@@ -18,6 +18,9 @@ module pera_system::pera_system_state_inner {
     use pera::table::Table;
     use pera::bag::Bag;
     use pera::bag;
+    use pera_system::dwallet_network_key::{NetworkDecryptionKeyShares,
+        new_encrypted_network_decryption_key_shares, is_valid_key_scheme,
+    };
 
     // same as in validator_set
     const ACTIVE_VALIDATOR_ONLY: u8 = 1;
@@ -25,6 +28,9 @@ module pera_system::pera_system_state_inner {
     const ANY_VALIDATOR: u8 = 3;
 
     const SYSTEM_STATE_VERSION_V1: u64 = 1;
+
+    #[error]
+    const EInvalidKeyType: u8 = 2;
 
     /// A list of system config parameters.
     public struct SystemParameters has store {
@@ -139,6 +145,7 @@ module pera_system::pera_system_state_inner {
         epoch_start_timestamp_ms: u64,
         /// Any extra fields that's not defined statically.
         extra_fields: Bag,
+        dwallet_admin_address: address,
     }
 
     /// Uses SystemParametersV2 as the parameters.
@@ -151,6 +158,9 @@ module pera_system::pera_system_state_inner {
         /// This is always the same as PeraSystemState.version. Keeping a copy here so that
         /// we know what version it is by inspecting PeraSystemStateInner as well.
         system_state_version: u64,
+        /// These are the encrypted decryption-key shares for the current epoch, used for dWallet MPC session.
+        /// The shares are indexed by the validator index of the current epoch committee.
+        decryption_key_shares: VecMap<u8, vector<NetworkDecryptionKeyShares>>,
         /// Contains all information about the validators.
         validators: ValidatorSet,
         /// The storage fund.
@@ -187,6 +197,7 @@ module pera_system::pera_system_state_inner {
         epoch_start_timestamp_ms: u64,
         /// Any extra fields that's not defined statically.
         extra_fields: Bag,
+        dwallet_admin_address: address,
     }
 
     /// Event containing system-level epoch information, emitted during
@@ -230,6 +241,7 @@ module pera_system::pera_system_state_inner {
         epoch_start_timestamp_ms: u64,
         parameters: SystemParameters,
         stake_subsidy: StakeSubsidy,
+        dwallet_admin_address: address,
         ctx: &mut TxContext,
     ): PeraSystemStateInner {
         let validators = validator_set::new(validators, ctx);
@@ -252,6 +264,7 @@ module pera_system::pera_system_state_inner {
             safe_mode_non_refundable_storage_fee: 0,
             epoch_start_timestamp_ms,
             extra_fields: bag::new(ctx),
+            dwallet_admin_address,
         };
         system_state
     }
@@ -298,6 +311,7 @@ module pera_system::pera_system_state_inner {
             safe_mode_non_refundable_storage_fee,
             epoch_start_timestamp_ms,
             extra_fields: state_extra_fields,
+            dwallet_admin_address,
         } = self;
         let SystemParameters {
             epoch_duration_ms,
@@ -313,6 +327,7 @@ module pera_system::pera_system_state_inner {
             epoch,
             protocol_version,
             system_state_version: 2,
+            decryption_key_shares: vec_map::empty(),
             validators,
             storage_fund,
             parameters: SystemParametersV2 {
@@ -335,11 +350,56 @@ module pera_system::pera_system_state_inner {
             safe_mode_storage_rebates,
             safe_mode_non_refundable_storage_fee,
             epoch_start_timestamp_ms,
-            extra_fields: state_extra_fields
+            extra_fields: state_extra_fields,
+            dwallet_admin_address,
         }
     }
 
     // ==== public(package) functions ====
+
+    public(package) fun dwallet_admin_address(self: &PeraSystemStateInnerV2): address {
+        self.dwallet_admin_address
+    }
+
+    public(package) fun lock_next_epoch_committee(
+        self: &mut PeraSystemStateInnerV2,
+    ) {
+        self.validators.lock_next_epoch_committee(self.epoch);
+    }
+
+    /// Update the system state with a new version dwallet mpc network key shares after the network DKG.
+    public(package) fun new_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_scheme: u8) {
+        assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
+        let new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty());
+
+        if (self.decryption_key_shares.contains(&key_scheme)) {
+            self.decryption_key_shares.get_mut(&key_scheme).push_back(new_version);
+            return
+        };
+
+        self.decryption_key_shares.insert(key_scheme, vector[new_version]);
+    }
+
+    /// Update the system state with new encryption of decryption key shares after re-configuring the network.
+    public(package) fun store_decryption_key_shares(
+        self: &mut PeraSystemStateInnerV2,
+        shares: vector<vector<u8>>,
+        key_scheme: u8,
+    ) {
+        assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
+        let version = self.decryption_key_shares.get(&key_scheme).length();
+        if (self.decryption_key_shares.contains(&key_scheme)) {
+            self.decryption_key_shares.get_mut(&key_scheme).borrow_mut(
+                version
+            ).update_new_shares(shares, self.epoch);
+            return
+        };
+
+        self.decryption_key_shares.insert(
+            key_scheme,
+            vector[new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty())]
+        );
+    }
 
     /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
     /// stakes in their staking pool. Once they have at least `MIN_VALIDATOR_JOINING_STAKE` amount of stake they
@@ -352,6 +412,7 @@ module pera_system::pera_system_state_inner {
         pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
+        class_groups_public_key_and_proof_bytes: vector<u8>,
         proof_of_possession: vector<u8>,
         name: vector<u8>,
         description: vector<u8>,
@@ -370,6 +431,7 @@ module pera_system::pera_system_state_inner {
             pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
+            class_groups_public_key_and_proof_bytes,
             proof_of_possession,
             name,
             description,
@@ -1152,5 +1214,6 @@ module pera_system::pera_system_state_inner {
 
         self.validators.request_add_validator_candidate(validator, ctx);
     }
+
 
 }

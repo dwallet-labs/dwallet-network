@@ -88,6 +88,7 @@ module pera_system::governance_test_utils {
             0,   // chain_start_timestamp_ms
             system_parameters,
             stake_subsidy,
+            address::from_u256(0),
             ctx,
         )
     }
@@ -189,6 +190,7 @@ module pera_system::governance_test_utils {
             pubkey,
             vector[171, 2, 39, 3, 139, 105, 166, 171, 153, 151, 102, 197, 151, 186, 140, 116, 114, 90, 213, 225, 20, 167, 60, 69, 203, 12, 180, 198, 9, 217, 117, 38],
             vector[171, 3, 39, 3, 139, 105, 166, 171, 153, 151, 102, 197, 151, 186, 140, 116, 114, 90, 213, 225, 20, 167, 60, 69, 203, 12, 180, 198, 9, 217, 117, 38],
+            vector[0],
             pop,
             name,
             b"description",
@@ -216,6 +218,7 @@ module pera_system::governance_test_utils {
             pubkey,
             vector[171, 2, 39, 3, 139, 105, 166, 171, 153, 151, 102, 197, 151, 186, 140, 116, 114, 90, 213, 225, 20, 167, 60, 69, 203, 12, 180, 198, 9, 217, 117, 38],
             vector[171, 3, 39, 3, 139, 105, 166, 171, 153, 151, 102, 197, 151, 186, 140, 116, 114, 90, 213, 225, 20, 167, 60, 69, 203, 12, 180, 198, 9, 217, 117, 38],
+            vector[0],
             pop,
             name,
             b"description",

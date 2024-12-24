@@ -52,6 +52,7 @@ module pera_system::pera_system {
     use pera_system::staking_pool::PoolTokenExchangeRate;
     use pera::dynamic_field;
     use pera::vec_map::VecMap;
+    use pera_system::dwallet_network_key::{is_valid_key_scheme, start_network_dkg};
 
     #[test_only] use pera::balance;
     #[test_only] use pera_system::validator_set::ValidatorSet;
@@ -64,6 +65,9 @@ module pera_system::pera_system {
 
     const ENotSystemAddress: u64 = 0;
     const EWrongInnerVersion: u64 = 1;
+    #[error]
+    const EInvalidKeyType: u8 = 2;
+    const ENotDwalletAdminAddress: u64 = 3;
 
     // ==== functions that can only be called by genesis ====
 
@@ -77,6 +81,7 @@ module pera_system::pera_system {
         epoch_start_timestamp_ms: u64,
         parameters: SystemParameters,
         stake_subsidy: StakeSubsidy,
+        dwallet_admin_address: address,
         ctx: &mut TxContext,
     ) {
         let system_state = pera_system_state_inner::create(
@@ -86,6 +91,7 @@ module pera_system::pera_system {
             epoch_start_timestamp_ms,
             parameters,
             stake_subsidy,
+            dwallet_admin_address,
             ctx,
         );
         let version = pera_system_state_inner::genesis_system_state_version();
@@ -97,7 +103,20 @@ module pera_system::pera_system {
         transfer::share_object(self);
     }
 
+    public(package) fun dwallet_admin_address(
+        wrapper: &mut PeraSystemState,
+    ): address  {
+        let self = load_system_state_mut(wrapper);
+        self.dwallet_admin_address()
+    }
+
     // ==== entry functions ====
+
+    /// Function to create start the network DKG for the dwallet mpc network key of a given key type.
+    public entry fun request_start_network_dkg(key_type: u8, system_state: &mut PeraSystemState, ctx: &mut TxContext) {
+        assert!(ctx.sender() == system_state.dwallet_admin_address(), ENotDwalletAdminAddress);
+        start_network_dkg(key_type, ctx);
+    }
 
     /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
     /// stakes in their staking pool. Once they have at least `MIN_VALIDATOR_JOINING_STAKE` amount of stake they
@@ -110,6 +129,7 @@ module pera_system::pera_system {
         pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
+        class_groups_public_key_and_proof_bytes: vector<u8>,
         proof_of_possession: vector<u8>,
         name: vector<u8>,
         description: vector<u8>,
@@ -128,6 +148,7 @@ module pera_system::pera_system {
             pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
+            class_groups_public_key_and_proof_bytes,
             proof_of_possession,
             name,
             description,
@@ -270,7 +291,7 @@ module pera_system::pera_system {
         wrapper: &mut PeraSystemState,
         staked_pera: StakedPera,
         ctx: &mut TxContext,
-    ) : Balance<PERA> {
+    ): Balance<PERA> {
         let self = load_system_state_mut(wrapper);
         self.request_withdraw_stake(staked_pera, ctx)
     }
@@ -509,7 +530,7 @@ module pera_system::pera_system {
     public fun pool_exchange_rates(
         wrapper: &mut PeraSystemState,
         pool_id: &ID
-    ): &Table<u64, PoolTokenExchangeRate>  {
+    ): &Table<u64, PoolTokenExchangeRate> {
         let self = load_system_state_mut(wrapper);
         self.pool_exchange_rates(pool_id)
     }
@@ -537,11 +558,11 @@ module pera_system::pera_system {
         storage_rebate: u64,
         non_refundable_storage_fee: u64,
         storage_fund_reinvest_rate: u64, // share of storage fund's rewards that's reinvested
-                                         // into storage fund, in basis point.
+        // into storage fund, in basis point.
         reward_slashing_rate: u64, // how much rewards are slashed to punish a validator, in bps.
         epoch_start_timestamp_ms: u64, // Timestamp of the epoch start
         ctx: &mut TxContext,
-    ) : Balance<PERA> {
+    ): Balance<PERA> {
         let self = load_system_state_mut(wrapper);
         // Validator will make a special system call with sender set as 0x0.
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
@@ -571,10 +592,10 @@ module pera_system::pera_system {
 
     fun load_inner_maybe_upgrade(self: &mut PeraSystemState): &mut PeraSystemStateInnerV2 {
         if (self.version == 1) {
-          let v1: PeraSystemStateInner = dynamic_field::remove(&mut self.id, self.version);
-          let v2 = v1.v1_to_v2();
-          self.version = 2;
-          dynamic_field::add(&mut self.id, self.version, v2);
+            let v1: PeraSystemStateInner = dynamic_field::remove(&mut self.id, self.version);
+            let v2 = v1.v1_to_v2();
+            self.version = 2;
+            dynamic_field::add(&mut self.id, self.version, v2);
         };
 
         let inner: &mut PeraSystemStateInnerV2 = dynamic_field::borrow_mut(
@@ -590,6 +611,46 @@ module pera_system::pera_system {
     fun validator_voting_powers(wrapper: &mut PeraSystemState): VecMap<address, u64> {
         let self = load_system_state(wrapper);
         pera_system_state_inner::active_validator_voting_powers(self)
+    }
+
+    #[allow(unused_function)]
+    /// Lock the next epoch's validator set
+    /// The chain agrees on the next epoch committee in order to pass
+    /// the chain's DWallet MPC secret to it.
+    fun lock_next_epoch_committee(wrapper: &mut PeraSystemState, ctx: &TxContext) {
+        assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        let self = load_system_state_mut(wrapper);
+        self.lock_next_epoch_committee();
+    }
+
+    #[allow(unused_function)]
+    /// Store the encrypted decryption key shares from the network DKG re-sharing.
+    /// The chain agrees on on the same public output.
+    fun store_decryption_key_shares(
+        wrapper: &mut PeraSystemState,
+        shares: vector<vector<u8>>,
+        key_scheme: u8,
+        ctx: &TxContext
+    ) {
+        assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
+        let self = load_system_state_mut(wrapper);
+        self.store_decryption_key_shares(shares, key_scheme);
+    }
+
+    #[allow(unused_function)]
+    /// Store the encrypted decryption key shares from the network DKG protocol public output.
+    /// The chain agrees on on the same public output.
+    fun new_decryption_key_shares_version(
+        wrapper: &mut PeraSystemState,
+        shares: vector<vector<u8>>,
+        key_scheme: u8,
+        ctx: &TxContext
+    ) {
+        assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
+        let self = load_system_state_mut(wrapper);
+        self.new_decryption_key_shares_version(shares, key_scheme);
     }
 
     #[test_only]

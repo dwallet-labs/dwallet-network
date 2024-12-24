@@ -13,6 +13,7 @@ use crate::{
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::hash::Hash;
 use std::{collections::BTreeMap, fmt::Debug};
 use strum_macros::{AsRefStr, IntoStaticStr};
 use thiserror::Error;
@@ -38,6 +39,7 @@ macro_rules! fp_ensure {
     };
 }
 use crate::digests::TransactionEventsDigest;
+use crate::dwallet_mpc_error::DwalletMPCError;
 use crate::execution_status::{CommandIndex, ExecutionFailureStatus};
 pub(crate) use fp_ensure;
 
@@ -437,7 +439,7 @@ pub enum PeraError {
     #[error("Invalid DKG message size")]
     InvalidDkgMessageSize,
 
-    #[error("Unexpected message.")]
+    #[error("unexpected message")]
     UnexpectedMessage,
 
     // Move module publishing related errors
@@ -660,6 +662,10 @@ pub enum PeraError {
 
     #[error("The request did not contain a certificate")]
     NoCertificateProvidedError,
+
+    // This is a string because the encapsulating error has too many derives.
+    #[error("dWallet MPC Error: {0}")]
+    DwalletMPCError(String),
 }
 
 #[repr(u64)]
@@ -717,6 +723,12 @@ impl From<Status> for PeraError {
                 status.code().description().to_owned(),
             )
         }
+    }
+}
+
+impl From<DwalletMPCError> for PeraError {
+    fn from(error: DwalletMPCError) -> Self {
+        PeraError::DwalletMPCError(error.to_string())
     }
 }
 
@@ -779,6 +791,14 @@ impl From<UserInputError> for PeraError {
 impl From<PeraObjectResponseError> for PeraError {
     fn from(error: PeraObjectResponseError) -> Self {
         PeraError::PeraObjectResponseError { error }
+    }
+}
+
+impl From<bcs::Error> for PeraError {
+    fn from(err: bcs::Error) -> Self {
+        PeraError::ObjectDeserializationError {
+            error: err.to_string(),
+        }
     }
 }
 

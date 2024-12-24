@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true, features = ["backtrace"] }
+dwallet-mpc.workspace = true
 arc-swap.workspace = true
 async-trait.workspace = true
 axum.workspace = true
@@ -45,6 +46,7 @@ scopeguard.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
+schemars.workspace = true
 signature.workspace = true
 static_assertions.workspace = true
 tap.workspace = true
@@ -98,6 +100,17 @@ pera-storage.workspace = true
 pera-types.workspace = true
 zeroize.workspace = true
 nonempty.workspace = true
+group.workspace = true
+mpc.workspace = true
+twopc_mpc.workspace = true
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "new-pera-api" }
+class_groups.workspace = true
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "new-pera-api" }
+class_groups_constants = { path = "../class-groups-constants" }
+rand_core = "0.6.4"
+crypto-bigint = { version = "0.5.5", features = ["rand_core", "serde"], default-features = false }
+dwallet-classgroups-types.workspace = true
+dwallet-mpc-types.workspace = true
 
 [dev-dependencies]
 clap.workspace = true
@@ -148,3 +161,8 @@ harness = false
 
 [features]
 test-utils = []
+# This feature must be enabled for release builds!
+# If it is not enabled, then we will receive dWallet MPC sessions even if the network key is not set.
+# The network DKG pauses the manager from advancing any MPC sessions if the network key is not initialized.
+# This feature allows bypassing this restriction, enabling development without relying on the network DKG.
+with-network-dkg = []

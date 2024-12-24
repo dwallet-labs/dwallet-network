@@ -489,6 +489,12 @@ mod checked {
             TransactionKind::EndOfEpochTransaction(_) => {
                 panic!("EndOfEpochTransaction should not exist in execution layer v0");
             }
+            TransactionKind::DWalletMPCOutput(_) => {
+                panic!("DWalletMPCOutput should not exist in execution layer v0");
+            }
+            _ => {
+                panic!("Unsupported transaction kind in V0: {:?}", transaction_kind);
+            }
         }
     }
 

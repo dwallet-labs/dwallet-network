@@ -409,6 +409,8 @@ pub enum PeraTransactionBlockKind {
     ConsensusCommitPrologueV2(PeraConsensusCommitPrologueV2),
     ConsensusCommitPrologueV3(PeraConsensusCommitPrologueV3),
     // .. more transaction types go here
+    DWalletMPCOutput(PeraDWalletMPCOutput),
+    LockNextCommittee,
 }
 
 impl Display for PeraTransactionBlockKind {
@@ -462,6 +464,12 @@ impl Display for PeraTransactionBlockKind {
             }
             Self::EndOfEpochTransaction(_) => {
                 writeln!(writer, "Transaction Kind: End of Epoch Transaction")?;
+            }
+            Self::DWalletMPCOutput(_) => {
+                writeln!(writer, "Transaction Kind: dwallet mpc Output")?;
+            }
+            PeraTransactionBlockKind::LockNextCommittee => {
+                writeln!(writer, "Transaction Kind: Lock Next Committee")?;
             }
         }
         write!(f, "{}", writer)
@@ -560,6 +568,14 @@ impl PeraTransactionBlockKind {
                         .collect(),
                 })
             }
+            TransactionKind::DWalletMPCOutput(output) => {
+                Self::DWalletMPCOutput(PeraDWalletMPCOutput {
+                    session_id: output.session_info.session_id,
+                    sender_address: output.session_info.initiating_user_address,
+                    value: output.output,
+                })
+            }
+            TransactionKind::LockNextCommittee(..) => Self::LockNextCommittee,
         })
     }
 
@@ -659,6 +675,14 @@ impl PeraTransactionBlockKind {
                         .collect(),
                 })
             }
+            TransactionKind::DWalletMPCOutput(output) => {
+                Self::DWalletMPCOutput(PeraDWalletMPCOutput {
+                    session_id: output.session_info.session_id,
+                    sender_address: output.session_info.initiating_user_address,
+                    value: output.output,
+                })
+            }
+            TransactionKind::LockNextCommittee(..) => Self::LockNextCommittee,
         })
     }
 
@@ -680,6 +704,8 @@ impl PeraTransactionBlockKind {
             Self::AuthenticatorStateUpdate(_) => "AuthenticatorStateUpdate",
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
+            Self::DWalletMPCOutput(_) => "DWalletMPCOutput",
+            PeraTransactionBlockKind::LockNextCommittee => "LockNextCommittee",
         }
     }
 }
@@ -1673,6 +1699,14 @@ pub enum PeraEndOfEpochTransactionKind {
     CoinDenyListStateCreate,
     BridgeStateCreate(CheckpointDigest),
     BridgeCommitteeUpdate(SequenceNumber),
+}
+
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+pub struct PeraDWalletMPCOutput {
+    pub session_id: ObjectID,
+    pub sender_address: PeraAddress,
+    pub value: Vec<u8>,
 }
 
 #[serde_as]

@@ -67,6 +67,11 @@ use crate::consensus_handler::{
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
 use crate::consensus_manager::ConsensusManager;
+use crate::dwallet_mpc::authority_name_to_party_id;
+use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
+use crate::dwallet_mpc::mpc_manager::{DWalletMPCChannelMessage, DWalletMPCSender};
+use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::randomness::{
     DkgStatus, RandomnessManager, RandomnessReporter, VersionedProcessedMessage,
@@ -78,6 +83,8 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
+use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, NetworkDecryptionKeyShares};
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
@@ -87,6 +94,7 @@ use pera_execution::{self, Executor};
 use pera_macros::fail_point;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_storage::mutex_table::{MutexGuard, MutexTable};
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::effects::TransactionEffects;
 use pera_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
@@ -333,6 +341,14 @@ pub struct AuthorityPerEpochStore {
     /// State machine managing randomness DKG and generation.
     randomness_manager: OnceCell<tokio::sync::Mutex<RandomnessManager>>,
     randomness_reporter: OnceCell<RandomnessReporter>,
+    /// A tokio channel to send messages to the async [`DWalletMPCManager`]
+    pub dwallet_mpc_sender: OnceCell<DWalletMPCSender>,
+    /// State machine managing dWallet MPC outputs.
+    /// This state machine is used to store outputs and emit ones
+    /// where the quorum of votes is valid.
+    pub dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
+    pub dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
+    pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -848,6 +864,10 @@ impl AuthorityPerEpochStore {
             jwk_aggregator,
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
+            dwallet_mpc_outputs_verifier: OnceCell::new(),
+            dwallet_mpc_sender: OnceCell::new(),
+            dwallet_mpc_batches_manager: OnceCell::new(),
+            dwallet_mpc_network_keys: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
@@ -916,6 +936,59 @@ impl AuthorityPerEpochStore {
         result
     }
 
+    /// A function to initiate the [`DWalletMPCSender`] when a new epoch starts.
+    pub fn set_dwallet_mpc_sender(&self, sender: DWalletMPCSender) -> PeraResult<()> {
+        if self.dwallet_mpc_sender.set(sender).is_err() {
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_sender` called more than once; this should never happen");
+        }
+        Ok(())
+    }
+
+    /// A function to initiate the [`DWalletMPCBatchesManager`] when a new epoch starts.
+    pub fn set_dwallet_mpc_batches_manager(
+        &self,
+        batches_manager: DWalletMPCBatchesManager,
+    ) -> PeraResult<()> {
+        if self
+            .dwallet_mpc_batches_manager
+            .set(tokio::sync::Mutex::new(batches_manager))
+            .is_err()
+        {
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_batches_manager` called more than once; this should never happen");
+        }
+        Ok(())
+    }
+
+    /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
+    /// This manager handles storing all the valid outputs of a batched dWallet MPC session,
+    /// and writes them to the chain once all the batch outputs are ready.
+    pub fn set_dwallet_mpc_outputs_manager(
+        &self,
+        manager: DWalletMPCOutputsVerifier,
+    ) -> PeraResult<()> {
+        if self
+            .dwallet_mpc_outputs_verifier
+            .set(tokio::sync::Mutex::new(manager))
+            .is_err()
+        {
+            error!(
+                "AuthorityPerEpochStore: `set_dwallet_mpc_outputs_manager` called more than once; this should never happen"
+            );
+        }
+        Ok(())
+    }
+
+    /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
+    pub fn set_dwallet_mpc_network_keys(&self) {
+        if self
+            .dwallet_mpc_network_keys
+            .set(DwalletMPCNetworkKeyVersions::new(self))
+            .is_err()
+        {
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
+        }
+    }
+
     pub fn coin_deny_list_state_exists(&self) -> bool {
         self.epoch_start_configuration
             .coin_deny_list_obj_initial_shared_version()
@@ -965,6 +1038,72 @@ impl AuthorityPerEpochStore {
 
     pub fn epoch_start_state(&self) -> &EpochStartSystemState {
         self.epoch_start_configuration.epoch_start_state()
+    }
+
+    /// Returns the current active validators' class groups public keys and proofs.
+    /// The data is being used as part of the network's DKG protocol.
+    pub fn active_validators_class_groups_public_keys_and_proofs(
+        &self,
+    ) -> PeraResult<HashMap<AuthorityName, ClassGroupsPublicKeyAndProof>> {
+        match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => data
+                .get_active_validators_class_groups_public_key_and_proof()
+                .iter()
+                .map(|(k, v)| Ok((*k, bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(v)?)))
+                .collect::<PeraResult<HashMap<AuthorityName, ClassGroupsPublicKeyAndProof>>>(),
+        }
+    }
+
+    /// Retrieves the decryption key shares for the current epoch if they exist in the system state.
+    ///
+    /// The data is sourced from the epoch's initial system state.
+    /// The returned value is a map where:
+    /// - The key represents the key scheme (e.g., Secp256k1, Ristretto, etc.).
+    /// - The value is a vector of [`NetworkDecryptionKeyShares`],
+    ///   which contains all versions of the encrypted decryption key shares.
+    pub(crate) fn load_decryption_key_shares_from_system_state(
+        &self,
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<NetworkDecryptionKeyShares>>> {
+        let decryption_key_shares = (match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
+        })
+        .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+        .contents
+        .into_iter()
+        .map(|entry| Ok((DWalletMPCNetworkKey::try_from(entry.key)?, entry.value)))
+        .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
+        Ok(decryption_key_shares)
+    }
+
+    /// Retrieves the *running validator's* latest decryption key shares for each key scheme
+    /// if they exist in the system state.
+    ///
+    /// The data is sourced from the epoch's initial system state.
+    /// The returned value is a map where:
+    /// - The key represents the key scheme.
+    /// - The value is a `Vec<Vec<u8>>`, containing the decryption key shares for the validator.
+    pub(crate) fn load_validator_decryption_key_shares_from_system_state(
+        &self,
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>> {
+        let decryption_key_shares = self.load_decryption_key_shares_from_system_state()?;
+        let party_id = authority_name_to_party_id(&self.name, self)? as usize;
+        decryption_key_shares
+            .into_iter()
+            .map(|(key_type, encryption_shares)| {
+                let shares = encryption_shares
+                    .iter()
+                    .map(|share| {
+                        // TODO (#382): Decrypt the decryption key share
+                        share
+                            .current_epoch_shares
+                            .get(party_id)
+                            .cloned()
+                            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)
+                    })
+                    .collect::<DwalletMPCResult<_>>()?;
+                Ok((key_type, shares))
+            })
+            .collect()
     }
 
     pub fn get_chain_identifier(&self) -> ChainIdentifier {
@@ -2390,12 +2529,57 @@ impl AuthorityPerEpochStore {
             skipped_consensus_txns.inc();
             return None;
         }
-        // Signatures are verified as part of the consensus payload verification in PeraTxValidator
+        // Signatures are verified as part of the consensus payload verification in `PeraTxValidator`.
         match &transaction.transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::UserTransaction(_certificate),
                 ..
             }) => {}
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::LockNextCommittee(authority, _),
+                ..
+            }) => {
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "LockNextCommittee authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
+                ..
+            }) => {
+                // When sending an MPC output, the validator also includes its public key.
+                // Here, we verify that the public key used to sign this transaction matches
+                // the provided public key.
+                // This public key is later used to identify the authority that sent the MPC message.
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "DWalletMPCOutput authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, _, _),
+                ..
+            }) => {
+                // When sending an MPC message, the validator also includes its public key.
+                // Here, we verify that the public key used to sign this transaction matches
+                // the provided public key.
+                // This public key is later used
+                // to identify the authority that sent the MPC message.
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "DWalletMPCMessage authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::CheckpointSignature(data),
                 ..
@@ -2495,6 +2679,29 @@ impl AuthorityPerEpochStore {
             SequencedConsensusTransactionKind::System(_) => {}
         }
         Some(VerifiedSequencedConsensusTransaction(transaction))
+    }
+
+    /// Return the [`DWalletMPCOutputsVerifier`].
+    /// Uses a Mutex because the instance is initialized from a different thread.
+    pub async fn get_dwallet_mpc_outputs_verifier(
+        &self,
+    ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCOutputsVerifier>> {
+        match self.dwallet_mpc_outputs_verifier.get() {
+            Some(dwallet_mpc_outputs_manager) => Ok(dwallet_mpc_outputs_manager.lock().await),
+            None => Err(DwalletMPCError::MissingDwalletMPCOutputsVerifier.into()),
+        }
+    }
+
+    /// Return the current epoch's [`DWalletMPCBatchesManager`].
+    /// This manager handles storing all the valid outputs of a batched dWallet MPC sessions,
+    /// and writes them to the chain at once when all the batch outputs are ready.
+    pub async fn get_dwallet_mpc_batches_manager(
+        &self,
+    ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCBatchesManager>> {
+        match self.dwallet_mpc_batches_manager.get() {
+            Some(m) => Ok(m.lock().await),
+            None => Err(DwalletMPCError::MissingDWalletMPCBatchesManager.into()),
+        }
     }
 
     fn db_batch(&self) -> PeraResult<DBBatch> {
@@ -3152,6 +3359,13 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
+        if let Some(dwallet_mpc_sender) = self.dwallet_mpc_sender.get() {
+            dwallet_mpc_sender
+                .send(DWalletMPCChannelMessage::EndOfDelivery)
+                .map_err(|err| {
+                    DwalletMPCError::DWalletMPCSenderSendFailed(format!("EndOfDelivery - {}", err))
+                })?;
+        }
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
@@ -3540,6 +3754,40 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::LockNextCommittee(..),
+                ..
+            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
+                ..
+            }) => {
+                self.dwallet_mpc_sender
+                    .get()
+                    .ok_or(DwalletMPCError::MissingDWalletMPCSender)?
+                    .send(DWalletMPCChannelMessage::Output(
+                        output.clone(),
+                        *authority,
+                        session_info.clone(),
+                    ))
+                    .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
+                ..
+            }) => {
+                self.dwallet_mpc_sender
+                    .get()
+                    .ok_or(DwalletMPCError::MissingDWalletMPCSender)?
+                    .send(DWalletMPCChannelMessage::Message(
+                        message.clone(),
+                        *authority,
+                        *session_id,
+                    ))
+                    .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::RandomnessStateUpdate(_, _),
                 ..
             }) => {
@@ -3632,8 +3880,13 @@ impl AuthorityPerEpochStore {
             return ConsensusCertificateResult::IgnoredSystem;
         }
 
-        // If needed we can support owned object system transactions as well...
-        assert!(system_transaction.contains_shared_object());
+        // System transactions either contain a shared object
+        // or are dWallet MPC output transactions.
+        let is_dwallet_mpc_output = matches!(
+            system_transaction.transaction_data().execution_parts().0,
+            TransactionKind::DWalletMPCOutput(_)
+        );
+        assert!(system_transaction.contains_shared_object() || is_dwallet_mpc_output);
         ConsensusCertificateResult::PeraTransaction(system_transaction.clone())
     }
 

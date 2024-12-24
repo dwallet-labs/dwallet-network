@@ -5,6 +5,7 @@ use enum_dispatch::enum_dispatch;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::base_types::{AuthorityName, EpochId, PeraAddress};
+use crate::collection_types::VecMap;
 use crate::committee::{Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
 use crate::multiaddr::Multiaddr;
 use anemo::types::{PeerAffinity, PeerInfo};
@@ -13,6 +14,7 @@ use consensus_config::{
     Authority, AuthorityPublicKey, Committee as ConsensusCommittee, NetworkPublicKey,
     ProtocolPublicKey,
 };
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 use narwhal_config::{Committee as NarwhalCommittee, CommitteeBuilder, WorkerCache, WorkerIndex};
 use pera_protocol_config::ProtocolVersion;
 use serde::{Deserialize, Serialize};
@@ -59,6 +61,7 @@ impl EpochStartSystemState {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
+        decryption_key_shares: Option<VecMap<u8, Vec<NetworkDecryptionKeyShares>>>,
     ) -> Self {
         Self::V1(EpochStartSystemStateV1 {
             epoch,
@@ -68,6 +71,7 @@ impl EpochStartSystemState {
             epoch_start_timestamp_ms,
             epoch_duration_ms,
             active_validators,
+            decryption_key_shares,
         })
     }
 
@@ -86,6 +90,7 @@ impl EpochStartSystemState {
                 epoch_start_timestamp_ms: state.epoch_start_timestamp_ms,
                 epoch_duration_ms: state.epoch_duration_ms,
                 active_validators: state.active_validators.clone(),
+                decryption_key_shares: None,
             }),
         }
     }
@@ -100,9 +105,28 @@ pub struct EpochStartSystemStateV1 {
     epoch_start_timestamp_ms: u64,
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
+    decryption_key_shares: Option<VecMap<u8, Vec<NetworkDecryptionKeyShares>>>,
 }
 
 impl EpochStartSystemStateV1 {
+    pub fn get_decryption_key_shares(&self) -> Option<VecMap<u8, Vec<NetworkDecryptionKeyShares>>> {
+        self.decryption_key_shares.clone()
+    }
+
+    pub fn get_active_validators_class_groups_public_key_and_proof(
+        &self,
+    ) -> HashMap<AuthorityName, Vec<u8>> {
+        self.active_validators
+            .iter()
+            .map(|validator| {
+                (
+                    validator.authority_name().clone(),
+                    validator.class_groups_public_key_and_proof.clone(),
+                )
+            })
+            .collect()
+    }
+
     pub fn new_for_testing() -> Self {
         Self::new_for_testing_with_epoch(0)
     }
@@ -116,6 +140,7 @@ impl EpochStartSystemStateV1 {
             epoch_start_timestamp_ms: 0,
             epoch_duration_ms: 1000,
             active_validators: vec![],
+            decryption_key_shares: None,
         }
     }
 }
@@ -316,6 +341,7 @@ pub struct EpochStartValidatorInfoV1 {
     pub protocol_pubkey: narwhal_crypto::PublicKey,
     pub narwhal_network_pubkey: narwhal_crypto::NetworkPublicKey,
     pub narwhal_worker_pubkey: narwhal_crypto::NetworkPublicKey,
+    pub class_groups_public_key_and_proof: Vec<u8>,
     pub pera_net_address: Multiaddr,
     pub p2p_address: Multiaddr,
     pub narwhal_primary_address: Multiaddr,
@@ -358,6 +384,7 @@ mod test {
                 protocol_pubkey: protocol_key.public().clone(),
                 narwhal_network_pubkey: narwhal_network_key.public().clone(),
                 narwhal_worker_pubkey: narwhal_network_key.public().clone(),
+                class_groups_public_key_and_proof: vec![],
                 pera_net_address: Multiaddr::empty(),
                 p2p_address: Multiaddr::empty(),
                 narwhal_primary_address: Multiaddr::empty(),

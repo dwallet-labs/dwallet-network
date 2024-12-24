@@ -77,8 +77,9 @@ proptest.workspace = true
 proptest-derive.workspace = true
 better_any.workspace = true
 lru.workspace = true
-
+group.workspace = true
 pera-sdk2.workspace = true
+dwallet-mpc-types.workspace = true
 
 [dev-dependencies]
 bincode.workspace = true
@@ -95,7 +96,6 @@ async-trait.workspace = true
 p256.workspace = true
 passkey-client.workspace = true
 passkey-authenticator.workspace = true
-
 [[bench]]
 name = "accumulator_bench"
 harness = false

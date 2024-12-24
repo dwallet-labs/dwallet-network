@@ -27,6 +27,7 @@ module pera_system::genesis {
 
         network_public_key: vector<u8>,
         worker_public_key: vector<u8>,
+        class_groups_public_key_and_proof: vector<u8>,
 
         network_address: vector<u8>,
         p2p_address: vector<u8>,
@@ -82,6 +83,7 @@ module pera_system::genesis {
         genesis_chain_parameters: GenesisChainParameters,
         genesis_validators: vector<GenesisValidatorMetadata>,
         token_distribution_schedule: TokenDistributionSchedule,
+        dwallet_admin_address: address,
         ctx: &mut TxContext,
     ) {
         // Ensure this is only called at genesis
@@ -112,6 +114,7 @@ module pera_system::genesis {
                 proof_of_possession,
                 network_public_key,
                 worker_public_key,
+                class_groups_public_key_and_proof,
                 network_address,
                 p2p_address,
                 primary_address,
@@ -123,6 +126,7 @@ module pera_system::genesis {
                 protocol_public_key,
                 network_public_key,
                 worker_public_key,
+                class_groups_public_key_and_proof,
                 proof_of_possession,
                 name,
                 description,
@@ -189,6 +193,7 @@ module pera_system::genesis {
             genesis_chain_parameters.chain_start_timestamp_ms,
             system_parameters,
             stake_subsidy,
+            dwallet_admin_address,
             ctx,
         );
     }

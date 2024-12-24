@@ -5,8 +5,8 @@ pub use checked::*;
 
 #[pera_macros::with_checked_arithmetic]
 mod checked {
-
     use crate::execution_mode::{self, ExecutionMode};
+    use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
     use pera_types::balance::{
@@ -58,6 +58,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
+    use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound};
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -134,6 +135,7 @@ mod checked {
         let is_epoch_change = transaction_kind.is_end_of_epoch_tx();
 
         let deny_cert = is_certificate_denied(&transaction_digest, certificate_deny_set);
+
         let (gas_cost_summary, execution_result) = execute_transaction::<Mode>(
             &mut temporary_store,
             transaction_kind,
@@ -254,7 +256,7 @@ mod checked {
             0,
         );
         let mut gas_charger = GasCharger::new_unmetered(tx_context.digest());
-        programmable_transactions::execution::execute::<execution_mode::Genesis>(
+        let _ = programmable_transactions::execution::execute::<execution_mode::Genesis>(
             protocol_config,
             metrics,
             move_vm,
@@ -262,7 +264,7 @@ mod checked {
             tx_context,
             &mut gas_charger,
             pt,
-        )?;
+        );
         temporary_store.update_object_version_and_prev_tx();
         Ok(temporary_store.into_inner())
     }
@@ -297,6 +299,7 @@ mod checked {
 
         // We must charge object read here during transaction execution, because if this fails
         // we must still ensure an effect is committed and all objects versions incremented
+
         let result = gas_charger.charge_input_objects(temporary_store);
         let mut result = result.and_then(|()| {
             let mut execution_result = if deny_cert {
@@ -713,6 +716,30 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
+            TransactionKind::DWalletMPCOutput(data) => {
+                setup_and_execute_dwallet_mpc_output(
+                    data,
+                    temporary_store,
+                    tx_ctx,
+                    move_vm,
+                    gas_charger,
+                    protocol_config,
+                    metrics,
+                )?;
+
+                Ok(Mode::empty_results())
+            }
+            TransactionKind::LockNextCommittee(..) => {
+                setup_and_execute_lock_next_epoch_committee(
+                    temporary_store,
+                    tx_ctx,
+                    move_vm,
+                    gas_charger,
+                    protocol_config,
+                    metrics,
+                )?;
+                Ok(Mode::empty_results())
+            }
         }?;
         temporary_store.check_execution_results_consistency()?;
         Ok(result)
@@ -1080,6 +1107,151 @@ mod checked {
             )
             .expect("Unable to generate randomness_state_create transaction!");
         builder
+    }
+
+    /// Executes the transaction to store the final MPC output on-chain,
+    /// making it accessible to the initiating user.
+    /// Each validator executes this transaction locally,
+    /// and if validators represent more than two-thirds of the voting power
+    /// "vote" to include it by executing it, the transaction is added to the block.
+    /// todo(zeev): compare with bytes party, remove unwraps, replace error
+    fn setup_and_execute_dwallet_mpc_output(
+        data: DWalletMPCOutput,
+        temporary_store: &mut TemporaryStore<'_>,
+        tx_ctx: &mut TxContext,
+        move_vm: &Arc<MoveVM>,
+        gas_charger: &mut GasCharger,
+        protocol_config: &ProtocolConfig,
+        metrics: Arc<LimitsMetrics>,
+    ) -> Result<(), ExecutionError> {
+        let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
+        let (move_function_name, args) = match data.session_info.mpc_round {
+            MPCRound::DKGFirst => (
+                "create_dkg_first_round_output",
+                vec![
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                ],
+            ),
+            MPCRound::DKGSecond(dwallet_cap_id, dwallet_network_key_version) => (
+                "create_dkg_second_round_output",
+                vec![
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(dwallet_cap_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&dwallet_network_key_version).unwrap()),
+                ],
+            ),
+            MPCRound::PresignFirst(dwallet_id, dkg_output, batch_session_id) => (
+                "launch_presign_second_round",
+                vec![
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&dkg_output).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(batch_session_id.to_vec()),
+                ],
+            ),
+            MPCRound::PresignSecond(dwallet_id, _first_round_output, batch_session_id) => {
+                let presigns: Vec<(ObjectID, Vec<u8>)> = bcs::from_bytes(&data.output).unwrap();
+                let keys: Vec<ObjectID> = presigns.clone().into_iter().map(|(k, _)| k).collect();
+                let values: Vec<Vec<u8>> = presigns.into_iter().map(|(_, v)| v).collect();
+                (
+                    "create_batched_presign_output",
+                    vec![
+                        CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                        CallArg::Pure(batch_session_id.to_vec()),
+                        CallArg::Pure(bcs::to_bytes(&keys).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&values).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
+                    ],
+                )
+            }
+            MPCRound::Sign(..) | MPCRound::BatchedSign(..) => {
+                // todo(zeev): why we need this if the output is created by the user?
+                let MPCRound::Sign(batch_session_id, _) = data.session_info.mpc_round else {
+                    unreachable!("MPCRound is not Sign for a sign session")
+                };
+                (
+                    "create_sign_output",
+                    vec![
+                        CallArg::Pure(data.output),
+                        CallArg::Pure(bcs::to_bytes(&batch_session_id).unwrap()),
+                    ],
+                )
+            }
+            MPCRound::NetworkDkg(key_type) => {
+                module_name = PERA_SYSTEM_MODULE_NAME;
+                (
+                    "new_decryption_key_shares_version",
+                    vec![
+                        CallArg::PERA_SYSTEM_MUT,
+                        CallArg::Pure(bcs::to_bytes(&vec![data.output.clone()]).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&(key_type as u8)).unwrap()),
+                    ],
+                )
+            }
+            _ => {
+                unreachable!(
+                    "MPCRound {:?} is not supported for creating an on chain output",
+                    data.session_info.mpc_round
+                )
+            }
+        };
+        let pt = {
+            let mut builder = ProgrammableTransactionBuilder::new();
+            let res = builder.move_call(
+                PERA_SYSTEM_PACKAGE_ID.into(),
+                module_name.to_owned(),
+                ident_str!(move_function_name).to_owned(),
+                vec![],
+                args,
+            );
+            assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
+            builder.finish()
+        };
+        programmable_transactions::execution::execute::<execution_mode::System>(
+            protocol_config,
+            metrics,
+            move_vm,
+            temporary_store,
+            tx_ctx,
+            gas_charger,
+            pt,
+        )
+    }
+
+    fn setup_and_execute_lock_next_epoch_committee(
+        temporary_store: &mut TemporaryStore<'_>,
+        tx_ctx: &mut TxContext,
+        move_vm: &Arc<MoveVM>,
+        gas_charger: &mut GasCharger,
+        protocol_config: &ProtocolConfig,
+        metrics: Arc<LimitsMetrics>,
+    ) -> Result<(), ExecutionError> {
+        let pt = {
+            let mut builder = ProgrammableTransactionBuilder::new();
+            let res = builder.move_call(
+                PERA_SYSTEM_PACKAGE_ID.into(),
+                PERA_SYSTEM_MODULE_NAME.to_owned(),
+                ident_str!("lock_next_epoch_committee").to_owned(),
+                vec![],
+                vec![CallArg::PERA_SYSTEM_MUT],
+            );
+            assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
+            builder.finish()
+        };
+        programmable_transactions::execution::execute::<execution_mode::System>(
+            protocol_config,
+            metrics,
+            move_vm,
+            temporary_store,
+            tx_ctx,
+            gas_charger,
+            pt,
+        )
     }
 
     fn setup_bridge_create(

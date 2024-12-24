@@ -31,6 +31,7 @@ pera-framework.workspace = true
 pera-framework-snapshot.workspace = true
 pera-protocol-config.workspace = true
 pera-types.workspace = true
+dwallet-classgroups-types.workspace = true
 [target.'cfg(msim)'.dependencies]
 pera-simulator.workspace = true
 

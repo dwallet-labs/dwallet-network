@@ -5,7 +5,12 @@
 		"module": "CommonJS",
 		"outDir": "dist/cjs",
 		"rootDir": "src",
-		"isolatedModules": true
+		"isolatedModules": true,
+		"sourceMap": true
 	},
-	"references": [{ "path": "../bcs" }]
+	"references": [
+		{
+			"path": "../bcs"
+		}
+	]
 }

@@ -56,11 +56,6 @@ module.exports = {
 				message: 'Buffer usage increases bundle size and is not consistently implemented on web.',
 			},
 		],
-		'header/header': [
-			2,
-			'line',
-			[' Copyright (c) Mysten Labs, Inc.', ' SPDX-License-Identifier: BSD-3-Clause-Clear'],
-		],
 		'@typescript-eslint/no-unused-vars': [
 			'error',
 			{

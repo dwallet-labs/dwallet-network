@@ -16,6 +16,7 @@ use crate::pera_system_state::pera_system_state_inner_v1::{
     StakeSubsidyV1, StorageFundV1, ValidatorSetV1,
 };
 use crate::storage::ObjectStore;
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 use serde::{Deserialize, Serialize};
 
 /// Rust version of the Move pera::pera_system::SystemParametersV2 type
@@ -59,6 +60,7 @@ pub struct PeraSystemStateInnerV2 {
     pub epoch: u64,
     pub protocol_version: u64,
     pub system_state_version: u64,
+    pub encrypted_decryption_key_share: VecMap<u8, Vec<NetworkDecryptionKeyShares>>,
     pub validators: ValidatorSetV1,
     pub storage_fund: StorageFundV1,
     pub parameters: SystemParametersV2,
@@ -72,6 +74,7 @@ pub struct PeraSystemStateInnerV2 {
     pub safe_mode_non_refundable_storage_fee: u64,
     pub epoch_start_timestamp_ms: u64,
     pub extra_fields: Bag,
+    pub dwallet_admin_address: PeraAddress,
     // TODO: Use getters instead of all pub.
 }
 
@@ -172,6 +175,9 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
                         protocol_pubkey: metadata.protocol_pubkey.clone(),
                         narwhal_network_pubkey: metadata.network_pubkey.clone(),
                         narwhal_worker_pubkey: metadata.worker_pubkey.clone(),
+                        class_groups_public_key_and_proof: metadata
+                            .class_groups_public_key_and_proof
+                            .clone(),
                         pera_net_address: metadata.net_address.clone(),
                         p2p_address: metadata.p2p_address.clone(),
                         narwhal_primary_address: metadata.primary_address.clone(),
@@ -181,6 +187,11 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
                     }
                 })
                 .collect(),
+            if self.encrypted_decryption_key_share.contents.is_empty() {
+                None
+            } else {
+                Some(self.encrypted_decryption_key_share)
+            },
         )
     }
 
@@ -192,8 +203,10 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             epoch,
             protocol_version,
             system_state_version,
+            encrypted_decryption_key_share: _,
             validators:
                 ValidatorSetV1 {
+                    locked: _,
                     total_stake,
                     active_validators,
                     pending_active_validators:
@@ -260,6 +273,7 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             safe_mode_non_refundable_storage_fee,
             epoch_start_timestamp_ms,
             extra_fields: _,
+            dwallet_admin_address: _,
         } = self;
         PeraSystemStateSummary {
             epoch,
