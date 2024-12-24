@@ -372,6 +372,13 @@ pub(crate) fn from_event(
     dwallet_mpc_manager: &DWalletMPCManager,
     party_id: PartyID,
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
+    if &event.type_ == &StartNetworkDKGEvent::type_() {
+        let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
+        return network_dkg::network_dkg_party(deserialized_event);
+    }
+    let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+        dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?,
+    )?;
     match &event.type_ {
         t if t == &StartDKGFirstRoundEvent::type_() => {
             let deserialized_event: StartDKGFirstRoundEvent = bcs::from_bytes(&event.contents)?;
@@ -383,7 +390,8 @@ pub(crate) fn from_event(
                 deserialized_event,
                 // Todo (#394): Remove the hardcoded network key type
                 if cfg!(feature = "with-network-dkg") {
-                    dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?
+                    dwallet_mpc_manager
+                        .network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?
                 } else {
                     0
                 },
@@ -401,10 +409,6 @@ pub(crate) fn from_event(
         t if t == &StartSignRoundEvent::type_() => {
             let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
             sign_party(party_id, deserialized_event, dwallet_mpc_manager)
-        }
-        t if t == &StartNetworkDKGEvent::type_() => {
-            let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
-            network_dkg::network_dkg_party(deserialized_event)
         }
         _ => Err(DwalletMPCError::NonMPCEvent.into()),
     }

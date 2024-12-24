@@ -109,9 +109,7 @@ pub struct EpochStartSystemStateV1 {
 }
 
 impl EpochStartSystemStateV1 {
-    pub fn get_decryption_key_shares(
-        &self,
-    ) -> Option<VecMap<u8, Vec<DwalletMPCNetworkKey>>> {
+    pub fn get_decryption_key_shares(&self) -> Option<VecMap<u8, Vec<DwalletMPCNetworkKey>>> {
         self.decryption_key_shares.clone()
     }
 

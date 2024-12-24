@@ -11,23 +11,30 @@ use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
-use class_groups::{encryption_key, CompactIbqf, KnowledgeOfDiscreteLogUCProof, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS};
+use class_groups::{
+    encryption_key, CompactIbqf, KnowledgeOfDiscreteLogUCProof,
+    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
+    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_SCALAR_LIMBS,
+};
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::class_groups_key::{
-    read_class_groups_from_file_real,
-    read_class_groups_private_key_from_file_real, ClassGroupsEncryptionKeyAndProof,
+    read_class_groups_from_file_real, read_class_groups_private_key_from_file_real,
+    ClassGroupsEncryptionKeyAndProof,
 };
+use dwallet_mpc_types::dwallet_mpc::MPCPrivateOutput;
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::{AsynchronousRoundResult, AsynchronouslyAdvanceable, Party, WeightedThresholdAccessStructure};
+use mpc::{
+    AsynchronousRoundResult, AsynchronouslyAdvanceable, Party, WeightedThresholdAccessStructure,
+};
+use pera_types::crypto::Signable;
 use pera_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, DwalletMPCNetworkKey};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use twopc_mpc::sign::Protocol;
-use dwallet_mpc_types::dwallet_mpc::MPCPrivateOutput;
-use pera_types::crypto::Signable;
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -38,7 +45,6 @@ pub enum DwalletMPCNetworkKeysStatus {
     NotInitialized,
 }
 
-
 /// Holds the network keys of the dWallet MPC protocols.
 pub struct DwalletMPCNetworkKeyVersions {
     inner: Arc<RwLock<DwalletMPCNetworkKeyVersionsInner>>,
@@ -47,11 +53,13 @@ pub struct DwalletMPCNetworkKeyVersions {
 /// Encapsulates all the fields in a single structure for atomic access.
 pub struct DwalletMPCNetworkKeyVersionsInner {
     /// The validators' decryption key shares.
-    pub validator_decryption_key_share: HashMap<DWalletMPCNetworkKeyScheme, Vec<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>>,
+    pub validator_decryption_key_share: HashMap<
+        DWalletMPCNetworkKeyScheme,
+        Vec<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
+    >,
     /// The dWallet MPC network decryption key shares (encrypted).
     /// Map from key type to the encryption of the key version.
-    pub key_shares_versions:
-        HashMap<DWalletMPCNetworkKeyScheme, Vec<DwalletMPCNetworkKey>>,
+    pub key_shares_versions: HashMap<DWalletMPCNetworkKeyScheme, Vec<DwalletMPCNetworkKey>>,
     /// The status of the network supported key types for the dWallet MPC sessions.
     pub status: DwalletMPCNetworkKeysStatus,
 }
@@ -121,29 +129,38 @@ impl DwalletMPCNetworkKeyVersions {
         key_type: DWalletMPCNetworkKeyScheme,
         self_decryption_key_share: HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>,
         dkg_public_output: Vec<u8>,
-        access_structure: &WeightedThresholdAccessStructure
+        access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
         let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
 
-        let new_key_version = Self::new_dwallet_mpc_network_key(dkg_public_output, key_type, epoch_store.epoch(), access_structure)?;
-        let pp = bcs::from_bytes(&new_key_version.protocol_public_parameters)?;
+        let new_key_version = Self::new_dwallet_mpc_network_key(
+            dkg_public_output,
+            key_type,
+            epoch_store.epoch(),
+            access_structure,
+        )?;
+        let pp = bcs::from_bytes(&new_key_version.decryption_public_parameters)?;
         let self_decryption_key_share = self_decryption_key_share
             .into_iter()
             .map(|(party_id, secret_key_share)| {
-                Ok(
-                    (
+                Ok((
+                    party_id,
+                    <AsyncProtocol as Protocol>::DecryptionKeyShare::new(
                         party_id,
-                        <AsyncProtocol as Protocol>::DecryptionKeyShare::new(party_id, secret_key_share, &pp).unwrap()
+                        secret_key_share,
+                        &pp,
                     )
-                )
+                    .unwrap(),
+                ))
             })
             .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
 
-        inner.key_shares_versions.insert(
-            key_type.clone(),
-            vec![new_key_version],
-        );
-        inner.validator_decryption_key_share.insert(key_type, vec![self_decryption_key_share]);
+        inner
+            .key_shares_versions
+            .insert(key_type.clone(), vec![new_key_version]);
+        inner
+            .validator_decryption_key_share
+            .insert(key_type, vec![self_decryption_key_share]);
 
         if let DwalletMPCNetworkKeysStatus::Ready(keys) = &mut inner.status {
             keys.insert(key_type);
@@ -154,10 +171,16 @@ impl DwalletMPCNetworkKeyVersions {
         Ok(())
     }
 
-    fn new_dwallet_mpc_network_key(dkg_output: Vec<u8>, key_scheme: DWalletMPCNetworkKeyScheme, epoch: u64, access_structure: &WeightedThresholdAccessStructure) -> DwalletMPCResult<DwalletMPCNetworkKey> {
+    fn new_dwallet_mpc_network_key(
+        dkg_output: Vec<u8>,
+        key_scheme: DWalletMPCNetworkKeyScheme,
+        epoch: u64,
+        access_structure: &WeightedThresholdAccessStructure,
+    ) -> DwalletMPCResult<DwalletMPCNetworkKey> {
         match key_scheme {
             DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                let dkg_output: <Secp256k1Party as Party>::PublicOutput = bcs::from_bytes(&dkg_output)?;
+                let dkg_output: <Secp256k1Party as Party>::PublicOutput =
+                    bcs::from_bytes(&dkg_output)?;
                 Ok(DwalletMPCNetworkKey {
                     epoch,
                     current_epoch_shares: vec![bcs::to_bytes(&dkg_output.encryptions_of_shares_per_crt_prime)?],
@@ -166,15 +189,13 @@ impl DwalletMPCNetworkKeyVersions {
                     decryption_public_parameters: bcs::to_bytes(&dkg_output.default_decryption_key_share_public_parameters::<SECP256K1_SCALAR_LIMBS, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, secp256k1::GroupElement>(access_structure).map_err(|_|DwalletMPCError::ClassGroupsError)?)?,
                 })
             }
-            DWalletMPCNetworkKeyScheme::Ristretto => {
-                Ok(DwalletMPCNetworkKey {
-                    epoch,
-                    current_epoch_shares: vec![],
-                    previous_epoch_shares: vec![],
-                    protocol_public_parameters: vec![],
-                    decryption_public_parameters: vec![],
-                })
-            }
+            DWalletMPCNetworkKeyScheme::Ristretto => Ok(DwalletMPCNetworkKey {
+                epoch,
+                current_epoch_shares: vec![],
+                previous_epoch_shares: vec![],
+                protocol_public_parameters: vec![],
+                decryption_public_parameters: vec![],
+            }),
         }
     }
 
@@ -183,12 +204,29 @@ impl DwalletMPCNetworkKeyVersions {
     pub fn get_decryption_key_share(
         &self,
         key_type: DWalletMPCNetworkKeyScheme,
-    ) -> DwalletMPCResult<Vec<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>> {
+    ) -> DwalletMPCResult<Vec<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>>
+    {
         let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
         Ok(inner
             .validator_decryption_key_share
             .get(&key_type)
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .clone())
+    }
+
+    pub fn get_protocol_public_parameters(
+        &self,
+        key_scheme: DWalletMPCNetworkKeyScheme,
+        key_version: u8,
+    ) -> DwalletMPCResult<Vec<u8>> {
+        let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
+        Ok(inner
+            .key_shares_versions
+            .get(&key_scheme)
+            .ok_or(DwalletMPCError::InvalidMPCPartyType)?
+            .get(key_version as usize)
+            .ok_or(DwalletMPCError::InvalidMPCPartyType)?
+            .protocol_public_parameters
             .clone())
     }
 
@@ -234,23 +272,18 @@ pub(crate) fn advance_network_dkg(
             malicious_parties,
             private_output,
             public_output,
-        } =>
-            {
-                Ok(AsynchronousRoundResult::Finalize {
-                    malicious_parties,
-                    private_output: MPCPrivateOutput::DecryptionKeyShare(private_output),
-                    public_output,
-                })
-            }
+        } => Ok(AsynchronousRoundResult::Finalize {
+            malicious_parties,
+            private_output: MPCPrivateOutput::DecryptionKeyShare(private_output),
+            public_output,
+        }),
         AsynchronousRoundResult::Advance {
             malicious_parties,
-            message
-        } => {
-            Ok(AsynchronousRoundResult::Advance {
-                malicious_parties,
-                message,
-            })
-        }
+            message,
+        } => Ok(AsynchronousRoundResult::Advance {
+            malicious_parties,
+            message,
+        }),
     }
 }
 

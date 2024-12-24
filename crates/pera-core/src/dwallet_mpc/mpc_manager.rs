@@ -202,15 +202,35 @@ impl DWalletMPCManager {
         Ok(())
     }
 
+    pub fn get_protocol_public_parameters(&self, key_version: u8) -> DwalletMPCResult<Vec<u8>> {
+        if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
+            return self_decryption_share.get_protocol_public_parameters(
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+                key_version,
+            );
+        }
+        Err(DwalletMPCError::TwoPCMPCError(
+            "Decryption share not found".to_string(),
+        ))
+    }
+
     /// Get the decryption share for the current party.
     // This will be changed in #382
     pub fn get_decryption_share(
         &self,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        if let Some(self_decryption_share) = self.epoch_store()?
-            .dwallet_mpc_network_keys.get() {
-            match self_decryption_share.get_decryption_key_share(DWalletMPCNetworkKeyScheme::Secp256k1) {
-                Ok(self_decryption_share) => return Ok(self_decryption_share.get(self_decryption_share.len() -1).ok_or(DwalletMPCError::TwoPCMPCError("Decryption share not found".to_string()))?.clone()),
+        if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
+            match self_decryption_share
+                .get_decryption_key_share(DWalletMPCNetworkKeyScheme::Secp256k1)
+            {
+                Ok(self_decryption_share) => {
+                    return Ok(self_decryption_share
+                        .get(self_decryption_share.len() - 1)
+                        .ok_or(DwalletMPCError::TwoPCMPCError(
+                            "Decryption share not found".to_string(),
+                        ))?
+                        .clone())
+                }
                 Err(e) => {}
             }
         }
@@ -233,8 +253,11 @@ impl DWalletMPCManager {
             .as_ref()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters)?;
 
-        Ok(HashMap::from([(party_id, DecryptionKeyShare::new(party_id, share_value, public_parameters)
-            .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?)]))
+        Ok(HashMap::from([(
+            party_id,
+            DecryptionKeyShare::new(party_id, share_value, public_parameters)
+                .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?,
+        )]))
     }
 
     /// Advance all the MPC instances that either received enough messages
@@ -336,7 +359,7 @@ impl DWalletMPCManager {
                         &self.weighted_threshold_access_structure,
                     )?;
                 }
-        }
+            }
 
             self.consensus_adapter
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
@@ -366,7 +389,7 @@ impl DWalletMPCManager {
                 key_type,
                 private_output,
                 public_output,
-                &self.weighted_threshold_access_structure
+                &self.weighted_threshold_access_structure,
             )?;
         }
         Ok(())

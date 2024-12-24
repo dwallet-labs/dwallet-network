@@ -9,7 +9,6 @@ pub struct DwalletMPCNetworkKey {
     pub previous_epoch_shares: Vec<Vec<u8>>,
     pub protocol_public_parameters: Vec<u8>,
     pub decryption_public_parameters: Vec<u8>,
-
 }
 
 #[repr(u8)]

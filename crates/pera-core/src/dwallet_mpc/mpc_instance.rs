@@ -45,7 +45,7 @@ impl DWalletMPCInstance {
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
         session_info: SessionInfo,
-        decryption_share: Option<HashMap<PartyID ,<AsyncProtocol as Protocol>::DecryptionKeyShare>>,
+        decryption_share: Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
     ) -> Self {
         Self {
             status,

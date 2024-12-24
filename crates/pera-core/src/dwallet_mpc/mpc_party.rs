@@ -117,23 +117,18 @@ impl MPCParty {
                 malicious_parties,
                 private_output,
                 public_output,
-            } =>
-                {
-                    Ok(mpc::AsynchronousRoundResult::Finalize {
-                        malicious_parties,
-                        private_output: MPCPrivateOutput::None,
-                        public_output,
-                    })
-                }
+            } => Ok(mpc::AsynchronousRoundResult::Finalize {
+                malicious_parties,
+                private_output: MPCPrivateOutput::None,
+                public_output,
+            }),
             mpc::AsynchronousRoundResult::Advance {
                 malicious_parties,
-                message
-            } => {
-                Ok(mpc::AsynchronousRoundResult::Advance {
-                    malicious_parties,
-                    message,
-                })
-            }
+                message,
+            } => Ok(mpc::AsynchronousRoundResult::Advance {
+                malicious_parties,
+                message,
+            }),
         }
     }
 }
