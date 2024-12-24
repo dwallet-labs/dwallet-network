@@ -220,8 +220,8 @@ impl StartBatchedPresignEvent {
 
 /// Rust version of the Move [`pera_system::validator_set::LockedNextEpochCommitteeEvent`] type.
 pub struct LockedNextEpochCommitteeEvent {
-    next_committee_validators: Vec<ValidatorDataForDWalletSecretReShare>,
-    epoch: u64,
+    _next_committee_validators: Vec<ValidatorDataForDWalletSecretReShare>,
+    _epoch: u64,
 }
 
 struct ValidatorDataForDWalletSecretReShare {
