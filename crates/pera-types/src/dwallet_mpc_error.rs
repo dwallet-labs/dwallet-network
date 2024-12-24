@@ -1,6 +1,6 @@
 use crate::base_types::{AuthorityName, EpochId, ObjectID};
-use group::PartyID;
 use dwallet_mpc_types::dwallet_mpc::DwalletNetworkMPCError;
+use group::PartyID;
 // todo(zeev): remove unused errors.
 
 #[derive(thiserror::Error, Debug)]

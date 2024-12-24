@@ -10,14 +10,14 @@ use crate::dwallet_mpc::dkg::DKGFirstParty;
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use commitment::CommitmentSizedNumber;
+use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, NetworkDecryptionKeyShares};
 use group::PartyID;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
-use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -39,8 +39,7 @@ pub struct DwalletMPCNetworkKeyVersionsInner {
     pub validator_decryption_key_share: HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>,
     /// The dWallet MPC network decryption key shares (encrypted).
     /// Map from key type to the encryption of the key version.
-    pub key_shares_versions:
-        HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>,
+    pub key_shares_versions: HashMap<DWalletMPCNetworkKey, Vec<NetworkDecryptionKeyShares>>,
     /// The status of the network supported key types for the dWallet MPC sessions.
     pub status: DwalletMPCNetworkKeysStatus,
 }
@@ -120,7 +119,7 @@ impl DwalletMPCNetworkKeyVersions {
 
         inner.key_shares_versions.insert(
             key_type.clone(),
-            vec![EncryptionOfNetworkDecryptionKeyShares {
+            vec![NetworkDecryptionKeyShares {
                 epoch: epoch_store.epoch(),
                 current_epoch_shares: vec![encryption_of_decryption_shares],
                 previous_epoch_shares: vec![],

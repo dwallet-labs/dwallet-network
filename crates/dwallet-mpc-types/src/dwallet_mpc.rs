@@ -82,9 +82,9 @@ impl fmt::Display for MPCSessionStatus {
     }
 }
 
-/// Rust representation of the move struct `EncryptionOfNetworkDecryptionKeyShares`
+/// Rust representation of the move struct `NetworkDecryptionKeyShares`
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct EncryptionOfNetworkDecryptionKeyShares {
+pub struct NetworkDecryptionKeyShares {
     pub epoch: u64,
     pub current_epoch_shares: Vec<Vec<u8>>,
     pub previous_epoch_shares: Vec<Vec<u8>>,

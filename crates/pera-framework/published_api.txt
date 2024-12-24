@@ -772,7 +772,7 @@ total_object_storage_rebates
 total_balance
 	public fun
 	0x3::storage_fund
-EncryptionOfNetworkDecryptionKeyShares
+NetworkDecryptionKeyShares
 	public struct
 	0x3::dwallet_network_key
 is_key_type

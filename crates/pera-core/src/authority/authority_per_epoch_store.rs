@@ -83,7 +83,8 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
+use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, NetworkDecryptionKeyShares};
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
@@ -115,7 +116,6 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use tap::TapOptional;
 use tokio::time::Instant;
-use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
 
@@ -1059,12 +1059,11 @@ impl AuthorityPerEpochStore {
     /// The data is sourced from the epoch's initial system state.
     /// The returned value is a map where:
     /// - The key represents the key scheme (e.g., Secp256k1, Ristretto, etc.).
-    /// - The value is a vector of [`EncryptionOfNetworkDecryptionKeyShares`],
+    /// - The value is a vector of [`NetworkDecryptionKeyShares`],
     ///   which contains all versions of the encrypted decryption key shares.
     pub(crate) fn load_decryption_key_shares_from_system_state(
         &self,
-    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>>
-    {
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<NetworkDecryptionKeyShares>>> {
         let decryption_key_shares = (match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
         })

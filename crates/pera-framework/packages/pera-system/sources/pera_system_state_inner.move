@@ -17,7 +17,7 @@ module pera_system::pera_system_state_inner {
     use pera::table::Table;
     use pera::bag::Bag;
     use pera::bag;
-    use pera_system::dwallet_network_key::{EncryptionOfNetworkDecryptionKeyShares,
+    use pera_system::dwallet_network_key::{NetworkDecryptionKeyShares,
         new_encrypted_network_decryption_key_shares, is_valid_key_scheme,
     };
 
@@ -159,7 +159,7 @@ module pera_system::pera_system_state_inner {
         system_state_version: u64,
         /// These are the encrypted decryption-key shares for the current epoch, used for dWallet MPC session.
         /// The shares are indexed by the validator index of the current epoch committee.
-        decryption_key_shares: VecMap<u8, vector<EncryptionOfNetworkDecryptionKeyShares>>,
+        decryption_key_shares: VecMap<u8, vector<NetworkDecryptionKeyShares>>,
         /// Contains all information about the validators.
         validators: ValidatorSet,
         /// The storage fund.

@@ -426,7 +426,7 @@ Uses SystemParametersV2 as the parameters.
  we know what version it is by inspecting PeraSystemStateInner as well.
 </dd>
 <dt>
-<code>decryption_key_shares: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;u8, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptionOfNetworkDecryptionKeyShares">dwallet_network_key::EncryptionOfNetworkDecryptionKeyShares</a>&gt;&gt;</code>
+<code>decryption_key_shares: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;u8, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_network_key.md#0x3_dwallet_network_key_NetworkDecryptionKeyShares">dwallet_network_key::NetworkDecryptionKeyShares</a>&gt;&gt;</code>
 </dt>
 <dd>
  These are the encrypted decryption-key shares for the current epoch, used for dWallet MPC session.
