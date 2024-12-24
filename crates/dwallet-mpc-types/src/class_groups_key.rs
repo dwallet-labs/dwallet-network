@@ -1,6 +1,6 @@
 use anyhow::Context;
 use class_groups::{
-    construct_knowledge_of_discrete_log_public_parameters_per_crt_prime,
+    construct_knowledge_of_decryption_key_public_parameters_per_crt_prime,
     construct_setup_parameters_per_crt_prime, generate_keypairs_per_crt_prime,
     generate_knowledge_of_decryption_key_proofs_per_crt_prime, CompactIbqf,
     KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
@@ -86,7 +86,7 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
             construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER)
                 .unwrap();
         let language_public_parameters_per_crt_prime =
-            construct_knowledge_of_discrete_log_public_parameters_per_crt_prime(
+            construct_knowledge_of_decryption_key_public_parameters_per_crt_prime(
                 setup_parameters_per_crt_prime.each_ref(),
             )
             .unwrap();
