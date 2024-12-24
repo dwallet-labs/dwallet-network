@@ -9,7 +9,7 @@ use crate::balance::Balance;
 use crate::base_types::PeraAddress;
 use crate::collection_types::{Bag, Table, TableVec, VecMap, VecSet};
 use crate::committee::{CommitteeWithNetworkMetadata, NetworkMetadata};
-use crate::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
+use crate::dwallet_mpc::{DWalletMPCNetworkKeyScheme, DwalletMPCNetworkKey};
 use crate::error::PeraError;
 use crate::pera_system_state::epoch_start_pera_system_state::EpochStartSystemState;
 use crate::pera_system_state::get_validators_from_table_vec;
@@ -60,7 +60,7 @@ pub struct PeraSystemStateInnerV2 {
     pub epoch: u64,
     pub protocol_version: u64,
     pub system_state_version: u64,
-    pub encrypted_decryption_key_share: VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>,
+    pub encrypted_decryption_key_share: VecMap<u8, Vec<DwalletMPCNetworkKey>>,
     pub validators: ValidatorSetV1,
     pub storage_fund: StorageFundV1,
     pub parameters: SystemParametersV2,

@@ -1,5 +1,5 @@
 use crate::base_types::{AuthorityName, EpochId, ObjectID};
-use crate::dwallet_mpc::DWalletMPCNetworkKey;
+use crate::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use group::PartyID;
 // todo(zeev): remove unused errors.
 

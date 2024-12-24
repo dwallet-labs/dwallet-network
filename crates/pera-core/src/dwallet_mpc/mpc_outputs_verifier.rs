@@ -7,7 +7,7 @@ use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::collection_types::VecMap;
 use pera_types::committee::StakeUnit;
-use pera_types::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
+use pera_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, DwalletMPCNetworkKey};
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 use std::collections::{HashMap, HashSet};

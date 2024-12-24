@@ -21,7 +21,7 @@ use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::AuthorityName;
 use pera_types::base_types::{EpochId, ObjectID};
-use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
+use pera_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
@@ -39,6 +39,7 @@ pub(crate) mod mpc_party;
 pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
+pub mod dwallet_network_mpc_keys;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
@@ -383,7 +384,7 @@ pub(crate) fn from_event(
                 deserialized_event,
                 // Todo (#394): Remove the hardcoded network key type
                 if cfg!(feature = "with-network-dkg") {
-                    dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKey::Secp256k1)?
+                    dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?
                 } else {
                     0
                 },

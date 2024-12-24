@@ -100,7 +100,7 @@ create_mock_presign
 StartNetworkDKGEvent
 	public struct
 	0x3::dwallet_network_key
-EncryptionOfNetworkDecryptionKeyShares
+DwalletMPCNetworkKey
 	public struct
 	0x3::dwallet_network_key
 is_valid_key_scheme

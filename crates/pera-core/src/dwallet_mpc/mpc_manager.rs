@@ -20,7 +20,7 @@ use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
-use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
+use pera_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, ConsensusTransactionKind};
@@ -209,7 +209,7 @@ impl DWalletMPCManager {
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         if let Some(self_decryption_share) = self.epoch_store()?
             .dwallet_mpc_network_keys.get() {
-            match self_decryption_share.get_decryption_key_share(DWalletMPCNetworkKey::Secp256k1) {
+            match self_decryption_share.get_decryption_key_share(DWalletMPCNetworkKeyScheme::Secp256k1) {
                 Ok(self_decryption_share) => return Ok(self_decryption_share.get(self_decryption_share.len() -1).ok_or(DwalletMPCError::TwoPCMPCError("Decryption share not found".to_string()))?.clone()),
                 Err(e) => {}
             }
@@ -485,7 +485,7 @@ impl DWalletMPCManager {
 
     pub(super) fn network_key_version(
         &self,
-        key_type: DWalletMPCNetworkKey,
+        key_type: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<u8> {
         self.epoch_store()?
             .dwallet_mpc_network_keys

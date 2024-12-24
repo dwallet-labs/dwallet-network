@@ -1,0 +1,10 @@
+---
+chain_start_timestamp_ms: 1735033721919
+protocol_version: 56
+allow_insertion_of_extra_objects: true
+epoch_duration_ms: 86400000
+stake_subsidy_start_epoch: 0
+stake_subsidy_initial_distribution_amount: 1000000000000000
+stake_subsidy_period_length: 10
+stake_subsidy_decrease_rate: 1000
+dwallet_admin_address: "0xd87602cc701d65a293896ed155a4c1af3228bcad044015eed4d96495d5068413"

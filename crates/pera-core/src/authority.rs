@@ -169,7 +169,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
-use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
+use pera_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use pera_types::dwallet_mpc_error::DwalletMPCError;
 use pera_types::execution_config_utils::to_binary_config;
 
@@ -1573,7 +1573,7 @@ impl AuthorityState {
                 .dwallet_mpc_network_keys
                 .get()
                 .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-                .key_version(DWalletMPCNetworkKey::Secp256k1)
+                .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
                 .unwrap_or_default();
             let Ok(Some(session_info)) =
                 session_info_from_event(event, party_id, Some(key_version))

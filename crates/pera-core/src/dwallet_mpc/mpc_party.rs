@@ -8,7 +8,7 @@ use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPrivateOutput, MPCPublicInpu
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::ObjectID;
-use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
+use pera_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use std::collections::HashMap;
 use twopc_mpc::sign::Protocol;
@@ -29,7 +29,7 @@ pub enum MPCParty {
     /// The party used in the sign protocol.
     SignBytesParty(HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>),
     /// The party used in the network DKG protocol.
-    NetworkDkg(DWalletMPCNetworkKey),
+    NetworkDkg(DWalletMPCNetworkKeyScheme),
 }
 
 impl MPCParty {

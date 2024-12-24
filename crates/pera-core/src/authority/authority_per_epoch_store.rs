@@ -99,7 +99,7 @@ use pera_macros::fail_point;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_storage::mutex_table::{MutexGuard, MutexTable};
 use pera_types::collection_types::VecMap;
-use pera_types::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
+use pera_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, DwalletMPCNetworkKey};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::effects::TransactionEffects;
 use pera_types::executable_transaction::{
@@ -1070,11 +1070,11 @@ impl AuthorityPerEpochStore {
     /// The data is sourced from the epoch's initial system state.
     /// The returned value is a map where:
     /// - The key represents the key scheme (e.g., Secp256k1, Ristretto, etc.).
-    /// - The value is a vector of [`EncryptionOfNetworkDecryptionKeyShares`],
+    /// - The value is a vector of [`DwalletMPCNetworkKey`],
     ///   which contains all versions of the encrypted decryption key shares.
     pub(crate) fn load_decryption_key_shares_from_system_state(
         &self,
-    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>>
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<DwalletMPCNetworkKey>>>
     {
         let decryption_key_shares = (match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
@@ -1082,7 +1082,7 @@ impl AuthorityPerEpochStore {
         .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
         .contents
         .into_iter()
-        .map(|entry| Ok((DWalletMPCNetworkKey::try_from(entry.key)?, entry.value)))
+        .map(|entry| Ok((DWalletMPCNetworkKeyScheme::try_from(entry.key)?, entry.value)))
         .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
         Ok(decryption_key_shares)
     }
@@ -1096,7 +1096,7 @@ impl AuthorityPerEpochStore {
     /// - The value is a `Vec<Vec<u8>>`, containing the decryption key shares for the validator.
     pub(crate) fn load_validator_decryption_key_shares_from_system_state(
         &self,
-    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>> {
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<Vec<u8>>>> {
         let decryption_key_shares = self.load_decryption_key_shares_from_system_state()?;
         let party_id = authority_name_to_party_id(&self.name, self)? as usize;
         let mut decryption_key_share = HashMap::new();
