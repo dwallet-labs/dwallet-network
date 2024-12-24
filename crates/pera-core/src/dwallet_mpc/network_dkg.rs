@@ -25,8 +25,6 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
-use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
-use twopc_mpc::secp256k1::class_groups::{FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS};
 use twopc_mpc::sign::Protocol;
 use dwallet_mpc_types::dwallet_mpc::MPCPrivateOutput;
 use pera_types::crypto::Signable;
@@ -164,12 +162,18 @@ impl DwalletMPCNetworkKeyVersions {
                     epoch,
                     current_epoch_shares: vec![bcs::to_bytes(&dkg_output.encryptions_of_shares_per_crt_prime)?],
                     previous_epoch_shares: vec![],
-                    protocol_public_parameters: bcs::to_bytes(&dkg_output.default_encryption_scheme_public_parameters().map_err(|| DwalletMPCError::ClassGroupsError)?)?,
-                    decryption_public_parameters: bcs::to_bytes(&dkg_output.default_decryption_key_share_public_parameters(access_structure).map_err(||DwalletMPCError::ClassGroupsError)?)?,
+                    protocol_public_parameters: bcs::to_bytes(&dkg_output.default_encryption_scheme_public_parameters::<SECP256K1_SCALAR_LIMBS, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, secp256k1::GroupElement>().map_err(|_| DwalletMPCError::ClassGroupsError)?)?,
+                    decryption_public_parameters: bcs::to_bytes(&dkg_output.default_decryption_key_share_public_parameters::<SECP256K1_SCALAR_LIMBS, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, secp256k1::GroupElement>(access_structure).map_err(|_|DwalletMPCError::ClassGroupsError)?)?,
                 })
             }
             DWalletMPCNetworkKeyScheme::Ristretto => {
-                todo!()
+                Ok(DwalletMPCNetworkKey {
+                    epoch,
+                    current_epoch_shares: vec![],
+                    previous_epoch_shares: vec![],
+                    protocol_public_parameters: vec![],
+                    decryption_public_parameters: vec![],
+                })
             }
         }
     }
