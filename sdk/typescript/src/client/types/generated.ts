@@ -164,6 +164,14 @@ export interface DryRunTransactionBlockResponse {
 	input: TransactionBlockData;
 	objectChanges: PeraObjectChange[];
 }
+/** Rust representation of the move struct `DwalletMPCNetworkKey` */
+export interface DwalletMPCNetworkKey {
+	current_epoch_shares: number[][];
+	decryption_public_parameters: number[];
+	epoch: string;
+	previous_epoch_shares: number[][];
+	protocol_public_parameters: number[];
+}
 export interface DynamicFieldInfo {
 	bcsName: string;
 	digest: string;
@@ -1087,6 +1095,7 @@ export interface PeraSystemStateSummary {
 	activeValidators: PeraValidatorSummary[];
 	/** Map storing the number of epochs for which each validator has been below the low stake threshold. */
 	atRiskValidators: [string, string][];
+	decryptionKeyShares: [number, DwalletMPCNetworkKey[]][];
 	/** The current epoch ID, starting from 0. */
 	epoch: string;
 	/** The duration of an epoch, in milliseconds. */
@@ -1233,6 +1242,7 @@ export type PeraTransactionBlockBuilderMode = 'Commit' | 'DevInspect';
  * fields so that they are decoupled from the internal definitions.
  */
 export interface PeraValidatorSummary {
+	classGroupsPublicKeyAndProof: string;
 	commissionRate: string;
 	description: string;
 	/** ID of the exchange rate table object. */
