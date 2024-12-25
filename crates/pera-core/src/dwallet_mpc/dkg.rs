@@ -21,7 +21,7 @@ pub(super) type DKGSecondParty = <AsyncProtocol as Protocol>::ProofVerificationR
 /// preparing the party with the essential session information and other contextual data.
 pub(super) trait DKGFirstPartyPublicInputGenerator: Party {
     /// Generates the public input required for the first round of the DKG protocol.
-    fn generate_public_input() -> DwalletMPCResult<MPCPublicInput>;
+    fn generate_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResult<MPCPublicInput>;
 }
 
 /// A trait for generating the public input for the last round of the DKG protocol.
@@ -34,20 +34,22 @@ pub(super) trait DKGFirstPartyPublicInputGenerator: Party {
 pub(super) trait DKGSecondPartyPublicInputGenerator: Party {
     /// Generates the public input required for the second round of the DKG protocol.
     fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
         first_round_output: Vec<u8>,
         centralized_party_public_key_share: Vec<u8>,
     ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
 impl DKGFirstPartyPublicInputGenerator for DKGFirstParty {
-    fn generate_public_input() -> DwalletMPCResult<MPCPublicInput> {
-        let input: Self::PublicInput = class_groups_constants::protocol_public_parameters();
+    fn generate_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResult<MPCPublicInput> {
+        let input: Self::PublicInput = bcs::from_bytes(&protocol_public_parameters)?;
         bcs::to_bytes(&input).map_err(|e| DwalletMPCError::BcsError(e))
     }
 }
 
 impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
     fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
         first_round_output_buf: Vec<u8>,
         centralized_party_public_key_share_buf: Vec<u8>,
     ) -> DwalletMPCResult<MPCPublicInput> {
@@ -57,7 +59,7 @@ impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
             bcs::from_bytes(&centralized_party_public_key_share_buf).map_err(|e| DwalletMPCError::BcsError(e))?;
 
         let input: Self::PublicInput = (
-            class_groups_constants::protocol_public_parameters(),
+            bcs::from_bytes(&protocol_public_parameters)?,
             first_round_output,
             centralized_party_public_key_share,
         )

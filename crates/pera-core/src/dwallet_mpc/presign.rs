@@ -14,7 +14,7 @@ pub(super) type PresignSecondParty = <AsyncProtocol as twopc_mpc::presign::Proto
 /// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
 /// when accessing `mpc::Party::PublicInput`.
 pub(super) trait PresignFirstPartyPublicInputGenerator: mpc::Party {
-    fn generate_public_input(dkg_output: MPCPublicOutput) -> DwalletMPCResult<MPCPublicInput>;
+    fn generate_public_input(protocol_public_parameters: Vec<u8>, dkg_output: MPCPublicOutput) -> DwalletMPCResult<MPCPublicInput>;
 }
 
 /// A trait for generating the public input for the last round of the Presign protocol.
@@ -23,15 +23,16 @@ pub(super) trait PresignFirstPartyPublicInputGenerator: mpc::Party {
 /// when accessing `mpc::Party::PublicInput`.
 pub(super) trait PresignSecondPartyPublicInputGenerator: mpc::Party {
     fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
         dkg_output: MPCPublicOutput,
         first_round_output: MPCPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
 impl PresignFirstPartyPublicInputGenerator for PresignFirstParty {
-    fn generate_public_input(dkg_output: MPCPublicOutput) -> DwalletMPCResult<MPCPublicInput> {
+    fn generate_public_input(protocol_public_parameters: Vec<u8>, dkg_output: MPCPublicOutput) -> DwalletMPCResult<MPCPublicInput> {
         let pub_input = Self::PublicInput {
-            protocol_public_parameters: class_groups_constants::protocol_public_parameters(),
+            protocol_public_parameters: bcs::from_bytes(&protocol_public_parameters)?,
             dkg_output: bcs::from_bytes(&dkg_output)?,
         };
         Ok(bcs::to_bytes(&pub_input)?)
@@ -40,11 +41,13 @@ impl PresignFirstPartyPublicInputGenerator for PresignFirstParty {
 
 impl PresignSecondPartyPublicInputGenerator for PresignSecondParty {
     fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
         dkg_output: Vec<u8>,
         first_round_output: Vec<u8>,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let first_round_public_input =
             <PresignFirstParty as PresignFirstPartyPublicInputGenerator>::generate_public_input(
+                protocol_public_parameters,
                 dkg_output,
             )?;
         let first_round_public_input: <PresignFirstParty as mpc::Party>::PublicInput =
