@@ -142,3 +142,33 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 		} minutes (${seconds} seconds passed).`,
 	);
 }
+
+interface HasProtocolPublicParameters {
+	protocol_public_parameters: number[];
+}
+
+function is_protocol_public_parameters(obj: any): obj is HasProtocolPublicParameters {
+	return 'protocol_public_parameters' in obj;
+}
+
+export async function fetchProtocolPublicParameters(c: Config): Promise<Uint8Array> {
+	const res = await c.client.getObject({
+		id: 0x5,
+		options: { showContent: true },
+	});
+
+	const objectData =
+		res.data?.content?.dataType === 'moveObject' &&
+		res.data?.content.type === objectType &&
+		is_protocol_public_parameters(res.data.content.fields)
+			? (res.data.content.fields as HasProtocolPublicParameters)
+			: null;
+
+	if (!objectData) {
+		throw new Error(
+			`invalid object of type ${objectType}, got: ${JSON.stringify(res.data?.content)}`,
+		);
+	}
+
+	return objectData.fields.protocol_public_parameters;
+}

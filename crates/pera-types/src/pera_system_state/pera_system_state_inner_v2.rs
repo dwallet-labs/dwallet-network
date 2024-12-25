@@ -203,7 +203,7 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             epoch,
             protocol_version,
             system_state_version,
-            encrypted_decryption_key_share: _,
+            encrypted_decryption_key_share,
             validators:
                 ValidatorSetV1 {
                     locked: _,
@@ -324,6 +324,7 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             validator_low_stake_grace_period,
             stake_subsidy_period_length,
             stake_subsidy_decrease_rate,
+            decryption_key_shares: encrypted_decryption_key_share.contents.iter().map(|e| (e.key, e.value.clone())).collect(),
         }
     }
 }

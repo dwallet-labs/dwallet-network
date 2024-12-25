@@ -182,6 +182,8 @@ pub struct PeraSystemStateSummary {
     pub at_risk_validators: Vec<(PeraAddress, u64)>,
     /// A map storing the records of validator reporting each other.
     pub validator_report_records: Vec<(PeraAddress, Vec<PeraAddress>)>,
+
+    pub decryption_key_shares: Vec<(u8, Vec<crate::dwallet_mpc::DwalletMPCNetworkKey>)>,
 }
 
 impl PeraSystemStateSummary {
@@ -362,6 +364,7 @@ impl Default for PeraSystemStateSummary {
             validator_candidates_size: 0,
             at_risk_validators: vec![],
             validator_report_records: vec![],
+            decryption_key_shares: vec![],
         }
     }
 }

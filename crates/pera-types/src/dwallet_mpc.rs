@@ -1,8 +1,9 @@
+use schemars::JsonSchema;
 use crate::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use serde::{Deserialize, Serialize};
 
 /// Rust representation of the move struct `DwalletMPCNetworkKey`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct DwalletMPCNetworkKey {
     pub epoch: u64,
     pub current_epoch_shares: Vec<Vec<u8>>,
