@@ -7,7 +7,7 @@ pub use checked::*;
 mod checked {
     use crate::execution_mode::{self, ExecutionMode};
     use anyhow::Context;
-    use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
+    use dwallet_mpc_types::dwallet_mpc::{MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME};
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
     use pera_types::balance::{
@@ -1185,8 +1185,7 @@ mod checked {
                 ],
             ),
             MPCRound::PresignSecond(dwallet_id, _first_round_output, batch_session_id) => {
-                // todo(zeev): need to clean this, also why is it different from batch sign?
-                let presigns: Vec<(ObjectID, Vec<u8>)> =
+                let presigns: Vec<(ObjectID, MPCPublicOutput)> =
                     bcs::from_bytes(&data.output).map_err(|e| {
                         ExecutionError::new(
                             ExecutionErrorKind::DeserializationFailed,
@@ -1195,20 +1194,20 @@ mod checked {
                             ),
                         )
                     })?;
-                let keys: Vec<ObjectID> = presigns.iter().map(|(k, _)| *k).collect();
-                let values: Vec<Vec<u8>> = presigns.into_iter().map(|(_, v)| v).collect();
+                let first_round_session_ids: Vec<ObjectID> = presigns.iter().map(|(k, _)| *k).collect();
+                let presigns: Vec<MPCPublicOutput> = presigns.into_iter().map(|(_, v)| v).collect();
                 (
                     "create_batched_presign_output",
                     vec![
                         CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                         CallArg::Pure(batch_session_id.to_vec()),
-                        CallArg::Pure(bcs::to_bytes(&keys).map_err(|e| {
+                        CallArg::Pure(bcs::to_bytes(&first_round_session_ids).map_err(|e| {
                             ExecutionError::new(
                                 ExecutionErrorKind::SerializationFailed,
                                 Some(format!("Failed to serialize keys for batch: {}", e).into()),
                             )
                         })?),
-                        CallArg::Pure(bcs::to_bytes(&values).map_err(|e| {
+                        CallArg::Pure(bcs::to_bytes(&presigns).map_err(|e| {
                             ExecutionError::new(
                                 ExecutionErrorKind::SerializationFailed,
                                 Some(format!("Failed to serialize values for batch: {}", e).into()),
@@ -1226,7 +1225,9 @@ mod checked {
             MPCRound::Sign(session_id, _) => (
                 "create_sign_output",
                 vec![
+                    // Serialized Vector of Signatures.
                     CallArg::Pure(data.output),
+                    // The Batch Session ID.
                     CallArg::Pure(bcs::to_bytes(&session_id).map_err(|e| {
                         ExecutionError::new(
                             ExecutionErrorKind::SerializationFailed,

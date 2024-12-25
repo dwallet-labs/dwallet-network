@@ -1,7 +1,7 @@
 //! A module with logic to manage the batched sessions.
 //! The struct, [`DWalletMPCBatchesManager`] stores all the batched
 //! sessions that are currently being processed, and decides whether a batch is
-//! completed by checking if it received all the expected batch outputs.
+//! completed by checking if it received all the expected VERIFIED batch outputs.
 //! When a batch is completed, it returns the output of the entire batch,
 //! which can be written to the chain through a system transaction.
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
@@ -37,7 +37,7 @@ pub struct BatchedPresignSession {
     batch_size: u64,
     /// A map between the first presign session ID to the verified, serialized presign object.
     /// The first round's session ID is needed for the centralized sign flow.
-    verified_presigns: Vec<(ObjectID, Vec<u8>)>,
+    verified_presigns: Vec<(ObjectID, MPCPublicOutput)>,
 }
 
 /// A struct to manage the batched sign sessions.
@@ -96,7 +96,7 @@ impl DWalletMPCBatchesManager {
     pub(crate) fn store_verified_output(
         &mut self,
         session_info: SessionInfo,
-        output: Vec<u8>,
+        output: MPCPublicOutput,
     ) -> DwalletMPCResult<()> {
         match session_info.mpc_round {
             MPCRound::Sign(batch_session_id, ref hashed_message) => {

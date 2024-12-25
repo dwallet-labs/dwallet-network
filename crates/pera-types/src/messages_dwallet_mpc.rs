@@ -25,7 +25,7 @@ pub enum MPCRound {
     /// and the hashed messages being signed.
     Sign(ObjectID, MPCPublicOutput),
     /// A batched sign session, contains the list of messages that are being signed.
-    BatchedSign(Vec<MPCMessage>),
+    BatchedSign(Vec<Vec<u8>>),
     BatchedPresign(u64),
     /// The round of the network DKG protocol.
     NetworkDkg(DWalletMPCNetworkKey),

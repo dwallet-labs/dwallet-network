@@ -55,6 +55,11 @@ pub struct DWalletMPCManager {
     /// Any message/output from these authorities will be ignored.
     malicious_actors: HashSet<AuthorityName>,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+    /// An internal instance of the outputs verifier,
+    /// used only to determinate if an actor is malicious.
+    /// This verifier is out of sync from the consensus.
+    /// Each Validator holds the Malicious state for itself,
+    /// this is not in sync with the blockchain.
     outputs_verifier: DWalletMPCOutputsVerifier,
 }
 

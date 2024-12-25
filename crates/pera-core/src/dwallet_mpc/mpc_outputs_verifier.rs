@@ -10,8 +10,9 @@ use pera_types::committee::StakeUnit;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 use std::collections::{HashMap, HashSet};
 
-/// A struct to verify the DWallet MPC outputs.
-/// It stores all the outputs received for each session,
+/// Verify the DWallet MPC outputs.
+///
+/// Stores all the outputs received for each session,
 /// and decides whether an output is valid
 /// by checking if a validators with quorum of stake voted for it.
 pub struct DWalletMPCOutputsVerifier {
@@ -22,6 +23,7 @@ pub struct DWalletMPCOutputsVerifier {
     pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
     /// The quorum threshold of the chain.
     pub quorum_threshold: StakeUnit,
+    // todo(zeev): why is it here?
     pub completed_locking_next_committee: bool,
     voted_to_lock_committee: HashSet<AuthorityName>,
 }
@@ -105,6 +107,7 @@ impl DWalletMPCOutputsVerifier {
                 malicious_actors: vec![origin_authority],
             });
         };
+        // Sent more than once.
         if session
             .authorities_that_sent_output
             .contains(&origin_authority)
