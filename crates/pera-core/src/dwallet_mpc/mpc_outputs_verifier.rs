@@ -3,7 +3,11 @@
 /// by checking if a validators with quorum of stake voted for it.
 /// Any validator that voted for a different output is considered malicious.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
+use class_groups::dkg::Secp256k1Party;
+use group::PartyID;
+use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::collection_types::VecMap;
 use pera_types::committee::StakeUnit;
@@ -12,10 +16,6 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use class_groups::dkg::Secp256k1Party;
-use group::PartyID;
-use mpc::WeightedThresholdAccessStructure;
-use crate::dwallet_mpc::authority_name_to_party_id;
 
 /// A struct to verify the DWallet MPC outputs.
 /// It stores all the outputs received for each session, and decides whether an output is valid
@@ -70,11 +70,13 @@ impl DWalletMPCOutputsVerifier {
                     *weight as PartyID,
                 ))
             })
-            .collect::<DwalletMPCResult<HashMap<PartyID, PartyID>>>().unwrap();
+            .collect::<DwalletMPCResult<HashMap<PartyID, PartyID>>>()
+            .unwrap();
         let weighted_threshold_access_structure = WeightedThresholdAccessStructure::new(
             epoch_store.committee().quorum_threshold() as PartyID,
             weighted_parties.clone(),
-        ).unwrap();
+        )
+        .unwrap();
 
         DWalletMPCOutputsVerifier {
             quorum_threshold: epoch_store.committee().quorum_threshold(),

@@ -69,7 +69,12 @@ impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
             bcs::from_bytes(&centralized_party_public_key_share_buf).map_err(|e| DwalletMPCError::BcsError(e))?;
 
         let input: Self::PublicInput = (
-            bcs::from_bytes(&protocol_public_parameters)?,
+            ProtocolPublicParameters::new::<
+                { secp256k1::SCALAR_LIMBS },
+                { secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                { secp256k1::class_groups::NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                secp256k1::GroupElement,
+            >(bcs::from_bytes(&protocol_public_parameters)?),
             first_round_output,
             centralized_party_public_key_share,
         )

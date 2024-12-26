@@ -1184,9 +1184,15 @@ mod checked {
                 )
             }
             MPCRound::NetworkDkg(key_type, ppp) => {
-                let ppp = ppp.ok_or(ExecutionError::new(ExecutionErrorKind::TypeArgumentError { argument_idx: 0, kind: pera_types::execution_status::TypeArgumentError::TypeNotFound }, None))?;
+                let ppp = ppp.ok_or(ExecutionError::new(
+                    ExecutionErrorKind::TypeArgumentError {
+                        argument_idx: 0,
+                        kind: pera_types::execution_status::TypeArgumentError::TypeNotFound,
+                    },
+                    None,
+                ))?;
 
-                let a  = base64::encode(&data.output);
+                let a = base64::encode(&data.output);
 
                 module_name = PERA_SYSTEM_MODULE_NAME;
                 (

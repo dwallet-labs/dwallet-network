@@ -15,8 +15,6 @@ pub fn protocol_public_parameters() -> Vec<u8> {
     bcs::to_bytes(&network_dkg_final_output().default_encryption_scheme_public_parameters::<{ SECP256K1_SCALAR_LIMBS }, { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS }, secp256k1::GroupElement>().unwrap()).unwrap()
 }
 
-
-
 pub fn network_dkg_final_output() -> <Secp256k1Party as mpc::Party>::PublicOutput {
     // Safe to unwrap as we're using a hardcoded constant.
     let protocol_public_parameters = STANDARD.decode(&NETWORK_DKG_OUTPUT).unwrap();

@@ -96,7 +96,8 @@ impl DwalletMPCNetworkKeyVersions {
             .validator_decryption_key_share
             .get(&key_type)
             .ok_or(DwalletMPCError::InvalidMPCPartyType)?
-            .len() as u8 -1)
+            .len() as u8
+            - 1)
     }
 
     /// Update the key version with the new shares.

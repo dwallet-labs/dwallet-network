@@ -1,9 +1,11 @@
 //! This module provides a wrapper around the Presign protocol from the 2PC-MPC library.
 //!
 //! It integrates both Presign parties (each representing a round in the Presign protocol).
+
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
+use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
 pub(super) type PresignFirstParty =
     <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShareRoundParty;
@@ -38,7 +40,14 @@ impl PresignFirstPartyPublicInputGenerator for PresignFirstParty {
         dkg_output: MPCPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let pub_input = Self::PublicInput {
-            protocol_public_parameters: bcs::from_bytes(&protocol_public_parameters)?,
+            protocol_public_parameters: ProtocolPublicParameters::new::<
+                { secp256k1::SCALAR_LIMBS },
+                { secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                { secp256k1::class_groups::NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                secp256k1::GroupElement,
+            >(bcs::from_bytes(
+                &protocol_public_parameters,
+            )?),
             dkg_output: bcs::from_bytes(&dkg_output)?,
         };
         Ok(bcs::to_bytes(&pub_input)?)

@@ -110,6 +110,7 @@ class_groups_constants = { path = "../class-groups-constants" }
 rand_core = "0.6.4"
 crypto-bigint = { version = "0.5.5", features = ["rand_core", "serde"], default-features = false }
 dwallet-mpc-types.workspace = true
+base64 = "0.22.1"
 
 [dev-dependencies]
 clap.workspace = true

@@ -13,6 +13,7 @@ use crate::dwallet_mpc::sign::SignFirstParty;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
 use anyhow::anyhow;
+use class_groups::dkg::Secp256k1Party;
 use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus};
 use group::PartyID;
@@ -28,7 +29,6 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
-use class_groups::dkg::Secp256k1Party;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::MutexGuard;
 use tracing::log::warn;
@@ -277,7 +277,6 @@ impl DWalletMPCManager {
         let mut messages = vec![];
         let epoch_store = self.epoch_store()?;
 
-
         let mut ready_to_advance = self
             .mpc_instances
             .iter_mut()
@@ -357,18 +356,22 @@ impl DWalletMPCManager {
             {
                 if let MPCPrivateOutput::DecryptionKeyShare(private_output) = private_output {
                     if let MPCRound::NetworkDkg(key_type, _) = instance.session_info.mpc_round {
+                        let a = base64::encode(&public_output);
                         let network_keys = epoch_store
                             .dwallet_mpc_network_keys
                             .get()
                             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
 
-                        instance.session_info.mpc_round = MPCRound::NetworkDkg(key_type, Some(network_keys.add_key_version(
-                            epoch_store.clone(),
+                        instance.session_info.mpc_round = MPCRound::NetworkDkg(
                             key_type,
-                            private_output,
-                            public_output,
-                            &self.weighted_threshold_access_structure,
-                        )?));
+                            Some(network_keys.add_key_version(
+                                epoch_store.clone(),
+                                key_type,
+                                private_output,
+                                public_output,
+                                &self.weighted_threshold_access_structure,
+                            )?),
+                        );
                     }
                     // self.update_dwallet_mpc_network_key(
                     //     &mut instance,

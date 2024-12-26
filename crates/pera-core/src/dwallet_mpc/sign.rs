@@ -6,6 +6,7 @@ use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::presign::Presign;
+use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
 pub(super) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
@@ -37,7 +38,12 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let auxiliary = SignPublicInput::from((
-            bcs::from_bytes(&protocol_public_parameters)?,
+            ProtocolPublicParameters::new::<
+                { secp256k1::SCALAR_LIMBS },
+                { secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                { secp256k1::class_groups::NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                secp256k1::GroupElement,
+            >(bcs::from_bytes(&protocol_public_parameters)?),
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::Message>(
                 &hashed_message,
             )?,
