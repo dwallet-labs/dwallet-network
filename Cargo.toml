@@ -227,12 +227,14 @@ strip = 'none'
 # For convenience.
 strip = 'none'
 
+# Needed to generate the keypair and proof
+# breaks the debugger
+[profile.dev]
+opt-level = 2
+
 [profile.test.package.move-compiler]
 # opt-level 2 for move-compiler reduces the size of some of its
 # (recursive) stack frames by up to 10x, avoiding stack overflows.
-opt-level = 2
-
-[profile.dev]
 opt-level = 2
 
 [profile.simulator]
@@ -248,10 +250,10 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(msim)', 'cfg(fail_points)'
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], branch = "pera-network-dkg" }
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-network-dkg", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], branch = "pera-network-dkg" }
-group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", branch = "pera-network-dkg" }
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], rev = "36142d48b474211b60c46d380ce41c30981839c9" }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "36142d48b474211b60c46d380ce41c30981839c9", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], rev = "36142d48b474211b60c46d380ce41c30981839c9" }
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "36142d48b474211b60c46d380ce41c30981839c9" }
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"

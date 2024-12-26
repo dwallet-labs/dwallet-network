@@ -145,6 +145,7 @@ use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
 use crate::dwallet_mpc::mpc_events::{
     LockedNextEpochCommitteeEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent,
+    StartPresignSecondRoundEvent, ValidatorDataForDWalletSecretShare,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
@@ -1566,6 +1567,24 @@ impl AuthorityState {
             if LockedNextEpochCommitteeEvent::type_() == event.type_ {
                 info!("received LockedNextEpochCommitteeEvent successfully");
                 dwallet_mpc_outputs_manager.completed_locking_next_committee = true;
+                continue;
+            }
+            if ValidatorDataForDWalletSecretShare::type_() == event.type_ {
+                let deserialized_event: ValidatorDataForDWalletSecretShare =
+                    bcs::from_bytes(&event.contents)?;
+                let dwallet_mpc_sender =
+                    epoch_store.dwallet_mpc_sender.get().ok_or(PeraError::from(
+                        "DWallet MPC sender not initialized when iterating over events",
+                    ))?;
+                dwallet_mpc_sender
+                    .send(DWalletMPCChannelMessage::ValidatorDataForDKG(
+                        deserialized_event,
+                    ))
+                    .map_err(|err| {
+                        PeraError::from(format!(
+                            "Failed to send MPC event to DWallet MPC service: {err}"
+                        ))
+                    })?;
                 continue;
             }
             /// Todo (#427): Receive the key version from the MPC event and check its validity.

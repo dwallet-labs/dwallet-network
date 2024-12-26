@@ -1,5 +1,6 @@
 module pera_system::dwallet_network_key {
     use pera::event;
+    use pera_system::validator_set::{ValidatorDataForDWalletSecretShare, emit_validator_data_for_secret_share};
 
     /// Represents the key schemes supported by the system.
     const Secp256k1: u8 = 0;
@@ -19,13 +20,26 @@ module pera_system::dwallet_network_key {
         key_scheme: u8,
     }
 
-    /// Function to emit a new StartNetworkDKGEvent.
-    public(package) fun start_network_dkg(key_scheme: u8, ctx: &mut TxContext) {
+    /// Function to start a new network DKG.
+    /// It emits a [`StartNetworkDKGEvent`] and emits the [`ValidatorDataForDWalletSecretShare`] for each validator,
+    /// with its public key and proof, that are needed for the DKG process.
+    ///
+    /// Each validator's data is being emitted separately because the proof size is
+    /// almost 250KB, which is the maximum event size in Sui.
+    public(package) fun start_network_dkg(key_scheme: u8, validators_data: vector<ValidatorDataForDWalletSecretShare>, ctx: &mut TxContext) {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+
         event::emit(StartNetworkDKGEvent {
             session_id,
             key_scheme,
         });
+        let validators_len = validators_data.length();
+        let mut i = 0;
+        while (i < validators_len) {
+            let validator_data = validators_data[i];
+            emit_validator_data_for_secret_share(validator_data);
+            i = i + 1;
+        }
     }
 
     /// Struct to store the network encryption of decryption key shares
