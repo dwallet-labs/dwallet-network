@@ -194,7 +194,7 @@ impl From<GenesisValidatorInfo> for GenesisValidatorMetadata {
             p2p_address: info.p2p_address,
             primary_address: info.narwhal_primary_address,
             worker_address: info.narwhal_worker_address,
-            class_groups_public_key_and_proof: info.class_groups_public_key_and_proof
+            class_groups_public_key_and_proof: info.class_groups_public_key_and_proof,
         }
     }
 }

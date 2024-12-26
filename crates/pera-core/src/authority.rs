@@ -1570,21 +1570,7 @@ impl AuthorityState {
                 continue;
             }
             if ValidatorDataForDWalletSecretShare::type_() == event.type_ {
-                let deserialized_event: ValidatorDataForDWalletSecretShare =
-                    bcs::from_bytes(&event.contents)?;
-                let dwallet_mpc_sender =
-                    epoch_store.dwallet_mpc_sender.get().ok_or(PeraError::from(
-                        "DWallet MPC sender not initialized when iterating over events",
-                    ))?;
-                dwallet_mpc_sender
-                    .send(DWalletMPCChannelMessage::ValidatorDataForDKG(
-                        deserialized_event,
-                    ))
-                    .map_err(|err| {
-                        PeraError::from(format!(
-                            "Failed to send MPC event to DWallet MPC service: {err}"
-                        ))
-                    })?;
+                Self::handle_validator_data_for_network_dkg_event(epoch_store, &event)?;
                 continue;
             }
             /// Todo (#427): Receive the key version from the MPC event and check its validity.
@@ -1618,6 +1604,27 @@ impl AuthorityState {
                     ))
                 })?;
         }
+        Ok(())
+    }
+
+    fn handle_validator_data_for_network_dkg_event(
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+        event: &&Event,
+    ) -> Result<(), PeraError> {
+        let deserialized_event: ValidatorDataForDWalletSecretShare =
+            bcs::from_bytes(&event.contents)?;
+        let dwallet_mpc_sender = epoch_store.dwallet_mpc_sender.get().ok_or(PeraError::from(
+            "DWallet MPC sender not initialized when iterating over events",
+        ))?;
+        dwallet_mpc_sender
+            .send(DWalletMPCChannelMessage::ValidatorDataForDKG(
+                deserialized_event,
+            ))
+            .map_err(|err| {
+                PeraError::from(format!(
+                    "Failed to send MPC event to DWallet MPC service: {err}"
+                ))
+            })?;
         Ok(())
     }
 
