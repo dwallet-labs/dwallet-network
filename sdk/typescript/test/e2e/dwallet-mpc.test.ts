@@ -5,9 +5,9 @@ import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-was
 import { bcs } from '@mysten/bcs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { MoveStruct, PeraClient } from '../../src/client';
+import { DwalletMPCNetworkKey, MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
-import { Config } from '../../src/dwallet-mpc/globals';
+import { Config, fetchProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
 import { launchNetworkDKG } from '../../src/dwallet-mpc/network-dkg';
 import { presign } from '../../src/dwallet-mpc/presign';
 import { Hash, signMessageTransactionCall } from '../../src/dwallet-mpc/sign';
@@ -173,14 +173,31 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: 5 * 60 * 1000,
 		};
-		// await launchNetworkDKG(conf);
-
+		await launchNetworkDKG(conf);
+		// let b = await fetchProtocolPublicParameters(conf);
+		// console.log(b);
 		let a = await conf.client.getLatestPeraSystemState();
 		console.log(a.decryptionKeyShares);
+		// console.log(convertToMap(a.decryptionKeyShares));
 
 		pollRef.value = false;
 	});
 });
+
+function convertToMap(
+	input: [number, DwalletMPCNetworkKey[]][],
+): Map<number, DwalletMPCNetworkKey[][]> {
+	const resultMap = new Map<number, DwalletMPCNetworkKey[][]>();
+
+	input.forEach(([key, value]) => {
+		if (!resultMap.has(key)) {
+			resultMap.set(key, []);
+		}
+		resultMap.get(key)!.push(value);
+	});
+
+	return resultMap;
+}
 
 async function printOwnedObjects(
 	keypair: Ed25519Keypair,

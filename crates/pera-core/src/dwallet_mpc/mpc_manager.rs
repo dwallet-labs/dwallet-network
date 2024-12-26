@@ -28,6 +28,7 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use class_groups::dkg::Secp256k1Party;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::MutexGuard;
 use tracing::log::warn;
@@ -274,6 +275,8 @@ impl DWalletMPCManager {
             .status()?;
         let mut malicious_parties = vec![];
         let mut messages = vec![];
+        let epoch_store = self.epoch_store()?;
+
 
         let mut ready_to_advance = self
             .mpc_instances
@@ -345,20 +348,34 @@ impl DWalletMPCManager {
         // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
         for (message, session_id) in messages {
             // Update the manager with the new network decryption key share (if relevant).
-            let instance = self
+            let mut instance = self
                 .mpc_instances
-                .get(&session_id)
+                .get_mut(&session_id)
                 .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
             if let MPCSessionStatus::Finished(public_output, private_output) =
                 instance.status.clone()
             {
                 if let MPCPrivateOutput::DecryptionKeyShare(private_output) = private_output {
-                    self.update_dwallet_mpc_network_key(
-                        &instance.session_info,
-                        public_output,
-                        private_output,
-                        &self.weighted_threshold_access_structure,
-                    )?;
+                    if let MPCRound::NetworkDkg(key_type, _) = instance.session_info.mpc_round {
+                        let network_keys = epoch_store
+                            .dwallet_mpc_network_keys
+                            .get()
+                            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
+
+                        instance.session_info.mpc_round = MPCRound::NetworkDkg(key_type, Some(network_keys.add_key_version(
+                            epoch_store.clone(),
+                            key_type,
+                            private_output,
+                            public_output,
+                            &self.weighted_threshold_access_structure,
+                        )?));
+                    }
+                    // self.update_dwallet_mpc_network_key(
+                    //     &mut instance,
+                    //     &instance.session_info,
+                    //     public_output,
+                    //     private_output,
+                    // )?;
                 }
             }
 
@@ -371,30 +388,30 @@ impl DWalletMPCManager {
 
     /// Update the encryption of decryption key share with the new shares.
     /// This function is called when the network DKG protocol is done.
-    fn update_dwallet_mpc_network_key(
-        &self,
-        session_info: &SessionInfo,
-        public_output: MPCPublicOutput,
-        private_output: HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>,
-        access_structure: &WeightedThresholdAccessStructure,
-    ) -> DwalletMPCResult<()> {
-        if let MPCRound::NetworkDkg(key_type) = session_info.mpc_round {
-            let epoch_store = self.epoch_store()?;
-            let network_keys = epoch_store
-                .dwallet_mpc_network_keys
-                .get()
-                .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
-
-            network_keys.add_key_version(
-                epoch_store.clone(),
-                key_type,
-                private_output,
-                public_output,
-                &self.weighted_threshold_access_structure,
-            )?;
-        }
-        Ok(())
-    }
+    // fn update_dwallet_mpc_network_key(
+    //     &self,
+    //     instance: &mut DWalletMPCInstance,
+    //     session_info: &SessionInfo,
+    //     public_output: MPCPublicOutput,
+    //     private_output: HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>,
+    // ) -> DwalletMPCResult<()> {
+    //     if let MPCRound::NetworkDkg(key_type, _) = session_info.mpc_round {
+    //         let epoch_store = self.epoch_store()?;
+    //         let network_keys = epoch_store
+    //             .dwallet_mpc_network_keys
+    //             .get()
+    //             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
+    //
+    //         instance.session_info.mpc_round = MPCRound::NetworkDkg(key_type, network_keys.add_key_version(
+    //             epoch_store.clone(),
+    //             key_type,
+    //             private_output,
+    //             public_output,
+    //             &self.weighted_threshold_access_structure,
+    //         )?);
+    //     }
+    //     Ok(())
+    // }
 
     fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
         self.epoch_store

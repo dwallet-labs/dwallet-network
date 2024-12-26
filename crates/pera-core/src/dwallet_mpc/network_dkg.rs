@@ -96,7 +96,7 @@ impl DwalletMPCNetworkKeyVersions {
             .validator_decryption_key_share
             .get(&key_type)
             .ok_or(DwalletMPCError::InvalidMPCPartyType)?
-            .len() as u8)
+            .len() as u8 -1)
     }
 
     /// Update the key version with the new shares.
@@ -130,7 +130,7 @@ impl DwalletMPCNetworkKeyVersions {
         self_decryption_key_share: HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>,
         dkg_public_output: Vec<u8>,
         access_structure: &WeightedThresholdAccessStructure,
-    ) -> DwalletMPCResult<()> {
+    ) -> DwalletMPCResult<DwalletMPCNetworkKey> {
         let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
 
         let new_key_version = Self::new_dwallet_mpc_network_key(
@@ -157,7 +157,7 @@ impl DwalletMPCNetworkKeyVersions {
 
         inner
             .key_shares_versions
-            .insert(key_type.clone(), vec![new_key_version]);
+            .insert(key_type.clone(), vec![new_key_version.clone()]);
         inner
             .validator_decryption_key_share
             .insert(key_type, vec![self_decryption_key_share]);
@@ -168,7 +168,7 @@ impl DwalletMPCNetworkKeyVersions {
         } else {
             inner.status = DwalletMPCNetworkKeysStatus::Ready(HashSet::from([key_type]));
         }
-        Ok(())
+        Ok(new_key_version.clone())
     }
 
     fn new_dwallet_mpc_network_key(
@@ -320,7 +320,7 @@ fn dkg_secp256k1_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
-        mpc_round: MPCRound::NetworkDkg(DWalletMPCNetworkKeyScheme::Secp256k1),
+        mpc_round: MPCRound::NetworkDkg(DWalletMPCNetworkKeyScheme::Secp256k1, None),
     }
 }
 
@@ -339,7 +339,7 @@ fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
-        mpc_round: MPCRound::NetworkDkg(DWalletMPCNetworkKeyScheme::Ristretto),
+        mpc_round: MPCRound::NetworkDkg(DWalletMPCNetworkKeyScheme::Ristretto, None),
     }
 }
 

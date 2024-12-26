@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Rust representation of the move struct `DwalletMPCNetworkKey`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Hash)]
 pub struct DwalletMPCNetworkKey {
     pub epoch: u64,
     pub current_epoch_shares: Vec<Vec<u8>>,

@@ -541,6 +541,12 @@ module pera_system::pera_system {
         self.active_validator_addresses()
     }
 
+    /// Getter
+    public fun decryption_key_shares(wrapper: &mut PeraSystemState, key_type: u8, key_version: u64): vector<u8> {
+        let self = load_system_state(wrapper);
+        self.decryption_key_shares(key_type, key_version)
+    }
+
     #[allow(unused_function)]
     /// This function should be called at the end of an epoch, and advances the system to the next epoch.
     /// It does the following things:
@@ -636,11 +642,12 @@ module pera_system::pera_system {
     #[allow(unused_function)]
     /// Store the encrypted decryption key shares from the network DKG protocol public output.
     /// The chain agrees on on the same public output.
-    fun new_decryption_key_shares_version(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_scheme: u8, ctx: &TxContext) {
+    fun new_decryption_key_shares_version(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, protocol_public_parameters: vector<u8>,
+                                          decryption_public_parameters: vector<u8>, key_scheme: u8, ctx: &TxContext) {
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
         assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
         let self = load_system_state_mut(wrapper);
-        self.new_decryption_key_shares_version(shares, key_scheme);
+        self.new_decryption_key_shares_version(shares, protocol_public_parameters, decryption_public_parameters, key_scheme);
     }
 
     #[test_only]

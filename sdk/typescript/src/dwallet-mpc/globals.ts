@@ -153,7 +153,7 @@ function is_protocol_public_parameters(obj: any): obj is HasProtocolPublicParame
 
 export async function fetchProtocolPublicParameters(c: Config): Promise<Uint8Array> {
 	const res = await c.client.getObject({
-		id: 0x5,
+		id: '0x0000000000000000000000000000000000000000000000000000000000000005',
 		options: { showContent: true },
 	});
 

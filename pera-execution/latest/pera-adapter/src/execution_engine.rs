@@ -1183,13 +1183,16 @@ mod checked {
                     ],
                 )
             }
-            MPCRound::NetworkDkg(key_type) => {
+            MPCRound::NetworkDkg(key_type, ppp) => {
+                let ppp = ppp.ok_or(ExecutionError::new(ExecutionErrorKind::TypeArgumentError { argument_idx: 0, kind: pera_types::execution_status::TypeArgumentError::TypeNotFound }, None))?;
                 module_name = PERA_SYSTEM_MODULE_NAME;
                 (
                     "new_decryption_key_shares_version",
                     vec![
                         CallArg::PERA_SYSTEM_MUT,
-                        CallArg::Pure(bcs::to_bytes(&vec![data.output.clone()]).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&ppp.current_epoch_shares).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&ppp.protocol_public_parameters).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&ppp.decryption_public_parameters).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&(key_type as u8)).unwrap()),
                     ],
                 )
