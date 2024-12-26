@@ -41,7 +41,7 @@ pub(super) trait DKGSecondPartyPublicInputGenerator: Party {
 
 impl DKGFirstPartyPublicInputGenerator for DKGFirstParty {
     fn generate_public_input() -> DwalletMPCResult<MPCPublicInput> {
-        // TODO: Update hardcoded public parameters with valid values to Scaly's new version.
+        // Todo (Yael): Update hardcoded public parameters with valid values to Scaly's new version.
         return Ok(vec![]);
         let input: Self::PublicInput = class_groups_constants::protocol_public_parameters();
         bcs::to_bytes(&input).map_err(|e| DwalletMPCError::BcsError(e))
