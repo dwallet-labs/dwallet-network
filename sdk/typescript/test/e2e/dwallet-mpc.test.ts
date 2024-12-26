@@ -178,7 +178,9 @@ describe('Test dWallet MPC', () => {
 		// console.log(b);
 		let a = await conf.client.getLatestPeraSystemState();
 		console.log(a.decryptionKeyShares);
-		// console.log(convertToMap(a.decryptionKeyShares));
+		console.log(
+			convertToMap(a.decryptionKeyShares).get(1)!.at(0)!.at(0)!.protocol_public_parameters,
+		);
 
 		pollRef.value = false;
 	});

@@ -5,6 +5,7 @@
 import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 
 import { bcs } from '../bcs/index.js';
+import { DwalletMPCNetworkKey } from '../client';
 import { Transaction } from '../transactions/index.js';
 import type { Config } from './globals.js';
 import {
@@ -61,11 +62,28 @@ interface DKGFirstRoundOutputEvent {
 interface DKGFirstRoundOutput extends DKGFirstRoundOutputEvent {
 	dwallet_cap_id: string;
 }
+function convertToMap(
+	input: [number, DwalletMPCNetworkKey[]][],
+): Map<number, DwalletMPCNetworkKey[][]> {
+	const resultMap = new Map<number, DwalletMPCNetworkKey[][]>();
+
+	input.forEach(([key, value]) => {
+		if (!resultMap.has(key)) {
+			resultMap.set(key, []);
+		}
+		resultMap.get(key)!.push(value);
+	});
+
+	return resultMap;
+}
 
 export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 	const dkgFirstRoundOutput: DKGFirstRoundOutput = await launchDKGFirstRound(conf);
 	console.log('DKG First Round Output:', dkgFirstRoundOutput);
+	let a = await conf.client.getLatestPeraSystemState();
+	let ppp = convertToMap(a.decryptionKeyShares).get(1)!.at(0)!.at(0)!.protocol_public_parameters;
 	let [publicKeyShareAndProof, centralizedOutput] = create_dkg_centralized_output(
+		Uint8Array.from(ppp),
 		Uint8Array.from(dkgFirstRoundOutput.output),
 		// Remove the 0x prefix.
 		dkgFirstRoundOutput.session_id.slice(2),

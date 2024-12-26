@@ -215,6 +215,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "rand_core",
+ "rayon",
  "rstest",
  "serde",
  "sha3 0.10.8",
@@ -227,7 +228,9 @@ version = "1.32.2"
 dependencies = [
  "base64",
  "bcs",
+ "class_groups",
  "group 0.1.0",
+ "mpc",
  "serde",
  "twopc_mpc",
 ]
@@ -992,6 +995,7 @@ dependencies = [
  "mpc",
  "rand",
  "rand_core",
+ "rayon",
  "rstest",
  "serde",
  "serde_json",

@@ -44,18 +44,18 @@ enum Hash {
 /// # Errors
 /// Returns an error if decoding or advancing the protocol fails.
 pub fn create_dkg_output(
+    protocol_public_parameters: Vec<u8>,
     decentralized_first_round_output: Vec<u8>,
     session_id: String,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
         bcs::from_bytes(&decentralized_first_round_output)?;
-    let public_parameters = class_groups_constants::protocol_public_parameters();
     let public_parameters = ProtocolPublicParameters::new::<
         { secp256k1::SCALAR_LIMBS },
         { secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },
         { secp256k1::class_groups::NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
         secp256k1::GroupElement,
-    >(bcs::from_bytes(&public_parameters)?);
+    >(bcs::from_bytes(&protocol_public_parameters)?);
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
 
     let (public_key_share_and_proof, centralized_output) = DKGCentralizedParty::advance(
@@ -95,13 +95,13 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 /// The `session_id` is a unique identifier for the session, represented as a hexadecimal string.
 /// The `hash` must fit the [`Hash`] enum.
 pub fn create_sign_output(
+    protocol_public_parameters: Vec<u8>,
     centralized_party_dkg_output: Vec<u8>,
     presigns: Vec<Vec<u8>>,
     messages: Vec<Vec<u8>>,
     hash: u8,
     session_ids: Vec<String>,
 ) -> anyhow::Result<(Vec<Vec<u8>>, Vec<Vec<u8>>)> {
-    let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
     let protocol_public_parameters = ProtocolPublicParameters::new::<
         { secp256k1::SCALAR_LIMBS },
         { secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },

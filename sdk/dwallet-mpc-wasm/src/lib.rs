@@ -7,11 +7,12 @@ use wasm_bindgen::JsValue;
 
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(
+    protocol_public_parameters: Vec<u8>,
     dkg_first_round_output: Vec<u8>,
     session_id: String,
 ) -> Result<JsValue, JsError> {
     let (public_key_share_and_proof, centralized_output) =
-        create_dkg_output(dkg_first_round_output, session_id)
+        create_dkg_output(protocol_public_parameters, dkg_first_round_output, session_id)
             .map_err(|e| JsError::new(&e.to_string()))?;
 
     // Serialize the result to JsValue and handle potential errors.
@@ -22,6 +23,7 @@ pub fn create_dkg_centralized_output(
 // todo(zeev): why sign output was moved?
 #[wasm_bindgen]
 pub fn create_sign_centralized_output(
+    protocol_public_parameters: Vec<u8>,
     centralized_party_dkg_output: Vec<u8>,
     presigns: Vec<u8>,
     // todo(zeev): Vec<Vec<u8>> here.
@@ -36,6 +38,7 @@ pub fn create_sign_centralized_output(
     let session_ids: Vec<String> =
         bcs::from_bytes(&session_ids).map_err(|e| JsError::new(&e.to_string()))?;
     let res = create_sign_output(
+        protocol_public_parameters,
         centralized_party_dkg_output,
         presigns,
         messages,
