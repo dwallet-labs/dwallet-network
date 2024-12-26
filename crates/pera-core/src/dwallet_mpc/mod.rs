@@ -158,7 +158,9 @@ fn dkg_first_party(
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
     Ok((
         MPCParty::FirstDKGBytesParty,
-        <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(protocol_public_parameters)?,
+        <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
+            protocol_public_parameters,
+        )?,
         dkg_first_party_session_info(deserialized_event),
     ))
 }
@@ -418,7 +420,12 @@ pub(crate) fn from_event(
         }
         t if t == &StartSignRoundEvent::type_() => {
             let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
-            sign_party(party_id, deserialized_event, dwallet_mpc_manager, protocol_public_parameters)
+            sign_party(
+                party_id,
+                deserialized_event,
+                dwallet_mpc_manager,
+                protocol_public_parameters,
+            )
         }
         _ => Err(DwalletMPCError::NonMPCEvent.into()),
     }

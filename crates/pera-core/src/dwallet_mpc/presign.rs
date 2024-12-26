@@ -14,7 +14,10 @@ pub(super) type PresignSecondParty = <AsyncProtocol as twopc_mpc::presign::Proto
 /// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
 /// when accessing `mpc::Party::PublicInput`.
 pub(super) trait PresignFirstPartyPublicInputGenerator: mpc::Party {
-    fn generate_public_input(protocol_public_parameters: Vec<u8>, dkg_output: MPCPublicOutput) -> DwalletMPCResult<MPCPublicInput>;
+    fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
+        dkg_output: MPCPublicOutput,
+    ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
 /// A trait for generating the public input for the last round of the Presign protocol.
@@ -30,7 +33,10 @@ pub(super) trait PresignSecondPartyPublicInputGenerator: mpc::Party {
 }
 
 impl PresignFirstPartyPublicInputGenerator for PresignFirstParty {
-    fn generate_public_input(protocol_public_parameters: Vec<u8>, dkg_output: MPCPublicOutput) -> DwalletMPCResult<MPCPublicInput> {
+    fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
+        dkg_output: MPCPublicOutput,
+    ) -> DwalletMPCResult<MPCPublicInput> {
         let pub_input = Self::PublicInput {
             protocol_public_parameters: bcs::from_bytes(&protocol_public_parameters)?,
             dkg_output: bcs::from_bytes(&dkg_output)?,

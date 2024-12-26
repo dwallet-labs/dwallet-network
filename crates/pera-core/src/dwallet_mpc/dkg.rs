@@ -21,7 +21,9 @@ pub(super) type DKGSecondParty = <AsyncProtocol as Protocol>::ProofVerificationR
 /// preparing the party with the essential session information and other contextual data.
 pub(super) trait DKGFirstPartyPublicInputGenerator: Party {
     /// Generates the public input required for the first round of the DKG protocol.
-    fn generate_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResult<MPCPublicInput>;
+    fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
+    ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
 /// A trait for generating the public input for the last round of the DKG protocol.
@@ -41,7 +43,9 @@ pub(super) trait DKGSecondPartyPublicInputGenerator: Party {
 }
 
 impl DKGFirstPartyPublicInputGenerator for DKGFirstParty {
-    fn generate_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResult<MPCPublicInput> {
+    fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
+    ) -> DwalletMPCResult<MPCPublicInput> {
         let input: Self::PublicInput = bcs::from_bytes(&protocol_public_parameters)?;
         bcs::to_bytes(&input).map_err(|e| DwalletMPCError::BcsError(e))
     }

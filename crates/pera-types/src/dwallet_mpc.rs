@@ -1,5 +1,5 @@
-use schemars::JsonSchema;
 use crate::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Rust representation of the move struct `DwalletMPCNetworkKey`

@@ -173,7 +173,11 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: 5 * 60 * 1000,
 		};
-		await launchNetworkDKG(conf);
+		// await launchNetworkDKG(conf);
+
+		let a = await conf.client.getLatestPeraSystemState();
+		console.log(a.decryptionKeyShares);
+
 		pollRef.value = false;
 	});
 });

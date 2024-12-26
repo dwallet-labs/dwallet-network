@@ -203,7 +203,6 @@ impl DWalletMPCManager {
     }
 
     pub fn get_protocol_public_parameters(&self, key_version: u8) -> DwalletMPCResult<Vec<u8>> {
-
         // todo (yael): add mock with constant parameters
         if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
             return self_decryption_share.get_protocol_public_parameters(
