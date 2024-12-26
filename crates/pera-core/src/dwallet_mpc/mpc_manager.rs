@@ -347,9 +347,9 @@ impl DWalletMPCManager {
         // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
         for (message, session_id) in messages {
             // Update the manager with the new network decryption key share (if relevant).
-            let mut instance = self
+            let instance = self
                 .mpc_instances
-                .get_mut(&session_id)
+                .get(&session_id)
                 .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
             if let MPCSessionStatus::Finished(public_output, private_output) =
                 instance.status.clone()
@@ -357,21 +357,22 @@ impl DWalletMPCManager {
                 if let MPCPrivateOutput::DecryptionKeyShare(private_output) = private_output {
                     if let MPCRound::NetworkDkg(key_type, _) = instance.session_info.mpc_round {
                         let a = base64::encode(&public_output);
+                        println!("public_output: {:?}", a);
                         let network_keys = epoch_store
                             .dwallet_mpc_network_keys
                             .get()
                             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
-
-                        instance.session_info.mpc_round = MPCRound::NetworkDkg(
-                            key_type,
-                            Some(network_keys.add_key_version(
-                                epoch_store.clone(),
-                                key_type,
-                                private_output,
-                                public_output,
-                                &self.weighted_threshold_access_structure,
-                            )?),
-                        );
+                        //
+                        // instance.session_info.mpc_round = MPCRound::NetworkDkg(
+                        //     key_type,
+                        //     Some(network_keys.add_key_version(
+                        //         epoch_store.clone(),
+                        //         key_type,
+                        //         private_output,
+                        //         public_output,
+                        //         &self.weighted_threshold_access_structure,
+                        //     )?),
+                        // );
                     }
                     // self.update_dwallet_mpc_network_key(
                     //     &mut instance,

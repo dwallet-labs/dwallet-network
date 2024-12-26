@@ -547,7 +547,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                                     MPCRound::NetworkDkg(key_scheme, Some(key));
                                                 let transaction = self
                                                     .create_dwallet_mpc_output_system_tx(
-                                                        session_info,
+                                                        &new_session_info,
                                                         output,
                                                     );
                                                 transactions.push((
