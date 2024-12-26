@@ -10,10 +10,14 @@ use std::{
 
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
+use class_groups::dkg::Secp256k1Party;
+use class_groups::{SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS};
+use group::PartyID;
 use lru::LruCache;
+use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
-
+use twopc_mpc::secp256k1;
 use crate::dwallet_mpc::mpc_outputs_verifier::{OutputResult, OutputVerificationResult};
 use crate::{
     authority::{
@@ -39,7 +43,7 @@ use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
-use pera_types::dwallet_mpc_error::DwalletMPCResult;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::executable_transaction::CertificateProof;
 use pera_types::message_envelope::VerifiedEnvelope;
 use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound, SessionInfo};
@@ -52,6 +56,7 @@ use pera_types::{
     pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
     transaction::{SenderSignedData, VerifiedTransaction},
 };
+use pera_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -482,13 +487,73 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         }
                                     }
                                 } else {
-                                    let transaction = self
-                                        .create_dwallet_mpc_output_system_tx(session_info, output);
-                                    transactions.push((
-                                        empty_bytes.as_slice(),
-                                        SequencedConsensusTransactionKind::System(transaction),
-                                        consensus_output.leader_author_index(),
-                                    ));
+                                    if let MPCRound::NetworkDkg(key_scheme, _) =  session_info.mpc_round {
+                                        match key_scheme {
+                                            DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                                                let deser_output: <Secp256k1Party as mpc::Party>::PublicOutput = match bcs::from_bytes(output) {
+                                                    Ok(output) => output,
+                                                    Err(_) => {
+                                                        error!("Failed to deserialize output for secp256k1 party");
+                                                        continue;
+                                                    },
+                                                };
+
+                                                let current_epoch_shares = bcs::to_bytes(&deser_output.encryptions_of_shares_per_crt_prime).unwrap();
+                                                let protocol_public_parameters = match
+                                                    deser_output.default_encryption_scheme_public_parameters::<
+                                                        SECP256K1_SCALAR_LIMBS,
+                                                        SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+                                                        secp256k1::GroupElement,
+                                                    >()
+                                                 {
+                                                    Ok(params) => bcs::to_bytes(&params).unwrap(),
+                                                    Err(_) => {
+                                                        error!("Failed to serialize default encryption scheme public parameters");
+                                                        continue;
+                                                    },
+                                                };
+
+                                                let decryption_public_parameters = match deser_output.default_decryption_key_share_public_parameters::<
+                                                        SECP256K1_SCALAR_LIMBS,
+                                                        SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+                                                        secp256k1::GroupElement,
+                                                    >(&dwallet_outputs_manager.weighted_threshold_access_structure)
+                                                 {
+                                                    Ok(params) => bcs::to_bytes(&params).unwrap(),
+                                                    Err(_) => {
+                                                        error!("Failed to serialize default decryption key share public parameters");
+                                                        continue;
+                                                    },
+                                                };
+
+                                                let key = pera_types::dwallet_mpc::DwalletMPCNetworkKey {
+                                                    epoch: 0,
+                                                    current_epoch_shares: vec![current_epoch_shares],
+                                                    previous_epoch_shares: vec![],
+                                                    protocol_public_parameters,
+                                                    decryption_public_parameters,
+                                                };
+                                                let mut new_session_info = session_info.clone();
+                                                new_session_info.mpc_round = MPCRound::NetworkDkg(key_scheme, Some(key));
+                                                let transaction = self
+                                                    .create_dwallet_mpc_output_system_tx(session_info, output);
+                                                transactions.push((
+                                                    empty_bytes.as_slice(),
+                                                    SequencedConsensusTransactionKind::System(transaction),
+                                                    consensus_output.leader_author_index(),
+                                                ));
+                                            }
+                                            DWalletMPCNetworkKeyScheme::Ristretto => todo!()
+                                        }
+                                    } else {
+                                        let transaction = self
+                                            .create_dwallet_mpc_output_system_tx(session_info, output);
+                                        transactions.push((
+                                            empty_bytes.as_slice(),
+                                            SequencedConsensusTransactionKind::System(transaction),
+                                            consensus_output.leader_author_index(),
+                                        ));
+                                    }
                                 }
                             }
                             OutputResult::NotEnoughVotes | OutputResult::Malicious => {

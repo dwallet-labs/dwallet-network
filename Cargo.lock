@@ -2590,7 +2590,9 @@ version = "1.32.2"
 dependencies = [
  "base64 0.22.1",
  "bcs",
+ "class_groups",
  "group 0.1.0",
+ "mpc",
  "serde",
  "twopc_mpc",
 ]
@@ -9959,6 +9961,7 @@ name = "pera-adapter-latest"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "bcs",
  "dwallet-mpc-types",
  "leb128",

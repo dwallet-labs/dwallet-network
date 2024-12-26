@@ -37,6 +37,10 @@ impl MPCRound {
     pub fn is_part_of_batch(&self) -> bool {
         matches!(self, MPCRound::Sign(..) | MPCRound::PresignSecond(..))
     }
+
+    pub fn is_network_dkg(&self) -> bool {
+        matches!(self, MPCRound::NetworkDkg(..))
+    }
 }
 
 /// The content of the system transaction that stores the MPC session output on the chain.

@@ -8,10 +8,14 @@ use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::collection_types::VecMap;
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, DwalletMPCNetworkKey};
-use pera_types::dwallet_mpc_error::DwalletMPCResult;
-use pera_types::messages_dwallet_mpc::SessionInfo;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use class_groups::dkg::Secp256k1Party;
+use group::PartyID;
+use mpc::WeightedThresholdAccessStructure;
+use crate::dwallet_mpc::authority_name_to_party_id;
 
 /// A struct to verify the DWallet MPC outputs.
 /// It stores all the outputs received for each session, and decides whether an output is valid
@@ -24,6 +28,7 @@ pub struct DWalletMPCOutputsVerifier {
     /// The quorum threshold of the chain.
     pub quorum_threshold: StakeUnit,
     pub completed_locking_next_committee: bool,
+    pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     voted_to_lock_committee: HashSet<AuthorityName>,
 }
 
@@ -55,6 +60,22 @@ pub struct OutputVerificationResult {
 
 impl DWalletMPCOutputsVerifier {
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
+        let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
+            .committee()
+            .voting_rights
+            .iter()
+            .map(|(name, weight)| {
+                Ok((
+                    authority_name_to_party_id(&name, &epoch_store).unwrap(),
+                    *weight as PartyID,
+                ))
+            })
+            .collect::<DwalletMPCResult<HashMap<PartyID, PartyID>>>().unwrap();
+        let weighted_threshold_access_structure = WeightedThresholdAccessStructure::new(
+            epoch_store.committee().quorum_threshold() as PartyID,
+            weighted_parties.clone(),
+        ).unwrap();
+
         DWalletMPCOutputsVerifier {
             quorum_threshold: epoch_store.committee().quorum_threshold(),
             mpc_instances_outputs: HashMap::new(),
@@ -66,6 +87,7 @@ impl DWalletMPCOutputsVerifier {
                 .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
+            weighted_threshold_access_structure,
         }
     }
 

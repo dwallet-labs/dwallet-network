@@ -6,6 +6,7 @@ use dwallet_mpc_types::dwallet_mpc::MPCPublicInput;
 use mpc::Party;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use twopc_mpc::dkg::Protocol;
+use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
 /// This struct represents the initial round of the DKG protocol.
 pub(super) type DKGFirstParty = <AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty;
@@ -46,7 +47,12 @@ impl DKGFirstPartyPublicInputGenerator for DKGFirstParty {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
     ) -> DwalletMPCResult<MPCPublicInput> {
-        let input: Self::PublicInput = bcs::from_bytes(&protocol_public_parameters)?;
+        let input: Self::PublicInput = ProtocolPublicParameters::new::<
+            { secp256k1::SCALAR_LIMBS },
+            { secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },
+            { secp256k1::class_groups::NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+            secp256k1::GroupElement,
+        >(bcs::from_bytes(&protocol_public_parameters)?);
         bcs::to_bytes(&input).map_err(|e| DwalletMPCError::BcsError(e))
     }
 }

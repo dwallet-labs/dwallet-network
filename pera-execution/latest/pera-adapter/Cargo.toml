@@ -36,6 +36,7 @@ pera-macros.workspace = true
 pera-protocol-config.workspace = true
 pera-types.workspace = true
 parking_lot.workspace = true
+base64 = "0.22.1"
 
 [dev-dependencies]
 move-package.workspace = true
