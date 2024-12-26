@@ -1002,7 +1002,7 @@ fn create_genesis_objects(
         }
     }
 
-    let res = generate_genesis_system_object(
+    generate_genesis_system_object(
         &mut store,
         executor.as_ref(),
         validators,
@@ -1011,9 +1011,8 @@ fn create_genesis_objects(
         token_distribution_schedule,
         metrics,
         dwallet_admin_address,
-    );
-
-    res.unwrap();
+    )
+    .unwrap();
 
     store.into_inner().into_values().collect()
 }
