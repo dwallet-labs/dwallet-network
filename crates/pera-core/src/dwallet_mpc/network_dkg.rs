@@ -18,10 +18,7 @@ use class_groups::{
     SECP256K1_SCALAR_LIMBS,
 };
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::class_groups_key::{
-    read_class_groups_from_file_real, read_class_groups_private_key_from_file_real,
-    ClassGroupsEncryptionKeyAndProof,
-};
+use dwallet_mpc_types::class_groups_key::{read_class_groups_from_file_real, read_class_groups_private_key_from_file_real, ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::MPCPrivateOutput;
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -87,6 +84,21 @@ impl DwalletMPCNetworkKeyVersions {
                 status,
             })),
         }
+    }
+
+    pub fn mock_network_dkg(&self, epoch_store: Arc<AuthorityPerEpochStore>, party_id: PartyID, weighted_threshold_access_structure: &WeightedThresholdAccessStructure){
+        let public_output = class_groups_constants::network_dkg_final_output();
+        let decryption_shares = public_output.default_decryption_key_shares::<SECP256K1_SCALAR_LIMBS, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, secp256k1::GroupElement>(party_id, weighted_threshold_access_structure, mock_cg_private_key()).unwrap();
+        self.add_key_version(
+            epoch_store,
+            DWalletMPCNetworkKeyScheme::Secp256k1,
+            decryption_shares,
+            bcs::to_bytes(&public_output).unwrap(),
+            &weighted_threshold_access_structure,
+        ).unwrap();
+
+        let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError).unwrap();
+        inner.status = DwalletMPCNetworkKeysStatus::Ready(HashSet::from([DWalletMPCNetworkKeyScheme::Secp256k1]));
     }
 
     /// Returns the latest version of the given key type.
@@ -391,4 +403,8 @@ fn mock_class_groups_encryption_keys_and_proofs() -> HashMap<
         );
     });
     encryption_keys_and_proofs
+}
+
+pub fn mock_cg_private_key() -> ClassGroupsDecryptionKey {
+    read_class_groups_private_key_from_file_real("class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key").unwrap()
 }

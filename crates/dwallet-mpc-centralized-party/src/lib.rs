@@ -50,6 +50,7 @@ pub fn create_dkg_output(
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
         bcs::from_bytes(&decentralized_first_round_output)?;
+    let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
     let public_parameters = ProtocolPublicParameters::new::<
         { secp256k1::SCALAR_LIMBS },
         { secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },
@@ -102,6 +103,7 @@ pub fn create_sign_output(
     hash: u8,
     session_ids: Vec<String>,
 ) -> anyhow::Result<(Vec<Vec<u8>>, Vec<Vec<u8>>)> {
+    let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
     let protocol_public_parameters = ProtocolPublicParameters::new::<
         { secp256k1::SCALAR_LIMBS },
         { secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },

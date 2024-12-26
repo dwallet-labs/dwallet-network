@@ -183,7 +183,7 @@ pub struct PeraSystemStateSummary {
     /// A map storing the records of validator reporting each other.
     pub validator_report_records: Vec<(PeraAddress, Vec<PeraAddress>)>,
 
-    pub decryption_key_shares: (u8, Vec<crate::dwallet_mpc::DwalletMPCNetworkKey>),
+    pub decryption_key_shares: Vec<(u8, Vec<crate::dwallet_mpc::DwalletMPCNetworkKey>)>,
 }
 
 impl PeraSystemStateSummary {

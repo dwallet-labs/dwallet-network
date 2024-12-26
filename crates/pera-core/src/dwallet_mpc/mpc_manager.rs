@@ -103,6 +103,12 @@ impl DWalletMPCManager {
         )
         .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
 
+        epoch_store.dwallet_mpc_network_keys.get().ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?.mock_network_dkg(
+            epoch_store.clone(),
+            authority_name_to_party_id(&epoch_store.name, &epoch_store)?,
+            &weighted_threshold_access_structure,
+        );
+
         let (sender, mut receiver) =
             tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
         let mut manager = Self {

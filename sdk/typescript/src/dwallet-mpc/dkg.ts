@@ -80,10 +80,11 @@ function convertToMap(
 export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 	const dkgFirstRoundOutput: DKGFirstRoundOutput = await launchDKGFirstRound(conf);
 	console.log('DKG First Round Output:', dkgFirstRoundOutput);
-	let a = await conf.client.getLatestPeraSystemState();
-	let ppp = convertToMap(a.decryptionKeyShares).get(1)!.at(0)!.at(0)!.protocol_public_parameters;
+	// let a = await conf.client.getLatestPeraSystemState();
+	// let ppp = convertToMap(a.decryptionKeyShares).get(1)!.at(0)!.at(0)!.protocol_public_parameters;
 	let [publicKeyShareAndProof, centralizedOutput] = create_dkg_centralized_output(
-		Uint8Array.from(ppp),
+		// Uint8Array.from(ppp),
+		Uint8Array.from([1, 2]),
 		Uint8Array.from(dkgFirstRoundOutput.output),
 		// Remove the 0x prefix.
 		dkgFirstRoundOutput.session_id.slice(2),

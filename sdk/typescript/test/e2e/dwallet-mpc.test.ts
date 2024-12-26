@@ -94,7 +94,10 @@ describe('Test dWallet MPC', () => {
 				presignOutput2.first_round_session_id.slice(2),
 			])
 			.toBytes();
+		let a = await conf.client.getLatestPeraSystemState();
+		let ppp = convertToMap(a.decryptionKeyShares).get(1)!.at(0)!.at(0)!.protocol_public_parameters;
 		const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
+			Uint8Array.from(ppp),
 			Uint8Array.from(dWallet.centralizedDKGOutput),
 			serializedPresigns,
 			serializedMsgs,
@@ -142,7 +145,10 @@ describe('Test dWallet MPC', () => {
 					presignCompletionEvent.first_round_session_ids.map((session_id) => session_id.slice(2)),
 				)
 				.toBytes();
+			// let a = await conf.client.getLatestPeraSystemState();
+			// let ppp = convertToMap(a.decryptionKeyShares).get(1)!.at(0)!.at(0)!.protocol_public_parameters;
 			const [centralizedSignedMsg, hashedMsgs] = create_sign_centralized_output(
+				Uint8Array.from([1, 2]),
 				Uint8Array.from(dWallet.centralizedDKGOutput),
 				serializedPresigns,
 				serializedMsgs,
