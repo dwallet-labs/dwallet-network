@@ -1190,9 +1190,6 @@ mod checked {
                     },
                     None,
                 ))?;
-
-                let a = base64::encode(&data.output);
-
                 module_name = PERA_SYSTEM_MODULE_NAME;
                 (
                     "new_decryption_key_shares_version",

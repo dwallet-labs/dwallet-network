@@ -1,4 +1,4 @@
-use class_groups::{CompactIbqf, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES};
+use class_groups::{CompactIbqf, KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES};
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
 use serde_derive::{Deserialize, Serialize};
@@ -18,6 +18,15 @@ pub type ClassGroupsProof = KnowledgeOfDiscreteLogUCProof;
 pub struct ClassGroupsKeyPairAndProof {
     decryption_key: ClassGroupsDecryptionKey,
     encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClassGroupsKeyPairAndProofReal {
+    decryption_key: ClassGroupsDecryptionKey,
+    pub encryption_key_and_proof: [(
+        CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
+        KnowledgeOfDiscreteLogUCProof,
+    ); MAX_PRIMES],
 }
 
 impl ClassGroupsKeyPairAndProof {
@@ -107,4 +116,27 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
     let decoded = Base64::decode(contents.as_str()).map_err(|e| anyhow::anyhow!(e))?;
     let keypair: ClassGroupsKeyPairAndProof = bcs::from_bytes(&decoded)?;
     Ok(keypair)
+}
+
+pub fn read_class_groups_from_file_real<P: AsRef<std::path::Path>>(
+    path: P,
+) -> anyhow::Result<
+    [(
+        CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
+        KnowledgeOfDiscreteLogUCProof,
+    ); MAX_PRIMES],
+> {
+    let contents = std::fs::read_to_string(path)?;
+    let decoded = Base64::decode(contents.as_str()).map_err(|e| anyhow::anyhow!(e))?;
+    let keypair: ClassGroupsKeyPairAndProofReal = bcs::from_bytes(&decoded)?;
+    Ok(keypair.encryption_key_and_proof)
+}
+
+pub fn read_class_groups_private_key_from_file_real<P: AsRef<std::path::Path>>(
+    path: P,
+) -> anyhow::Result<ClassGroupsDecryptionKey> {
+    let contents = std::fs::read_to_string(path)?;
+    let decoded = Base64::decode(contents.as_str()).map_err(|e| anyhow::anyhow!(e))?;
+    let keypair: ClassGroupsKeyPairAndProofReal = bcs::from_bytes(&decoded)?;
+    Ok(keypair.decryption_key)
 }

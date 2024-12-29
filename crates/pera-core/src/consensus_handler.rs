@@ -42,7 +42,7 @@ use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
 use pera_types::executable_transaction::CertificateProof;
 use pera_types::message_envelope::VerifiedEnvelope;
-use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, SessionInfo};
+use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound, SessionInfo};
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -55,6 +55,7 @@ use pera_types::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
 use twopc_mpc::secp256k1;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -534,7 +535,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                                 };
 
                                                 let key =
-                                                    pera_types::dwallet_mpc::DwalletMPCNetworkKey {
+                                                    NetworkDecryptionKeyShares {
                                                         epoch: 0,
                                                         current_epoch_shares: vec![
                                                             current_epoch_shares,

@@ -4,7 +4,7 @@ use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, MPCMessage, MPCPrivateOutput, MPCPublicInput};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCPublicInput};
 use group::PartyID;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::ObjectID;

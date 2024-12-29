@@ -17,6 +17,7 @@ use fastcrypto::traits::ToFromBytes;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 
 /// This is the JSON-RPC type for the PERA system state object.
 /// It flattens all fields to make them top-level fields such that it as minimum
@@ -183,7 +184,7 @@ pub struct PeraSystemStateSummary {
     /// A map storing the records of validator reporting each other.
     pub validator_report_records: Vec<(PeraAddress, Vec<PeraAddress>)>,
 
-    pub decryption_key_shares: Vec<(u8, Vec<crate::dwallet_mpc::DwalletMPCNetworkKey>)>,
+    pub decryption_key_shares: Vec<(u8, Vec<NetworkDecryptionKeyShares>)>,
 }
 
 impl PeraSystemStateSummary {

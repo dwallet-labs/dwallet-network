@@ -83,7 +83,7 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, NetworkDecryptionKeyShares};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
@@ -94,7 +94,6 @@ use pera_macros::fail_point;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_storage::mutex_table::{MutexGuard, MutexTable};
 use pera_types::collection_types::VecMap;
-use pera_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, DwalletMPCNetworkKey};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::effects::TransactionEffects;
 use pera_types::executable_transaction::{
@@ -1050,7 +1049,7 @@ impl AuthorityPerEpochStore {
     ///   which contains all versions of the encrypted decryption key shares.
     pub(crate) fn load_decryption_key_shares_from_system_state(
         &self,
-    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<DwalletMPCNetworkKey>>> {
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<NetworkDecryptionKeyShares>>> {
         let decryption_key_shares = (match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
         })

@@ -8,6 +8,10 @@ use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 use std::collections::{HashMap, HashSet};
+use group::PartyID;
+use mpc::WeightedThresholdAccessStructure;
+use pera_types::dwallet_mpc_error::DwalletMPCResult;
+use crate::dwallet_mpc::authority_name_to_party_id;
 
 /// A struct to verify the DWallet MPC outputs.
 /// It stores all the outputs received for each session,

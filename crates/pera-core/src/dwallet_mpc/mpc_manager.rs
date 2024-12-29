@@ -11,7 +11,7 @@ use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, DwalletMPCNe
 use crate::dwallet_mpc::sign::SignFirstParty;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKey, MPCMessage, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
 };
 use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
 use anyhow::anyhow;
@@ -22,7 +22,6 @@ use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Weight, WeightedThresholdAccessStructure};
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
-use pera_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
@@ -250,8 +249,7 @@ impl DWalletMPCManager {
                         .get(self_decryption_share.len() - 1)
                         .ok_or(DwalletMPCError::TwoPCMPCError(
                             "Decryption share not found".to_string(),
-                        ))?
-                        .clone())
+                        ))?.clone())
                 }
                 Err(e) => {}
             }
@@ -293,8 +291,6 @@ impl DWalletMPCManager {
             .get()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .status()?;
-        let mut malicious_parties = vec![];
-        let mut messages = vec![];
         let epoch_store = self.epoch_store()?;
 
         let mut ready_to_advance = self
@@ -387,7 +383,7 @@ impl DWalletMPCManager {
                 session.status.clone()
             {
                 if let MPCPrivateOutput::DecryptionKeyShare(private_output) = private_output {
-                    if let MPCRound::NetworkDkg(key_type, _) = instance.session_info.mpc_round {
+                    if let MPCRound::NetworkDkg(key_type, _) = session.session_info.mpc_round {
                         let a = base64::encode(&public_output);
                         println!("public_output: {:?}", a);
                         let network_keys = epoch_store

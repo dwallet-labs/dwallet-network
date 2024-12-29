@@ -61,7 +61,7 @@ use self::authority_store_pruner::AuthorityStorePruningMetrics;
 pub use authority_store::{AuthorityStore, ResolverWrapper, UpdateType};
 use mysten_metrics::{monitored_scope, spawn_monitored_task};
 
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKey;
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use once_cell::sync::OnceCell;
 use pera_archival::reader::ArchiveReaderBalancer;
 use pera_config::genesis::Genesis;
@@ -169,7 +169,6 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
-use pera_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use pera_types::dwallet_mpc_error::DwalletMPCError;
 use pera_types::execution_config_utils::to_binary_config;
 
