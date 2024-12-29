@@ -6,7 +6,6 @@ pub use checked::*;
 #[pera_macros::with_checked_arithmetic]
 mod checked {
     use crate::execution_mode::{self, ExecutionMode};
-    use anyhow::Context;
     use dwallet_mpc_types::dwallet_mpc::{MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME};
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
@@ -1185,8 +1184,8 @@ mod checked {
                 ],
             ),
             MPCRound::PresignSecond(dwallet_id, _first_round_output, batch_session_id) => {
-                let presigns: Vec<(ObjectID, MPCPublicOutput)> =
-                    bcs::from_bytes(&data.output).map_err(|e| {
+                let presigns: Vec<(ObjectID, MPCPublicOutput)> = bcs::from_bytes(&data.output)
+                    .map_err(|e| {
                         ExecutionError::new(
                             ExecutionErrorKind::DeserializationFailed,
                             Some(
@@ -1194,7 +1193,8 @@ mod checked {
                             ),
                         )
                     })?;
-                let first_round_session_ids: Vec<ObjectID> = presigns.iter().map(|(k, _)| *k).collect();
+                let first_round_session_ids: Vec<ObjectID> =
+                    presigns.iter().map(|(k, _)| *k).collect();
                 let presigns: Vec<MPCPublicOutput> = presigns.into_iter().map(|(_, v)| v).collect();
                 (
                     "create_batched_presign_output",

@@ -13,6 +13,7 @@ use crate::supported_protocol_versions::{
 };
 use crate::transaction::CertifiedTransaction;
 use byteorder::{BigEndian, ReadBytesExt};
+use dwallet_mpc_types::dwallet_mpc::MPCMessage;
 use fastcrypto::error::FastCryptoResult;
 use fastcrypto::groups::bls12381;
 use fastcrypto_tbls::{dkg, dkg_v1};
@@ -90,6 +91,19 @@ pub struct ConsensusTransaction {
     pub kind: ConsensusTransactionKind,
 }
 
+/// The message a Validator can send to the other parties while
+/// running a dWallet MPC session.
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
+pub struct DWalletMPCMessage {
+    /// The serialized message.
+    pub message: MPCMessage,
+    /// The authority (Validator) that sent the message.
+    pub authority: AuthorityName,
+    pub session_id: ObjectID,
+    /// The MPC round number, starts from 0.
+    pub round_number: usize,
+}
+
 #[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
@@ -97,7 +111,7 @@ pub enum ConsensusTransactionKey {
     /// The message sent between MPC parties in a dwallet MPC session.
     /// The [`Vec<u8>`] is the message, the [`AuthorityName`] is the sending authority, and the
     /// [`ObjectID`] is the session ID.
-    DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    DWalletMPCMessage(DWalletMPCMessage),
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
@@ -119,8 +133,8 @@ impl Debug for ConsensusTransactionKey {
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
             }
-            Self::DWalletMPCMessage(name, _, _) => {
-                write!(f, "DWalletMPCMessage({:?})", name.concise(),)
+            Self::DWalletMPCMessage(message) => {
+                write!(f, "DWalletMPCMessage({:?})", message,)
             }
             Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
             Self::CapabilityNotification(name, generation) => write!(
@@ -295,7 +309,7 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilitiesV1),
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
-    DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
     LockNextCommittee(AuthorityName, EpochId),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
@@ -497,13 +511,19 @@ impl ConsensusTransaction {
         authority: AuthorityName,
         message: Vec<u8>,
         session_id: ObjectID,
+        round_number: usize,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         session_id.into_bytes().hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
+            kind: ConsensusTransactionKind::DWalletMPCMessage(DWalletMPCMessage {
+                message,
+                authority,
+                round_number,
+                session_id,
+            }),
         }
     }
 
@@ -604,12 +624,8 @@ impl ConsensusTransaction {
             ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _) => {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
             }
-            ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id) => {
-                ConsensusTransactionKey::DWalletMPCMessage(
-                    *authority,
-                    message.clone(),
-                    session_id.clone(),
-                )
+            ConsensusTransactionKind::DWalletMPCMessage(message) => {
+                ConsensusTransactionKey::DWalletMPCMessage(message.clone())
             }
             ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {
                 ConsensusTransactionKey::DWalletMPCOutput(
