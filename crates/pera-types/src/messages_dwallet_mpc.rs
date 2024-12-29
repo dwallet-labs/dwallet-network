@@ -23,12 +23,19 @@ pub enum MPCRound {
     /// The first and only round of the Sign protocol.
     /// Contains the `ObjectID` of the batched sign session,
     /// and the hashed messages being signed.
-    Sign(ObjectID, MPCPublicOutput),
+    Sign(SignData),
     /// A batched sign session, contains the list of messages that are being signed.
     BatchedSign(Vec<Vec<u8>>),
     BatchedPresign(u64),
     /// The round of the network DKG protocol.
     NetworkDkg(DWalletMPCNetworkKey),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct SignData {
+    pub batch_session_id: ObjectID,
+    pub message: Vec<u8>,
+    pub dwallet_id: ObjectID,
 }
 
 impl MPCRound {
