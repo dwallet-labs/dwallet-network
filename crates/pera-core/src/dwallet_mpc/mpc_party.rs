@@ -16,7 +16,7 @@ use twopc_mpc::sign::Protocol;
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 /// Enum representing the different parties used in the MPC manager.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum MPCParty {
     /// The party used in the first round of the DKG protocol.
     FirstDKGBytesParty,
