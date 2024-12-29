@@ -196,7 +196,7 @@ checksum = "1462739cb27611015575c0c11df5df7601141071f07518d56fcc1be504cbec97"
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=36142d48b474211b60c46d380ce41c30981839c9#36142d48b474211b60c46d380ce41c30981839c9"
 dependencies = [
  "commitment",
  "criterion",
@@ -204,6 +204,7 @@ dependencies = [
  "crypto-primes",
  "group 0.1.0",
  "homomorphic_encryption",
+ "itertools 0.13.0",
  "maurer",
  "merlin",
  "mpc",
@@ -212,9 +213,11 @@ dependencies = [
  "num-traits",
  "proof",
  "rand",
+ "rand_chacha",
  "rand_core",
  "rstest",
  "serde",
+ "sha3 0.10.8",
  "thiserror",
 ]
 
@@ -240,7 +243,7 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=36142d48b474211b60c46d380ce41c30981839c9#36142d48b474211b60c46d380ce41c30981839c9"
 dependencies = [
  "crypto-bigint",
  "group 0.1.0",
@@ -276,7 +279,7 @@ dependencies = [
  "clap",
  "criterion-plot",
  "is-terminal",
- "itertools",
+ "itertools 0.10.5",
  "num-traits",
  "once_cell",
  "oorandom",
@@ -295,7 +298,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
 dependencies = [
  "cast",
- "itertools",
+ "itertools 0.10.5",
 ]
 
 [[package]]
@@ -483,7 +486,7 @@ dependencies = [
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=36142d48b474211b60c46d380ce41c30981839c9#36142d48b474211b60c46d380ce41c30981839c9"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -650,7 +653,7 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=36142d48b474211b60c46d380ce41c30981839c9#36142d48b474211b60c46d380ce41c30981839c9"
 dependencies = [
  "crypto-bigint",
  "curve25519-dalek-ng",
@@ -709,7 +712,7 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=36142d48b474211b60c46d380ce41c30981839c9#36142d48b474211b60c46d380ce41c30981839c9"
 dependencies = [
  "crypto-bigint",
  "getrandom",
@@ -747,6 +750,15 @@ name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -803,12 +815,13 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=36142d48b474211b60c46d380ce41c30981839c9#36142d48b474211b60c46d380ce41c30981839c9"
 dependencies = [
  "commitment",
  "crypto-bigint",
  "getrandom",
  "group 0.1.0",
+ "homomorphic_encryption",
  "merlin",
  "mpc",
  "proof",
@@ -838,8 +851,9 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=36142d48b474211b60c46d380ce41c30981839c9#36142d48b474211b60c46d380ce41c30981839c9"
 dependencies = [
+ "commitment",
  "criterion",
  "crypto-bigint",
  "gcd",
@@ -963,7 +977,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=36142d48b474211b60c46d380ce41c30981839c9#36142d48b474211b60c46d380ce41c30981839c9"
 dependencies = [
  "bulletproofs",
  "commitment",
@@ -972,6 +986,7 @@ dependencies = [
  "curve25519-dalek-ng",
  "getrandom",
  "group 0.1.0",
+ "itertools 0.13.0",
  "merlin",
  "mpc",
  "rand",
@@ -1338,7 +1353,7 @@ dependencies = [
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=36142d48b474211b60c46d380ce41c30981839c9#36142d48b474211b60c46d380ce41c30981839c9"
 dependencies = [
  "crypto-bigint",
  "crypto-primes",
@@ -1374,7 +1389,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=36142d48b474211b60c46d380ce41c30981839c9#36142d48b474211b60c46d380ce41c30981839c9"
 dependencies = [
  "base64",
  "bcs",
