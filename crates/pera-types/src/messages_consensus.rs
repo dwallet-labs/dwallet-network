@@ -91,6 +91,19 @@ pub struct ConsensusTransaction {
     pub kind: ConsensusTransactionKind,
 }
 
+/// The message a Validator can send to the other parties while
+/// running a dWallet MPC session.
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
+pub struct DWalletMPCMessage {
+    /// The serialized message.
+    pub message: MPCMessage,
+    /// The authority (Validator) that sent the message.
+    pub authority: AuthorityName,
+    pub session_id: ObjectID,
+    /// The MPC round number, starts from 0.
+    pub round_number: usize,
+}
+
 #[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
@@ -662,16 +675,4 @@ fn test_jwk_compatibility() {
     let expected_id_bytes = vec![3, 97, 98, 99, 3, 100, 101, 102];
     let id_bcs = bcs::to_bytes(&id).unwrap();
     assert_eq!(id_bcs, expected_id_bytes);
-}
-
-/// The message a Validator can send to the other parties while
-/// running a dWallet MPC session.
-#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
-pub struct DWalletMPCMessage {
-    /// The serialized message.
-    pub message: MPCMessage,
-    /// The authority (Validator) that sent the message.
-    pub authority: AuthorityName,
-    pub session_id: ObjectID,
-    pub round_number: usize,
 }

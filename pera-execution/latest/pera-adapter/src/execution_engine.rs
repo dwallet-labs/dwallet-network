@@ -6,7 +6,6 @@ pub use checked::*;
 #[pera_macros::with_checked_arithmetic]
 mod checked {
     use crate::execution_mode::{self, ExecutionMode};
-    use anyhow::Context;
     use dwallet_mpc_types::dwallet_mpc::{MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME};
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;

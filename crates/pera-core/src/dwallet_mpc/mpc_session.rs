@@ -23,7 +23,8 @@ pub(super) struct DWalletMPCSession {
     pub(super) status: MPCSessionStatus,
     /// The messages that are pending to be executed while advancing the session
     /// We need to accumulate a threshold of those before advancing the session.
-    pub(super) pending_messages: Vec<HashMap<PartyID, Vec<u8>>>,
+    /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
+    pub(super) pending_messages: Vec<HashMap<PartyID, MPCMessage>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     /// The total number of parties in the chain
@@ -163,26 +164,31 @@ impl DWalletMPCSession {
     }
 
     /// Stores a message in the pending messages map.
-    /// The code stores every new message it receives for that session,
-    /// and when we reach the end of delivery,
-    /// we will advance the session if we have a threshold of messages.
+    /// Every new message received for a session is stored.
+    /// When a threshold of messages is reached, the session advances.
     fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         let source_party_id =
             authority_name_to_party_id(&message.authority, &*self.epoch_store()?)?;
-        if let Some(mut messages_map) = self.pending_messages.get_mut(message.round_number) {
-            if messages_map.contains_key(&source_party_id) {
-                return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+
+        let msg_len = self.pending_messages.len();
+        match self.pending_messages.get_mut(message.round_number) {
+            Some(party_to_msg) => {
+                if party_to_msg.contains_key(&source_party_id) {
+                    // Duplicate.
+                    return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+                }
+                party_to_msg.insert(source_party_id, message.message.clone());
             }
-            messages_map.insert(source_party_id, message.message.clone());
-        } else if message.round_number == self.pending_messages.len() {
-            self.pending_messages.push({
+            // If next round.
+            None if message.round_number == msg_len => {
                 let mut map = HashMap::new();
                 map.insert(source_party_id, message.message.clone());
-                map
-            });
-        } else {
-            // This should never happen, as rounds should grow by one each time.
-            return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+                self.pending_messages.push(map);
+            }
+            _ => {
+                // Unexpected round number; rounds should grow sequentially.
+                return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+            }
         }
         Ok(())
     }

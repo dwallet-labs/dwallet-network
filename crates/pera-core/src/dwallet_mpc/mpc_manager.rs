@@ -10,7 +10,7 @@ use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKey, MPCMessage, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
+    DWalletMPCNetworkKey, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
 };
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -254,44 +254,38 @@ impl DWalletMPCManager {
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, session)| {
-                let received_weight: PartyID = if let MPCSessionStatus::Active = session.status {
-                    session
+                let received_weight: PartyID = match session.status {
+                    MPCSessionStatus::Active => session
                         .pending_messages
                         .get(session.round_number)
                         .unwrap_or(&HashMap::new())
                         .keys()
-                        .map(|authority_index| {
-                            // Should never be "or"
-                            // as we receive messages only from known authorities.
+                        .filter_map(|authority_index| {
                             self.weighted_threshold_access_structure
                                 .party_to_weight
                                 .get(authority_index)
-                                .unwrap_or(&0)
                         })
-                        .sum()
-                } else {
-                    0
+                        .sum(),
+                    _ => 0,
                 };
 
-                let is_ready = (matches!(session.status, MPCSessionStatus::Active)
-                    && received_weight as StakeUnit >= threshold)
-                    || (session.status == MPCSessionStatus::FirstExecution);
+                let is_ready = match session.status {
+                    MPCSessionStatus::Active => received_weight as StakeUnit >= threshold,
+                    MPCSessionStatus::FirstExecution => true,
+                    _ => false,
+                };
 
-                let mut is_manager_ready = true;
-                if cfg!(feature = "with-network-dkg") {
-                    is_manager_ready = (mpc_network_key_status
-                        == DwalletMPCNetworkKeysStatus::NotInitialized
-                        && matches!(session.party(), MPCParty::NetworkDkg(_)))
-                        || matches!(
-                            mpc_network_key_status,
-                            DwalletMPCNetworkKeysStatus::Ready(_)
-                        )
-                }
-                if is_ready && is_manager_ready {
-                    Some(session)
-                } else {
-                    None
-                }
+                let is_manager_ready = !cfg!(feature = "with-network-dkg")
+                    || matches!(
+                        mpc_network_key_status,
+                        DwalletMPCNetworkKeysStatus::Ready(_)
+                    )
+                    || (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
+                        && matches!(session.party(), MPCParty::NetworkDkg(_)));
+
+                is_ready
+                    .then(|| is_manager_ready.then_some(session))
+                    .flatten()
             })
             .collect::<Vec<&mut DWalletMPCSession>>();
 
