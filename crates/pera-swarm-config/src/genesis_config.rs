@@ -6,10 +6,6 @@ use std::net::{IpAddr, SocketAddr};
 
 use anyhow::Result;
 use class_groups::SecretKeyShareSizedNumber;
-use dwallet_mpc_types::class_groups_key::ClassGroupsKeyPairAndProof;
-use dwallet_mpc_types::class_groups_key::{
-    generate_class_groups_keypair_and_proof_from_seed, read_class_groups_from_file,
-};
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use group::PartyID;
 use pera_config::genesis::{GenesisCeremonyParameters, TokenAllocation};
@@ -28,6 +24,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 pub use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
+use dwallet_classgroups_types::{generate_class_groups_keypair_and_proof_from_seed, read_class_groups_from_file, ClassGroupsKeyPairAndProof};
 
 // All information needed to build a NodeConfig for a state sync fullnode.
 #[derive(Serialize, Deserialize, Debug)]
@@ -77,7 +74,8 @@ impl ValidatorGenesisConfig {
         let network_key: NetworkPublicKey = self.network_key_pair.public().clone();
         let worker_key: NetworkPublicKey = self.worker_key_pair.public().clone();
         let network_address = self.network_address.clone();
-        let class_groups_public_key_and_proof = self.class_groups_keypair_and_proof.public_bytes();
+        let class_groups_public_key_and_proof =
+            self.class_groups_keypair_and_proof.public_bytes();
 
         let info = ValidatorInfo {
             name,

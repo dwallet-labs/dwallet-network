@@ -25,6 +25,34 @@ enum Hash {
     SHA256 = 1,
 }
 
+type HashedMessages = Vec<u8>;
+type SignedMessages = Vec<u8>;
+
+impl fmt::Display for Hash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let hash_name = match self {
+            Hash::KECCAK256 => "KECCAK256",
+            Hash::SHA256 => "SHA256",
+        };
+        write!(f, "{}", hash_name)
+    }
+}
+
+impl TryFrom<u8> for Hash {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Hash::KECCAK256),
+            1 => Ok(Hash::SHA256),
+            _ => Err(anyhow::Error::msg(format!(
+                "invalid value for Hash enum: {}",
+                value
+            ))),
+        }
+    }
+}
+
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
 ///
 /// This function is invoked by the centralized party to produce:
@@ -49,7 +77,8 @@ pub fn create_dkg_output(
     session_id: String,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
-        bcs::from_bytes(&decentralized_first_round_output)?;
+        bcs::from_bytes(&decentralized_first_round_output)
+            .context("Failed to deserialize decentralized first round output")?;
     let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
     let public_parameters = ProtocolPublicParameters::new::<
         { secp256k1::SCALAR_LIMBS },
@@ -85,6 +114,7 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
                 .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
         }
     };
+    #[allow(clippy::useless_conversion)]
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
     Ok(U256::from(m).into())
 }
@@ -102,7 +132,7 @@ pub fn create_sign_output(
     messages: Vec<Vec<u8>>,
     hash: u8,
     session_ids: Vec<String>,
-) -> anyhow::Result<(Vec<Vec<u8>>, Vec<Vec<u8>>)> {
+) -> anyhow::Result<(Vec<HashedMessages>, Vec<SignedMessages>)> {
     let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
     let protocol_public_parameters = ProtocolPublicParameters::new::<
         { secp256k1::SCALAR_LIMBS },
@@ -125,7 +155,7 @@ pub fn create_sign_output(
             let centralized_party_auxiliary_input = (
                 hashed_message,
                 centralized_party_dkg_output.clone(),
-                presign.clone(),
+                presign,
                 protocol_public_parameters.clone(),
                 session_id,
             )
@@ -144,29 +174,4 @@ pub fn create_sign_output(
         .unzip();
 
     Ok((signed_messages, hashed_messages))
-}
-
-impl fmt::Display for Hash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let hash_name = match self {
-            Hash::KECCAK256 => "KECCAK256",
-            Hash::SHA256 => "SHA256",
-        };
-        write!(f, "{}", hash_name)
-    }
-}
-
-impl TryFrom<u8> for Hash {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Hash::KECCAK256),
-            1 => Ok(Hash::SHA256),
-            _ => Err(anyhow::Error::msg(format!(
-                "invalid value for Hash enum: {}",
-                value
-            ))),
-        }
-    }
 }

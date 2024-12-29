@@ -4,7 +4,6 @@
 use anyhow::Result;
 use camino::Utf8PathBuf;
 use clap::Parser;
-use dwallet_mpc_types::class_groups_key::read_class_groups_from_file;
 use fastcrypto::encoding::{Encoding, Hex};
 use pera_config::{genesis::UnsignedGenesis, PERA_GENESIS_FILENAME};
 use pera_genesis_builder::Builder;
@@ -21,7 +20,7 @@ use pera_types::{
     message_envelope::Message,
 };
 use std::path::PathBuf;
-
+use dwallet_classgroups_types::read_class_groups_from_file;
 use crate::genesis_inspector::examine_genesis_checkpoint;
 
 #[derive(Parser)]
@@ -269,11 +268,8 @@ fn check_protocol_version(builder: &Builder, protocol_version: ProtocolVersion) 
 mod test {
     use super::*;
     use anyhow::Result;
-    use dwallet_mpc_types::class_groups_key::{
-        generate_class_groups_keypair_and_proof_from_seed,
-        write_class_groups_keypair_and_proof_to_file,
-    };
     use fastcrypto::traits::ToFromBytes;
+    use dwallet_classgroups_types::{generate_class_groups_keypair_and_proof_from_seed, write_class_groups_keypair_and_proof_to_file};
     use pera_config::local_ip_utils;
     use pera_genesis_builder::validator_info::ValidatorInfo;
     use pera_keys::keypair_file::{write_authority_keypair_to_file, write_keypair_to_file};

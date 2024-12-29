@@ -66,7 +66,6 @@ title: Module `0x3::pera_system_state_inner`
 -  [Function `get_storage_fund_object_rebates`](#0x3_pera_system_state_inner_get_storage_fund_object_rebates)
 -  [Function `pool_exchange_rates`](#0x3_pera_system_state_inner_pool_exchange_rates)
 -  [Function `active_validator_addresses`](#0x3_pera_system_state_inner_active_validator_addresses)
--  [Function `decryption_key_shares`](#0x3_pera_system_state_inner_decryption_key_shares)
 -  [Function `extract_coin_balance`](#0x3_pera_system_state_inner_extract_coin_balance)
 -  [Function `active_validators`](#0x3_pera_system_state_inner_active_validators)
 
@@ -428,7 +427,7 @@ Uses SystemParametersV2 as the parameters.
  we know what version it is by inspecting PeraSystemStateInner as well.
 </dd>
 <dt>
-<code>decryption_key_shares: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;u8, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_network_key.md#0x3_dwallet_network_key_DwalletMPCNetworkKey">dwallet_network_key::DwalletMPCNetworkKey</a>&gt;&gt;</code>
+<code>decryption_key_shares: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;u8, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_network_key.md#0x3_dwallet_network_key_NetworkDecryptionKeyShares">dwallet_network_key::NetworkDecryptionKeyShares</a>&gt;&gt;</code>
 </dt>
 <dd>
  These are the encrypted decryption-key shares for the current epoch, used for dWallet MPC session.
@@ -1001,7 +1000,7 @@ This function will be called only once in genesis.
 Update the system state with a new version dwallet mpc network key shares after the network DKG.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, protocol_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, decryption_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, key_scheme: u8)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_scheme: u8)
 </code></pre>
 
 
@@ -1010,10 +1009,9 @@ Update the system state with a new version dwallet mpc network key shares after 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, protocol_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                                      decryption_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, key_scheme: u8) {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_scheme: u8) {
     <b>assert</b>!(is_valid_key_scheme(key_scheme), <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_EInvalidKeyType">EInvalidKeyType</a>);
-    <b>let</b> new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>(), protocol_public_parameters, decryption_public_parameters);
+    <b>let</b> new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>());
 
     <b>if</b> (self.decryption_key_shares.contains(&key_scheme)) {
         self.decryption_key_shares.get_mut(&key_scheme).push_back(new_version);
@@ -1058,10 +1056,10 @@ Update the system state with new encryption of decryption key shares after re-co
         <b>return</b>
     };
 
-    // self.decryption_key_shares.insert(
-    //     key_scheme,
-    //     <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[new_encrypted_network_decryption_key_shares(self.epoch, shares, <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>())]
-    // );
+    self.decryption_key_shares.insert(
+        key_scheme,
+        <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[new_encrypted_network_decryption_key_shares(self.epoch, shares, <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>())]
+    );
 }
 </code></pre>
 
@@ -2736,30 +2734,6 @@ Returns all the validators who are currently reporting <code>addr</code>
 <pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_active_validator_addresses">active_validator_addresses</a>(self: &<a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt; {
     <b>let</b> <a href="validator_set.md#0x3_validator_set">validator_set</a> = &self.validators;
     <a href="validator_set.md#0x3_validator_set">validator_set</a>.<a href="pera_system_state_inner.md#0x3_pera_system_state_inner_active_validator_addresses">active_validator_addresses</a>()
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_pera_system_state_inner_decryption_key_shares"></a>
-
-## Function `decryption_key_shares`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_decryption_key_shares">decryption_key_shares</a>(self: &<a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>, key_type: u8, key_version: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_decryption_key_shares">decryption_key_shares</a>(self: &<a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>, key_type: u8, key_version: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
-    <a href="../move-stdlib/vector.md#0x1_vector_borrow">vector::borrow</a>(self.decryption_key_shares.get(&key_type), key_version).protocol_public_parameters()
 }
 </code></pre>
 

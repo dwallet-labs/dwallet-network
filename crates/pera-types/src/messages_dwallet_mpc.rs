@@ -3,6 +3,7 @@ use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc::{DWalletMPCNetworkKeyScheme, DwalletMPCNetworkKey};
 use crate::message_envelope::Message;
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKey;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
@@ -35,7 +36,13 @@ pub enum MPCRound {
 impl MPCRound {
     /// Returns `true` if the round output is part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
-        matches!(self, MPCRound::Sign(..) | MPCRound::PresignSecond(..))
+        matches!(
+            self,
+            MPCRound::Sign(..)
+                | MPCRound::PresignSecond(..)
+                | MPCRound::BatchedSign(..)
+                | MPCRound::BatchedPresign(..)
+        )
     }
 
     pub fn is_network_dkg(&self) -> bool {

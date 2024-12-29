@@ -1,3 +1,4 @@
+/// This module manages the storage of the network dWallet MPC keys and associated data.
 module pera_system::dwallet_network_key {
     use pera::event;
     use pera_system::validator_set::{ValidatorDataForDWalletSecretShare, emit_validator_data_for_secret_share};
@@ -43,7 +44,7 @@ module pera_system::dwallet_network_key {
     }
 
     /// Struct to store the network encryption of decryption key shares
-    public struct DwalletMPCNetworkKey has store, copy {
+    public struct NetworkDecryptionKeyShares has store, copy {
         epoch: u64,
         current_epoch_shares: vector<vector<u8>>,
         previous_epoch_shares: vector<vector<u8>>,
@@ -55,15 +56,14 @@ module pera_system::dwallet_network_key {
         self.protocol_public_parameters
     }
 
-    /// Function to create a new DwalletMPCNetworkKey.
+    /// Function to create a new NetworkDecryptionKeyShares.
     public(package) fun new_encrypted_network_decryption_key_shares(
         epoch: u64,
         current_epoch_shares: vector<vector<u8>>,
         previous_epoch_shares: vector<vector<u8>>,
-        protocol_public_parameters: vector<u8>,
         decryption_public_parameters: vector<u8>,
-    ): DwalletMPCNetworkKey {
-        DwalletMPCNetworkKey {
+    ): NetworkDecryptionKeyShares {
+        NetworkDecryptionKeyShares {
             epoch,
             current_epoch_shares,
             previous_epoch_shares,
@@ -74,7 +74,7 @@ module pera_system::dwallet_network_key {
 
     /// Function to update the shares of the network encryption of decryption key.
     public fun update_new_shares(
-        self: &mut DwalletMPCNetworkKey,
+        self: &mut NetworkDecryptionKeyShares,
         new_shares: vector<vector<u8>>,
         epoch: u64
     ) {

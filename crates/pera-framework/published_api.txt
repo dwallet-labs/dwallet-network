@@ -28,6 +28,12 @@ DKGFirstRoundOutputEvent
 Presign
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+PartiallySignedMessages
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CreatedPartiallySignedMessagesEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartDKGFirstRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -96,6 +102,18 @@ create_mock_dwallet
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_mock_presign
 	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+publish_partially_signed_messages
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+future_sign
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+pop_and_verify_message_approval
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+verify_partially_signed_signatures
+	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
 	public struct
@@ -739,7 +757,7 @@ active_validator_addresses
 StartNetworkDKGEvent
 	public struct
 	0x3::dwallet_network_key
-DwalletMPCNetworkKey
+NetworkDecryptionKeyShares
 	public struct
 	0x3::dwallet_network_key
 is_valid_key_scheme
@@ -747,9 +765,6 @@ is_valid_key_scheme
 	0x3::dwallet_network_key
 start_network_dkg
 	public(package) fun
-	0x3::dwallet_network_key
-protocol_public_parameters
-	public fun
 	0x3::dwallet_network_key
 new_encrypted_network_decryption_key_shares
 	public(package) fun
@@ -967,9 +982,6 @@ pool_exchange_rates
 active_validator_addresses
 	public(package) fun
 	0x3::pera_system_state_inner
-decryption_key_shares
-	public(package) fun
-	0x3::pera_system_state_inner
 extract_coin_balance
 	fun
 	0x3::pera_system_state_inner
@@ -1094,9 +1106,6 @@ pool_exchange_rates
 	public fun
 	0x3::pera_system
 active_validator_addresses
-	public fun
-	0x3::pera_system
-decryption_key_shares
 	public fun
 	0x3::pera_system
 advance_epoch

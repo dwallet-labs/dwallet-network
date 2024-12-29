@@ -18,20 +18,14 @@ use class_groups::{
     SECP256K1_SCALAR_LIMBS,
 };
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::class_groups_key::{read_class_groups_from_file_real, read_class_groups_private_key_from_file_real, ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
-use dwallet_mpc_types::dwallet_mpc::MPCPrivateOutput;
-use group::{ristretto, secp256k1, PartyID};
-use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::{
-    AsynchronousRoundResult, AsynchronouslyAdvanceable, Party, WeightedThresholdAccessStructure,
-};
-use pera_types::crypto::Signable;
-use pera_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, DwalletMPCNetworkKey};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, NetworkDecryptionKeyShares};
+use group::PartyID;
+use mpc::WeightedThresholdAccessStructure;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
-use twopc_mpc::sign::Protocol;
+use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -56,7 +50,7 @@ pub struct DwalletMPCNetworkKeyVersionsInner {
     >,
     /// The dWallet MPC network decryption key shares (encrypted).
     /// Map from key type to the encryption of the key version.
-    pub key_shares_versions: HashMap<DWalletMPCNetworkKeyScheme, Vec<DwalletMPCNetworkKey>>,
+    pub key_shares_versions: HashMap<DWalletMPCNetworkKeyScheme, Vec<NetworkDecryptionKeyShares>>,
     /// The status of the network supported key types for the dWallet MPC sessions.
     pub status: DwalletMPCNetworkKeysStatus,
 }
@@ -173,6 +167,18 @@ impl DwalletMPCNetworkKeyVersions {
             .insert(key_type.clone(), vec![new_key_version.clone()]);
         inner
             .validator_decryption_key_share
+            .entry(key_type.clone())
+            .or_insert_with(Vec::new)
+            .push(self_decryption_key_share.clone());
+
+        inner.key_shares_versions.insert(
+            key_type.clone(),
+            vec![NetworkDecryptionKeyShares {
+                epoch: epoch_store.epoch(),
+                current_epoch_shares: vec![encryption_of_decryption_shares],
+                previous_epoch_shares: vec![],
+            }],
+        );
             .insert(key_type, vec![self_decryption_key_share]);
 
         if let DwalletMPCNetworkKeysStatus::Ready(keys) = &mut inner.status {

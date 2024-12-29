@@ -153,7 +153,6 @@ impl StartPresignSecondRoundEvent {
     }
 }
 
-// todo(zeev): check this.
 /// Represents the Rust version of the Move
 /// struct `pera_system::dwallet::StartSignRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]

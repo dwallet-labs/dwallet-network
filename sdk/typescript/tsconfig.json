@@ -8,5 +8,9 @@
 		"isolatedModules": true,
 		"sourceMap": true
 	},
-	"references": [{ "path": "../bcs" }]
+	"references": [
+		{
+			"path": "../bcs"
+		}
+	]
 }

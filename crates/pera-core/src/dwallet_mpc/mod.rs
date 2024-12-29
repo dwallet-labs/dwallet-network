@@ -16,7 +16,7 @@ use crate::dwallet_mpc::presign::{
 };
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::MPCMessage;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, MPCMessage, MPCPublicInput};
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::AuthorityName;
@@ -32,10 +32,10 @@ use twopc_mpc::sign::Protocol;
 pub mod batches_manager;
 mod dkg;
 pub(crate) mod mpc_events;
-pub mod mpc_instance;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
 pub(crate) mod mpc_party;
+pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
@@ -262,7 +262,7 @@ fn sign_party(
 
 fn sign_party_session_info(
     deserialized_event: &StartSignRoundEvent,
-    party_id: PartyID,
+    _party_id: PartyID,
 ) -> SessionInfo {
     SessionInfo {
         flow_session_id: deserialized_event.presign_session_id.bytes,
@@ -374,7 +374,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 }
 
 /// Parses an [`Event`] to extract the corresponding [`MPCParty`],
-/// auxiliary input, and session information.
+/// public input, and session information.
 ///
 /// Returns an error if the event type does not correspond to any known MPC rounds
 /// or if deserialization fails.
@@ -382,7 +382,7 @@ pub(crate) fn from_event(
     event: &Event,
     dwallet_mpc_manager: &DWalletMPCManager,
     party_id: PartyID,
-) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
+) -> DwalletMPCResult<(MPCParty, MPCPublicInput, SessionInfo)> {
     if &event.type_ == &StartNetworkDKGEvent::type_() {
         let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
         return network_dkg::network_dkg_party(deserialized_event);

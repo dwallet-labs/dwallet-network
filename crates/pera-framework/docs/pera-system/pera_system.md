@@ -81,7 +81,6 @@ the PeraSystemStateInner version, or vice versa.
 -  [Function `update_candidate_validator_network_pubkey`](#0x3_pera_system_update_candidate_validator_network_pubkey)
 -  [Function `pool_exchange_rates`](#0x3_pera_system_pool_exchange_rates)
 -  [Function `active_validator_addresses`](#0x3_pera_system_active_validator_addresses)
--  [Function `decryption_key_shares`](#0x3_pera_system_decryption_key_shares)
 -  [Function `advance_epoch`](#0x3_pera_system_advance_epoch)
 -  [Function `load_system_state`](#0x3_pera_system_load_system_state)
 -  [Function `load_system_state_mut`](#0x3_pera_system_load_system_state_mut)
@@ -723,7 +722,7 @@ Non-entry version of <code>request_withdraw_stake</code> that returns the withdr
     wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>,
     staked_pera: StakedPera,
     ctx: &<b>mut</b> TxContext,
-) : Balance&lt;PERA&gt; {
+): Balance&lt;PERA&gt; {
     <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>(wrapper);
     self.<a href="pera_system.md#0x3_pera_system_request_withdraw_stake">request_withdraw_stake</a>(staked_pera, ctx)
 }
@@ -1399,7 +1398,7 @@ Getter of the pool token exchange rate of a staking pool. Works for both active 
 <pre><code><b>public</b> <b>fun</b> <a href="pera_system.md#0x3_pera_system_pool_exchange_rates">pool_exchange_rates</a>(
     wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>,
     pool_id: &ID
-): &Table&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, PoolTokenExchangeRate&gt;  {
+): &Table&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, PoolTokenExchangeRate&gt; {
     <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>(wrapper);
     self.<a href="pera_system.md#0x3_pera_system_pool_exchange_rates">pool_exchange_rates</a>(pool_id)
 }
@@ -1428,32 +1427,6 @@ Getter returning addresses of the currently active validators.
 <pre><code><b>public</b> <b>fun</b> <a href="pera_system.md#0x3_pera_system_active_validator_addresses">active_validator_addresses</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt; {
     <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state">load_system_state</a>(wrapper);
     self.<a href="pera_system.md#0x3_pera_system_active_validator_addresses">active_validator_addresses</a>()
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_pera_system_decryption_key_shares"></a>
-
-## Function `decryption_key_shares`
-
-Getter
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="pera_system.md#0x3_pera_system_decryption_key_shares">decryption_key_shares</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, key_type: u8, key_version: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="pera_system.md#0x3_pera_system_decryption_key_shares">decryption_key_shares</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>, key_type: u8, key_version: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
-    <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state">load_system_state</a>(wrapper);
-    self.<a href="pera_system.md#0x3_pera_system_decryption_key_shares">decryption_key_shares</a>(key_type, key_version)
 }
 </code></pre>
 
@@ -1492,11 +1465,11 @@ gas coins.
     storage_rebate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
     non_refundable_storage_fee: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
     storage_fund_reinvest_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, // share of storage fund's rewards that's reinvested
-                                     // into storage fund, in basis point.
+    // into storage fund, in basis point.
     reward_slashing_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, // how much rewards are slashed <b>to</b> punish a <a href="validator.md#0x3_validator">validator</a>, in bps.
     epoch_start_timestamp_ms: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, // Timestamp of the epoch start
     ctx: &<b>mut</b> TxContext,
-) : Balance&lt;PERA&gt; {
+): Balance&lt;PERA&gt; {
     <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>(wrapper);
     // Validator will make a special system call <b>with</b> sender set <b>as</b> 0x0.
     <b>assert</b>!(ctx.sender() == @0x0, <a href="pera_system.md#0x3_pera_system_ENotSystemAddress">ENotSystemAddress</a>);
@@ -1586,10 +1559,10 @@ gas coins.
 
 <pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_load_inner_maybe_upgrade">load_inner_maybe_upgrade</a>(self: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>): &<b>mut</b> PeraSystemStateInnerV2 {
     <b>if</b> (self.version == 1) {
-      <b>let</b> v1: PeraSystemStateInner = <a href="../pera-framework/dynamic_field.md#0x2_dynamic_field_remove">dynamic_field::remove</a>(&<b>mut</b> self.id, self.version);
-      <b>let</b> v2 = v1.v1_to_v2();
-      self.version = 2;
-      <a href="../pera-framework/dynamic_field.md#0x2_dynamic_field_add">dynamic_field::add</a>(&<b>mut</b> self.id, self.version, v2);
+        <b>let</b> v1: PeraSystemStateInner = <a href="../pera-framework/dynamic_field.md#0x2_dynamic_field_remove">dynamic_field::remove</a>(&<b>mut</b> self.id, self.version);
+        <b>let</b> v2 = v1.v1_to_v2();
+        self.version = 2;
+        <a href="../pera-framework/dynamic_field.md#0x2_dynamic_field_add">dynamic_field::add</a>(&<b>mut</b> self.id, self.version, v2);
     };
 
     <b>let</b> inner: &<b>mut</b> PeraSystemStateInnerV2 = <a href="../pera-framework/dynamic_field.md#0x2_dynamic_field_borrow_mut">dynamic_field::borrow_mut</a>(
@@ -1677,7 +1650,12 @@ The chain agrees on on the same public output.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_store_decryption_key_shares">store_decryption_key_shares</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_scheme: u8, ctx: &TxContext) {
+<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_store_decryption_key_shares">store_decryption_key_shares</a>(
+    wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>,
+    shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    key_scheme: u8,
+    ctx: &TxContext
+) {
     <b>assert</b>!(ctx.sender() == @0x0, <a href="pera_system.md#0x3_pera_system_ENotSystemAddress">ENotSystemAddress</a>);
     <b>assert</b>!(is_valid_key_scheme(key_scheme), <a href="pera_system.md#0x3_pera_system_EInvalidKeyType">EInvalidKeyType</a>);
     <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>(wrapper);
@@ -1697,7 +1675,7 @@ Store the encrypted decryption key shares from the network DKG protocol public o
 The chain agrees on on the same public output.
 
 
-<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, protocol_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, decryption_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, key_scheme: u8, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_scheme: u8, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1706,12 +1684,16 @@ The chain agrees on on the same public output.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, protocol_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                      decryption_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, key_scheme: u8, ctx: &TxContext) {
+<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(
+    wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>,
+    shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    key_scheme: u8,
+    ctx: &TxContext
+) {
     <b>assert</b>!(ctx.sender() == @0x0, <a href="pera_system.md#0x3_pera_system_ENotSystemAddress">ENotSystemAddress</a>);
     <b>assert</b>!(is_valid_key_scheme(key_scheme), <a href="pera_system.md#0x3_pera_system_EInvalidKeyType">EInvalidKeyType</a>);
     <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>(wrapper);
-    self.<a href="pera_system.md#0x3_pera_system_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(shares, protocol_public_parameters, decryption_public_parameters, key_scheme);
+    self.<a href="pera_system.md#0x3_pera_system_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(shares, key_scheme);
 }
 </code></pre>
 

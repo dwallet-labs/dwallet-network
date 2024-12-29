@@ -17,6 +17,7 @@ use crate::pera_system_state::pera_system_state_inner_v1::{
     StakeSubsidyV1, StorageFundV1, ValidatorSetV1,
 };
 use crate::storage::ObjectStore;
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 use serde::{Deserialize, Serialize};
 
 /// Rust version of the Move pera::pera_system::SystemParametersV2 type
@@ -60,7 +61,7 @@ pub struct PeraSystemStateInnerV2 {
     pub epoch: u64,
     pub protocol_version: u64,
     pub system_state_version: u64,
-    pub encrypted_decryption_key_share: VecMap<u8, Vec<DwalletMPCNetworkKey>>,
+    pub encrypted_decryption_key_share: VecMap<u8, Vec<NetworkDecryptionKeyShares>>,
     pub validators: ValidatorSetV1,
     pub storage_fund: StorageFundV1,
     pub parameters: SystemParametersV2,

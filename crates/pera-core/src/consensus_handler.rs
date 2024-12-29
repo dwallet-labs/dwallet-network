@@ -40,11 +40,9 @@ use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
-use pera_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
-use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::executable_transaction::CertificateProof;
 use pera_types::message_envelope::VerifiedEnvelope;
-use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound, SessionInfo};
+use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, SessionInfo};
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -371,7 +369,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     {
                         if *epoch_id != self.epoch_store.epoch() {
                             error!(
-                                "Received LockNextCommittee transaction for epoch {:?} while processing epoch {:?}",
+                                "received `LockNextCommittee` transaction for the epoch {:?} while processing epoch {:?}",
                                 epoch_id,
                                 self.epoch_store.epoch()
                             );
@@ -380,7 +378,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let Ok(mut dwallet_outputs_manager) =
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await
                         else {
-                            error!("Failed to get dwallet mpc outputs manager when processing LockNextCommittee transaction");
+                            error!("failed to get dWallet MPC outputs manager when processing `LockNextCommittee` transaction");
                             continue;
                         };
                         if dwallet_outputs_manager.should_lock_committee(*authority) {
@@ -404,24 +402,21 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     // to store its output on the blockchain,
                     // so it will be available for the initiating user.
                     else if let ConsensusTransactionKind::DWalletMPCOutput(
-                        authority,
+                        _authority,
                         session_info,
                         output,
                     ) = &transaction.kind
                     {
-                        // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system
-                        // transaction to store its output on the blockchain, so it will be available for the
-                        // initiating user.
                         info!(
-                            "Received dwallet mpc output from authority {:?} for session {:?}",
+                            "Received dWallet MPC output from authority {:?} for session {:?}",
                             authority_index, session_info.session_id
                         );
                         let Some(origin_authority) =
                             self.committee.authority_pubkey_by_index(authority_index)
                         else {
                             error!(
-                                "Malicious output from unknown authority index {:?}",
-                                authority_index
+                                "malicious output from unknown authority index: {:?}, for session: {:?}",
+                                authority_index, session_info.session_id
                             );
                             continue;
                         };
@@ -429,13 +424,14 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let Ok(mut dwallet_outputs_manager) =
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await
                         else {
+                            error!("failed to get dWallet MPC outputs verifier when processing DWalletMPCOutput transaction");
                             continue;
                         };
 
                         let output_verification_result = dwallet_outputs_manager
                             .try_verify_output(output, &session_info, origin_authority)
                             .unwrap_or_else(|e| {
-                                error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
+                                error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                                 OutputVerificationResult {
                                     result: OutputResult::Malicious,
                                     malicious_actors: vec![origin_authority],
@@ -447,7 +443,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     let Ok(mut batches_manager) =
                                         self.epoch_store.get_dwallet_mpc_batches_manager().await
                                     else {
-                                        error!("Failed to get dwallet mpc batches manager when processing DWalletMPCOutput transaction");
+                                        error!("failed to get dWallet MPC batches manager when processing DWalletMPCOutput transaction");
                                         continue;
                                     };
                                     if let Err(err) = batches_manager
@@ -475,13 +471,18 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         }
                                         Err(err) => {
                                             error!(
-                                                "Error checking if batch is completed: {:?}",
-                                                err
+                                                "session: `{:?}` error checking if batch is completed: {:?}",
+                                                session_info.session_id, err
                                             );
                                             continue;
                                         }
                                         _ => {
-                                            // We don't want to write this output to the chain, as we stored it in the batch
+                                            debug!(
+                                                "session: '{:?}' received a batch output",
+                                                session_info.session_id
+                                            );
+                                            // We don't want to write this output to the chain,
+                                            // as we stored it in the batch,
                                             // but the batch is not yet complete.
                                             continue;
                                         }
