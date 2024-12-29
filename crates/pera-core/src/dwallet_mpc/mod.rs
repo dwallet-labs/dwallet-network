@@ -23,7 +23,7 @@ use pera_types::base_types::AuthorityName;
 use pera_types::base_types::{EpochId, ObjectID};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
-use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo, SignData};
+use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo, SignMessageData};
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 
@@ -255,7 +255,7 @@ fn sign_party_session_info(
         flow_session_id: deserialized_event.presign_session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCRound::Sign(SignData {
+        mpc_round: MPCRound::Sign(SignMessageData {
             batch_session_id: deserialized_event.batched_session_id.bytes,
             message: deserialized_event.hashed_message.clone(),
             dwallet_id: deserialized_event.dwallet_id.bytes,

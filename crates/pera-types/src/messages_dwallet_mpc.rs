@@ -2,7 +2,7 @@ use crate::base_types::{ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::message_envelope::Message;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, MPCMessage, MPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, MPCPublicOutput};
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
@@ -21,9 +21,7 @@ pub enum MPCRound {
     /// the Presign first round output, and the batch session ID.
     PresignSecond(ObjectID, MPCPublicOutput, ObjectID),
     /// The first and only round of the Sign protocol.
-    /// Contains the `ObjectID` of the batched sign session,
-    /// and the hashed messages being signed.
-    Sign(SignData),
+    Sign(SignMessageData),
     /// A batched sign session, contains the list of messages that are being signed.
     BatchedSign(Vec<Vec<u8>>),
     BatchedPresign(u64),
@@ -31,10 +29,12 @@ pub enum MPCRound {
     NetworkDkg(DWalletMPCNetworkKey),
 }
 
+/// The message and data for the Sign round.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct SignData {
+pub struct SignMessageData {
     pub batch_session_id: ObjectID,
     pub message: Vec<u8>,
+    /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,
 }
 

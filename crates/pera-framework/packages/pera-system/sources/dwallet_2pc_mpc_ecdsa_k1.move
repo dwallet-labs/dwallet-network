@@ -55,14 +55,14 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         output: vector<u8>,
     }
 
-    /// The output of the DWallet creation DKG first round.
+    /// The output of the dWallet creation DKG first round.
     public struct DKGFirstRoundOutput has key, store {
         id: UID,
         session_id: ID,
         output: vector<u8>,
     }
 
-    /// The output of a batched sign session.
+    /// The output of a batched Sign session.
     public struct BatchedSignOutput has key, store {
         id: UID,
         session_id: ID,
