@@ -5,7 +5,6 @@ use pera_types::error::PeraResult;
 
 use crate::dwallet_mpc::batches_manager::BatchedSignSession;
 use crate::dwallet_mpc::mpc_events::{StartBatchedSignEvent, ValidatorDataForDWalletSecretShare};
-use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
 use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputResult};
 use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, DwalletMPCNetworkKeysStatus};
@@ -17,7 +16,6 @@ use dwallet_mpc_types::dwallet_mpc::{
 use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
 use anyhow::anyhow;
 use class_groups::DecryptionKeyShare;
-use dwallet_mpc_types::dwallet_mpc::{MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus};
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Weight, WeightedThresholdAccessStructure};
@@ -35,6 +33,7 @@ use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKey;
 use twopc_mpc::sign::Protocol;
+use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
@@ -284,7 +283,7 @@ impl DWalletMPCManager {
                 let is_manager_ready = if cfg!(feature = "with-network-dkg") {
                     (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
                         && matches!(session.party(), MPCParty::NetworkDkg(_)))
-                        && self.validators_data_for_network_dkg.len() == self.weighted_parties.len()
+                        && self.validators_data_for_network_dkg.len() == self.weighted_threshold_access_structure.party_to_weight.len()
                         || matches!(
                             mpc_network_key_status,
                             DwalletMPCNetworkKeysStatus::Ready(_)

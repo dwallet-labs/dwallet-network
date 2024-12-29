@@ -644,8 +644,8 @@ pera-metric-checker = { path = "crates/pera-metric-checker" }
 pera-move = { path = "crates/pera-move" }
 pera-move-build = { path = "crates/pera-move-build" }
 pera-move-lsp = { path = "crates/pera-move-lsp" }
-dwallet-mpc-types = { path = "crates/dwallet-mpc-types", features = ["mock-class-groups"]}
-dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types" }
+dwallet-mpc-types = { path = "crates/dwallet-mpc-types"}
+dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types", features = ["mock-class-groups"] }
 pera-network = { path = "crates/pera-network" }
 pera-node = { path = "crates/pera-node" }
 pera-open-rpc = { path = "crates/pera-open-rpc" }

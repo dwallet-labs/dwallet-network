@@ -1,5 +1,3 @@
-use class_groups::SecretKeyShareSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 
@@ -37,8 +35,9 @@ pub(super) struct DWalletMPCSession {
     /// The MPC party being used to run the MPC cryptographic steps.
     /// Party in here is not a Validator, but a cryptographic party.    pub party: MPCParty,
     pub(super) public_input: MPCPublicInput,
-    /// The decryption share of the party for mpc sign sessions
-    decryption_share: Option<<AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    party: MPCParty,
+    // The decryption share of the party for mpc sign sessions
+    // decryption_share: Option<<AsyncProtocol as Protocol>::DecryptionKeyShare>,
 }
 
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
@@ -97,7 +96,7 @@ impl DWalletMPCSession {
             }
         };
         self.status = status;
-        let advance_result = self.party.advance(
+        let advance_result = self.party().advance(
             pending_messages,
             self.session_info.flow_session_id,
             party_id,

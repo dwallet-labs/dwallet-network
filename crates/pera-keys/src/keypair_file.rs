@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use anyhow::anyhow;
 use fastcrypto::encoding::{Encoding, Hex};
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
-use fastcrypto::encoding::{Base64, Encoding, Hex};
 use fastcrypto::{secp256k1::Secp256k1KeyPair, traits::EncodeDecodeBase64};
 use pera_types::crypto::{AuthorityKeyPair, NetworkKeyPair, PeraKeyPair, ToFromBytes};
 

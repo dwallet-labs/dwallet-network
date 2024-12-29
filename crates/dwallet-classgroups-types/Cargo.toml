@@ -5,11 +5,20 @@ version.workspace = true
 
 [dependencies]
 class_groups.workspace = true
+group.workspace = true
 crypto-bigint = "0.5.5"
 serde.workspace = true
 anyhow.workspace = true
 bcs.workspace = true
+fastcrypto = { workspace = true, features = ["copy_key"] }
+rand_chacha = "0.3.1"
+serde_json.workspace = true
+serde_derive = "1.0.217"
+
 
 
 [lints]
 workspace = true
+
+[features]
+mock-class-groups = []

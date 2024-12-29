@@ -2591,7 +2591,6 @@ dependencies = [
  "base64 0.22.1",
  "bcs",
  "group 0.1.0",
- "serde",
  "twopc_mpc",
 ]
 
@@ -4053,6 +4052,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "dwallet-classgroups-types"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "class_groups",
+ "crypto-bigint 0.5.5",
+ "fastcrypto",
+ "group 0.1.0",
+ "rand_chacha 0.3.1",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
 name = "dwallet-mpc"
 version = "1.32.2"
 dependencies = [
@@ -4074,14 +4089,10 @@ version = "1.32.2"
 dependencies = [
  "anyhow",
  "bcs",
- "class_groups",
- "crypto-bigint 0.5.5",
- "fastcrypto",
- "group 0.1.0",
  "move-core-types",
- "rand_chacha 0.3.1",
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -9873,6 +9884,7 @@ dependencies = [
  "csv",
  "datatest-stable",
  "diesel",
+ "dwallet-classgroups-types",
  "dwallet-mpc-types",
  "expect-test",
  "fastcrypto",
@@ -10462,6 +10474,7 @@ dependencies = [
  "crypto-bigint 0.5.5",
  "dashmap",
  "diffy 0.3.0",
+ "dwallet-classgroups-types",
  "dwallet-mpc",
  "dwallet-mpc-types",
  "either",
@@ -10858,7 +10871,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "camino",
- "dwallet-mpc-types",
+ "dwallet-classgroups-types",
  "fastcrypto",
  "insta",
  "move-binary-format",
@@ -11238,6 +11251,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "bip32",
+ "dwallet-classgroups-types",
  "dwallet-mpc-types",
  "fastcrypto",
  "pera-types",
@@ -12238,7 +12252,7 @@ dependencies = [
  "bcs",
  "class_groups",
  "class_groups_constants",
- "dwallet-mpc-types",
+ "dwallet-classgroups-types",
  "fastcrypto",
  "group 0.1.0",
  "insta",
@@ -12452,6 +12466,7 @@ dependencies = [
  "criterion",
  "derivative",
  "derive_more 0.99.18",
+ "dwallet-mpc-types",
  "enum_dispatch",
  "expect-test",
  "eyre",

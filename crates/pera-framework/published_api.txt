@@ -28,6 +28,12 @@ DKGFirstRoundOutputEvent
 Presign
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+PartiallySignedMessages
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CreatedPartiallySignedMessagesEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartDKGFirstRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -96,6 +102,18 @@ create_mock_dwallet
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_mock_presign
 	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+publish_partially_signed_messages
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+future_sign
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+pop_and_verify_message_approval
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+verify_partially_signed_signatures
+	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
 	public struct
@@ -739,7 +757,7 @@ active_validator_addresses
 StartNetworkDKGEvent
 	public struct
 	0x3::dwallet_network_key
-EncryptionOfNetworkDecryptionKeyShares
+NetworkDecryptionKeyShares
 	public struct
 	0x3::dwallet_network_key
 is_valid_key_scheme
