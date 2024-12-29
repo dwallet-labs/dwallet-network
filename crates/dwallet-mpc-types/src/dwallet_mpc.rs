@@ -63,7 +63,7 @@ pub type MPCRound = usize;
 pub enum MPCSessionStatus {
     Pending,
     FirstExecution,
-    Active(MPCRound),
+    Active,
     Finished(MPCPublicOutput, MPCPrivateOutput),
     Failed,
 }
@@ -73,7 +73,7 @@ impl fmt::Display for MPCSessionStatus {
         match self {
             MPCSessionStatus::Pending => write!(f, "Pending"),
             MPCSessionStatus::FirstExecution => write!(f, "FirstExecution"),
-            MPCSessionStatus::Active(round) => write!(f, "Active - round {}", round),
+            MPCSessionStatus::Active => write!(f, "Active"),
             MPCSessionStatus::Finished(public_output, private_output) => {
                 write!(f, "Finished({:?} {:?})", public_output, private_output)
             }

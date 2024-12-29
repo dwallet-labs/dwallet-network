@@ -8,12 +8,12 @@ use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput, MPCSessionStatu
 
 use pera_types::base_types::EpochId;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::messages_consensus::ConsensusTransaction;
+use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::SessionInfo;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_party::MPCParty;
-use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 
 /// A dWallet MPC session.
 /// It keeps track of the session, the channel to send messages to the session,
@@ -36,6 +36,9 @@ pub(super) struct DWalletMPCSession {
     /// Party in here is not a Validator, but a cryptographic party.
     party: MPCParty,
     pub(super) public_input: MPCPublicInput,
+    /// The current MPC round number of the session.
+    /// Starts at 0 and increments by one each time we advance the session.
+    pub(super) round_number: usize,
 }
 
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
@@ -52,12 +55,13 @@ impl DWalletMPCSession {
     ) -> Self {
         Self {
             status,
-            pending_messages: Vec::new(),
+            pending_messages: vec![HashMap::new()],
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             party,
             public_input: auxiliary_input,
             session_info,
+            round_number: 0,
         }
     }
 
@@ -76,25 +80,10 @@ impl DWalletMPCSession {
         weighted_threshold_access: &WeightedThresholdAccessStructure,
         party_id: PartyID,
     ) -> DwalletMPCResult<(ConsensusTransaction, Vec<PartyID>)> {
-        let pending_messages = self.pending_messages.clone();
-        let (status, round) = match self.status {
-            MPCSessionStatus::Pending | MPCSessionStatus::FirstExecution => {
-                (MPCSessionStatus::Active(0), 0)
-            }
-            MPCSessionStatus::Active(round) => (MPCSessionStatus::Active(round + 1), round + 1),
-            _ => {
-                return Err(DwalletMPCError::MPCSessionError {
-                    session_id: self.session_info.session_id,
-                    error: format!(
-                        "failed to advance the MPC session, unexpected status: {}",
-                        self.status
-                    ),
-                })
-            }
-        };
-        self.status = status;
+        self.status = MPCSessionStatus::Active;
+        self.round_number = self.round_number + 1;
         let advance_result = self.party.advance(
-            pending_messages,
+            self.pending_messages.clone(),
             self.session_info.flow_session_id,
             party_id,
             weighted_threshold_access,
@@ -105,21 +94,15 @@ impl DWalletMPCSession {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
                 message,
-            }) => {
-                self.pending_messages.insert(round, HashMap::new());
-                Ok((
-                    self.new_dwallet_mpc_message(message).map_err(|e| {
-                        DwalletMPCError::MPCSessionError {
-                            session_id: self.session_info.session_id,
-                            error: format!(
-                                "failed to create a new MPC message on advance(): {:?}",
-                                e
-                            ),
-                        }
-                    })?,
-                    malicious_parties,
-                ))
-            }
+            }) => Ok((
+                self.new_dwallet_mpc_message(message).map_err(|e| {
+                    DwalletMPCError::MPCSessionError {
+                        session_id: self.session_info.session_id,
+                        error: format!("failed to create a new MPC message on advance(): {:?}", e),
+                    }
+                })?,
+                malicious_parties,
+            )),
             Ok(AsynchronousRoundResult::Finalize {
                 malicious_parties,
                 private_output,
@@ -148,6 +131,7 @@ impl DWalletMPCSession {
     /// the session will be restarted.
     fn restart(&mut self) {
         self.status = MPCSessionStatus::FirstExecution;
+        self.pending_messages = vec![HashMap::new()];
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
@@ -160,6 +144,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             message,
             self.session_info.session_id.clone(),
+            self.round_number,
         ))
     }
 
@@ -181,25 +166,32 @@ impl DWalletMPCSession {
     /// The code stores every new message it receives for that session,
     /// and when we reach the end of delivery,
     /// we will advance the session if we have a threshold of messages.
-    fn store_message(&mut self, round: usize, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        let epoch_store = self.epoch_store()?;
-        let party_id = authority_name_to_party_id(&message.authority, &epoch_store)?;
-        if self.pending_messages[round].contains_key(&party_id) {
-            return Err(DwalletMPCError::MaliciousParties(vec![party_id]));
+    fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+        let source_party_id =
+            authority_name_to_party_id(&message.authority, &*self.epoch_store()?)?;
+        if let Some(mut messages_map) = self.pending_messages.get_mut(message.round_number) {
+            if messages_map.contains_key(&source_party_id) {
+                return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+            }
+            messages_map.insert(source_party_id, message.message.clone());
+        } else if message.round_number == self.pending_messages.len() {
+            self.pending_messages.push({
+                let mut map = HashMap::new();
+                map.insert(source_party_id, message.message.clone());
+                map
+            });
+        } else {
+            // This should never happen, as rounds should grow by one each time.
+            return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
         }
-        self.pending_messages[round].insert(party_id, message.message.clone());
         Ok(())
     }
 
     /// Handles a message by either forwarding it to the session
     /// or ignoring it if the session is not active.
     pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        if let MPCSessionStatus::Active(round) = self.status {
-            self.store_message(round, message)
-        } else {
-            // Do nothing.
-            Ok(())
-        }
+        self.store_message(message)?;
+        Ok(())
     }
 
     pub(crate) fn party(&self) -> &MPCParty {

@@ -2564,7 +2564,7 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, _, _),
+                kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                 ..
             }) => {
                 // When sending an MPC message, the validator also includes its public key.
@@ -2572,10 +2572,10 @@ impl AuthorityPerEpochStore {
                 // the provided public key.
                 // This public key is later used
                 // to identify the authority that sent the MPC message.
-                if transaction.sender_authority() != *authority {
+                if transaction.sender_authority() != message.authority {
                     warn!(
                         "DWalletMPCMessage authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
+                        message.authority, transaction.certificate_author_index
                     );
                     return None;
                 }
@@ -3773,17 +3773,13 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
+                kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                 ..
             }) => {
                 self.dwallet_mpc_sender
                     .get()
                     .ok_or(DwalletMPCError::MissingDWalletMPCSender)?
-                    .send(DWalletMPCChannelMessage::Message(
-                        message.clone(),
-                        *authority,
-                        *session_id,
-                    ))
+                    .send(DWalletMPCChannelMessage::Message(message.clone()))
                     .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }

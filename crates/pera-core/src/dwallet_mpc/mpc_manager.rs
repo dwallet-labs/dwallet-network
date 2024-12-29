@@ -3,12 +3,12 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::from_event;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
-use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKey, MPCMessage, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
 };
@@ -19,7 +19,7 @@ use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
-use pera_types::messages_consensus::ConsensusTransaction;
+use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -66,7 +66,7 @@ pub struct DWalletMPCManager {
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
 pub enum DWalletMPCChannelMessage {
     /// An MPC message from another validator.
-    Message(MPCMessage, AuthorityName, ObjectID),
+    Message(DWalletMPCMessage),
     /// An output for a completed MPC message.
     Output(MPCPublicOutput, AuthorityName, SessionInfo),
     /// A new session event.
@@ -133,8 +133,8 @@ impl DWalletMPCManager {
 
     async fn handle_incoming_channel_message(&mut self, message: DWalletMPCChannelMessage) {
         match message {
-            DWalletMPCChannelMessage::Message(msg, authority, session_id) => {
-                if let Err(err) = self.handle_message(&msg, authority, session_id) {
+            DWalletMPCChannelMessage::Message(message) => {
+                if let Err(err) = self.handle_message(message) {
                     error!("failed to handle an MPC message with error: {:?}", err);
                 }
             }
@@ -254,24 +254,26 @@ impl DWalletMPCManager {
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, session)| {
-                let received_weight: PartyID =
-                    if let MPCSessionStatus::Active(round) = session.status {
-                        session.pending_messages[round]
-                            .keys()
-                            .map(|authority_index| {
-                                // Should never be "or"
-                                // as we receive messages only from known authorities.
-                                self.weighted_threshold_access_structure
-                                    .party_to_weight
-                                    .get(authority_index)
-                                    .unwrap_or(&0)
-                            })
-                            .sum()
-                    } else {
-                        0
-                    };
+                let received_weight: PartyID = if let MPCSessionStatus::Active = session.status {
+                    session
+                        .pending_messages
+                        .get(session.round_number)
+                        .unwrap_or(&HashMap::new())
+                        .keys()
+                        .map(|authority_index| {
+                            // Should never be "or"
+                            // as we receive messages only from known authorities.
+                            self.weighted_threshold_access_structure
+                                .party_to_weight
+                                .get(authority_index)
+                                .unwrap_or(&0)
+                        })
+                        .sum()
+                } else {
+                    0
+                };
 
-                let is_ready = (matches!(session.status, MPCSessionStatus::Active(_))
+                let is_ready = (matches!(session.status, MPCSessionStatus::Active)
                     && received_weight as StakeUnit >= threshold)
                     || (session.status == MPCSessionStatus::FirstExecution);
 
@@ -379,30 +381,22 @@ impl DWalletMPCManager {
 
     /// Handles a message by forwarding it to the relevant MPC session.
     /// If the session does not exist, punish the sender.
-    pub(crate) fn handle_message(
-        &mut self,
-        message: &[u8],
-        authority_name: AuthorityName,
-        session_id: ObjectID,
-    ) -> DwalletMPCResult<()> {
-        if self.malicious_actors.contains(&authority_name) {
+    pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) -> DwalletMPCResult<()> {
+        if self.malicious_actors.contains(&message.authority) {
             return Ok(());
         }
-        let session = match self.mpc_sessions.get_mut(&session_id) {
+        let session = match self.mpc_sessions.get_mut(&message.session_id) {
             Some(session) => session,
             None => {
                 warn!(
                     "received a message for an MPC session ID: `{:?}` which does not exist",
-                    session_id
+                    message.session_id
                 );
-                self.malicious_actors.insert(authority_name);
+                self.malicious_actors.insert(message.authority);
                 return Ok(());
             }
         };
-        match session.handle_message(&DWalletMPCMessage {
-            message: message.to_vec(),
-            authority: authority_name,
-        }) {
+        match session.handle_message(&message) {
             Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
                 self.flag_parties_as_malicious(&malicious_parties)?;
                 Ok(())

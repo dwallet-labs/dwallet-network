@@ -1185,8 +1185,8 @@ mod checked {
                 ],
             ),
             MPCRound::PresignSecond(dwallet_id, _first_round_output, batch_session_id) => {
-                let presigns: Vec<(ObjectID, MPCPublicOutput)> =
-                    bcs::from_bytes(&data.output).map_err(|e| {
+                let presigns: Vec<(ObjectID, MPCPublicOutput)> = bcs::from_bytes(&data.output)
+                    .map_err(|e| {
                         ExecutionError::new(
                             ExecutionErrorKind::DeserializationFailed,
                             Some(
@@ -1194,7 +1194,8 @@ mod checked {
                             ),
                         )
                     })?;
-                let first_round_session_ids: Vec<ObjectID> = presigns.iter().map(|(k, _)| *k).collect();
+                let first_round_session_ids: Vec<ObjectID> =
+                    presigns.iter().map(|(k, _)| *k).collect();
                 let presigns: Vec<MPCPublicOutput> = presigns.into_iter().map(|(_, v)| v).collect();
                 (
                     "create_batched_presign_output",
