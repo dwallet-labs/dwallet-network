@@ -229,8 +229,8 @@ strip = 'none'
 
 # The Class-Groups key generation output was too large, causing runtime stack overflow errors. This optimization resolved the issue
 # Note: This flag causes issues with the debugger (#441)
-[profile.dev]
-opt-level = 2
+#[profile.dev]
+#opt-level = 2
 
 [profile.test.package.move-compiler]
 # opt-level 2 for move-compiler reduces the size of some of its
@@ -643,7 +643,7 @@ pera-metric-checker = { path = "crates/pera-metric-checker" }
 pera-move = { path = "crates/pera-move" }
 pera-move-build = { path = "crates/pera-move-build" }
 pera-move-lsp = { path = "crates/pera-move-lsp" }
-dwallet-mpc-types = { path = "crates/dwallet-mpc-types"}
+dwallet-mpc-types = { path = "crates/dwallet-mpc-types", features = ["mock-class-groups"]}
 pera-network = { path = "crates/pera-network" }
 pera-node = { path = "crates/pera-node" }
 pera-open-rpc = { path = "crates/pera-open-rpc" }

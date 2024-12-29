@@ -177,6 +177,15 @@ the PeraSystemStateInner version, or vice versa.
 
 
 
+<a name="0x3_pera_system_ENotDwalletAdminAddress"></a>
+
+
+
+<pre><code><b>const</b> <a href="pera_system.md#0x3_pera_system_ENotDwalletAdminAddress">ENotDwalletAdminAddress</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 3;
+</code></pre>
+
+
+
 <a name="0x3_pera_system_create"></a>
 
 ## Function `create`
@@ -273,7 +282,7 @@ Function to create start the network DKG for the dwallet mpc network key of a gi
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="pera_system.md#0x3_pera_system_request_start_network_dkg">request_start_network_dkg</a>(key_type: u8, system_state: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>, ctx: &<b>mut</b> TxContext) {
-    // <b>assert</b>!(ctx.sender() == system_state.<a href="pera_system.md#0x3_pera_system_dwallet_admin_address">dwallet_admin_address</a>(), ENotDwalletAdminAddress);
+    <b>assert</b>!(ctx.sender() == system_state.<a href="pera_system.md#0x3_pera_system_dwallet_admin_address">dwallet_admin_address</a>(), <a href="pera_system.md#0x3_pera_system_ENotDwalletAdminAddress">ENotDwalletAdminAddress</a>);
     <b>let</b> self = system_state.<a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>();
     <b>let</b> validators = self.active_validators();
     <b>let</b> validators_data = get_active_validators_data(validators);

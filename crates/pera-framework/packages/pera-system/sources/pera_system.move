@@ -68,6 +68,7 @@ module pera_system::pera_system {
     const EWrongInnerVersion: u64 = 1;
     #[error]
     const EInvalidKeyType: u8 = 2;
+    const ENotDwalletAdminAddress: u64 = 3;
 
     // ==== functions that can only be called by genesis ====
 
