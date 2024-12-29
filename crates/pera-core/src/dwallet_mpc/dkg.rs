@@ -47,6 +47,7 @@ impl DKGFirstPartyPublicInputGenerator for DKGFirstParty {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
     ) -> DwalletMPCResult<MPCPublicInput> {
+        return Ok(vec![]);
         let input: Self::PublicInput = ProtocolPublicParameters::new::<
             { secp256k1::SCALAR_LIMBS },
             { secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },

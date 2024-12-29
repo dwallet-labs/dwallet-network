@@ -103,9 +103,9 @@ nonempty.workspace = true
 group.workspace = true
 mpc.workspace = true
 twopc_mpc.workspace = true
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "pera-network-dkg" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "36142d48b474211b60c46d380ce41c30981839c9" }
 class_groups.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "pera-network-dkg" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", rev = "36142d48b474211b60c46d380ce41c30981839c9" }
 class_groups_constants = { path = "../class-groups-constants" }
 rand_core = "0.6.4"
 crypto-bigint = { version = "0.5.5", features = ["rand_core", "serde"], default-features = false }

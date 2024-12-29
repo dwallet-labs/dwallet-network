@@ -3,7 +3,7 @@
 
 use crate::balance::Balance;
 use crate::base_types::{ObjectID, PeraAddress};
-use crate::collection_types::{Bag, Table, TableVec, VecMap, VecSet};
+use crate::collection_types::{Bag, ObjectBag, Table, TableVec, VecMap, VecSet};
 use crate::committee::{CommitteeWithNetworkMetadata, NetworkMetadata};
 use crate::crypto::verify_proof_of_possession;
 use crate::crypto::AuthorityPublicKeyBytes;
@@ -68,7 +68,6 @@ pub struct ValidatorMetadataV1 {
     pub protocol_pubkey_bytes: Vec<u8>,
     pub network_pubkey_bytes: Vec<u8>,
     pub worker_pubkey_bytes: Vec<u8>,
-    pub class_groups_public_key_and_proof: Vec<u8>,
     pub proof_of_possession_bytes: Vec<u8>,
     pub name: String,
     pub description: String,
@@ -87,6 +86,7 @@ pub struct ValidatorMetadataV1 {
     pub next_epoch_primary_address: Option<String>,
     pub next_epoch_worker_address: Option<String>,
     pub extra_fields: Bag,
+    pub persistent_extra_fields: ObjectBag,
 }
 
 #[derive(derivative::Derivative, Clone, Eq, PartialEq)]
@@ -96,7 +96,6 @@ pub struct VerifiedValidatorMetadataV1 {
     pub protocol_pubkey: narwhal_crypto::PublicKey,
     pub network_pubkey: narwhal_crypto::NetworkPublicKey,
     pub worker_pubkey: narwhal_crypto::NetworkPublicKey,
-    pub class_groups_public_key_and_proof: Vec<u8>,
     #[derivative(Debug = "ignore")]
     pub proof_of_possession_bytes: Vec<u8>,
     pub name: String,
@@ -273,7 +272,6 @@ impl ValidatorMetadataV1 {
             protocol_pubkey,
             network_pubkey,
             worker_pubkey,
-            class_groups_public_key_and_proof: self.class_groups_public_key_and_proof.clone(),
             proof_of_possession_bytes: self.proof_of_possession_bytes.clone(),
             name: self.name.clone(),
             description: self.description.clone(),
@@ -330,7 +328,6 @@ impl ValidatorV1 {
                     protocol_pubkey_bytes,
                     network_pubkey_bytes,
                     worker_pubkey_bytes,
-                    class_groups_public_key_and_proof,
                     proof_of_possession_bytes,
                     name,
                     description,
@@ -349,6 +346,7 @@ impl ValidatorV1 {
                     next_epoch_primary_address,
                     next_epoch_worker_address,
                     extra_fields: _,
+                    persistent_extra_fields: _,
                 },
             verified_metadata: _,
             voting_power,
@@ -383,7 +381,6 @@ impl ValidatorV1 {
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
-            class_groups_public_key_and_proof,
             proof_of_possession_bytes,
             name,
             description,
@@ -603,9 +600,6 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV1 {
                         protocol_pubkey: metadata.protocol_pubkey.clone(),
                         narwhal_network_pubkey: metadata.network_pubkey.clone(),
                         narwhal_worker_pubkey: metadata.worker_pubkey.clone(),
-                        class_groups_public_key_and_proof: metadata
-                            .class_groups_public_key_and_proof
-                            .clone(),
                         pera_net_address: metadata.net_address.clone(),
                         p2p_address: metadata.p2p_address.clone(),
                         narwhal_primary_address: metadata.primary_address.clone(),

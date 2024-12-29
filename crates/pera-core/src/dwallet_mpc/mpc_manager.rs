@@ -4,7 +4,7 @@ use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::batches_manager::BatchedSignSession;
-use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
+use crate::dwallet_mpc::mpc_events::{StartBatchedSignEvent, ValidatorDataForDWalletSecretShare};
 use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
 use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputResult};
 use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
@@ -64,6 +64,7 @@ pub struct DWalletMPCManager {
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     weighted_parties: HashMap<PartyID, PartyID>,
     outputs_manager: DWalletMPCOutputsVerifier,
+    validators_data_for_network_dkg: Vec<ValidatorDataForDWalletSecretShare>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
@@ -77,6 +78,11 @@ pub enum DWalletMPCChannelMessage {
     /// A signal that the delivery of messages has ended, now the instances that received a quorum of messages can advance
     EndOfDelivery,
     StartLockNextEpochCommittee,
+    /// A validator's public key and proof for the network DKG protocol
+    /// Each validator's data is being emitted separately because the proof size is
+    /// almost 250KB, which is the maximum event size in Sui.
+    /// The manager accumulates the data until it received such an event for all validators, and then it starts the network DKG protocol.
+    ValidatorDataForDKG(ValidatorDataForDWalletSecretShare),
 }
 
 impl DWalletMPCManager {
@@ -125,6 +131,7 @@ impl DWalletMPCManager {
             weighted_threshold_access_structure,
             weighted_parties,
             outputs_manager: DWalletMPCOutputsVerifier::new(&epoch_store),
+            validators_data_for_network_dkg: Vec::new(),
         };
 
         tokio::spawn(async move {
@@ -176,6 +183,9 @@ impl DWalletMPCManager {
                         err
                     );
                 }
+            }
+            DWalletMPCChannelMessage::ValidatorDataForDKG(data) => {
+                self.validators_data_for_network_dkg.push(data);
             }
         }
     }
@@ -304,16 +314,18 @@ impl DWalletMPCManager {
                     && received_weight as StakeUnit >= threshold)
                     || (instance.status == MPCSessionStatus::FirstExecution);
 
-                let mut is_manager_ready = true;
-                if cfg!(feature = "with-network-dkg") {
-                    is_manager_ready = (mpc_network_key_status
-                        == DwalletMPCNetworkKeysStatus::NotInitialized
+                let is_manager_ready = if cfg!(feature = "with-network-dkg") {
+                    (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
                         && matches!(instance.party(), MPCParty::NetworkDkg(_)))
+                        && self.validators_data_for_network_dkg.len() == self.weighted_parties.len()
                         || matches!(
                             mpc_network_key_status,
                             DwalletMPCNetworkKeysStatus::Ready(_)
                         )
-                }
+                } else {
+                    true
+                };
+
                 if is_ready && is_manager_ready {
                     Some(instance)
                 } else {
@@ -322,6 +334,10 @@ impl DWalletMPCManager {
             })
             .collect::<Vec<&mut DWalletMPCInstance>>();
 
+        if ready_to_advance.len() > 0 && cfg!(feature = "with-network-dkg") {
+            // Itay: I verified that at this point you have all the validators data you need to start the network DKG
+            todo!("Implement network DKG")
+        }
         ready_to_advance
             .par_iter_mut()
             .map(|instance| {

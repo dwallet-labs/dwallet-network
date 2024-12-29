@@ -52,6 +52,7 @@ module pera_system::pera_system {
     use pera_system::staking_pool::PoolTokenExchangeRate;
     use pera::dynamic_field;
     use pera::vec_map::VecMap;
+    use pera_system::validator_set::{get_active_validators_data};
     use pera_system::dwallet_network_key::{is_valid_key_scheme, start_network_dkg};
 
     #[test_only] use pera::balance;
@@ -115,7 +116,10 @@ module pera_system::pera_system {
     /// Function to create start the network DKG for the dwallet mpc network key of a given key type.
     public entry fun request_start_network_dkg(key_type: u8, system_state: &mut PeraSystemState, ctx: &mut TxContext) {
         assert!(ctx.sender() == system_state.dwallet_admin_address(), ENotDwalletAdminAddress);
-        start_network_dkg(key_type, ctx);
+        let self = system_state.load_system_state_mut();
+        let validators = self.active_validators();
+        let validators_data = get_active_validators_data(validators);
+        start_network_dkg(key_type, validators_data, ctx);
     }
 
     /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
@@ -129,7 +133,7 @@ module pera_system::pera_system {
         pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
-        class_groups_public_key_and_proof_bytes: vector<u8>,
+        cg_pubkey_and_proof: vector<u8>,
         proof_of_possession: vector<u8>,
         name: vector<u8>,
         description: vector<u8>,
@@ -148,7 +152,7 @@ module pera_system::pera_system {
             pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
-            class_groups_public_key_and_proof_bytes,
+            cg_pubkey_and_proof,
             proof_of_possession,
             name,
             description,

@@ -7,7 +7,7 @@ title: Module `0x3::validator_set`
 -  [Struct `ValidatorSet`](#0x3_validator_set_ValidatorSet)
 -  [Struct `ValidatorEpochInfoEvent`](#0x3_validator_set_ValidatorEpochInfoEvent)
 -  [Struct `ValidatorEpochInfoEventV2`](#0x3_validator_set_ValidatorEpochInfoEventV2)
--  [Struct `ValidatorDataForDWalletSecretReShare`](#0x3_validator_set_ValidatorDataForDWalletSecretReShare)
+-  [Struct `ValidatorDataForDWalletSecretShare`](#0x3_validator_set_ValidatorDataForDWalletSecretShare)
 -  [Struct `LockedNextEpochCommitteeEvent`](#0x3_validator_set_LockedNextEpochCommitteeEvent)
 -  [Struct `ValidatorJoinEvent`](#0x3_validator_set_ValidatorJoinEvent)
 -  [Struct `ValidatorLeaveEvent`](#0x3_validator_set_ValidatorLeaveEvent)
@@ -22,6 +22,8 @@ title: Module `0x3::validator_set`
 -  [Function `request_withdraw_stake`](#0x3_validator_set_request_withdraw_stake)
 -  [Function `request_set_commission_rate`](#0x3_validator_set_request_set_commission_rate)
 -  [Function `lock_next_epoch_committee`](#0x3_validator_set_lock_next_epoch_committee)
+-  [Function `emit_validator_data_for_secret_share`](#0x3_validator_set_emit_validator_data_for_secret_share)
+-  [Function `get_active_validators_data`](#0x3_validator_set_get_active_validators_data)
 -  [Function `advance_epoch`](#0x3_validator_set_advance_epoch)
 -  [Function `update_and_process_low_stake_departures`](#0x3_validator_set_update_and_process_low_stake_departures)
 -  [Function `effectuate_staged_metadata`](#0x3_validator_set_effectuate_staged_metadata)
@@ -359,14 +361,14 @@ V2 of ValidatorEpochInfoEvent containing more information about the validator.
 
 </details>
 
-<a name="0x3_validator_set_ValidatorDataForDWalletSecretReShare"></a>
+<a name="0x3_validator_set_ValidatorDataForDWalletSecretShare"></a>
 
-## Struct `ValidatorDataForDWalletSecretReShare`
+## Struct `ValidatorDataForDWalletSecretShare`
 
 The data we need to know about a validator in order to re-share the DWallet secret to it.
 
 
-<pre><code><b>struct</b> <a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretReShare">ValidatorDataForDWalletSecretReShare</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -377,7 +379,7 @@ The data we need to know about a validator in order to re-share the DWallet secr
 
 <dl>
 <dt>
-<code>class_groups_public_key_and_proof_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>cg_pubkey_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
  The class groups encryption key of the validator, used to encrypt the validator secret share to it.
@@ -410,12 +412,6 @@ V2 of ValidatorEpochInfoEvent containing more information about the validator.
 
 
 <dl>
-<dt>
-<code>next_committee_validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretReShare">validator_set::ValidatorDataForDWalletSecretReShare</a>&gt;</code>
-</dt>
-<dd>
-
-</dd>
 <dt>
 <code>epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
 </dt>
@@ -1086,30 +1082,92 @@ the stake and any rewards corresponding to it will be immediately processed.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_lock_next_epoch_committee">lock_next_epoch_committee</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">ValidatorSet</a>, epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>) {
-    <b>let</b> <b>mut</b> next_epoch_vals = <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>();
+    <b>let</b> <b>mut</b> _next_epoch_vals = <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>();
+    // TODO (#439): Emit each <a href="validator.md#0x3_validator">validator</a>'s Re-share data separately.
     <b>let</b> <b>mut</b> active_val_index = 0;
     <b>while</b> (active_val_index &lt; self.active_validators.length()) {
         <b>if</b> (!self.pending_removals.contains(&active_val_index)) {
             <b>let</b> <a href="validator.md#0x3_validator">validator</a> = &self.active_validators[active_val_index];
-            next_epoch_vals.push_back(<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretReShare">ValidatorDataForDWalletSecretReShare</a> {
-                class_groups_public_key_and_proof_bytes: get_val_class_groups_public_key_and_proof_bytes(<a href="validator.md#0x3_validator">validator</a>),
-                protocol_pubkey_bytes: get_validator_protocol_pubkey_bytes(<a href="validator.md#0x3_validator">validator</a>),
+            _next_epoch_vals.push_back(<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a> {
+                cg_pubkey_and_proof: get_cg_pubkey_and_proof(<a href="validator.md#0x3_validator">validator</a>),
+                protocol_pubkey_bytes: get_validator_protocol_pubkey(<a href="validator.md#0x3_validator">validator</a>),
             });
         };
         active_val_index = active_val_index + 1;
     };
-
     <b>let</b> <b>mut</b> pending_val_index = 0;
     <b>while</b> (pending_val_index &lt; self.pending_active_validators.length()) {
         <b>let</b> <a href="validator.md#0x3_validator">validator</a> = &self.pending_active_validators[pending_val_index];
-        next_epoch_vals.push_back(<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretReShare">ValidatorDataForDWalletSecretReShare</a> {
-            class_groups_public_key_and_proof_bytes: get_val_class_groups_public_key_and_proof_bytes(<a href="validator.md#0x3_validator">validator</a>),
-            protocol_pubkey_bytes: get_validator_protocol_pubkey_bytes(<a href="validator.md#0x3_validator">validator</a>),
+        _next_epoch_vals.push_back(<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a> {
+            cg_pubkey_and_proof: get_cg_pubkey_and_proof(<a href="validator.md#0x3_validator">validator</a>),
+            protocol_pubkey_bytes: get_validator_protocol_pubkey(<a href="validator.md#0x3_validator">validator</a>),
         });
         pending_val_index = pending_val_index + 1;
     };
-    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="validator_set.md#0x3_validator_set_LockedNextEpochCommitteeEvent">LockedNextEpochCommitteeEvent</a> { next_committee_validators: next_epoch_vals, epoch });
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="validator_set.md#0x3_validator_set_LockedNextEpochCommitteeEvent">LockedNextEpochCommitteeEvent</a> { epoch });
     self.locked = <b>true</b>;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_validator_set_emit_validator_data_for_secret_share"></a>
+
+## Function `emit_validator_data_for_secret_share`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_emit_validator_data_for_secret_share">emit_validator_data_for_secret_share</a>(data: <a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">validator_set::ValidatorDataForDWalletSecretShare</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_emit_validator_data_for_secret_share">emit_validator_data_for_secret_share</a>(data: <a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a>) {
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(data);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_validator_set_get_active_validators_data"></a>
+
+## Function `get_active_validators_data`
+
+Maps the given <code>Validator</code> objects to the corresponding <code><a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a></code> objects.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_get_active_validators_data">get_active_validators_data</a>(validators: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">validator_set::ValidatorDataForDWalletSecretShare</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_get_active_validators_data">get_active_validators_data</a>(
+    validators: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;Validator&gt;
+): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a>&gt; {
+    <b>let</b> <b>mut</b> validators_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a>&gt; = <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[];
+    <b>let</b> validators_len = validators.length();
+    <b>let</b> <b>mut</b> i = 0;
+    <b>while</b> (i &lt; validators_len) {
+        <b>let</b> <a href="validator.md#0x3_validator">validator</a> = &validators[i];
+        validators_data.push_back(<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a> {
+            cg_pubkey_and_proof: get_cg_pubkey_and_proof(<a href="validator.md#0x3_validator">validator</a>),
+            protocol_pubkey_bytes: get_validator_protocol_pubkey(<a href="validator.md#0x3_validator">validator</a>),
+        });
+        i = i + 1;
+    };
+    validators_data
 }
 </code></pre>
 

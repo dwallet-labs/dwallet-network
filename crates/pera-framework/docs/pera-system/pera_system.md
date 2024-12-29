@@ -108,6 +108,7 @@ the PeraSystemStateInner version, or vice versa.
 <b>use</b> <a href="staking_pool.md#0x3_staking_pool">0x3::staking_pool</a>;
 <b>use</b> <a href="validator.md#0x3_validator">0x3::validator</a>;
 <b>use</b> <a href="validator_cap.md#0x3_validator_cap">0x3::validator_cap</a>;
+<b>use</b> <a href="validator_set.md#0x3_validator_set">0x3::validator_set</a>;
 </code></pre>
 
 
@@ -283,7 +284,10 @@ Function to create start the network DKG for the dwallet mpc network key of a gi
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="pera_system.md#0x3_pera_system_request_start_network_dkg">request_start_network_dkg</a>(key_type: u8, system_state: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>, ctx: &<b>mut</b> TxContext) {
     <b>assert</b>!(ctx.sender() == system_state.<a href="pera_system.md#0x3_pera_system_dwallet_admin_address">dwallet_admin_address</a>(), <a href="pera_system.md#0x3_pera_system_ENotDwalletAdminAddress">ENotDwalletAdminAddress</a>);
-    start_network_dkg(key_type, ctx);
+    <b>let</b> self = system_state.<a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>();
+    <b>let</b> validators = self.active_validators();
+    <b>let</b> validators_data = get_active_validators_data(validators);
+    start_network_dkg(key_type, validators_data, ctx);
 }
 </code></pre>
 
@@ -303,7 +307,7 @@ Note: <code>proof_of_possession</code> MUST be a valid signature using pera_addr
 To produce a valid PoP, run [fn test_proof_of_possession].
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="pera_system.md#0x3_pera_system_request_add_validator_candidate">request_add_validator_candidate</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, network_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, worker_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, class_groups_public_key_and_proof_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_of_possession: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, name: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, description: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, image_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, project_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, net_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, p2p_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, primary_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, worker_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, gas_price: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, commission_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="pera_system.md#0x3_pera_system_request_add_validator_candidate">request_add_validator_candidate</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, network_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, worker_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, cg_pubkey_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_of_possession: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, name: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, description: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, image_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, project_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, net_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, p2p_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, primary_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, worker_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, gas_price: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, commission_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -317,7 +321,7 @@ To produce a valid PoP, run [fn test_proof_of_possession].
     pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     network_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     worker_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    class_groups_public_key_and_proof_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    cg_pubkey_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     proof_of_possession: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     name: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     description: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
@@ -336,7 +340,7 @@ To produce a valid PoP, run [fn test_proof_of_possession].
         pubkey_bytes,
         network_pubkey_bytes,
         worker_pubkey_bytes,
-        class_groups_public_key_and_proof_bytes,
+        cg_pubkey_and_proof,
         proof_of_possession,
         name,
         description,
