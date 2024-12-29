@@ -1,4 +1,11 @@
+//! A module with logic to manage the batched sessions.
+//! The struct, [`DWalletMPCBatchesManager`] stores all the batched
+//! sessions that are currently being processed, and decides whether a batch is
+//! completed by checking if it received all the expected batch outputs.
+//! When a batch is completed, it returns the output of the entire batch,
+//! which can be written to the chain through a system transaction.
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicOutput};
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
@@ -16,10 +23,11 @@ pub struct BatchedSignSession {
     /// When this map contains all the hashed messages,
     /// the batched sign session is ready to be written to the chain.
     /// HashedMsg -> Sign Output.
-    hashed_msg_to_signature: HashMap<Vec<u8>, Vec<u8>>,
-    /// A list of all the messages that need to be signed, in the order they were received.
+    hashed_msg_to_signature: HashMap<Vec<u8>, MPCPublicOutput>,
+    /// A list of all the messages that need to be signed,
+    /// in the order they were received.
     /// The output list of signatures will be written to the chain in the same order.
-    ordered_messages: Vec<Vec<u8>>,
+    ordered_messages: Vec<MPCMessage>,
 }
 
 /// A struct to hold the batches presign sessions data,
@@ -52,7 +60,8 @@ impl DWalletMPCBatchesManager {
         }
     }
 
-    /// Handle a new event by initializing a new batched session if the event is a start batch event.
+    /// Handle a new event by initializing a new batched session
+    /// if the event is a start batch event.
     pub(crate) fn handle_new_event(&mut self, session_info: &SessionInfo) {
         match &session_info.mpc_round {
             MPCRound::BatchedSign(hashed_messages) => {
@@ -158,12 +167,15 @@ impl DWalletMPCBatchesManager {
         Ok(())
     }
 
+    /// Check if a batched sign session is completed.
+    /// If it is, return the output of the entire batch.
+    /// Otherwise, return None.
     fn is_sign_batch_completed(&self, session_id: ObjectID) -> DwalletMPCResult<Option<Vec<u8>>> {
         let batched_sign_session = self
             .batched_sign_sessions
             .get(&session_id)
             .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
-        return if batched_sign_session.hashed_msg_to_signature.values().len()
+        if batched_sign_session.hashed_msg_to_signature.values().len()
             == batched_sign_session.ordered_messages.len()
         {
             let new_output: Vec<Vec<u8>> = batched_sign_session
@@ -180,7 +192,7 @@ impl DWalletMPCBatchesManager {
             Ok(Some(bcs::to_bytes(&new_output)?))
         } else {
             Ok(None)
-        };
+        }
     }
 
     fn is_presign_batch_completed(

@@ -967,26 +967,28 @@ pub fn get_position_in_list(
 
 #[async_trait]
 impl ReconfigurationInitiator for Arc<ConsensusAdapter> {
-    /// This method is called externally to begin reconfiguration
-    /// It transition reconfig state to reject new certificates from user
-    /// ConsensusAdapter will send EndOfPublish message once pending certificate queue is drained.
+    /// This method is called externally to begin reconfiguration.
+    /// It transitions reconfig state to reject new certificates from user
+    /// ConsensusAdapter will send EndOfPublish message
+    /// once the pending certificate queue is drained.
+    /// This function is called multiple times, for each checkpoint after epoch end time.
     async fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
         let Some(dwallet_mpc_sender) = epoch_store.dwallet_mpc_sender.get() else {
-            error!("DWallet MPC sender not found when trying to switch epoch");
+            error!("dWallet MPC sender was not found when trying to switch epoch");
             return;
         };
         if let Err(err) =
             dwallet_mpc_sender.send(DWalletMPCChannelMessage::StartLockNextEpochCommittee)
         {
-            error!("Error when sending StartLockNextEpochCommittee message to DWallet MPC sender: {:?}", err);
+            error!("error when sending StartLockNextEpochCommittee message to DWallet MPC sender: {:?}", err);
             return;
         }
-        let Ok(dwallet_mpc_outputs_manager) = epoch_store.get_dwallet_mpc_outputs_verifier().await
+        let Ok(dwallet_mpc_outputs_verifier) = epoch_store.get_dwallet_mpc_outputs_verifier().await
         else {
-            error!("DWallet MPC outputs manager not found when trying to switch epoch");
+            error!("dWallet MPC outputs verifier was not found when trying to switch epoch");
             return;
         };
-        if !dwallet_mpc_outputs_manager.completed_locking_next_committee {
+        if !dwallet_mpc_outputs_verifier.completed_locking_next_committee {
             return;
         }
         let send_end_of_publish = {

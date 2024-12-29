@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use crate::keypair_file::read_authority_keypair_from_file;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
-use dwallet_mpc_types::class_groups_key::generate_class_groups_keypair_and_proof_from_seed;
+use dwallet_classgroups_types::class_groups_key::generate_class_groups_keypair_and_proof_from_seed;
 use dwallet_mpc_types::class_groups_key::ClassGroupsKeyPairAndProof;
 use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::secp256r1::{Secp256r1KeyPair, Secp256r1PrivateKey};
@@ -185,9 +185,10 @@ pub fn generate_new_key(
     }
 }
 
+// todo(zeev): doc this.
 pub fn generate_new_class_groups_keypair_and_proof(
     path: PathBuf,
-) -> Result<(PeraAddress, ClassGroupsKeyPairAndProof), anyhow::Error> {
+) -> anyhow::Result<(PeraAddress, ClassGroupsKeyPairAndProof)> {
     let bls12381 = read_authority_keypair_from_file(path)
         .map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
     let class_groups_seed = bls12381.copy().private().as_bytes().try_into()?;

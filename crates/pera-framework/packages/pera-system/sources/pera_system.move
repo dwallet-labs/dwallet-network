@@ -295,7 +295,7 @@ module pera_system::pera_system {
         wrapper: &mut PeraSystemState,
         staked_pera: StakedPera,
         ctx: &mut TxContext,
-    ) : Balance<PERA> {
+    ): Balance<PERA> {
         let self = load_system_state_mut(wrapper);
         self.request_withdraw_stake(staked_pera, ctx)
     }
@@ -534,7 +534,7 @@ module pera_system::pera_system {
     public fun pool_exchange_rates(
         wrapper: &mut PeraSystemState,
         pool_id: &ID
-    ): &Table<u64, PoolTokenExchangeRate>  {
+    ): &Table<u64, PoolTokenExchangeRate> {
         let self = load_system_state_mut(wrapper);
         self.pool_exchange_rates(pool_id)
     }
@@ -562,11 +562,11 @@ module pera_system::pera_system {
         storage_rebate: u64,
         non_refundable_storage_fee: u64,
         storage_fund_reinvest_rate: u64, // share of storage fund's rewards that's reinvested
-                                         // into storage fund, in basis point.
+        // into storage fund, in basis point.
         reward_slashing_rate: u64, // how much rewards are slashed to punish a validator, in bps.
         epoch_start_timestamp_ms: u64, // Timestamp of the epoch start
         ctx: &mut TxContext,
-    ) : Balance<PERA> {
+    ): Balance<PERA> {
         let self = load_system_state_mut(wrapper);
         // Validator will make a special system call with sender set as 0x0.
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
@@ -596,10 +596,10 @@ module pera_system::pera_system {
 
     fun load_inner_maybe_upgrade(self: &mut PeraSystemState): &mut PeraSystemStateInnerV2 {
         if (self.version == 1) {
-          let v1: PeraSystemStateInner = dynamic_field::remove(&mut self.id, self.version);
-          let v2 = v1.v1_to_v2();
-          self.version = 2;
-          dynamic_field::add(&mut self.id, self.version, v2);
+            let v1: PeraSystemStateInner = dynamic_field::remove(&mut self.id, self.version);
+            let v2 = v1.v1_to_v2();
+            self.version = 2;
+            dynamic_field::add(&mut self.id, self.version, v2);
         };
 
         let inner: &mut PeraSystemStateInnerV2 = dynamic_field::borrow_mut(
@@ -630,7 +630,12 @@ module pera_system::pera_system {
     #[allow(unused_function)]
     /// Store the encrypted decryption key shares from the network DKG re-sharing.
     /// The chain agrees on on the same public output.
-    fun store_decryption_key_shares(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_scheme: u8, ctx: &TxContext) {
+    fun store_decryption_key_shares(
+        wrapper: &mut PeraSystemState,
+        shares: vector<vector<u8>>,
+        key_scheme: u8,
+        ctx: &TxContext
+    ) {
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
         assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
         let self = load_system_state_mut(wrapper);
@@ -640,7 +645,12 @@ module pera_system::pera_system {
     #[allow(unused_function)]
     /// Store the encrypted decryption key shares from the network DKG protocol public output.
     /// The chain agrees on on the same public output.
-    fun new_decryption_key_shares_version(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_scheme: u8, ctx: &TxContext) {
+    fun new_decryption_key_shares_version(
+        wrapper: &mut PeraSystemState,
+        shares: vector<vector<u8>>,
+        key_scheme: u8,
+        ctx: &TxContext
+    ) {
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
         assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
         let self = load_system_state_mut(wrapper);

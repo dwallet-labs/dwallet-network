@@ -6,7 +6,6 @@ version.workspace = true
 [dependencies]
 twopc_mpc.workspace = true
 group.workspace = true
-serde = "1.0.210"
 bcs = "0.1.6"
 base64 = "0.22.1"
 

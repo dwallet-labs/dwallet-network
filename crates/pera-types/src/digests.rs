@@ -402,6 +402,10 @@ impl DWalletMPCMessageDigest {
     Deserialize,
     JsonSchema,
 )]
+
+/// The digest type of the DWalletMPCOutput.
+/// Needed in order to implement the [`crate::message_envelope::Message`] trait for the DWalletMPCOutput,
+/// which is needed in order to send the message over the network.
 pub struct DWalletMPCOutputDigest(pub Digest);
 
 impl DWalletMPCOutputDigest {

@@ -1,7 +1,8 @@
 use move_core_types::{ident_str, identifier::IdentStr};
+use serde::{Deserialize, Serialize};
 use std::fmt;
+use thiserror::Error;
 
-// todo(zeev): move all types here.
 pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
 pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
 pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
@@ -80,6 +81,41 @@ impl fmt::Display for MPCSessionStatus {
                 write!(f, "Finished({:?} {:?})", public_output, private_output)
             }
             MPCSessionStatus::Failed => write!(f, "Failed"),
+        }
+    }
+}
+
+/// Rust representation of the move struct `NetworkDecryptionKeyShares`
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NetworkDecryptionKeyShares {
+    pub epoch: u64,
+    pub current_epoch_shares: Vec<Vec<u8>>,
+    pub previous_epoch_shares: Vec<Vec<u8>>,
+}
+
+#[repr(u8)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash, Copy)]
+pub enum DWalletMPCNetworkKey {
+    Secp256k1 = 1,
+    Ristretto = 2,
+}
+
+// We can't import pera-types here since we import this module in there.
+// Therefor we use `thiserror` `#from` to convert this error.
+#[derive(Debug, Error)]
+pub enum DwalletNetworkMPCError {
+    #[error("invalid DWalletMPCNetworkKey value: {0}")]
+    InvalidDWalletMPCNetworkKey(u8),
+}
+
+impl TryFrom<u8> for DWalletMPCNetworkKey {
+    type Error = DwalletNetworkMPCError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(DWalletMPCNetworkKey::Secp256k1),
+            2 => Ok(DWalletMPCNetworkKey::Ristretto),
+            v => Err(DwalletNetworkMPCError::InvalidDWalletMPCNetworkKey(v)),
         }
     }
 }

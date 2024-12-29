@@ -6,7 +6,8 @@ use std::net::{IpAddr, SocketAddr};
 
 use anyhow::Result;
 use class_groups::SecretKeyShareSizedNumber;
-use dwallet_mpc_types::class_groups_key::ClassGroupsKeyPairAndProof;
+use dwallet_classgroups_types::{
+    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
 use dwallet_mpc_types::class_groups_key::{
     generate_class_groups_keypair_and_proof_from_seed, read_class_groups_from_file,
 };
@@ -77,7 +78,8 @@ impl ValidatorGenesisConfig {
         let network_key: NetworkPublicKey = self.network_key_pair.public().clone();
         let worker_key: NetworkPublicKey = self.worker_key_pair.public().clone();
         let network_address = self.network_address.clone();
-        let class_groups_public_key_and_proof = self.class_groups_keypair_and_proof.public_bytes();
+        let class_groups_public_key_and_proof =
+            self.class_groups_keypair_and_proof.public_bytes().unwrap();
 
         let info = ValidatorInfo {
             name,

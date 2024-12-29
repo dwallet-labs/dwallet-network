@@ -2,7 +2,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use super::{base_types::*, error::*, PERA_BRIDGE_OBJECT_ID, PERA_SYSTEM_PACKAGE_ID};
+use super::{base_types::*, error::*, PERA_BRIDGE_OBJECT_ID};
 use crate::authenticator_state::ActiveJwk;
 use crate::committee::{Committee, EpochId, ProtocolVersion};
 use crate::crypto::{
@@ -293,10 +293,13 @@ pub enum TransactionKind {
 
     ConsensusCommitPrologueV3(ConsensusCommitPrologueV3),
 
-    /// A transaction with the output of the dwallet MPC flow.
-    /// Used to send the output of the dwallet MPC flow to the other validators so they will be able to
-    /// create a system transaction that writes it to the chain
+    /// A transaction with the output of the dWallet MPC flow.
+    /// Used to send the output of the dwallet MPC flow to the other validators,
+    /// so they will be able to create a system transaction that writes it to the chain
     DWalletMPCOutput(DWalletMPCOutput),
+    /// A transaction that locks the next committee.
+    /// When processing this TX from the consensus output, it's being replaced with a system TX call to
+    /// the `lock_next_epoch_committee` move function.
     LockNextCommittee(EpochId),
     // .. more transaction types go here
 }
@@ -1341,9 +1344,6 @@ impl TransactionKind {
                 after_dedup
             }
             Self::ProgrammableTransaction(p) => return p.input_objects(),
-            Self::DWalletMPCOutput(_) => {
-                vec![InputObjectKind::MovePackage(PERA_SYSTEM_PACKAGE_ID)]
-            }
         };
         // Ensure that there are no duplicate inputs. This cannot be removed because:
         // In [`AuthorityState::check_locks`], we check that there are no duplicate mutable

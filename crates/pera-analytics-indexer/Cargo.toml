@@ -51,6 +51,7 @@ pera-json-rpc-types.workspace = true
 pera-package-resolver.workspace = true
 simulacrum.workspace = true
 arrow.workspace = true
+# Note: this is hardcoded because of breaking API changes in the latest versions.
 gcp-bigquery-client = "=0.18.0"
 snowflake-api.workspace = true
 tap.workspace = true
