@@ -51,7 +51,23 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// [`launch_dkg_second_round`] function to start the second round.
     public struct DKGFirstRoundOutputEvent has copy, drop {
         session_id: ID,
+        output_object_id: ID,
         output: vector<u8>,
+    }
+
+    /// The output of the dWallet creation DKG first round.
+    public struct DKGFirstRoundOutput has key, store {
+        id: UID,
+        session_id: ID,
+        output: vector<u8>,
+    }
+
+    /// The output of a batched Sign session.
+    public struct BatchedSignOutput has key, store {
+        id: UID,
+        session_id: ID,
+        signatures: vector<vector<u8>>,
+        dwallet_id: ID,
     }
 
     /// Represents the result of the second and final
@@ -359,13 +375,21 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     fun create_dkg_first_round_output(
         session_id: ID,
         output: vector<u8>,
-        ctx: &TxContext
+        initiator: address,
+        ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
+        let dkg_output = DKGFirstRoundOutput {
+            session_id,
+            id: object::new(ctx),
+            output,
+        };
         event::emit(DKGFirstRoundOutputEvent {
             session_id,
+            output_object_id: object::id(&dkg_output),
             output,
         });
+        transfer::transfer(dkg_output, initiator);
     }
 
     /// Starts the second DKG round.
@@ -379,7 +403,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun launch_dkg_second_round(
         dwallet_cap: &DWalletCap,
         public_key_share_and_proof: vector<u8>,
-        first_round_output: vector<u8>,
+        first_round_output: &DKGFirstRoundOutput,
         first_round_session_id: ID,
         ctx: &mut TxContext
     ): address {
@@ -387,7 +411,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         event::emit(StartDKGSecondRoundEvent {
             session_id,
             initiator: tx_context::sender(ctx),
-            first_round_output,
+            first_round_output: first_round_output.output,
             public_key_share_and_proof,
             dwallet_cap_id: object::id(dwallet_cap),
             first_round_session_id,
@@ -442,12 +466,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id: ID,
         output: vector<u8>,
         ctx: &mut TxContext
-    ) {
-        create_dkg_first_round_output(
+    ): DKGFirstRoundOutput {
+        assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
+        DKGFirstRoundOutput {
             session_id,
+            id: object::new(ctx),
             output,
-            ctx
-        );
+        }
     }
 
     #[test_only]
@@ -841,10 +866,20 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     fun create_sign_output(
         signed_messages: vector<vector<u8>>,
         batch_session_id: ID,
-        ctx: &TxContext
+        initiator: address,
+        dwallet_id: ID,
+        ctx: &mut TxContext
     ) {
         // Ensure that only the system address can call this function.
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
+
+        let sign_output = BatchedSignOutput {
+            id: object::new(ctx),
+            signatures: signed_messages,
+            dwallet_id,
+            session_id: batch_session_id
+        };
+        transfer::transfer(sign_output, initiator);
 
         // Emit the CompletedSignEvent with session ID and signed messages.
         event::emit(CompletedSignEvent {
@@ -860,12 +895,16 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun create_sign_output_for_testing(
         signed_messages: vector<vector<u8>>,
         batch_session_id: ID,
+        initiator: address,
+        dwallet_id: ID,
         ctx: &mut TxContext
     ) {
         // Call the main create_sign_output function with the provided parameters
         create_sign_output(
             signed_messages,
             batch_session_id,
+            initiator,
+            dwallet_id,
             ctx
         );
     }

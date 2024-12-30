@@ -56,6 +56,7 @@ interface StartDKGFirstRoundEvent {
 interface DKGFirstRoundOutputEvent {
 	output: number[];
 	session_id: string;
+	output_object_id: string;
 }
 
 interface DKGFirstRoundOutput extends DKGFirstRoundOutputEvent {
@@ -126,7 +127,7 @@ async function launchDKGSecondRound(
 		arguments: [
 			tx.object(firstRound.dwallet_cap_id),
 			tx.pure(bcs.vector(bcs.u8()).serialize(publicKeyShareAndProof)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(firstRound.output)),
+			tx.object(firstRound.output_object_id),
 			tx.pure.id(firstRound.session_id),
 		],
 	});
@@ -173,5 +174,5 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 }
 
 function isDKGFirstRoundOutputEvent(obj: any): obj is DKGFirstRoundOutputEvent {
-	return 'output' in obj && 'session_id' in obj;
+	return 'output' in obj && 'session_id' in obj && 'output_object_id' in obj;
 }
