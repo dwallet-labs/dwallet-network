@@ -169,7 +169,7 @@ fn presign_first_party_session_info(
     }
 }
 
-fn presign_second_auxiliary_input(
+fn presign_second_public_input(
     deserialized_event: StartPresignSecondRoundEvent,
 ) -> DwalletMPCResult<Vec<u8>> {
     Ok(
@@ -351,7 +351,7 @@ pub(crate) fn public_input_from_event(
         t if t == &StartPresignSecondRoundEvent::type_() => {
             let deserialized_event: StartPresignSecondRoundEvent =
                 bcs::from_bytes(&event.contents)?;
-            presign_second_auxiliary_input(deserialized_event)
+            presign_second_public_input(deserialized_event)
         }
         t if t == &StartSignRoundEvent::type_() => {
             let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
