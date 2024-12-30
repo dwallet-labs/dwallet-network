@@ -4,7 +4,7 @@
 //! completed by checking if it received all the expected VERIFIED batch outputs.
 //! When a batch is completed, it returns the output of the entire batch,
 //! which can be written to the chain through a system transaction.
-use crate::dwallet_mpc::mpc_party::AsyncProtocol;
+use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicOutput};
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};

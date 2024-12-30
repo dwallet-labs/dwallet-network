@@ -1,7 +1,7 @@
 //! This module provides a wrapper around the Presign protocol from the 2PC-MPC library.
 //!
 //! It integrates both Presign parties (each representing a round in the Presign protocol).
-use crate::dwallet_mpc::mpc_party::AsyncProtocol;
+use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 
