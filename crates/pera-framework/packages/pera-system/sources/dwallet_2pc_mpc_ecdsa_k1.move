@@ -466,12 +466,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id: ID,
         output: vector<u8>,
         ctx: &mut TxContext
-    ) {
-        create_dkg_first_round_output(
+    ): DKGFirstRoundOutput {
+        assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
+        DKGFirstRoundOutput {
             session_id,
+            id: object::new(ctx),
             output,
-            ctx
-        );
+        }
     }
 
     #[test_only]
@@ -894,12 +895,16 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun create_sign_output_for_testing(
         signed_messages: vector<vector<u8>>,
         batch_session_id: ID,
+        initiator: address,
+        dwallet_id: ID,
         ctx: &mut TxContext
     ) {
         // Call the main create_sign_output function with the provided parameters
         create_sign_output(
             signed_messages,
             batch_session_id,
+            initiator,
+            dwallet_id,
             ctx
         );
     }
