@@ -25,6 +25,12 @@ MessageApproval
 DKGFirstRoundOutputEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+DKGFirstRoundOutput
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+SignOutput
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 Presign
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
