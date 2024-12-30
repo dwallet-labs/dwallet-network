@@ -2,7 +2,7 @@ use crate::base_types::{ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::message_envelope::Message;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares};
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
@@ -15,16 +15,15 @@ pub enum MPCRound {
     /// The first round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, and the batch session ID.
-    PresignFirst(ObjectID, Vec<u8>, ObjectID),
+    PresignFirst(ObjectID, MPCPublicOutput, ObjectID),
     /// The second round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
     /// the Presign first round output, and the batch session ID.
-    PresignSecond(ObjectID, Vec<u8>, ObjectID),
+    PresignSecond(ObjectID, MPCPublicOutput, ObjectID),
     /// The first and only round of the Sign protocol.
-    /// Contains the `PartyID` associated with the decryption share,
-    /// the `ObjectID` of the batched sign session,
-    /// and the hashed message being signed.
-    Sign(ObjectID, Vec<u8>),
+    /// Contains the `ObjectID` of the batched sign session,
+    /// and the hashed messages being signed.
+    Sign(ObjectID, MPCPublicOutput),
     /// A batched sign session, contains the list of messages that are being signed.
     BatchedSign(Vec<Vec<u8>>),
     BatchedPresign(u64),
@@ -70,7 +69,6 @@ impl Message for DWalletMPCOutput {
     }
 }
 
-// todo(zeev): rename to MPCSessionInfo.
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {

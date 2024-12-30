@@ -7,24 +7,27 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use group::PartyID;
 use mpc::WeightedThresholdAccessStructure;
+use dwallet_mpc_types::dwallet_mpc::MPCPublicOutput;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 use std::collections::{HashMap, HashSet};
 
-/// A struct to verify the DWallet MPC outputs.
-/// It stores all the outputs received for each session,
+/// Verify the DWallet MPC outputs.
+///
+/// Stores all the outputs received for each session,
 /// and decides whether an output is valid
 /// by checking if a validators with quorum of stake voted for it.
 pub struct DWalletMPCOutputsVerifier {
     /// The outputs received for each MPC session.
     pub mpc_sessions_outputs: HashMap<ObjectID, SessionOutputsData>,
     /// A mapping between an authority name to its stake.
-    /// todo(zeev): can we use the data from the manager?
+    /// This data exists in the MPCManager, but in a different data structure.
     pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
     /// The quorum threshold of the chain.
     pub quorum_threshold: StakeUnit,
+    // todo(zeev): why is it here?
     pub completed_locking_next_committee: bool,
     pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     voted_to_lock_committee: HashSet<AuthorityName>,
@@ -33,10 +36,11 @@ pub struct DWalletMPCOutputsVerifier {
 /// The data needed to manage the outputs of an MPC session.
 #[derive(Clone)]
 pub struct SessionOutputsData {
-    // todo(zeev): cleanup.
     /// Maps session's output to the authorities that voted for it.
+    /// The key must contain the session info, and the output to prevent
+    /// malicious behavior, such as sending the correct output, but from a faulty session.
     pub session_output_to_voting_authorities:
-        HashMap<(Vec<u8>, SessionInfo), HashSet<AuthorityName>>,
+        HashMap<(MPCPublicOutput, SessionInfo), HashSet<AuthorityName>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
     pub authorities_that_sent_output: HashSet<AuthorityName>,
 }
@@ -83,8 +87,8 @@ impl DWalletMPCOutputsVerifier {
             weighted_parties: epoch_store
                 .committee()
                 .voting_rights
-                .clone()
-                .into_iter()
+                .iter()
+                .cloned()
                 .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
@@ -92,13 +96,18 @@ impl DWalletMPCOutputsVerifier {
         }
     }
 
-    /// Returns true if the `lock_next_epoch_committee` system TX should get called, a.k.a. a quorum of validators voted for it,
-    /// and false otherwise.
+    /// Determines whether the `lock_next_epoch_committee` system transaction should be called.
+    ///
+    /// This function tracks votes from authorities to decide if a quorum has been reached
+    /// to lock the next epoch's committee.
+    /// If the total weighted stake of the authorities
+    /// that have voted exceeds or equals the quorum threshold, it returns `true`.
+    /// Otherwise, it returns `false`.
     pub(crate) fn should_lock_committee(&mut self, authority_name: AuthorityName) -> bool {
         self.voted_to_lock_committee.insert(authority_name);
         self.voted_to_lock_committee
             .iter()
-            .map(|voter_name| self.weighted_parties.get(voter_name).unwrap_or(&0))
+            .map(|voter| self.weighted_parties.get(voter).unwrap_or(&0))
             .sum::<StakeUnit>()
             >= self.quorum_threshold
     }
@@ -122,6 +131,7 @@ impl DWalletMPCOutputsVerifier {
                 malicious_actors: vec![origin_authority],
             });
         };
+        // Sent more than once.
         if session
             .authorities_that_sent_output
             .contains(&origin_authority)

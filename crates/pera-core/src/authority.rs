@@ -2808,6 +2808,7 @@ impl AuthorityState {
         });
 
         // Start a task to execute ready certificates.
+        // Note: This is where all consensus transactions start.
         let authority_state = Arc::downgrade(&state);
         spawn_monitored_task!(execution_process(
             authority_state,

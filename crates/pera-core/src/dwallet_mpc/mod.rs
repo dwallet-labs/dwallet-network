@@ -41,16 +41,6 @@ pub(crate) mod sign;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
-/// The message a Validator can send to the other parties while
-/// running a dWallet MPC session.
-#[derive(Clone)]
-pub struct DWalletMPCMessage {
-    /// The serialized message.
-    pub(crate) message: MPCMessage,
-    /// The authority (Validator) that sent the message.
-    pub(crate) authority: AuthorityName,
-}
-
 /// Convert a given authority name (address) to it's corresponding [`PartyID`].
 /// The [`PartyID`] is the index of the authority in the committee.
 pub(crate) fn authority_name_to_party_id(

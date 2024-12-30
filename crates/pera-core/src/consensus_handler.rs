@@ -376,13 +376,13 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             );
                             continue;
                         }
-                        let Ok(mut dwallet_outputs_manager) =
+                        let Ok(mut dwallet_mpc_verifier) =
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await
                         else {
                             error!("failed to get dWallet MPC outputs manager when processing `LockNextCommittee` transaction");
                             continue;
                         };
-                        if dwallet_outputs_manager.should_lock_committee(*authority) {
+                        if dwallet_mpc_verifier.should_lock_committee(*authority) {
                             let transaction =
                                 VerifiedTransaction::new_lock_next_committee_system_transaction(
                                     *epoch_id,
@@ -422,14 +422,14 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             continue;
                         };
 
-                        let Ok(mut dwallet_outputs_manager) =
+                        let Ok(mut dwallet_mpc_outputs_verifier) =
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await
                         else {
                             error!("failed to get dWallet MPC outputs verifier when processing DWalletMPCOutput transaction");
                             continue;
                         };
 
-                        let output_verification_result = dwallet_outputs_manager
+                        let output_verification_result = dwallet_mpc_outputs_verifier
                             .try_verify_output(output, &session_info, origin_authority)
                             .unwrap_or_else(|e| {
                                 error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);

@@ -6,7 +6,7 @@ pub use checked::*;
 #[pera_macros::with_checked_arithmetic]
 mod checked {
     use crate::execution_mode::{self, ExecutionMode};
-    use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
+    use dwallet_mpc_types::dwallet_mpc::{MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME};
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
     use pera_types::balance::{
@@ -1114,7 +1114,6 @@ mod checked {
     /// Each validator executes this transaction locally,
     /// and if validators represent more than two-thirds of the voting power
     /// "vote" to include it by executing it, the transaction is added to the block.
-    /// todo(zeev): compare with bytes party, remove unwraps, replace error
     fn setup_and_execute_dwallet_mpc_output(
         data: DWalletMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
@@ -1130,7 +1129,12 @@ mod checked {
                 "create_dkg_first_round_output",
                 vec![
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).map_err(|e| {
+                        ExecutionError::new(
+                            ExecutionErrorKind::SerializationFailed,
+                            Some(format!("Failed to serialize DKGFirst output: {}", e).into()),
+                        )
+                    })?),
                 ],
             ),
             MPCRound::DKGSecond(dwallet_cap_id, dwallet_network_key_version) => (
@@ -1138,50 +1142,100 @@ mod checked {
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).map_err(|e| {
+                        ExecutionError::new(
+                            ExecutionErrorKind::SerializationFailed,
+                            Some(format!("Failed to serialize DKGSecond output: {}", e).into()),
+                        )
+                    })?),
                     CallArg::Pure(dwallet_cap_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&dwallet_network_key_version).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&dwallet_network_key_version).map_err(|e| {
+                        ExecutionError::new(
+                            ExecutionErrorKind::SerializationFailed,
+                            Some(format!("Failed to serialize network key version: {}", e).into()),
+                        )
+                    })?),
                 ],
             ),
             MPCRound::PresignFirst(dwallet_id, dkg_output, batch_session_id) => (
                 "launch_presign_second_round",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&dkg_output).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&dwallet_id).map_err(|e| {
+                        ExecutionError::new(
+                            ExecutionErrorKind::SerializationFailed,
+                            Some(format!("Failed to serialize dwallet_id: {}", e).into()),
+                        )
+                    })?),
+                    CallArg::Pure(bcs::to_bytes(&dkg_output).map_err(|e| {
+                        ExecutionError::new(
+                            ExecutionErrorKind::SerializationFailed,
+                            Some(format!("Failed to serialize dkg_output: {}", e).into()),
+                        )
+                    })?),
+                    CallArg::Pure(bcs::to_bytes(&data.output).map_err(|e| {
+                        ExecutionError::new(
+                            ExecutionErrorKind::SerializationFailed,
+                            Some(format!("Failed to serialize PresignFirst output: {}", e).into()),
+                        )
+                    })?),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                     CallArg::Pure(batch_session_id.to_vec()),
                 ],
             ),
             MPCRound::PresignSecond(dwallet_id, _first_round_output, batch_session_id) => {
-                let presigns: Vec<(ObjectID, Vec<u8>)> = bcs::from_bytes(&data.output).unwrap();
-                let keys: Vec<ObjectID> = presigns.clone().into_iter().map(|(k, _)| k).collect();
-                let values: Vec<Vec<u8>> = presigns.into_iter().map(|(_, v)| v).collect();
+                let presigns: Vec<(ObjectID, MPCPublicOutput)> = bcs::from_bytes(&data.output)
+                    .map_err(|e| {
+                        ExecutionError::new(
+                            ExecutionErrorKind::DeserializationFailed,
+                            Some(
+                                format!("Failed to deserialize PresignSecond output: {}", e).into(),
+                            ),
+                        )
+                    })?;
+                let first_round_session_ids: Vec<ObjectID> =
+                    presigns.iter().map(|(k, _)| *k).collect();
+                let presigns: Vec<MPCPublicOutput> = presigns.into_iter().map(|(_, v)| v).collect();
                 (
                     "create_batched_presign_output",
                     vec![
                         CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                         CallArg::Pure(batch_session_id.to_vec()),
-                        CallArg::Pure(bcs::to_bytes(&keys).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&values).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&first_round_session_ids).map_err(|e| {
+                            ExecutionError::new(
+                                ExecutionErrorKind::SerializationFailed,
+                                Some(format!("Failed to serialize keys for batch: {}", e).into()),
+                            )
+                        })?),
+                        CallArg::Pure(bcs::to_bytes(&presigns).map_err(|e| {
+                            ExecutionError::new(
+                                ExecutionErrorKind::SerializationFailed,
+                                Some(format!("Failed to serialize values for batch: {}", e).into()),
+                            )
+                        })?),
+                        CallArg::Pure(bcs::to_bytes(&dwallet_id).map_err(|e| {
+                            ExecutionError::new(
+                                ExecutionErrorKind::SerializationFailed,
+                                Some(format!("Failed to serialize dwallet_id: {}", e).into()),
+                            )
+                        })?),
                     ],
                 )
             }
-            MPCRound::Sign(..) | MPCRound::BatchedSign(..) => {
-                // todo(zeev): why we need this if the output is created by the user?
-                let MPCRound::Sign(batch_session_id, _) = data.session_info.mpc_round else {
-                    unreachable!("MPCRound is not Sign for a sign session")
-                };
-                (
-                    "create_sign_output",
-                    vec![
-                        CallArg::Pure(data.output),
-                        CallArg::Pure(bcs::to_bytes(&batch_session_id).unwrap()),
-                    ],
-                )
-            }
+            MPCRound::Sign(session_id, _) => (
+                "create_sign_output",
+                vec![
+                    // Serialized Vector of Signatures.
+                    CallArg::Pure(data.output),
+                    // The Batch Session ID.
+                    CallArg::Pure(bcs::to_bytes(&session_id).map_err(|e| {
+                        ExecutionError::new(
+                            ExecutionErrorKind::SerializationFailed,
+                            Some(format!("Failed to serialize session_id: {}", e).into()),
+                        )
+                    })?),
+                ],
+            ),
             MPCRound::NetworkDkg(key_type, ppp) => {
                 let ppp = ppp.ok_or(ExecutionError::new(
                     ExecutionErrorKind::TypeArgumentError {
@@ -1197,8 +1251,23 @@ mod checked {
                         CallArg::PERA_SYSTEM_MUT,
                         CallArg::Pure(bcs::to_bytes(&ppp.current_epoch_shares).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&ppp.protocol_public_parameters).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&ppp.decryption_public_parameters).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&(key_type as u8)).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&ppp.decryption_public_parameters).map_err(|e| {
+                            ExecutionError::new(
+                                ExecutionErrorKind::SerializationFailed,
+                                Some(
+                                    format!("Failed to serialize NetworkDkg output: {}", e).into(),
+                                ),
+                            )
+                        })?),
+                        CallArg::Pure(bcs::to_bytes(&(key_type as u8)).map_err(|e| {
+                            ExecutionError::new(
+                                ExecutionErrorKind::SerializationFailed,
+                                Some(
+                                    format!("Failed to serialize NetworkDkg key type: {}", e)
+                                        .into(),
+                                ),
+                            )
+                        })?),
                     ],
                 )
             }
@@ -1209,6 +1278,7 @@ mod checked {
                 )
             }
         };
+
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
             let res = builder.move_call(

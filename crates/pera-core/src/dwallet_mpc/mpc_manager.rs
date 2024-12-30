@@ -16,7 +16,7 @@ use anyhow::anyhow;
 use class_groups::dkg::Secp256k1Party;
 use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
+    DWalletMPCNetworkKeyScheme, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
 };
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -62,6 +62,11 @@ pub struct DWalletMPCManager {
     /// Any message/output from these authorities will be ignored.
     malicious_actors: HashSet<AuthorityName>,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+    /// An internal instance of the outputs verifier,
+    /// used only to determinate if an actor is malicious.
+    /// This verifier is out of sync from the consensus.
+    /// Each Validator holds the Malicious state for itself,
+    /// this is not in sync with the blockchain.
     outputs_verifier: DWalletMPCOutputsVerifier,
     validators_data_for_network_dkg: Vec<ValidatorDataForDWalletSecretShare>,
 }
@@ -69,7 +74,7 @@ pub struct DWalletMPCManager {
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
 pub enum DWalletMPCChannelMessage {
     /// An MPC message from another validator.
-    Message(MPCMessage, AuthorityName, ObjectID),
+    Message(DWalletMPCMessage),
     /// An output for a completed MPC message.
     Output(MPCPublicOutput, AuthorityName, SessionInfo),
     /// A new session event.
@@ -107,11 +112,11 @@ impl DWalletMPCManager {
                 ))
             })
             .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
-        let weighted_threshold_access_structure = WeightedThresholdAccessStructure::new(
-            epoch_store.committee().quorum_threshold() as PartyID,
-            weighted_parties,
-        )
-        .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
+
+        let quorum_threshold = epoch_store.committee().quorum_threshold();
+        let weighted_threshold_access_structure =
+            WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
+                .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
 
         // epoch_store
         //     .dwallet_mpc_network_keys
@@ -152,8 +157,8 @@ impl DWalletMPCManager {
 
     async fn handle_incoming_channel_message(&mut self, message: DWalletMPCChannelMessage) {
         match message {
-            DWalletMPCChannelMessage::Message(msg, authority, session_id) => {
-                if let Err(err) = self.handle_message(&msg, authority, session_id) {
+            DWalletMPCChannelMessage::Message(message) => {
+                if let Err(err) = self.handle_message(message) {
                     error!("failed to handle an MPC message with error: {:?}", err);
                 }
             }
@@ -239,8 +244,17 @@ impl DWalletMPCManager {
         ))
     }
 
-    /// Get the decryption share for the current party.
     // This will be changed in #382
+    /// Retrieves the decryption share for the current authority.
+    ///
+    /// This function accesses the current epoch's store and determines the party ID for the
+    /// authority using its name.
+    /// It then retrieves the corresponding decryption share from
+    /// the node configuration.
+    /// The decryption share is combined with the public parameters
+    /// to build a [`DecryptionKeyShare`].
+    /// If any required data is missing or invalid, an
+    /// appropriate error is returned.
     pub fn get_decryption_share(
         &self,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
@@ -302,48 +316,48 @@ impl DWalletMPCManager {
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, session)| {
-                let received_weight: PartyID =
-                    if let MPCSessionStatus::Active(round) = session.status {
-                        session.pending_messages[round]
-                            .keys()
-                            .map(|authority_index| {
-                                // Should never be "or"
-                                // as we receive messages only from known authorities.
-                                self.weighted_threshold_access_structure
-                                    .party_to_weight
-                                    .get(authority_index)
-                                    .unwrap_or(&0)
-                            })
-                            .sum()
-                    } else {
-                        0
-                    };
-
-                let is_ready = (matches!(session.status, MPCSessionStatus::Active(_))
-                    && received_weight as StakeUnit >= threshold)
-                    || (session.status == MPCSessionStatus::FirstExecution);
-
-                let is_manager_ready = if cfg!(feature = "with-network-dkg") {
-                    (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
-                        && matches!(session.party(), MPCParty::NetworkDkg(_)))
-                        && self.validators_data_for_network_dkg.len()
-                            == self
-                                .weighted_threshold_access_structure
+                let received_weight: PartyID = match session.status {
+                    MPCSessionStatus::Active => session
+                        .pending_messages
+                        .get(session.round_number)
+                        .unwrap_or(&HashMap::new())
+                        .keys()
+                        .filter_map(|authority_index| {
+                            self.weighted_threshold_access_structure
                                 .party_to_weight
-                                .len()
-                        || matches!(
+                                .get(authority_index)
+                        })
+                        .sum(),
+                    _ => 0,
+                };
+
+                let is_ready = match session.status {
+                    MPCSessionStatus::Active => received_weight as StakeUnit >= threshold,
+                    MPCSessionStatus::FirstExecution => true,
+                    _ => false,
+                };
+
+                let is_manager_ready = !cfg!(feature = "with-network-dkg")
+                    || matches!(
+                        mpc_network_key_status,
+                        DwalletMPCNetworkKeysStatus::Ready(_)
+                    )
+                    || (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
+                        && matches!(session.party(), MPCParty::NetworkDkg(_))
+                    && self.validators_data_for_network_dkg.len()
+                    == self
+                    .weighted_threshold_access_structure
+                    .party_to_weight
+                    .len()
+                    || matches!(
                             mpc_network_key_status,
                             DwalletMPCNetworkKeysStatus::Ready(_)
                         )
-                } else {
-                    true
-                };
+                );
 
-                if is_ready && is_manager_ready {
-                    Some(session)
-                } else {
-                    None
-                }
+                is_ready
+                    .then(|| is_manager_ready.then_some(session))
+                    .flatten()
             })
             .collect::<Vec<&mut DWalletMPCSession>>();
 
@@ -374,7 +388,6 @@ impl DWalletMPCManager {
                     malicious_parties.extend(malicious);
                     Ok(())
                 }
-                // todo(zeev): if there is a fatal error, should we abort?
                 Err(e) => Err(e),
             })?;
 
@@ -462,30 +475,22 @@ impl DWalletMPCManager {
 
     /// Handles a message by forwarding it to the relevant MPC session.
     /// If the session does not exist, punish the sender.
-    pub(crate) fn handle_message(
-        &mut self,
-        message: &[u8],
-        authority_name: AuthorityName,
-        session_id: ObjectID,
-    ) -> DwalletMPCResult<()> {
-        if self.malicious_actors.contains(&authority_name) {
+    pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) -> DwalletMPCResult<()> {
+        if self.malicious_actors.contains(&message.authority) {
             return Ok(());
         }
-        let session = match self.mpc_sessions.get_mut(&session_id) {
+        let session = match self.mpc_sessions.get_mut(&message.session_id) {
             Some(session) => session,
             None => {
                 warn!(
                     "received a message for an MPC session ID: `{:?}` which does not exist",
-                    session_id
+                    message.session_id
                 );
-                self.malicious_actors.insert(authority_name);
+                self.malicious_actors.insert(message.authority);
                 return Ok(());
             }
         };
-        match session.handle_message(&DWalletMPCMessage {
-            message: message.to_vec(),
-            authority: authority_name,
-        }) {
+        match session.handle_message(&message) {
             Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
                 self.flag_parties_as_malicious(&malicious_parties)?;
                 Ok(())
@@ -497,7 +502,7 @@ impl DWalletMPCManager {
     /// Convert the indices of the malicious parties to their addresses and store them
     /// in the malicious actors set.
     /// New messages from these parties will be ignored.
-    /// todo(zeev): clarify if it's restarted on epoch change.
+    /// Restarted for each epoch.
     fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID]) -> DwalletMPCResult<()> {
         let malicious_parties_names = malicious_parties
             .iter()

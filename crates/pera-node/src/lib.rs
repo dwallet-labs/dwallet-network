@@ -1297,9 +1297,10 @@ impl PeraNode {
 
         // Start the dWallet MPC manager on epoch start.
         epoch_store.set_dwallet_mpc_network_keys();
+        // This verifier is in sync with the consensus,
+        // used to verify outputs before sending a system TX to store them.
         epoch_store
-            .set_dwallet_mpc_outputs_manager(DWalletMPCOutputsVerifier::new(&epoch_store))?;
-
+            .set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(&epoch_store))?;
         epoch_store.set_dwallet_mpc_batches_manager(DWalletMPCBatchesManager::new())?;
 
         epoch_store.set_dwallet_mpc_sender(

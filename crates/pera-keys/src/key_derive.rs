@@ -186,7 +186,14 @@ pub fn generate_new_key(
     }
 }
 
-// todo(zeev): doc this.
+/// Generates a new class groups keypair and proof based on a seed derived from a
+/// BLS12-381 private key.
+///
+/// This function reads a BLS12-381 keypair from a file located at the provided path,
+/// extracts its private key,
+/// and uses it as a seed to generate a class groups keypair and proof.
+/// The public key of the BLS12-381 keypair
+/// is returned alongside the generated class groups keypair and proof.
 pub fn generate_new_class_groups_keypair_and_proof(
     path: PathBuf,
 ) -> anyhow::Result<(PeraAddress, ClassGroupsKeyPairAndProof)> {

@@ -962,17 +962,17 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
     /// This manager handles storing all the valid outputs of a batched dWallet MPC session,
     /// and writes them to the chain once all the batch outputs are ready.
-    pub fn set_dwallet_mpc_outputs_manager(
+    pub fn set_dwallet_mpc_outputs_verifier(
         &self,
-        manager: DWalletMPCOutputsVerifier,
+        verifier: DWalletMPCOutputsVerifier,
     ) -> PeraResult<()> {
         if self
             .dwallet_mpc_outputs_verifier
-            .set(tokio::sync::Mutex::new(manager))
+            .set(tokio::sync::Mutex::new(verifier))
             .is_err()
         {
             error!(
-                "AuthorityPerEpochStore: `set_dwallet_mpc_outputs_manager` called more than once; this should never happen"
+                "AuthorityPerEpochStore: `set_dwallet_mpc_outputs_verifier` called more than once; this should never happen"
             );
         }
         Ok(())
@@ -2558,7 +2558,7 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, _, _),
+                kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                 ..
             }) => {
                 // When sending an MPC message, the validator also includes its public key.
@@ -2566,10 +2566,10 @@ impl AuthorityPerEpochStore {
                 // the provided public key.
                 // This public key is later used
                 // to identify the authority that sent the MPC message.
-                if transaction.sender_authority() != *authority {
+                if transaction.sender_authority() != message.authority {
                     warn!(
                         "DWalletMPCMessage authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
+                        message.authority, transaction.certificate_author_index
                     );
                     return None;
                 }
@@ -2681,7 +2681,7 @@ impl AuthorityPerEpochStore {
         &self,
     ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCOutputsVerifier>> {
         match self.dwallet_mpc_outputs_verifier.get() {
-            Some(dwallet_mpc_outputs_manager) => Ok(dwallet_mpc_outputs_manager.lock().await),
+            Some(dwallet_mpc_outputs_verifier) => Ok(dwallet_mpc_outputs_verifier.lock().await),
             None => Err(DwalletMPCError::MissingDwalletMPCOutputsVerifier.into()),
         }
     }
@@ -3767,17 +3767,13 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
+                kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                 ..
             }) => {
                 self.dwallet_mpc_sender
                     .get()
                     .ok_or(DwalletMPCError::MissingDWalletMPCSender)?
-                    .send(DWalletMPCChannelMessage::Message(
-                        message.clone(),
-                        *authority,
-                        *session_id,
-                    ))
+                    .send(DWalletMPCChannelMessage::Message(message.clone()))
                     .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
