@@ -397,7 +397,7 @@ impl DWalletMPCManager {
             .map(|party_id| {
                 self.epoch_store()?
                     .committee()
-                    .authority_by_index(*party_id as u32)
+                    .authority_by_index(*party_id as u32 - 1)
                     .cloned()
                     .ok_or(DwalletMPCError::AuthorityIndexNotFound(*party_id))
             })
