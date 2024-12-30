@@ -8,7 +8,6 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::advance;
 use crate::dwallet_mpc::dkg::DKGFirstParty;
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
-use crate::dwallet_mpc::mpc_party::MPCParty;
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, NetworkDecryptionKeyShares};
@@ -187,12 +186,12 @@ pub(crate) fn advance_network_dkg(
     }?)
 }
 
-pub(super) fn network_dkg_party(
+pub(super) fn network_dkg_public_input(
     deserialized_event: StartNetworkDKGEvent,
-) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
+) -> DwalletMPCResult<Vec<u8>> {
     match DWalletMPCNetworkKey::try_from(deserialized_event.key_scheme)? {
-        DWalletMPCNetworkKey::Secp256k1 => Ok(dkg_secp256k1_party(deserialized_event)?),
-        DWalletMPCNetworkKey::Ristretto => Ok(dkg_ristretto_party(deserialized_event)?),
+        DWalletMPCNetworkKey::Secp256k1 => Ok(dkg_secp256k1_auxiliary_input(deserialized_event)?),
+        DWalletMPCNetworkKey::Ristretto => Ok(dkg_ristretto_auxiliary_input(deserialized_event)?),
     }
 }
 
@@ -205,14 +204,10 @@ pub(super) fn network_dkg_session_info(
     }
 }
 
-fn dkg_secp256k1_party(
+fn dkg_secp256k1_auxiliary_input(
     deserialized_event: StartNetworkDKGEvent,
-) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
-    Ok((
-        MPCParty::NetworkDkg(DWalletMPCNetworkKey::Secp256k1),
-        generate_secp256k1_dkg_party_public_input(HashMap::new())?,
-        dkg_secp256k1_session_info(deserialized_event),
-    ))
+) -> DwalletMPCResult<Vec<u8>> {
+    Ok(generate_secp256k1_dkg_party_public_input(HashMap::new())?)
 }
 
 fn dkg_secp256k1_session_info(deserialized_event: StartNetworkDKGEvent) -> SessionInfo {
@@ -224,14 +219,10 @@ fn dkg_secp256k1_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
     }
 }
 
-fn dkg_ristretto_party(
-    deserialized_event: StartNetworkDKGEvent,
-) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
-    Ok((
-        MPCParty::NetworkDkg(DWalletMPCNetworkKey::Ristretto),
-        generate_ristretto_dkg_party_public_input(HashMap::new())?,
-        dkg_ristretto_session_info(deserialized_event),
-    ))
+fn dkg_ristretto_auxiliary_input(
+    _deserialized_event: StartNetworkDKGEvent,
+) -> DwalletMPCResult<Vec<u8>> {
+    Ok(generate_ristretto_dkg_party_public_input(HashMap::new())?)
 }
 
 fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> SessionInfo {
