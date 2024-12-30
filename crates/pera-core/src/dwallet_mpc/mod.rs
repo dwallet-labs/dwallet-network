@@ -228,7 +228,7 @@ fn sign_party(
     dwallet_mpc_manager: &DWalletMPCManager,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
-    let decryption_key_share = dwallet_mpc_manager.get_decryption_share()?;
+    let (decryption_key_share, decryption_pp) = dwallet_mpc_manager.get_decryption_share()?;
     Ok((
         MPCParty::SignBytesParty(decryption_key_share),
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
@@ -237,13 +237,7 @@ fn sign_party(
             deserialized_event.hashed_message.clone(),
             deserialized_event.presign.clone(),
             deserialized_event.centralized_signed_message.clone(),
-            dwallet_mpc_manager
-                .node_config
-                .dwallet_mpc_decryption_shares_public_parameters
-                .clone()
-                .ok_or_else(|| {
-                    DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters
-                })?,
+            bcs::from_bytes(&decryption_pp)?,
         )?,
         sign_party_session_info(&deserialized_event, party_id),
     ))

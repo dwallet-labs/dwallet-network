@@ -10,7 +10,7 @@ use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, DwalletMPCNetworkKeysStatus};
 use crate::dwallet_mpc::sign::SignFirstParty;
-use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
 use anyhow::anyhow;
 use class_groups::dkg::Secp256k1Party;
@@ -25,7 +25,7 @@ use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
-use pera_types::messages_consensus::ConsensusTransaction;
+use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -244,6 +244,19 @@ impl DWalletMPCManager {
         ))
     }
 
+    pub fn get_decryption_public_parameters(&self, key_version: u8) -> DwalletMPCResult<Vec<u8>> {
+        // todo (yael): add mock with constant parameters
+        if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
+            return self_decryption_share.get_decryption_public_parameters(
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+                key_version,
+            );
+        }
+        Err(DwalletMPCError::TwoPCMPCError(
+            "Decryption share not found".to_string(),
+        ))
+    }
+
     // This will be changed in #382
     /// Retrieves the decryption share for the current authority.
     ///
@@ -257,18 +270,23 @@ impl DWalletMPCManager {
     /// appropriate error is returned.
     pub fn get_decryption_share(
         &self,
-    ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
+    ) -> DwalletMPCResult<(HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>, Vec<u8>)> {
         if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
+            let decryption_protocol_public_parameters = self_decryption_share.get_decryption_public_parameters(
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+                0,
+            )?;
             match self_decryption_share
                 .get_decryption_key_share(DWalletMPCNetworkKeyScheme::Secp256k1)
             {
                 Ok(self_decryption_share) => {
-                    return Ok(self_decryption_share
+                    return Ok((self_decryption_share
                         .get(self_decryption_share.len() - 1)
                         .ok_or(DwalletMPCError::TwoPCMPCError(
                             "Decryption share not found".to_string(),
                         ))?
-                        .clone())
+                        .clone(), decryption_protocol_public_parameters)
+                    )
                 }
                 Err(e) => {}
             }
@@ -292,11 +310,11 @@ impl DWalletMPCManager {
             .as_ref()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters)?;
 
-        Ok(HashMap::from([(
+        Ok((HashMap::from([(
             party_id,
             DecryptionKeyShare::new(party_id, share_value, public_parameters)
                 .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?,
-        )]))
+        )]), Vec::new()))
     }
 
     /// Advance all the MPC sessions that either received enough messages

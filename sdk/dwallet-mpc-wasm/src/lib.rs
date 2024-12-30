@@ -11,12 +11,12 @@ pub fn create_dkg_centralized_output(
     dkg_first_round_output: Vec<u8>,
     session_id: String,
 ) -> Result<JsValue, JsError> {
-    let (public_key_share_and_proof, centralized_output) =
+    let (public_key_share_and_proof, centralized_output, centralized_secret_output) =
         create_dkg_output(protocol_public_parameters, dkg_first_round_output, session_id)
             .map_err(|e| JsError::new(&e.to_string()))?;
 
     // Serialize the result to JsValue and handle potential errors.
-    serde_wasm_bindgen::to_value(&(public_key_share_and_proof, centralized_output))
+    serde_wasm_bindgen::to_value(&(public_key_share_and_proof, centralized_output, centralized_secret_output))
         .map_err(|e| JsError::new(&e.to_string()))
 }
 
@@ -24,6 +24,7 @@ pub fn create_dkg_centralized_output(
 pub fn create_sign_centralized_output(
     protocol_public_parameters: Vec<u8>,
     centralized_party_dkg_output: Vec<u8>,
+    centralized_party_dkg_secret_output: Vec<u8>,
     presigns: Vec<u8>,
     messages: Vec<u8>,
     hash_type: u8,
@@ -38,6 +39,7 @@ pub fn create_sign_centralized_output(
     let res = create_sign_output(
         protocol_public_parameters,
         centralized_party_dkg_output,
+        centralized_party_dkg_secret_output,
         presigns,
         messages,
         hash_type,

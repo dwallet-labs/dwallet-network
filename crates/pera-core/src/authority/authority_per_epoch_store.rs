@@ -982,7 +982,7 @@ impl AuthorityPerEpochStore {
     pub fn set_dwallet_mpc_network_keys(&self) {
         if self
             .dwallet_mpc_network_keys
-            .set(DwalletMPCNetworkKeyVersions::new(self))
+            .set(DwalletMPCNetworkKeyVersions::mock_network_dkg(self))
             .is_err()
         {
             error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");

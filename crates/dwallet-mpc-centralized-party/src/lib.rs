@@ -5,10 +5,11 @@ use k256::ecdsa::hazmat::bits2field;
 use k256::ecdsa::signature::digest::{Digest, FixedOutput};
 use k256::elliptic_curve::ops::Reduce;
 use k256::{elliptic_curve, U256};
-use mpc::two_party::Round;
+use mpc::two_party::{Round, RoundResult};
 use rand_core::OsRng;
 use std::fmt;
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
+use twopc_mpc::sign::centralized_party::class_groups::Message;
 
 type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
@@ -75,7 +76,7 @@ pub fn create_dkg_output(
     protocol_public_parameters: Vec<u8>,
     decentralized_first_round_output: Vec<u8>,
     session_id: String,
-) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
+) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
         bcs::from_bytes(&decentralized_first_round_output)
             .context("Failed to deserialize decentralized first round output")?;
@@ -88,17 +89,22 @@ pub fn create_dkg_output(
     >(bcs::from_bytes(&protocol_public_parameters)?);
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
 
-    let (public_key_share_and_proof, centralized_output) = DKGCentralizedParty::advance(
-        decentralized_first_round_output,
+    let round_result = DKGCentralizedParty::advance(
+        decentralized_first_round_output.clone(),
+        &(),
         &(public_parameters, session_id).into(),
         &mut OsRng,
-    )
-    .context("advance() failed on the DKGCentralizedParty")?;
+    ).context("advance() failed on the DKGCentralizedParty")?;
+
+    let public_key_share_and_proof = round_result.outgoing_message;
+    let centralized_party_dkg_output = round_result.public_output;
+    let centralized_party_secret_key_share = round_result.private_output;
 
     let public_key_share_and_proof = bcs::to_bytes(&public_key_share_and_proof)?;
-    let centralized_output = bcs::to_bytes(&centralized_output)?;
+    let centralized_public_output = bcs::to_bytes(&centralized_party_dkg_output)?;
+    let centralized_secret_output = bcs::to_bytes(&centralized_party_secret_key_share)?;
 
-    Ok((public_key_share_and_proof, centralized_output))
+    Ok((public_key_share_and_proof, centralized_public_output, centralized_secret_output))
 }
 
 /// Computes the message digest of a given message using the specified hash function.
@@ -128,6 +134,7 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 pub fn create_sign_output(
     protocol_public_parameters: Vec<u8>,
     centralized_party_dkg_output: Vec<u8>,
+    centralized_party_secret_key_share: Vec<u8>,
     presigns: Vec<Vec<u8>>,
     messages: Vec<Vec<u8>>,
     hash: u8,
@@ -140,7 +147,7 @@ pub fn create_sign_output(
         { secp256k1::class_groups::NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
         secp256k1::GroupElement,
     >(bcs::from_bytes(&protocol_public_parameters)?);
-    let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGOutput =
+    let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
         bcs::from_bytes(&centralized_party_dkg_output)?;
     let (signed_messages, hashed_messages): (Vec<_>, Vec<_>) = messages
         .into_iter()
@@ -151,23 +158,21 @@ pub fn create_sign_output(
                 bcs::from_bytes(&presigns[index])?;
             let hashed_message =
                 message_digest(&message, &hash.try_into()?).context("Message digest failed")?;
-            // Prepare auxiliary input.
-            let centralized_party_auxiliary_input = (
-                hashed_message,
+            let centralized_party_public_input = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedPartyPublicInput::from(
+                (hashed_message,
                 centralized_party_dkg_output.clone(),
                 presign,
                 protocol_public_parameters.clone(),
-                session_id,
-            )
-                .into();
+                session_id)
+            );
 
-            let (sign_message, _) =
-                SignCentralizedParty::advance((), &centralized_party_auxiliary_input, &mut OsRng)
+            let round_result =
+                SignCentralizedParty::advance((), &bcs::from_bytes(&centralized_party_secret_key_share)?, &centralized_party_public_input, &mut OsRng)
                     .context("advance() failed on the SignCentralizedParty")?;
 
-            let signed_message = bcs::to_bytes(&sign_message)?;
-            let hashed_message_bytes = bcs::to_bytes(&hashed_message)?;
-            Ok((signed_message, hashed_message_bytes))
+                let signed_message = bcs::to_bytes(&round_result.outgoing_message)?;
+                let hashed_message_bytes = bcs::to_bytes(&hashed_message)?;
+                Ok((signed_message, hashed_message_bytes))
         })
         .collect::<anyhow::Result<Vec<_>>>()?
         .into_iter()

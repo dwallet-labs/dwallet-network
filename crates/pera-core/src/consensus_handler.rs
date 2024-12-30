@@ -525,7 +525,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                                         SECP256K1_SCALAR_LIMBS,
                                                         SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
                                                         secp256k1::GroupElement,
-                                                    >(&dwallet_outputs_manager.weighted_threshold_access_structure)
+                                                    >(&dwallet_mpc_outputs_verifier.weighted_threshold_access_structure)
                                                  {
                                                     Ok(params) => bcs::to_bytes(&params).unwrap(),
                                                     Err(_) => {
