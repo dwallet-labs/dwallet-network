@@ -4,14 +4,14 @@
 //! by checking if a validators with quorum of stake voted for it.
 //! Any validator that voted for a different output is considered malicious.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use pera_types::base_types::{AuthorityName, ObjectID};
-use pera_types::committee::StakeUnit;
-use pera_types::messages_dwallet_mpc::SessionInfo;
-use std::collections::{HashMap, HashSet};
+use crate::dwallet_mpc::authority_name_to_party_id;
 use group::PartyID;
 use mpc::WeightedThresholdAccessStructure;
+use pera_types::base_types::{AuthorityName, ObjectID};
+use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
-use crate::dwallet_mpc::authority_name_to_party_id;
+use pera_types::messages_dwallet_mpc::SessionInfo;
+use std::collections::{HashMap, HashSet};
 
 /// A struct to verify the DWallet MPC outputs.
 /// It stores all the outputs received for each session,

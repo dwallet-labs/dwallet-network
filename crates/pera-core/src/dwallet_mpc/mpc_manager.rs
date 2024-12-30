@@ -7,16 +7,17 @@ use crate::dwallet_mpc::batches_manager::BatchedSignSession;
 use crate::dwallet_mpc::mpc_events::{StartBatchedSignEvent, ValidatorDataForDWalletSecretShare};
 use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputResult};
 use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
+use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, DwalletMPCNetworkKeysStatus};
 use crate::dwallet_mpc::sign::SignFirstParty;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
-};
 use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
 use anyhow::anyhow;
 use class_groups::dkg::Secp256k1Party;
 use class_groups::DecryptionKeyShare;
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
+};
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Weight, WeightedThresholdAccessStructure};
@@ -34,7 +35,6 @@ use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKey;
 use twopc_mpc::sign::Protocol;
-use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
@@ -113,11 +113,15 @@ impl DWalletMPCManager {
         )
         .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
 
-        epoch_store.dwallet_mpc_network_keys.get().ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?.mock_network_dkg(
-            epoch_store.clone(),
-            authority_name_to_party_id(&epoch_store.name, &epoch_store)?,
-            &weighted_threshold_access_structure,
-        );
+        // epoch_store
+        //     .dwallet_mpc_network_keys
+        //     .get()
+        //     .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+        //     .mock_network_dkg(
+        //         epoch_store.clone(),
+        //         authority_name_to_party_id(&epoch_store.name, &epoch_store)?,
+        //         &weighted_threshold_access_structure,
+        //     );
 
         let (sender, mut receiver) =
             tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
@@ -249,7 +253,8 @@ impl DWalletMPCManager {
                         .get(self_decryption_share.len() - 1)
                         .ok_or(DwalletMPCError::TwoPCMPCError(
                             "Decryption share not found".to_string(),
-                        ))?.clone())
+                        ))?
+                        .clone())
                 }
                 Err(e) => {}
             }
@@ -321,7 +326,11 @@ impl DWalletMPCManager {
                 let is_manager_ready = if cfg!(feature = "with-network-dkg") {
                     (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
                         && matches!(session.party(), MPCParty::NetworkDkg(_)))
-                        && self.validators_data_for_network_dkg.len() == self.weighted_threshold_access_structure.party_to_weight.len()
+                        && self.validators_data_for_network_dkg.len()
+                            == self
+                                .weighted_threshold_access_structure
+                                .party_to_weight
+                                .len()
                         || matches!(
                             mpc_network_key_status,
                             DwalletMPCNetworkKeysStatus::Ready(_)

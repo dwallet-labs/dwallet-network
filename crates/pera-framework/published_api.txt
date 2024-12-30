@@ -766,6 +766,9 @@ is_valid_key_scheme
 start_network_dkg
 	public(package) fun
 	0x3::dwallet_network_key
+protocol_public_parameters
+	public fun
+	0x3::dwallet_network_key
 new_encrypted_network_decryption_key_shares
 	public(package) fun
 	0x3::dwallet_network_key
@@ -982,6 +985,9 @@ pool_exchange_rates
 active_validator_addresses
 	public(package) fun
 	0x3::pera_system_state_inner
+decryption_key_shares
+	public(package) fun
+	0x3::pera_system_state_inner
 extract_coin_balance
 	fun
 	0x3::pera_system_state_inner
@@ -1106,6 +1112,9 @@ pool_exchange_rates
 	public fun
 	0x3::pera_system
 active_validator_addresses
+	public fun
+	0x3::pera_system
+decryption_key_shares
 	public fun
 	0x3::pera_system
 advance_epoch

@@ -14,11 +14,11 @@ use consensus_config::{
     Authority, AuthorityPublicKey, Committee as ConsensusCommittee, NetworkPublicKey,
     ProtocolPublicKey,
 };
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 use narwhal_config::{Committee as NarwhalCommittee, CommitteeBuilder, WorkerCache, WorkerIndex};
 use pera_protocol_config::ProtocolVersion;
 use serde::{Deserialize, Serialize};
 use tracing::{error, warn};
-use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 
 #[enum_dispatch]
 pub trait EpochStartSystemStateTrait {

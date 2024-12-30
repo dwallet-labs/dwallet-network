@@ -52,7 +52,7 @@ module pera_system::dwallet_network_key {
         decryption_public_parameters: vector<u8>,
     }
 
-    public fun protocol_public_parameters(self: &DwalletMPCNetworkKey): vector<u8> {
+    public fun protocol_public_parameters(self: &NetworkDecryptionKeyShares): vector<u8> {
         self.protocol_public_parameters
     }
 
@@ -61,6 +61,7 @@ module pera_system::dwallet_network_key {
         epoch: u64,
         current_epoch_shares: vector<vector<u8>>,
         previous_epoch_shares: vector<vector<u8>>,
+        protocol_public_parameters: vector<u8>,
         decryption_public_parameters: vector<u8>,
     ): NetworkDecryptionKeyShares {
         NetworkDecryptionKeyShares {

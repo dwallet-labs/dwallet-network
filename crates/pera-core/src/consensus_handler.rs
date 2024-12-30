@@ -31,6 +31,7 @@ use async_trait::async_trait;
 use class_groups::dkg::Secp256k1Party;
 use class_groups::{SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS};
 use consensus_core::CommitConsumerMonitor;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use group::PartyID;
 use lru::LruCache;
 use mpc::WeightedThresholdAccessStructure;
@@ -55,7 +56,6 @@ use pera_types::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
 use twopc_mpc::secp256k1;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -534,16 +534,15 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                                     },
                                                 };
 
-                                                let key =
-                                                    NetworkDecryptionKeyShares {
-                                                        epoch: 0,
-                                                        current_epoch_shares: vec![
-                                                            current_epoch_shares,
-                                                        ],
-                                                        previous_epoch_shares: vec![],
-                                                        protocol_public_parameters,
-                                                        decryption_public_parameters,
-                                                    };
+                                                let key = NetworkDecryptionKeyShares {
+                                                    epoch: 0,
+                                                    current_epoch_shares: vec![
+                                                        current_epoch_shares,
+                                                    ],
+                                                    previous_epoch_shares: vec![],
+                                                    protocol_public_parameters,
+                                                    decryption_public_parameters,
+                                                };
                                                 let mut new_session_info = session_info.clone();
                                                 new_session_info.mpc_round =
                                                     MPCRound::NetworkDkg(key_scheme, Some(key));

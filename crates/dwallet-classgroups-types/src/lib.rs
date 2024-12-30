@@ -1,4 +1,7 @@
-use class_groups::{CompactIbqf, KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES};
+use class_groups::{
+    CompactIbqf, KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
+};
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
 use serde_derive::{Deserialize, Serialize};

@@ -1049,7 +1049,8 @@ impl AuthorityPerEpochStore {
     ///   which contains all versions of the encrypted decryption key shares.
     pub(crate) fn load_decryption_key_shares_from_system_state(
         &self,
-    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<NetworkDecryptionKeyShares>>> {
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<NetworkDecryptionKeyShares>>>
+    {
         let decryption_key_shares = (match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
         })

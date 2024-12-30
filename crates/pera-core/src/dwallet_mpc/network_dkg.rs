@@ -18,17 +18,22 @@ use class_groups::{
     SECP256K1_SCALAR_LIMBS,
 };
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPrivateOutput, NetworkDecryptionKeyShares};
+use dwallet_classgroups_types::{
+    read_class_groups_from_file_real, read_class_groups_private_key_from_file_real,
+    ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof,
+};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCPrivateOutput, NetworkDecryptionKeyShares,
+};
 use group::{ristretto, PartyID};
+use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
-use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use twopc_mpc::secp256k1;
 use twopc_mpc::sign::Protocol;
-use dwallet_classgroups_types::{read_class_groups_from_file_real, read_class_groups_private_key_from_file_real, ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -83,7 +88,12 @@ impl DwalletMPCNetworkKeyVersions {
         }
     }
 
-    pub fn mock_network_dkg(&self, epoch_store: Arc<AuthorityPerEpochStore>, party_id: PartyID, weighted_threshold_access_structure: &WeightedThresholdAccessStructure){
+    pub fn mock_network_dkg(
+        &self,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        party_id: PartyID,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+    ) {
         let public_output = class_groups_constants::network_dkg_final_output();
         let decryption_shares = public_output.default_decryption_key_shares::<SECP256K1_SCALAR_LIMBS, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, secp256k1::GroupElement>(party_id, weighted_threshold_access_structure, mock_cg_private_key()).unwrap();
         self.add_key_version(
@@ -92,10 +102,17 @@ impl DwalletMPCNetworkKeyVersions {
             decryption_shares,
             bcs::to_bytes(&public_output).unwrap(),
             &weighted_threshold_access_structure,
-        ).unwrap();
+        )
+        .unwrap();
 
-        let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError).unwrap();
-        inner.status = DwalletMPCNetworkKeysStatus::Ready(HashSet::from([DWalletMPCNetworkKeyScheme::Secp256k1]));
+        let mut inner = self
+            .inner
+            .write()
+            .map_err(|_| DwalletMPCError::LockError)
+            .unwrap();
+        inner.status = DwalletMPCNetworkKeysStatus::Ready(HashSet::from([
+            DWalletMPCNetworkKeyScheme::Secp256k1,
+        ]));
     }
 
     /// Returns the latest version of the given key type.
@@ -281,7 +298,12 @@ pub(crate) fn advance_network_dkg(
             public_output,
         } => Ok(AsynchronousRoundResult::Finalize {
             malicious_parties,
-            private_output: MPCPrivateOutput::DecryptionKeyShare(private_output.iter().map(|(party_id, share)| (*party_id, bcs::to_bytes(share).unwrap())).collect()),
+            private_output: MPCPrivateOutput::DecryptionKeyShare(
+                private_output
+                    .iter()
+                    .map(|(party_id, share)| (*party_id, bcs::to_bytes(share).unwrap()))
+                    .collect(),
+            ),
             public_output,
         }),
         AsynchronousRoundResult::Advance {
@@ -400,5 +422,8 @@ fn mock_class_groups_encryption_keys_and_proofs() -> HashMap<
 }
 
 pub fn mock_cg_private_key() -> ClassGroupsDecryptionKey {
-    read_class_groups_private_key_from_file_real("class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key").unwrap()
+    read_class_groups_private_key_from_file_real(
+        "class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key",
+    )
+    .unwrap()
 }
