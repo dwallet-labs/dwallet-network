@@ -7,7 +7,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
     use pera_system::dwallet;
     use pera_system::dwallet::DWalletCap;
     use pera_system::dwallet_2pc_mpc_ecdsa_k1;
-    use pera_system::dwallet_2pc_mpc_ecdsa_k1::{Presign};
+    use pera_system::dwallet_2pc_mpc_ecdsa_k1::{Presign, create_dkg_first_round_output_for_testing};
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{
         ENotSystemAddress,
         EMessageApprovalDWalletMismatch,
@@ -57,19 +57,20 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let session_id = object::id_from_address(@0x10);
             let output: vector<u8> = std::vector::empty();
 
-            dwallet_2pc_mpc_ecdsa_k1::create_dkg_first_round_output_for_testing(
+            let dkg_output = dwallet_2pc_mpc_ecdsa_k1::create_dkg_first_round_output_for_testing(
                 session_id,
                 output,
                 ctx,
             );
 
+            test_utils::destroy(dkg_output);
             test_utils::destroy(session_id);
         };
 
         let effects: TransactionEffects = scenario.end();
 
         let events_num = test_scenario::num_user_events(&effects);
-        assert!(events_num == 1, EWrongEventNumber);
+        assert!(events_num == 0, EWrongEventNumber);
 
         let created_objects = test_scenario::created(&effects);
         assert!(std::vector::length(&created_objects) == 0, EWrongCreatedObjectsNum);
@@ -80,26 +81,33 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
     #[test]
     public fun test_launch_dkg_second_round() {
-        let sender = SENDER_ADDRESS;
+        let sender = SYSTEM_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
         test_scenario::next_tx(&mut scenario, sender);
         {
+            let session_id = object::id_from_address(@0x10);
+            let output = std::vector::singleton(0xAA);
+            let dkg_first_round_output = dwallet_2pc_mpc_ecdsa_k1::create_dkg_first_round_output_for_testing(
+                session_id,
+                output,
+                test_scenario::ctx(&mut scenario),
+            );
             let ctx = test_scenario::ctx(&mut scenario);
             let dwallet_cap = dwallet::create_dwallet_cap(ctx);
-            let first_round_output: vector<u8> = std::vector::empty();
             let public_key_share_and_proof: vector<u8> = std::vector::empty();
             let first_round_session_id = object::id_from_address(@0x10);
 
             let session_id = dwallet_2pc_mpc_ecdsa_k1::launch_dkg_second_round(
                 &dwallet_cap,
                 public_key_share_and_proof,
-                first_round_output,
+                &dkg_first_round_output,
                 first_round_session_id,
                 test_scenario::ctx(&mut scenario),
             );
 
             assert!(session_id != @0x0, EWrongSessionAddress);
             test_utils::destroy(first_round_session_id);
+            test_utils::destroy(dkg_first_round_output);
             test_utils::destroy(dwallet_cap);
         };
 
@@ -153,12 +161,13 @@ module pera_system::dwallet_ecdsa_k1_tests {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
         test_scenario::next_tx(&mut scenario, sender);
+        let dkg_output;
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let session_id = object::id_from_address(@0x10);
             let output: vector<u8> = std::vector::empty();
 
-            dwallet_2pc_mpc_ecdsa_k1::create_dkg_first_round_output_for_testing(
+            dkg_output = dwallet_2pc_mpc_ecdsa_k1::create_dkg_first_round_output_for_testing(
                 session_id,
                 output,
                 ctx,
@@ -166,6 +175,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         };
 
         test_scenario::end(scenario);
+        test_utils::destroy(dkg_output);
     }
 
     #[test]
@@ -559,7 +569,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
 
-
             let mut output: vector<vector<u8>> = vector::empty();
             vector::push_back(&mut output, std::vector::singleton(0xAA));
             let session_id = object::id_from_address(@0x01);
@@ -567,6 +576,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             dwallet_2pc_mpc_ecdsa_k1::create_sign_output_for_testing(
                 output,
                 session_id,
+                @0x0,
+                object::id_from_address(@0x10),
                 ctx
             );
             test_utils::destroy(session_id);
