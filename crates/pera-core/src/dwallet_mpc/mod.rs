@@ -107,7 +107,7 @@ pub(crate) fn session_info_from_event(
     }
 }
 
-fn dkg_second_auxiliary_input(
+fn dkg_second_public_input(
     deserialized_event: StartDKGSecondRoundEvent,
 ) -> DwalletMPCResult<Vec<u8>> {
     Ok(DKGSecondParty::generate_public_input(
@@ -131,8 +131,8 @@ fn dkg_second_party_session_info(
     }
 }
 
-fn dkg_first_auxiliary_input() -> DwalletMPCResult<Vec<u8>> {
-    Ok(<DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input()?)
+fn dkg_first_public_input() -> DwalletMPCResult<Vec<u8>> {
+    <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
 
 fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
@@ -144,7 +144,7 @@ fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> 
     }
 }
 
-fn presign_first_auxiliary_input(
+fn presign_first_public_input(
     deserialized_event: StartPresignFirstRoundEvent,
 ) -> DwalletMPCResult<Vec<u8>> {
     Ok(
@@ -334,19 +334,19 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 ///
 /// Returns an error if the event type does not correspond to any known MPC rounds
 /// or if deserialization fails.
-pub(crate) fn auxiliary_input_from_event(
+pub(crate) fn public_input_from_event(
     event: &Event,
     dwallet_mpc_manager: &DWalletMPCManager,
 ) -> DwalletMPCResult<MPCPublicInput> {
     match &event.type_ {
-        t if t == &StartDKGFirstRoundEvent::type_() => dkg_first_auxiliary_input(),
+        t if t == &StartDKGFirstRoundEvent::type_() => dkg_first_public_input(),
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
-            dkg_second_auxiliary_input(deserialized_event)
+            dkg_second_public_input(deserialized_event)
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
             let deserialized_event: StartPresignFirstRoundEvent = bcs::from_bytes(&event.contents)?;
-            presign_first_auxiliary_input(deserialized_event)
+            presign_first_public_input(deserialized_event)
         }
         t if t == &StartPresignSecondRoundEvent::type_() => {
             let deserialized_event: StartPresignSecondRoundEvent =

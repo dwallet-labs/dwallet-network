@@ -4,10 +4,10 @@ use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
 use crate::dwallet_mpc::authority_name_to_party_id;
-use crate::dwallet_mpc::auxiliary_input_from_event;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
+use crate::dwallet_mpc::public_input_from_event;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKey, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
 };
@@ -193,7 +193,7 @@ impl DWalletMPCManager {
 
     fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {
         self.outputs_verifier.handle_new_event(&session_info);
-        self.push_new_mpc_session(auxiliary_input_from_event(&event, &self)?, session_info)?;
+        self.push_new_mpc_session(public_input_from_event(&event, &self)?, session_info)?;
         Ok(())
     }
 
