@@ -186,7 +186,7 @@ pub(crate) fn advance_network_dkg(
     }?)
 }
 
-pub(super) fn network_dkg_auxiliary_input(
+pub(super) fn network_dkg_public_input(
     deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<Vec<u8>> {
     match DWalletMPCNetworkKey::try_from(deserialized_event.key_scheme)? {

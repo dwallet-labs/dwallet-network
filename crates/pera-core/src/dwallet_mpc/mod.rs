@@ -195,7 +195,7 @@ fn presign_second_party_session_info(
     }
 }
 
-fn sign_auxiliary_input(
+fn sign_public_input(
     deserialized_event: StartSignRoundEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
 ) -> DwalletMPCResult<Vec<u8>> {
@@ -355,11 +355,11 @@ pub(crate) fn public_input_from_event(
         }
         t if t == &StartSignRoundEvent::type_() => {
             let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
-            sign_auxiliary_input(deserialized_event, dwallet_mpc_manager)
+            sign_public_input(deserialized_event, dwallet_mpc_manager)
         }
         t if t == &StartNetworkDKGEvent::type_() => {
             let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
-            network_dkg::network_dkg_auxiliary_input(deserialized_event)
+            network_dkg::network_dkg_public_input(deserialized_event)
         }
         _ => Err(DwalletMPCError::NonMPCEvent.into()),
     }
