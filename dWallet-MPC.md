@@ -2,7 +2,13 @@ The User initiates a dWallet DKG first round by calling the `launch_dkg_first_ro
 [dwallet_2pc_mpc_ecdsa_k1.move](crates/pera-framework/packages/pera-system/sources/dwallet_2pc_mpc_ecdsa_k1.move)
 module.
 
+
+
 The Move function emits a `StartDKGFirstRoundEvent` event, and creates a transaction with the event as an effect.
+
+
+
+process_consensus_transactions
 
 This transaction is being sequenced in the consensus, and every validator process it, along with the entire consensus
 output, in the `ConsensusHandler::handle_consensus_output_internal()` function.
