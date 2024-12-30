@@ -8,8 +8,8 @@ use k256::{elliptic_curve, U256};
 use mpc::two_party::{Round, RoundResult};
 use rand_core::OsRng;
 use std::fmt;
-use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 use twopc_mpc::sign::centralized_party::class_groups::Message;
+use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
 type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
@@ -94,7 +94,8 @@ pub fn create_dkg_output(
         &(),
         &(public_parameters, session_id).into(),
         &mut OsRng,
-    ).context("advance() failed on the DKGCentralizedParty")?;
+    )
+    .context("advance() failed on the DKGCentralizedParty")?;
 
     let public_key_share_and_proof = round_result.outgoing_message;
     let centralized_party_dkg_output = round_result.public_output;
@@ -104,7 +105,11 @@ pub fn create_dkg_output(
     let centralized_public_output = bcs::to_bytes(&centralized_party_dkg_output)?;
     let centralized_secret_output = bcs::to_bytes(&centralized_party_secret_key_share)?;
 
-    Ok((public_key_share_and_proof, centralized_public_output, centralized_secret_output))
+    Ok((
+        public_key_share_and_proof,
+        centralized_public_output,
+        centralized_secret_output,
+    ))
 }
 
 /// Computes the message digest of a given message using the specified hash function.
@@ -158,21 +163,28 @@ pub fn create_sign_output(
                 bcs::from_bytes(&presigns[index])?;
             let hashed_message =
                 message_digest(&message, &hash.try_into()?).context("Message digest failed")?;
-            let centralized_party_public_input = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedPartyPublicInput::from(
-                (hashed_message,
-                centralized_party_dkg_output.clone(),
-                presign,
-                protocol_public_parameters.clone(),
-                session_id)
-            );
+            let centralized_party_public_input =
+                <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedPartyPublicInput::from(
+                    (
+                        hashed_message,
+                        centralized_party_dkg_output.clone(),
+                        presign,
+                        protocol_public_parameters.clone(),
+                        session_id,
+                    ),
+                );
 
-            let round_result =
-                SignCentralizedParty::advance((), &bcs::from_bytes(&centralized_party_secret_key_share)?, &centralized_party_public_input, &mut OsRng)
-                    .context("advance() failed on the SignCentralizedParty")?;
+            let round_result = SignCentralizedParty::advance(
+                (),
+                &bcs::from_bytes(&centralized_party_secret_key_share)?,
+                &centralized_party_public_input,
+                &mut OsRng,
+            )
+            .context("advance() failed on the SignCentralizedParty")?;
 
-                let signed_message = bcs::to_bytes(&round_result.outgoing_message)?;
-                let hashed_message_bytes = bcs::to_bytes(&hashed_message)?;
-                Ok((signed_message, hashed_message_bytes))
+            let signed_message = bcs::to_bytes(&round_result.outgoing_message)?;
+            let hashed_message_bytes = bcs::to_bytes(&hashed_message)?;
+            Ok((signed_message, hashed_message_bytes))
         })
         .collect::<anyhow::Result<Vec<_>>>()?
         .into_iter()

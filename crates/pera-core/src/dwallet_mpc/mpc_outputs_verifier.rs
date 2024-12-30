@@ -5,9 +5,9 @@
 //! Any validator that voted for a different output is considered malicious.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
+use dwallet_mpc_types::dwallet_mpc::MPCPublicOutput;
 use group::PartyID;
 use mpc::WeightedThresholdAccessStructure;
-use dwallet_mpc_types::dwallet_mpc::MPCPublicOutput;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;

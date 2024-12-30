@@ -5,9 +5,9 @@
 //! It provides inner mutability for the [`EpochStore`]
 //! to update the network decryption key shares synchronously.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::{advance, authority_name_to_party_id};
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
+use crate::dwallet_mpc::{advance, authority_name_to_party_id};
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
@@ -88,9 +88,7 @@ impl DwalletMPCNetworkKeyVersions {
         }
     }
 
-    pub fn mock_network_dkg(
-        epoch_store: &AuthorityPerEpochStore,
-    ) -> Self  {
+    pub fn mock_network_dkg(epoch_store: &AuthorityPerEpochStore) -> Self {
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
             .voting_rights
@@ -107,7 +105,7 @@ impl DwalletMPCNetworkKeyVersions {
             epoch_store.committee().quorum_threshold() as PartyID,
             weighted_parties.clone(),
         )
-            .unwrap();
+        .unwrap();
 
         let public_output = class_groups_constants::network_dkg_final_output();
         // this function takes some time to run
@@ -119,7 +117,8 @@ impl DwalletMPCNetworkKeyVersions {
             DWalletMPCNetworkKeyScheme::Secp256k1,
             epoch_store.epoch(),
             &weighted_threshold_access_structure,
-        ).unwrap();
+        )
+        .unwrap();
 
         let self_decryption_key_share = decryption_shares
             .into_iter()
@@ -136,12 +135,19 @@ impl DwalletMPCNetworkKeyVersions {
             })
             .collect::<DwalletMPCResult<HashMap<_, _>>>().unwrap();
 
-
         Self {
             inner: Arc::new(RwLock::new(DwalletMPCNetworkKeyVersionsInner {
-                validator_decryption_key_share: HashMap::from([(DWalletMPCNetworkKeyScheme::Secp256k1, vec![self_decryption_key_share])]),
-                key_shares_versions: HashMap::from([(DWalletMPCNetworkKeyScheme::Secp256k1, vec![new_key_version])]),
-                status: DwalletMPCNetworkKeysStatus::Ready(HashSet::from([DWalletMPCNetworkKeyScheme::Secp256k1])),
+                validator_decryption_key_share: HashMap::from([(
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                    vec![self_decryption_key_share],
+                )]),
+                key_shares_versions: HashMap::from([(
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                    vec![new_key_version],
+                )]),
+                status: DwalletMPCNetworkKeysStatus::Ready(HashSet::from([
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                ])),
             })),
         }
     }
@@ -217,7 +223,9 @@ impl DwalletMPCNetworkKeyVersions {
             .key_shares_versions
             .insert(key_type.clone(), vec![new_key_version.clone()]);
 
-        inner.validator_decryption_key_share.insert(key_type.clone(), vec![self_decryption_key_share]);
+        inner
+            .validator_decryption_key_share
+            .insert(key_type.clone(), vec![self_decryption_key_share]);
         if let DwalletMPCNetworkKeysStatus::Ready(keys) = &mut inner.status {
             keys.insert(key_type);
             inner.status = DwalletMPCNetworkKeysStatus::Ready(keys.clone());

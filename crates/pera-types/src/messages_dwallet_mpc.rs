@@ -2,7 +2,9 @@ use crate::base_types::{ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::message_envelope::Message;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
+};
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 

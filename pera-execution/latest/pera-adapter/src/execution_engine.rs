@@ -1251,14 +1251,17 @@ mod checked {
                         CallArg::PERA_SYSTEM_MUT,
                         CallArg::Pure(bcs::to_bytes(&ppp.current_epoch_shares).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&ppp.protocol_public_parameters).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&ppp.decryption_public_parameters).map_err(|e| {
-                            ExecutionError::new(
-                                ExecutionErrorKind::SerializationFailed,
-                                Some(
-                                    format!("Failed to serialize NetworkDkg output: {}", e).into(),
-                                ),
-                            )
-                        })?),
+                        CallArg::Pure(bcs::to_bytes(&ppp.decryption_public_parameters).map_err(
+                            |e| {
+                                ExecutionError::new(
+                                    ExecutionErrorKind::SerializationFailed,
+                                    Some(
+                                        format!("Failed to serialize NetworkDkg output: {}", e)
+                                            .into(),
+                                    ),
+                                )
+                            },
+                        )?),
                         CallArg::Pure(bcs::to_bytes(&(key_type as u8)).map_err(|e| {
                             ExecutionError::new(
                                 ExecutionErrorKind::SerializationFailed,

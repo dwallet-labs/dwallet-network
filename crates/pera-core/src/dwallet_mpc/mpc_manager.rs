@@ -3,6 +3,7 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::batches_manager::BatchedSignSession;
 use crate::dwallet_mpc::mpc_events::{StartBatchedSignEvent, ValidatorDataForDWalletSecretShare};
 use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputResult};
@@ -10,7 +11,6 @@ use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, DwalletMPCNetworkKeysStatus};
 use crate::dwallet_mpc::sign::SignFirstParty;
-use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
 use anyhow::anyhow;
 use class_groups::dkg::Secp256k1Party;
@@ -270,23 +270,26 @@ impl DWalletMPCManager {
     /// appropriate error is returned.
     pub fn get_decryption_share(
         &self,
-    ) -> DwalletMPCResult<(HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>, Vec<u8>)> {
+    ) -> DwalletMPCResult<(
+        HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+        Vec<u8>,
+    )> {
         if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
-            let decryption_protocol_public_parameters = self_decryption_share.get_decryption_public_parameters(
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-                0,
-            )?;
+            let decryption_protocol_public_parameters = self_decryption_share
+                .get_decryption_public_parameters(DWalletMPCNetworkKeyScheme::Secp256k1, 0)?;
             match self_decryption_share
                 .get_decryption_key_share(DWalletMPCNetworkKeyScheme::Secp256k1)
             {
                 Ok(self_decryption_share) => {
-                    return Ok((self_decryption_share
-                        .get(self_decryption_share.len() - 1)
-                        .ok_or(DwalletMPCError::TwoPCMPCError(
-                            "Decryption share not found".to_string(),
-                        ))?
-                        .clone(), decryption_protocol_public_parameters)
-                    )
+                    return Ok((
+                        self_decryption_share
+                            .get(self_decryption_share.len() - 1)
+                            .ok_or(DwalletMPCError::TwoPCMPCError(
+                                "Decryption share not found".to_string(),
+                            ))?
+                            .clone(),
+                        decryption_protocol_public_parameters,
+                    ))
                 }
                 Err(e) => {}
             }
@@ -310,11 +313,14 @@ impl DWalletMPCManager {
             .as_ref()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters)?;
 
-        Ok((HashMap::from([(
-            party_id,
-            DecryptionKeyShare::new(party_id, share_value, public_parameters)
-                .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?,
-        )]), Vec::new()))
+        Ok((
+            HashMap::from([(
+                party_id,
+                DecryptionKeyShare::new(party_id, share_value, public_parameters)
+                    .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?,
+            )]),
+            Vec::new(),
+        ))
     }
 
     /// Advance all the MPC sessions that either received enough messages
@@ -362,16 +368,15 @@ impl DWalletMPCManager {
                     )
                     || (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
                         && matches!(session.party(), MPCParty::NetworkDkg(_))
-                    && self.validators_data_for_network_dkg.len()
-                    == self
-                    .weighted_threshold_access_structure
-                    .party_to_weight
-                    .len()
-                    || matches!(
+                        && self.validators_data_for_network_dkg.len()
+                            == self
+                                .weighted_threshold_access_structure
+                                .party_to_weight
+                                .len()
+                        || matches!(
                             mpc_network_key_status,
                             DwalletMPCNetworkKeysStatus::Ready(_)
-                        )
-                );
+                        ));
 
                 is_ready
                     .then(|| is_manager_ready.then_some(session))

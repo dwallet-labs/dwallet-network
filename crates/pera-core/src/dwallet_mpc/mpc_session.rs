@@ -12,8 +12,8 @@ use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::SessionInfo;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 use crate::dwallet_mpc::authority_name_to_party_id;
+use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 
 /// A dWallet MPC session.
 /// It keeps track of the session, the channel to send messages to the session,
