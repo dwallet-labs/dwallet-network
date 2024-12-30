@@ -144,7 +144,9 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc::mpc_events::LockedNextEpochCommitteeEvent;
+use crate::dwallet_mpc::mpc_events::{
+    LockedNextEpochCommitteeEvent, ValidatorDataForDWalletSecretShare,
+};
 use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use crate::epoch::committee_store::CommitteeStore;
@@ -1565,6 +1567,10 @@ impl AuthorityState {
                 dwallet_mpc_outputs_verifier.completed_locking_next_committee = true;
                 continue;
             }
+            if ValidatorDataForDWalletSecretShare::type_() == event.type_ {
+                Self::handle_validator_data_for_network_dkg_event(epoch_store, &event)?;
+                continue;
+            }
             // Todo (#427): Receive the key version
             // Todo (#427): from the MPC event and check its validity.
             let key_version = epoch_store
@@ -1594,7 +1600,27 @@ impl AuthorityState {
                 .send(DWalletMPCChannelMessage::Event(event.clone(), session_info))
                 .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
         }
+        Ok(())
+    }
 
+    fn handle_validator_data_for_network_dkg_event(
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+        event: &&Event,
+    ) -> Result<(), PeraError> {
+        let deserialized_event: ValidatorDataForDWalletSecretShare =
+            bcs::from_bytes(&event.contents)?;
+        let dwallet_mpc_sender = epoch_store.dwallet_mpc_sender.get().ok_or(PeraError::from(
+            "DWallet MPC sender not initialized when iterating over events",
+        ))?;
+        dwallet_mpc_sender
+            .send(DWalletMPCChannelMessage::ValidatorDataForDKG(
+                deserialized_event,
+            ))
+            .map_err(|err| {
+                PeraError::from(format!(
+                    "Failed to send MPC event to DWallet MPC service: {err}"
+                ))
+            })?;
         Ok(())
     }
 

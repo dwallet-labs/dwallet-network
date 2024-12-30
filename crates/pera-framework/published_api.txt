@@ -28,7 +28,7 @@ DKGFirstRoundOutputEvent
 DKGFirstRoundOutput
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-SignOutput
+BatchedSignOutput
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 Presign
@@ -121,24 +121,6 @@ pop_and_verify_message_approval
 verify_partially_signed_signatures
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartNetworkDKGEvent
-	public struct
-	0x3::dwallet_network_key
-NetworkDecryptionKeyShares
-	public struct
-	0x3::dwallet_network_key
-is_valid_key_scheme
-	public(package) fun
-	0x3::dwallet_network_key
-start_network_dkg
-	public(package) fun
-	0x3::dwallet_network_key
-new_encrypted_network_decryption_key_shares
-	public(package) fun
-	0x3::dwallet_network_key
-update_new_shares
-	public fun
-	0x3::dwallet_network_key
 UnverifiedValidatorOperationCap
 	public struct
 	0x3::validator_cap
@@ -277,10 +259,13 @@ StakingRequestEvent
 UnstakingRequestEvent
 	public struct
 	0x3::validator
-get_validator_protocol_pubkey_bytes
+PersistentCGPubKeyAndProof
+	public struct
+	0x3::validator
+get_validator_protocol_pubkey
 	public(package) fun
 	0x3::validator
-get_val_class_groups_public_key_and_proof_bytes
+get_cg_pubkey_and_proof
 	public(package) fun
 	0x3::validator
 new_metadata
@@ -574,7 +559,7 @@ ValidatorEpochInfoEvent
 ValidatorEpochInfoEventV2
 	public struct
 	0x3::validator_set
-ValidatorDataForDWalletSecretReShare
+ValidatorDataForDWalletSecretShare
 	public struct
 	0x3::validator_set
 LockedNextEpochCommitteeEvent
@@ -614,6 +599,12 @@ request_set_commission_rate
 	public(package) fun
 	0x3::validator_set
 lock_next_epoch_committee
+	public(package) fun
+	0x3::validator_set
+emit_validator_data_for_secret_share
+	public(package) fun
+	0x3::validator_set
+get_active_validators_data
 	public(package) fun
 	0x3::validator_set
 advance_epoch
@@ -769,6 +760,24 @@ is_inactive_validator
 active_validator_addresses
 	public(package) fun
 	0x3::validator_set
+StartNetworkDKGEvent
+	public struct
+	0x3::dwallet_network_key
+NetworkDecryptionKeyShares
+	public struct
+	0x3::dwallet_network_key
+is_valid_key_scheme
+	public(package) fun
+	0x3::dwallet_network_key
+start_network_dkg
+	public(package) fun
+	0x3::dwallet_network_key
+new_encrypted_network_decryption_key_shares
+	public(package) fun
+	0x3::dwallet_network_key
+update_new_shares
+	public fun
+	0x3::dwallet_network_key
 StakeSubsidy
 	public struct
 	0x3::stake_subsidy
@@ -981,6 +990,9 @@ active_validator_addresses
 	0x3::pera_system_state_inner
 extract_coin_balance
 	fun
+	0x3::pera_system_state_inner
+active_validators
+	public(package) fun
 	0x3::pera_system_state_inner
 PeraSystemState
 	public struct

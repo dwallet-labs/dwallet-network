@@ -412,7 +412,7 @@ module pera_system::pera_system_state_inner {
         pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
-        class_groups_public_key_and_proof_bytes: vector<u8>,
+        cg_pubkey_and_proof: vector<u8>,
         proof_of_possession: vector<u8>,
         name: vector<u8>,
         description: vector<u8>,
@@ -431,7 +431,7 @@ module pera_system::pera_system_state_inner {
             pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
-            class_groups_public_key_and_proof_bytes,
+            cg_pubkey_and_proof,
             proof_of_possession,
             name,
             description,
@@ -1119,6 +1119,11 @@ module pera_system::pera_system_state_inner {
         } else {
             total_balance
         }
+    }
+
+    /// Return the current validator set
+    public(package) fun active_validators(self: &PeraSystemStateInnerV2): &vector<Validator> {
+        self.validators.active_validators()
     }
 
     #[test_only]

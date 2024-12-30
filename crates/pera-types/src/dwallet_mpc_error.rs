@@ -13,8 +13,8 @@ pub enum DwalletMPCError {
     #[error("Operations for the epoch {0} have ended")]
     EpochEnded(EpochId),
 
-    #[error("non MPC event")]
-    NonMPCEvent,
+    #[error("non MPC event {0}")]
+    NonMPCEvent(String),
 
     #[error("authority with a name: `{0}` not found")]
     AuthorityNameNotFound(AuthorityName),

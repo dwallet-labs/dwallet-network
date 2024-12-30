@@ -15,7 +15,7 @@ use crate::dwallet_mpc::presign::{
 };
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, MPCMessage, MPCPublicInput};
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput};
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::AuthorityName;
@@ -362,6 +362,6 @@ pub(crate) fn public_input_from_event(
             let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
             network_dkg::network_dkg_public_input(deserialized_event)
         }
-        _ => Err(DwalletMPCError::NonMPCEvent.into()),
+        _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),
     }
 }

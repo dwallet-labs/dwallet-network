@@ -10,6 +10,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
     START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
     START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
+    VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME, VALIDATOR_SET_MODULE_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
@@ -220,13 +221,33 @@ impl StartBatchedPresignEvent {
 
 /// Rust version of the Move [`pera_system::validator_set::LockedNextEpochCommitteeEvent`] type.
 pub struct LockedNextEpochCommitteeEvent {
-    _next_committee_validators: Vec<ValidatorDataForDWalletSecretReShare>,
-    _epoch: u64,
+    epoch: u64,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 struct ValidatorDataForDWalletSecretReShare {
-    _class_groups_public_key_and_proof_bytes: Vec<u8>,
-    _protocol_pubkey_bytes: Vec<u8>,
+    cg_pubkey_and_proof: Vec<u8>,
+    protocol_pubkey_bytes: Vec<u8>,
+}
+
+/// The data we need to know about a validator in order to run a re-share/network-dkg flow with it.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+pub struct ValidatorDataForDWalletSecretShare {
+    /// The class groups encryption key of the validator, used to encrypt the validator's secret share to it.
+    cg_pubkey_and_proof: Vec<u8>,
+    /// The Ika public key of the validator, used as an identifier for the validator.
+    protocol_pubkey_bytes: Vec<u8>,
+}
+
+impl ValidatorDataForDWalletSecretShare {
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME.to_owned(),
+            module: VALIDATOR_SET_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }
 
 impl LockedNextEpochCommitteeEvent {
@@ -237,7 +258,7 @@ impl LockedNextEpochCommitteeEvent {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME.to_owned(),
-            module: ident_str!("validator_set").to_owned(),
+            module: VALIDATOR_SET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

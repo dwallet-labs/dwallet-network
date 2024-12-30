@@ -4,10 +4,12 @@ use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
 use crate::dwallet_mpc::authority_name_to_party_id;
+use crate::dwallet_mpc::mpc_events::ValidatorDataForDWalletSecretShare;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
+use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::public_input_from_event;
+use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKey, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
 };
@@ -26,7 +28,7 @@ use std::sync::{Arc, Weak};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::warn;
 use tracing::{error, info};
-use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+use twopc_mpc::sign::Protocol;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
@@ -60,6 +62,7 @@ pub struct DWalletMPCManager {
     /// Each Validator holds the Malicious state for itself,
     /// this is not in sync with the blockchain.
     outputs_verifier: DWalletMPCOutputsVerifier,
+    validators_data_for_network_dkg: Vec<ValidatorDataForDWalletSecretShare>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -78,6 +81,11 @@ pub enum DWalletMPCChannelMessage {
     /// This starts when the current epoch time has ended, and it's time to start the
     /// reconfiguration process for the next epoch.
     StartLockNextEpochCommittee,
+    /// A validator's public key and proof for the network DKG protocol
+    /// Each validator's data is being emitted separately because the proof size is
+    /// almost 250KB, which is the maximum event size in Sui.
+    /// The manager accumulates the data until it received such an event for all validators, and then it starts the network DKG protocol.
+    ValidatorDataForDKG(ValidatorDataForDWalletSecretShare),
 }
 
 impl DWalletMPCManager {
@@ -119,6 +127,7 @@ impl DWalletMPCManager {
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
             outputs_verifier: DWalletMPCOutputsVerifier::new(&epoch_store),
+            validators_data_for_network_dkg: Vec::new(),
         };
 
         tokio::spawn(async move {
@@ -171,6 +180,9 @@ impl DWalletMPCManager {
                     );
                 }
             }
+            DWalletMPCChannelMessage::ValidatorDataForDKG(data) => {
+                self.validators_data_for_network_dkg.push(data);
+            }
         }
     }
 
@@ -207,7 +219,10 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    pub fn get_decryption_share(&self) -> DwalletMPCResult<DecryptionKeyShare> {
+    // Todo (#382): Read the real decryption share from the DKG output.
+    pub fn get_decryption_share(
+        &self,
+    ) -> DwalletMPCResult<<AsyncProtocol as Protocol>::DecryptionKeyShare> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
         let shares = self
@@ -274,7 +289,16 @@ impl DWalletMPCManager {
                         DwalletMPCNetworkKeysStatus::Ready(_)
                     )
                     || (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
-                        && matches!(session.session_info.mpc_round, MPCRound::NetworkDkg(..)));
+                        && matches!(session.session_info.mpc_round, MPCRound::NetworkDkg(..))
+                        && self.validators_data_for_network_dkg.len()
+                            == self
+                                .weighted_threshold_access_structure
+                                .party_to_weight
+                                .len()
+                        || matches!(
+                            mpc_network_key_status,
+                            DwalletMPCNetworkKeysStatus::Ready(_)
+                        ));
 
                 is_ready
                     .then(|| is_manager_ready.then_some(session))

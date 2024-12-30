@@ -34,7 +34,6 @@ use std::time::Duration;
 use pera_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair};
 use pera_types::multiaddr::Multiaddr;
 use tracing::info;
-use twopc_mpc::secp256k1::class_groups::DecryptionSharePublicParameters;
 
 // Default max number of concurrent requests served
 pub const DEFAULT_GRPC_CONCURRENCY_LIMIT: usize = 20000000000;
@@ -55,7 +54,8 @@ pub struct NodeConfig {
     // todo (#348): Update the system to ensure that each
     // todo (#348): validator saves only their own decryption share
     #[serde(default)]
-    pub dwallet_mpc_decryption_shares_public_parameters: Option<DecryptionSharePublicParameters>,
+    pub dwallet_mpc_decryption_shares_public_parameters:
+        Option<twopc_mpc::sign::ClassGroupsPublicParams>,
     #[serde(default)]
     pub dwallet_mpc_class_groups_decryption_shares:
         Option<HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>>,

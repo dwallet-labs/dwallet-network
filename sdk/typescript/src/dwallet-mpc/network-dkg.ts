@@ -10,11 +10,12 @@ export async function launchNetworkDKG(c: Config) {
 		arguments: [tx.pure(bcs.u8().serialize(1)), tx.object('0x5')],
 	});
 
-	await c.client.signAndExecuteTransaction({
+	return await c.client.signAndExecuteTransaction({
 		signer: c.keypair,
 		transaction: tx,
 		options: {
 			showEffects: true,
+			showEvents: true,
 		},
 	});
 }

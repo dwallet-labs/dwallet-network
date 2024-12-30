@@ -49,6 +49,7 @@ mysql-clippy = [
 rustflags = ["-C", "force-frame-pointers=yes", "-C", "force-unwind-tables=yes"]
 
 [env]
+RUST_MIN_STACK = "16777216"
 # Fixes a bug related to compliaction in some systems.
 MYSQLCLIENT_LIB_DIR = "/usr/local/opt/mysql-client/lib"
 MYSQLCLIENT_INCLUDE_DIR = "/usr/local/opt/mysql-client/include"

@@ -17,6 +17,7 @@ This module manages the storage of the network dWallet MPC keys and associated d
 <pre><code><b>use</b> <a href="../pera-framework/event.md#0x2_event">0x2::event</a>;
 <b>use</b> <a href="../pera-framework/object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="../pera-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
+<b>use</b> <a href="validator_set.md#0x3_validator_set">0x3::validator_set</a>;
 </code></pre>
 
 
@@ -151,10 +152,15 @@ Checks if the key scheme is supported by the system
 
 ## Function `start_network_dkg`
 
-Function to emit a new StartNetworkDKGEvent.
+Function to start a new network DKG.
+It emits a [<code><a href="dwallet_network_key.md#0x3_dwallet_network_key_StartNetworkDKGEvent">StartNetworkDKGEvent</a></code>] and emits the [<code>ValidatorDataForDWalletSecretShare</code>] for each validator,
+with its public key and proof, that are needed for the DKG process.
+
+Each validator's data is being emitted separately because the proof size is
+almost 250KB, which is the maximum event size in Sui.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_scheme: u8, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_scheme: u8, validators_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">validator_set::ValidatorDataForDWalletSecretShare</a>&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -163,12 +169,20 @@ Function to emit a new StartNetworkDKGEvent.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_scheme: u8, ctx: &<b>mut</b> TxContext) {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_scheme: u8, validators_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;ValidatorDataForDWalletSecretShare&gt;, ctx: &<b>mut</b> TxContext) {
     <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
+
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_network_key.md#0x3_dwallet_network_key_StartNetworkDKGEvent">StartNetworkDKGEvent</a> {
         session_id,
         key_scheme,
     });
+    <b>let</b> validators_len = validators_data.length();
+    <b>let</b> <b>mut</b> i = 0;
+    <b>while</b> (i &lt; validators_len) {
+        <b>let</b> validator_data = validators_data[i];
+        emit_validator_data_for_secret_share(validator_data);
+        i = i + 1;
+    }
 }
 </code></pre>
 

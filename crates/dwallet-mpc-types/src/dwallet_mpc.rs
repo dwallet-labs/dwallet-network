@@ -4,6 +4,7 @@ use std::fmt;
 use thiserror::Error;
 
 pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
+pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
 pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartDKGFirstRoundEvent");
 pub const START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
@@ -18,6 +19,8 @@ pub const START_BATCHED_PRESIGN_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartBatchedPresignEvent");
 pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("LockedNextEpochCommitteeEvent");
+pub const VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME: &IdentStr =
+    ident_str!("ValidatorDataForDWalletSecretShare");
 pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartNetworkDKGEvent");
 
 /// Alias for an MPC message.

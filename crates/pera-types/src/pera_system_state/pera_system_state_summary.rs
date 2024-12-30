@@ -230,9 +230,6 @@ pub struct PeraValidatorSummary {
     pub worker_pubkey_bytes: Vec<u8>,
     #[schemars(with = "Base64")]
     #[serde_as(as = "Base64")]
-    pub class_groups_public_key_and_proof: Vec<u8>,
-    #[schemars(with = "Base64")]
-    #[serde_as(as = "Base64")]
     pub proof_of_possession_bytes: Vec<u8>,
     pub name: String,
     pub description: String,
@@ -373,7 +370,6 @@ impl Default for PeraValidatorSummary {
             protocol_pubkey_bytes: vec![],
             network_pubkey_bytes: vec![],
             worker_pubkey_bytes: vec![],
-            class_groups_public_key_and_proof: vec![],
             proof_of_possession_bytes: vec![],
             name: String::new(),
             description: String::new(),
