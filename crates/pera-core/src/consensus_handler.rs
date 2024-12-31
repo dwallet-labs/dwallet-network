@@ -542,6 +542,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                                     previous_epoch_shares: vec![],
                                                     protocol_public_parameters,
                                                     decryption_public_parameters,
+                                                    encryption_key: bcs::to_bytes(&deser_output.encryption_key).unwrap(),
+                                                    reconstructed_commitments_to_sharing: bcs::to_bytes(&deser_output.reconstructed_commitments_to_sharing).unwrap(),
                                                 };
                                                 let mut new_session_info = session_info.clone();
                                                 new_session_info.mpc_round =

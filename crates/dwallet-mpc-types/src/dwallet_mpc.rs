@@ -93,6 +93,8 @@ pub struct NetworkDecryptionKeyShares {
     pub previous_epoch_shares: Vec<Vec<u8>>,
     pub protocol_public_parameters: Vec<u8>,
     pub decryption_public_parameters: Vec<u8>,
+    pub encryption_key: Vec<u8>,
+    pub reconstructed_commitments_to_sharing: Vec<u8>,
 }
 
 #[repr(u8)]

@@ -251,6 +251,8 @@ impl DwalletMPCNetworkKeyVersions {
                     previous_epoch_shares: vec![],
                     protocol_public_parameters: bcs::to_bytes(&dkg_output.default_encryption_scheme_public_parameters::<SECP256K1_SCALAR_LIMBS, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, secp256k1::GroupElement>().map_err(|_| DwalletMPCError::ClassGroupsError)?)?,
                     decryption_public_parameters: bcs::to_bytes(&dkg_output.default_decryption_key_share_public_parameters::<SECP256K1_SCALAR_LIMBS, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, secp256k1::GroupElement>(access_structure).map_err(|_|DwalletMPCError::ClassGroupsError)?)?,
+                    encryption_key: bcs::to_bytes(&dkg_output.encryption_key)?,
+                    reconstructed_commitments_to_sharing: bcs::to_bytes(&dkg_output.reconstructed_commitments_to_sharing)?,
                 })
             }
             DWalletMPCNetworkKeyScheme::Ristretto => Ok(NetworkDecryptionKeyShares {
@@ -259,6 +261,8 @@ impl DwalletMPCNetworkKeyVersions {
                 previous_epoch_shares: vec![],
                 protocol_public_parameters: vec![],
                 decryption_public_parameters: vec![],
+                encryption_key: vec![],
+                reconstructed_commitments_to_sharing: vec![],
             }),
         }
     }

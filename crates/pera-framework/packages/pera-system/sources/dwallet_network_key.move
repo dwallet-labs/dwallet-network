@@ -27,7 +27,11 @@ module pera_system::dwallet_network_key {
     ///
     /// Each validator's data is being emitted separately because the proof size is
     /// almost 250KB, which is the maximum event size in Sui.
-    public(package) fun start_network_dkg(key_scheme: u8, validators_data: vector<ValidatorDataForDWalletSecretShare>, ctx: &mut TxContext) {
+    public(package) fun start_network_dkg(
+        key_scheme: u8,
+        validators_data: vector<ValidatorDataForDWalletSecretShare>,
+        ctx: &mut TxContext
+    ) {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
 
         event::emit(StartNetworkDKGEvent {
@@ -50,6 +54,8 @@ module pera_system::dwallet_network_key {
         previous_epoch_shares: vector<vector<u8>>,
         protocol_public_parameters: vector<u8>,
         decryption_public_parameters: vector<u8>,
+        encryption_key: vector<u8>,
+        reconstructed_commitments_to_sharing: vector<u8>,
     }
 
     public fun protocol_public_parameters(self: &NetworkDecryptionKeyShares): vector<u8> {
@@ -63,6 +69,8 @@ module pera_system::dwallet_network_key {
         previous_epoch_shares: vector<vector<u8>>,
         protocol_public_parameters: vector<u8>,
         decryption_public_parameters: vector<u8>,
+        encryption_key: vector<u8>,
+        reconstructed_commitments_to_sharing: vector<u8>,
     ): NetworkDecryptionKeyShares {
         NetworkDecryptionKeyShares {
             epoch,
@@ -70,6 +78,8 @@ module pera_system::dwallet_network_key {
             previous_epoch_shares,
             protocol_public_parameters,
             decryption_public_parameters,
+            encryption_key,
+            reconstructed_commitments_to_sharing,
         }
     }
 

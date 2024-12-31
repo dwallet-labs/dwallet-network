@@ -368,10 +368,25 @@ module pera_system::pera_system_state_inner {
     }
 
     /// Update the system state with a new version dwallet mpc network key shares after the network DKG.
-    public(package) fun new_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, protocol_public_parameters: vector<u8>,
-                                                          decryption_public_parameters: vector<u8>, key_scheme: u8) {
+    public(package) fun new_decryption_key_shares_version(
+        self: &mut PeraSystemStateInnerV2,
+        shares: vector<vector<u8>>,
+        protocol_public_parameters: vector<u8>,
+        decryption_public_parameters: vector<u8>,
+        encryption_key: vector<u8>,
+        reconstructed_commitments_to_sharing: vector<u8>,
+        key_scheme: u8
+    ) {
         assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
-        let new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty(), protocol_public_parameters, decryption_public_parameters);
+        let new_version = new_encrypted_network_decryption_key_shares(
+            self.epoch,
+            shares,
+            vector::empty(),
+            protocol_public_parameters,
+            decryption_public_parameters,
+            encryption_key,
+            reconstructed_commitments_to_sharing,
+        );
 
         if (self.decryption_key_shares.contains(&key_scheme)) {
             self.decryption_key_shares.get_mut(&key_scheme).push_back(new_version);
