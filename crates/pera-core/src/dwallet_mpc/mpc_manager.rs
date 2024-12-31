@@ -3,11 +3,11 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
-use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::public_input_from_event;
+use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKey, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
 };
@@ -394,13 +394,7 @@ impl DWalletMPCManager {
     fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID]) -> DwalletMPCResult<()> {
         let malicious_parties_names = malicious_parties
             .iter()
-            .map(|party_id| {
-                self.epoch_store()?
-                    .committee()
-                    .authority_by_index(*party_id as u32 - 1)
-                    .cloned()
-                    .ok_or(DwalletMPCError::AuthorityIndexNotFound(*party_id))
-            })
+            .map(|party_id| party_id_to_authority_name(*party_id, &*self.epoch_store()?))
             .collect::<DwalletMPCResult<Vec<AuthorityName>>>()?;
         warn!(
             "[dWallet MPC] Flagged the following parties as malicious: {:?}",
