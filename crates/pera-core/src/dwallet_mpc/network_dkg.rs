@@ -469,3 +469,43 @@ pub fn mock_cg_private_key() -> ClassGroupsDecryptionKey {
     )
     .unwrap()
 }
+
+pub(crate) fn new_from_dkg_public_output(
+    epoch: u64,
+    key_scheme: DWalletMPCNetworkKeyScheme,
+    weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+    public_output: Vec<u8>,
+) -> anyhow::Result<NetworkDecryptionKeyShares> {
+    match key_scheme {
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            let public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
+                bcs::from_bytes(&public_output)?;
+            let current_epoch_shares =
+                bcs::to_bytes(&public_output.encryptions_of_shares_per_crt_prime)?;
+            let protocol_public_parameters =
+                public_output.default_encryption_scheme_public_parameters::<
+                    SECP256K1_SCALAR_LIMBS,
+                    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+                    secp256k1::GroupElement,
+                >()?;
+            let decryption_public_parameters = public_output.default_decryption_key_share_public_parameters::<
+                SECP256K1_SCALAR_LIMBS,
+                SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+                secp256k1::GroupElement,
+            >(weighted_threshold_access_structure)?;
+
+            Ok(NetworkDecryptionKeyShares {
+                epoch,
+                current_epoch_shares: vec![current_epoch_shares],
+                previous_epoch_shares: vec![],
+                protocol_public_parameters: bcs::to_bytes(&protocol_public_parameters)?,
+                decryption_public_parameters: bcs::to_bytes(&decryption_public_parameters)?,
+                encryption_key: bcs::to_bytes(&public_output.encryption_key)?,
+                reconstructed_commitments_to_sharing: bcs::to_bytes(
+                    &public_output.reconstructed_commitments_to_sharing,
+                )?,
+            })
+        }
+        DWalletMPCNetworkKeyScheme::Ristretto => todo!("Ristretto key scheme"),
+    }
+}

@@ -49,6 +49,7 @@ mod checked {
     use pera_types::digests::{
         get_mainnet_chain_identifier, get_testnet_chain_identifier, ChainIdentifier,
     };
+    use pera_types::dwallet_mpc_error::DwalletMPCResult;
     use pera_types::effects::TransactionEffects;
     use pera_types::error::{ExecutionError, ExecutionErrorKind};
     use pera_types::execution::is_certificate_denied;
@@ -1130,12 +1131,7 @@ mod checked {
                 "create_dkg_first_round_output",
                 vec![
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&data.output).map_err(|e| {
-                        ExecutionError::new(
-                            ExecutionErrorKind::SerializationFailed,
-                            Some(format!("Failed to serialize DKGFirst output: {}", e).into()),
-                        )
-                    })?),
+                    CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                 ],
             ),
@@ -1144,43 +1140,18 @@ mod checked {
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&data.output).map_err(|e| {
-                        ExecutionError::new(
-                            ExecutionErrorKind::SerializationFailed,
-                            Some(format!("Failed to serialize DKGSecond output: {}", e).into()),
-                        )
-                    })?),
+                    CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(dwallet_cap_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&dwallet_network_key_version).map_err(|e| {
-                        ExecutionError::new(
-                            ExecutionErrorKind::SerializationFailed,
-                            Some(format!("Failed to serialize network key version: {}", e).into()),
-                        )
-                    })?),
+                    CallArg::Pure(bcs_to_bytes(&dwallet_network_key_version)?),
                 ],
             ),
             MPCRound::PresignFirst(dwallet_id, dkg_output, batch_session_id) => (
                 "launch_presign_second_round",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&dwallet_id).map_err(|e| {
-                        ExecutionError::new(
-                            ExecutionErrorKind::SerializationFailed,
-                            Some(format!("Failed to serialize dwallet_id: {}", e).into()),
-                        )
-                    })?),
-                    CallArg::Pure(bcs::to_bytes(&dkg_output).map_err(|e| {
-                        ExecutionError::new(
-                            ExecutionErrorKind::SerializationFailed,
-                            Some(format!("Failed to serialize dkg_output: {}", e).into()),
-                        )
-                    })?),
-                    CallArg::Pure(bcs::to_bytes(&data.output).map_err(|e| {
-                        ExecutionError::new(
-                            ExecutionErrorKind::SerializationFailed,
-                            Some(format!("Failed to serialize PresignFirst output: {}", e).into()),
-                        )
-                    })?),
+                    CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
+                    CallArg::Pure(bcs_to_bytes(&dkg_output)?),
+                    CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                     CallArg::Pure(batch_session_id.to_vec()),
                 ],
@@ -1203,24 +1174,14 @@ mod checked {
                     vec![
                         CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                         CallArg::Pure(batch_session_id.to_vec()),
-                        CallArg::Pure(bcs::to_bytes(&first_round_session_ids).map_err(|e| {
-                            ExecutionError::new(
-                                ExecutionErrorKind::SerializationFailed,
-                                Some(format!("Failed to serialize keys for batch: {}", e).into()),
-                            )
-                        })?),
-                        CallArg::Pure(bcs::to_bytes(&presigns).map_err(|e| {
+                        CallArg::Pure(bcs_to_bytes(&first_round_session_ids)?),
+                        CallArg::Pure(bcs_to_bytes(&presigns).map_err(|e| {
                             ExecutionError::new(
                                 ExecutionErrorKind::SerializationFailed,
                                 Some(format!("Failed to serialize values for batch: {}", e).into()),
                             )
                         })?),
-                        CallArg::Pure(bcs::to_bytes(&dwallet_id).map_err(|e| {
-                            ExecutionError::new(
-                                ExecutionErrorKind::SerializationFailed,
-                                Some(format!("Failed to serialize dwallet_id: {}", e).into()),
-                            )
-                        })?),
+                        CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
                     ],
                 )
             }
@@ -1234,14 +1195,9 @@ mod checked {
                     // Serialized Vector of Signatures.
                     CallArg::Pure(data.output),
                     // The Batch Session ID.
-                    CallArg::Pure(bcs::to_bytes(&batch_session_id).map_err(|e| {
-                        ExecutionError::new(
-                            ExecutionErrorKind::SerializationFailed,
-                            Some(format!("Failed to serialize session_id: {}", e).into()),
-                        )
-                    })?),
+                    CallArg::Pure(bcs_to_bytes(&batch_session_id)?),
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
+                    CallArg::Pure(bcs_to_bytes(&dwallet_id).unwrap()),
                 ],
             ),
             MPCRound::NetworkDkg(key_type, ppp) => {
@@ -1257,28 +1213,12 @@ mod checked {
                     "new_decryption_key_shares_version",
                     vec![
                         CallArg::PERA_SYSTEM_MUT,
-                        CallArg::Pure(bcs::to_bytes(&ppp.current_epoch_shares).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&ppp.protocol_public_parameters).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&ppp.decryption_public_parameters).map_err(
-                            |e| {
-                                ExecutionError::new(
-                                    ExecutionErrorKind::SerializationFailed,
-                                    Some(
-                                        format!("Failed to serialize NetworkDkg output: {}", e)
-                                            .into(),
-                                    ),
-                                )
-                            },
-                        )?),
-                        CallArg::Pure(bcs::to_bytes(&(key_type as u8)).map_err(|e| {
-                            ExecutionError::new(
-                                ExecutionErrorKind::SerializationFailed,
-                                Some(
-                                    format!("Failed to serialize NetworkDkg key type: {}", e)
-                                        .into(),
-                                ),
-                            )
-                        })?),
+                        CallArg::Pure(bcs_to_bytes(&ppp.current_epoch_shares)?),
+                        CallArg::Pure(bcs_to_bytes(&ppp.protocol_public_parameters)?),
+                        CallArg::Pure(bcs_to_bytes(&ppp.decryption_public_parameters)?),
+                        CallArg::Pure(bcs_to_bytes(&ppp.encryption_key)?),
+                        CallArg::Pure(bcs_to_bytes(&ppp.reconstructed_commitments_to_sharing)?),
+                        CallArg::Pure(bcs_to_bytes(&(key_type as u8))?),
                     ],
                 )
             }
@@ -1311,6 +1251,18 @@ mod checked {
             gas_charger,
             pt,
         )
+    }
+
+    fn bcs_to_bytes<T>(obj: &T) -> Result<Vec<u8>, ExecutionError>
+    where
+        T: serde::Serialize,
+    {
+        bcs::to_bytes(obj).map_err(|e| {
+            ExecutionError::new(
+                ExecutionErrorKind::SerializationFailed,
+                Some(format!("Failed to serialize object: {}", e).into()),
+            )
+        })
     }
 
     fn setup_and_execute_lock_next_epoch_committee(

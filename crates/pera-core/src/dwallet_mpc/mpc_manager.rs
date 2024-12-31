@@ -418,7 +418,14 @@ impl DWalletMPCManager {
                     let network_keys = epoch_store
                         .dwallet_mpc_network_keys
                         .get()
-                        .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?.add_key_version(self.epoch_store()?, key_type, bcs::from_bytes(&private_output)?, public_output, &self.weighted_threshold_access_structure)?;
+                        .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+                        .add_key_version(
+                            self.epoch_store()?,
+                            key_type,
+                            bcs::from_bytes(&private_output)?,
+                            public_output,
+                            &self.weighted_threshold_access_structure,
+                        )?;
                 }
             }
 
