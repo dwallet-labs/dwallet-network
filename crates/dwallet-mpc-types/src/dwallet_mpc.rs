@@ -32,12 +32,7 @@ pub type MPCMessage = Vec<u8>;
 pub type MPCPublicOutput = Vec<u8>;
 
 /// Alias for an MPC private output.
-#[derive(Clone, Debug, PartialEq)]
-pub enum MPCPrivateOutput {
-    None,
-    DecryptionKeyShare(HashMap<PartyID, Vec<u8>>),
-}
-// pub type MPCPrivateOutput = PrivateOutput;
+pub type MPCPrivateOutput = Vec<u8>;
 
 /// Alias for MPC public input.
 pub type MPCPublicInput = Vec<u8>;

@@ -110,7 +110,7 @@ impl DWalletMPCSession {
                 println!("party id: {}", self.party_id);
                 // todo : fix the none
                 self.status =
-                    MPCSessionStatus::Finished(public_output.clone(), MPCPrivateOutput::None);
+                    MPCSessionStatus::Finished(public_output.clone(), private_output);
                 Ok((
                     self.new_dwallet_mpc_output_message(public_output)?,
                     malicious_parties,
