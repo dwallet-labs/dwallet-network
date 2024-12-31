@@ -1,19 +1,23 @@
+use commitment::CommitmentSizedNumber;
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput, MPCSessionStatus};
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput, MPCSessionStatus};
+use pera_types::base_types::EpochId;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
+use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use twopc_mpc::sign::Protocol;
 
-use pera_types::base_types::EpochId;
-use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
-use pera_types::messages_dwallet_mpc::SessionInfo;
-
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
-use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
+use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
+use crate::dwallet_mpc::network_dkg::advance_network_dkg;
+use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
+use crate::dwallet_mpc::sign::SignFirstParty;
+
+pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 /// A dWallet MPC session.
 /// It keeps track of the session, the channel to send messages to the session,
@@ -33,15 +37,13 @@ pub(super) struct DWalletMPCSession {
     /// as the IDs are just the indexes of those parties.
     /// If there are three parties, the IDs are [0, 1, 2].
     pub(super) session_info: SessionInfo,
-    /// The MPC party being used to run the MPC cryptographic steps.
-    /// Party in here is not a Validator, but a cryptographic party.    pub party: MPCParty,
     pub(super) public_input: MPCPublicInput,
-    party: MPCParty,
-    // The decryption share of the party for mpc sign sessions
-    // decryption_share: Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
     pub(super) round_number: usize,
+    party_id: PartyID,
+    weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+    decryption_share: <AsyncProtocol as Protocol>::DecryptionKeyShare,
 }
 
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
@@ -51,20 +53,24 @@ impl DWalletMPCSession {
     pub(crate) fn new(
         epoch_store: Weak<AuthorityPerEpochStore>,
         epoch: EpochId,
-        party: MPCParty,
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
         session_info: SessionInfo,
+        party_id: PartyID,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+        decryption_share: <AsyncProtocol as Protocol>::DecryptionKeyShare,
     ) -> Self {
         Self {
             status,
             pending_messages: vec![HashMap::new()],
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
-            party,
             public_input: auxiliary_input,
             session_info,
             round_number: 0,
+            party_id,
+            weighted_threshold_access_structure,
+            decryption_share,
         }
     }
 
@@ -78,22 +84,10 @@ impl DWalletMPCSession {
     /// to send to the other MPC parties.
     /// Uses the existing party if it exists,
     /// otherwise creates a new one, as this is the first advance.
-    pub(super) fn advance(
-        &mut self,
-        weighted_threshold_access: &WeightedThresholdAccessStructure,
-        party_id: PartyID,
-    ) -> DwalletMPCResult<(ConsensusTransaction, Vec<PartyID>)> {
+    pub(super) fn advance(&mut self) -> DwalletMPCResult<(ConsensusTransaction, Vec<PartyID>)> {
         self.status = MPCSessionStatus::Active;
         self.round_number = self.round_number + 1;
-        let advance_result = self.party().advance(
-            self.pending_messages.clone(),
-            self.session_info.flow_session_id,
-            party_id,
-            weighted_threshold_access,
-            self.public_input.clone(),
-        );
-
-        match advance_result {
+        match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
                 message,
@@ -125,6 +119,84 @@ impl DWalletMPCSession {
             Err(e) => {
                 self.status = MPCSessionStatus::Failed;
                 Err(e)
+            }
+        }
+    }
+
+    fn advance_specific_party(
+        &self,
+    ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+        let session_id = CommitmentSizedNumber::from_le_slice(
+            self.session_info.flow_session_id.to_vec().as_slice(),
+        );
+        match &self.session_info.mpc_round {
+            MPCRound::DKGFirst => {
+                let public_input = bcs::from_bytes(&self.public_input)?;
+                crate::dwallet_mpc::advance::<DKGFirstParty>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.pending_messages.clone(),
+                    public_input,
+                    (),
+                )
+            }
+            MPCRound::DKGSecond(..) => {
+                let public_input = bcs::from_bytes(&self.public_input)?;
+                crate::dwallet_mpc::advance::<DKGSecondParty>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.pending_messages.clone(),
+                    public_input,
+                    (),
+                )
+            }
+            MPCRound::PresignFirst(..) => {
+                let public_input = bcs::from_bytes(&self.public_input)?;
+                crate::dwallet_mpc::advance::<PresignFirstParty>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.pending_messages.clone(),
+                    public_input,
+                    (),
+                )
+            }
+            MPCRound::PresignSecond(..) => {
+                let public_input = bcs::from_bytes(&self.public_input)?;
+                crate::dwallet_mpc::advance::<PresignSecondParty>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.pending_messages.clone(),
+                    public_input,
+                    (),
+                )
+            }
+            MPCRound::Sign(..) => {
+                let public_input = bcs::from_bytes(&self.public_input)?;
+                crate::dwallet_mpc::advance::<SignFirstParty>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.pending_messages.clone(),
+                    public_input,
+                    vec![(self.party_id, self.decryption_share.clone())]
+                        .into_iter()
+                        .collect(),
+                )
+            }
+            MPCRound::NetworkDkg(key_type) => advance_network_dkg(
+                session_id,
+                &self.weighted_threshold_access_structure,
+                self.party_id,
+                &self.public_input,
+                key_type,
+                self.pending_messages.clone(),
+            ),
+            MPCRound::BatchedPresign(..) | MPCRound::BatchedSign(..) => {
+                unreachable!("advance should never be called on a batched session")
             }
         }
     }
@@ -201,9 +273,5 @@ impl DWalletMPCSession {
     pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         self.store_message(message)?;
         Ok(())
-    }
-
-    pub(crate) fn party(&self) -> &MPCParty {
-        &self.party
     }
 }

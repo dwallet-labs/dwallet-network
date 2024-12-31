@@ -40,7 +40,8 @@ pub struct SsfnGenesisConfig {
 pub struct ValidatorGenesisConfig {
     // todo (#348): Update the system to ensure that each validator saves only their own decryption share
     #[serde(default)]
-    pub dwallet_mpc_class_groups_public_parameters: Option<DecryptionSharePublicParameters>,
+    pub dwallet_mpc_class_groups_public_parameters:
+        Option<twopc_mpc::sign::ClassGroupsPublicParams>,
     #[serde(default)]
     pub dwallet_mpc_class_groups_decryption_shares:
         Option<HashMap<PartyID, SecretKeyShareSizedNumber>>,
@@ -121,7 +122,7 @@ pub struct ValidatorGenesisConfigBuilder {
     port_offset: Option<u16>,
     /// Whether to use a specific p2p listen ip address. This is useful for testing on AWS.
     p2p_listen_ip_address: Option<IpAddr>,
-    dwallet_mpc_class_groups_public_parameters: Option<DecryptionSharePublicParameters>,
+    dwallet_mpc_class_groups_public_parameters: Option<twopc_mpc::sign::ClassGroupsPublicParams>,
     dwallet_mpc_decryption_shares: Option<HashMap<PartyID, SecretKeyShareSizedNumber>>,
     class_groups_key_pair_and_proof: Option<ClassGroupsKeyPairAndProof>,
 }
@@ -133,7 +134,7 @@ impl ValidatorGenesisConfigBuilder {
 
     pub fn with_dwallet_mpc_class_groups_public_parameters(
         mut self,
-        dwallet_mpc_class_groups_public_parameters: DecryptionSharePublicParameters,
+        dwallet_mpc_class_groups_public_parameters: twopc_mpc::sign::ClassGroupsPublicParams,
     ) -> Self {
         self.dwallet_mpc_class_groups_public_parameters =
             Some(dwallet_mpc_class_groups_public_parameters);

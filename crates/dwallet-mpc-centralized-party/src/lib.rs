@@ -80,13 +80,8 @@ pub fn create_dkg_output(
     let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
         bcs::from_bytes(&decentralized_first_round_output)
             .context("Failed to deserialize decentralized first round output")?;
-    let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
-    let public_parameters = ProtocolPublicParameters::new::<
-        { secp256k1::SCALAR_LIMBS },
-        { secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        { secp256k1::class_groups::NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        secp256k1::GroupElement,
-    >(bcs::from_bytes(&protocol_public_parameters)?);
+    let public_parameters = class_groups_constants::protocol_public_parameters();
+
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
 
     let round_result = DKGCentralizedParty::advance(
@@ -97,13 +92,9 @@ pub fn create_dkg_output(
     )
     .context("advance() failed on the DKGCentralizedParty")?;
 
-    let public_key_share_and_proof = round_result.outgoing_message;
-    let centralized_party_dkg_output = round_result.public_output;
-    let centralized_party_secret_key_share = round_result.private_output;
-
-    let public_key_share_and_proof = bcs::to_bytes(&public_key_share_and_proof)?;
-    let centralized_public_output = bcs::to_bytes(&centralized_party_dkg_output)?;
-    let centralized_secret_output = bcs::to_bytes(&centralized_party_secret_key_share)?;
+    let public_key_share_and_proof = bcs::to_bytes(&round_result.outgoing_message)?;
+    let centralized_public_output = bcs::to_bytes(&round_result.public_output)?;
+    let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
 
     Ok((
         public_key_share_and_proof,
@@ -146,12 +137,7 @@ pub fn create_sign_output(
     session_ids: Vec<String>,
 ) -> anyhow::Result<(Vec<HashedMessages>, Vec<SignedMessages>)> {
     let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
-    let protocol_public_parameters = ProtocolPublicParameters::new::<
-        { secp256k1::SCALAR_LIMBS },
-        { secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        { secp256k1::class_groups::NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        secp256k1::GroupElement,
-    >(bcs::from_bytes(&protocol_public_parameters)?);
+
     let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
         bcs::from_bytes(&centralized_party_dkg_output)?;
     let (signed_messages, hashed_messages): (Vec<_>, Vec<_>) = messages

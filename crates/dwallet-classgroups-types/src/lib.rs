@@ -1,9 +1,13 @@
 use class_groups::{
-    CompactIbqf, KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
+    construct_knowledge_of_decryption_key_public_parameters_per_crt_prime,
+    construct_setup_parameters_per_crt_prime, generate_keypairs_per_crt_prime,
+    generate_knowledge_of_decryption_key_proofs_per_crt_prime, CompactIbqf,
+    KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
 };
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
+use rand_chacha::rand_core::SeedableRng;
 use serde_derive::{Deserialize, Serialize};
 
 pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
@@ -21,6 +25,8 @@ pub type ClassGroupsProof = KnowledgeOfDiscreteLogUCProof;
 pub struct ClassGroupsKeyPairAndProof {
     decryption_key: ClassGroupsDecryptionKey,
     encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
+    // decryption_key: ClassGroupsDecryptionKey,
+    // encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -44,6 +50,7 @@ impl ClassGroupsKeyPairAndProof {
     }
 
     pub fn public_bytes(&self) -> ClassGroupsPublicKeyAndProofBytes {
+        // Safe to unwrap because the serialization should never fail.
         bcs::to_bytes(&self.public()).unwrap()
     }
 
@@ -80,7 +87,7 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
             construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER)
                 .unwrap();
         let language_public_parameters_per_crt_prime =
-            construct_knowledge_of_discrete_log_public_parameters_per_crt_prime(
+            construct_knowledge_of_decryption_key_public_parameters_per_crt_prime(
                 setup_parameters_per_crt_prime.each_ref(),
             )
             .unwrap();

@@ -1,7 +1,7 @@
 //! This module provides a wrapper around the DKG protocol from the 2PC-MPC library.
 //!
 //! It integrates both DKG parties (each representing a round in the DKG protocol).
-use crate::dwallet_mpc::mpc_party::AsyncProtocol;
+use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::MPCPublicInput;
 use mpc::Party;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};

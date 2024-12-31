@@ -4,16 +4,11 @@ use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
 use crate::dwallet_mpc::authority_name_to_party_id;
-use crate::dwallet_mpc::batches_manager::BatchedSignSession;
-use crate::dwallet_mpc::mpc_events::{StartBatchedSignEvent, ValidatorDataForDWalletSecretShare};
-use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputResult};
-use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
-use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
-use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, DwalletMPCNetworkKeysStatus};
-use crate::dwallet_mpc::sign::SignFirstParty;
-use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
-use anyhow::anyhow;
-use class_groups::dkg::Secp256k1Party;
+use crate::dwallet_mpc::mpc_events::ValidatorDataForDWalletSecretShare;
+use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
+use crate::dwallet_mpc::public_input_from_event;
 use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
@@ -33,8 +28,8 @@ use std::sync::{Arc, Weak};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::warn;
 use tracing::{error, info};
-use twopc_mpc::secp256k1::class_groups::DecryptionKey;
 use twopc_mpc::sign::Protocol;
+use twopc_mpc::secp256k1::class_groups::DecryptionKey;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
@@ -221,13 +216,7 @@ impl DWalletMPCManager {
 
     fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {
         self.outputs_verifier.handle_new_event(&session_info);
-        if let Ok((party, auxiliary_input, session_info)) = from_event(
-            &event,
-            &self,
-            authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?,
-        ) {
-            self.push_new_mpc_session(auxiliary_input, party, session_info)?;
-        };
+        self.push_new_mpc_session(public_input_from_event(&event, &self)?, session_info)?;
         Ok(())
     }
 
@@ -367,7 +356,7 @@ impl DWalletMPCManager {
                         DwalletMPCNetworkKeysStatus::Ready(_)
                     )
                     || (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
-                        && matches!(session.party(), MPCParty::NetworkDkg(_))
+                        && matches!(session.session_info.mpc_round, MPCRound::NetworkDkg(..))
                         && self.validators_data_for_network_dkg.len()
                             == self
                                 .weighted_threshold_access_structure
@@ -392,12 +381,7 @@ impl DWalletMPCManager {
         let mut messages = vec![];
         ready_to_advance
             .par_iter_mut()
-            .map(|session| {
-                (
-                    session.advance(&self.weighted_threshold_access_structure, self.party_id),
-                    session.session_info.session_id,
-                )
-            })
+            .map(|session| (session.advance(), session.session_info.session_id))
             .collect::<Vec<_>>()
             // Convert back to an iterator for processing.
             .into_iter()
@@ -550,7 +534,6 @@ impl DWalletMPCManager {
     pub(crate) fn push_new_mpc_session(
         &mut self,
         auxiliary_input: Vec<u8>,
-        party: MPCParty,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
         if self.mpc_sessions.contains_key(&session_info.session_id) {
@@ -568,10 +551,12 @@ impl DWalletMPCManager {
         let mut new_session = DWalletMPCSession::new(
             self.epoch_store.clone(),
             self.epoch_id,
-            party,
             MPCSessionStatus::Pending,
             auxiliary_input,
             session_info.clone(),
+            self.party_id,
+            self.weighted_threshold_access_structure.clone(),
+            self.get_decryption_share()?,
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing

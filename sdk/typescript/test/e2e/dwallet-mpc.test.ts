@@ -102,6 +102,7 @@ describe('Test dWallet MPC', () => {
 		// let a = await conf.client.getLatestPeraSystemState();
 		// let ppp = convertToMap(a.decryptionKeyShares).get(1)!.at(0)!.at(0)!.protocol_public_parameters;
 		const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
+			// Todo (#382): Change to real value.
 			Uint8Array.from([1, 2]),
 			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
 			Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),
@@ -154,6 +155,7 @@ describe('Test dWallet MPC', () => {
 			// let a = await conf.client.getLatestPeraSystemState();
 			// let ppp = convertToMap(a.decryptionKeyShares).get(1)!.at(0)!.at(0)!.protocol_public_parameters;
 			const [centralizedSignedMsg, hashedMsgs] = create_sign_centralized_output(
+				// Todo (#382): Change to real value.
 				Uint8Array.from([1, 2]),
 				Uint8Array.from(dWallet.centralizedDKGPublicOutput),
 				Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),
@@ -208,6 +210,7 @@ describe('Test dWallet MPC', () => {
 			])
 			.toBytes();
 		const [centralizedSignMsg, hashedMsgs] = create_sign_centralized_output(
+			// Todo (#382): Change to real value.
 			Uint8Array.from([1, 2]),
 			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
 			Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),

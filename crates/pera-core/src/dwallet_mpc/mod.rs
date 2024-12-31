@@ -9,7 +9,6 @@ use crate::dwallet_mpc::mpc_events::{
     StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
-use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 use crate::dwallet_mpc::presign::{
     PresignFirstParty, PresignFirstPartyPublicInputGenerator, PresignSecondParty,
     PresignSecondPartyPublicInputGenerator,
@@ -23,7 +22,7 @@ use pera_types::base_types::AuthorityName;
 use pera_types::base_types::{EpochId, ObjectID};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
-use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
+use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo, SignMessageData};
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 use twopc_mpc::sign::Protocol;
@@ -33,7 +32,6 @@ mod dkg;
 pub(crate) mod mpc_events;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
-pub(crate) mod mpc_party;
 pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
@@ -110,20 +108,15 @@ pub(crate) fn session_info_from_event(
     }
 }
 
-fn dkg_second_party(
+fn dkg_second_public_input(
     deserialized_event: StartDKGSecondRoundEvent,
-    dwallet_network_key_version: u8,
     protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
-    Ok((
-        MPCParty::SecondDKGBytesParty,
-        DKGSecondParty::generate_public_input(
-            protocol_public_parameters,
-            deserialized_event.first_round_output.clone(),
-            deserialized_event.public_key_share_and_proof.clone(),
-        )?,
-        dkg_second_party_session_info(&deserialized_event, dwallet_network_key_version),
-    ))
+) -> DwalletMPCResult<Vec<u8>> {
+    Ok(DKGSecondParty::generate_public_input(
+        protocol_public_parameters,
+        deserialized_event.first_round_output.clone(),
+        deserialized_event.public_key_share_and_proof.clone(),
+    )?)
 }
 
 fn dkg_second_party_session_info(
@@ -141,17 +134,10 @@ fn dkg_second_party_session_info(
     }
 }
 
-fn dkg_first_party(
-    deserialized_event: StartDKGFirstRoundEvent,
+fn dkg_first_public_input(
     protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
-    Ok((
-        MPCParty::FirstDKGBytesParty,
-        <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
-            protocol_public_parameters,
-        )?,
-        dkg_first_party_session_info(deserialized_event),
-    ))
+) -> DwalletMPCResult<Vec<u8>> {
+    <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(protocol_public_parameters)
 }
 
 fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
@@ -163,18 +149,16 @@ fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> 
     }
 }
 
-fn presign_first_party(
+fn presign_first_public_input(
     deserialized_event: StartPresignFirstRoundEvent,
     protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
-    Ok((
-        MPCParty::FirstPresignBytesParty,
+) -> DwalletMPCResult<Vec<u8>> {
+    Ok(
         <PresignFirstParty as PresignFirstPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
             deserialized_event.dkg_output.clone(),
         )?,
-        presign_first_party_session_info(deserialized_event),
-    ))
+    )
 }
 
 fn presign_first_party_session_info(
@@ -192,19 +176,17 @@ fn presign_first_party_session_info(
     }
 }
 
-fn presign_second_party(
+fn presign_second_public_input(
     deserialized_event: StartPresignSecondRoundEvent,
     protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
-    Ok((
-        MPCParty::SecondPresignBytesParty,
+) -> DwalletMPCResult<Vec<u8>> {
+    Ok(
         <PresignSecondParty as PresignSecondPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
             deserialized_event.dkg_output.clone(),
             deserialized_event.first_round_output.clone(),
         )?,
-        presign_second_party_session_info(&deserialized_event),
-    ))
+    )
 }
 
 fn presign_second_party_session_info(
@@ -222,15 +204,14 @@ fn presign_second_party_session_info(
     }
 }
 
-fn sign_party(
-    party_id: PartyID,
+fn sign_public_input(
     deserialized_event: StartSignRoundEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
     protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
+) -> DwalletMPCResult<Vec<u8>> {
+    // Todo (Yael): Save the shares so it'll be reachable where needed
     let (decryption_key_share, decryption_pp) = dwallet_mpc_manager.get_decryption_share()?;
-    Ok((
-        MPCParty::SignBytesParty(decryption_key_share),
+    Ok(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
             deserialized_event.dkg_output.clone(),
@@ -239,8 +220,7 @@ fn sign_party(
             deserialized_event.centralized_signed_message.clone(),
             bcs::from_bytes(&decryption_pp)?,
         )?,
-        sign_party_session_info(&deserialized_event, party_id),
-    ))
+    )
 }
 
 fn sign_party_session_info(
@@ -251,10 +231,11 @@ fn sign_party_session_info(
         flow_session_id: deserialized_event.presign_session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCRound::Sign(
-            deserialized_event.batched_session_id.bytes,
-            deserialized_event.hashed_message.clone(),
-        ),
+        mpc_round: MPCRound::Sign(SignMessageData {
+            batch_session_id: deserialized_event.batched_session_id.bytes,
+            message: deserialized_event.hashed_message.clone(),
+            dwallet_id: deserialized_event.dwallet_id.bytes,
+        }),
     }
 }
 
@@ -361,11 +342,10 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 ///
 /// Returns an error if the event type does not correspond to any known MPC rounds
 /// or if deserialization fails.
-pub(crate) fn from_event(
+pub(crate) fn public_input_from_event(
     event: &Event,
     dwallet_mpc_manager: &DWalletMPCManager,
-    party_id: PartyID,
-) -> DwalletMPCResult<(MPCParty, MPCPublicInput, SessionInfo)> {
+) -> DwalletMPCResult<MPCPublicInput> {
     if &event.type_ == &StartNetworkDKGEvent::type_() {
         let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
         return network_dkg::network_dkg_party(deserialized_event);
@@ -374,42 +354,24 @@ pub(crate) fn from_event(
         dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?,
     )?;
     match &event.type_ {
-        t if t == &StartDKGFirstRoundEvent::type_() => {
-            let deserialized_event: StartDKGFirstRoundEvent = bcs::from_bytes(&event.contents)?;
-            dkg_first_party(deserialized_event, protocol_public_parameters)
-        }
+        t if t == &StartDKGFirstRoundEvent::type_() => dkg_first_public_input(protocol_public_parameters),
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
-            dkg_second_party(
-                deserialized_event,
-                // Todo (#394): Remove the hardcoded network key type
-                if cfg!(feature = "with-network-dkg") {
-                    dwallet_mpc_manager
-                        .network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?
-                } else {
-                    0
-                },
-                protocol_public_parameters,
-            )
+            dkg_second_public_input(deserialized_event, protocol_public_parameters)
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
             let deserialized_event: StartPresignFirstRoundEvent = bcs::from_bytes(&event.contents)?;
-            presign_first_party(deserialized_event, protocol_public_parameters)
+            presign_first_public_input(deserialized_event, protocol_public_parameters)
         }
         t if t == &StartPresignSecondRoundEvent::type_() => {
             let deserialized_event: StartPresignSecondRoundEvent =
                 bcs::from_bytes(&event.contents)?;
-            presign_second_party(deserialized_event, protocol_public_parameters)
+            presign_second_public_input(deserialized_event, protocol_public_parameters)
         }
         t if t == &StartSignRoundEvent::type_() => {
             let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
-            sign_party(
-                party_id,
-                deserialized_event,
-                dwallet_mpc_manager,
-                protocol_public_parameters,
-            )
+            sign_public_input(deserialized_event, dwallet_mpc_manager, protocol_public_parameters)
         }
-        _ => Err(DwalletMPCError::NonMPCEvent.into()),
+        _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),
     }
 }

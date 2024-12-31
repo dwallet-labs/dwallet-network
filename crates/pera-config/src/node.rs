@@ -60,7 +60,8 @@ pub struct NodeConfig {
     // todo (#348): Update the system to ensure that each
     // todo (#348): validator saves only their own decryption share
     #[serde(default)]
-    pub dwallet_mpc_decryption_shares_public_parameters: Option<DecryptionSharePublicParameters>,
+    pub dwallet_mpc_decryption_shares_public_parameters:
+        Option<twopc_mpc::sign::ClassGroupsPublicParams>,
     #[serde(default)]
     pub dwallet_mpc_class_groups_decryption_shares:
         Option<HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>>,

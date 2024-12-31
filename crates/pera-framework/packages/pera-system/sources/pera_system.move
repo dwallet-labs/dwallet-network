@@ -52,7 +52,7 @@ module pera_system::pera_system {
     use pera_system::staking_pool::PoolTokenExchangeRate;
     use pera::dynamic_field;
     use pera::vec_map::VecMap;
-    use pera_system::validator_set::{get_active_validators_data};
+    use pera_system::validator_set::get_active_validators_data;
     use pera_system::dwallet_network_key::{is_valid_key_scheme, start_network_dkg};
 
     #[test_only] use pera::balance;

@@ -58,7 +58,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
-    use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound};
+    use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound, SignMessageData};
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -1124,6 +1124,7 @@ mod checked {
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
         let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
+
         let (move_function_name, args) = match data.session_info.mpc_round {
             MPCRound::DKGFirst => (
                 "create_dkg_first_round_output",
@@ -1135,6 +1136,7 @@ mod checked {
                             Some(format!("Failed to serialize DKGFirst output: {}", e).into()),
                         )
                     })?),
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                 ],
             ),
             MPCRound::DKGSecond(dwallet_cap_id, dwallet_network_key_version) => (
@@ -1222,18 +1224,24 @@ mod checked {
                     ],
                 )
             }
-            MPCRound::Sign(session_id, _) => (
+            MPCRound::Sign(SignMessageData {
+                batch_session_id,
+                dwallet_id,
+                ..
+            }) => (
                 "create_sign_output",
                 vec![
                     // Serialized Vector of Signatures.
                     CallArg::Pure(data.output),
                     // The Batch Session ID.
-                    CallArg::Pure(bcs::to_bytes(&session_id).map_err(|e| {
+                    CallArg::Pure(bcs::to_bytes(&batch_session_id).map_err(|e| {
                         ExecutionError::new(
                             ExecutionErrorKind::SerializationFailed,
                             Some(format!("Failed to serialize session_id: {}", e).into()),
                         )
                     })?),
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
                 ],
             ),
             MPCRound::NetworkDkg(key_type, ppp) => {

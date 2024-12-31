@@ -58,6 +58,7 @@ interface StartDKGFirstRoundEvent {
 interface DKGFirstRoundOutputEvent {
 	output: number[];
 	session_id: string;
+	output_object_id: string;
 }
 
 interface DKGFirstRoundOutput extends DKGFirstRoundOutputEvent {
@@ -81,11 +82,11 @@ function convertToMap(
 export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 	const dkgFirstRoundOutput: DKGFirstRoundOutput = await launchDKGFirstRound(conf);
 	console.log('DKG First Round Output:', dkgFirstRoundOutput);
-	// let a = await conf.client.getLatestPeraSystemState();
-	// let ppp = convertToMap(a.decryptionKeyShares).get(1)!.at(0)!.at(0)!.protocol_public_parameters;
+    // let a = await conf.client.getLatestPeraSystemState();
+    // let ppp = convertToMap(a.decryptionKeyShares).get(1)!.at(0)!.at(0)!.protocol_public_parameters;
 	let [publicKeyShareAndProof, centralizedPublicOutput, centralizedPrivateOutput] =
 		create_dkg_centralized_output(
-			// Uint8Array.from(ppp),
+			// Todo (#382): Change to real value.
 			Uint8Array.from([1, 2]),
 			Uint8Array.from(dkgFirstRoundOutput.output),
 			// Remove the 0x prefix.
@@ -148,7 +149,7 @@ async function launchDKGSecondRound(
 		arguments: [
 			tx.object(firstRound.dwallet_cap_id),
 			tx.pure(bcs.vector(bcs.u8()).serialize(publicKeyShareAndProof)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(firstRound.output)),
+			tx.object(firstRound.output_object_id),
 			tx.pure.id(firstRound.session_id),
 		],
 	});
@@ -195,5 +196,5 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 }
 
 function isDKGFirstRoundOutputEvent(obj: any): obj is DKGFirstRoundOutputEvent {
-	return 'output' in obj && 'session_id' in obj;
+	return 'output' in obj && 'session_id' in obj && 'output_object_id' in obj;
 }

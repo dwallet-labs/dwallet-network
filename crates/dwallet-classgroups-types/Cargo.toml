@@ -14,6 +14,7 @@ fastcrypto = { workspace = true, features = ["copy_key"] }
 rand_chacha = "0.3.1"
 serde_json.workspace = true
 serde_derive = "1.0.217"
+pera-types.workspace = true
 
 
 
