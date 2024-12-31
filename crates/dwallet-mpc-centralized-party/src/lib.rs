@@ -5,11 +5,10 @@ use k256::ecdsa::hazmat::bits2field;
 use k256::ecdsa::signature::digest::{Digest, FixedOutput};
 use k256::elliptic_curve::ops::Reduce;
 use k256::{elliptic_curve, U256};
-use mpc::two_party::{Round, RoundResult};
+use mpc::two_party::Round;
 use rand_core::OsRng;
 use std::fmt;
-use twopc_mpc::sign::centralized_party::class_groups::Message;
-use twopc_mpc::{secp256k1, ProtocolPublicParameters};
+use twopc_mpc::secp256k1;
 
 type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
