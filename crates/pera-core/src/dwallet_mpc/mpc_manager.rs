@@ -28,8 +28,8 @@ use std::sync::{Arc, Weak};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::warn;
 use tracing::{error, info};
-use twopc_mpc::sign::Protocol;
 use twopc_mpc::secp256k1::class_groups::DecryptionKey;
+use twopc_mpc::sign::Protocol;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
@@ -556,7 +556,7 @@ impl DWalletMPCManager {
             session_info.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
-            self.get_decryption_share()?,
+            self.get_decryption_share()?.0,
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing

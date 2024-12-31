@@ -134,10 +134,10 @@ fn dkg_second_party_session_info(
     }
 }
 
-fn dkg_first_public_input(
-    protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<Vec<u8>> {
-    <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(protocol_public_parameters)
+fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResult<Vec<u8>> {
+    <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
+        protocol_public_parameters,
+    )
 }
 
 fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
@@ -264,7 +264,7 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
-) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, P::PrivateOutput, Vec<u8>>> {
+) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
     let messages = deserialize_mpc_messages(messages)?;
 
     let res = P::advance(
@@ -293,6 +293,7 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
         } => {
             let public_output: P::PublicOutputValue = public_output.into();
             let public_output = bcs::to_bytes(&public_output)?;
+            let private_output = bcs::to_bytes(&private_output)?;
             mpc::AsynchronousRoundResult::Finalize {
                 malicious_parties,
                 private_output,
@@ -348,13 +349,15 @@ pub(crate) fn public_input_from_event(
 ) -> DwalletMPCResult<MPCPublicInput> {
     if &event.type_ == &StartNetworkDKGEvent::type_() {
         let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
-        return network_dkg::network_dkg_party(deserialized_event);
+        return network_dkg::network_dkg_public_input(deserialized_event);
     }
     let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
         dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?,
     )?;
     match &event.type_ {
-        t if t == &StartDKGFirstRoundEvent::type_() => dkg_first_public_input(protocol_public_parameters),
+        t if t == &StartDKGFirstRoundEvent::type_() => {
+            dkg_first_public_input(protocol_public_parameters)
+        }
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
             dkg_second_public_input(deserialized_event, protocol_public_parameters)
@@ -370,7 +373,11 @@ pub(crate) fn public_input_from_event(
         }
         t if t == &StartSignRoundEvent::type_() => {
             let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
-            sign_public_input(deserialized_event, dwallet_mpc_manager, protocol_public_parameters)
+            sign_public_input(
+                deserialized_event,
+                dwallet_mpc_manager,
+                protocol_public_parameters,
+            )
         }
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),
     }

@@ -1,5 +1,7 @@
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput, MPCSessionStatus};
+use dwallet_mpc_types::dwallet_mpc::{
+    MPCMessage, MPCPrivateOutput, MPCPublicInput, MPCSessionStatus,
+};
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use pera_types::base_types::EpochId;
@@ -43,7 +45,7 @@ pub(super) struct DWalletMPCSession {
     pub(super) round_number: usize,
     party_id: PartyID,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-    decryption_share: <AsyncProtocol as Protocol>::DecryptionKeyShare,
+    decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
 }
 
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
@@ -58,7 +60,7 @@ impl DWalletMPCSession {
         session_info: SessionInfo,
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        decryption_share: <AsyncProtocol as Protocol>::DecryptionKeyShare,
+        decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     ) -> Self {
         Self {
             status,
@@ -105,8 +107,10 @@ impl DWalletMPCSession {
                 private_output,
                 public_output,
             }) => {
-                println!("party id: {}, party {:?}", party_id, self.party);
-                self.status = MPCSessionStatus::Finished(public_output.clone(), private_output);
+                println!("party id: {}", self.party_id);
+                // todo : fix the none
+                self.status =
+                    MPCSessionStatus::Finished(public_output.clone(), MPCPrivateOutput::None);
                 Ok((
                     self.new_dwallet_mpc_output_message(public_output)?,
                     malicious_parties,
@@ -182,12 +186,10 @@ impl DWalletMPCSession {
                     &self.weighted_threshold_access_structure,
                     self.pending_messages.clone(),
                     public_input,
-                    vec![(self.party_id, self.decryption_share.clone())]
-                        .into_iter()
-                        .collect(),
+                    self.decryption_share.clone(),
                 )
             }
-            MPCRound::NetworkDkg(key_type) => advance_network_dkg(
+            MPCRound::NetworkDkg(key_type, _) => advance_network_dkg(
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,

@@ -6,6 +6,7 @@
 //! to update the network decryption key shares synchronously.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
+use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::{advance, authority_name_to_party_id};
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
@@ -33,7 +34,6 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use twopc_mpc::secp256k1;
 use twopc_mpc::sign::Protocol;
-use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -325,8 +325,8 @@ pub(crate) fn advance_network_dkg(
     public_input: &[u8],
     key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
-) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, MPCPrivateOutput, Vec<u8>>> {
-    let output = match key_scheme {
+) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+    match key_scheme {
         // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
         DWalletMPCNetworkKeyScheme::Secp256k1 => advance::<Secp256k1Party>(
             session_id,
@@ -345,39 +345,19 @@ pub(crate) fn advance_network_dkg(
             bcs::from_bytes(public_input)?,
             read_class_groups_private_key_from_file_real("class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key").unwrap(),
         ),
-    }?;
-
-    match output {
-        AsynchronousRoundResult::Finalize {
-            malicious_parties,
-            private_output,
-            public_output,
-        } => Ok(AsynchronousRoundResult::Finalize {
-            malicious_parties,
-            private_output: MPCPrivateOutput::DecryptionKeyShare(
-                private_output
-                    .iter()
-                    .map(|(party_id, share)| (*party_id, bcs::to_bytes(share).unwrap()))
-                    .collect(),
-            ),
-            public_output,
-        }),
-        AsynchronousRoundResult::Advance {
-            malicious_parties,
-            message,
-        } => Ok(AsynchronousRoundResult::Advance {
-            malicious_parties,
-            message,
-        }),
     }
 }
 
 pub(super) fn network_dkg_public_input(
     deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<Vec<u8>> {
-    match DWalletMPCNetworkKey::try_from(deserialized_event.key_scheme)? {
-        DWalletMPCNetworkKey::Secp256k1 => Ok(dkg_secp256k1_auxiliary_input(deserialized_event)?),
-        DWalletMPCNetworkKey::Ristretto => Ok(dkg_ristretto_auxiliary_input(deserialized_event)?),
+    match DWalletMPCNetworkKeyScheme::try_from(deserialized_event.key_scheme)? {
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            Ok(dkg_secp256k1_auxiliary_input(deserialized_event)?)
+        }
+        DWalletMPCNetworkKeyScheme::Ristretto => {
+            Ok(dkg_ristretto_auxiliary_input(deserialized_event)?)
+        }
     }
 }
 

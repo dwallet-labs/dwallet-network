@@ -4063,6 +4063,7 @@ dependencies = [
  "crypto-bigint 0.5.5",
  "fastcrypto",
  "group 0.1.0",
+ "pera-types",
  "rand_chacha 0.3.1",
  "serde",
  "serde_derive",
@@ -4089,7 +4090,6 @@ dependencies = [
 name = "dwallet-mpc-types"
 version = "1.32.2"
 dependencies = [
- "anyhow",
  "bcs",
  "fastcrypto",
  "group 0.1.0",
