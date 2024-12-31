@@ -52,7 +52,6 @@ pub const DEFAULT_COMMISSION_RATE: u64 = 200;
 /// Default max number of active dWallet MPC sessions allowed to run simultaneously.
 pub const DEFAULT_MAX_ACTIVE_DWALLET_MPC_SESSIONS: usize = 3000;
 
-pub type DecryptionSharePublicParameters = twopc_mpc::sign::ClassGroupsPublicParams;
 #[serde_as]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
