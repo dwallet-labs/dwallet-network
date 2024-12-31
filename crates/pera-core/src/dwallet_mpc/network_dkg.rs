@@ -111,7 +111,6 @@ impl DwalletMPCNetworkKeyVersions {
         // this function takes some time to run
         let decryption_shares = public_output.default_decryption_key_shares::<SECP256K1_SCALAR_LIMBS, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, secp256k1::GroupElement>(authority_name_to_party_id(&epoch_store.name, &epoch_store).unwrap(), &weighted_threshold_access_structure, mock_cg_private_key()).unwrap();
 
-        let a = base64::encode(bcs::to_bytes(&decryption_shares).unwrap());
         let new_key_version = Self::new_dwallet_mpc_network_key(
             bcs::to_bytes(&public_output).unwrap(),
             DWalletMPCNetworkKeyScheme::Secp256k1,
