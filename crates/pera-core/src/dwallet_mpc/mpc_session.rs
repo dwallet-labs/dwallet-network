@@ -108,7 +108,6 @@ impl DWalletMPCSession {
                 public_output,
             }) => {
                 println!("party id: {}", self.party_id);
-                // todo : fix the none
                 self.status =
                     MPCSessionStatus::Finished(public_output.clone(), private_output);
                 Ok((
