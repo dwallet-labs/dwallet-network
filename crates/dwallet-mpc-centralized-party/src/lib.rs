@@ -1,14 +1,17 @@
 //! This crate contains the cryptographic logic for the centralized 2PC-MPC party.
 
 use anyhow::Context;
+use class_groups::setup::get_setup_parameters_secp256k1;
+use class_groups::Secp256k1DecryptionKey;
 use k256::ecdsa::hazmat::bits2field;
 use k256::ecdsa::signature::digest::{Digest, FixedOutput};
 use k256::elliptic_curve::ops::Reduce;
 use k256::{elliptic_curve, U256};
 use mpc::two_party::Round;
-use rand_core::OsRng;
+use rand_core::{OsRng, SeedableRng};
 use std::fmt;
 use twopc_mpc::secp256k1;
+use twopc_mpc::secp256k1::GroupElement;
 
 type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
@@ -160,4 +163,19 @@ pub fn create_sign_output(
         .unzip();
 
     Ok((signed_messages, hashed_messages))
+}
+
+/// Derives a Secp256k1 class groups keypair from a given seed.
+///
+/// The class groups key that is being used to encrypt a Secp256k1 keypair should be different from
+/// the encryption key used to encrypt a Ristretto keypair, due to cryptographic reasons.
+/// This function derives a class groups keypair to encrypt a Secp256k1 secret from the given seed.
+pub fn generate_secp_cg_keypair_from_seed_internal(seed: [u8; 32]) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
+    let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
+    let setup_parameters = get_setup_parameters_secp256k1();
+    let (encryption_key, decryption_key) =
+        Secp256k1DecryptionKey::generate(setup_parameters, &mut rng)?;
+    let decryption_key = bcs::to_bytes(&decryption_key.decryption_key)?;
+    let encryption_key = bcs::to_bytes(&encryption_key)?;
+    Ok((encryption_key, decryption_key))
 }

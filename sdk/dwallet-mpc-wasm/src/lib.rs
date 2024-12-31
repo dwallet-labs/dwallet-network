@@ -1,9 +1,10 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use dwallet_mpc::{create_dkg_output, create_sign_output};
+use dwallet_mpc::{create_dkg_output, create_sign_output, generate_secp_cg_keypair_from_seed_internal};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
+use anyhow::Error;
 
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(
@@ -18,6 +19,23 @@ pub fn create_dkg_centralized_output(
     serde_wasm_bindgen::to_value(&(public_key_share_and_proof, centralized_output))
         .map_err(|e| JsError::new(&e.to_string()))
 }
+
+/// Derives a Secp256k1 class groups keypair from a given seed.
+///
+/// The class groups key that is being used to encrypt a Secp256k1 keypair should be different from
+/// the encryption key used to encrypt a Ristretto keypair, due to cryptographic reasons.
+/// This function derives a class groups keypair to encrypt a Secp256k1 secret from the given seed.
+#[wasm_bindgen]
+pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsError> {
+    let fixed_size_seed: [u8; 32] = seed.try_into().expect("seed must be 32 bytes long");
+    let (public_key, private_key) =
+        generate_secp_cg_keypair_from_seed_internal(
+            fixed_size_seed,
+        )
+            .map_err(to_js_err)?;
+    Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
+}
+
 
 #[wasm_bindgen]
 pub fn create_sign_centralized_output(
@@ -44,3 +62,10 @@ pub fn create_sign_centralized_output(
 
     serde_wasm_bindgen::to_value(&res).map_err(|e| JsError::new(&e.to_string()))
 }
+
+// There is no way to implement From<anyhow::Error> for JsErr
+// since the current From<Error> is generic, and it results in a conflict.
+fn to_js_err(e: Error) -> JsError {
+    JsError::new(format!("{}", e).as_str())
+}
+

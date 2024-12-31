@@ -4,8 +4,29 @@ DWallet
 DWalletCap
 	public struct
 	0x3::dwallet
+ActiveEncryptionKeys
+	public struct
+	0x3::dwallet
+EncryptionKey
+	public struct
+	0x3::dwallet
 create_dwallet
 	public(package) fun
+	0x3::dwallet
+create_active_encryption_keys
+	public fun
+	0x3::dwallet
+get_active_encryption_key
+	public fun
+	0x3::dwallet
+set_active_encryption_key
+	public fun
+	0x3::dwallet
+register_encryption_key
+	public fun
+	0x3::dwallet
+is_valid_encryption_key_scheme
+	fun
 	0x3::dwallet
 create_dwallet_cap
 	public(package) fun
@@ -28,7 +49,7 @@ DKGFirstRoundOutputEvent
 DKGFirstRoundOutput
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-SignOutput
+BatchedSignOutput
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 Presign
