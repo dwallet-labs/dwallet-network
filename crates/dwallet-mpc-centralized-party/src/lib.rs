@@ -170,7 +170,9 @@ pub fn create_sign_output(
 /// The class groups key that is being used to encrypt a Secp256k1 keypair should be different from
 /// the encryption key used to encrypt a Ristretto keypair, due to cryptographic reasons.
 /// This function derives a class groups keypair to encrypt a Secp256k1 secret from the given seed.
-pub fn generate_secp_cg_keypair_from_seed_internal(seed: [u8; 32]) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
+pub fn generate_secp_cg_keypair_from_seed_internal(
+    seed: [u8; 32],
+) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
     let setup_parameters = get_setup_parameters_secp256k1();
     let (encryption_key, decryption_key) =
