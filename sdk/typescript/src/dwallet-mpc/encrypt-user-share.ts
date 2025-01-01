@@ -115,18 +115,16 @@ export const getOrCreateEncryptionKey = async (
 	const encryptionKeyRef = await storeEncryptionKey(
 		encryptionKey,
 		EncryptionKeyScheme.ClassGroups,
-		keypair,
-		client,
+		c
 	);
 
 	// Sleep for 5 seconds so the storeEncryptionKey transaction effects has time to
 	// get written to the blockchain.
 	await new Promise((r) => setTimeout(r, 5000));
 	await setActiveEncryptionKey(
-		client,
-		keypair,
 		encryptionKeyRef?.objectId!,
 		activeEncryptionKeysTableID,
+		c,
 	);
 	return {
 		decryptionKey,
@@ -140,10 +138,9 @@ export const getOrCreateEncryptionKey = async (
  * address & encryption keys holder table.
  */
 const setActiveEncryptionKey = async (
-	client: PeraClient,
-	keypair: Keypair,
 	encryptionKeyObjID: string,
 	encryptionKeysHolderID: string,
+	c: Config
 ) => {
 	const tx = new Transaction();
 	const EncKeyObj = tx.object(encryptionKeyObjID);
@@ -154,8 +151,8 @@ const setActiveEncryptionKey = async (
 		arguments: [encryptionKeysHolder, EncKeyObj],
 	});
 
-	return await client.signAndExecuteTransaction({
-		signer: keypair,
+	return await c.client.signAndExecuteTransaction({
+		signer: c.keypair,
 		transaction: tx,
 		options: {
 			showEffects: true,
@@ -169,8 +166,7 @@ const setActiveEncryptionKey = async (
 const storeEncryptionKey = async (
 	encryptionKey: Uint8Array,
 	encryptionKeyScheme: EncryptionKeyScheme,
-	keypair: Keypair,
-	client: PeraClient,
+	c: Config
 ): Promise<PeraObjectRef> => {
 	let signedEncryptionKey = await keypair.sign(new Uint8Array(encryptionKey));
 	const tx = new Transaction();
@@ -187,8 +183,8 @@ const storeEncryptionKey = async (
 			tx.pure(bcs.u8().serialize(encryptionKeyScheme)),
 		],
 	});
-	let result = await client.signAndExecuteTransaction({
-		signer: keypair,
+	let result = await c.client.signAndExecuteTransaction({
+		signer: c.keypair,
 		transaction: tx,
 		options: {
 			showEffects: true,
