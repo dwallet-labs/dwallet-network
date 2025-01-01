@@ -4,10 +4,11 @@ use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
+use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::public_input_from_event;
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
+use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKey, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
 };
@@ -26,7 +27,7 @@ use std::sync::{Arc, Weak};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::warn;
 use tracing::{error, info};
-use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+use twopc_mpc::sign::Protocol;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
@@ -207,7 +208,10 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    pub fn get_decryption_share(&self) -> DwalletMPCResult<DecryptionKeyShare> {
+    // Todo (#382): Read the real decryption share from the DKG output.
+    pub fn get_decryption_share(
+        &self,
+    ) -> DwalletMPCResult<<AsyncProtocol as Protocol>::DecryptionKeyShare> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
         let shares = self

@@ -16,7 +16,7 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path>>(
     let serialized = serde_json::to_vec(&keypair)?;
     let contents = Base64::encode(serialized);
     std::fs::write(path, contents)?;
-    Ok(Base64::encode(keypair.public_bytes()?))
+    Ok(Base64::encode(keypair.public_bytes()))
 }
 
 /// Write Base64 encoded `flag || privkey` to file.

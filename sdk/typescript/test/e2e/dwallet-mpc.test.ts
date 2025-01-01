@@ -100,7 +100,10 @@ describe('Test dWallet MPC', () => {
 			])
 			.toBytes();
 		const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
-			Uint8Array.from(dWallet.centralizedDKGOutput),
+			// Todo (#382): Change to real value.
+			Uint8Array.from([1, 2]),
+			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
+			Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),
 			serializedPresigns,
 			serializedMsgs,
 			Hash.SHA256,
@@ -148,7 +151,10 @@ describe('Test dWallet MPC', () => {
 				)
 				.toBytes();
 			const [centralizedSignedMsg, hashedMsgs] = create_sign_centralized_output(
-				Uint8Array.from(dWallet.centralizedDKGOutput),
+				// Todo (#382): Change to real value.
+				Uint8Array.from([1, 2]),
+				Uint8Array.from(dWallet.centralizedDKGPublicOutput),
+				Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),
 				serializedPresigns,
 				serializedMsgs,
 				Hash.SHA256,
@@ -200,7 +206,10 @@ describe('Test dWallet MPC', () => {
 			])
 			.toBytes();
 		const [centralizedSignMsg, hashedMsgs] = create_sign_centralized_output(
-			Uint8Array.from(dWallet.centralizedDKGOutput),
+			// Todo (#382): Change to real value.
+			Uint8Array.from([1, 2]),
+			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
+			Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),
 			serializedPresigns,
 			serializedMsgs,
 			Hash.SHA256,

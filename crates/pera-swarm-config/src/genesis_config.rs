@@ -24,7 +24,7 @@ use pera_types::multiaddr::Multiaddr;
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::info;
-pub use twopc_mpc::secp256k1::class_groups::{AsyncProtocol, DecryptionSharePublicParameters};
+pub use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 // All information needed to build a NodeConfig for a state sync fullnode.
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,7 +37,8 @@ pub struct SsfnGenesisConfig {
 pub struct ValidatorGenesisConfig {
     // todo (#348): Update the system to ensure that each validator saves only their own decryption share
     #[serde(default)]
-    pub dwallet_mpc_class_groups_public_parameters: Option<DecryptionSharePublicParameters>,
+    pub dwallet_mpc_class_groups_public_parameters:
+        Option<twopc_mpc::sign::ClassGroupsPublicParams>,
     #[serde(default)]
     pub dwallet_mpc_class_groups_decryption_shares:
         Option<HashMap<PartyID, SecretKeyShareSizedNumber>>,
@@ -74,8 +75,7 @@ impl ValidatorGenesisConfig {
         let network_key: NetworkPublicKey = self.network_key_pair.public().clone();
         let worker_key: NetworkPublicKey = self.worker_key_pair.public().clone();
         let network_address = self.network_address.clone();
-        let class_groups_public_key_and_proof =
-            self.class_groups_keypair_and_proof.public_bytes().unwrap();
+        let class_groups_public_key_and_proof = self.class_groups_keypair_and_proof.public_bytes();
 
         let info = ValidatorInfo {
             name,
@@ -119,7 +119,7 @@ pub struct ValidatorGenesisConfigBuilder {
     port_offset: Option<u16>,
     /// Whether to use a specific p2p listen ip address. This is useful for testing on AWS.
     p2p_listen_ip_address: Option<IpAddr>,
-    dwallet_mpc_class_groups_public_parameters: Option<DecryptionSharePublicParameters>,
+    dwallet_mpc_class_groups_public_parameters: Option<twopc_mpc::sign::ClassGroupsPublicParams>,
     dwallet_mpc_decryption_shares: Option<HashMap<PartyID, SecretKeyShareSizedNumber>>,
 }
 
@@ -130,7 +130,7 @@ impl ValidatorGenesisConfigBuilder {
 
     pub fn with_dwallet_mpc_class_groups_public_parameters(
         mut self,
-        dwallet_mpc_class_groups_public_parameters: DecryptionSharePublicParameters,
+        dwallet_mpc_class_groups_public_parameters: twopc_mpc::sign::ClassGroupsPublicParams,
     ) -> Self {
         self.dwallet_mpc_class_groups_public_parameters =
             Some(dwallet_mpc_class_groups_public_parameters);

@@ -41,7 +41,8 @@ export interface DWallet {
 
 export interface CreatedDwallet {
 	id: string;
-	centralizedDKGOutput: number[];
+	centralizedDKGPublicOutput: number[];
+	CentralizedDKGPrivateOutput: number[];
 	decentralizedDKGOutput: number[];
 	dwalletCapID: string;
 	dwalletMPCNetworkKeyVersion: number;
@@ -66,16 +67,20 @@ interface DKGFirstRoundOutput extends DKGFirstRoundOutputEvent {
 export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 	const dkgFirstRoundOutput: DKGFirstRoundOutput = await launchDKGFirstRound(conf);
 	console.log('DKG First Round Output:', dkgFirstRoundOutput);
-	let [publicKeyShareAndProof, centralizedOutput] = create_dkg_centralized_output(
-		Uint8Array.from(dkgFirstRoundOutput.output),
-		// Remove the 0x prefix.
-		dkgFirstRoundOutput.session_id.slice(2),
-	);
+	let [publicKeyShareAndProof, centralizedPublicOutput, centralizedPrivateOutput] =
+		create_dkg_centralized_output(
+			// Todo (#382): Change to real value.
+			Uint8Array.from([1, 2]),
+			Uint8Array.from(dkgFirstRoundOutput.output),
+			// Remove the 0x prefix.
+			dkgFirstRoundOutput.session_id.slice(2),
+		);
 	let dwallet = await launchDKGSecondRound(conf, dkgFirstRoundOutput, publicKeyShareAndProof);
 
 	return {
 		id: dwallet.id.id,
-		centralizedDKGOutput: centralizedOutput,
+		centralizedDKGPublicOutput: centralizedPublicOutput,
+		CentralizedDKGPrivateOutput: centralizedPrivateOutput,
 		decentralizedDKGOutput: dwallet.output,
 		dwalletCapID: dwallet.dwallet_cap_id,
 		dwalletMPCNetworkKeyVersion: dwallet.dwallet_mpc_network_key_version,
