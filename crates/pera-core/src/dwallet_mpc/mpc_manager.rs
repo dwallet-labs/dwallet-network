@@ -24,6 +24,7 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use class_groups::DecryptionKeyShare;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::warn;
 use tracing::{error, info};
