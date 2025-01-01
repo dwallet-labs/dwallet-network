@@ -6,13 +6,13 @@ import type { Keypair } from '../cryptography/index.js';
 import { decodePeraPrivateKey } from '../cryptography/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
-import { dWalletModuleName, packageId } from './globals.js';
+import {Config, dWalletModuleName, packageId} from './globals.js';
 
-type EncryptionKeyPair = {
+interface EncryptionKeyPair {
 	encryptionKey: Uint8Array;
 	decryptionKey: Uint8Array;
 	objectID: string;
-};
+}
 
 export enum EncryptionKeyScheme {
 	ClassGroups = 0,
@@ -46,14 +46,13 @@ export const createActiveEncryptionKeysTable = async (client: PeraClient, keypai
 };
 
 export const getActiveEncryptionKeyObjID = async (
-	client: PeraClient,
-	keyOwnerAddress: string,
+	c: Config,
 	encryptionKeysHolderID: string,
 ): Promise<string> => {
+	let keyOwnerAddress = c.keypair.toPeraAddress();
+	let client = c.client;
 	const tx = new Transaction();
 	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
-
-	console.log(keyOwnerAddress);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
@@ -73,17 +72,16 @@ export const getActiveEncryptionKeyObjID = async (
 };
 
 export const getOrCreateEncryptionKey = async (
-	keypair: Ed25519Keypair,
-	client: PeraClient,
+	c: Config,
 	activeEncryptionKeysTableID: string,
 ): Promise<EncryptionKeyPair> => {
-	let [encryptionKey, decryptionKey] = generatePaillierKeyPairFromSuiKeyPair(keypair);
+	let [encryptionKey, decryptionKey] = generatePaillierKeyPairFromSuiKeyPair(c.keypair as Ed25519Keypair);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
-		client,
-		keypair.toPeraAddress(),
+		c,
 		activeEncryptionKeysTableID,
 	);
 	if (activeEncryptionKeyObjID) {
+
 		let encryptionKeyObj = await getEncryptionKeyByObjectId(client, activeEncryptionKeyObjID);
 		if (isEqual(encryptionKeyObj?.encryptionKey!, encryptionKey)) {
 			return {

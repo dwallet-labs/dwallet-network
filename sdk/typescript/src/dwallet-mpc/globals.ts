@@ -142,3 +142,30 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 		} minutes (${seconds} seconds passed).`,
 	);
 }
+
+export async function fetchObjectWithType<TObject>(
+	conf: Config,
+	objectType: string,
+	isObject: (obj: any) => obj is TObject,
+	objectId: string,
+) {
+	const res = await conf.client.getObject({
+		id: objectId,
+		options: { showContent: true },
+	});
+
+	const objectData =
+		res.data?.content?.dataType === 'moveObject' &&
+		res.data?.content.type === objectType &&
+		isObject(res.data.content.fields)
+			? (res.data.content.fields as TObject)
+			: null;
+
+	if (!objectData) {
+		throw new Error(
+			`invalid object of type ${objectType}, got: ${JSON.stringify(res.data?.content)}`,
+		);
+	}
+
+	return objectData;
+}

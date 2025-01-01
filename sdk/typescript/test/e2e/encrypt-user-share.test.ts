@@ -6,6 +6,7 @@ import {
 	getOrCreateEncryptionKey,
 } from '../../src/dwallet-mpc/encrypt-user-share';
 import { setup, TestToolbox } from './utils/setup';
+import {Config} from "../../src/dwallet-mpc/globals";
 
 describe('encrypt user share', () => {
 	let dwalletSenderToolbox: TestToolbox;
@@ -21,6 +22,11 @@ describe('encrypt user share', () => {
 	});
 
 	it('creates an encryption key & stores it in the active encryption keys table', async () => {
+		let conf: Config = {
+			keypair: dwalletSenderToolbox.keypair,
+			client: dwalletSenderToolbox.client,
+			timeout: 5 * 60 * 1000,
+		};
 		let senderEncryptionKeyObj = await getOrCreateEncryptionKey(
 			dwalletSenderToolbox.keypair,
 			dwalletSenderToolbox.client,
@@ -32,8 +38,7 @@ describe('encrypt user share', () => {
 		await new Promise((r) => setTimeout(r, 5000));
 
 		const activeEncryptionKeyAddress = await getActiveEncryptionKeyObjID(
-			dwalletSenderToolbox.client,
-			dwalletSenderToolbox.keypair.toPeraAddress(),
+			conf,
 			activeEncryptionKeysTableID,
 		);
 
