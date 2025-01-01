@@ -168,11 +168,11 @@ const storeEncryptionKey = async (
 	encryptionKeyScheme: EncryptionKeyScheme,
 	c: Config
 ): Promise<PeraObjectRef> => {
-	let signedEncryptionKey = await keypair.sign(new Uint8Array(encryptionKey));
+	let signedEncryptionKey = await c.keypair.sign(new Uint8Array(encryptionKey));
 	const tx = new Transaction();
 	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey));
 	let pureSignedPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(signedEncryptionKey));
-	let pureSuiPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(keypair.getPublicKey().toRawBytes()));
+	let pureSuiPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(c.keypair.getPublicKey().toRawBytes()));
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::register_encryption_key`,
