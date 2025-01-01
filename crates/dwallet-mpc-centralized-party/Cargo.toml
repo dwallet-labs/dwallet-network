@@ -6,9 +6,9 @@ version.workspace = true
 [dependencies]
 mpc.workspace = true
 twopc_mpc.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev="5a5db371ae412b73aa4fddd26cd1bac2fd241f1c", subdir = "commitment" }
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "5a5db371ae412b73aa4fddd26cd1bac2fd241f1c", subdir = "class-groups" }
-group = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "5a5db371ae412b73aa4fddd26cd1bac2fd241f1c", subdir = "group" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev="acc18d3a87af6a17ca246dcb33c6141cefab0ff8", subdir = "commitment" }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "acc18d3a87af6a17ca246dcb33c6141cefab0ff8", subdir = "class-groups" }
+group = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "acc18d3a87af6a17ca246dcb33c6141cefab0ff8", subdir = "group" }
 class_groups_constants = { path = "../class-groups-constants" }
 k256 = { git = 'https://github.com/ycscaly/elliptic-curves.git', branch = "13.3-fixed", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
 anyhow.workspace = true
