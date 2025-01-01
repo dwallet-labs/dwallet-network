@@ -5,8 +5,8 @@ import {
 	getActiveEncryptionKeyObjID,
 	getOrCreateEncryptionKey,
 } from '../../src/dwallet-mpc/encrypt-user-share';
+import { Config } from '../../src/dwallet-mpc/globals';
 import { setup, TestToolbox } from './utils/setup';
-import {Config} from "../../src/dwallet-mpc/globals";
 
 describe('encrypt user share', () => {
 	let dwalletSenderToolbox: TestToolbox;

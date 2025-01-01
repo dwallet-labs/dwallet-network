@@ -6,7 +6,8 @@ import type { Keypair } from '../cryptography/index.js';
 import { decodePeraPrivateKey } from '../cryptography/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
-import {Config, dWalletModuleName, fetchObjectWithType, packageId} from './globals.js';
+import type { Config } from './globals.js';
+import { dWalletModuleName, fetchObjectWithType, packageId } from './globals.js';
 
 interface EncryptionKeyPair {
 	encryptionKey: Uint8Array;
@@ -71,7 +72,6 @@ export const getActiveEncryptionKeyObjID = async (
 	return hexString;
 };
 
-
 interface EncryptionKey {
 	encryptionKey: Uint8Array;
 	key_owner_address: string;
@@ -79,8 +79,8 @@ interface EncryptionKey {
 }
 
 const isEncryptionKey = (obj: any): obj is EncryptionKey => {
-	return "encryptionKey" in obj && "key_owner_address" in obj && "encryption_key_signature" in obj;
-}
+	return 'encryptionKey' in obj && 'key_owner_address' in obj && 'encryption_key_signature' in obj;
+};
 
 let encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
 
@@ -88,13 +88,15 @@ export const getOrCreateEncryptionKey = async (
 	c: Config,
 	activeEncryptionKeysTableID: string,
 ): Promise<EncryptionKeyPair> => {
-	let [encryptionKey, decryptionKey] = generatePaillierKeyPairFromSuiKeyPair(c.keypair as Ed25519Keypair);
+	let [encryptionKey, decryptionKey] = generatePaillierKeyPairFromSuiKeyPair(
+		c.keypair as Ed25519Keypair,
+	);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
 		activeEncryptionKeysTableID,
 	);
 	if (activeEncryptionKeyObjID) {
-		let encryptionKeyObj =  await fetchObjectWithType<EncryptionKey>(
+		let encryptionKeyObj = await fetchObjectWithType<EncryptionKey>(
 			c,
 			encryptionKeyMoveType,
 			isEncryptionKey,
@@ -115,17 +117,13 @@ export const getOrCreateEncryptionKey = async (
 	const encryptionKeyRef = await storeEncryptionKey(
 		encryptionKey,
 		EncryptionKeyScheme.ClassGroups,
-		c
+		c,
 	);
 
 	// Sleep for 5 seconds so the storeEncryptionKey transaction effects has time to
 	// get written to the blockchain.
 	await new Promise((r) => setTimeout(r, 5000));
-	await setActiveEncryptionKey(
-		encryptionKeyRef?.objectId!,
-		activeEncryptionKeysTableID,
-		c,
-	);
+	await setActiveEncryptionKey(encryptionKeyRef?.objectId!, activeEncryptionKeysTableID, c);
 	return {
 		decryptionKey,
 		encryptionKey,
@@ -140,7 +138,7 @@ export const getOrCreateEncryptionKey = async (
 const setActiveEncryptionKey = async (
 	encryptionKeyObjID: string,
 	encryptionKeysHolderID: string,
-	c: Config
+	c: Config,
 ) => {
 	const tx = new Transaction();
 	const EncKeyObj = tx.object(encryptionKeyObjID);
@@ -166,13 +164,15 @@ const setActiveEncryptionKey = async (
 const storeEncryptionKey = async (
 	encryptionKey: Uint8Array,
 	encryptionKeyScheme: EncryptionKeyScheme,
-	c: Config
+	c: Config,
 ): Promise<PeraObjectRef> => {
 	let signedEncryptionKey = await c.keypair.sign(new Uint8Array(encryptionKey));
 	const tx = new Transaction();
 	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey));
 	let pureSignedPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(signedEncryptionKey));
-	let pureSuiPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(c.keypair.getPublicKey().toRawBytes()));
+	let pureSuiPubKey = tx.pure(
+		bcs.vector(bcs.u8()).serialize(c.keypair.getPublicKey().toRawBytes()),
+	);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::register_encryption_key`,
@@ -200,30 +200,6 @@ function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
 
 	return arr1.every((value, index) => value === arr2[index]);
 }
-
-const getEncryptionKeyByObjectId = async (client: PeraClient, encryptionKeyObjID: string) => {
-	const response = await client.getObject({
-		id: encryptionKeyObjID,
-		options: { showContent: true },
-	});
-
-	const objectFields =
-		response.data?.content?.dataType === 'moveObject'
-			? (response.data?.content?.fields as unknown as {
-					encryption_key: Uint8Array;
-					key_owner_address: string;
-					encryption_key_signature: Uint8Array;
-				})
-			: null;
-
-	return objectFields
-		? {
-				encryptionKey: objectFields?.encryption_key,
-				signedEncryptionKey: objectFields?.encryption_key_signature,
-				keyOwnerAddress: objectFields?.key_owner_address,
-			}
-		: null;
-};
 
 const generatePaillierKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
 	let secretKey = keypair.getSecretKey();
