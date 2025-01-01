@@ -114,8 +114,12 @@ use pera_types::pera_system_state::epoch_start_pera_system_state::{
 use pera_types::storage::GetSharedLocks;
 use prometheus::IntCounter;
 use std::str::FromStr;
+use class_groups::DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER;
+use class_groups::dkg::Secp256k1Party;
+use mpc::{PublicOutput, WeightedThresholdAccessStructure};
 use tap::TapOptional;
 use tokio::time::Instant;
+use twopc_mpc::secp256k1;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
 
@@ -980,6 +984,15 @@ impl AuthorityPerEpochStore {
 
     /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
     pub fn set_dwallet_mpc_network_keys(&self) {
+        #[cfg(feature = "with-network-dkg")]
+        if self
+            .dwallet_mpc_network_keys
+            .set(DwalletMPCNetworkKeyVersions::new(self))
+            .is_err()
+        {
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
+        }
+        #[cfg(not(feature = "with-network-dkg"))]
         if self
             .dwallet_mpc_network_keys
             .set(DwalletMPCNetworkKeyVersions::mock_network_dkg(self))
@@ -1045,7 +1058,7 @@ impl AuthorityPerEpochStore {
     /// The data is sourced from the epoch's initial system state.
     /// The returned value is a map where:
     /// - The key represents the key scheme (e.g., Secp256k1, Ristretto, etc.).
-    /// - The value is a vector of [`DwalletMPCNetworkKey`],
+    /// - The value is a vector of [`NetworkDecryptionKeyShares`],
     ///   which contains all versions of the encrypted decryption key shares.
     pub(crate) fn load_decryption_key_shares_from_system_state(
         &self,

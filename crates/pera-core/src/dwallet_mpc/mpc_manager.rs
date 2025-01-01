@@ -375,7 +375,7 @@ impl DWalletMPCManager {
 
         if ready_to_advance.len() > 0 && cfg!(feature = "with-network-dkg") {
             // Itay: I verified that at this point you have all the validators data you need to start the network DKG
-            todo!("Implement network DKG")
+            // todo!("Implement network DKG")
         }
         let mut malicious_parties = vec![];
         let mut messages = vec![];
@@ -415,6 +415,8 @@ impl DWalletMPCManager {
                 // This is called when the network DKG protocol is done.
                 if let MPCRound::NetworkDkg(key_type, _) = session.session_info.mpc_round {
                     let epoch_store = self.epoch_store()?;
+                    let base64_output = base64::encode(&public_output);
+                    println!("{}", base64_output);
                     let network_keys = epoch_store
                         .dwallet_mpc_network_keys
                         .get()
@@ -518,7 +520,7 @@ impl DWalletMPCManager {
             session_info.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
-            self.get_decryption_share()?.0,
+            if !matches!(session_info.mpc_round, MPCRound::NetworkDkg(..)) { Some(self.get_decryption_share()?.0) } else { None },
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing

@@ -45,7 +45,7 @@ pub(super) struct DWalletMPCSession {
     pub(super) round_number: usize,
     party_id: PartyID,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-    decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    decryption_share: Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
 }
 
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
@@ -60,7 +60,7 @@ impl DWalletMPCSession {
         session_info: SessionInfo,
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+        decryption_share: Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
     ) -> Self {
         Self {
             status,
@@ -184,7 +184,7 @@ impl DWalletMPCSession {
                     &self.weighted_threshold_access_structure,
                     self.pending_messages.clone(),
                     public_input,
-                    self.decryption_share.clone(),
+                    self.decryption_share.clone().ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?,
                 )
             }
             MPCRound::NetworkDkg(key_type, _) => advance_network_dkg(
