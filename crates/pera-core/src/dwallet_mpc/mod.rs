@@ -53,6 +53,18 @@ pub(crate) fn authority_name_to_party_id(
         .ok_or_else(|| DwalletMPCError::AuthorityNameNotFound(*authority_name))
 }
 
+/// Convert a given [`PartyID`] to it's corresponding authority name (address).
+pub(crate) fn party_id_to_authority_name(
+    party_id: PartyID,
+    epoch_store: &AuthorityPerEpochStore,
+) -> DwalletMPCResult<AuthorityName> {
+    Ok(epoch_store
+        .committee()
+        .authority_by_index(party_id as u32 - 1)
+        .ok_or(DwalletMPCError::AuthorityIndexNotFound(party_id - 1))?
+        .clone())
+}
+
 /// Parses the session info from the event and returns it.
 /// Return `None` if the event is not a DWallet MPC event.
 pub(crate) fn session_info_from_event(
