@@ -27,10 +27,9 @@ pub fn create_dkg_centralized_output(
 /// This function derives a class groups keypair to encrypt a Secp256k1 secret from the given seed.
 #[wasm_bindgen]
 pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsError> {
-    let fixed_size_seed: [u8; 32] = seed.try_into().expect("seed must be 32 bytes long");
     let (public_key, private_key) =
         generate_secp_cg_keypair_from_seed_internal(
-            fixed_size_seed,
+            seed.try_into().expect("seed must be 32 bytes long"),
         )
             .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
