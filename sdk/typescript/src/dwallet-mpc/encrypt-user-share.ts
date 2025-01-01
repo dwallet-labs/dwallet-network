@@ -9,6 +9,7 @@ import { Transaction } from '../transactions/index.js';
 import type { Config } from './globals.js';
 import { dWalletModuleName, fetchObjectWithType, packageId } from './globals.js';
 
+
 /**
  * A class groups key pair.
  */
@@ -32,7 +33,7 @@ export enum EncryptionKeyScheme {
 }
 
 /**
- * Creates the table that maps a Sui address to the Paillier encryption
+ * Creates the table that maps a Sui address to the Class Groups encryption
  * key is derived from the Sui address secret.
  */
 export const createActiveEncryptionKeysTable = async (client: PeraClient, keypair: Keypair) => {
@@ -58,6 +59,9 @@ export const createActiveEncryptionKeysTable = async (client: PeraClient, keypai
 	)[0].reference!;
 };
 
+/**
+ * Retrieves the active encryption key object ID for the given Sui address, if it exists. Throws an error otherwise.
+ */
 export const getActiveEncryptionKeyObjID = async (
 	c: Config,
 	encryptionKeysHolderID: string,
@@ -77,11 +81,10 @@ export const getActiveEncryptionKeyObjID = async (
 		transactionBlock: tx,
 	});
 
-	const array = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
-	const hexString = Array.from(array)
+	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
+	return Array.from(objIDArray)
 		.map((byte) => byte.toString(16).padStart(2, '0'))
 		.join('');
-	return hexString;
 };
 
 const isEncryptionKey = (obj: any): obj is EncryptionKey => {
@@ -94,7 +97,7 @@ export const getOrCreateEncryptionKey = async (
 	c: Config,
 	activeEncryptionKeysTableID: string,
 ): Promise<CGSecpKeyPair> => {
-	let [encryptionKey, decryptionKey] = generatePaillierKeyPairFromSuiKeyPair(
+	let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(
 		c.keypair as Ed25519Keypair,
 	);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
@@ -165,7 +168,7 @@ const setActiveEncryptionKey = async (
 };
 
 /**
- * Store the given Paillier encryption key in the blockchain.
+ * Store the given Class Groups encryption key in the blockchain.
  */
 const storeEncryptionKey = async (
 	encryptionKey: Uint8Array,
@@ -207,7 +210,7 @@ function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
 	return arr1.every((value, index) => value === arr2[index]);
 }
 
-const generatePaillierKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
+const generateCGKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
 	let secretKey = keypair.getSecretKey();
 	let decoded = decodePeraPrivateKey(secretKey);
 	return generate_secp_cg_keypair_from_seed(decoded.secretKey);
