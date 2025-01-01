@@ -6,7 +6,7 @@ import type { Keypair } from '../cryptography/index.js';
 import { decodePeraPrivateKey } from '../cryptography/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
-import {Config, dWalletModuleName, packageId} from './globals.js';
+import {Config, dWalletModuleName, fetchObjectWithType, packageId} from './globals.js';
 
 interface EncryptionKeyPair {
 	encryptionKey: Uint8Array;
@@ -71,6 +71,19 @@ export const getActiveEncryptionKeyObjID = async (
 	return hexString;
 };
 
+
+interface EncryptionKey {
+	encryptionKey: Uint8Array;
+	key_owner_address: string;
+	encryption_key_signature: Uint8Array;
+}
+
+const isEncryptionKey = (obj: any): obj is EncryptionKey => {
+	return "encryptionKey" in obj && "key_owner_address" in obj && "encryption_key_signature" in obj;
+}
+
+let encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
+
 export const getOrCreateEncryptionKey = async (
 	c: Config,
 	activeEncryptionKeysTableID: string,
@@ -81,8 +94,12 @@ export const getOrCreateEncryptionKey = async (
 		activeEncryptionKeysTableID,
 	);
 	if (activeEncryptionKeyObjID) {
-
-		let encryptionKeyObj = await getEncryptionKeyByObjectId(client, activeEncryptionKeyObjID);
+		let encryptionKeyObj =  await fetchObjectWithType<EncryptionKey>(
+			c,
+			encryptionKeyMoveType,
+			isEncryptionKey,
+			activeEncryptionKeyObjID,
+		);
 		if (isEqual(encryptionKeyObj?.encryptionKey!, encryptionKey)) {
 			return {
 				encryptionKey,
