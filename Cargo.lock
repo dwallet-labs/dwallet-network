@@ -2569,20 +2569,20 @@ dependencies = [
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c#5a5db371ae412b73aa4fddd26cd1bac2fd241f1c"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
 dependencies = [
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "crypto-bigint 0.5.5",
  "crypto-primes",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
- "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
+ "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "itertools 0.13.0",
  "merlin",
- "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "num-bigint 0.4.6",
  "num-integer",
  "num-traits",
- "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
@@ -2780,10 +2780,10 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c#5a5db371ae412b73aa4fddd26cd1bac2fd241f1c"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
 dependencies = [
  "crypto-bigint 0.5.5",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "merlin",
  "serde",
  "thiserror 1.0.69",
@@ -4087,10 +4087,10 @@ version = "1.32.2"
 dependencies = [
  "anyhow",
  "bcs",
- "class_groups 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "class_groups 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "class_groups_constants",
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "k256 0.13.3",
  "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
  "rand_chacha 0.3.1",
@@ -5433,7 +5433,7 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c#5a5db371ae412b73aa4fddd26cd1bac2fd241f1c"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
 dependencies = [
  "crypto-bigint 0.5.5",
  "curve25519-dalek-ng",
@@ -5806,11 +5806,11 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c#5a5db371ae412b73aa4fddd26cd1bac2fd241f1c"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
 dependencies = [
  "crypto-bigint 0.5.5",
  "getrandom 0.2.15",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rstest 0.22.0",
@@ -8245,13 +8245,13 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c#5a5db371ae412b73aa4fddd26cd1bac2fd241f1c"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
 dependencies = [
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "crypto-bigint 0.5.5",
  "gcd",
  "getrandom 0.2.15",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "rand 0.8.5",
  "serde",
  "serde_json",
@@ -13329,17 +13329,17 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c#5a5db371ae412b73aa4fddd26cd1bac2fd241f1c"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
 dependencies = [
  "bulletproofs",
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "crypto-bigint 0.5.5",
  "curve25519-dalek-ng",
  "getrandom 0.2.15",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "itertools 0.13.0",
  "merlin",
- "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=5a5db371ae412b73aa4fddd26cd1bac2fd241f1c)",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "serde",
  "serde_json",
  "thiserror 1.0.69",

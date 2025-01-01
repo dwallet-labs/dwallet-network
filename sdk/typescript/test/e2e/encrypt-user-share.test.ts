@@ -28,8 +28,7 @@ describe('encrypt user share', () => {
 			timeout: 5 * 60 * 1000,
 		};
 		let senderEncryptionKeyObj = await getOrCreateEncryptionKey(
-			dwalletSenderToolbox.keypair,
-			dwalletSenderToolbox.client,
+			conf,
 			activeEncryptionKeysTableID,
 		);
 
