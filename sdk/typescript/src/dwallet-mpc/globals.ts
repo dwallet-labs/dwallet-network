@@ -69,26 +69,7 @@ export async function fetchObjectFromEvent<TEvent, TObject>({
 				continue;
 			}
 
-			// Fetch the object based on the event
-			const res = await conf.client.getObject({
-				id: getObjectId(event),
-				options: { showContent: true },
-			});
-
-			const objectData =
-				res.data?.content?.dataType === 'moveObject' &&
-				res.data?.content.type === objectType &&
-				isObject(res.data.content.fields)
-					? (res.data.content.fields as TObject)
-					: null;
-
-			if (!objectData) {
-				throw new Error(
-					`invalid object of type ${objectType}, got: ${JSON.stringify(res.data?.content)}`,
-				);
-			}
-
-			return objectData;
+			return fetchObjectWithType(conf, objectType, isObject, getObjectId(event));
 		}
 		cursor = hasNextPage ? nextCursor : null;
 	}
