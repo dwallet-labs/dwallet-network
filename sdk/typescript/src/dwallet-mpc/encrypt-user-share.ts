@@ -9,10 +9,22 @@ import { Transaction } from '../transactions/index.js';
 import type { Config } from './globals.js';
 import { dWalletModuleName, fetchObjectWithType, packageId } from './globals.js';
 
-interface EncryptionKeyPair {
+/**
+ * A class groups key pair.
+ */
+interface CGSecpKeyPair {
 	encryptionKey: Uint8Array;
 	decryptionKey: Uint8Array;
 	objectID: string;
+}
+
+/**
+ * A class groups Move encryption key object.
+ */
+interface EncryptionKey {
+	encryptionKey: Uint8Array;
+	key_owner_address: string;
+	encryption_key_signature: Uint8Array;
 }
 
 export enum EncryptionKeyScheme {
@@ -72,12 +84,6 @@ export const getActiveEncryptionKeyObjID = async (
 	return hexString;
 };
 
-interface EncryptionKey {
-	encryptionKey: Uint8Array;
-	key_owner_address: string;
-	encryption_key_signature: Uint8Array;
-}
-
 const isEncryptionKey = (obj: any): obj is EncryptionKey => {
 	return 'encryptionKey' in obj && 'key_owner_address' in obj && 'encryption_key_signature' in obj;
 };
@@ -87,7 +93,7 @@ let encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
 export const getOrCreateEncryptionKey = async (
 	c: Config,
 	activeEncryptionKeysTableID: string,
-): Promise<EncryptionKeyPair> => {
+): Promise<CGSecpKeyPair> => {
 	let [encryptionKey, decryptionKey] = generatePaillierKeyPairFromSuiKeyPair(
 		c.keypair as Ed25519Keypair,
 	);
