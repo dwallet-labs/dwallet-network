@@ -217,13 +217,7 @@ fn sign_public_input(
             deserialized_event.hashed_message.clone(),
             deserialized_event.presign.clone(),
             deserialized_event.centralized_signed_message.clone(),
-            dwallet_mpc_manager
-                .node_config
-                .dwallet_mpc_decryption_shares_public_parameters
-                .clone()
-                .ok_or_else(|| {
-                    DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters
-                })?,
+            bcs::from_bytes(&class_groups_constants::decryption_key_share_public_parameters())?,
         )?,
     )
 }

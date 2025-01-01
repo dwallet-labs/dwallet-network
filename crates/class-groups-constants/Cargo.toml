@@ -10,6 +10,7 @@ mpc.workspace = true
 group.workspace = true
 bcs = "0.1.6"
 base64 = "0.22.1"
+dwallet-classgroups-types.workspace = true
 
 [lints]
 workspace = true

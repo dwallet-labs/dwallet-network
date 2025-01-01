@@ -211,28 +211,25 @@ impl DWalletMPCManager {
     // Todo (#382): Read the real decryption share from the DKG output.
     pub fn get_decryption_share(
         &self,
-    ) -> DwalletMPCResult<<AsyncProtocol as Protocol>::DecryptionKeyShare> {
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+    ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
-        let shares = self
-            .node_config
-            .dwallet_mpc_class_groups_decryption_shares
-            .as_ref()
-            .ok_or(DwalletMPCError::MissingDwalletMPCClassGroupsDecryptionShares)?;
+        let public_parameters = class_groups_constants::decryption_key_share_public_parameters();
+        let self_shares = class_groups_constants::decryption_key_share(party_id);
 
-        let share_value = shares
-            .get(&party_id)
-            .ok_or(DwalletMPCError::DwalletMPCClassGroupsDecryptionShareMissing(party_id))?
-            .clone();
-
-        let public_parameters = self
-            .node_config
-            .dwallet_mpc_decryption_shares_public_parameters
-            .as_ref()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters)?;
-
-        DecryptionKeyShare::new(party_id, share_value, public_parameters)
-            .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
+        self_shares
+            .iter()
+            .map(|(party_id, share_value)| {
+                let share = DecryptionKeyShare::new(
+                    *party_id,
+                    *share_value,
+                    &bcs::from_bytes(&public_parameters).unwrap(),
+                )
+                .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
+                Ok((*party_id, share))
+            })
+            .collect()
     }
 
     /// Advance all the MPC sessions that either received enough messages
@@ -435,7 +432,7 @@ impl DWalletMPCManager {
             session_info.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
-            self.get_decryption_share()?,
+            self.get_decryption_share(&self.weighted_threshold_access_structure)?,
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing
