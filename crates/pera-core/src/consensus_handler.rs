@@ -41,7 +41,7 @@ use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
 use pera_types::executable_transaction::CertificateProof;
 use pera_types::message_envelope::VerifiedEnvelope;
-use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, SessionInfo};
+use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound, SessionInfo};
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -484,13 +484,49 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         }
                                     }
                                 } else {
-                                    let transaction = self
-                                        .create_dwallet_mpc_output_system_tx(session_info, output);
-                                    transactions.push((
-                                        empty_bytes.as_slice(),
-                                        SequencedConsensusTransactionKind::System(transaction),
-                                        consensus_output.leader_author_index(),
-                                    ));
+                                    if let MPCRound::NetworkDkg(key_scheme, _) =
+                                        session_info.mpc_round
+                                    {
+                                        let key =
+                                            match crate::dwallet_mpc::network_dkg::new_from_dkg_public_output(
+                                                self.epoch(),
+                                                key_scheme,
+                                                &dwallet_mpc_outputs_verifier
+                                                    .weighted_threshold_access_structure,
+                                                output.clone(),
+                                            ) {
+                                                Ok(key) => key,
+                                                Err(e) => {
+                                                    error!(
+                                                            "error creating new key from dkg public output: {:?}",
+                                                            e
+                                                        );
+                                                    continue;
+                                                }
+                                            };
+                                        let mut new_session_info = session_info.clone();
+                                        new_session_info.mpc_round =
+                                            MPCRound::NetworkDkg(key_scheme, Some(key));
+                                        let transaction = self.create_dwallet_mpc_output_system_tx(
+                                            &new_session_info,
+                                            output,
+                                        );
+                                        transactions.push((
+                                            empty_bytes.as_slice(),
+                                            SequencedConsensusTransactionKind::System(transaction),
+                                            consensus_output.leader_author_index(),
+                                        ));
+                                    } else {
+                                        let transaction = self.create_dwallet_mpc_output_system_tx(
+                                            session_info,
+                                            output,
+                                        );
+                                        transactions.push((
+                                            empty_bytes.as_slice(),
+                                            SequencedConsensusTransactionKind::System(transaction),
+                                            consensus_output.leader_author_index(),
+                                        ));
+                                    }
                                 }
                             }
                             OutputResult::NotEnoughVotes | OutputResult::Malicious => {

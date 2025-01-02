@@ -4,9 +4,13 @@
 //! by checking if a validators with quorum of stake voted for it.
 //! Any validator that voted for a different output is considered malicious.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::authority_name_to_party_id;
 use dwallet_mpc_types::dwallet_mpc::MPCPublicOutput;
+use group::PartyID;
+use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
+use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 use std::collections::{HashMap, HashSet};
 
@@ -25,6 +29,7 @@ pub struct DWalletMPCOutputsVerifier {
     pub quorum_threshold: StakeUnit,
     // todo(zeev): why is it here?
     pub completed_locking_next_committee: bool,
+    pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     voted_to_lock_committee: HashSet<AuthorityName>,
 }
 
@@ -58,6 +63,24 @@ pub struct OutputVerificationResult {
 
 impl DWalletMPCOutputsVerifier {
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
+        let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
+            .committee()
+            .voting_rights
+            .iter()
+            .map(|(name, weight)| {
+                Ok((
+                    authority_name_to_party_id(&name, &epoch_store).unwrap(),
+                    *weight as PartyID,
+                ))
+            })
+            .collect::<DwalletMPCResult<HashMap<PartyID, PartyID>>>()
+            .unwrap();
+        let weighted_threshold_access_structure = WeightedThresholdAccessStructure::new(
+            epoch_store.committee().quorum_threshold() as PartyID,
+            weighted_parties.clone(),
+        )
+        .unwrap();
+
         DWalletMPCOutputsVerifier {
             quorum_threshold: epoch_store.committee().quorum_threshold(),
             mpc_sessions_outputs: HashMap::new(),
@@ -69,6 +92,7 @@ impl DWalletMPCOutputsVerifier {
                 .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
+            weighted_threshold_access_structure,
         }
     }
 

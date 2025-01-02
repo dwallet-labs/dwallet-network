@@ -11,7 +11,7 @@ use crate::dwallet_mpc::public_input_from_event;
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
 use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKey, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
+    DWalletMPCNetworkKeyScheme, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
 };
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -359,7 +359,7 @@ impl DWalletMPCManager {
         public_output: MPCPublicOutput,
         private_output: MPCPrivateOutput,
     ) -> DwalletMPCResult<()> {
-        if let MPCRound::NetworkDkg(key_type) = session_info.mpc_round {
+        if let MPCRound::NetworkDkg(key_type, _) = session_info.mpc_round {
             let epoch_store = self.epoch_store()?;
             let network_keys = epoch_store
                 .dwallet_mpc_network_keys
@@ -477,7 +477,7 @@ impl DWalletMPCManager {
 
     pub(super) fn network_key_version(
         &self,
-        key_type: DWalletMPCNetworkKey,
+        key_type: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<u8> {
         self.epoch_store()?
             .dwallet_mpc_network_keys

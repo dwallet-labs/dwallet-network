@@ -97,7 +97,7 @@ pub struct NetworkDecryptionKeyShares {
 
 #[repr(u8)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash, Copy)]
-pub enum DWalletMPCNetworkKey {
+pub enum DWalletMPCNetworkKeyScheme {
     Secp256k1 = 1,
     Ristretto = 2,
 }
@@ -110,13 +110,13 @@ pub enum DwalletNetworkMPCError {
     InvalidDWalletMPCNetworkKey(u8),
 }
 
-impl TryFrom<u8> for DWalletMPCNetworkKey {
+impl TryFrom<u8> for DWalletMPCNetworkKeyScheme {
     type Error = DwalletNetworkMPCError;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            1 => Ok(DWalletMPCNetworkKey::Secp256k1),
-            2 => Ok(DWalletMPCNetworkKey::Ristretto),
+            1 => Ok(DWalletMPCNetworkKeyScheme::Secp256k1),
+            2 => Ok(DWalletMPCNetworkKeyScheme::Ristretto),
             v => Err(DwalletNetworkMPCError::InvalidDWalletMPCNetworkKey(v)),
         }
     }

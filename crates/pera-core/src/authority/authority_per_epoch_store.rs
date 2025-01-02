@@ -83,7 +83,7 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, NetworkDecryptionKeyShares};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
@@ -1048,14 +1048,20 @@ impl AuthorityPerEpochStore {
     ///   which contains all versions of the encrypted decryption key shares.
     pub(crate) fn load_decryption_key_shares_from_system_state(
         &self,
-    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<NetworkDecryptionKeyShares>>> {
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<NetworkDecryptionKeyShares>>>
+    {
         let decryption_key_shares = (match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
         })
         .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
         .contents
         .into_iter()
-        .map(|entry| Ok((DWalletMPCNetworkKey::try_from(entry.key)?, entry.value)))
+        .map(|entry| {
+            Ok((
+                DWalletMPCNetworkKeyScheme::try_from(entry.key)?,
+                entry.value,
+            ))
+        })
         .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
         Ok(decryption_key_shares)
     }
@@ -1069,7 +1075,7 @@ impl AuthorityPerEpochStore {
     /// - The value is a `Vec<Vec<u8>>`, containing the decryption key shares for the validator.
     pub(crate) fn load_validator_decryption_key_shares_from_system_state(
         &self,
-    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>> {
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<Vec<u8>>>> {
         let decryption_key_shares = self.load_decryption_key_shares_from_system_state()?;
         let party_id = authority_name_to_party_id(&self.name, self)? as usize;
         decryption_key_shares

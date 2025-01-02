@@ -2,7 +2,9 @@ use crate::base_types::{ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::message_envelope::Message;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, MPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
+};
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
@@ -26,7 +28,10 @@ pub enum MPCRound {
     BatchedSign(Vec<Vec<u8>>),
     BatchedPresign(u64),
     /// The round of the network DKG protocol.
-    NetworkDkg(DWalletMPCNetworkKey),
+    NetworkDkg(
+        DWalletMPCNetworkKeyScheme,
+        Option<NetworkDecryptionKeyShares>,
+    ),
 }
 
 /// The message and data for the Sign round.

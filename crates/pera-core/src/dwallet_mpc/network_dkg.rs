@@ -10,7 +10,7 @@ use crate::dwallet_mpc::dkg::DKGFirstParty;
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, NetworkDecryptionKeyShares};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use group::PartyID;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -22,7 +22,7 @@ use std::sync::{Arc, RwLock};
 #[derive(Clone, Debug, PartialEq)]
 pub enum DwalletMPCNetworkKeysStatus {
     /// The network supported key types have been updated or initialized.
-    Ready(HashSet<DWalletMPCNetworkKey>),
+    Ready(HashSet<DWalletMPCNetworkKeyScheme>),
     /// None of the network supported key types have been initialized.
     NotInitialized,
 }
@@ -35,10 +35,10 @@ pub struct DwalletMPCNetworkKeyVersions {
 /// Encapsulates all the fields in a single structure for atomic access.
 pub struct DwalletMPCNetworkKeyVersionsInner {
     /// The validators' decryption key shares.
-    pub validator_decryption_key_share: HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>,
+    pub validator_decryption_key_share: HashMap<DWalletMPCNetworkKeyScheme, Vec<Vec<u8>>>,
     /// The dWallet MPC network decryption key shares (encrypted).
     /// Map from key type to the encryption of the key version.
-    pub key_shares_versions: HashMap<DWalletMPCNetworkKey, Vec<NetworkDecryptionKeyShares>>,
+    pub key_shares_versions: HashMap<DWalletMPCNetworkKeyScheme, Vec<NetworkDecryptionKeyShares>>,
     /// The status of the network supported key types for the dWallet MPC sessions.
     pub status: DwalletMPCNetworkKeysStatus,
 }
@@ -68,7 +68,7 @@ impl DwalletMPCNetworkKeyVersions {
     }
 
     /// Returns the latest version of the given key type.
-    pub fn key_version(&self, key_type: DWalletMPCNetworkKey) -> DwalletMPCResult<u8> {
+    pub fn key_version(&self, key_type: DWalletMPCNetworkKeyScheme) -> DwalletMPCResult<u8> {
         let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
         Ok(inner
             .validator_decryption_key_share
@@ -81,7 +81,7 @@ impl DwalletMPCNetworkKeyVersions {
     /// Used after the re-sharing is done.
     pub fn update_key_version(
         &self,
-        key_type: DWalletMPCNetworkKey,
+        key_type: DWalletMPCNetworkKeyScheme,
         version: u8,
         new_shares: Vec<Vec<u8>>,
     ) -> DwalletMPCResult<()> {
@@ -104,7 +104,7 @@ impl DwalletMPCNetworkKeyVersions {
     pub fn add_key_version(
         &self,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        key_type: DWalletMPCNetworkKey,
+        key_type: DWalletMPCNetworkKeyScheme,
         self_decryption_key_share: Vec<u8>,
         encryption_of_decryption_shares: Vec<u8>,
     ) -> DwalletMPCResult<()> {
@@ -118,6 +118,7 @@ impl DwalletMPCNetworkKeyVersions {
 
         inner.key_shares_versions.insert(
             key_type.clone(),
+            // Todo (#382): Replace with the actual values, once we use the real DKG protocol.
             vec![NetworkDecryptionKeyShares {
                 epoch: epoch_store.epoch(),
                 current_epoch_shares: vec![encryption_of_decryption_shares],
@@ -142,7 +143,7 @@ impl DwalletMPCNetworkKeyVersions {
     // Todo (#382): Replace with the actual type once the DKG protocol is ready.
     pub fn get_decryption_key_share(
         &self,
-        key_type: DWalletMPCNetworkKey,
+        key_type: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<Vec<u8>>> {
         let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
         Ok(inner
@@ -165,12 +166,12 @@ pub(crate) fn advance_network_dkg(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     party_id: PartyID,
     public_input: &[u8],
-    key_scheme: &DWalletMPCNetworkKey,
+    key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
     Ok(match key_scheme {
         // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
-        DWalletMPCNetworkKey::Secp256k1 => advance::<DKGFirstParty>(
+        DWalletMPCNetworkKeyScheme::Secp256k1 => advance::<DKGFirstParty>(
             session_id,
             party_id,
             &weighted_threshold_access_structure,
@@ -179,7 +180,7 @@ pub(crate) fn advance_network_dkg(
             (),
         ),
         // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
-        DWalletMPCNetworkKey::Ristretto => advance::<DKGFirstParty>(
+        DWalletMPCNetworkKeyScheme::Ristretto => advance::<DKGFirstParty>(
             session_id,
             party_id,
             &weighted_threshold_access_structure,
@@ -193,18 +194,22 @@ pub(crate) fn advance_network_dkg(
 pub(super) fn network_dkg_public_input(
     deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<Vec<u8>> {
-    match DWalletMPCNetworkKey::try_from(deserialized_event.key_scheme)? {
-        DWalletMPCNetworkKey::Secp256k1 => Ok(dkg_secp256k1_auxiliary_input(deserialized_event)?),
-        DWalletMPCNetworkKey::Ristretto => Ok(dkg_ristretto_auxiliary_input(deserialized_event)?),
+    match DWalletMPCNetworkKeyScheme::try_from(deserialized_event.key_scheme)? {
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            Ok(dkg_secp256k1_auxiliary_input(deserialized_event)?)
+        }
+        DWalletMPCNetworkKeyScheme::Ristretto => {
+            Ok(dkg_ristretto_auxiliary_input(deserialized_event)?)
+        }
     }
 }
 
 pub(super) fn network_dkg_session_info(
     deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<SessionInfo> {
-    match DWalletMPCNetworkKey::try_from(deserialized_event.key_scheme)? {
-        DWalletMPCNetworkKey::Secp256k1 => Ok(dkg_secp256k1_session_info(deserialized_event)),
-        DWalletMPCNetworkKey::Ristretto => Ok(dkg_ristretto_session_info(deserialized_event)),
+    match DWalletMPCNetworkKeyScheme::try_from(deserialized_event.key_scheme)? {
+        DWalletMPCNetworkKeyScheme::Secp256k1 => Ok(dkg_secp256k1_session_info(deserialized_event)),
+        DWalletMPCNetworkKeyScheme::Ristretto => Ok(dkg_ristretto_session_info(deserialized_event)),
     }
 }
 
@@ -219,7 +224,7 @@ fn dkg_secp256k1_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
-        mpc_round: MPCRound::NetworkDkg(DWalletMPCNetworkKey::Secp256k1),
+        mpc_round: MPCRound::NetworkDkg(DWalletMPCNetworkKeyScheme::Secp256k1, None),
     }
 }
 
@@ -234,7 +239,7 @@ fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
-        mpc_round: MPCRound::NetworkDkg(DWalletMPCNetworkKey::Ristretto),
+        mpc_round: MPCRound::NetworkDkg(DWalletMPCNetworkKeyScheme::Ristretto, None),
     }
 }
 
@@ -256,4 +261,29 @@ fn generate_ristretto_dkg_party_public_input(
     >,
 ) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
+}
+
+pub(crate) fn new_from_dkg_public_output(
+    epoch: u64,
+    key_scheme: DWalletMPCNetworkKeyScheme,
+    _weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+    public_output: Vec<u8>,
+) -> anyhow::Result<NetworkDecryptionKeyShares> {
+    match key_scheme {
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            // Todo (#382): Extract the actual values from the public output once we use the real DKG party.
+            let current_epoch_shares = bcs::to_bytes(&public_output)?;
+
+            Ok(NetworkDecryptionKeyShares {
+                epoch,
+                current_epoch_shares: vec![current_epoch_shares],
+                previous_epoch_shares: vec![],
+                protocol_public_parameters: vec![],
+                decryption_public_parameters: vec![],
+                encryption_key: vec![],
+                reconstructed_commitments_to_sharing: vec![],
+            })
+        }
+        DWalletMPCNetworkKeyScheme::Ristretto => todo!("Ristretto key scheme"),
+    }
 }
