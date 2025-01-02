@@ -17,7 +17,7 @@ import {
 	signMessageTransactionCall,
 } from '../../src/dwallet-mpc/sign';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
-import { mockCreateDwallet, mockCreatePresign, mockedDWallet } from './utils/dwallet';
+import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test dWallet MPC', () => {
