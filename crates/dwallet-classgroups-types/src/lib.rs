@@ -73,22 +73,5 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
         )
     });
 
-    return ClassGroupsKeyPairAndProof::new(decryption_key, encryption_key_and_proof);
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ClassGroupsKeyPairAndProofReal {
-    decryption_key: ClassGroupsDecryptionKey,
-    pub encryption_key_and_proof: [(
-        CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
-        KnowledgeOfDiscreteLogUCProof,
-    ); MAX_PRIMES],
-}
-pub fn read_class_groups_private_key_from_file_real<P: AsRef<std::path::Path>>(
-    path: P,
-) -> anyhow::Result<ClassGroupsDecryptionKey> {
-    let contents = std::fs::read_to_string(path)?;
-    let decoded = Base64::decode(contents.as_str()).map_err(|e| anyhow::anyhow!(e))?;
-    let keypair: ClassGroupsKeyPairAndProofReal = bcs::from_bytes(&decoded)?;
-    Ok(keypair.decryption_key)
+    ClassGroupsKeyPairAndProof::new(decryption_key, encryption_key_and_proof)
 }

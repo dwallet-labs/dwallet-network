@@ -2592,7 +2592,6 @@ dependencies = [
  "base64 0.22.1",
  "bcs",
  "class_groups",
- "dwallet-classgroups-types",
  "group 0.1.0",
  "mpc",
  "twopc_mpc",
