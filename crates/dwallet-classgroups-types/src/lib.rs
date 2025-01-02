@@ -7,8 +7,8 @@ use class_groups::{
 };
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
-use rand_chacha::rand_core::SeedableRng;
 use fastcrypto::encoding::{Base64, Encoding};
+use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::rand_core::SeedableRng;
 use serde_derive::{Deserialize, Serialize};
 
