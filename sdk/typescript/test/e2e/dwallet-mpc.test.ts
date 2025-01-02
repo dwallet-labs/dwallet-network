@@ -45,6 +45,9 @@ describe('Test dWallet MPC', () => {
 			timeout: 5 * 60 * 1000,
 		};
 		const dWallet = await createDWallet(conf);
+		console.log("decentralized output", encodeToBase64(dWallet.decentralizedDKGOutput));
+		console.log("centralized output", encodeToBase64(dWallet.CentralizedDKGPrivateOutput));
+		console.log("decentralized output", encodeToBase64(dWallet.centralizedDKGPublicOutput));
 
 		expect(dWallet).toBeDefined();
 		pollRef.value = false;
