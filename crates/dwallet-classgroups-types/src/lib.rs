@@ -8,7 +8,7 @@ use class_groups::{
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
 use rand_chacha::rand_core::SeedableRng;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
 pub type ClassGroupsDecryptionKey = [Uint<{ CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS }>; MAX_PRIMES];
