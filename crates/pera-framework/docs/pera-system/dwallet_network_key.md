@@ -91,6 +91,30 @@ Struct to store the network encryption of decryption key shares
 <dd>
 
 </dd>
+<dt>
+<code>protocol_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>decryption_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>reconstructed_commitments_to_sharing: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
 </dl>
 
 
@@ -169,7 +193,11 @@ almost 250KB, which is the maximum event size in Sui.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_scheme: u8, validators_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;ValidatorDataForDWalletSecretShare&gt;, ctx: &<b>mut</b> TxContext) {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(
+    key_scheme: u8,
+    validators_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;ValidatorDataForDWalletSecretShare&gt;,
+    ctx: &<b>mut</b> TxContext
+) {
     <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
 
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_network_key.md#0x3_dwallet_network_key_StartNetworkDKGEvent">StartNetworkDKGEvent</a> {
@@ -197,7 +225,7 @@ almost 250KB, which is the maximum event size in Sui.
 Function to create a new NetworkDecryptionKeyShares.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares">new_encrypted_network_decryption_key_shares</a>(epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, current_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="dwallet_network_key.md#0x3_dwallet_network_key_NetworkDecryptionKeyShares">dwallet_network_key::NetworkDecryptionKeyShares</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares">new_encrypted_network_decryption_key_shares</a>(epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, current_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, protocol_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, decryption_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, reconstructed_commitments_to_sharing: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="dwallet_network_key.md#0x3_dwallet_network_key_NetworkDecryptionKeyShares">dwallet_network_key::NetworkDecryptionKeyShares</a>
 </code></pre>
 
 
@@ -209,12 +237,20 @@ Function to create a new NetworkDecryptionKeyShares.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares">new_encrypted_network_decryption_key_shares</a>(
     epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
     current_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
-    previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+    previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    protocol_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    decryption_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    reconstructed_commitments_to_sharing: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
 ): <a href="dwallet_network_key.md#0x3_dwallet_network_key_NetworkDecryptionKeyShares">NetworkDecryptionKeyShares</a> {
     <a href="dwallet_network_key.md#0x3_dwallet_network_key_NetworkDecryptionKeyShares">NetworkDecryptionKeyShares</a> {
         epoch,
         current_epoch_shares,
         previous_epoch_shares,
+        protocol_public_parameters,
+        decryption_public_parameters,
+        encryption_key,
+        reconstructed_commitments_to_sharing,
     }
 }
 </code></pre>

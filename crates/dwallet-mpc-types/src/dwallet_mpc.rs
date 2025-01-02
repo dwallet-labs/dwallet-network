@@ -84,16 +84,20 @@ impl fmt::Display for MPCSessionStatus {
 }
 
 /// Rust representation of the move struct `NetworkDecryptionKeyShares`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
 pub struct NetworkDecryptionKeyShares {
     pub epoch: u64,
     pub current_epoch_shares: Vec<Vec<u8>>,
     pub previous_epoch_shares: Vec<Vec<u8>>,
+    pub protocol_public_parameters: Vec<u8>,
+    pub decryption_public_parameters: Vec<u8>,
+    pub encryption_key: Vec<u8>,
+    pub reconstructed_commitments_to_sharing: Vec<u8>,
 }
 
 #[repr(u8)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash, Copy)]
-pub enum DWalletMPCNetworkKeyScheme {
+pub enum DWalletMPCNetworkKey {
     Secp256k1 = 1,
     Ristretto = 2,
 }
@@ -106,13 +110,13 @@ pub enum DwalletNetworkMPCError {
     InvalidDWalletMPCNetworkKey(u8),
 }
 
-impl TryFrom<u8> for DWalletMPCNetworkKeyScheme {
+impl TryFrom<u8> for DWalletMPCNetworkKey {
     type Error = DwalletNetworkMPCError;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            1 => Ok(DWalletMPCNetworkKeyScheme::Secp256k1),
-            2 => Ok(DWalletMPCNetworkKeyScheme::Ristretto),
+            1 => Ok(DWalletMPCNetworkKey::Secp256k1),
+            2 => Ok(DWalletMPCNetworkKey::Ristretto),
             v => Err(DwalletNetworkMPCError::InvalidDWalletMPCNetworkKey(v)),
         }
     }

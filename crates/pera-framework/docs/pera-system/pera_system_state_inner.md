@@ -1000,7 +1000,7 @@ This function will be called only once in genesis.
 Update the system state with a new version dwallet mpc network key shares after the network DKG.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_scheme: u8)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, protocol_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, decryption_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, reconstructed_commitments_to_sharing: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, key_scheme: u8)
 </code></pre>
 
 
@@ -1009,9 +1009,25 @@ Update the system state with a new version dwallet mpc network key shares after 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_scheme: u8) {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(
+    self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>,
+    shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    protocol_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    decryption_public_parameters: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    reconstructed_commitments_to_sharing: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    key_scheme: u8
+) {
     <b>assert</b>!(is_valid_key_scheme(key_scheme), <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_EInvalidKeyType">EInvalidKeyType</a>);
-    <b>let</b> new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>());
+    <b>let</b> new_version = new_encrypted_network_decryption_key_shares(
+        self.epoch,
+        shares,
+        <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>(),
+        protocol_public_parameters,
+        decryption_public_parameters,
+        encryption_key,
+        reconstructed_commitments_to_sharing,
+    );
 
     <b>if</b> (self.decryption_key_shares.contains(&key_scheme)) {
         self.decryption_key_shares.get_mut(&key_scheme).push_back(new_version);
@@ -1055,11 +1071,6 @@ Update the system state with new encryption of decryption key shares after re-co
         ).update_new_shares(shares, self.epoch);
         <b>return</b>
     };
-
-    self.decryption_key_shares.insert(
-        key_scheme,
-        <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[new_encrypted_network_decryption_key_shares(self.epoch, shares, <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>())]
-    );
 }
 </code></pre>
 

@@ -4094,6 +4094,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "move-core-types",
+ "schemars",
  "serde",
  "serde_json",
  "thiserror 1.0.69",

@@ -122,6 +122,10 @@ impl DwalletMPCNetworkKeyVersions {
                 epoch: epoch_store.epoch(),
                 current_epoch_shares: vec![encryption_of_decryption_shares],
                 previous_epoch_shares: vec![],
+                protocol_public_parameters: vec![],
+                decryption_public_parameters: vec![],
+                encryption_key: vec![],
+                reconstructed_commitments_to_sharing: vec![],
             }],
         );
 

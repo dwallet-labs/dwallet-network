@@ -648,13 +648,24 @@ module pera_system::pera_system {
     fun new_decryption_key_shares_version(
         wrapper: &mut PeraSystemState,
         shares: vector<vector<u8>>,
+        protocol_public_parameters: vector<u8>,
+        decryption_public_parameters: vector<u8>,
+        encryption_key: vector<u8>,
+        reconstructed_commitments_to_sharing: vector<u8>,
         key_scheme: u8,
         ctx: &TxContext
     ) {
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
         assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
         let self = load_system_state_mut(wrapper);
-        self.new_decryption_key_shares_version(shares, key_scheme);
+        self.new_decryption_key_shares_version(
+            shares,
+            protocol_public_parameters,
+            decryption_public_parameters,
+            encryption_key,
+            reconstructed_commitments_to_sharing,
+            key_scheme,
+        );
     }
 
     #[test_only]
