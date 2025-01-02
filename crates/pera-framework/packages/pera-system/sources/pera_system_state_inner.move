@@ -18,8 +18,10 @@ module pera_system::pera_system_state_inner {
     use pera::table::Table;
     use pera::bag::Bag;
     use pera::bag;
-    use pera_system::dwallet_network_key::{NetworkDecryptionKeyShares,
-        new_encrypted_network_decryption_key_shares, is_valid_key_scheme, protocol_public_parameters,
+    use pera_system::dwallet_network_key::{
+        NetworkDecryptionKeyShares,
+        new_encrypted_network_decryption_key_shares,
+        is_valid_key_scheme, protocol_public_parameters,
     };
 
     // same as in validator_set
@@ -410,11 +412,6 @@ module pera_system::pera_system_state_inner {
             ).update_new_shares(shares, self.epoch);
             return
         };
-
-        // self.decryption_key_shares.insert(
-        //     key_scheme,
-        //     vector[new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty())]
-        // );
     }
 
     /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated

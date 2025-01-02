@@ -88,12 +88,21 @@ impl fmt::Display for MPCSessionStatus {
 /// Rust representation of the move struct `NetworkDecryptionKeyShares`
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
 pub struct NetworkDecryptionKeyShares {
+    /// The epoch of the last version update.
     pub epoch: u64,
+    /// A list of the all decryption key shares for the current epoch.
+    /// Updated at reconfiguration or when a new key version is created at network DKG.
     pub current_epoch_shares: Vec<Vec<u8>>,
+    /// A list of the all decryption key shares for the previous epoch.
+    /// Updated at reconfiguration.
     pub previous_epoch_shares: Vec<Vec<u8>>,
+    /// The public parameters of the network DKG, updated only after a successful network DKG.
     pub protocol_public_parameters: Vec<u8>,
+    /// The public parameters of the decryption key shares, updated only after a successful network DKG.
     pub decryption_public_parameters: Vec<u8>,
+    ///  The network encryption, updated only after a successful network DKG.
     pub encryption_key: Vec<u8>,
+    /// Validators commitments.
     pub reconstructed_commitments_to_sharing: Vec<u8>,
 }
 

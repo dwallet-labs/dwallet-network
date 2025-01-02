@@ -490,6 +490,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         }
                                     }
                                 } else {
+                                    // Extract the final network DKG transaction parameters from the verified output
+                                    // We can't preform this within the execution engine,
+                                    // as it requires the class-groups crate from crypto-private lib.
                                     if let MPCRound::NetworkDkg(key_scheme, _) =
                                         session_info.mpc_round
                                     {

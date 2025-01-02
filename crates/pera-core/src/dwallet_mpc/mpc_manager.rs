@@ -409,9 +409,6 @@ impl DWalletMPCManager {
                 // Update the encryption of decryption key share with the new shares.
                 // This is called when the network DKG protocol is done.
                 if let MPCRound::NetworkDkg(key_type, _) = session.session_info.mpc_round {
-                    let epoch_store = self.epoch_store()?;
-                    let base64_output = base64::encode(&public_output);
-                    println!("{}", base64_output);
                     let network_keys = epoch_store
                         .dwallet_mpc_network_keys
                         .get()
