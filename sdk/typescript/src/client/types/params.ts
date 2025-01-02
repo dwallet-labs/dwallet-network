@@ -22,7 +22,7 @@ export interface DevInspectTransactionBlockParams {
 	sender: string;
 	/** BCS encoded TransactionKind(as opposed to TransactionData, which include gasBudget and gasPrice) */
 	transactionBlock: Transaction | Uint8Array | string;
-	/** Gas is not charged, but gas usage is still calculated. Default to use reference gas price */
+	/** Gas is not charged, but gas usage is still calculated. Default to use computation price per unit size */
 	gasPrice?: bigint | number | null | undefined;
 	/** The epoch to perform the call. Will be set from the system state object if not provided */
 	epoch?: string | null | undefined;
@@ -265,7 +265,7 @@ export type GetOwnedObjectsParams = {
 	/** Max number of items returned per page, default to [QUERY_MAX_RESULT_LIMIT] if not specified. */
 	limit?: number | null | undefined;
 } & RpcTypes.IkaObjectResponseQuery;
-/** Return the reference gas price for the network */
+/** Return the computation price per unit size for the network */
 export interface GetReferenceGasPriceParams {}
 /** Return all [DelegatedStake]. */
 export interface GetStakesParams {

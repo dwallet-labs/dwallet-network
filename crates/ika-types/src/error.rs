@@ -2,13 +2,16 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
+use sui_types::{
     base_types::*,
+    execution_status::CommandArgumentError,
+    object::Owner,
+};
+use crate::{
     committee::{Committee, EpochId, StakeUnit},
     digests::CheckpointContentsDigest,
-    execution_status::CommandArgumentError,
     messages_checkpoint::CheckpointSequenceNumber,
-    object::Owner,
+    crypto::AuthorityName
 };
 
 use schemars::JsonSchema;
@@ -37,8 +40,9 @@ macro_rules! fp_ensure {
         }
     };
 }
-use crate::digests::TransactionEventsDigest;
-use crate::execution_status::{CommandIndex, ExecutionFailureStatus};
+use sui_types::digests::TransactionEventsDigest;
+use sui_types::error::SuiError;
+use sui_types::execution_status::{CommandIndex, ExecutionFailureStatus};
 pub(crate) use fp_ensure;
 
 #[macro_export]
@@ -164,16 +168,16 @@ pub enum UserInputError {
     #[error("Transaction kind does not support Sponsored Transaction")]
     UnsupportedSponsoredTransactionKind,
     #[error(
-        "Gas price {:?} under reference gas price (RGP) {:?}",
-        gas_price,
-        reference_gas_price
+        "Gas price {:?} under computation price per unit size (RGP) {:?}",
+        computation_price,
+        computation_price_per_unit_size
     )]
     GasPriceUnderRGP {
-        gas_price: u64,
-        reference_gas_price: u64,
+        computation_price: u64,
+        computation_price_per_unit_size: u64,
     },
-    #[error("Gas price cannot exceed {:?} nika", max_gas_price)]
-    GasPriceTooHigh { max_gas_price: u64 },
+    #[error("Gas price cannot exceed {:?} nika", max_computation_price)]
+    GasPriceTooHigh { max_computation_price: u64 },
     #[error("Object {object_id} is not a gas object")]
     InvalidGasObject { object_id: ObjectID },
     #[error("Gas object does not have enough balance to cover minimal gas spend")]
@@ -218,9 +222,6 @@ pub enum UserInputError {
     #[error("Query transactions with move function input error: {0}")]
     MoveFunctionInputError(String),
 
-    #[error("Verified checkpoint not found for sequence number: {0}")]
-    VerifiedCheckpointNotFound(CheckpointSequenceNumber),
-
     #[error("Verified checkpoint not found for digest: {0}")]
     VerifiedCheckpointDigestNotFound(String),
 
@@ -254,7 +255,7 @@ pub enum UserInputError {
 
     #[error("Address {address:?} is denied for coin {coin_type}")]
     AddressDeniedForCoin {
-        address: IkaAddress,
+        address: SuiAddress,
         coin_type: String,
     },
 
@@ -292,55 +293,16 @@ pub enum UserInputError {
     InvalidIdentifier { error: String },
 }
 
-#[derive(
-    Eq,
-    PartialEq,
-    Clone,
-    Debug,
-    Serialize,
-    Deserialize,
-    Hash,
-    AsRefStr,
-    IntoStaticStr,
-    JsonSchema,
-    Error,
-)]
-#[serde(tag = "code", rename = "ObjectResponseError", rename_all = "camelCase")]
-pub enum IkaObjectResponseError {
-    #[error("Object {:?} does not exist", object_id)]
-    NotExists { object_id: ObjectID },
-    #[error("Cannot find dynamic field for parent object {:?}", parent_object_id)]
-    DynamicFieldNotFound { parent_object_id: ObjectID },
-    #[error(
-        "Object has been deleted object_id: {:?} at version: {:?} in digest {:?}",
-        object_id,
-        version,
-        digest
-    )]
-    Deleted {
-        object_id: ObjectID,
-        /// Object version.
-        version: SequenceNumber,
-        /// Base64 string representing the object digest
-        digest: ObjectDigest,
-    },
-    #[error("Unknown Error")]
-    Unknown,
-    #[error("Display Error: {:?}", error)]
-    DisplayError { error: String },
-    // TODO: also integrate IkaPastObjectResponse (VersionNotFound,  VersionTooHigh)
-}
-
 /// Custom error type for Ika.
 #[derive(
     Eq, PartialEq, Clone, Debug, Serialize, Deserialize, Error, Hash, AsRefStr, IntoStaticStr,
 )]
 pub enum IkaError {
+    #[error("SuiError: {:?}", error)]
+    SuiError { error: SuiError },
+    
     #[error("Error checking transaction input objects: {:?}", error)]
     UserInputError { error: UserInputError },
-
-    #[error("Error checking transaction object: {:?}", error)]
-    IkaObjectResponseError { error: IkaObjectResponseError },
 
     #[error("Expecting a single owner, shared ownership found")]
     UnexpectedOwnerType,
@@ -733,8 +695,8 @@ impl From<TypedStoreError> for IkaError {
     }
 }
 
-impl From<crate::storage::error::Error> for IkaError {
-    fn from(e: crate::storage::error::Error) -> Self {
+impl From<sui_types::storage::error::Error> for IkaError {
+    fn from(e: sui_types::storage::error::Error) -> Self {
         Self::Storage(e.to_string())
     }
 }
@@ -783,9 +745,9 @@ impl From<UserInputError> for IkaError {
     }
 }
 
-impl From<IkaObjectResponseError> for IkaError {
-    fn from(error: IkaObjectResponseError) -> Self {
-        IkaError::IkaObjectResponseError { error }
+impl From<SuiError> for IkaError {
+    fn from(error: SuiError) -> Self {
+        IkaError::SuiError { error }
     }
 }
 

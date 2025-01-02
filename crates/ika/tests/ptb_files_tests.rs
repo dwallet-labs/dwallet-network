@@ -4,7 +4,7 @@
 #[cfg(not(msim))]
 use std::path::Path;
 #[cfg(not(msim))]
-use ika_types::transaction::{CallArg, ObjectArg};
+use ika_types::action::{CallArg, ObjectArg};
 
 #[cfg(not(msim))]
 const TEST_DIR: &str = "tests";

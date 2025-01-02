@@ -21,8 +21,8 @@ pub struct EpochMetrics {
     /// Number of transactions in the epoch.
     pub epoch_transaction_count: IntGauge,
 
-    /// Total amount of gas rewards (i.e. computation gas cost) in the epoch.
-    pub epoch_total_gas_reward: IntGauge,
+    /// Total amount of computation rewards in the epoch.
+    pub epoch_total_computation_reward: IntGauge,
 
     // An active validator reconfigures through the following steps:
     // 1. Halt validator (a.k.a. close epoch) and stop accepting user transaction certs.
@@ -130,9 +130,9 @@ impl EpochMetrics {
                 "Number of transactions in the epoch",
                 registry
             ).unwrap(),
-            epoch_total_gas_reward: register_int_gauge_with_registry!(
-                "epoch_total_gas_reward",
-                "Total amount of gas rewards (i.e. computation gas cost) in the epoch",
+            epoch_total_computation_reward: register_int_gauge_with_registry!(
+                "epoch_total_computation_reward",
+                "Total amount of computation rewards in the epoch",
                 registry
             ).unwrap(),
             epoch_pending_certs_processed_time_since_epoch_close_ms: register_int_gauge_with_registry!(

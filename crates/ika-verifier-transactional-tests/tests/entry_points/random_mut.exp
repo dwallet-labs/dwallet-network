@@ -1,6 +1,0 @@
-processed 1 task
-
-task 0, lines 6-14:
-//# publish
-Error: Transaction Effects Status: Ika Move Bytecode Verification Error. Please run the Ika Move Verifier for more information.
-Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: IkaMoveVerificationError, source: Some("Invalid entry point parameter type. Random must be passed by immutable reference. got: &mut ika::random::Random"), command: Some(0) } }

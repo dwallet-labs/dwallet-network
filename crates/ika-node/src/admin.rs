@@ -16,11 +16,11 @@ use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     str::FromStr,
 };
-use ika_types::{
+use sui_types::{
     base_types::AuthorityName,
     crypto::{RandomnessPartialSignature, RandomnessRound, RandomnessSignature},
-    error::IkaError,
 };
+use ika_types::error::IkaError;
 use telemetry_subscribers::TracingHandle;
 use tokio::sync::oneshot;
 use tracing::info;
@@ -57,17 +57,6 @@ use tracing::info;
 //
 //   $ curl -X POST 'http://127.0.0.1:1337/reset-tracing'
 //
-// Get the node's randomness partial signatures for round 123.
-//
-//  $ curl 'http://127.0.0.1:1337/randomness-partial-sigs?round=123'
-//
-// Inject a randomness partial signature from another node, bypassing validity checks.
-//
-//  $ curl 'http://127.0.0.1:1337/randomness-inject-partial-sigs?authority_name=hexencodedname&round=123&sigs=base64encodedsigs'
-//
-// Inject a full signature from another node, bypassing validity checks.
-//
-//  $ curl 'http://127.0.0.1:1337/randomness-inject-full-sig?round=123&sigs=base64encodedsig'
 
 const LOGGING_ROUTE: &str = "/logging";
 const TRACING_ROUTE: &str = "/enable-tracing";
@@ -77,9 +66,6 @@ const CLEAR_BUFFER_STAKE_ROUTE: &str = "/clear-override-buffer-stake";
 const FORCE_CLOSE_EPOCH: &str = "/force-close-epoch";
 const CAPABILITIES: &str = "/capabilities";
 const NODE_CONFIG: &str = "/node-config";
-const RANDOMNESS_PARTIAL_SIGS_ROUTE: &str = "/randomness-partial-sigs";
-const RANDOMNESS_INJECT_PARTIAL_SIGS_ROUTE: &str = "/randomness-inject-partial-sigs";
-const RANDOMNESS_INJECT_FULL_SIG_ROUTE: &str = "/randomness-inject-full-sig";
 
 struct AppState {
     node: Arc<IkaNode>,
@@ -110,15 +96,6 @@ pub async fn run_admin_server(node: Arc<IkaNode>, port: u16, tracing_handle: Tra
         .route(FORCE_CLOSE_EPOCH, post(force_close_epoch))
         .route(TRACING_ROUTE, post(enable_tracing))
         .route(TRACING_RESET_ROUTE, post(reset_tracing))
-        .route(RANDOMNESS_PARTIAL_SIGS_ROUTE, get(randomness_partial_sigs))
-        .route(
-            RANDOMNESS_INJECT_PARTIAL_SIGS_ROUTE,
-            post(randomness_inject_partial_sigs),
-        )
-        .route(
-            RANDOMNESS_INJECT_FULL_SIG_ROUTE,
-            post(randomness_inject_full_sig),
-        )
         .with_state(Arc::new(app_state));
 
     let socket_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
@@ -245,7 +222,7 @@ async fn capabilities(State(state): State<Arc<AppState>>) -> (StatusCode, String
         output.push_str(&format!("{:?}\n", capability));
     }
 
-    let capabilities = epoch_store.get_capabilities_v2();
+    let capabilities = epoch_store.get_capabilities_v1();
     for capability in capabilities.unwrap_or_default() {
         output.push_str(&format!("{:?}\n", capability));
     }
@@ -333,113 +310,113 @@ async fn force_close_epoch(
     }
 }
 
-#[derive(Deserialize)]
-struct Round {
-    round: u64,
-}
+// #[derive(Deserialize)]
+// struct Round {
+//     round: u64,
+// }
 
-async fn randomness_partial_sigs(
-    State(state): State<Arc<AppState>>,
-    round: Query<Round>,
-) -> (StatusCode, String) {
-    let Query(Round { round }) = round;
+// async fn randomness_partial_sigs(
+//     State(state): State<Arc<AppState>>,
+//     round: Query<Round>,
+// ) -> (StatusCode, String) {
+//     let Query(Round { round }) = round;
+// 
+//     let (tx, rx) = oneshot::channel();
+//     state
+//         .node
+//         .randomness_handle()
+//         .admin_get_partial_signatures(RandomnessRound(round), tx);
+// 
+//     let sigs = match rx.await {
+//         Ok(sigs) => sigs,
+//         Err(err) => return (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
+//     };
+// 
+//     let output = format!(
+//         "{}\n",
+//         base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(sigs)
+//     );
+// 
+//     (StatusCode::OK, output)
+// }
 
-    let (tx, rx) = oneshot::channel();
-    state
-        .node
-        .randomness_handle()
-        .admin_get_partial_signatures(RandomnessRound(round), tx);
+// #[derive(Deserialize)]
+// struct PartialSigsToInject {
+//     hex_authority_name: String,
+//     round: u64,
+//     base64_sigs: String,
+// }
 
-    let sigs = match rx.await {
-        Ok(sigs) => sigs,
-        Err(err) => return (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
-    };
+// async fn randomness_inject_partial_sigs(
+//     State(state): State<Arc<AppState>>,
+//     args: Query<PartialSigsToInject>,
+// ) -> (StatusCode, String) {
+//     let Query(PartialSigsToInject {
+//         hex_authority_name,
+//         round,
+//         base64_sigs,
+//     }) = args;
+// 
+//     let authority_name = match AuthorityName::from_str(hex_authority_name.as_str()) {
+//         Ok(authority_name) => authority_name,
+//         Err(err) => return (StatusCode::BAD_REQUEST, err.to_string()),
+//     };
+// 
+//     let sigs: Vec<u8> = match base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(base64_sigs) {
+//         Ok(sigs) => sigs,
+//         Err(err) => return (StatusCode::BAD_REQUEST, err.to_string()),
+//     };
+// 
+//     let sigs: Vec<RandomnessPartialSignature> = match bcs::from_bytes(&sigs) {
+//         Ok(sigs) => sigs,
+//         Err(err) => return (StatusCode::BAD_REQUEST, err.to_string()),
+//     };
+// 
+//     let (tx_result, rx_result) = oneshot::channel();
+//     state
+//         .node
+//         .randomness_handle()
+//         .admin_inject_partial_signatures(authority_name, RandomnessRound(round), sigs, tx_result);
+// 
+//     match rx_result.await {
+//         Ok(Ok(())) => (StatusCode::OK, "partial signatures injected\n".to_string()),
+//         Ok(Err(e)) => (StatusCode::BAD_REQUEST, e.to_string()),
+//         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+//     }
+// }
 
-    let output = format!(
-        "{}\n",
-        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(sigs)
-    );
-
-    (StatusCode::OK, output)
-}
-
-#[derive(Deserialize)]
-struct PartialSigsToInject {
-    hex_authority_name: String,
-    round: u64,
-    base64_sigs: String,
-}
-
-async fn randomness_inject_partial_sigs(
-    State(state): State<Arc<AppState>>,
-    args: Query<PartialSigsToInject>,
-) -> (StatusCode, String) {
-    let Query(PartialSigsToInject {
-        hex_authority_name,
-        round,
-        base64_sigs,
-    }) = args;
-
-    let authority_name = match AuthorityName::from_str(hex_authority_name.as_str()) {
-        Ok(authority_name) => authority_name,
-        Err(err) => return (StatusCode::BAD_REQUEST, err.to_string()),
-    };
-
-    let sigs: Vec<u8> = match base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(base64_sigs) {
-        Ok(sigs) => sigs,
-        Err(err) => return (StatusCode::BAD_REQUEST, err.to_string()),
-    };
-
-    let sigs: Vec<RandomnessPartialSignature> = match bcs::from_bytes(&sigs) {
-        Ok(sigs) => sigs,
-        Err(err) => return (StatusCode::BAD_REQUEST, err.to_string()),
-    };
-
-    let (tx_result, rx_result) = oneshot::channel();
-    state
-        .node
-        .randomness_handle()
-        .admin_inject_partial_signatures(authority_name, RandomnessRound(round), sigs, tx_result);
-
-    match rx_result.await {
-        Ok(Ok(())) => (StatusCode::OK, "partial signatures injected\n".to_string()),
-        Ok(Err(e)) => (StatusCode::BAD_REQUEST, e.to_string()),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
-    }
-}
-
-#[derive(Deserialize)]
-struct FullSigToInject {
-    round: u64,
-    base64_sig: String,
-}
-
-async fn randomness_inject_full_sig(
-    State(state): State<Arc<AppState>>,
-    args: Query<FullSigToInject>,
-) -> (StatusCode, String) {
-    let Query(FullSigToInject { round, base64_sig }) = args;
-
-    let sig: Vec<u8> = match base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(base64_sig) {
-        Ok(sig) => sig,
-        Err(err) => return (StatusCode::BAD_REQUEST, err.to_string()),
-    };
-
-    let sig: RandomnessSignature = match bcs::from_bytes(&sig) {
-        Ok(sig) => sig,
-        Err(err) => return (StatusCode::BAD_REQUEST, err.to_string()),
-    };
-
-    let (tx_result, rx_result) = oneshot::channel();
-    state.node.randomness_handle().admin_inject_full_signature(
-        RandomnessRound(round),
-        sig,
-        tx_result,
-    );
-
-    match rx_result.await {
-        Ok(Ok(())) => (StatusCode::OK, "full signature injected\n".to_string()),
-        Ok(Err(e)) => (StatusCode::BAD_REQUEST, e.to_string()),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
-    }
-}
+// #[derive(Deserialize)]
+// struct FullSigToInject {
+//     round: u64,
+//     base64_sig: String,
+// }
+// 
+// async fn randomness_inject_full_sig(
+//     State(state): State<Arc<AppState>>,
+//     args: Query<FullSigToInject>,
+// ) -> (StatusCode, String) {
+//     let Query(FullSigToInject { round, base64_sig }) = args;
+// 
+//     let sig: Vec<u8> = match base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(base64_sig) {
+//         Ok(sig) => sig,
+//         Err(err) => return (StatusCode::BAD_REQUEST, err.to_string()),
+//     };
+// 
+//     let sig: RandomnessSignature = match bcs::from_bytes(&sig) {
+//         Ok(sig) => sig,
+//         Err(err) => return (StatusCode::BAD_REQUEST, err.to_string()),
+//     };
+// 
+//     let (tx_result, rx_result) = oneshot::channel();
+//     state.node.randomness_handle().admin_inject_full_signature(
+//         RandomnessRound(round),
+//         sig,
+//         tx_result,
+//     );
+// 
+//     match rx_result.await {
+//         Ok(Ok(())) => (StatusCode::OK, "full signature injected\n".to_string()),
+//         Ok(Err(e)) => (StatusCode::BAD_REQUEST, e.to_string()),
+//         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+//     }
+// }

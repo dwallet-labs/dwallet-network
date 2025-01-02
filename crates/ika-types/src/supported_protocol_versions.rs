@@ -3,7 +3,7 @@
 
 use std::ops::RangeInclusive;
 
-use crate::{crypto::DefaultHash, digests::Digest};
+use sui_types::{crypto::DefaultHash, digests::Digest};
 use fastcrypto::hash::HashFunction;
 use serde::{Deserialize, Serialize};
 pub use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};

@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use serde::Serialize;
-use shared_crypto::intent::Intent;
+use ika_types::intent::Intent;
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::sync::Arc;
-use ika_types::base_types::AuthorityName;
-use ika_types::base_types::ConciseableName;
+use sui_types::base_types::ConciseableName;
 use ika_types::committee::{Committee, CommitteeTrait, StakeUnit};
-use ika_types::crypto::{AuthorityQuorumSignInfo, AuthoritySignInfo, AuthoritySignInfoTrait};
+use ika_types::crypto::{AuthorityQuorumSignInfo, AuthoritySignInfo, AuthoritySignInfoTrait, AuthorityName};
 use ika_types::error::IkaError;
 use ika_types::message_envelope::{Envelope, Message};
 use tracing::warn;
@@ -182,7 +181,7 @@ impl<const STRENGTH: bool> StakeAggregator<AuthoritySignInfo, STRENGTH> {
                             }
                         }
                     }
-                    Err(error) => InsertResult::Failed { error },
+                    Err(error) => InsertResult::Failed { error: error.into() },
                 }
             }
             // The following is necessary to change the template type of InsertResult.

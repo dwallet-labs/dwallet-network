@@ -1038,7 +1038,7 @@
 
 - f3444bdf2: fix faucet response type
 - 01efa8bc6: Add getReferenceGasPrice
-- 01efa8bc6: Use reference gas price instead of a hardcoded "1" for transaction construction
+- 01efa8bc6: Use computation price per unit size instead of a hardcoded "1" for transaction construction
 
 ## 0.22.0
 

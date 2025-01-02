@@ -13,7 +13,7 @@ use std::sync::Arc;
 use ika_core::test_utils::{make_cert_with_large_committee, make_dummy_tx};
 use ika_types::committee::Committee;
 use ika_types::crypto::{get_key_pair, AccountKeyPair, AuthorityKeyPair};
-use ika_types::transaction::CertifiedTransaction;
+use ika_types::action::CertifiedTransaction;
 
 use fastcrypto_zkp::bn254::zk_login_api::ZkLoginEnv;
 use ika_core::signature_verifier::*;

@@ -476,7 +476,7 @@ export class IkaClient {
 	}
 
 	/**
-	 * Getting the reference gas price for the network
+	 * Getting the computation price per unit size for the network
 	 */
 	async getReferenceGasPrice(): Promise<bigint> {
 		const resp = await this.transport.request<string>({

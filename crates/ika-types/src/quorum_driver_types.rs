@@ -4,17 +4,17 @@
 
 use std::collections::BTreeMap;
 
-use crate::base_types::{AuthorityName, EpochId, ObjectRef, TransactionDigest};
+use sui_types::base_types::{AuthorityName, EpochId, ObjectRef, TransactionDigest};
 use crate::committee::StakeUnit;
-use crate::crypto::{AuthorityStrongQuorumSignInfo, ConciseAuthorityPublicKeyBytes};
-use crate::effects::{
+use sui_types::crypto::{AuthorityStrongQuorumSignInfo, ConciseAuthorityPublicKeyBytes};
+use sui_types::effects::{
     CertifiedTransactionEffects, TransactionEffects, TransactionEvents,
     VerifiedCertifiedTransactionEffects,
 };
 use crate::error::IkaError;
-use crate::messages_checkpoint::CheckpointSequenceNumber;
-use crate::object::Object;
-use crate::transaction::{Transaction, VerifiedTransaction};
+use sui_types::messages_checkpoint::CheckpointSequenceNumber;
+use sui_types::object::Object;
+use sui_types::transaction::{Transaction, VerifiedTransaction};
 use serde::{Deserialize, Serialize};
 use strum::AsRefStr;
 use thiserror::Error;

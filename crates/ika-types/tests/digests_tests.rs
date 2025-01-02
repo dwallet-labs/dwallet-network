@@ -4,8 +4,8 @@
 use std::str::FromStr;
 
 use ika_types::digests::{
-    CheckpointContentsDigest, CheckpointDigest, EffectsAuxDataDigest, ObjectDigest,
-    TransactionDigest, TransactionEventsDigest,
+    CheckpointContentsDigest, CheckpointMessageDigest, EffectsAuxDataDigest, ObjectDigest,
+    ActionDigest, TransactionEventsDigest,
 };
 
 macro_rules! define_digest_test {
@@ -37,13 +37,13 @@ define_digest_test!(
     CheckpointContentsDigest
 );
 
-define_digest_test!(test_checkpoint_digest_from_str, CheckpointDigest);
+define_digest_test!(test_checkpoint_digest_from_str, CheckpointMessageDigest);
 
 define_digest_test!(test_effects_aux_data_digest_from_str, EffectsAuxDataDigest);
 
 define_digest_test!(test_object_digest_from_str, ObjectDigest);
 
-define_digest_test!(test_transaction_digest_from_str, TransactionDigest);
+define_digest_test!(test_transaction_digest_from_str, ActionDigest);
 
 define_digest_test!(
     test_transaction_events_digest_from_str,

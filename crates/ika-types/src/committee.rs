@@ -2,12 +2,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use super::base_types::*;
+use sui_types::base_types::*;
 use crate::crypto::{
-    random_committee_key_pairs_of_size, AuthorityKeyPair, AuthorityPublicKey, NetworkPublicKey,
+    random_committee_key_pairs_of_size, AuthorityKeyPair, AuthorityPublicKey, NetworkPublicKey, AuthorityName
 };
 use crate::error::{IkaError, IkaResult};
-use crate::multiaddr::Multiaddr;
+use sui_types::multiaddr::Multiaddr;
 use fastcrypto::traits::KeyPair;
 use once_cell::sync::OnceCell;
 use rand::rngs::{StdRng, ThreadRng};
@@ -54,14 +54,14 @@ pub struct Committee {
 }
 
 impl Committee {
-    pub fn new(epoch: EpochId, voting_rights: BTreeMap<AuthorityName, StakeUnit>) -> Self {
-        let mut voting_rights: Vec<(AuthorityName, StakeUnit)> =
-            voting_rights.iter().map(|(a, s)| (*a, *s)).collect();
+    pub fn new(epoch: EpochId, voting_rights: Vec<(AuthorityName, StakeUnit)>) -> Self {
+        // let mut voting_rights: Vec<(AuthorityName, StakeUnit)> =
+        //     voting_rights.iter().map(|(a, s)| (*a, *s)).collect();
 
         assert!(!voting_rights.is_empty());
         assert!(voting_rights.iter().any(|(_, s)| *s != 0));
 
-        voting_rights.sort_by_key(|(a, _)| *a);
+        //voting_rights.sort_by_key(|(a, _)| *a);
         let total_votes: StakeUnit = voting_rights.iter().map(|(_, votes)| *votes).sum();
         assert_eq!(total_votes, TOTAL_VOTING_POWER);
 
@@ -97,7 +97,7 @@ impl Committee {
             }
         }
 
-        Self::new(epoch, voting_weights)
+        Self::new(epoch, voting_weights.into_iter().collect())
     }
 
     // We call this if these have not yet been computed
@@ -222,9 +222,8 @@ impl Committee {
     }
 
     pub fn authority_exists(&self, name: &AuthorityName) -> bool {
-        self.voting_rights
-            .binary_search_by_key(name, |(a, _)| *a)
-            .is_ok()
+        self.index_map
+            .contains_key(name)
     }
 
     /// Derive a seed deterministically from the transaction digest and shuffle the validators.
@@ -298,9 +297,13 @@ impl CommitteeTrait<AuthorityName> for Committee {
     }
 
     fn weight(&self, author: &AuthorityName) -> StakeUnit {
-        match self.voting_rights.binary_search_by_key(author, |(a, _)| *a) {
-            Err(_) => 0,
-            Ok(idx) => self.voting_rights[idx].1,
+        let Some(index) = self.index_map.get(author) else {
+            return 0;
+        };
+
+        match self.voting_rights.get(*index) {
+            None => 0,
+            Some((_, s)) => *s,
         }
     }
 }
@@ -365,14 +368,14 @@ pub struct NetworkMetadata {
 #[derive(Clone, Debug)]
 pub struct CommitteeWithNetworkMetadata {
     epoch_id: EpochId,
-    validators: BTreeMap<AuthorityName, (StakeUnit, NetworkMetadata)>,
+    validators: Vec<(AuthorityName, (StakeUnit, NetworkMetadata))>,
     committee: OnceCell<Committee>,
 }
 
 impl CommitteeWithNetworkMetadata {
     pub fn new(
         epoch_id: EpochId,
-        validators: BTreeMap<AuthorityName, (StakeUnit, NetworkMetadata)>,
+        validators: Vec<(AuthorityName, (StakeUnit, NetworkMetadata))>,
     ) -> Self {
         Self {
             epoch_id,
@@ -384,7 +387,7 @@ impl CommitteeWithNetworkMetadata {
         self.epoch_id
     }
 
-    pub fn validators(&self) -> &BTreeMap<AuthorityName, (StakeUnit, NetworkMetadata)> {
+    pub fn validators(&self) -> &Vec<(AuthorityName, (StakeUnit, NetworkMetadata))> {
         &self.validators
     }
 

@@ -1,29 +1,31 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use super::{CheckpointMetrics, CheckpointStore};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::StableSyncAuthoritySigner;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::epoch::reconfiguration::ReconfigurationInitiator;
+use crate::sui_connector::CheckpointMessageSuiNotify;
 use async_trait::async_trait;
-use std::sync::Arc;
-use ika_types::base_types::AuthorityName;
+use fastcrypto::traits::ToFromBytes;
+use ika_types::crypto::AuthorityName;
 use ika_types::error::IkaResult;
 use ika_types::message_envelope::Message;
 use ika_types::messages_checkpoint::{
-    CertifiedCheckpointSummary, CheckpointContents, CheckpointSignatureMessage, CheckpointSummary,
-    SignedCheckpointSummary, VerifiedCheckpoint,
+    CertifiedCheckpointMessage, CheckpointContents, CheckpointMessage, CheckpointSignatureMessage,
+    SignedCheckpointMessage, VerifiedCheckpointMessage,
 };
 use ika_types::messages_consensus::ConsensusTransaction;
+use itertools::Itertools;
+use std::sync::Arc;
 use tracing::{debug, info, instrument, trace};
-
-use super::{CheckpointMetrics, CheckpointStore};
 
 #[async_trait]
 pub trait CheckpointOutput: Sync + Send + 'static {
     async fn checkpoint_created(
         &self,
-        summary: &CheckpointSummary,
+        summary: &CheckpointMessage,
         contents: &CheckpointContents,
         epoch_store: &Arc<AuthorityPerEpochStore>,
         checkpoint_store: &Arc<CheckpointStore>,
@@ -31,9 +33,11 @@ pub trait CheckpointOutput: Sync + Send + 'static {
 }
 
 #[async_trait]
-pub trait CertifiedCheckpointOutput: Sync + Send + 'static {
-    async fn certified_checkpoint_created(&self, summary: &CertifiedCheckpointSummary)
-        -> IkaResult;
+pub trait CertifiedCheckpointMessageOutput: Sync + Send + 'static {
+    async fn certified_checkpoint_message_created(
+        &self,
+        summary: &CertifiedCheckpointMessage,
+    ) -> IkaResult;
 }
 
 pub struct SubmitCheckpointToConsensus<T> {
@@ -51,7 +55,7 @@ impl LogCheckpointOutput {
         Box::new(Self)
     }
 
-    pub fn boxed_certified() -> Box<dyn CertifiedCheckpointOutput> {
+    pub fn boxed_certified() -> Box<dyn CertifiedCheckpointMessageOutput> {
         Box::new(Self)
     }
 }
@@ -63,7 +67,7 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> CheckpointOutput
     #[instrument(level = "debug", skip_all)]
     async fn checkpoint_created(
         &self,
-        summary: &CheckpointSummary,
+        summary: &CheckpointMessage,
         contents: &CheckpointContents,
         epoch_store: &Arc<AuthorityPerEpochStore>,
         checkpoint_store: &Arc<CheckpointStore>,
@@ -100,14 +104,14 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> CheckpointOutput
                 self.next_reconfiguration_timestamp_ms.saturating_sub(checkpoint_timestamp), self.next_reconfiguration_timestamp_ms
             );
 
-            let summary = SignedCheckpointSummary::new(
+            let summary = SignedCheckpointMessage::new(
                 epoch_store.epoch(),
                 summary.clone(),
                 &*self.signer,
                 self.authority,
             );
 
-            let message = CheckpointSignatureMessage { summary };
+            let message = CheckpointSignatureMessage { checkpoint_message: summary };
             let transaction = ConsensusTransaction::new_checkpoint_signature_message(message);
             self.sender
                 .submit_to_consensus(&vec![transaction], epoch_store)
@@ -136,7 +140,7 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> CheckpointOutput
 impl CheckpointOutput for LogCheckpointOutput {
     async fn checkpoint_created(
         &self,
-        summary: &CheckpointSummary,
+        summary: &CheckpointMessage,
         contents: &CheckpointContents,
         _epoch_store: &Arc<AuthorityPerEpochStore>,
         _checkpoint_store: &Arc<CheckpointStore>,
@@ -147,14 +151,12 @@ impl CheckpointOutput for LogCheckpointOutput {
             contents
         );
         info!(
-            "Creating checkpoint {:?} at epoch {}, sequence {}, previous digest {:?}, transactions count {}, content digest {:?}, end_of_epoch_data {:?}",
+            "Creating checkpoint {:?} at epoch {}, sequence {}, transactions count {}, content digest {:?}",
             summary.digest(),
             summary.epoch,
             summary.sequence_number,
-            summary.previous_digest,
             contents.size(),
-            summary.content_digest,
-            summary.end_of_epoch_data,
+            summary.actions,
         );
 
         Ok(())
@@ -162,10 +164,10 @@ impl CheckpointOutput for LogCheckpointOutput {
 }
 
 #[async_trait]
-impl CertifiedCheckpointOutput for LogCheckpointOutput {
-    async fn certified_checkpoint_created(
+impl CertifiedCheckpointMessageOutput for LogCheckpointOutput {
+    async fn certified_checkpoint_message_created(
         &self,
-        summary: &CertifiedCheckpointSummary,
+        summary: &CertifiedCheckpointMessage,
     ) -> IkaResult {
         info!(
             "Certified checkpoint with sequence {} and digest {}",
@@ -187,19 +189,19 @@ impl SendCheckpointToStateSync {
 }
 
 #[async_trait]
-impl CertifiedCheckpointOutput for SendCheckpointToStateSync {
+impl CertifiedCheckpointMessageOutput for SendCheckpointToStateSync {
     #[instrument(level = "debug", skip_all)]
-    async fn certified_checkpoint_created(
+    async fn certified_checkpoint_message_created(
         &self,
-        summary: &CertifiedCheckpointSummary,
+        checkpoint_message: &CertifiedCheckpointMessage,
     ) -> IkaResult {
         info!(
             "Certified checkpoint with sequence {} and digest {}",
-            summary.sequence_number,
-            summary.digest()
+            checkpoint_message.sequence_number,
+            checkpoint_message.digest(),
         );
         self.handle
-            .send_checkpoint(VerifiedCheckpoint::new_unchecked(summary.to_owned()))
+            .send_checkpoint(VerifiedCheckpointMessage::new_unchecked(checkpoint_message.to_owned()))
             .await;
 
         Ok(())

@@ -208,12 +208,12 @@ validators:
         net_address: []
         next_epoch_stake: 1
         next_epoch_delegation: 0
-        next_epoch_gas_price: 1
+        next_epoch_computation_price: 1
         next_epoch_commission_rate: 0
       stake_amount: 1
       pending_stake: 0
       pending_withdraw: 0
-      gas_price: 1
+      computation_price: 1
       delegation_staking_pool:
         validator_address: "0x21b60aa9a8cb189ccbe20461dbfad2202fdef55b"
         starting_epoch: 1
@@ -425,7 +425,7 @@ validators:
       net_address: []
       next_epoch_stake: 1
       next_epoch_delegation: 0
-      next_epoch_gas_price: 1
+      next_epoch_computation_price: 1
       next_epoch_commission_rate: 0
   pending_delegation_switches:
     contents: []
@@ -436,8 +436,8 @@ storage_fund:
 parameters:
   min_validator_stake: 100000000000000
   max_validator_candidate_count: 100
-  storage_gas_price: 1
-reference_gas_price: 0
+  storage_computation_price: 1
+computation_price_per_unit_size: 0
 validator_report_records:
   contents: []
 next_epoch_stake_subsidy: 1000000

@@ -33,7 +33,7 @@ impl BenchmarkBank {
     pub async fn generate(
         &mut self,
         builders: Vec<Box<dyn WorkloadBuilder<dyn Payload>>>,
-        gas_price: u64,
+        computation_price: u64,
         chunk_size: u64,
     ) -> Result<Vec<Box<dyn Workload<dyn Payload>>>> {
         let mut coin_configs = VecDeque::new();
@@ -57,13 +57,13 @@ impl BenchmarkBank {
         let mut init_coin = self
             .create_init_coin(
                 total_gas_needed + (MAX_BUDGET * chunked_coin_configs.len() as u64),
-                gas_price,
+                computation_price,
             )
             .await?;
 
         info!("Number of gas requests = {}", chunked_coin_configs.len());
         for chunk in chunked_coin_configs {
-            let gas_coins = self.pay_ika(chunk, &mut init_coin, gas_price).await?;
+            let gas_coins = self.pay_ika(chunk, &mut init_coin, computation_price).await?;
             new_gas_coins.extend(gas_coins);
         }
         let mut workloads = vec![];
@@ -99,7 +99,7 @@ impl BenchmarkBank {
         &mut self,
         coin_configs: &[GasCoinConfig],
         init_coin: &mut Gas,
-        gas_price: u64,
+        computation_price: u64,
     ) -> Result<UpdatedAndNewlyMintedGasCoins> {
         let recipient_addresses: Vec<IkaAddress> = coin_configs.iter().map(|g| g.address).collect();
         let amounts: Vec<u64> = coin_configs.iter().map(|c| c.amount).collect();
@@ -117,7 +117,7 @@ impl BenchmarkBank {
             amounts,
             init_coin.1,
             &init_coin.2,
-            gas_price,
+            computation_price,
             MAX_BUDGET,
         );
 
@@ -160,7 +160,7 @@ impl BenchmarkBank {
         transferred_coins
     }
 
-    async fn create_init_coin(&mut self, amount: u64, gas_price: u64) -> Result<Gas> {
+    async fn create_init_coin(&mut self, amount: u64, computation_price: u64) -> Result<Gas> {
         info!("Creating initilization coin of value {amount}...");
 
         let tx = make_transfer_ika_transaction(
@@ -169,7 +169,7 @@ impl BenchmarkBank {
             Some(amount),
             self.primary_coin.1,
             &self.primary_coin.2,
-            gas_price,
+            computation_price,
         );
 
         let effects = self.proxy.execute_transaction_block(tx).await?;

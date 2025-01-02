@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use ika_config::{ConsensusConfig, NodeConfig};
 use ika_protocol_config::ProtocolVersion;
-use ika_types::committee::EpochId;
+use sui_types::committee::EpochId;
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::ConsensusTransaction;
 use tokio::sync::{Mutex, MutexGuard};

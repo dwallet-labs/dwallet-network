@@ -565,7 +565,7 @@ mod test {
             };
             simulated_load_config.shared_counter_hotness_factor = rng.gen_range(50..=100);
 
-            // Use shared_counter_max_tip to make transactions to have different gas prices.
+            // Use shared_counter_max_tip to make transactions to have different computation prices.
             simulated_load_config.use_shared_counter_max_tip = rng.gen_bool(0.25);
             simulated_load_config.shared_counter_max_tip = rng.gen_range(1..=1000);
             info!("Simulated load config: {:?}", simulated_load_config);
@@ -1006,7 +1006,7 @@ mod test {
         let system_state_observer = {
             let mut system_state_observer = SystemStateObserver::new(proxy.clone());
             if let Ok(_) = system_state_observer.state.changed().await {
-                info!("Got the new state (reference gas price and/or protocol config) from system state object");
+                info!("Got the new state (computation price per unit size and/or protocol config) from system state object");
             }
             Arc::new(system_state_observer)
         };

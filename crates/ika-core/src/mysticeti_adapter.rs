@@ -22,7 +22,7 @@ use crate::{
 /// Gets a client to submit transactions to Mysticeti, or waits for one to be available.
 /// This hides the complexities of async consensus initialization and submitting to different
 /// instances of consensus across epochs.
-// TODO: rename to LazyConsensusClient?
+
 #[derive(Default, Clone)]
 pub struct LazyMysticetiClient {
     client: Arc<ArcSwapOption<TransactionClient>>,
@@ -101,7 +101,9 @@ impl ConsensusClient for LazyMysticetiClient {
                     ClientError::ConsensusShuttingDown(_) => {
                         info!("{}", msg);
                     }
-                    ClientError::OversizedTransaction(_, _) => {
+                    ClientError::OversizedTransaction(_, _)
+                    | ClientError::OversizedTransactionBundleBytes(_, _)
+                    | ClientError::OversizedTransactionBundleCount(_, _)  => {
                         if cfg!(debug_assertions) {
                             panic!("{}", msg);
                         } else {
@@ -118,10 +120,7 @@ impl ConsensusClient for LazyMysticetiClient {
             && matches!(
                 transactions[0].kind,
                 ConsensusTransactionKind::EndOfPublish(_)
-                    | ConsensusTransactionKind::CapabilityNotification(_)
-                    | ConsensusTransactionKind::CapabilityNotificationV2(_)
-                    | ConsensusTransactionKind::RandomnessDkgMessage(_, _)
-                    | ConsensusTransactionKind::RandomnessDkgConfirmation(_, _)
+                    | ConsensusTransactionKind::CapabilityNotificationV1(_)
             )
         {
             let transaction_key = SequencedConsensusTransactionKey::External(transactions[0].key());

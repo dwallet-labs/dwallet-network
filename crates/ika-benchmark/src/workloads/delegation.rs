@@ -63,7 +63,7 @@ impl Payload for DelegationTestPayload {
                 self.system_state_observer
                     .state
                     .borrow()
-                    .reference_gas_price,
+                    .computation_price_per_unit_size,
             )
             .call_staking(coin, self.validator)
             .build_and_sign(self.keypair.as_ref()),
@@ -76,7 +76,7 @@ impl Payload for DelegationTestPayload {
                 self.system_state_observer
                     .state
                     .borrow()
-                    .reference_gas_price,
+                    .computation_price_per_unit_size,
             ),
         }
     }

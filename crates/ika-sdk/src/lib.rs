@@ -84,18 +84,7 @@ use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
 use serde_json::Value;
 
 use move_core_types::language_storage::StructTag;
-pub use ika_json as json;
-use ika_json_rpc_api::{
-    CLIENT_SDK_TYPE_HEADER, CLIENT_SDK_VERSION_HEADER, CLIENT_TARGET_API_VERSION_HEADER,
-};
-pub use ika_json_rpc_types as rpc_types;
-use ika_json_rpc_types::{
-    ObjectsPage, IkaObjectDataFilter, IkaObjectDataOptions, IkaObjectResponse,
-    IkaObjectResponseQuery,
-};
-use ika_transaction_builder::{DataReader, TransactionBuilder};
 pub use ika_types as types;
-use ika_types::base_types::{ObjectID, ObjectInfo, IkaAddress};
 
 use crate::apis::{CoinReadApi, EventApi, GovernanceApi, QuorumDriverApi, ReadApi};
 use crate::error::{Error, IkaRpcResult};
@@ -582,8 +571,8 @@ impl DataReader for ReadApi {
         Ok(self.get_object_with_options(object_id, options).await?)
     }
 
-    /// Returns the reference gas price as a u64 or an error otherwise
-    async fn get_reference_gas_price(&self) -> Result<u64, anyhow::Error> {
-        Ok(self.get_reference_gas_price().await?)
+    /// Returns the computation price per unit size as a u64 or an error otherwise
+    async fn get_computation_price_per_unit_size(&self) -> Result<u64, anyhow::Error> {
+        Ok(self.get_computation_price_per_unit_size().await?)
     }
 }

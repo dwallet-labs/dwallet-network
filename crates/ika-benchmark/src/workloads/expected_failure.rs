@@ -78,7 +78,7 @@ impl Payload for ExpectedFailurePayload {
             self.system_state_observer
                 .state
                 .borrow()
-                .reference_gas_price,
+                .computation_price_per_unit_size,
         );
         self.create_failing_transaction(tx)
     }

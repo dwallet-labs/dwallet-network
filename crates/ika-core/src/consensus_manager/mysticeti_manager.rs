@@ -12,7 +12,7 @@ use prometheus::Registry;
 use ika_config::NodeConfig;
 use ika_protocol_config::ConsensusNetwork;
 use ika_types::{
-    committee::EpochId, ika_system_state::epoch_start_ika_system_state::EpochStartSystemStateTrait,
+    committee::EpochId, sui::ika_system_state::epoch_start_ika_system_state::EpochStartSystemStateTrait,
 };
 use tokio::sync::Mutex;
 use tracing::info;
@@ -28,10 +28,6 @@ use crate::{
     consensus_validator::IkaTxValidator,
     mysticeti_adapter::LazyMysticetiClient,
 };
-
-#[cfg(test)]
-#[path = "../unit_tests/mysticeti_manager_tests.rs"]
-pub mod mysticeti_manager_tests;
 
 pub struct MysticetiManager {
     protocol_keypair: ProtocolKeyPair,
@@ -171,13 +167,18 @@ impl ConsensusManagerTrait for MysticetiManager {
                 *boot_counter
             );
         }
+        
+        let network_type = match network_type {
+            ConsensusNetwork::Anemo => sui_protocol_config::ConsensusNetwork::Anemo,
+            ConsensusNetwork::Tonic => sui_protocol_config::ConsensusNetwork::Tonic,
+        };
 
         let authority = ConsensusAuthority::start(
             network_type,
             own_index,
             committee.clone(),
             parameters.clone(),
-            protocol_config.clone(),
+            sui_protocol_config::ProtocolConfig::get_for_version(sui_protocol_config::ProtocolVersion::MAX, sui_protocol_config::Chain::Mainnet),
             self.protocol_keypair.clone(),
             self.network_keypair.clone(),
             Arc::new(tx_validator.clone()),
@@ -199,7 +200,6 @@ impl ConsensusManagerTrait for MysticetiManager {
         // spin up the new mysticeti consensus handler to listen for committed sub dags
         let consensus_transaction_handler = ConsensusTransactionHandler::new(
             epoch_store.clone(),
-            consensus_handler.transaction_manager_sender().clone(),
             consensus_handler_initializer.metrics().clone(),
         );
         let handler = MysticetiConsensusHandler::new(

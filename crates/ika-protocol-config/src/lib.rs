@@ -53,7 +53,7 @@ const MAX_PROTOCOL_VERSION: u64 = 69;
 // Version 14: Introduce a config variable to allow charging of computation to be either
 //             bucket base or rounding up. The presence of `gas_rounding_step` (or `None`)
 //             decides whether rounding is applied or not.
-// Version 15: Add reordering of user transactions by gas price after consensus.
+// Version 15: Add reordering of user transactions by computation price after consensus.
 //             Add `ika::table_vec::drop` to the framework via a system package upgrade.
 // Version 16: Enabled simplified_unwrap_then_delete feature flag, which allows the execution engine
 //             to no longer consult the object store when generating unwrapped_then_deleted in the
@@ -61,7 +61,7 @@ const MAX_PROTOCOL_VERSION: u64 = 69;
 //             Add self-matching prevention for deepbook.
 // Version 17: Enable upgraded multisig support.
 // Version 18: Introduce execution layer versioning, preserve all existing behaviour in v0.
-//             Gas minimum charges moved to be a multiplier over the reference gas price. In this
+//             Gas minimum charges moved to be a multiplier over the computation price per unit size. In this
 //             protocol version the multiplier is the same as the lowest bucket of computation
 //             such that the minimum transaction cost is the same as the minimum computation
 //             bucket.
@@ -356,7 +356,7 @@ struct FeatureFlags {
     // Enable upgraded multisig support
     #[serde(skip_serializing_if = "is_false")]
     upgraded_multisig_supported: bool,
-    // If true minimum txn charge is a multiplier of the gas price
+    // If true minimum txn charge is a multiplier of the computation price
     #[serde(skip_serializing_if = "is_false")]
     txn_base_cost_as_multiplier: bool,
 
@@ -587,7 +587,7 @@ pub enum ConsensusTransactionOrdering {
     /// No ordering. Transactions are processed in the order they appear in the consensus output.
     #[default]
     None,
-    /// Order transactions by gas price, highest first.
+    /// Order transactions by computation price, highest first.
     ByGasPrice,
 }
 
@@ -764,8 +764,8 @@ pub struct ProtocolConfig {
     /// Maximum gas budget in NIKA that a transaction can use.
     max_tx_gas: Option<u64>,
 
-    /// Maximum amount of the proposed gas price in NIKA (defined in the transaction).
-    max_gas_price: Option<u64>,
+    /// Maximum amount of the proposed computation price in NIKA (defined in the transaction).
+    max_computation_price: Option<u64>,
 
     /// The max computation bucket for gas. This is the max that can be charged for computation.
     max_gas_computation_bucket: Option<u64>,
@@ -942,8 +942,8 @@ pub struct ProtocolConfig {
     /// In basis point.
     reward_slashing_rate: Option<u64>,
 
-    /// Unit gas price, NIka per internal gas unit.
-    storage_gas_price: Option<u64>,
+    /// Unit computation price, NIka per internal gas unit.
+    storage_computation_price: Option<u64>,
 
     /// === Core Protocol ===
 
@@ -1854,7 +1854,7 @@ impl ProtocolConfig {
             max_move_package_size: Some(100 * 1024),
             max_publish_or_upgrade_per_ptb: None,
             max_tx_gas: Some(10_000_000_000),
-            max_gas_price: Some(100_000),
+            max_computation_price: Some(100_000),
             max_gas_computation_bucket: Some(5_000_000),
             max_loop_depth: Some(5),
             max_generic_instantiation_length: Some(32),
@@ -1902,7 +1902,7 @@ impl ProtocolConfig {
             storage_rebate_rate: Some(9900),
             storage_fund_reinvest_rate: Some(500),
             reward_slashing_rate: Some(5000),
-            storage_gas_price: Some(1),
+            storage_computation_price: Some(1),
             max_transactions_per_checkpoint: Some(10_000),
             max_checkpoint_size_bytes: Some(30 * 1024 * 1024),
 
@@ -2231,8 +2231,8 @@ impl ProtocolConfig {
                     cfg.max_tx_gas = Some(50_000_000_000);
                     // min gas budget is in NIKA and an absolute value 2000NIKA or 0.000002IKA
                     cfg.base_tx_cost_fixed = Some(2_000);
-                    // storage gas price multiplier
-                    cfg.storage_gas_price = Some(76);
+                    // storage computation price multiplier
+                    cfg.storage_computation_price = Some(76);
                     cfg.feature_flags.loaded_child_objects_fixed = true;
                     // max size of written objects during a TXn
                     // this is a sum of all objects written during a TXn
@@ -2326,7 +2326,7 @@ impl ProtocolConfig {
                     // cfg.feature_flags.ban_entry_init = true;
                     // cfg.feature_flags.pack_digest_hash_modules = true;
                     cfg.feature_flags.txn_base_cost_as_multiplier = true;
-                    // this is a multiplier of the gas price
+                    // this is a multiplier of the computation price
                     cfg.base_tx_cost_fixed = Some(1_000);
                 }
                 19 => {

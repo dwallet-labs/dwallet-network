@@ -52,31 +52,13 @@ uuid.workspace = true
 url.workspace = true
 
 ika-config.workspace = true
-ika-bridge.workspace = true
-ika-cluster-test.workspace = true
-ika-execution = { path = "../../ika-execution" }
-ika-faucet.workspace = true
 ika-swarm-config.workspace = true
-ika-graphql-rpc.workspace = true
-ika-indexer.workspace = true
-ika-genesis-builder.workspace = true
 ika-types.workspace = true
-ika-json.workspace = true
 ika-swarm.workspace = true
-ika-json-rpc-types.workspace = true
-ika-sdk.workspace = true
-ika-keys.workspace = true
-ika-source-validation.workspace = true
-ika-move = { workspace = true, features = ["all"] }
-ika-move-build.workspace = true
-ika-package-management.workspace = true
+#ika-sdk.workspace = true
 ika-protocol-config.workspace = true
 shared-crypto.workspace = true
-ika-replay.workspace = true
-ika-transaction-builder.workspace = true
 move-binary-format.workspace = true
-move-bytecode-source-map.workspace = true
-test-cluster.workspace = true
 
 fastcrypto.workspace = true
 fastcrypto-zkp.workspace = true
@@ -101,6 +83,18 @@ move-vm-config.workspace = true
 move-ir-types.workspace = true
 move-command-line-common.workspace = true
 
+sui.workspace = true
+sui-config.workspace = true
+sui-faucet.workspace = true
+sui-indexer.workspace = true
+sui-graphql-rpc.workspace = true
+sui-keys.workspace = true
+sui-sdk.workspace = true
+sui-swarm.workspace = true
+sui-swarm-config.workspace = true
+sui-types.workspace = true
+ika-move-packages.workspace = true
+
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemalloc-ctl.workspace = true
 
@@ -112,9 +106,9 @@ assert_cmd.workspace = true
 toml.workspace = true
 
 test-cluster.workspace = true
-ika-macros.workspace = true
-ika-simulator.workspace = true
-ika-test-transaction-builder.workspace = true
+sui-macros.workspace = true
+sui-simulator.workspace = true
+sui-test-transaction-builder.workspace = true
 serde_json.workspace = true
 
 [target.'cfg(msim)'.dependencies]
@@ -135,5 +129,4 @@ harness = false
 [features]
 tracing = [
     "ika-types/tracing",
-    "ika-execution/tracing",
 ]

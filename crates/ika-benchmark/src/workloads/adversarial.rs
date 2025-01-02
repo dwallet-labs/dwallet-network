@@ -212,11 +212,11 @@ impl AdversarialTestPayload {
         let module_name = "adversarial";
         let account = self.state.account(&self.sender).unwrap();
         let gas_budget = protocol_config.max_tx_gas();
-        let gas_price = self
+        let computation_price = self
             .system_state_observer
             .state
             .borrow()
-            .reference_gas_price;
+            .computation_price_per_unit_size;
         match payload_type {
             AdversarialPayloadType::MaxReads => {
                 let mut builder = ProgrammableTransactionBuilder::new();
@@ -238,14 +238,14 @@ impl AdversarialTestPayload {
                     vec![account.gas],
                     builder.finish(),
                     gas_budget,
-                    gas_price,
+                    computation_price,
                 );
                 to_sender_signed_transaction(data, account.key())
             }
             AdversarialPayloadType::MaxPackagePublish => {
                 let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
                 path.push("src/workloads/data/max_package");
-                TestTransactionBuilder::new(self.sender, account.gas, gas_price)
+                TestTransactionBuilder::new(self.sender, account.gas, computation_price)
                     .publish(path)
                     .build_and_sign(account.key())
             }
@@ -257,7 +257,7 @@ impl AdversarialTestPayload {
                 vec![],
                 args.args,
                 gas_budget,
-                gas_price,
+                computation_price,
             ),
         }
     }
@@ -464,12 +464,12 @@ impl Workload<dyn Payload> for AdversarialWorkload {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("src/workloads/data/adversarial");
         let SystemState {
-            reference_gas_price,
+            computation_price_per_unit_size,
             protocol_config,
         } = system_state_observer.state.borrow().clone();
         let protocol_config = protocol_config.unwrap();
         let gas_budget = protocol_config.max_tx_gas();
-        let transaction = TestTransactionBuilder::new(gas.1, gas.0, reference_gas_price)
+        let transaction = TestTransactionBuilder::new(gas.1, gas.0, computation_price_per_unit_size)
             .publish(path)
             .build_and_sign(gas.2.as_ref());
         let effects = proxy.execute_transaction_block(transaction).await.unwrap();
@@ -516,7 +516,7 @@ impl Workload<dyn Payload> for AdversarialWorkload {
             vec![num_shared_objs.into()],
             &gas_ref,
             gas_budget,
-            reference_gas_price,
+            computation_price_per_unit_size,
         );
 
         let effects = proxy.execute_transaction_block(transaction).await.unwrap();

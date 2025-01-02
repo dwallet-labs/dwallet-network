@@ -22,15 +22,16 @@ prometheus.workspace = true
 
 ika-config.workspace = true
 ika-swarm-config.workspace = true
-ika-macros.workspace = true
+sui-macros.workspace = true
+sui-types.workspace = true
 ika-node.workspace = true
 ika-protocol-config.workspace = true
-ika-tls.workspace = true
+sui-tls.workspace = true
 ika-types.workspace = true
 mysten-metrics.workspace = true
 mysten-network.workspace = true
 telemetry-subscribers.workspace = true
 
 [target.'cfg(msim)'.dependencies]
-ika-simulator.workspace = true
+sui-simulator.workspace = true
 

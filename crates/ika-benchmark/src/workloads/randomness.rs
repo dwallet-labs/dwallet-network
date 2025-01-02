@@ -53,7 +53,7 @@ impl Payload for RandomnessTestPayload {
             .system_state_observer
             .state
             .borrow()
-            .reference_gas_price;
+            .computation_price_per_unit_size;
         TestTransactionBuilder::new(self.gas.1, self.gas.0, rgp)
             .call_emit_random(self.package_id, self.randomness_initial_shared_version)
             .build_and_sign(self.gas.2.as_ref())
@@ -75,7 +75,7 @@ impl RandomnessWorkloadBuilder {
         target_qps: u64,
         num_workers: u64,
         in_flight_ratio: u64,
-        reference_gas_price: u64,
+        computation_price_per_unit_size: u64,
         duration: Interval,
         group: u32,
     ) -> Option<WorkloadBuilderInfo> {
@@ -95,7 +95,7 @@ impl RandomnessWorkloadBuilder {
             let workload_builder = Box::<dyn WorkloadBuilder<dyn Payload>>::from(Box::new(
                 RandomnessWorkloadBuilder {
                     num_payloads: max_ops,
-                    rgp: reference_gas_price,
+                    rgp: computation_price_per_unit_size,
                 },
             ));
             let builder_info = WorkloadBuilderInfo {
@@ -163,7 +163,7 @@ impl Workload<dyn Payload> for RandomnessWorkload {
         if self.basics_package_id.is_some() {
             return;
         }
-        let gas_price = system_state_observer.state.borrow().reference_gas_price;
+        let computation_price = system_state_observer.state.borrow().computation_price_per_unit_size;
         let gas = self
             .init_gas
             .first()
@@ -173,7 +173,7 @@ impl Workload<dyn Payload> for RandomnessWorkload {
         if self.basics_package_id.is_none() {
             info!("Publishing basics package");
             self.basics_package_id = Some(
-                publish_basics_package(gas.0, proxy.clone(), gas.1, &gas.2, gas_price)
+                publish_basics_package(gas.0, proxy.clone(), gas.1, &gas.2, computation_price)
                     .await
                     .0,
             );

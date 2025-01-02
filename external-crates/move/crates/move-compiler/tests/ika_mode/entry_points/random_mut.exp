@@ -1,9 +1,0 @@
-error[Ika E02002]: invalid 'entry' function signature
-  ┌─ tests/ika_mode/entry_points/random_mut.move:4:36
-  │
-4 │     public entry fun no_random_mut(_: &mut ika::random::Random) {
-  │            -----                   ^  ------------------------ ika::random::Random must be passed by immutable reference, e.g. '&ika::random::Random'
-  │            │                       │   
-  │            │                       Invalid 'entry' parameter type for parameter '_'
-  │            'no_random_mut' was declared 'entry' here
-

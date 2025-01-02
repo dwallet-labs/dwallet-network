@@ -196,7 +196,7 @@ const options: {
 					alias: 'transactionBlock',
 					typeAlias: 'Transaction | Uint8Array | string',
 				},
-				gas_price: {
+				computation_price: {
 					typeAlias: 'bigint | number',
 				},
 			},

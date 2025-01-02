@@ -200,7 +200,7 @@ pub enum RunSpec {
         // counters to create.
         #[clap(long, num_args(1..), value_delimiter = ',')]
         num_shared_counters: Option<Vec<u64>>,
-        // Maximum gas price increment over the RGP for shared counter transactions.
+        // Maximum computation price increment over the RGP for shared counter transactions.
         // The actual increment for each transaction is chosen at random a value between 0 and this value.
         #[clap(long, num_args(1..), value_delimiter = ',', default_values_t = [0])]
         shared_counter_max_tip: Vec<u64>,

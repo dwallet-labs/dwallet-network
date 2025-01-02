@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::authority::AuthorityMetrics;
 use arc_swap::ArcSwap;
-use narwhal_types::TimestampMs;
 use parking_lot::Mutex;
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU64;
 use std::sync::Arc;
+use sui_types::messages_consensus::TimestampMs;
 use ika_protocol_config::Chain;
 use ika_types::digests::ChainIdentifier;
 use tracing::{debug, warn};
@@ -77,11 +77,12 @@ impl ThroughputProfileRanges {
             ]
         };
 
-        match chain_id.chain() {
-            Chain::Mainnet => ThroughputProfileRanges::new(&to_profiles(500, 2_000)),
-            Chain::Testnet => ThroughputProfileRanges::new(&to_profiles(500, 2_000)),
-            Chain::Unknown => ThroughputProfileRanges::new(&to_profiles(1_000, 2_000)),
-        }
+        // match chain_id.chain() {
+        //     Chain::Mainnet => ThroughputProfileRanges::new(&to_profiles(500, 2_000)),
+        //     Chain::Testnet => ThroughputProfileRanges::new(&to_profiles(500, 2_000)),
+        //     Chain::Unknown => ThroughputProfileRanges::new(&to_profiles(1_000, 2_000)),
+        // }
+        ThroughputProfileRanges::new(&to_profiles(1_000, 2_000))
     }
 
     pub fn new(profiles: &[ThroughputProfile]) -> Self {

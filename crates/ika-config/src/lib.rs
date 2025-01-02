@@ -9,18 +9,17 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::trace;
 
-pub mod certificate_deny_config;
-pub mod genesis;
+pub mod initiation;
 pub mod local_ip_utils;
 pub mod node;
 pub mod node_config_metrics;
-pub mod object_storage_config;
 pub mod p2p;
-pub mod transaction_deny_config;
-pub mod verifier_signing_config;
 
-pub use node::{ConsensusConfig, ExecutionCacheConfig, NodeConfig};
-use ika_types::multiaddr::Multiaddr;
+
+pub use sui_config::object_storage_config;
+pub use node::{ConsensusConfig, NodeConfig};
+use sui_types::multiaddr::Multiaddr;
+pub use sui_config::{Config, PersistedConfig};
 
 const IKA_DIR: &str = ".ika";
 pub const IKA_CONFIG_DIR: &str = "ika_config";
@@ -53,16 +52,16 @@ pub fn ika_config_dir() -> Result<PathBuf, anyhow::Error> {
     })
 }
 
-/// Check if the genesis blob exists in the given directory or the default directory.
-pub fn genesis_blob_exists(config_dir: Option<PathBuf>) -> bool {
+/// Check if the network config blob exists in the given directory or the default directory.
+pub fn network_config_exists(config_dir: Option<PathBuf>) -> bool {
     if let Some(dir) = config_dir {
-        dir.join(IKA_GENESIS_FILENAME).exists()
+        dir.join(IKA_NETWORK_CONFIG).exists()
     } else if let Some(config_env) = std::env::var_os("IKA_CONFIG_DIR") {
-        Path::new(&config_env).join(IKA_GENESIS_FILENAME).exists()
+        Path::new(&config_env).join(IKA_NETWORK_CONFIG).exists()
     } else if let Some(home) = dirs::home_dir() {
         let mut config = PathBuf::new();
         config.push(&home);
-        config.extend([IKA_DIR, IKA_CONFIG_DIR, IKA_GENESIS_FILENAME]);
+        config.extend([IKA_DIR, IKA_CONFIG_DIR, IKA_NETWORK_CONFIG]);
         config.exists()
     } else {
         false
@@ -84,73 +83,4 @@ fn multiaddr_to_filename(address: Multiaddr) -> Option<String> {
         }
     }
     None
-}
-
-pub trait Config
-where
-    Self: DeserializeOwned + Serialize,
-{
-    fn persisted(self, path: &Path) -> PersistedConfig<Self> {
-        PersistedConfig {
-            inner: self,
-            path: path.to_path_buf(),
-        }
-    }
-
-    fn load<P: AsRef<Path>>(path: P) -> Result<Self, anyhow::Error> {
-        let path = path.as_ref();
-        trace!("Reading config from {}", path.display());
-        let reader = fs::File::open(path)
-            .with_context(|| format!("Unable to load config from {}", path.display()))?;
-        Ok(serde_yaml::from_reader(reader)?)
-    }
-
-    fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), anyhow::Error> {
-        let path = path.as_ref();
-        trace!("Writing config to {}", path.display());
-        let config = serde_yaml::to_string(&self)?;
-        fs::write(path, config)
-            .with_context(|| format!("Unable to save config to {}", path.display()))?;
-        Ok(())
-    }
-}
-
-pub struct PersistedConfig<C> {
-    inner: C,
-    path: PathBuf,
-}
-
-impl<C> PersistedConfig<C>
-where
-    C: Config,
-{
-    pub fn read(path: &Path) -> Result<C, anyhow::Error> {
-        Config::load(path)
-    }
-
-    pub fn save(&self) -> Result<(), anyhow::Error> {
-        self.inner.save(&self.path)
-    }
-
-    pub fn into_inner(self) -> C {
-        self.inner
-    }
-
-    pub fn path(&self) -> &Path {
-        &self.path
-    }
-}
-
-impl<C> std::ops::Deref for PersistedConfig<C> {
-    type Target = C;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl<C> std::ops::DerefMut for PersistedConfig<C> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
 }

@@ -1,6 +1,0 @@
-processed 1 task
-
-task 0, lines 4-10:
-//# publish
-Error: Transaction Effects Status: Ika Move Bytecode Verification Error. Please run the Ika Move Verifier for more information.
-Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: IkaMoveVerificationError, source: Some("First field of struct S must be of type ika::object::UID, Bool type found"), command: Some(0) } }

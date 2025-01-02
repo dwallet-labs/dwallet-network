@@ -2,14 +2,7 @@
     "release_binaries": [
         "ika",
         "ika-node",
-        "ika-tool",
-        "ika-faucet",
-        "ika-data-ingestion",
-        "ika-bridge",
-        "ika-bridge-cli",
-        "ika-graphql-rpc",
-        "ika-test-validator",
-        "move-analyzer"
+        "ika-data-ingestion"
     ],
     "internal_binaries": [
         "stress",

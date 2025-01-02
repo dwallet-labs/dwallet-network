@@ -112,7 +112,7 @@ impl Payload for BatchPaymentTestPayload {
             self.system_state_observer
                 .state
                 .borrow()
-                .reference_gas_price,
+                .computation_price_per_unit_size,
             gas_budget,
         )
     }

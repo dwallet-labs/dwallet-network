@@ -1,6 +1,0 @@
-processed 2 tasks
-
-task 1, lines 6-11:
-//# publish 
-Error: Transaction Effects Status: Ika Move Bytecode Verification Error. Please run the Ika Move Verifier for more information.
-Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: IkaMoveVerificationError, source: Some("Enum X cannot have the 'key' ability. Enums cannot have the 'key' ability."), command: Some(0) } }

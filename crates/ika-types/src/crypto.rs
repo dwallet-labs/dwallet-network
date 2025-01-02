@@ -1,11 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-use crate::base_types::{AuthorityName, ConciseableName, IkaAddress};
 use crate::committee::CommitteeTrait;
 use crate::committee::{Committee, EpochId, StakeUnit};
 use crate::error::{IkaError, IkaResult};
-use crate::signature::GenericSignature;
-use crate::ika_serde::{Readable, IkaBitmap};
+use crate::intent::{Intent, IntentMessage, IntentScope};
 use anyhow::{anyhow, Error};
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
@@ -44,23 +42,16 @@ use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, Bytes};
-use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::fmt::{self, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 use strum::EnumString;
+use sui_types::base_types::{ConciseableName, SuiAddress};
+use sui_types::sui_serde::{Readable, SuiBitmap};
+use sui_types::crypto::{SuiPublicKey};
 use tracing::{instrument, warn};
-
-#[cfg(test)]
-#[path = "unit_tests/crypto_tests.rs"]
-mod crypto_tests;
-
-#[cfg(test)]
-#[cfg(feature = "test-utils")]
-#[path = "unit_tests/intent_tests.rs"]
-mod intent_tests;
 
 // Authority Objects
 pub type AuthorityKeyPair = BLS12381KeyPair;
@@ -82,7 +73,9 @@ pub type NetworkPrivateKey = Ed25519PrivateKey;
 pub type DefaultHash = Blake2b256;
 
 pub const DEFAULT_EPOCH_ID: EpochId = 0;
-pub const IKA_PRIV_KEY_PREFIX: &str = "ikaprivkey";
+
+pub type AuthorityName = AuthorityPublicKeyBytes;
+
 
 /// Creates a proof of that the authority account address is owned by the
 /// holder of authority protocol key, and also ensures that the authority
@@ -92,7 +85,7 @@ pub const IKA_PRIV_KEY_PREFIX: &str = "ikaprivkey";
 /// constructed as `authority_pubkey_bytes || authority_account_address`.
 pub fn generate_proof_of_possession(
     keypair: &AuthorityKeyPair,
-    address: IkaAddress,
+    address: SuiAddress,
 ) -> AuthoritySignature {
     let mut msg: Vec<u8> = Vec::new();
     msg.extend_from_slice(keypair.public().as_bytes());
@@ -109,7 +102,7 @@ pub fn generate_proof_of_possession(
 pub fn verify_proof_of_possession(
     pop: &AuthoritySignature,
     protocol_pubkey: &AuthorityPublicKey,
-    ika_address: IkaAddress,
+    ika_address: SuiAddress,
 ) -> Result<(), IkaError> {
     protocol_pubkey
         .validate()
@@ -124,267 +117,6 @@ pub fn verify_proof_of_possession(
         protocol_pubkey.into(),
     )
 }
-///////////////////////////////////////////////
-/// Account Keys
-///
-/// * The following section defines the keypairs that are used by
-/// * accounts to interact with Ika.
-/// * Currently we support eddsa and ecdsa on Ika.
-///
-
-#[allow(clippy::large_enum_variant)]
-#[derive(Debug, From, PartialEq, Eq)]
-pub enum IkaKeyPair {
-    Ed25519(Ed25519KeyPair),
-    Secp256k1(Secp256k1KeyPair),
-    Secp256r1(Secp256r1KeyPair),
-}
-
-impl IkaKeyPair {
-    pub fn public(&self) -> PublicKey {
-        match self {
-            IkaKeyPair::Ed25519(kp) => PublicKey::Ed25519(kp.public().into()),
-            IkaKeyPair::Secp256k1(kp) => PublicKey::Secp256k1(kp.public().into()),
-            IkaKeyPair::Secp256r1(kp) => PublicKey::Secp256r1(kp.public().into()),
-        }
-    }
-
-    pub fn copy(&self) -> Self {
-        match self {
-            IkaKeyPair::Ed25519(kp) => kp.copy().into(),
-            IkaKeyPair::Secp256k1(kp) => kp.copy().into(),
-            IkaKeyPair::Secp256r1(kp) => kp.copy().into(),
-        }
-    }
-}
-
-impl Signer<Signature> for IkaKeyPair {
-    fn sign(&self, msg: &[u8]) -> Signature {
-        match self {
-            IkaKeyPair::Ed25519(kp) => kp.sign(msg),
-            IkaKeyPair::Secp256k1(kp) => kp.sign(msg),
-            IkaKeyPair::Secp256r1(kp) => kp.sign(msg),
-        }
-    }
-}
-
-impl EncodeDecodeBase64 for IkaKeyPair {
-    fn encode_base64(&self) -> String {
-        Base64::encode(self.to_bytes())
-    }
-
-    fn decode_base64(value: &str) -> FastCryptoResult<Self> {
-        let bytes = Base64::decode(value)?;
-        Self::from_bytes(&bytes).map_err(|_| FastCryptoError::InvalidInput)
-    }
-}
-impl IkaKeyPair {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes: Vec<u8> = Vec::new();
-        bytes.push(self.public().flag());
-
-        match self {
-            IkaKeyPair::Ed25519(kp) => {
-                bytes.extend_from_slice(kp.as_bytes());
-            }
-            IkaKeyPair::Secp256k1(kp) => {
-                bytes.extend_from_slice(kp.as_bytes());
-            }
-            IkaKeyPair::Secp256r1(kp) => {
-                bytes.extend_from_slice(kp.as_bytes());
-            }
-        }
-        bytes
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, eyre::Report> {
-        match SignatureScheme::from_flag_byte(bytes.first().ok_or_else(|| eyre!("Invalid length"))?)
-        {
-            Ok(x) => match x {
-                SignatureScheme::ED25519 => Ok(IkaKeyPair::Ed25519(Ed25519KeyPair::from_bytes(
-                    bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
-                )?)),
-                SignatureScheme::Secp256k1 => {
-                    Ok(IkaKeyPair::Secp256k1(Secp256k1KeyPair::from_bytes(
-                        bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
-                    )?))
-                }
-                SignatureScheme::Secp256r1 => {
-                    Ok(IkaKeyPair::Secp256r1(Secp256r1KeyPair::from_bytes(
-                        bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
-                    )?))
-                }
-                _ => Err(eyre!("Invalid flag byte")),
-            },
-            _ => Err(eyre!("Invalid bytes")),
-        }
-    }
-
-    pub fn to_bytes_no_flag(&self) -> Vec<u8> {
-        match self {
-            IkaKeyPair::Ed25519(kp) => kp.as_bytes().to_vec(),
-            IkaKeyPair::Secp256k1(kp) => kp.as_bytes().to_vec(),
-            IkaKeyPair::Secp256r1(kp) => kp.as_bytes().to_vec(),
-        }
-    }
-
-    /// Encode a IkaKeyPair as `flag || privkey` in Bech32 starting with "ikaprivkey" to a string. Note that the pubkey is not encoded.
-    pub fn encode(&self) -> Result<String, eyre::Report> {
-        Bech32::encode(self.to_bytes(), IKA_PRIV_KEY_PREFIX).map_err(|e| eyre!(e))
-    }
-
-    /// Decode a IkaKeyPair from `flag || privkey` in Bech32 starting with "ikaprivkey" to IkaKeyPair. The public key is computed directly from the private key bytes.
-    pub fn decode(value: &str) -> Result<Self, eyre::Report> {
-        let bytes = Bech32::decode(value, IKA_PRIV_KEY_PREFIX)?;
-        Self::from_bytes(&bytes)
-    }
-}
-
-impl Serialize for IkaKeyPair {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let s = self.encode_base64();
-        serializer.serialize_str(&s)
-    }
-}
-
-impl<'de> Deserialize<'de> for IkaKeyPair {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        use serde::de::Error;
-        let s = String::deserialize(deserializer)?;
-        IkaKeyPair::decode_base64(&s).map_err(|e| Error::custom(e.to_string()))
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, JsonSchema, Serialize, Deserialize)]
-pub enum PublicKey {
-    Ed25519(Ed25519PublicKeyAsBytes),
-    Secp256k1(Secp256k1PublicKeyAsBytes),
-    Secp256r1(Secp256r1PublicKeyAsBytes),
-    ZkLogin(ZkLoginPublicIdentifier),
-    Passkey(Secp256r1PublicKeyAsBytes),
-}
-
-/// A wrapper struct to retrofit in [enum PublicKey] for zkLogin.
-/// Useful to construct [struct MultiSigPublicKey].
-#[derive(Clone, Debug, PartialEq, Eq, JsonSchema, Serialize, Deserialize)]
-pub struct ZkLoginPublicIdentifier(#[schemars(with = "Base64")] pub Vec<u8>);
-
-impl ZkLoginPublicIdentifier {
-    /// Consists of iss_bytes_len || iss_bytes || padded_32_byte_address_seed.
-    pub fn new(iss: &str, address_seed: &Bn254FrElement) -> IkaResult<Self> {
-        let mut bytes = Vec::new();
-        let iss_bytes = iss.as_bytes();
-        bytes.extend([iss_bytes.len() as u8]);
-        bytes.extend(iss_bytes);
-        bytes.extend(address_seed.padded());
-
-        Ok(Self(bytes))
-    }
-}
-impl AsRef<[u8]> for PublicKey {
-    fn as_ref(&self) -> &[u8] {
-        match self {
-            PublicKey::Ed25519(pk) => &pk.0,
-            PublicKey::Secp256k1(pk) => &pk.0,
-            PublicKey::Secp256r1(pk) => &pk.0,
-            PublicKey::ZkLogin(z) => &z.0,
-            PublicKey::Passkey(pk) => &pk.0,
-        }
-    }
-}
-
-impl EncodeDecodeBase64 for PublicKey {
-    fn encode_base64(&self) -> String {
-        let mut bytes: Vec<u8> = Vec::new();
-        bytes.extend_from_slice(&[self.flag()]);
-        bytes.extend_from_slice(self.as_ref());
-        Base64::encode(&bytes[..])
-    }
-
-    fn decode_base64(value: &str) -> FastCryptoResult<Self> {
-        let bytes = Base64::decode(value)?;
-        match bytes.first() {
-            Some(x) => {
-                if x == &SignatureScheme::ED25519.flag() {
-                    let pk: Ed25519PublicKey =
-                        Ed25519PublicKey::from_bytes(bytes.get(1..).ok_or(
-                            FastCryptoError::InputLengthWrong(Ed25519PublicKey::LENGTH + 1),
-                        )?)?;
-                    Ok(PublicKey::Ed25519((&pk).into()))
-                } else if x == &SignatureScheme::Secp256k1.flag() {
-                    let pk = Secp256k1PublicKey::from_bytes(bytes.get(1..).ok_or(
-                        FastCryptoError::InputLengthWrong(Secp256k1PublicKey::LENGTH + 1),
-                    )?)?;
-                    Ok(PublicKey::Secp256k1((&pk).into()))
-                } else if x == &SignatureScheme::Secp256r1.flag() {
-                    let pk = Secp256r1PublicKey::from_bytes(bytes.get(1..).ok_or(
-                        FastCryptoError::InputLengthWrong(Secp256r1PublicKey::LENGTH + 1),
-                    )?)?;
-                    Ok(PublicKey::Secp256r1((&pk).into()))
-                } else if x == &SignatureScheme::PasskeyAuthenticator.flag() {
-                    let pk = Secp256r1PublicKey::from_bytes(bytes.get(1..).ok_or(
-                        FastCryptoError::InputLengthWrong(Secp256r1PublicKey::LENGTH + 1),
-                    )?)?;
-                    Ok(PublicKey::Passkey((&pk).into()))
-                } else {
-                    Err(FastCryptoError::InvalidInput)
-                }
-            }
-            _ => Err(FastCryptoError::InvalidInput),
-        }
-    }
-}
-
-impl PublicKey {
-    pub fn flag(&self) -> u8 {
-        self.scheme().flag()
-    }
-
-    pub fn try_from_bytes(
-        curve: SignatureScheme,
-        key_bytes: &[u8],
-    ) -> Result<PublicKey, eyre::Report> {
-        match curve {
-            SignatureScheme::ED25519 => Ok(PublicKey::Ed25519(
-                (&Ed25519PublicKey::from_bytes(key_bytes)?).into(),
-            )),
-            SignatureScheme::Secp256k1 => Ok(PublicKey::Secp256k1(
-                (&Secp256k1PublicKey::from_bytes(key_bytes)?).into(),
-            )),
-            SignatureScheme::Secp256r1 => Ok(PublicKey::Secp256r1(
-                (&Secp256r1PublicKey::from_bytes(key_bytes)?).into(),
-            )),
-            SignatureScheme::PasskeyAuthenticator => Ok(PublicKey::Passkey(
-                (&Secp256r1PublicKey::from_bytes(key_bytes)?).into(),
-            )),
-            _ => Err(eyre!("Unsupported curve")),
-        }
-    }
-
-    pub fn scheme(&self) -> SignatureScheme {
-        match self {
-            PublicKey::Ed25519(_) => Ed25519IkaSignature::SCHEME,
-            PublicKey::Secp256k1(_) => Secp256k1IkaSignature::SCHEME,
-            PublicKey::Secp256r1(_) => Secp256r1IkaSignature::SCHEME,
-            PublicKey::ZkLogin(_) => SignatureScheme::ZkLoginAuthenticator,
-            PublicKey::Passkey(_) => SignatureScheme::PasskeyAuthenticator,
-        }
-    }
-
-    pub fn from_zklogin_inputs(inputs: &ZkLoginInputs) -> IkaResult<Self> {
-        Ok(PublicKey::ZkLogin(ZkLoginPublicIdentifier::new(
-            inputs.get_iss(),
-            inputs.get_address_seed(),
-        )?))
-    }
-}
-
 /// Defines the compressed version of the public key that we pass around
 /// in Ika
 #[serde_as]
@@ -506,7 +238,7 @@ impl AuthorityPublicKeyBytes {
 
     /// This ensures it's impossible to construct an instance with other than registered lengths
     pub const fn new(bytes: [u8; AuthorityPublicKey::LENGTH]) -> AuthorityPublicKeyBytes
-where {
+    where {
         AuthorityPublicKeyBytes(bytes)
     }
 }
@@ -592,15 +324,6 @@ impl IkaAuthoritySignature for AuthoritySignature {
     }
 }
 
-// TODO: get_key_pair() and get_key_pair_from_bytes() should return KeyPair only.
-// TODO: rename to random_key_pair
-pub fn get_key_pair<KP: KeypairTraits>() -> (IkaAddress, KP)
-where
-    <KP as KeypairTraits>::PubKey: IkaPublicKey,
-{
-    get_key_pair_from_rng(&mut OsRng)
-}
-
 /// Generate a random committee key pairs with a given committee size
 pub fn random_committee_key_pairs_of_size(size: usize) -> Vec<AuthorityKeyPair> {
     let mut rng = StdRng::from_seed([0; 32]);
@@ -619,412 +342,15 @@ pub fn random_committee_key_pairs_of_size(size: usize) -> Vec<AuthorityKeyPair> 
         })
         .collect()
 }
-
-pub fn deterministic_random_account_key() -> (IkaAddress, AccountKeyPair) {
-    let mut rng = StdRng::from_seed([0; 32]);
-    get_key_pair_from_rng(&mut rng)
-}
-
-pub fn get_account_key_pair() -> (IkaAddress, AccountKeyPair) {
-    get_key_pair()
-}
-
-pub fn get_authority_key_pair() -> (IkaAddress, AuthorityKeyPair) {
-    get_key_pair()
-}
-
 /// Generate a keypair from the specified RNG (useful for testing with seedable rngs).
-pub fn get_key_pair_from_rng<KP: KeypairTraits, R>(csprng: &mut R) -> (IkaAddress, KP)
+pub fn get_key_pair_from_rng<KP: KeypairTraits, R>(csprng: &mut R) -> (SuiAddress, KP)
 where
     R: rand::CryptoRng + rand::RngCore,
-    <KP as KeypairTraits>::PubKey: IkaPublicKey,
+    <KP as KeypairTraits>::PubKey: SuiPublicKey,
 {
     let kp = KP::generate(&mut StdRng::from_rng(csprng).unwrap());
     (kp.public().into(), kp)
 }
-
-// TODO: C-GETTER
-pub fn get_key_pair_from_bytes<KP: KeypairTraits>(bytes: &[u8]) -> IkaResult<(IkaAddress, KP)>
-where
-    <KP as KeypairTraits>::PubKey: IkaPublicKey,
-{
-    let priv_length = <KP as KeypairTraits>::PrivKey::LENGTH;
-    let pub_key_length = <KP as KeypairTraits>::PubKey::LENGTH;
-    if bytes.len() != priv_length + pub_key_length {
-        return Err(IkaError::KeyConversionError(format!(
-            "Invalid input byte length, expected {}: {}",
-            priv_length,
-            bytes.len()
-        )));
-    }
-    let sk = <KP as KeypairTraits>::PrivKey::from_bytes(
-        bytes
-            .get(..priv_length)
-            .ok_or(IkaError::InvalidPrivateKey)?,
-    )
-    .map_err(|_| IkaError::InvalidPrivateKey)?;
-    let kp: KP = sk.into();
-    Ok((kp.public().into(), kp))
-}
-
-//
-// Account Signatures
-//
-
-// Enums for signature scheme signatures
-#[enum_dispatch]
-#[derive(Clone, JsonSchema, Debug, PartialEq, Eq, Hash)]
-pub enum Signature {
-    Ed25519IkaSignature,
-    Secp256k1IkaSignature,
-    Secp256r1IkaSignature,
-}
-
-impl Serialize for Signature {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let bytes = self.as_ref();
-
-        if serializer.is_human_readable() {
-            let s = Base64::encode(bytes);
-            serializer.serialize_str(&s)
-        } else {
-            serializer.serialize_bytes(bytes)
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for Signature {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        use serde::de::Error;
-
-        let bytes = if deserializer.is_human_readable() {
-            let s = String::deserialize(deserializer)?;
-            Base64::decode(&s).map_err(|e| Error::custom(e.to_string()))?
-        } else {
-            let data: Vec<u8> = Vec::deserialize(deserializer)?;
-            data
-        };
-
-        Self::from_bytes(&bytes).map_err(|e| Error::custom(e.to_string()))
-    }
-}
-
-impl Signature {
-    /// The messaged passed in is already hashed form.
-    pub fn new_hashed(hashed_msg: &[u8], secret: &dyn Signer<Signature>) -> Self {
-        Signer::sign(secret, hashed_msg)
-    }
-
-    pub fn new_secure<T>(value: &IntentMessage<T>, secret: &dyn Signer<Signature>) -> Self
-    where
-        T: Serialize,
-    {
-        // Compute the BCS hash of the value in intent message. In the case of transaction data,
-        // this is the BCS hash of `struct TransactionData`, different from the transaction digest
-        // itself that computes the BCS hash of the Rust type prefix and `struct TransactionData`.
-        // (See `fn digest` in `impl Message for SenderSignedData`).
-        let mut hasher = DefaultHash::default();
-        hasher.update(bcs::to_bytes(&value).expect("Message serialization should not fail"));
-
-        Signer::sign(secret, &hasher.finalize().digest)
-    }
-}
-
-impl AsRef<[u8]> for Signature {
-    fn as_ref(&self) -> &[u8] {
-        match self {
-            Signature::Ed25519IkaSignature(sig) => sig.as_ref(),
-            Signature::Secp256k1IkaSignature(sig) => sig.as_ref(),
-            Signature::Secp256r1IkaSignature(sig) => sig.as_ref(),
-        }
-    }
-}
-impl AsMut<[u8]> for Signature {
-    fn as_mut(&mut self) -> &mut [u8] {
-        match self {
-            Signature::Ed25519IkaSignature(sig) => sig.as_mut(),
-            Signature::Secp256k1IkaSignature(sig) => sig.as_mut(),
-            Signature::Secp256r1IkaSignature(sig) => sig.as_mut(),
-        }
-    }
-}
-
-impl ToFromBytes for Signature {
-    fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
-        match bytes.first() {
-            Some(x) => {
-                if x == &Ed25519IkaSignature::SCHEME.flag() {
-                    Ok(<Ed25519IkaSignature as ToFromBytes>::from_bytes(bytes)?.into())
-                } else if x == &Secp256k1IkaSignature::SCHEME.flag() {
-                    Ok(<Secp256k1IkaSignature as ToFromBytes>::from_bytes(bytes)?.into())
-                } else if x == &Secp256r1IkaSignature::SCHEME.flag() {
-                    Ok(<Secp256r1IkaSignature as ToFromBytes>::from_bytes(bytes)?.into())
-                } else {
-                    Err(FastCryptoError::InvalidInput)
-                }
-            }
-            _ => Err(FastCryptoError::InvalidInput),
-        }
-    }
-}
-
-//
-// BLS Port
-//
-
-impl IkaPublicKey for BLS12381PublicKey {
-    const SIGNATURE_SCHEME: SignatureScheme = SignatureScheme::BLS12381;
-}
-
-//
-// Ed25519 Ika Signature port
-//
-
-#[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Hash, AsRef, AsMut)]
-#[as_ref(forward)]
-#[as_mut(forward)]
-pub struct Ed25519IkaSignature(
-    #[schemars(with = "Base64")]
-    #[serde_as(as = "Readable<Base64, Bytes>")]
-    [u8; Ed25519PublicKey::LENGTH + Ed25519Signature::LENGTH + 1],
-);
-
-// Implementation useful for simplify testing when mock signature is needed
-impl Default for Ed25519IkaSignature {
-    fn default() -> Self {
-        Self([0; Ed25519PublicKey::LENGTH + Ed25519Signature::LENGTH + 1])
-    }
-}
-
-impl IkaSignatureInner for Ed25519IkaSignature {
-    type Sig = Ed25519Signature;
-    type PubKey = Ed25519PublicKey;
-    type KeyPair = Ed25519KeyPair;
-    const LENGTH: usize = Ed25519PublicKey::LENGTH + Ed25519Signature::LENGTH + 1;
-}
-
-impl IkaPublicKey for Ed25519PublicKey {
-    const SIGNATURE_SCHEME: SignatureScheme = SignatureScheme::ED25519;
-}
-
-impl ToFromBytes for Ed25519IkaSignature {
-    fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
-        if bytes.len() != Self::LENGTH {
-            return Err(FastCryptoError::InputLengthWrong(Self::LENGTH));
-        }
-        let mut sig_bytes = [0; Self::LENGTH];
-        sig_bytes.copy_from_slice(bytes);
-        Ok(Self(sig_bytes))
-    }
-}
-
-impl Signer<Signature> for Ed25519KeyPair {
-    fn sign(&self, msg: &[u8]) -> Signature {
-        Ed25519IkaSignature::new(self, msg).into()
-    }
-}
-
-//
-// Secp256k1 Ika Signature port
-//
-#[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Hash, AsRef, AsMut)]
-#[as_ref(forward)]
-#[as_mut(forward)]
-pub struct Secp256k1IkaSignature(
-    #[schemars(with = "Base64")]
-    #[serde_as(as = "Readable<Base64, Bytes>")]
-    [u8; Secp256k1PublicKey::LENGTH + Secp256k1Signature::LENGTH + 1],
-);
-
-impl IkaSignatureInner for Secp256k1IkaSignature {
-    type Sig = Secp256k1Signature;
-    type PubKey = Secp256k1PublicKey;
-    type KeyPair = Secp256k1KeyPair;
-    const LENGTH: usize = Secp256k1PublicKey::LENGTH + Secp256k1Signature::LENGTH + 1;
-}
-
-impl IkaPublicKey for Secp256k1PublicKey {
-    const SIGNATURE_SCHEME: SignatureScheme = SignatureScheme::Secp256k1;
-}
-
-impl ToFromBytes for Secp256k1IkaSignature {
-    fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
-        if bytes.len() != Self::LENGTH {
-            return Err(FastCryptoError::InputLengthWrong(Self::LENGTH));
-        }
-        let mut sig_bytes = [0; Self::LENGTH];
-        sig_bytes.copy_from_slice(bytes);
-        Ok(Self(sig_bytes))
-    }
-}
-
-impl Signer<Signature> for Secp256k1KeyPair {
-    fn sign(&self, msg: &[u8]) -> Signature {
-        Secp256k1IkaSignature::new(self, msg).into()
-    }
-}
-
-//
-// Secp256r1 Ika Signature port
-//
-#[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Hash, AsRef, AsMut)]
-#[as_ref(forward)]
-#[as_mut(forward)]
-pub struct Secp256r1IkaSignature(
-    #[schemars(with = "Base64")]
-    #[serde_as(as = "Readable<Base64, Bytes>")]
-    [u8; Secp256r1PublicKey::LENGTH + Secp256r1Signature::LENGTH + 1],
-);
-
-impl IkaSignatureInner for Secp256r1IkaSignature {
-    type Sig = Secp256r1Signature;
-    type PubKey = Secp256r1PublicKey;
-    type KeyPair = Secp256r1KeyPair;
-    const LENGTH: usize = Secp256r1PublicKey::LENGTH + Secp256r1Signature::LENGTH + 1;
-}
-
-impl IkaPublicKey for Secp256r1PublicKey {
-    const SIGNATURE_SCHEME: SignatureScheme = SignatureScheme::Secp256r1;
-}
-
-impl ToFromBytes for Secp256r1IkaSignature {
-    fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
-        if bytes.len() != Self::LENGTH {
-            return Err(FastCryptoError::InputLengthWrong(Self::LENGTH));
-        }
-        let mut sig_bytes = [0; Self::LENGTH];
-        sig_bytes.copy_from_slice(bytes);
-        Ok(Self(sig_bytes))
-    }
-}
-
-impl Signer<Signature> for Secp256r1KeyPair {
-    fn sign(&self, msg: &[u8]) -> Signature {
-        Secp256r1IkaSignature::new(self, msg).into()
-    }
-}
-
-//
-// This struct exists due to the limitations of the `enum_dispatch` library.
-//
-pub trait IkaSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
-    type Sig: Authenticator<PubKey = Self::PubKey>;
-    type PubKey: VerifyingKey<Sig = Self::Sig> + IkaPublicKey;
-    type KeyPair: KeypairTraits<PubKey = Self::PubKey, Sig = Self::Sig>;
-
-    const LENGTH: usize = Self::Sig::LENGTH + Self::PubKey::LENGTH + 1;
-    const SCHEME: SignatureScheme = Self::PubKey::SIGNATURE_SCHEME;
-
-    /// Returns the deserialized signature and deserialized pubkey.
-    fn get_verification_inputs(&self) -> IkaResult<(Self::Sig, Self::PubKey)> {
-        let pk = Self::PubKey::from_bytes(self.public_key_bytes())
-            .map_err(|_| IkaError::KeyConversionError("Invalid public key".to_string()))?;
-
-        // deserialize the signature
-        let signature = Self::Sig::from_bytes(self.signature_bytes()).map_err(|_| {
-            IkaError::InvalidSignature {
-                error: "Fail to get pubkey and sig".to_string(),
-            }
-        })?;
-
-        Ok((signature, pk))
-    }
-
-    fn new(kp: &Self::KeyPair, message: &[u8]) -> Self {
-        let sig = Signer::sign(kp, message);
-
-        let mut signature_bytes: Vec<u8> = Vec::new();
-        signature_bytes
-            .extend_from_slice(&[<Self::PubKey as IkaPublicKey>::SIGNATURE_SCHEME.flag()]);
-        signature_bytes.extend_from_slice(sig.as_ref());
-        signature_bytes.extend_from_slice(kp.public().as_ref());
-        Self::from_bytes(&signature_bytes[..])
-            .expect("Serialized signature did not have expected size")
-    }
-}
-
-pub trait IkaPublicKey: VerifyingKey {
-    const SIGNATURE_SCHEME: SignatureScheme;
-}
-
-#[enum_dispatch(Signature)]
-pub trait IkaSignature: Sized + ToFromBytes {
-    fn signature_bytes(&self) -> &[u8];
-    fn public_key_bytes(&self) -> &[u8];
-    fn scheme(&self) -> SignatureScheme;
-
-    fn verify_secure<T>(
-        &self,
-        value: &IntentMessage<T>,
-        author: IkaAddress,
-        scheme: SignatureScheme,
-    ) -> IkaResult<()>
-    where
-        T: Serialize;
-}
-
-impl<S: IkaSignatureInner + Sized> IkaSignature for S {
-    fn signature_bytes(&self) -> &[u8] {
-        // Access array slice is safe because the array bytes is initialized as
-        // flag || signature || pubkey with its defined length.
-        &self.as_ref()[1..1 + S::Sig::LENGTH]
-    }
-
-    fn public_key_bytes(&self) -> &[u8] {
-        // Access array slice is safe because the array bytes is initialized as
-        // flag || signature || pubkey with its defined length.
-        &self.as_ref()[S::Sig::LENGTH + 1..]
-    }
-
-    fn scheme(&self) -> SignatureScheme {
-        S::PubKey::SIGNATURE_SCHEME
-    }
-
-    fn verify_secure<T>(
-        &self,
-        value: &IntentMessage<T>,
-        author: IkaAddress,
-        scheme: SignatureScheme,
-    ) -> Result<(), IkaError>
-    where
-        T: Serialize,
-    {
-        let mut hasher = DefaultHash::default();
-        hasher.update(bcs::to_bytes(&value).expect("Message serialization should not fail"));
-        let digest = hasher.finalize().digest;
-
-        let (sig, pk) = &self.get_verification_inputs()?;
-        match scheme {
-            SignatureScheme::ZkLoginAuthenticator => {} // Pass this check because zk login does not derive address from pubkey.
-            _ => {
-                let address = IkaAddress::from(pk);
-                if author != address {
-                    return Err(IkaError::IncorrectSigner {
-                        error: format!(
-                            "Incorrect signer, expected {:?}, got {:?}",
-                            author, address
-                        ),
-                    });
-                }
-            }
-        }
-
-        pk.verify(&digest, sig)
-            .map_err(|e| IkaError::InvalidSignature {
-                error: format!("Fail to verify user sig {}", e),
-            })
-    }
-}
-
 /// AuthoritySignInfoTrait is a trait used specifically for a few structs in messages.rs
 /// to template on whether the struct is signed by an authority. We want to limit how
 /// those structs can be instantiated on, hence the sealed trait.
@@ -1190,7 +516,7 @@ pub struct AuthorityQuorumSignInfo<const STRONG_THRESHOLD: bool> {
     #[schemars(with = "Base64")]
     pub signature: AggregateAuthoritySignature,
     #[schemars(with = "Base64")]
-    #[serde_as(as = "IkaBitmap")]
+    #[serde_as(as = "SuiBitmap")]
     pub signers_map: RoaringBitmap,
 }
 
@@ -1204,7 +530,7 @@ pub struct IkaAuthorityStrongQuorumSignInfo {
     pub epoch: EpochId,
     pub signature: AggregateAuthoritySignatureAsBytes,
     #[schemars(with = "Base64")]
-    #[serde_as(as = "IkaBitmap")]
+    #[serde_as(as = "SuiBitmap")]
     pub signers_map: RoaringBitmap,
 }
 
@@ -1448,16 +774,10 @@ mod bcs_signable {
 
     pub trait BcsSignable: serde::Serialize + serde::de::DeserializeOwned {}
     impl BcsSignable for crate::committee::Committee {}
-    impl BcsSignable for crate::messages_checkpoint::CheckpointSummary {}
+    impl BcsSignable for crate::messages_checkpoint::CheckpointMessage {}
     impl BcsSignable for crate::messages_checkpoint::CheckpointContents {}
-
-    impl BcsSignable for crate::effects::TransactionEffects {}
-    impl BcsSignable for crate::effects::TransactionEvents {}
-    impl BcsSignable for crate::transaction::TransactionData {}
-    impl BcsSignable for crate::transaction::SenderSignedData {}
-    impl BcsSignable for crate::object::ObjectInner {}
-
-    impl BcsSignable for crate::accumulator::Accumulator {}
+    
+    impl BcsSignable for crate::action::ActionData {}
 
     impl BcsSignable for super::bcs_signable_test::Foo {}
     #[cfg(test)]
@@ -1638,174 +958,8 @@ pub mod bcs_signable_test {
         let idx = obligation.add_message(
             value,
             0,
-            Intent::ika_app(IntentScope::SenderSignedTransaction),
+            Intent::sui_app(IntentScope::SenderSignedTransaction),
         );
         (obligation, idx)
-    }
-}
-
-#[derive(
-    Clone,
-    Copy,
-    Deserialize,
-    Serialize,
-    JsonSchema,
-    Debug,
-    EnumString,
-    strum_macros::Display,
-    PartialEq,
-    Eq,
-)]
-#[strum(serialize_all = "lowercase")]
-pub enum SignatureScheme {
-    ED25519,
-    Secp256k1,
-    Secp256r1,
-    BLS12381, // This is currently not supported for user Ika Address.
-    MultiSig,
-    ZkLoginAuthenticator,
-    PasskeyAuthenticator,
-}
-
-impl SignatureScheme {
-    pub fn flag(&self) -> u8 {
-        match self {
-            SignatureScheme::ED25519 => 0x00,
-            SignatureScheme::Secp256k1 => 0x01,
-            SignatureScheme::Secp256r1 => 0x02,
-            SignatureScheme::MultiSig => 0x03,
-            SignatureScheme::BLS12381 => 0x04, // This is currently not supported for user Ika Address.
-            SignatureScheme::ZkLoginAuthenticator => 0x05,
-            SignatureScheme::PasskeyAuthenticator => 0x06,
-        }
-    }
-
-    pub fn from_flag(flag: &str) -> Result<SignatureScheme, IkaError> {
-        let byte_int = flag
-            .parse::<u8>()
-            .map_err(|_| IkaError::KeyConversionError("Invalid key scheme".to_string()))?;
-        Self::from_flag_byte(&byte_int)
-    }
-
-    pub fn from_flag_byte(byte_int: &u8) -> Result<SignatureScheme, IkaError> {
-        match byte_int {
-            0x00 => Ok(SignatureScheme::ED25519),
-            0x01 => Ok(SignatureScheme::Secp256k1),
-            0x02 => Ok(SignatureScheme::Secp256r1),
-            0x03 => Ok(SignatureScheme::MultiSig),
-            0x04 => Ok(SignatureScheme::BLS12381),
-            0x05 => Ok(SignatureScheme::ZkLoginAuthenticator),
-            0x06 => Ok(SignatureScheme::PasskeyAuthenticator),
-            _ => Err(IkaError::KeyConversionError(
-                "Invalid key scheme".to_string(),
-            )),
-        }
-    }
-}
-/// Unlike [enum Signature], [enum CompressedSignature] does not contain public key.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
-pub enum CompressedSignature {
-    Ed25519(Ed25519SignatureAsBytes),
-    Secp256k1(Secp256k1SignatureAsBytes),
-    Secp256r1(Secp256r1SignatureAsBytes),
-    ZkLogin(ZkLoginAuthenticatorAsBytes),
-}
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
-pub struct ZkLoginAuthenticatorAsBytes(#[schemars(with = "Base64")] pub Vec<u8>);
-
-impl AsRef<[u8]> for CompressedSignature {
-    fn as_ref(&self) -> &[u8] {
-        match self {
-            CompressedSignature::Ed25519(sig) => &sig.0,
-            CompressedSignature::Secp256k1(sig) => &sig.0,
-            CompressedSignature::Secp256r1(sig) => &sig.0,
-            CompressedSignature::ZkLogin(sig) => &sig.0,
-        }
-    }
-}
-
-impl FromStr for Signature {
-    type Err = eyre::Report;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::decode_base64(s).map_err(|e| eyre!("Fail to decode base64 {}", e.to_string()))
-    }
-}
-
-impl FromStr for PublicKey {
-    type Err = eyre::Report;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::decode_base64(s).map_err(|e| eyre!("Fail to decode base64 {}", e.to_string()))
-    }
-}
-
-impl FromStr for GenericSignature {
-    type Err = eyre::Report;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::decode_base64(s).map_err(|e| eyre!("Fail to decode base64 {}", e.to_string()))
-    }
-}
-
-//
-// Types for randomness generation
-//
-pub type RandomnessSignature = fastcrypto_tbls::types::Signature;
-pub type RandomnessPartialSignature = fastcrypto_tbls::tbls::PartialSignature<RandomnessSignature>;
-pub type RandomnessPrivateKey =
-    fastcrypto_tbls::ecies_v1::PrivateKey<fastcrypto::groups::bls12381::G2Element>;
-
-/// Round number of generated randomness.
-#[derive(Clone, Copy, Hash, Serialize, Deserialize, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct RandomnessRound(pub u64);
-
-impl Display for RandomnessRound {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl std::ops::Add for RandomnessRound {
-    type Output = Self;
-    fn add(self, other: Self) -> Self {
-        Self(self.0 + other.0)
-    }
-}
-
-impl std::ops::Add<u64> for RandomnessRound {
-    type Output = Self;
-    fn add(self, other: u64) -> Self {
-        Self(self.0 + other)
-    }
-}
-
-impl std::ops::Sub for RandomnessRound {
-    type Output = Self;
-    fn sub(self, other: Self) -> Self {
-        Self(self.0 - other.0)
-    }
-}
-
-impl std::ops::Sub<u64> for RandomnessRound {
-    type Output = Self;
-    fn sub(self, other: u64) -> Self {
-        Self(self.0 - other)
-    }
-}
-
-impl RandomnessRound {
-    pub fn new(round: u64) -> Self {
-        Self(round)
-    }
-
-    pub fn checked_add(self, rhs: u64) -> Option<Self> {
-        self.0.checked_add(rhs).map(Self)
-    }
-
-    pub fn signature_message(&self) -> Vec<u8> {
-        "random_beacon round "
-            .as_bytes()
-            .iter()
-            .cloned()
-            .chain(bcs::to_bytes(&self.0).expect("serialization should not fail"))
-            .collect()
     }
 }

@@ -20,7 +20,7 @@ use ika::ika_commands::IndexerArgs;
 use ika_sdk::IkaClient;
 use ika_test_transaction_builder::batch_make_transfer_transactions;
 use ika_types::object::Owner;
-use ika_types::transaction::{
+use ika_types::action::{
     TEST_ONLY_GAS_UNIT_FOR_GENERIC, TEST_ONLY_GAS_UNIT_FOR_OBJECT_BASICS,
     TEST_ONLY_GAS_UNIT_FOR_PUBLISH, TEST_ONLY_GAS_UNIT_FOR_SPLIT_COIN,
     TEST_ONLY_GAS_UNIT_FOR_TRANSFER,
@@ -49,14 +49,14 @@ use ika_macros::sim_test;
 use ika_move_build::{BuildConfig, IkaPackageHooks};
 use ika_sdk::ika_client_config::IkaClientConfig;
 use ika_sdk::wallet_context::WalletContext;
-use ika_swarm_config::genesis_config::{AccountConfig, GenesisConfig};
+use ika_swarm_config::validator_initialization_config::{AccountConfig, GenesisConfig};
 use ika_swarm_config::network_config::NetworkConfig;
 use ika_types::base_types::IkaAddress;
 use ika_types::crypto::{
     Ed25519IkaSignature, Secp256k1IkaSignature, SignatureScheme, IkaKeyPair, IkaSignatureInner,
 };
 use ika_types::error::IkaObjectResponseError;
-use ika_types::{base_types::ObjectID, crypto::get_key_pair, gas_coin::GasCoin};
+use ika_types::{base_types::ObjectID, crypto::get_key_pair, ika_coin::IKACoin};
 use test_cluster::{TestCluster, TestClusterBuilder};
 
 const TEST_DATA_DIR: &str = "tests/data/";
@@ -210,7 +210,7 @@ async fn test_ptb_publish_and_complex_arg_resolution() -> Result<(), anyhow::Err
     // Publish the package
     move_package::package_hooks::register_package_hooks(Box::new(IkaPackageHooks));
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let client = context.get_client().await?;
@@ -271,7 +271,7 @@ async fn test_ptb_publish_and_complex_arg_resolution() -> Result<(), anyhow::Err
         function: "new_shared".to_string(),
         type_args: vec![],
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_PUBLISH),
-        gas_price: None,
+        computation_price: None,
         args: vec![],
     }
     .execute(context)
@@ -465,7 +465,7 @@ async fn test_object_info_get_command() -> Result<(), anyhow::Error> {
 #[sim_test]
 async fn test_gas_command() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let alias = context
@@ -528,7 +528,7 @@ async fn test_gas_command() -> Result<(), anyhow::Error> {
 #[sim_test]
 async fn test_move_call_args_linter_command() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address1 = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
 
@@ -640,7 +640,7 @@ async fn test_move_call_args_linter_command() -> Result<(), anyhow::Error> {
         type_args: vec![],
         args,
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_OBJECT_BASICS),
-        gas_price: None,
+        computation_price: None,
     }
     .execute(context)
     .await?;
@@ -677,7 +677,7 @@ async fn test_move_call_args_linter_command() -> Result<(), anyhow::Error> {
         type_args: vec![],
         args: args.to_vec(),
         opts: OptsWithGas::for_testing(Some(gas), rgp * TEST_ONLY_GAS_UNIT_FOR_OBJECT_BASICS),
-        gas_price: None,
+        computation_price: None,
     }
     .execute(context)
     .await;
@@ -701,15 +701,15 @@ async fn test_move_call_args_linter_command() -> Result<(), anyhow::Error> {
         type_args: vec![],
         args: args.to_vec(),
         opts: OptsWithGas::for_testing(Some(gas), rgp * TEST_ONLY_GAS_UNIT_FOR_OBJECT_BASICS),
-        gas_price: None,
+        computation_price: None,
     }
     .execute(context)
     .await;
 
     assert!(resp.is_err());
 
-    // Try a transfer with explicitly set gas price.
-    // It should fail due to that gas price is below RGP.
+    // Try a transfer with explicitly set computation price.
+    // It should fail due to that computation price is below RGP.
     let args = [
         IkaJsonValue::new(json!(created_obj))?,
         IkaJsonValue::new(json!(address2))?,
@@ -722,14 +722,14 @@ async fn test_move_call_args_linter_command() -> Result<(), anyhow::Error> {
         type_args: vec![],
         args: args.to_vec(),
         opts: OptsWithGas::for_testing(Some(gas), rgp * TEST_ONLY_GAS_UNIT_FOR_OBJECT_BASICS),
-        gas_price: Some(1),
+        computation_price: Some(1),
     }
     .execute(context)
     .await;
 
     assert!(resp.is_err());
     let err_string = format!("{} ", resp.err().unwrap());
-    assert!(err_string.contains("Gas price 1 under reference gas price"));
+    assert!(err_string.contains("Gas price 1 under computation price per unit size"));
 
     // FIXME: uncomment once we figure out what is going on with `resolve_and_type_check`
     // let err_string = format!("{} ", resp.err().unwrap());
@@ -749,13 +749,13 @@ async fn test_move_call_args_linter_command() -> Result<(), anyhow::Error> {
         function: "transfer".to_string(),
         type_args: vec![],
         args: args.to_vec(),
-        gas_price: None,
+        computation_price: None,
         opts: OptsWithGas::for_testing(Some(gas), rgp * TEST_ONLY_GAS_UNIT_FOR_OBJECT_BASICS),
     }
     .execute(context)
     .await?;
 
-    // Try a call with customized gas price.
+    // Try a call with customized computation price.
     let args = vec![
         IkaJsonValue::new(json!("123"))?,
         IkaJsonValue::new(json!(address1))?,
@@ -768,7 +768,7 @@ async fn test_move_call_args_linter_command() -> Result<(), anyhow::Error> {
         type_args: vec![],
         args,
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_OBJECT_BASICS),
-        gas_price: Some(12345),
+        computation_price: Some(12345),
     }
     .execute(context)
     .await?;
@@ -788,7 +788,7 @@ async fn test_move_call_args_linter_command() -> Result<(), anyhow::Error> {
 #[sim_test]
 async fn test_package_publish_command() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
 
@@ -857,7 +857,7 @@ async fn test_package_publish_command() -> Result<(), anyhow::Error> {
 #[sim_test]
 async fn test_package_management_on_publish_command() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
 
@@ -929,7 +929,7 @@ async fn test_package_management_on_publish_command() -> Result<(), anyhow::Erro
 #[sim_test]
 async fn test_delete_shared_object() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
 
@@ -995,7 +995,7 @@ async fn test_delete_shared_object() -> Result<(), anyhow::Error> {
         function: "start".to_string(),
         type_args: vec![],
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_PUBLISH),
-        gas_price: None,
+        computation_price: None,
         args: vec![],
     }
     .execute(context)
@@ -1015,7 +1015,7 @@ async fn test_delete_shared_object() -> Result<(), anyhow::Error> {
         function: "delete".to_string(),
         type_args: vec![],
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_PUBLISH),
-        gas_price: None,
+        computation_price: None,
         args: vec![IkaJsonValue::from_str(&shared_id.to_string()).unwrap()],
     }
     .execute(context)
@@ -1033,7 +1033,7 @@ async fn test_delete_shared_object() -> Result<(), anyhow::Error> {
 #[sim_test]
 async fn test_receive_argument() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
 
@@ -1099,7 +1099,7 @@ async fn test_receive_argument() -> Result<(), anyhow::Error> {
         function: "start".to_string(),
         type_args: vec![],
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_PUBLISH),
-        gas_price: None,
+        computation_price: None,
         args: vec![],
     }
     .execute(context)
@@ -1136,7 +1136,7 @@ async fn test_receive_argument() -> Result<(), anyhow::Error> {
         function: "receiver".to_string(),
         type_args: vec![],
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_PUBLISH),
-        gas_price: None,
+        computation_price: None,
         args: vec![
             IkaJsonValue::from_str(&parent.object_id.to_string()).unwrap(),
             IkaJsonValue::from_str(&child.object_id.to_string()).unwrap(),
@@ -1157,7 +1157,7 @@ async fn test_receive_argument() -> Result<(), anyhow::Error> {
 #[sim_test]
 async fn test_receive_argument_by_immut_ref() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
 
@@ -1222,7 +1222,7 @@ async fn test_receive_argument_by_immut_ref() -> Result<(), anyhow::Error> {
         module: "tto".to_string(),
         function: "start".to_string(),
         type_args: vec![],
-        gas_price: None,
+        computation_price: None,
         args: vec![],
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_PUBLISH),
     }
@@ -1259,7 +1259,7 @@ async fn test_receive_argument_by_immut_ref() -> Result<(), anyhow::Error> {
         module: "tto".to_string(),
         function: "invalid_call_immut_ref".to_string(),
         type_args: vec![],
-        gas_price: None,
+        computation_price: None,
         args: vec![
             IkaJsonValue::from_str(&parent.object_id.to_string()).unwrap(),
             IkaJsonValue::from_str(&child.object_id.to_string()).unwrap(),
@@ -1281,7 +1281,7 @@ async fn test_receive_argument_by_immut_ref() -> Result<(), anyhow::Error> {
 #[sim_test]
 async fn test_receive_argument_by_mut_ref() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
 
@@ -1346,7 +1346,7 @@ async fn test_receive_argument_by_mut_ref() -> Result<(), anyhow::Error> {
         module: "tto".to_string(),
         function: "start".to_string(),
         type_args: vec![],
-        gas_price: None,
+        computation_price: None,
         args: vec![],
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_PUBLISH),
     }
@@ -1383,7 +1383,7 @@ async fn test_receive_argument_by_mut_ref() -> Result<(), anyhow::Error> {
         module: "tto".to_string(),
         function: "invalid_call_mut_ref".to_string(),
         type_args: vec![],
-        gas_price: None,
+        computation_price: None,
         args: vec![
             IkaJsonValue::from_str(&parent.object_id.to_string()).unwrap(),
             IkaJsonValue::from_str(&child.object_id.to_string()).unwrap(),
@@ -1408,7 +1408,7 @@ async fn test_package_publish_command_with_unpublished_dependency_succeeds(
     let with_unpublished_dependencies = true; // Value under test, results in successful response.
 
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
 
@@ -1478,7 +1478,7 @@ async fn test_package_publish_command_with_unpublished_dependency_fails(
     let with_unpublished_dependencies = false; // Value under test, results in error response.
 
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let client = context.get_client().await?;
@@ -1530,7 +1530,7 @@ async fn test_package_publish_command_non_zero_unpublished_dep_fails() -> Result
     let with_unpublished_dependencies = true; // Value under test, incompatible with dependencies that specify non-zero address.
 
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
 
@@ -1572,7 +1572,7 @@ async fn test_package_publish_command_failure_invalid() -> Result<(), anyhow::Er
     let with_unpublished_dependencies = true; // Invalid packages should fail to publish, even if we allow unpublished dependencies.
 
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
 
@@ -1622,7 +1622,7 @@ async fn test_package_publish_command_failure_invalid() -> Result<(), anyhow::Er
 #[sim_test]
 async fn test_package_publish_nonexistent_dependency() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let client = context.get_client().await?;
@@ -1659,7 +1659,7 @@ async fn test_package_publish_nonexistent_dependency() -> Result<(), anyhow::Err
 #[sim_test]
 async fn test_package_publish_test_flag() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let client = context.get_client().await?;
@@ -1702,7 +1702,7 @@ async fn test_package_publish_test_flag() -> Result<(), anyhow::Error> {
 async fn test_package_upgrade_command() -> Result<(), anyhow::Error> {
     move_package::package_hooks::register_package_hooks(Box::new(IkaPackageHooks));
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let client = context.get_client().await?;
@@ -1837,7 +1837,7 @@ async fn test_package_upgrade_command() -> Result<(), anyhow::Error> {
 async fn test_package_management_on_upgrade_command() -> Result<(), anyhow::Error> {
     move_package::package_hooks::register_package_hooks(Box::new(IkaPackageHooks));
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let client = context.get_client().await?;
@@ -1971,7 +1971,7 @@ async fn test_package_management_on_upgrade_command() -> Result<(), anyhow::Erro
 async fn test_package_management_on_upgrade_command_conflict() -> Result<(), anyhow::Error> {
     move_package::package_hooks::register_package_hooks(Box::new(IkaPackageHooks));
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let client = context.get_client().await?;
@@ -2091,7 +2091,7 @@ async fn test_package_management_on_upgrade_command_conflict() -> Result<(), any
 #[sim_test]
 async fn test_native_transfer() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let recipient = IkaAddress::random_for_testing_only();
@@ -2479,7 +2479,7 @@ async fn test_active_address_command() -> Result<(), anyhow::Error> {
 }
 
 fn get_gas_value(o: &IkaObjectData) -> u64 {
-    GasCoin::try_from(o).unwrap().value()
+    IKACoin::try_from(o).unwrap().value()
 }
 
 async fn get_object(id: ObjectID, context: &WalletContext) -> Option<IkaObjectData> {
@@ -2504,7 +2504,7 @@ async fn get_parsed_object_assert_existence(
 #[sim_test]
 async fn test_merge_coin() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
 
@@ -2623,7 +2623,7 @@ async fn test_merge_coin() -> Result<(), anyhow::Error> {
 #[sim_test]
 async fn test_split_coin() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let client = context.get_client().await?;
@@ -2863,7 +2863,7 @@ async fn test_execute_signed_tx() -> Result<(), anyhow::Error> {
 #[sim_test]
 async fn test_serialize_tx() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let address1 = test_cluster.get_address_1();
     let context = &mut test_cluster.wallet;
@@ -3089,7 +3089,7 @@ async fn test_get_owned_objects_owned_by_address_and_check_pagination() -> Resul
         .get_owned_objects(
             address,
             Some(IkaObjectResponseQuery::new(
-                Some(IkaObjectDataFilter::StructType(GasCoin::type_())),
+                Some(IkaObjectDataFilter::StructType(IKACoin::type_())),
                 Some(
                     IkaObjectDataOptions::new()
                         .with_type()
@@ -3123,7 +3123,7 @@ async fn test_get_owned_objects_owned_by_address_and_check_pagination() -> Resul
             .get_owned_objects(
                 address,
                 Some(IkaObjectResponseQuery::new(
-                    Some(IkaObjectDataFilter::StructType(GasCoin::type_())),
+                    Some(IkaObjectDataFilter::StructType(IKACoin::type_())),
                     Some(
                         IkaObjectDataOptions::new()
                             .with_type()
@@ -3229,7 +3229,7 @@ fn assert_dry_run(dry_run: IkaClientCommandResult, object_id: ObjectID, command:
 #[sim_test]
 async fn test_dry_run() -> Result<(), anyhow::Error> {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let client = context.get_client().await?;
@@ -3348,7 +3348,7 @@ async fn test_cluster_helper() -> (
     [IkaAddress; 2],
 ) {
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address1 = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let client = context.get_client().await.unwrap();
@@ -3807,7 +3807,7 @@ async fn test_clever_errors() -> Result<(), anyhow::Error> {
     // Publish the package
     move_package::package_hooks::register_package_hooks(Box::new(IkaPackageHooks));
     let mut test_cluster = TestClusterBuilder::new().build().await;
-    let rgp = test_cluster.get_reference_gas_price().await;
+    let rgp = test_cluster.get_computation_price_per_unit_size().await;
     let address = test_cluster.get_address_0();
     let context = &mut test_cluster.wallet;
     let client = context.get_client().await?;
@@ -3876,7 +3876,7 @@ async fn test_clever_errors() -> Result<(), anyhow::Error> {
         function: "aborter".to_string(),
         type_args: vec![],
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_PUBLISH),
-        gas_price: None,
+        computation_price: None,
         args: vec![],
     }
     .execute(context)
@@ -3890,7 +3890,7 @@ async fn test_clever_errors() -> Result<(), anyhow::Error> {
         function: "aborter_line_no".to_string(),
         type_args: vec![],
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_PUBLISH),
-        gas_price: None,
+        computation_price: None,
         args: vec![],
     }
     .execute(context)
@@ -3904,7 +3904,7 @@ async fn test_clever_errors() -> Result<(), anyhow::Error> {
         function: "clever_aborter".to_string(),
         type_args: vec![],
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_PUBLISH),
-        gas_price: None,
+        computation_price: None,
         args: vec![],
     }
     .execute(context)
@@ -3918,7 +3918,7 @@ async fn test_clever_errors() -> Result<(), anyhow::Error> {
         function: "clever_aborter_not_a_string".to_string(),
         type_args: vec![],
         opts: OptsWithGas::for_testing(None, rgp * TEST_ONLY_GAS_UNIT_FOR_PUBLISH),
-        gas_price: None,
+        computation_price: None,
         args: vec![],
     }
     .execute(context)

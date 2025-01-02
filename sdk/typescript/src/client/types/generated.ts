@@ -1114,7 +1114,7 @@ export interface IkaSystemStateSummary {
 	pendingRemovals: string[];
 	/** The current protocol version, starting from 1. */
 	protocolVersion: string;
-	/** The reference gas price for the current epoch. */
+	/** The computation price per unit size for the current epoch. */
 	referenceGasPrice: string;
 	/**
 	 * Whether the system is running in a downgraded safe mode due to a non-recoverable bug. This is set

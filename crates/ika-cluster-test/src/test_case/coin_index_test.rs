@@ -34,7 +34,7 @@ impl TestCaseImpl for CoinIndexTest {
     async fn run(&self, ctx: &mut TestContext) -> Result<(), anyhow::Error> {
         let account = ctx.get_wallet_address();
         let client = ctx.clone_fullnode_client();
-        let rgp = ctx.get_reference_gas_price().await;
+        let rgp = ctx.get_computation_price_per_unit_size().await;
 
         // 0. Get some coins first
         ctx.get_ika_from_faucet(None).await;
@@ -692,7 +692,7 @@ async fn add_to_envelope(
 ) -> IkaTransactionBlockResponse {
     let account = ctx.get_wallet_address();
     let client = ctx.clone_fullnode_client();
-    let rgp = ctx.get_reference_gas_price().await;
+    let rgp = ctx.get_computation_price_per_unit_size().await;
     let txn = client
         .transaction_builder()
         .move_call(

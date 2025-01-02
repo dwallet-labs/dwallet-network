@@ -59,7 +59,7 @@ max_move_object_size: 256000
 max_move_package_size: 102400
 max_publish_or_upgrade_per_ptb: 5
 max_tx_gas: 50000000000
-max_gas_price: 100000
+max_computation_price: 100000
 max_gas_computation_bucket: 5000000
 gas_rounding_step: 1000
 max_loop_depth: 5
@@ -107,7 +107,7 @@ obj_metadata_cost_non_refundable: 50
 storage_rebate_rate: 9900
 storage_fund_reinvest_rate: 500
 reward_slashing_rate: 10000
-storage_gas_price: 76
+storage_computation_price: 76
 max_transactions_per_checkpoint: 10000
 max_checkpoint_size_bytes: 31457280
 buffer_stake_for_protocol_upgrade_bps: 5000

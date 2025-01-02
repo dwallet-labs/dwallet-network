@@ -976,7 +976,7 @@ and the network aims to keep epochs roughly the same duration as each other.
 During a particular epoch the following data is fixed:
 
 - the protocol version
-- the reference gas price
+- the computation price per unit size
 - the set of participating validators
 """
 type Epoch {
@@ -3965,7 +3965,7 @@ type Validator {
 	"""
 	The validator's current valid `Cap` object. Validators can delegate
 	the operation ability to another address. The address holding this `Cap` object
-	can then update the reference gas price and tallying rule on behalf of the validator.
+	can then update the computation price per unit size and tallying rule on behalf of the validator.
 	"""
 	operationCap: MoveObject
 	"""
@@ -4015,7 +4015,7 @@ type Validator {
 	"""
 	votingPower: Int
 	"""
-	The reference gas price for this epoch.
+	The computation price per unit size for this epoch.
 	"""
 	gasPrice: BigInt
 	"""

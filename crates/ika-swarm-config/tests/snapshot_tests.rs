@@ -25,7 +25,7 @@ use ika_config::genesis::{GenesisCeremonyParameters, TokenDistributionScheduleBu
 use ika_config::node::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_GAS_PRICE};
 use ika_genesis_builder::validator_info::ValidatorInfo;
 use ika_genesis_builder::Builder;
-use ika_swarm_config::genesis_config::GenesisConfig;
+use ika_swarm_config::validator_initialization_config::GenesisConfig;
 use ika_types::base_types::IkaAddress;
 use ika_types::crypto::{
     generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,
@@ -65,7 +65,7 @@ fn populated_genesis_snapshot_matches() {
         worker_key: worker_key.public().clone(),
         account_address: IkaAddress::from(account_key.public()),
         network_key: network_key.public().clone(),
-        gas_price: DEFAULT_VALIDATOR_GAS_PRICE,
+        computation_price: DEFAULT_VALIDATOR_GAS_PRICE,
         commission_rate: DEFAULT_COMMISSION_RATE,
         network_address: "/ip4/127.0.0.1/tcp/80".parse().unwrap(),
         p2p_address: "/ip4/127.0.0.1/udp/80".parse().unwrap(),

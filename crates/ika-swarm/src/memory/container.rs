@@ -7,7 +7,7 @@ use std::sync::{Arc, Weak};
 use std::thread;
 use ika_config::NodeConfig;
 use ika_node::{IkaNode, IkaNodeHandle};
-use ika_types::base_types::ConciseableName;
+use sui_types::base_types::ConciseableName;
 use ika_types::crypto::{AuthorityPublicKeyBytes, KeypairTraits};
 use telemetry_subscribers::get_global_telemetry_config;
 use tracing::{info, trace};

@@ -1,0 +1,22 @@
+[package]
+name = "ika-move-packages-snapshot"
+version.workspace = true
+edition = "2021"
+authors = ["Mysten Labs <eng@mystenlabs.com>"]
+description = "Tool to create a bytecode snapshot of the current ika-move-packages"
+license = "Apache-2.0"
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+bcs.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+bin-version.workspace = true
+
+ika-move-packages.workspace = true
+ika-protocol-config.workspace = true
+sui-types.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }

@@ -26,20 +26,20 @@ use ika_types::execution_status::{
     TypeArgumentError,
 };
 use ika_types::full_checkpoint_content::{CheckpointData, CheckpointTransaction};
-use ika_types::messages_checkpoint::CertifiedCheckpointSummary;
+use ika_types::messages_checkpoint::CertifiedCheckpointMessage;
 use ika_types::messages_grpc::ObjectInfoRequestKind;
 use ika_types::move_package::TypeOrigin;
 use ika_types::object::Object;
-use ika_types::transaction::{SenderSignedData, TransactionData};
+use ika_types::action::{SenderSignedData, ActionData};
 use ika_types::type_input::{StructInput, TypeInput};
 use ika_types::{
     base_types::MoveObjectType_,
     crypto::Signer,
     messages_checkpoint::{
-        CheckpointContents, CheckpointContentsDigest, CheckpointDigest, CheckpointSummary,
+        CheckpointContents, CheckpointContentsDigest, CheckpointMessageDigest, CheckpointMessage,
         FullCheckpointContents,
     },
-    transaction::TransactionExpiration,
+    action::TransactionExpiration,
 };
 use ika_types::{
     base_types::{
@@ -53,7 +53,7 @@ use ika_types::{
     object::{Data, Owner},
     signature::GenericSignature,
     storage::DeleteKind,
-    transaction::{
+    action::{
         Argument, CallArg, Command, EndOfEpochTransactionKind, ObjectArg, TransactionKind,
     },
 };
@@ -169,7 +169,7 @@ fn get_registry() -> Result<Registry> {
     let struct_tag = StructTag::from_str("0x2::coin::Coin<0x2::ika::IKA>").unwrap();
     tracer.trace_value(&mut samples, &struct_tag).unwrap();
 
-    let ccd = CheckpointDigest::random();
+    let ccd = CheckpointMessageDigest::random();
     tracer.trace_value(&mut samples, &ccd).unwrap();
 
     let tot = TypeOrigin {
@@ -233,10 +233,10 @@ fn get_registry() -> Result<Registry> {
         .trace_type::<FullCheckpointContents>(&samples)
         .unwrap();
     tracer.trace_type::<CheckpointContents>(&samples).unwrap();
-    tracer.trace_type::<CheckpointSummary>(&samples).unwrap();
+    tracer.trace_type::<CheckpointMessage>(&samples).unwrap();
 
     let sender_data = SenderSignedData::new(
-        TransactionData::new_with_gas_coins(
+        ActionData::new_with_gas_coins(
             TransactionKind::EndOfEpochTransaction(Vec::new()),
             IkaAddress::ZERO,
             Vec::new(),
@@ -255,7 +255,7 @@ fn get_registry() -> Result<Registry> {
     tracer.trace_value(&mut samples, &quorum_sig).unwrap();
 
     tracer
-        .trace_type::<CertifiedCheckpointSummary>(&samples)
+        .trace_type::<CertifiedCheckpointMessage>(&samples)
         .unwrap();
 
     let event = Event {
