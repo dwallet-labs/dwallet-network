@@ -17,7 +17,7 @@ import {
 	signMessageTransactionCall,
 } from '../../src/dwallet-mpc/sign';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
-import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet';
+import { mockCreateDwallet, mockCreatePresign, mockedDWallet } from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test dWallet MPC', () => {
@@ -37,6 +37,7 @@ describe('Test dWallet MPC', () => {
 			timeout: 5 * 60 * 1000,
 		};
 		const dWallet = await createDWallet(conf);
+
 		expect(dWallet).toBeDefined();
 		pollRef.value = false;
 		console.log({ dWallet });
@@ -103,7 +104,7 @@ describe('Test dWallet MPC', () => {
 			// Todo (#382): Change to real value.
 			Uint8Array.from([1, 2]),
 			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
-			Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),
+			Uint8Array.from(dWallet.centralizedDKGPrivateOutput),
 			serializedPresigns,
 			serializedMsgs,
 			Hash.SHA256,
@@ -154,7 +155,7 @@ describe('Test dWallet MPC', () => {
 				// Todo (#382): Change to real value.
 				Uint8Array.from([1, 2]),
 				Uint8Array.from(dWallet.centralizedDKGPublicOutput),
-				Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),
+				Uint8Array.from(dWallet.centralizedDKGPrivateOutput),
 				serializedPresigns,
 				serializedMsgs,
 				Hash.SHA256,
@@ -209,7 +210,7 @@ describe('Test dWallet MPC', () => {
 			// Todo (#382): Change to real value.
 			Uint8Array.from([1, 2]),
 			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
-			Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),
+			Uint8Array.from(dWallet.centralizedDKGPrivateOutput),
 			serializedPresigns,
 			serializedMsgs,
 			Hash.SHA256,
