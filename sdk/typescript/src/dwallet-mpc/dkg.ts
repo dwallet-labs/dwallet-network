@@ -69,8 +69,9 @@ export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 	console.log('DKG First Round Output:', dkgFirstRoundOutput);
 	let [publicKeyShareAndProof, centralizedPublicOutput, centralizedPrivateOutput] =
 		create_dkg_centralized_output(
-			// Todo (#382): Change to real value.
-			Uint8Array.from([1, 2]),
+			// Todo (#382): Pass the actual chain's public parameters.
+			// Right now we pass an empty array, and the wasm function behind the scenes uses the default, mock public parameters.
+			Uint8Array.from([]),
 			Uint8Array.from(dkgFirstRoundOutput.output),
 			// Remove the 0x prefix.
 			dkgFirstRoundOutput.session_id.slice(2),
