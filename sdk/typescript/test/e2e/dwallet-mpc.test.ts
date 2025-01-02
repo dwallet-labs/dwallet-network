@@ -20,17 +20,17 @@ import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import {mockCreateDwallet, mockCreatePresign, mockedDWallet} from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
 
-function encodeToBase64(numbers: Uint8Array): string{
-	return btoa(String.fromCharCode(...numbers));
+function encodeToBase64(numbers: number[]): string {
+	return Buffer.from(new Uint8Array(numbers)).toString('base64');
 }
 
 describe('Test dWallet MPC', () => {
 	let toolbox: TestToolbox;
 
-	// beforeEach(async () => {
-	// 	toolbox = await setup();
-	// 	console.log('Address', toolbox.keypair.toPeraAddress());
-	// });
+	beforeEach(async () => {
+		toolbox = await setup();
+		console.log('Address', toolbox.keypair.toPeraAddress());
+	});
 
 	it('should base64 encode', () => {
 		console.log(encodeToBase64(mockedDWallet.decentralizedDKGOutput))
@@ -46,8 +46,8 @@ describe('Test dWallet MPC', () => {
 		};
 		const dWallet = await createDWallet(conf);
 		console.log("decentralized output", encodeToBase64(dWallet.decentralizedDKGOutput));
-		console.log("centralized output", encodeToBase64(dWallet.CentralizedDKGPrivateOutput));
-		console.log("decentralized output", encodeToBase64(dWallet.centralizedDKGPublicOutput));
+		console.log("centralized private output", encodeToBase64(dWallet.centralizedDKGPrivateOutput));
+		console.log("centralized public output", encodeToBase64(dWallet.centralizedDKGPublicOutput));
 
 		expect(dWallet).toBeDefined();
 		pollRef.value = false;
@@ -115,7 +115,7 @@ describe('Test dWallet MPC', () => {
 			// Todo (#382): Change to real value.
 			Uint8Array.from([1, 2]),
 			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
-			Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),
+			Uint8Array.from(dWallet.centralizedDKGPrivateOutput),
 			serializedPresigns,
 			serializedMsgs,
 			Hash.SHA256,
@@ -166,7 +166,7 @@ describe('Test dWallet MPC', () => {
 				// Todo (#382): Change to real value.
 				Uint8Array.from([1, 2]),
 				Uint8Array.from(dWallet.centralizedDKGPublicOutput),
-				Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),
+				Uint8Array.from(dWallet.centralizedDKGPrivateOutput),
 				serializedPresigns,
 				serializedMsgs,
 				Hash.SHA256,
@@ -221,7 +221,7 @@ describe('Test dWallet MPC', () => {
 			// Todo (#382): Change to real value.
 			Uint8Array.from([1, 2]),
 			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
-			Uint8Array.from(dWallet.CentralizedDKGPrivateOutput),
+			Uint8Array.from(dWallet.centralizedDKGPrivateOutput),
 			serializedPresigns,
 			serializedMsgs,
 			Hash.SHA256,
