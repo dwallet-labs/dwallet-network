@@ -9,7 +9,6 @@ import { Transaction } from '../transactions/index.js';
 import type { Config } from './globals.js';
 import { dWalletModuleName, fetchObjectWithType, packageId } from './globals.js';
 
-
 /**
  * A class groups key pair.
  */
@@ -97,9 +96,7 @@ export const getOrCreateEncryptionKey = async (
 	c: Config,
 	activeEncryptionKeysTableID: string,
 ): Promise<CGSecpKeyPair> => {
-	let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(
-		c.keypair as Ed25519Keypair,
-	);
+	let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(c.keypair as Ed25519Keypair);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
 		activeEncryptionKeysTableID,

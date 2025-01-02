@@ -27,10 +27,7 @@ describe('encrypt user share', () => {
 			client: dwalletSenderToolbox.client,
 			timeout: 5 * 60 * 1000,
 		};
-		let senderEncryptionKeyObj = await getOrCreateEncryptionKey(
-			conf,
-			activeEncryptionKeysTableID,
-		);
+		let senderEncryptionKeyObj = await getOrCreateEncryptionKey(conf, activeEncryptionKeysTableID);
 
 		// Sleep for 5 seconds so the getOrCreateEncryptionKey inner transactions effects has time to
 		// get written to the chain.
