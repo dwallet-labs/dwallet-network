@@ -17,15 +17,23 @@ import {
 	signMessageTransactionCall,
 } from '../../src/dwallet-mpc/sign';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
-import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet';
+import {mockCreateDwallet, mockCreatePresign, mockedDWallet} from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
+
+function encodeToBase64(numbers: Uint8Array): string{
+	return btoa(String.fromCharCode(...numbers));
+}
 
 describe('Test dWallet MPC', () => {
 	let toolbox: TestToolbox;
 
-	beforeEach(async () => {
-		toolbox = await setup();
-		console.log('Address', toolbox.keypair.toPeraAddress());
+	// beforeEach(async () => {
+	// 	toolbox = await setup();
+	// 	console.log('Address', toolbox.keypair.toPeraAddress());
+	// });
+
+	it('should base64 encode', () => {
+		console.log(encodeToBase64(mockedDWallet.decentralizedDKGOutput))
 	});
 
 	it('should create a dWallet (DKG)', async () => {
@@ -37,6 +45,7 @@ describe('Test dWallet MPC', () => {
 			timeout: 5 * 60 * 1000,
 		};
 		const dWallet = await createDWallet(conf);
+
 		expect(dWallet).toBeDefined();
 		pollRef.value = false;
 		console.log({ dWallet });
