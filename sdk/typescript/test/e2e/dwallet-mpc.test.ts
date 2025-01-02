@@ -20,20 +20,12 @@ import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import {mockCreateDwallet, mockCreatePresign, mockedDWallet} from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
 
-function encodeToBase64(numbers: number[]): string {
-	return Buffer.from(new Uint8Array(numbers)).toString('base64');
-}
-
 describe('Test dWallet MPC', () => {
 	let toolbox: TestToolbox;
 
 	beforeEach(async () => {
 		toolbox = await setup();
 		console.log('Address', toolbox.keypair.toPeraAddress());
-	});
-
-	it('should base64 encode', () => {
-		console.log(encodeToBase64(mockedDWallet.decentralizedDKGOutput))
 	});
 
 	it('should create a dWallet (DKG)', async () => {
