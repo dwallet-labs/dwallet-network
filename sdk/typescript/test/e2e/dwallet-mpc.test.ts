@@ -45,9 +45,6 @@ describe('Test dWallet MPC', () => {
 			timeout: 5 * 60 * 1000,
 		};
 		const dWallet = await createDWallet(conf);
-		console.log("decentralized output", encodeToBase64(dWallet.decentralizedDKGOutput));
-		console.log("centralized private output", encodeToBase64(dWallet.centralizedDKGPrivateOutput));
-		console.log("centralized public output", encodeToBase64(dWallet.centralizedDKGPublicOutput));
 
 		expect(dWallet).toBeDefined();
 		pollRef.value = false;
@@ -65,8 +62,6 @@ describe('Test dWallet MPC', () => {
 		console.log({ dWallet });
 		const presignOutput = await presign(conf, dWallet.id, 1);
 		expect(presignOutput).toBeDefined();
-		console.log("presign", encodeToBase64(presignOutput.presigns[0]));
-		console.log("presign first round session id", presignOutput.first_round_session_ids[0]);
 		console.log({ presignOutput });
 	});
 
