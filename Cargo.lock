@@ -4091,8 +4091,11 @@ dependencies = [
 name = "dwallet-mpc-types"
 version = "1.32.2"
 dependencies = [
+ "anyhow",
+ "bcs",
  "move-core-types",
  "serde",
+ "serde_json",
  "thiserror 1.0.69",
 ]
 
