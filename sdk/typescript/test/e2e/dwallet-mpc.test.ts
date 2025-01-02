@@ -65,6 +65,8 @@ describe('Test dWallet MPC', () => {
 		console.log({ dWallet });
 		const presignOutput = await presign(conf, dWallet.id, 1);
 		expect(presignOutput).toBeDefined();
+		console.log("presign", encodeToBase64(presignOutput.presigns[0]));
+		console.log("presign first round session id", presignOutput.first_round_session_ids[0]);
 		console.log({ presignOutput });
 	});
 
