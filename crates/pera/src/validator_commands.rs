@@ -335,7 +335,7 @@ impl PeraValidatorCommand {
                     info: pera_genesis_builder::validator_info::ValidatorInfo {
                         name,
                         class_groups_public_key_and_proof: class_groups_keypair_and_proof
-                            .public_bytes()?,
+                            .public_bytes(),
                         protocol_key: keypair.public().into(),
                         worker_key: worker_keypair.public().clone(),
                         account_address: PeraAddress::from(&account_keypair.public()),

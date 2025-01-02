@@ -34,7 +34,6 @@ use std::time::Duration;
 use pera_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair};
 use pera_types::multiaddr::Multiaddr;
 use tracing::info;
-use twopc_mpc::secp256k1::class_groups::DecryptionSharePublicParameters;
 
 // Default max number of concurrent requests served
 pub const DEFAULT_GRPC_CONCURRENCY_LIMIT: usize = 20000000000;
@@ -52,13 +51,6 @@ pub const DEFAULT_MAX_ACTIVE_DWALLET_MPC_SESSIONS: usize = 3000;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
-    // todo (#348): Update the system to ensure that each
-    // todo (#348): validator saves only their own decryption share
-    #[serde(default)]
-    pub dwallet_mpc_decryption_shares_public_parameters: Option<DecryptionSharePublicParameters>,
-    #[serde(default)]
-    pub dwallet_mpc_class_groups_decryption_shares:
-        Option<HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>>,
     /// The maximum number of active dWallet MPC sessions allowed to run simultaneously.
     #[serde(default = "default_max_mpc_protocol_sessions_in_progress")]
     pub max_active_dwallet_mpc_sessions: usize,

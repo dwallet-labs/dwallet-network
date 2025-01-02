@@ -25,9 +25,9 @@ checksum = "55cc3b69f167a1ef2e161439aa98aed94e6028e5f9a59be9a6ffb47aef1651f9"
 
 [[package]]
 name = "anyhow"
-version = "1.0.95"
+version = "1.0.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34ac096ce696dc2fcabef30516bb13c0a68a11d30131d3df6f04711467681b04"
+checksum = "74f37166d7d48a0284b99dd824694c26119c700b53bf0d1540cdb147dbdaaf13"
 
 [[package]]
 name = "autocfg"
@@ -196,49 +196,29 @@ checksum = "1462739cb27611015575c0c11df5df7601141071f07518d56fcc1be504cbec97"
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#048fb417731bfe974838a63ec46ca071d6c5b97e"
 dependencies = [
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "commitment",
  "criterion",
  "crypto-bigint",
  "crypto-primes",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "group 0.1.0",
+ "homomorphic_encryption",
+ "itertools 0.13.0",
  "maurer",
  "merlin",
- "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "mpc",
  "num-bigint",
  "num-integer",
  "num-traits",
- "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "rand",
- "rand_core",
- "rstest",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "class_groups"
-version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
-dependencies = [
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
- "crypto-bigint",
- "crypto-primes",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
- "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
- "itertools 0.13.0",
- "merlin",
- "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
- "num-bigint",
- "num-integer",
- "num-traits",
- "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
+ "proof",
  "rand",
  "rand_chacha",
  "rand_core",
+ "rayon",
+ "rstest",
  "serde",
+ "serde_json",
  "sha3 0.10.8",
  "thiserror",
 ]
@@ -249,7 +229,9 @@ version = "1.32.2"
 dependencies = [
  "base64",
  "bcs",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "class_groups",
+ "group 0.1.0",
+ "mpc",
  "twopc_mpc",
 ]
 
@@ -265,22 +247,10 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#048fb417731bfe974838a63ec46ca071d6c5b97e"
 dependencies = [
  "crypto-bigint",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "merlin",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "commitment"
-version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
-dependencies = [
- "crypto-bigint",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
+ "group 0.1.0",
  "merlin",
  "serde",
  "thiserror",
@@ -456,13 +426,10 @@ version = "1.32.2"
 dependencies = [
  "anyhow",
  "bcs",
- "class_groups 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
  "class_groups_constants",
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
+ "commitment",
  "k256",
- "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "rand_chacha",
+ "mpc",
  "rand_core",
  "sha2",
  "sha3 0.10.8",
@@ -473,7 +440,6 @@ dependencies = [
 name = "dwallet-mpc-wasm"
 version = "0.1.6"
 dependencies = [
- "anyhow",
  "bcs",
  "dwallet-mpc",
  "serde-wasm-bindgen",
@@ -524,17 +490,17 @@ dependencies = [
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#048fb417731bfe974838a63ec46ca071d6c5b97e"
 dependencies = [
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "commitment",
  "crypto-bigint",
  "getrandom",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "group 0.1.0",
+ "homomorphic_encryption",
  "maurer",
  "merlin",
- "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "mpc",
+ "proof",
  "serde",
  "serde_json",
  "thiserror",
@@ -691,24 +657,7 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
-dependencies = [
- "crypto-bigint",
- "curve25519-dalek-ng",
- "getrandom",
- "k256",
- "serde",
- "sha3 0.10.8",
- "sha3 0.9.1",
- "subtle",
- "subtle-ng",
- "thiserror",
-]
-
-[[package]]
-name = "group"
-version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#048fb417731bfe974838a63ec46ca071d6c5b97e"
 dependencies = [
  "crypto-bigint",
  "curve25519-dalek-ng",
@@ -767,26 +716,11 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#048fb417731bfe974838a63ec46ca071d6c5b97e"
 dependencies = [
  "crypto-bigint",
  "getrandom",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "rand",
- "rand_core",
- "rstest",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "homomorphic_encryption"
-version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
-dependencies = [
- "crypto-bigint",
- "getrandom",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
+ "group 0.1.0",
  "rand",
  "rand_core",
  "rstest",
@@ -885,15 +819,16 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#048fb417731bfe974838a63ec46ca071d6c5b97e"
 dependencies = [
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "commitment",
  "crypto-bigint",
  "getrandom",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "group 0.1.0",
+ "homomorphic_encryption",
  "merlin",
- "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "mpc",
+ "proof",
  "serde",
  "serde_json",
  "thiserror",
@@ -920,33 +855,18 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#048fb417731bfe974838a63ec46ca071d6c5b97e"
 dependencies = [
+ "commitment",
  "criterion",
  "crypto-bigint",
  "gcd",
  "getrandom",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "group 0.1.0",
  "rand",
  "rand_core",
  "rayon",
  "rstest",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "mpc"
-version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
-dependencies = [
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
- "crypto-bigint",
- "gcd",
- "getrandom",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
- "rand",
  "serde",
  "serde_json",
  "thiserror",
@@ -1061,39 +981,22 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#048fb417731bfe974838a63ec46ca071d6c5b97e"
 dependencies = [
  "bulletproofs",
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "commitment",
  "criterion",
  "crypto-bigint",
  "curve25519-dalek-ng",
  "getrandom",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "merlin",
- "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "rand",
- "rand_core",
- "rstest",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "proof"
-version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8#acc18d3a87af6a17ca246dcb33c6141cefab0ff8"
-dependencies = [
- "bulletproofs",
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
- "crypto-bigint",
- "curve25519-dalek-ng",
- "getrandom",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
+ "group 0.1.0",
  "itertools 0.13.0",
  "merlin",
- "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=acc18d3a87af6a17ca246dcb33c6141cefab0ff8)",
+ "mpc",
+ "rand",
+ "rand_core",
+ "rayon",
+ "rstest",
  "serde",
  "serde_json",
  "thiserror",
@@ -1455,14 +1358,14 @@ dependencies = [
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#048fb417731bfe974838a63ec46ca071d6c5b97e"
 dependencies = [
  "crypto-bigint",
  "crypto-primes",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "group 0.1.0",
+ "homomorphic_encryption",
  "merlin",
- "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "mpc",
  "rand",
  "rand_core",
  "rstest",
@@ -1491,24 +1394,24 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#048fb417731bfe974838a63ec46ca071d6c5b97e"
 dependencies = [
  "base64",
  "bcs",
- "class_groups 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "class_groups",
+ "commitment",
  "criterion",
  "crypto-bigint",
  "ecdsa",
  "enhanced_maurer",
  "getrandom",
- "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "group 0.1.0",
+ "homomorphic_encryption",
  "k256",
  "maurer",
  "merlin",
- "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
- "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api)",
+ "mpc",
+ "proof",
  "rand",
  "rand_core",
  "rstest",

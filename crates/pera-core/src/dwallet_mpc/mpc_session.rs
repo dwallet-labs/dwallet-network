@@ -1,10 +1,10 @@
 use commitment::CommitmentSizedNumber;
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput, MPCSessionStatus};
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput, MPCSessionStatus};
+use twopc_mpc::sign::Protocol;
 
 use pera_types::base_types::EpochId;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -44,7 +44,7 @@ pub(super) struct DWalletMPCSession {
     pub(super) round_number: usize,
     party_id: PartyID,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-    decryption_share: twopc_mpc::secp256k1::class_groups::DecryptionKeyShare,
+    decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
 }
 
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
@@ -59,7 +59,7 @@ impl DWalletMPCSession {
         session_info: SessionInfo,
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        decryption_share: twopc_mpc::secp256k1::class_groups::DecryptionKeyShare,
+        decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     ) -> Self {
         Self {
             status,
@@ -182,9 +182,7 @@ impl DWalletMPCSession {
                     &self.weighted_threshold_access_structure,
                     self.pending_messages.clone(),
                     public_input,
-                    vec![(self.party_id, self.decryption_share.clone())]
-                        .into_iter()
-                        .collect(),
+                    self.decryption_share.clone(),
                 )
             }
             MPCRound::NetworkDkg(key_type) => advance_network_dkg(

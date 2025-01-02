@@ -156,7 +156,7 @@ pub fn run(cmd: Ceremony) -> Result<()> {
                     image_url,
                     project_url,
                     class_groups_public_key_and_proof: class_groups_keypair_and_proof
-                        .public_bytes()?,
+                        .public_bytes(),
                 },
                 pop,
             );

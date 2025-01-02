@@ -83,7 +83,7 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
-use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
+use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, NetworkDecryptionKeyShares};
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
@@ -1044,13 +1044,13 @@ impl AuthorityPerEpochStore {
     /// The data is being used as part of the network's DKG protocol.
     pub fn active_validators_class_groups_public_keys_and_proofs(
         &self,
-    ) -> PeraResult<HashMap<AuthorityName, ClassGroupsPublicKeyAndProof>> {
+    ) -> PeraResult<HashMap<AuthorityName, ClassGroupsEncryptionKeyAndProof>> {
         match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => data
                 .get_active_validators_class_groups_public_key_and_proof()
                 .iter()
-                .map(|(k, v)| Ok((*k, bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(v)?)))
-                .collect::<PeraResult<HashMap<AuthorityName, ClassGroupsPublicKeyAndProof>>>(),
+                .map(|(k, v)| Ok((*k, bcs::from_bytes::<ClassGroupsEncryptionKeyAndProof>(v)?)))
+                .collect::<PeraResult<HashMap<AuthorityName, ClassGroupsEncryptionKeyAndProof>>>(),
         }
     }
 

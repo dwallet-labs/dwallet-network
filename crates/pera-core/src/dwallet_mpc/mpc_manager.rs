@@ -3,11 +3,12 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
-use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
+use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::public_input_from_event;
+use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
+use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKey, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
 };
@@ -26,7 +27,7 @@ use std::sync::{Arc, Weak};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::warn;
 use tracing::{error, info};
-use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+use twopc_mpc::sign::Protocol;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
@@ -207,28 +208,28 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    pub fn get_decryption_share(&self) -> DwalletMPCResult<DecryptionKeyShare> {
+    // Todo (#382): Read the real decryption share from the DKG output.
+    pub fn get_decryption_share(
+        &self,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+    ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
-        let shares = self
-            .node_config
-            .dwallet_mpc_class_groups_decryption_shares
-            .as_ref()
-            .ok_or(DwalletMPCError::MissingDwalletMPCClassGroupsDecryptionShares)?;
+        let public_parameters = class_groups_constants::decryption_key_share_public_parameters();
+        let self_shares = class_groups_constants::decryption_key_share(party_id);
 
-        let share_value = shares
-            .get(&party_id)
-            .ok_or(DwalletMPCError::DwalletMPCClassGroupsDecryptionShareMissing(party_id))?
-            .clone();
-
-        let public_parameters = self
-            .node_config
-            .dwallet_mpc_decryption_shares_public_parameters
-            .as_ref()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters)?;
-
-        DecryptionKeyShare::new(party_id, share_value, public_parameters)
-            .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
+        self_shares
+            .iter()
+            .map(|(party_id, share_value)| {
+                let share = DecryptionKeyShare::new(
+                    *party_id,
+                    *share_value,
+                    &bcs::from_bytes(&public_parameters).unwrap(),
+                )
+                .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
+                Ok((*party_id, share))
+            })
+            .collect()
     }
 
     /// Advance all the MPC sessions that either received enough messages
@@ -394,13 +395,7 @@ impl DWalletMPCManager {
     fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID]) -> DwalletMPCResult<()> {
         let malicious_parties_names = malicious_parties
             .iter()
-            .map(|party_id| {
-                self.epoch_store()?
-                    .committee()
-                    .authority_by_index(*party_id as u32)
-                    .cloned()
-                    .ok_or(DwalletMPCError::AuthorityIndexNotFound(*party_id))
-            })
+            .map(|party_id| party_id_to_authority_name(*party_id, &*self.epoch_store()?))
             .collect::<DwalletMPCResult<Vec<AuthorityName>>>()?;
         warn!(
             "[dWallet MPC] Flagged the following parties as malicious: {:?}",
@@ -437,7 +432,7 @@ impl DWalletMPCManager {
             session_info.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
-            self.get_decryption_share()?,
+            self.get_decryption_share(&self.weighted_threshold_access_structure)?,
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing
