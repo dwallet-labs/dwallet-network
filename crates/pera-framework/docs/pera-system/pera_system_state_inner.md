@@ -1072,11 +1072,6 @@ Update the system state with new encryption of decryption key shares after re-co
         ).update_new_shares(shares, self.epoch);
         <b>return</b>
     };
-
-    // self.decryption_key_shares.insert(
-    //     key_scheme,
-    //     <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[new_encrypted_network_decryption_key_shares(self.epoch, shares, <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>())]
-    // );
 }
 </code></pre>
 

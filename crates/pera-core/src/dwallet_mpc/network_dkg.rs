@@ -508,28 +508,3 @@ pub(crate) fn new_from_dkg_public_output(
         DWalletMPCNetworkKeyScheme::Ristretto => todo!("Ristretto key scheme"),
     }
 }
-
-pub(crate) fn new_from_dkg_public_output(
-    epoch: u64,
-    key_scheme: DWalletMPCNetworkKeyScheme,
-    _weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-    public_output: Vec<u8>,
-) -> anyhow::Result<NetworkDecryptionKeyShares> {
-    match key_scheme {
-        DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            // Todo (#382): Extract the actual values from the public output once we use the real DKG party.
-            let current_epoch_shares = bcs::to_bytes(&public_output)?;
-
-            Ok(NetworkDecryptionKeyShares {
-                epoch,
-                current_epoch_shares: vec![current_epoch_shares],
-                previous_epoch_shares: vec![],
-                protocol_public_parameters: vec![],
-                decryption_public_parameters: vec![],
-                encryption_key: vec![],
-                reconstructed_commitments_to_sharing: vec![],
-            })
-        }
-        DWalletMPCNetworkKeyScheme::Ristretto => todo!("Ristretto key scheme"),
-    }
-}
