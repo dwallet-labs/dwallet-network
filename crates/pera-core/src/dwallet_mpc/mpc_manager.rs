@@ -288,18 +288,23 @@ impl DWalletMPCManager {
         let public_parameters = class_groups_constants::decryption_key_share_public_parameters();
         let self_shares = class_groups_constants::decryption_key_share(party_id);
 
-        self_shares
-            .iter()
-            .map(|(party_id, share_value)| {
-                let share = DecryptionKeyShare::new(
-                    *party_id,
-                    *share_value,
-                    &bcs::from_bytes(&public_parameters).unwrap(),
-                )
-                    .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
-                Ok((*party_id, share))
-            })
-            .collect()
+        Ok((
+            self_shares
+                .iter()
+                .map(|(party_id, share_value)| {
+                    let share: <AsyncProtocol as Protocol>::DecryptionKeyShare =
+                        DecryptionKeyShare::new(
+                            *party_id,
+                            *share_value,
+                            &bcs::from_bytes(&public_parameters).unwrap(),
+                        )
+                        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
+                        .unwrap();
+                    ((*party_id) as PartyID, share)
+                })
+                .collect(),
+            public_parameters,
+        ))
     }
 
     /// Advance all the MPC sessions that either received enough messages
@@ -504,7 +509,11 @@ impl DWalletMPCManager {
             session_info.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
-            if !matches!(session_info.mpc_round, MPCRound::NetworkDkg(..)) { Some(self.get_decryption_share()?.0) } else { None },
+            if !matches!(session_info.mpc_round, MPCRound::NetworkDkg(..)) {
+                Some(self.get_decryption_share()?.0)
+            } else {
+                None
+            },
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing

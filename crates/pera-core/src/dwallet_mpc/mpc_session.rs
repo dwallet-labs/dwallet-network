@@ -185,7 +185,9 @@ impl DWalletMPCSession {
                     &self.weighted_threshold_access_structure,
                     self.pending_messages.clone(),
                     public_input,
-                    self.decryption_share.clone().ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?,
+                    self.decryption_share
+                        .clone()
+                        .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?,
                 )
             }
             MPCRound::NetworkDkg(key_type, _) => advance_network_dkg(
