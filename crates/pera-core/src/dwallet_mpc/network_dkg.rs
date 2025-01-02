@@ -8,6 +8,7 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::advance;
 use crate::dwallet_mpc::dkg::DKGFirstParty;
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
+use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
@@ -83,7 +84,7 @@ impl DwalletMPCNetworkKeyVersions {
         &self,
         key_type: DWalletMPCNetworkKeyScheme,
         version: u8,
-        new_shares: Vec<Vec<u8>>,
+        new_shares: Vec<u8>,
     ) -> DwalletMPCResult<()> {
         let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
         let key_shares = inner
@@ -121,7 +122,7 @@ impl DwalletMPCNetworkKeyVersions {
             // Todo (#382): Replace with the actual values, once we use the real DKG protocol.
             vec![NetworkDecryptionKeyShares {
                 epoch: epoch_store.epoch(),
-                current_epoch_shares: vec![encryption_of_decryption_shares],
+                current_epoch_shares: encryption_of_decryption_shares,
                 previous_epoch_shares: vec![],
                 protocol_public_parameters: vec![],
                 decryption_public_parameters: vec![],
@@ -272,11 +273,10 @@ pub(crate) fn new_from_dkg_public_output(
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             // Todo (#382): Extract the actual values from the public output once we use the real DKG party.
-            let current_epoch_shares = bcs::to_bytes(&public_output)?;
 
             Ok(NetworkDecryptionKeyShares {
                 epoch,
-                current_epoch_shares: vec![current_epoch_shares],
+                current_epoch_shares: public_output,
                 previous_epoch_shares: vec![],
                 protocol_public_parameters: vec![],
                 decryption_public_parameters: vec![],

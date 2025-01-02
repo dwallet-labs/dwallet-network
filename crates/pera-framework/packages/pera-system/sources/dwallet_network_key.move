@@ -50,8 +50,8 @@ module pera_system::dwallet_network_key {
     /// Struct to store the network encryption of decryption key shares
     public struct NetworkDecryptionKeyShares has store, copy {
         epoch: u64,
-        current_epoch_shares: vector<vector<u8>>,
-        previous_epoch_shares: vector<vector<u8>>,
+        current_epoch_shares: vector<u8>,
+        previous_epoch_shares: vector<u8>,
         protocol_public_parameters: vector<u8>,
         decryption_public_parameters: vector<u8>,
         encryption_key: vector<u8>,
@@ -61,8 +61,8 @@ module pera_system::dwallet_network_key {
     /// Function to create a new NetworkDecryptionKeyShares.
     public(package) fun new_encrypted_network_decryption_key_shares(
         epoch: u64,
-        current_epoch_shares: vector<vector<u8>>,
-        previous_epoch_shares: vector<vector<u8>>,
+        current_epoch_shares: vector<u8>,
+        previous_epoch_shares: vector<u8>,
         protocol_public_parameters: vector<u8>,
         decryption_public_parameters: vector<u8>,
         encryption_key: vector<u8>,
@@ -82,7 +82,7 @@ module pera_system::dwallet_network_key {
     /// Function to update the shares of the network encryption of decryption key.
     public fun update_new_shares(
         self: &mut NetworkDecryptionKeyShares,
-        new_shares: vector<vector<u8>>,
+        new_shares: vector<u8>,
         epoch: u64
     ) {
         self.previous_epoch_shares = self.current_epoch_shares;

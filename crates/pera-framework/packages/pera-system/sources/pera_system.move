@@ -632,7 +632,7 @@ module pera_system::pera_system {
     /// The chain agrees on on the same public output.
     fun store_decryption_key_shares(
         wrapper: &mut PeraSystemState,
-        shares: vector<vector<u8>>,
+        shares: vector<u8>,
         key_scheme: u8,
         ctx: &TxContext
     ) {
@@ -647,7 +647,7 @@ module pera_system::pera_system {
     /// The chain agrees on on the same public output.
     fun new_decryption_key_shares_version(
         wrapper: &mut PeraSystemState,
-        shares: vector<vector<u8>>,
+        shares: vector<u8>,
         protocol_public_parameters: vector<u8>,
         decryption_public_parameters: vector<u8>,
         encryption_key: vector<u8>,
