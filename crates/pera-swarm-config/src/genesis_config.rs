@@ -36,13 +36,6 @@ pub struct SsfnGenesisConfig {
 // All information needed to build a NodeConfig for a validator.
 #[derive(Serialize, Deserialize)]
 pub struct ValidatorGenesisConfig {
-    // todo (#348): Update the system to ensure that each validator saves only their own decryption share
-    #[serde(default)]
-    pub dwallet_mpc_class_groups_public_parameters:
-        Option<twopc_mpc::sign::ClassGroupsPublicParams>,
-    #[serde(default)]
-    pub dwallet_mpc_class_groups_decryption_shares:
-        Option<HashMap<PartyID, SecretKeyShareSizedNumber>>,
     pub class_groups_keypair_and_proof: ClassGroupsKeyPairAndProof,
     #[serde(default = "default_bls12381_key_pair")]
     pub key_pair: AuthorityKeyPair,
@@ -253,9 +246,6 @@ impl ValidatorGenesisConfigBuilder {
             .map(|ip| SocketAddr::new(ip, p2p_address.port().unwrap()));
 
         ValidatorGenesisConfig {
-            dwallet_mpc_class_groups_public_parameters: self
-                .dwallet_mpc_class_groups_public_parameters,
-            dwallet_mpc_class_groups_decryption_shares: self.dwallet_mpc_decryption_shares,
             class_groups_keypair_and_proof,
             key_pair: protocol_key_pair,
             worker_key_pair,
