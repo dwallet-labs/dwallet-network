@@ -43,7 +43,7 @@ export interface DWallet {
 export interface CreatedDwallet {
 	id: string;
 	centralizedDKGPublicOutput: number[];
-	CentralizedDKGPrivateOutput: number[];
+	centralizedDKGPrivateOutput: number[];
 	decentralizedDKGOutput: number[];
 	dwalletCapID: string;
 	dwalletMPCNetworkKeyVersion: number;
@@ -86,7 +86,9 @@ export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
     // let ppp = convertToMap(a.decryptionKeyShares).get(1)!.at(0)!.at(0)!.protocol_public_parameters;
 	let [publicKeyShareAndProof, centralizedPublicOutput, centralizedPrivateOutput] =
 		create_dkg_centralized_output(
-			// Todo (#382): Change to real value.
+			// Todo (#382): Pass the actual chain's public parameters.
+			// Right now we pass an empty array, and the wasm function behind the scenes uses the default, mock public parameters.
+			// Can't be an empty array as it makes the wasm crash for some reason
 			Uint8Array.from([1, 2]),
 			Uint8Array.from(dkgFirstRoundOutput.output),
 			// Remove the 0x prefix.
@@ -97,7 +99,7 @@ export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 	return {
 		id: dwallet.id.id,
 		centralizedDKGPublicOutput: centralizedPublicOutput,
-		CentralizedDKGPrivateOutput: centralizedPrivateOutput,
+		centralizedDKGPrivateOutput: centralizedPrivateOutput,
 		decentralizedDKGOutput: dwallet.output,
 		dwalletCapID: dwallet.dwallet_cap_id,
 		dwalletMPCNetworkKeyVersion: dwallet.dwallet_mpc_network_key_version,
