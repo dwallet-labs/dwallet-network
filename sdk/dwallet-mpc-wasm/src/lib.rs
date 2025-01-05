@@ -1,7 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use dwallet_mpc::{create_dkg_output, create_sign_output, generate_secp_cg_keypair_from_seed_internal};
+use dwallet_mpc::{create_dkg_output, create_sign_output, generate_secp_cg_keypair_from_seed_internal, encrypt_secret_share_and_prove};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 use anyhow::Error;
@@ -34,6 +34,13 @@ pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErro
         )
             .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
+}
+
+#[wasm_bindgen]
+pub fn encrypt_secret_share(secret: Vec<u8>, encryption_key: Vec<u8>) -> Result<JsValue, JsError> {
+    let encryption_and_proof =
+        encrypt_secret_share_and_prove(secret, encryption_key).map_err(to_js_err)?;
+    Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
 }
 
 

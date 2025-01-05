@@ -20,7 +20,9 @@
 /// - Ensure secure and decentralized key generation and management.
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet;
-    use pera_system::dwallet::{DWallet, create_dwallet_cap, DWalletCap, get_dwallet_cap_id, get_dwallet_output};
+    use pera_system::dwallet::{DWallet, create_dwallet_cap, DWalletCap, get_dwallet_cap_id, get_dwallet_output,
+        EncryptionKey
+    };
     use pera::event;
 
     /// Represents the `Secp256K1` dWallet type.
@@ -146,6 +148,17 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public struct CompletedSignEvent has copy, drop {
         session_id: ID,
         signed_messages: vector<vector<u8>>,
+    }
+
+    /// A verified encrypted user share.
+    public struct EncryptedUserShare has key {
+        id: UID,
+        /// The id of the DWallet that its secret share is encrypted.
+        dwallet_id: ID,
+        /// The encrypted secret share and a proof that the encryption is actually the encryption of the `dwallet_id`'s secret share.
+        encrypted_secret_share_and_proof: vector<u8>,
+        /// The encryption key used to encrypt the secret share to.
+        encryption_key_id: ID,
     }
 
     /// Event emitted to start the second round of the DKG process.
@@ -417,6 +430,24 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             first_round_session_id,
         });
         session_id
+    }
+
+    /// Submits the given secret share encryption to the chain.
+    /// The chain verifies that the encryption is actually the encryption of the secret share before creating the [`EncryptedUserShare`] object.
+    public fun encrypt_user_share(
+        dwallet: &DWallet<Secp256K1>,
+        encryption_key: &EncryptionKey,
+        encrypted_secret_share_and_proof: vector<u8>,
+        ctx: &mut TxContext,
+    ) {
+        // TODO (#467): Verify the encrypted secret share
+        let encrypted_user_share = EncryptedUserShare {
+            id: object::new(ctx),
+            dwallet_id: object::id(dwallet),
+            encrypted_secret_share_and_proof,
+            encryption_key_id: object::id(encryption_key),
+        };
+        transfer::freeze_object(encrypted_user_share);
     }
 
     /// Completes the second DKG round and creates the final [`DWallet`].

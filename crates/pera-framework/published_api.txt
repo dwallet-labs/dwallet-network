@@ -1,13 +1,13 @@
 DWallet
 	public struct
 	0x3::dwallet
+EncryptionKey
+	public struct
+	0x3::dwallet
 DWalletCap
 	public struct
 	0x3::dwallet
 ActiveEncryptionKeys
-	public struct
-	0x3::dwallet
-EncryptionKey
 	public struct
 	0x3::dwallet
 create_dwallet
@@ -25,9 +25,6 @@ set_active_encryption_key
 register_encryption_key
 	public fun
 	0x3::dwallet
-is_valid_encryption_key_scheme
-	fun
-	0x3::dwallet
 create_dwallet_cap
 	public(package) fun
 	0x3::dwallet
@@ -36,6 +33,9 @@ get_dwallet_cap_id
 	0x3::dwallet
 get_dwallet_output
 	public(package) fun
+	0x3::dwallet
+is_valid_encryption_key_scheme
+	fun
 	0x3::dwallet
 Secp256K1
 	public struct
@@ -91,6 +91,9 @@ StartBatchedSignEvent
 StartBatchedPresignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+EncryptedUserShare
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -102,6 +105,9 @@ launch_dkg_second_round
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_dkg_second_round_output
 	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+encrypt_user_share
+	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_batched_presign
 	public fun

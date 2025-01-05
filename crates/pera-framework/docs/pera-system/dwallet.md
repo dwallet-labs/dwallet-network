@@ -30,19 +30,19 @@ ownership and control over a corresponding <code><a href="dwallet.md#0x3_dwallet
     -  [Overview](#@Overview_0)
     -  [Key Concepts](#@Key_Concepts_1)
 -  [Resource `DWallet`](#0x3_dwallet_DWallet)
+-  [Resource `EncryptionKey`](#0x3_dwallet_EncryptionKey)
 -  [Resource `DWalletCap`](#0x3_dwallet_DWalletCap)
 -  [Resource `ActiveEncryptionKeys`](#0x3_dwallet_ActiveEncryptionKeys)
--  [Resource `EncryptionKey`](#0x3_dwallet_EncryptionKey)
 -  [Constants](#@Constants_4)
 -  [Function `create_dwallet`](#0x3_dwallet_create_dwallet)
 -  [Function `create_active_encryption_keys`](#0x3_dwallet_create_active_encryption_keys)
 -  [Function `get_active_encryption_key`](#0x3_dwallet_get_active_encryption_key)
 -  [Function `set_active_encryption_key`](#0x3_dwallet_set_active_encryption_key)
 -  [Function `register_encryption_key`](#0x3_dwallet_register_encryption_key)
--  [Function `is_valid_encryption_key_scheme`](#0x3_dwallet_is_valid_encryption_key_scheme)
 -  [Function `create_dwallet_cap`](#0x3_dwallet_create_dwallet_cap)
 -  [Function `get_dwallet_cap_id`](#0x3_dwallet_get_dwallet_cap_id)
 -  [Function `get_dwallet_output`](#0x3_dwallet_get_dwallet_output)
+-  [Function `is_valid_encryption_key_scheme`](#0x3_dwallet_is_valid_encryption_key_scheme)
 
 
 <pre><code><b>use</b> <a href="../pera-framework/ed25519.md#0x2_ed25519">0x2::ed25519</a>;
@@ -116,6 +116,60 @@ ownership and control over a corresponding <code><a href="dwallet.md#0x3_dwallet
 
 </details>
 
+<a name="0x3_dwallet_EncryptionKey"></a>
+
+## Resource `EncryptionKey`
+
+An Additively Homomorphic Encryption (AHE) public key
+that can be used to encrypt a user share in order to prove to the network that
+the recipient can sign with a dWallet when it is transferred or access is granted to it.
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a> <b>has</b> key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>scheme: u8</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>key_owner_address: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>encryption_key_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="0x3_dwallet_DWalletCap"></a>
 
 ## Resource `DWalletCap`
@@ -178,60 +232,6 @@ and the value is the encryption key object ID.
 </dd>
 <dt>
 <code>encryption_keys: <a href="../pera-framework/table.md#0x2_table_Table">table::Table</a>&lt;<b>address</b>, <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_EncryptionKey"></a>
-
-## Resource `EncryptionKey`
-
-An Additively Homomorphic Encryption (AHE) public key
-that can be used to encrypt a user share in order to prove to the network that
-the recipient can sign with a dWallet when it is transferred or access is granted to it.
-
-
-<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a> <b>has</b> key
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>scheme: u8</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>key_owner_address: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>encryption_key_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
 
@@ -456,11 +456,7 @@ The key is saved as an immutable object.
 ) {
     <b>assert</b>!(<a href="dwallet.md#0x3_dwallet_is_valid_encryption_key_scheme">is_valid_encryption_key_scheme</a>(scheme), <a href="dwallet.md#0x3_dwallet_EInvalidEncryptionKeyScheme">EInvalidEncryptionKeyScheme</a>);
     <b>assert</b>!(ed25519_verify(&signature, &sender_sui_pubkey, &key), <a href="dwallet.md#0x3_dwallet_EInvalidEncryptionKeySignature">EInvalidEncryptionKeySignature</a>);
-    // TODO: Verify the ed2551 <b>public</b> key matches the sender's <b>address</b>
-    // <b>assert</b>!(
-    //     ed2551_pubkey_to_sui_addr(sender_sui_pubkey) == <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
-    //     EPublicKeyNotMatchSenderAddress
-    // );
+    // TODO (#453): Verify the ed2551 <b>public</b> key matches the sender's <b>address</b>
     <b>let</b> encryption_key = <a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         scheme,
@@ -469,30 +465,6 @@ The key is saved as an immutable object.
         encryption_key_signature: signature,
     };
     <a href="../pera-framework/transfer.md#0x2_transfer_freeze_object">transfer::freeze_object</a>(encryption_key);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_dwallet_is_valid_encryption_key_scheme"></a>
-
-## Function `is_valid_encryption_key_scheme`
-
-
-
-<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_valid_encryption_key_scheme">is_valid_encryption_key_scheme</a>(scheme: u8): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_valid_encryption_key_scheme">is_valid_encryption_key_scheme</a>(scheme: u8): bool {
-    scheme == <a href="dwallet.md#0x3_dwallet_CLASS_GROUPS">CLASS_GROUPS</a> // || scheme == ...
 }
 </code></pre>
 
@@ -615,6 +587,30 @@ A <code><a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_dwallet_output">get_dwallet_output</a>&lt;T: drop&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
     <a href="dwallet.md#0x3_dwallet">dwallet</a>.output
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_is_valid_encryption_key_scheme"></a>
+
+## Function `is_valid_encryption_key_scheme`
+
+
+
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_valid_encryption_key_scheme">is_valid_encryption_key_scheme</a>(scheme: u8): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_valid_encryption_key_scheme">is_valid_encryption_key_scheme</a>(scheme: u8): bool {
+    scheme == <a href="dwallet.md#0x3_dwallet_CLASS_GROUPS">CLASS_GROUPS</a> // || scheme == ...
 }
 </code></pre>
 

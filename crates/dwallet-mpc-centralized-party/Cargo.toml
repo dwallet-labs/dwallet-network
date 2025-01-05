@@ -10,6 +10,10 @@ commitment = { git = "https://github.com/dwallet-labs/cryptography-private", bra
 class_groups_constants = { path = "../class-groups-constants" }
 k256 = { git = 'https://github.com/ycscaly/elliptic-curves.git', branch = "13.3-fixed", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
 class_groups.workspace = true
+group.workspace = true
+homomorphic_encryption.workspace = true
+maurer = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-network-dkg", subdir = "maurer" }
+
 
 anyhow.workspace = true
 bcs.workspace = true

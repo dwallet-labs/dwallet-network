@@ -1,13 +1,24 @@
-import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
+import {
+	encrypt_secret_share,
+	generate_secp_cg_keypair_from_seed,
+} from '@dwallet-network/dwallet-mpc-wasm';
 
 import { bcs } from '../bcs/index.js';
 import type { PeraClient, PeraObjectRef } from '../client/index.js';
-import type { Keypair } from '../cryptography/index.js';
+import type { Keypair, PublicKey } from '../cryptography/index.js';
 import { decodePeraPrivateKey } from '../cryptography/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
+import type { CreatedDwallet } from './dkg.js';
 import type { Config } from './globals.js';
-import { dWalletModuleName, fetchObjectWithType, packageId } from './globals.js';
+import {
+	dWallet2PCMPCECDSAK1ModuleName,
+	dWalletModuleName,
+	fetchObjectWithType,
+	packageId,
+} from './globals.js';
+
+export const encryptedSecretShareMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::EncryptedUserShare`;
 
 /**
  * A class groups key pair.
@@ -21,15 +32,85 @@ interface CGSecpKeyPair {
 /**
  * A class groups Move encryption key object.
  */
+
 interface EncryptionKey {
-	encryptionKey: Uint8Array;
+	encryption_key: Uint8Array;
 	key_owner_address: string;
 	encryption_key_signature: Uint8Array;
+}
+
+/**
+ * The Move encrypted user share object.
+ */
+export interface EncryptedUserShare {
+	id: string;
+	dwallet_id: string;
+	encrypted_secret_share_and_proof: Uint8Array;
+	encryption_key_id: string;
 }
 
 export enum EncryptionKeyScheme {
 	ClassGroups = 0,
 }
+
+export const isEncryptedUserShare = (obj: any): obj is EncryptedUserShare => {
+	return (
+		'id' in obj &&
+		'dwallet_id' in obj &&
+		'encrypted_secret_share_and_proof' in obj &&
+		'encryption_key_id' in obj
+	);
+};
+
+/**
+ * Encrypts and sends the given secret user share to the given destination public key.
+ *
+ * @param c The DWallet client.
+ * @param dwallet The dWallet that we want to send the secret user share of.
+ * @param destinationPublicKey The ed2551 public key of the destination Sui address.
+ * @param activeEncryptionKeysTableID The ID of the table that holds the active encryption keys.
+ */
+export const sendUserShareToSuiPubKey = async (
+	c: Config,
+	dwallet: CreatedDwallet,
+	destinationPublicKey: PublicKey,
+	activeEncryptionKeysTableID: string,
+): Promise<string> => {
+	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
+		c,
+		destinationPublicKey.toPeraAddress(),
+		activeEncryptionKeysTableID,
+	);
+	if (!activeEncryptionKeyObjID) {
+		throw new Error('The destination public key does not have an active encryption key');
+	}
+	const recipientData = await fetchObjectWithType<EncryptionKey>(
+		c,
+		encryptionKeyMoveType,
+		isEncryptionKey,
+		activeEncryptionKeyObjID,
+	);
+	let isValidEncryptionKey = await destinationPublicKey.verify(
+		new Uint8Array(recipientData.encryption_key),
+		new Uint8Array(recipientData.encryption_key_signature),
+	);
+	if (!isValidEncryptionKey) {
+		throw new Error(
+			'The destination public key has not been signed by the desired destination Sui address',
+		);
+	}
+	let encryptedUserShareAndProof = encrypt_secret_share(
+		new Uint8Array(dwallet.centralizedDKGPrivateOutput),
+		new Uint8Array(recipientData.encryption_key),
+	);
+
+	return await transferEncryptedUserShare(
+		c,
+		encryptedUserShareAndProof,
+		activeEncryptionKeyObjID,
+		dwallet,
+	);
+};
 
 /**
  * Creates the table that maps a Sui address to the Class Groups encryption
@@ -63,9 +144,9 @@ export const createActiveEncryptionKeysTable = async (client: PeraClient, keypai
  */
 export const getActiveEncryptionKeyObjID = async (
 	c: Config,
+	keyOwnerAddress: string,
 	encryptionKeysHolderID: string,
 ): Promise<string> => {
-	let keyOwnerAddress = c.keypair.toPeraAddress();
 	let client = c.client;
 	const tx = new Transaction();
 	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
@@ -86,12 +167,6 @@ export const getActiveEncryptionKeyObjID = async (
 		.join('');
 };
 
-const isEncryptionKey = (obj: any): obj is EncryptionKey => {
-	return 'encryptionKey' in obj && 'key_owner_address' in obj && 'encryption_key_signature' in obj;
-};
-
-let encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
-
 export const getOrCreateEncryptionKey = async (
 	c: Config,
 	activeEncryptionKeysTableID: string,
@@ -99,6 +174,7 @@ export const getOrCreateEncryptionKey = async (
 	let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(c.keypair as Ed25519Keypair);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
+		c.keypair.toPeraAddress(),
 		activeEncryptionKeysTableID,
 	);
 	if (activeEncryptionKeyObjID) {
@@ -108,7 +184,7 @@ export const getOrCreateEncryptionKey = async (
 			isEncryptionKey,
 			activeEncryptionKeyObjID,
 		);
-		if (isEqual(encryptionKeyObj?.encryptionKey!, encryptionKey)) {
+		if (isEqual(encryptionKeyObj?.encryption_key!, encryptionKey)) {
 			return {
 				encryptionKey,
 				decryptionKey,
@@ -136,6 +212,48 @@ export const getOrCreateEncryptionKey = async (
 		objectID: encryptionKeyRef.objectId,
 	};
 };
+
+export const generateCGKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
+	let secretKey = keypair.getSecretKey();
+	let decoded = decodePeraPrivateKey(secretKey);
+	return generate_secp_cg_keypair_from_seed(decoded.secretKey);
+};
+
+const transferEncryptedUserShare = async (
+	conf: Config,
+	encryptedUserShareAndProof: Uint8Array,
+	encryptionKeyObjID: string,
+	dwallet: CreatedDwallet,
+): Promise<string> => {
+	const tx = new Transaction();
+	const encryptionKey = tx.object(encryptionKeyObjID);
+	const dwalletObj = tx.object(dwallet.id);
+
+	tx.moveCall({
+		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::encrypt_user_share`,
+		typeArguments: [],
+		arguments: [
+			dwalletObj,
+			encryptionKey,
+			tx.pure(bcs.vector(bcs.u8()).serialize(encryptedUserShareAndProof)),
+		],
+	});
+
+	const res = await conf.client.signAndExecuteTransaction({
+		signer: conf.keypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+
+	return res.effects?.created?.at(0)?.reference.objectId!;
+};
+const isEncryptionKey = (obj: any): obj is EncryptionKey => {
+	return 'encryption_key' in obj && 'key_owner_address' in obj && 'encryption_key_signature' in obj;
+};
+
+let encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
 
 /**
  * Sets the given encryption key as the active encryption key for the given keypair Sui
@@ -206,9 +324,3 @@ function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
 
 	return arr1.every((value, index) => value === arr2[index]);
 }
-
-const generateCGKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
-	let secretKey = keypair.getSecretKey();
-	let decoded = decodePeraPrivateKey(secretKey);
-	return generate_secp_cg_keypair_from_seed(decoded.secretKey);
-};

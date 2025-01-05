@@ -2,16 +2,30 @@
 
 use anyhow::Context;
 use class_groups::setup::get_setup_parameters_secp256k1;
-use class_groups::Secp256k1DecryptionKey;
+use class_groups::{
+    Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+};
+use group::{CyclicGroupElement, GroupElement, Samplable};
+use homomorphic_encryption::GroupsPublicParametersAccessors;
 use k256::ecdsa::hazmat::bits2field;
 use k256::ecdsa::signature::digest::{Digest, FixedOutput};
+use k256::elliptic_curve::bigint::Uint;
 use k256::elliptic_curve::ops::Reduce;
+use k256::elliptic_curve::{group::prime::PrimeCurveAffine, Group};
 use k256::{elliptic_curve, U256};
 use mpc::two_party::Round;
 use rand_core::{OsRng, SeedableRng};
 use std::fmt;
+use std::marker::PhantomData;
 use twopc_mpc::secp256k1;
-use twopc_mpc::secp256k1::GroupElement;
+use twopc_mpc::secp256k1::SCALAR_LIMBS;
+
+use class_groups_constants::protocol_public_parameters;
+use group::KnownOrderGroupElement;
+use twopc_mpc::languages::class_groups::{
+    construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
+};
 
 type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
@@ -196,4 +210,62 @@ pub fn generate_secp_cg_keypair_from_seed_internal(
     let decryption_key = bcs::to_bytes(&decryption_key.decryption_key)?;
     let encryption_key = bcs::to_bytes(&encryption_key)?;
     Ok((encryption_key, decryption_key))
+}
+
+/// Encrypts the given secret share to the given encryption key.
+/// Returns a tuple of the encryption key & proof.
+pub fn encrypt_secret_share_and_prove(
+    secret_share: Vec<u8>,
+    encryption_key: Vec<u8>,
+) -> anyhow::Result<Vec<u8>> {
+    let protocol_public_params = protocol_public_parameters();
+    let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
+        SCALAR_LIMBS,
+        { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        { SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        secp256k1::GroupElement,
+    >(
+        protocol_public_params
+            .scalar_group_public_parameters
+            .clone(),
+        protocol_public_params.group_public_parameters.clone(),
+        bcs::from_bytes(&encryption_key)?,
+    );
+    let randomness = class_groups::RandomnessSpaceGroupElement::<
+        { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+    >::sample(
+        language_public_parameters
+            .encryption_scheme_public_parameters
+            .randomness_space_public_parameters(),
+        &mut OsRng,
+    )?;
+    let parsed_secret_key =
+        secp256k1::Scalar::from(Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_share));
+    let witness = (parsed_secret_key, randomness).into();
+    let (proof, statements) = EncryptionOfDiscreteLogProofWithoutCtx::<
+        SCALAR_LIMBS,
+        SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+        SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+        secp256k1::GroupElement,
+    >::prove(
+        &PhantomData,
+        &language_public_parameters,
+        vec![witness],
+        &mut OsRng,
+    )?;
+    let (encryption_of_discrete_log, _) = statements.first().unwrap().clone().into();
+    Ok(bcs::to_bytes(&(proof, encryption_of_discrete_log.value()))?)
+}
+
+// Here for future use
+/// Derives a DWallet's public share from a private share.
+fn cg_public_share_from_secret_share(
+    secret_share: Vec<u8>,
+) -> anyhow::Result<group::secp256k1::GroupElement> {
+    let public_parameters = group::secp256k1::group_element::PublicParameters::default();
+    let generator_group_element =
+        group::secp256k1::group_element::GroupElement::generator_from_public_parameters(
+            &public_parameters,
+        )?;
+    Ok(generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_share)))
 }
