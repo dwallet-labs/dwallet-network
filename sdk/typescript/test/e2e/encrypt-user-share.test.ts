@@ -1,19 +1,15 @@
-import { encrypt_secret_share } from '@dwallet-network/dwallet-mpc-wasm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { decodePeraPrivateKey } from '../../src/cryptography';
 import {
 	createActiveEncryptionKeysTable,
 	encryptedSecretShareMoveType,
 	EncryptedUserShare,
-	generateCGKeyPairFromSuiKeyPair,
 	getActiveEncryptionKeyObjID,
 	getOrCreateEncryptionKey,
 	isEncryptedUserShare,
 	sendUserShareToSuiPubKey,
 } from '../../src/dwallet-mpc/encrypt-user-share';
 import { Config, fetchObjectWithType } from '../../src/dwallet-mpc/globals';
-import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import { mockCreateDwallet } from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
 
