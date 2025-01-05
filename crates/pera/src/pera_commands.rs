@@ -359,6 +359,7 @@ impl PeraCommand {
                 no_full_node,
                 epoch_duration_ms,
             } => {
+                // Note(zeev): start the sui swarm with the given configuration.
                 start(
                     config_dir.clone(),
                     with_faucet,

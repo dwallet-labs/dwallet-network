@@ -61,10 +61,11 @@ impl ApiEndpoint<RestService> for ExecuteTransaction {
 /// Execute Transaction REST endpoint.
 ///
 /// Handles client transaction submission request by passing off the provided signed transaction to
-/// an internal QuorumDriver which drives execution of the transaction with the current validator
+/// an internal QuorumDriver, which drives execution of the transaction with the current validator
 /// set.
 ///
 /// A client can signal, using the `Accept` header, the response format as either JSON or BCS.
+/// Note: this is where the TX request starts.
 async fn execute_transaction(
     State(state): State<Option<Arc<dyn TransactionExecutor>>>,
     Query(parameters): Query<ExecuteTransactionQueryParameters>,

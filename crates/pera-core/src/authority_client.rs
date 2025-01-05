@@ -139,6 +139,7 @@ impl AuthorityAPI for NetworkAuthorityClient {
         let mut request = transaction.into_request();
         insert_metadata(&mut request, client_addr);
 
+        // Note(zeev): this is using the generated gRPC client to actually send the Tx.
         self.client()?
             .transaction(request)
             .await

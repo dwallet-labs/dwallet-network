@@ -222,6 +222,7 @@ impl ValidatorGenesisConfigBuilder {
                 local_ip_utils::new_deterministic_tcp_address_for_testing(&ip, offset + 6),
             )
         } else {
+            // Note(zeev): this code generates random addresses for the swarm.
             (
                 local_ip_utils::new_tcp_address_for_testing(&ip),
                 local_ip_utils::new_udp_address_for_testing(&ip),

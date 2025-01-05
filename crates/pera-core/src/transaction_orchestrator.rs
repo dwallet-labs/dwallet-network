@@ -268,6 +268,7 @@ where
             in_flight.dec();
         });
 
+        // Start execution after TX was verified.
         let ticket = self
             .submit(transaction.clone(), request, client_addr)
             .await
@@ -310,6 +311,7 @@ where
         client_addr: Option<SocketAddr>,
     ) -> PeraResult<impl Future<Output = PeraResult<QuorumDriverResult>> + '_> {
         let tx_digest = *transaction.digest();
+        // Register TX.
         let ticket = self.notifier.register_one(&tx_digest);
         // TODO(william) need to also write client adr to pending tx log below
         // so that we can re-execute with this client addr if we restart

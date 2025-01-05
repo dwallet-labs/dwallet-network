@@ -1499,6 +1499,7 @@ impl AuthorityState {
             .filter_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store)
             .await
         {
+            // todo(zeev): debug?
             error!("failed to handle MPC events with error: {:?}", err);
         }
 
@@ -2781,7 +2782,7 @@ impl AuthorityState {
         });
 
         // Start a task to execute ready certificates.
-        // Note: This is where all consensus transactions start.
+        // Note(zeev): This is where all ready certificates are actually REALLY executed.
         let authority_state = Arc::downgrade(&state);
         spawn_monitored_task!(execution_process(
             authority_state,
