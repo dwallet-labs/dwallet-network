@@ -1,16 +1,20 @@
 //! This crate contains the cryptographic logic for the centralized 2PC-MPC party.
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use class_groups::setup::get_setup_parameters_secp256k1;
 use class_groups::{
+    CiphertextSpaceGroupElement, CiphertextSpaceValue, DecryptionKey, EncryptionKey,
     Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use group::{CyclicGroupElement, GroupElement, Samplable};
-use homomorphic_encryption::GroupsPublicParametersAccessors;
+use homomorphic_encryption::{
+    AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
+    GroupsPublicParametersAccessors,
+};
 use k256::ecdsa::hazmat::bits2field;
 use k256::ecdsa::signature::digest::{Digest, FixedOutput};
-use k256::elliptic_curve::bigint::Uint;
+use k256::elliptic_curve::bigint::{Encoding, Uint};
 use k256::elliptic_curve::ops::Reduce;
 use k256::elliptic_curve::{group::prime::PrimeCurveAffine, Group};
 use k256::{elliptic_curve, U256};
@@ -23,6 +27,7 @@ use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
 use group::KnownOrderGroupElement;
+use k256::elliptic_curve::subtle::CtOption;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -44,6 +49,19 @@ enum Hash {
 
 type HashedMessages = Vec<u8>;
 type SignedMessages = Vec<u8>;
+type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
+    SCALAR_LIMBS,
+    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    secp256k1::GroupElement,
+>;
+
+type SpecificEncryptionKey = EncryptionKey<
+    SCALAR_LIMBS,
+    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    secp256k1::GroupElement,
+>;
 
 impl fmt::Display for Hash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -242,12 +260,7 @@ pub fn encrypt_secret_share_and_prove(
     let parsed_secret_key =
         secp256k1::Scalar::from(Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_share));
     let witness = (parsed_secret_key, randomness).into();
-    let (proof, statements) = EncryptionOfDiscreteLogProofWithoutCtx::<
-        SCALAR_LIMBS,
-        SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-        SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-        secp256k1::GroupElement,
-    >::prove(
+    let (proof, statements) = SecretShareEncryptionProof::prove(
         &PhantomData,
         &language_public_parameters,
         vec![witness],
@@ -257,7 +270,48 @@ pub fn encrypt_secret_share_and_prove(
     Ok(bcs::to_bytes(&(proof, encryption_of_discrete_log.value()))?)
 }
 
-// Here for future use
+/// Verifies the given secret share matches the given DWallet's DKG output centralized_party_public_key_share.
+pub fn verify_secret_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> anyhow::Result<bool> {
+    let expected_public_key = cg_public_share_from_secret_share(secret_share)?;
+    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
+        bcs::from_bytes(&dkg_output)?;
+    Ok(dkg_output.centralized_party_public_key_share == expected_public_key.value())
+}
+
+/// Decrypts the given encrypted user share using the given decryption key.
+pub fn decrypt_user_share_inner(
+    encryption_key: Vec<u8>,
+    decryption_key: Vec<u8>,
+    encrypted_user_share_and_proof: Vec<u8>,
+) -> anyhow::Result<Vec<u8>> {
+    let (_, encryption_of_discrete_log): (
+        SecretShareEncryptionProof,
+        CiphertextSpaceValue<SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
+    ) = bcs::from_bytes(&encrypted_user_share_and_proof)?;
+    let public_parameters: homomorphic_encryption::PublicParameters<
+        SCALAR_LIMBS,
+        SpecificEncryptionKey,
+    > = bcs::from_bytes(&encryption_key)?;
+    let ciphertext = CiphertextSpaceGroupElement::new(
+        encryption_of_discrete_log,
+        &public_parameters.ciphertext_space_public_parameters(),
+    )?;
+
+    let decryption_key = bcs::from_bytes(&decryption_key)?;
+    let decryption_key: DecryptionKey<
+        SCALAR_LIMBS,
+        SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+        SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+        secp256k1::GroupElement,
+    > = DecryptionKey::new(decryption_key, &public_parameters)?;
+    let Some(plaintext): Option<<SpecificEncryptionKey as AdditivelyHomomorphicEncryptionKey<SCALAR_LIMBS>>::PlaintextSpaceGroupElement> = decryption_key
+        .decrypt(&ciphertext, &public_parameters).into() else {
+        return Err(anyhow!("Decryption failed"));
+    };
+    let secret_share_bytes = U256::from(&plaintext.value()).to_be_bytes().to_vec();
+    Ok(secret_share_bytes)
+}
+
 /// Derives a DWallet's public share from a private share.
 fn cg_public_share_from_secret_share(
     secret_share: Vec<u8>,

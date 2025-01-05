@@ -1,16 +1,27 @@
+import {
+	decrypt_user_share,
+	encrypt_secret_share,
+	verify_user_share,
+} from '@dwallet-network/dwallet-mpc-wasm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
 	createActiveEncryptionKeysTable,
 	encryptedSecretShareMoveType,
 	EncryptedUserShare,
+	generateCGKeyPairFromSuiKeyPair,
 	getActiveEncryptionKeyObjID,
 	getOrCreateEncryptionKey,
 	isEncryptedUserShare,
 	sendUserShareToSuiPubKey,
 } from '../../src/dwallet-mpc/encrypt-user-share';
 import { Config, fetchObjectWithType } from '../../src/dwallet-mpc/globals';
-import { mockCreateDwallet } from './utils/dwallet';
+import { Ed25519Keypair } from '../../src/keypairs/ed25519';
+import {
+	DKGCentralizedPrivateOutput,
+	DKGDecentralizedOutput,
+	mockCreateDwallet,
+} from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('encrypt user share', () => {
@@ -47,7 +58,10 @@ describe('encrypt user share', () => {
 		const createdDwallet = await mockCreateDwallet(senderConf);
 
 		// ======================= Create Destination Class Groups Keypair =======================
-		await getOrCreateEncryptionKey(receiverConf, activeEncryptionKeysTableID);
+		let destination_cg_keypair = await getOrCreateEncryptionKey(
+			receiverConf,
+			activeEncryptionKeysTableID,
+		);
 		await new Promise((r) => setTimeout(r, checkpointCreationTime));
 
 		// ======================= Send DWallet Secret Share To Destination Keypair  =======================
@@ -67,7 +81,20 @@ describe('encrypt user share', () => {
 			encryptedUserShareObjID,
 		);
 		// TODO (#467): Decrypt the encrypted user share and verify it is valid.
+
 		expect(encryptedUserShare).toBeDefined();
+
+		let decrypted = decrypt_user_share(
+			destination_cg_keypair.encryptionKey,
+			destination_cg_keypair.decryptionKey,
+			encryptedUserShare.encrypted_secret_share_and_proof,
+		);
+		expect(decrypted).toEqual(createdDwallet.centralizedDKGPrivateOutput);
+		let is_valid = verify_user_share(
+			decrypted,
+			new Uint8Array(createdDwallet.decentralizedDKGOutput),
+		);
+		expect(is_valid).toBeTruthy();
 	});
 
 	it('creates an encryption key & stores it in the active encryption keys table', async () => {
@@ -89,5 +116,24 @@ describe('encrypt user share', () => {
 		);
 
 		expect(`0x${activeEncryptionKeyAddress}`).toEqual(senderEncryptionKeyObj.objectID!);
+	});
+});
+
+describe('encrypt user share - tests that can run without the blockchain is running', () => {
+	it("successfully encrypts a secret share, decrypt it, and verify the decrypted share is matching the DWallet's public share", () => {
+		let keypair = Ed25519Keypair.generate();
+		let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(keypair);
+		let dwallet_secret_key_share = Array.from(Buffer.from(DKGCentralizedPrivateOutput, 'base64'));
+		let encryptedUserShareAndProof = encrypt_secret_share(
+			new Uint8Array(dwallet_secret_key_share),
+			encryptionKey,
+		);
+		let decrypted = decrypt_user_share(encryptionKey, decryptionKey, encryptedUserShareAndProof);
+		expect(decrypted).toEqual(dwallet_secret_key_share);
+		let is_valid = verify_user_share(
+			decrypted,
+			new Uint8Array(Array.from(Buffer.from(DKGDecentralizedOutput, 'base64'))),
+		);
+		expect(is_valid).toBeTruthy();
 	});
 });

@@ -1,7 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use dwallet_mpc::{create_dkg_output, create_sign_output, generate_secp_cg_keypair_from_seed_internal, encrypt_secret_share_and_prove};
+use dwallet_mpc::{create_dkg_output, create_sign_output, generate_secp_cg_keypair_from_seed_internal, encrypt_secret_share_and_prove, verify_secret_share, decrypt_user_share_inner};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 use anyhow::Error;
@@ -43,6 +43,26 @@ pub fn encrypt_secret_share(secret: Vec<u8>, encryption_key: Vec<u8>) -> Result<
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
 }
 
+#[wasm_bindgen]
+pub fn decrypt_user_share(
+    encryption_key: Vec<u8>,
+    decryption_key: Vec<u8>,
+    encrypted_user_share_and_proof: Vec<u8>,
+) -> Result<JsValue, JsError> {
+    let decrypted_secret_share = decrypt_user_share_inner(
+        encryption_key,
+        decryption_key,
+        encrypted_user_share_and_proof,
+    ).map_err(to_js_err)?;
+    Ok(serde_wasm_bindgen::to_value(&decrypted_secret_share)?)
+}
+
+#[wasm_bindgen]
+pub fn verify_user_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> Result<JsValue, JsError> {
+    let is_matching =
+        verify_secret_share(secret_share, dkg_output).map_err(to_js_err)?;
+    Ok(JsValue::from(is_matching))
+}
 
 #[wasm_bindgen]
 pub fn create_sign_centralized_output(
