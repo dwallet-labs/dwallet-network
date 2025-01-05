@@ -67,6 +67,9 @@ StartDKGFirstRoundEvent
 CompletedSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+EncryptedUserShare
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartDKGSecondRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -91,9 +94,6 @@ StartBatchedSignEvent
 StartBatchedPresignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-EncryptedUserShare
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -103,11 +103,11 @@ create_dkg_first_round_output
 launch_dkg_second_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_dkg_second_round_output
-	fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
 encrypt_user_share
 	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_dkg_second_round_output
+	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_batched_presign
 	public fun
