@@ -63,7 +63,7 @@ pub struct OutputVerificationResult {
 
 impl DWalletMPCOutputsVerifier {
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
-        let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
+        let weighted_parties = epoch_store
             .committee()
             .voting_rights
             .iter()

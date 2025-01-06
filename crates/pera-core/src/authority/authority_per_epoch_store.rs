@@ -1077,7 +1077,6 @@ impl AuthorityPerEpochStore {
         &self,
     ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<Vec<u8>>>> {
         let decryption_key_shares = self.load_decryption_key_shares_from_system_state()?;
-        let party_id = authority_name_to_party_id(&self.name, self)? as usize;
         decryption_key_shares
             .into_iter()
             .map(|(key_type, encryption_shares)| {
