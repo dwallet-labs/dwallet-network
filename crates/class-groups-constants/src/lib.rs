@@ -34,11 +34,13 @@ pub fn network_dkg_final_output() -> <Secp256k1Party as mpc::Party>::PublicOutpu
 
 pub fn decryption_key_share_public_parameters() -> Vec<u8> {
     // Safe to unwrap as we're using a hardcoded constant.
-    base64::decode(DECRYPTION_KEY_SHARE_PUBLIC_PARAMETERS).unwrap()
+    STANDARD
+        .decode(DECRYPTION_KEY_SHARE_PUBLIC_PARAMETERS)
+        .unwrap()
 }
 
 pub fn decryption_key_share(party_id: PartyID) -> HashMap<PartyID, SecretKeyShareSizedNumber> {
-    let bytes = base64::decode(DYCRPTION_SHARES).unwrap();
+    let bytes = STANDARD.decode(DYCRPTION_SHARES).unwrap();
     let shares: HashMap<PartyID, HashMap<PartyID, SecretKeyShareSizedNumber>> =
         bcs::from_bytes(&bytes).unwrap();
     shares.get(&party_id).unwrap().clone()
