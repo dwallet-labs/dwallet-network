@@ -176,9 +176,8 @@ almost 250KB, which is the maximum event size in Sui.
         session_id,
         key_scheme,
     });
-    <b>let</b> validators_len = validators_data.length();
     <b>let</b> <b>mut</b> i = 0;
-    <b>while</b> (i &lt; validators_len) {
+    <b>while</b> (i &lt; validators_data.length()) {
         <b>let</b> validator_data = validators_data[i];
         emit_validator_data_for_secret_share(validator_data);
         i = i + 1;
