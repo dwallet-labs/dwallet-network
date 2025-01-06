@@ -281,12 +281,13 @@ impl DWalletMPCManager {
                     _ => false,
                 };
 
-                let is_valid_network_dkg_transaction = matches!(session.session_info.mpc_round, MPCRound::NetworkDkg(..))
-                    && self.validators_data_for_network_dkg.len()
-                    == self
-                    .weighted_threshold_access_structure
-                    .party_to_weight
-                    .len();
+                let is_valid_network_dkg_transaction =
+                    matches!(session.session_info.mpc_round, MPCRound::NetworkDkg(..))
+                        && self.validators_data_for_network_dkg.len()
+                            == self
+                                .weighted_threshold_access_structure
+                                .party_to_weight
+                                .len();
 
                 let is_manager_ready = !cfg!(feature = "with-network-dkg")
                     || (is_valid_network_dkg_transaction
