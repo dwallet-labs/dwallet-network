@@ -387,9 +387,8 @@ module pera_system::validator_set {
         validators: &vector<Validator>
     ): vector<ValidatorDataForDWalletSecretShare> {
         let mut validators_data: vector<ValidatorDataForDWalletSecretShare> = vector[];
-        let validators_len = validators.length();
         let mut i = 0;
-        while (i < validators_len) {
+        while (i < validators.length()) {
             let validator = &validators[i];
             validators_data.push_back(ValidatorDataForDWalletSecretShare {
                 cg_pubkey_and_proof: get_cg_pubkey_and_proof(validator),

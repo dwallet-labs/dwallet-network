@@ -1121,7 +1121,7 @@ module pera_system::pera_system_state_inner {
         }
     }
 
-    /// Return the current validator set
+    /// Return the current validator set.
     public(package) fun active_validators(self: &PeraSystemStateInnerV2): &vector<Validator> {
         self.validators.active_validators()
     }
