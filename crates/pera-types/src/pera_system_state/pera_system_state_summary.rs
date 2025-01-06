@@ -12,6 +12,7 @@ use crate::pera_serde::BigInt;
 use crate::pera_serde::Readable;
 use crate::pera_system_state::get_validator_from_table;
 use crate::storage::ObjectStore;
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 use fastcrypto::encoding::Base64;
 use fastcrypto::traits::ToFromBytes;
 use schemars::JsonSchema;
@@ -182,6 +183,8 @@ pub struct PeraSystemStateSummary {
     pub at_risk_validators: Vec<(PeraAddress, u64)>,
     /// A map storing the records of validator reporting each other.
     pub validator_report_records: Vec<(PeraAddress, Vec<PeraAddress>)>,
+
+    pub decryption_key_shares: Vec<(u8, Vec<NetworkDecryptionKeyShares>)>,
 }
 
 impl PeraSystemStateSummary {
@@ -359,6 +362,7 @@ impl Default for PeraSystemStateSummary {
             validator_candidates_size: 0,
             at_risk_validators: vec![],
             validator_report_records: vec![],
+            decryption_key_shares: vec![],
         }
     }
 }

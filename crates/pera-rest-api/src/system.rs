@@ -470,6 +470,7 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraSystemSt
             validator_candidates_size,
             at_risk_validators,
             validator_report_records,
+            decryption_key_shares,
         } = value;
 
         Self {

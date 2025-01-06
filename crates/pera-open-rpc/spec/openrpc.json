@@ -5910,6 +5910,62 @@
           }
         }
       },
+      "DwalletMPCNetworkKey": {
+        "description": "Rust representation of the move struct `DwalletMPCNetworkKey`",
+        "type": "object",
+        "required": [
+          "current_epoch_shares",
+          "decryption_public_parameters",
+          "epoch",
+          "previous_epoch_shares",
+          "protocol_public_parameters"
+        ],
+        "properties": {
+          "current_epoch_shares": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            }
+          },
+          "decryption_public_parameters": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          },
+          "epoch": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "previous_epoch_shares": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            }
+          },
+          "protocol_public_parameters": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
       "DynamicFieldInfo": {
         "type": "object",
         "required": [
@@ -9280,6 +9336,7 @@
         "required": [
           "activeValidators",
           "atRiskValidators",
+          "decryptionKeyShares",
           "epoch",
           "epochDurationMs",
           "epochStartTimestampMs",
@@ -9335,6 +9392,27 @@
                 },
                 {
                   "$ref": "#/components/schemas/BigInt_for_uint64"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          },
+          "decryptionKeyShares": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DwalletMPCNetworkKey"
+                  }
                 }
               ],
               "maxItems": 2,
@@ -9820,6 +9898,7 @@
         "description": "This is the JSON-RPC type for the PERA validator. It flattens all inner structures to top-level fields so that they are decoupled from the internal definitions.",
         "type": "object",
         "required": [
+          "classGroupsPublicKeyAndProof",
           "commissionRate",
           "description",
           "exchangeRatesId",
@@ -9851,6 +9930,9 @@
           "workerPubkeyBytes"
         ],
         "properties": {
+          "classGroupsPublicKeyAndProof": {
+            "$ref": "#/components/schemas/Base64"
+          },
           "commissionRate": {
             "$ref": "#/components/schemas/BigInt_for_uint64"
           },

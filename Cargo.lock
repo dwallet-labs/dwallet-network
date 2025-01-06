@@ -4079,6 +4079,7 @@ dependencies = [
  "bcs",
  "class_groups_constants",
  "commitment",
+ "dwallet-mpc-types",
  "k256 0.13.3",
  "mpc",
  "rand_core 0.6.4",

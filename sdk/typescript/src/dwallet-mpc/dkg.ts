@@ -13,6 +13,7 @@ import {
 	dWalletPackageID,
 	fetchCompletedEvent,
 	fetchObjectFromEvent,
+	MPCKeyScheme,
 	packageId,
 } from './globals.js';
 
@@ -64,7 +65,10 @@ interface DKGFirstRoundOutput extends DKGFirstRoundOutputEvent {
 	dwallet_cap_id: string;
 }
 
-export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
+export async function createDWallet(
+	conf: Config,
+	protocolPublicParameters: Uint8Array,
+): Promise<CreatedDwallet> {
 	const dkgFirstRoundOutput: DKGFirstRoundOutput = await launchDKGFirstRound(conf);
 	console.log('DKG First Round Output:', dkgFirstRoundOutput);
 	let [publicKeyShareAndProof, centralizedPublicOutput, centralizedPrivateOutput] =
@@ -72,7 +76,8 @@ export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 			// Todo (#382): Pass the actual chain's public parameters.
 			// Right now we pass an empty array, and the wasm function behind the scenes uses the default, mock public parameters.
 			// Can't be an empty array as it makes the wasm crash for some reason
-			Uint8Array.from([1, 2]),
+			protocolPublicParameters,
+			MPCKeyScheme.Secp256k1,
 			Uint8Array.from(dkgFirstRoundOutput.output),
 			// Remove the 0x prefix.
 			dkgFirstRoundOutput.session_id.slice(2),

@@ -209,6 +209,32 @@ impl DWalletMPCManager {
         Ok(())
     }
 
+    pub fn get_protocol_public_parameters(
+        &self,
+        key_scheme: DWalletMPCNetworkKeyScheme,
+        key_version: u8,
+    ) -> DwalletMPCResult<Vec<u8>> {
+        if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
+            return self_decryption_share.get_protocol_public_parameters(key_scheme, key_version);
+        }
+        Err(DwalletMPCError::TwoPCMPCError(
+            "Decryption share not found".to_string(),
+        ))
+    }
+
+    pub fn get_decryption_public_parameters(
+        &self,
+        key_scheme: DWalletMPCNetworkKeyScheme,
+        key_version: u8,
+    ) -> DwalletMPCResult<Vec<u8>> {
+        if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
+            return self_decryption_share.get_decryption_public_parameters(key_scheme, key_version);
+        }
+        Err(DwalletMPCError::TwoPCMPCError(
+            "Decryption share not found".to_string(),
+        ))
+    }
+
     /// Retrieves the decryption share for the current authority.
     ///
     /// This function accesses the current epoch's store and determines the party ID for the
@@ -219,28 +245,27 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    // Todo (#382): Read the real decryption share from the DKG output.
     pub fn get_decryption_share(
         &self,
-        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+        key_scheme: DWalletMPCNetworkKeyScheme,
+        key_version: Option<usize>,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
-        let public_parameters = class_groups_constants::decryption_key_share_public_parameters();
-        let self_shares = class_groups_constants::decryption_key_share(party_id);
 
-        self_shares
-            .iter()
-            .map(|(party_id, share_value)| {
-                let share = DecryptionKeyShare::new(
-                    *party_id,
-                    *share_value,
-                    &bcs::from_bytes(&public_parameters).unwrap(),
-                )
-                .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
-                Ok((*party_id, share))
-            })
-            .collect()
+        let decryption_shares = epoch_store
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .get_decryption_key_share(key_scheme)?;
+        let key_version = match key_version {
+            Some(key_version) => key_version,
+            None => self.network_key_version(key_scheme)? as usize,
+        };
+        Ok(decryption_shares
+            .get(key_version)
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .clone())
     }
 
     /// Advance all the MPC sessions that either received enough messages
@@ -453,7 +478,14 @@ impl DWalletMPCManager {
             session_info.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
-            self.get_decryption_share(&self.weighted_threshold_access_structure)?,
+            if !matches!(session_info.mpc_round, MPCRound::NetworkDkg(..)) {
+                self.get_decryption_share(
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                    Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
+                )?
+            } else {
+                HashMap::new()
+            },
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing
