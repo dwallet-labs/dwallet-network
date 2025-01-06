@@ -228,7 +228,8 @@ strip = 'none'
 # For convenience.
 strip = 'none'
 
-# The Class-Groups key generation output was too large, causing runtime stack overflow errors. This optimization resolved the issue
+# The Class-Groups key generation output was too large, causing runtime stack overflow errors.
+# This optimization resolved the issue.
 # Note: This flag causes issues with the debugger (#441)
 #[profile.dev]
 #opt-level = 2
