@@ -1,3 +1,5 @@
+// noinspection ES6PreferShortImport
+
 import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
 
 import { bcs } from '../bcs/index.js';
@@ -12,7 +14,7 @@ import { dWalletModuleName, fetchObjectWithType, packageId } from './globals.js'
 /**
  * A class groups key pair.
  */
-interface CGSecpKeyPair {
+interface ClassGroupsSecpKeyPair {
 	encryptionKey: Uint8Array;
 	decryptionKey: Uint8Array;
 	objectID: string;
@@ -31,11 +33,12 @@ export enum EncryptionKeyScheme {
 	ClassGroups = 0,
 }
 
+const encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
+
 /**
- * Creates the table that maps a Sui address to the Class Groups encryption
- * key is derived from the Sui address secret.
+ * Creates a table that maps users` Sui addresses to Class Group encryption keys.
  */
-export const createActiveEncryptionKeysTable = async (client: PeraClient, keypair: Keypair) => {
+export async function createActiveEncryptionKeysTable(client: PeraClient, keypair: Keypair) {
 	const tx = new Transaction();
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::create_active_encryption_keys`,
@@ -50,53 +53,60 @@ export const createActiveEncryptionKeysTable = async (client: PeraClient, keypai
 		},
 	});
 
-	return result.effects?.created?.filter(
+	const activeEncryptionKeysObj = result.effects?.created?.filter(
 		(o) =>
 			typeof o.owner === 'object' &&
 			'Shared' in o.owner &&
 			o.owner.Shared.initial_shared_version !== undefined,
-	)[0].reference!;
-};
+	)[0].reference;
+	if (!activeEncryptionKeysObj) {
+		throw new Error('Failed to create the active encryption keys table');
+	}
+
+	return activeEncryptionKeysObj;
+}
 
 /**
- * Retrieves the active encryption key object ID for the given Sui address, if it exists. Throws an error otherwise.
+ * Retrieves the active encryption key object ID for the given Sui address if it exists.
+ * Throws an error otherwise.
  */
-export const getActiveEncryptionKeyObjID = async (
+export async function getActiveEncryptionKeyObjID(
 	c: Config,
-	encryptionKeysHolderID: string,
-): Promise<string> => {
-	let keyOwnerAddress = c.keypair.toPeraAddress();
-	let client = c.client;
+	activeEncryptionKeysTableID: string,
+): Promise<string> {
 	const tx = new Transaction();
-	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
+	const activeEncryptionKeysTableIDParam = tx.object(activeEncryptionKeysTableID);
 
+	let keyOwnerAddress = c.keypair.toPeraAddress();
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
-		arguments: [encryptionKeysHolder, tx.pure.address(keyOwnerAddress)],
+		arguments: [activeEncryptionKeysTableIDParam, tx.pure.address(keyOwnerAddress)],
 	});
 
-	let res = await client.devInspectTransactionBlock({
+	// todo(Itay): see if it's ok to use this func, it sounds like it's not meant for prod.
+	let res = await c.client.devInspectTransactionBlock({
 		sender: keyOwnerAddress,
 		transactionBlock: tx,
 	});
 
-	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
+	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0) as number[]);
+	// todo(Itay): please explain why 16 and why do we need a padding.
 	return Array.from(objIDArray)
 		.map((byte) => byte.toString(16).padStart(2, '0'))
 		.join('');
-};
+}
 
 const isEncryptionKey = (obj: any): obj is EncryptionKey => {
 	return 'encryptionKey' in obj && 'key_owner_address' in obj && 'encryption_key_signature' in obj;
 };
 
-let encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
-
 export const getOrCreateEncryptionKey = async (
 	c: Config,
 	activeEncryptionKeysTableID: string,
-): Promise<CGSecpKeyPair> => {
-	let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(c.keypair as Ed25519Keypair);
+): Promise<ClassGroupsSecpKeyPair> => {
+	let [encryptionKey, decryptionKey] = generateClassGroupKeyPairFromSuiKeyPair(
+		c.keypair as Ed25519Keypair,
+	);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
 		activeEncryptionKeysTableID,
@@ -108,7 +118,7 @@ export const getOrCreateEncryptionKey = async (
 			isEncryptionKey,
 			activeEncryptionKeyObjID,
 		);
-		if (isEqual(encryptionKeyObj?.encryptionKey!, encryptionKey)) {
+		if (isEqual(encryptionKeyObj?.encryptionKey, encryptionKey)) {
 			return {
 				encryptionKey,
 				decryptionKey,
@@ -126,10 +136,10 @@ export const getOrCreateEncryptionKey = async (
 		c,
 	);
 
-	// Sleep for 5 seconds so the storeEncryptionKey transaction effects has time to
+	// Sleep for 5 seconds, so the storeEncryptionKey transaction effects have time to
 	// get written to the blockchain.
 	await new Promise((r) => setTimeout(r, 5000));
-	await setActiveEncryptionKey(encryptionKeyRef?.objectId!, activeEncryptionKeysTableID, c);
+	await setActiveEncryptionKey(encryptionKeyRef?.objectId, activeEncryptionKeysTableID, c);
 	return {
 		decryptionKey,
 		encryptionKey,
@@ -141,6 +151,7 @@ export const getOrCreateEncryptionKey = async (
  * Sets the given encryption key as the active encryption key for the given keypair Sui
  * address & encryption keys holder table.
  */
+// todo(itay): this func is overriding the active key, change this func and the move func to `upsert()`.
 const setActiveEncryptionKey = async (
 	encryptionKeyObjID: string,
 	encryptionKeysHolderID: string,
@@ -196,7 +207,11 @@ const storeEncryptionKey = async (
 			showEffects: true,
 		},
 	});
-	return result.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference!;
+	const encKeyRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference;
+	if (!encKeyRef) {
+		throw new Error('Failed to store the encryption key');
+	}
+	return encKeyRef;
 };
 
 function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
@@ -207,7 +222,7 @@ function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
 	return arr1.every((value, index) => value === arr2[index]);
 }
 
-const generateCGKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
+const generateClassGroupKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
 	let secretKey = keypair.getSecretKey();
 	let decoded = decodePeraPrivateKey(secretKey);
 	return generate_secp_cg_keypair_from_seed(decoded.secretKey);

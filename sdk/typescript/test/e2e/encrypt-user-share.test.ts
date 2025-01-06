@@ -14,22 +14,25 @@ describe('encrypt user share', () => {
 
 	beforeAll(async () => {
 		dwalletSenderToolbox = await setup();
-		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
+		const encryptionKeysRef = await createActiveEncryptionKeysTable(
 			dwalletSenderToolbox.client,
 			dwalletSenderToolbox.keypair,
 		);
-		activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
+		activeEncryptionKeysTableID = encryptionKeysRef.objectId;
 	});
 
-	it('creates an encryption key & stores it in the active encryption keys table', async () => {
-		let conf: Config = {
+	it('creates an encryption key and stores it in the active encryption keys table', async () => {
+		const conf: Config = {
 			keypair: dwalletSenderToolbox.keypair,
 			client: dwalletSenderToolbox.client,
 			timeout: 5 * 60 * 1000,
 		};
-		let senderEncryptionKeyObj = await getOrCreateEncryptionKey(conf, activeEncryptionKeysTableID);
+		const senderEncryptionKeyObj = await getOrCreateEncryptionKey(
+			conf,
+			activeEncryptionKeysTableID,
+		);
 
-		// Sleep for 5 seconds so the getOrCreateEncryptionKey inner transactions effects has time to
+		// Sleep for 5 seconds, so the getOrCreateEncryptionKey inner transactions effects have time to
 		// get written to the chain.
 		await new Promise((r) => setTimeout(r, 5000));
 
@@ -38,6 +41,6 @@ describe('encrypt user share', () => {
 			activeEncryptionKeysTableID,
 		);
 
-		expect(`0x${activeEncryptionKeyAddress}`).toEqual(senderEncryptionKeyObj.objectID!);
+		expect(`0x${activeEncryptionKeyAddress}`).toEqual(senderEncryptionKeyObj.objectID);
 	});
 });
