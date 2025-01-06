@@ -4,23 +4,28 @@ import { Config, MPCKeyScheme } from './globals.js';
 export async function fetchProtocolPublicParameters(
 	conf: Config,
 	keyScheme: MPCKeyScheme,
-	keyVersion: number,
+	keyVersion: number | null | undefined,
 ): Promise<any> {
 	const startTime = Date.now();
 
 	while (Date.now() - startTime <= conf.timeout) {
 		// Wait for 5 seconds between queries
-		const a = await conf.client.getLatestPeraSystemState();
-		const decryptionKeyShares = convertToMap(a.decryptionKeyShares);
+		const systemStateSummary = await conf.client.getLatestPeraSystemState();
+		const decryptionKeyShares = convertToMap(systemStateSummary.decryptionKeyShares);
 
 		if (decryptionKeyShares.has(keyScheme)) {
 			const versions_by_scheme = decryptionKeyShares.get(keyScheme);
-			if (versions_by_scheme && versions_by_scheme.length > keyVersion) {
-				const latest_version = versions_by_scheme[keyVersion];
-				if (latest_version && latest_version.length > keyVersion) {
-					const protocolPublicParameters = latest_version[keyVersion]?.protocol_public_parameters;
-					if (protocolPublicParameters) {
-						return protocolPublicParameters;
+			if (versions_by_scheme) {
+				if (keyVersion === null || keyVersion === undefined) {
+					keyVersion = versions_by_scheme.length - 1;
+				}
+				if (versions_by_scheme.length > keyVersion) {
+					const latest_version = versions_by_scheme[keyVersion];
+					if (latest_version && latest_version.length > keyVersion) {
+						const protocolPublicParameters = latest_version[keyVersion]?.protocol_public_parameters;
+						if (protocolPublicParameters) {
+							return protocolPublicParameters;
+						}
 					}
 				}
 			}

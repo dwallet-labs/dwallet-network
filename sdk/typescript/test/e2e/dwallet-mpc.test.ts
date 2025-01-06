@@ -145,7 +145,11 @@ describe('Test dWallet MPC', () => {
 			timeout: 30 * 60 * 1000,
 		};
 		// Todo (#472): Start the network DKG flow from the test
-		let protocolPublicParams = await fetchProtocolPublicParameters(conf, MPCKeyScheme.Secp256k1, 0);
+		let protocolPublicParams = await fetchProtocolPublicParameters(
+			conf,
+			MPCKeyScheme.Secp256k1,
+			null,
+		);
 		conf.timeout = 10 * 60 * 1000;
 		await fullMPCUserSessions(conf, protocolPublicParams);
 	});
