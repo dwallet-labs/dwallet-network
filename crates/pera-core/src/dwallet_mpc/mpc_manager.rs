@@ -81,10 +81,11 @@ pub enum DWalletMPCChannelMessage {
     /// This starts when the current epoch time has ended, and it's time to start the
     /// reconfiguration process for the next epoch.
     StartLockNextEpochCommittee,
-    /// A validator's public key and proof for the network DKG protocol
+    /// A validator's public key and proof for the network DKG protocol.
     /// Each validator's data is being emitted separately because the proof size is
-    /// almost 250KB, which is the maximum event size in Sui.
-    /// The manager accumulates the data until it received such an event for all validators, and then it starts the network DKG protocol.
+    /// almost 250 KB, which is the maximum event size in Sui.
+    /// The manager accumulates the data until it receives such an event for all validators,
+    /// and then it starts the network DKG protocol.
     ValidatorDataForDKG(ValidatorDataForDWalletSecretShare),
 }
 

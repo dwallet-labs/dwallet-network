@@ -1082,14 +1082,14 @@ the stake and any rewards corresponding to it will be immediately processed.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_lock_next_epoch_committee">lock_next_epoch_committee</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">ValidatorSet</a>, epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>) {
-    <b>let</b> <b>mut</b> _next_epoch_vals = <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>();
+    <b>let</b> <b>mut</b> next_epoch_vals = <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>();
     // TODO (#439): Emit each <a href="validator.md#0x3_validator">validator</a>'s Re-share data separately.
     <b>let</b> <b>mut</b> active_val_index = 0;
     <b>while</b> (active_val_index &lt; self.active_validators.length()) {
         <b>if</b> (!self.pending_removals.contains(&active_val_index)) {
             <b>let</b> <a href="validator.md#0x3_validator">validator</a> = &self.active_validators[active_val_index];
-            _next_epoch_vals.push_back(<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a> {
-                cg_pubkey_and_proof: get_cg_pubkey_and_proof(<a href="validator.md#0x3_validator">validator</a>),
+            next_epoch_vals.push_back(<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a> {
+                cg_pubkey_and_proof: get_class_group_pubkey_and_proof(<a href="validator.md#0x3_validator">validator</a>),
                 protocol_pubkey_bytes: get_validator_protocol_pubkey(<a href="validator.md#0x3_validator">validator</a>),
             });
         };
@@ -1098,8 +1098,8 @@ the stake and any rewards corresponding to it will be immediately processed.
     <b>let</b> <b>mut</b> pending_val_index = 0;
     <b>while</b> (pending_val_index &lt; self.pending_active_validators.length()) {
         <b>let</b> <a href="validator.md#0x3_validator">validator</a> = &self.pending_active_validators[pending_val_index];
-        _next_epoch_vals.push_back(<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a> {
-            cg_pubkey_and_proof: get_cg_pubkey_and_proof(<a href="validator.md#0x3_validator">validator</a>),
+        next_epoch_vals.push_back(<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a> {
+            cg_pubkey_and_proof: get_class_group_pubkey_and_proof(<a href="validator.md#0x3_validator">validator</a>),
             protocol_pubkey_bytes: get_validator_protocol_pubkey(<a href="validator.md#0x3_validator">validator</a>),
         });
         pending_val_index = pending_val_index + 1;
@@ -1157,12 +1157,11 @@ Maps the given <code>Validator</code> objects to the corresponding <code><a href
     validators: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;Validator&gt;
 ): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a>&gt; {
     <b>let</b> <b>mut</b> validators_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a>&gt; = <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[];
-    <b>let</b> validators_len = validators.length();
     <b>let</b> <b>mut</b> i = 0;
-    <b>while</b> (i &lt; validators_len) {
+    <b>while</b> (i &lt; validators.length()) {
         <b>let</b> <a href="validator.md#0x3_validator">validator</a> = &validators[i];
         validators_data.push_back(<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">ValidatorDataForDWalletSecretShare</a> {
-            cg_pubkey_and_proof: get_cg_pubkey_and_proof(<a href="validator.md#0x3_validator">validator</a>),
+            cg_pubkey_and_proof: get_class_group_pubkey_and_proof(<a href="validator.md#0x3_validator">validator</a>),
             protocol_pubkey_bytes: get_validator_protocol_pubkey(<a href="validator.md#0x3_validator">validator</a>),
         });
         i = i + 1;

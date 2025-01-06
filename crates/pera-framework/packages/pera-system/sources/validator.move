@@ -170,7 +170,7 @@ module pera_system::validator {
     }
 
     /// Retrieves the validator's class groups public key and proof.
-    public(package) fun get_cg_pubkey_and_proof(val: &Validator): vector<u8> {
+    public(package) fun get_class_group_pubkey_and_proof(val: &Validator): vector<u8> {
         let cg_pubkey_and_proof: &PersistentCGPubKeyAndProof = val.metadata.persistent_extra_fields.borrow(
             CG_PUBKEY_AND_PROOF_BAG_KEY
         );
