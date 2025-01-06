@@ -75,6 +75,9 @@ pub enum DwalletMPCError {
     #[error("failed to lock the mutex")]
     LockError,
 
+    #[error("verification of the encrypted user share failed")]
+    EncryptedUserShareVerificationFailed,
+
     #[error(transparent)]
     DwalletNetworkMPCError(#[from] DwalletNetworkMPCError),
 }

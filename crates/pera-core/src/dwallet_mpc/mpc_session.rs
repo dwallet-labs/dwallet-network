@@ -14,6 +14,7 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
+use crate::dwallet_mpc::encrypt_user_share::chain_verify_secret_share_proof;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
@@ -193,6 +194,20 @@ impl DWalletMPCSession {
                 key_type,
                 self.pending_messages.clone(),
             ),
+            MPCRound::EncryptionKeyVerification(verification_data) => {
+                match chain_verify_secret_share_proof(
+                    verification_data.encrypted_secret_share_and_proof.clone(),
+                    verification_data.dwallet_output.clone(),
+                    verification_data.encryption_key.clone(),
+                ) {
+                    Ok(_) => Ok(AsynchronousRoundResult::Finalize {
+                        public_output: vec![],
+                        private_output: vec![],
+                        malicious_parties: vec![],
+                    }),
+                    Err(_) => Err(DwalletMPCError::EncryptedUserShareVerificationFailed),
+                }
+            }
             MPCRound::BatchedPresign(..) | MPCRound::BatchedSign(..) => {
                 unreachable!("advance should never be called on a batched session")
             }

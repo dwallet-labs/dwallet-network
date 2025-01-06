@@ -58,6 +58,10 @@ module pera_system::dwallet {
         encryption_key_signature: vector<u8>,
     }
 
+    public(package) fun get_encryption_key(key: &EncryptionKey): vector<u8> {
+        key.encryption_key
+    }
+
     /// `DWalletCap` holder controls a corresponding `DWallet`.
     ///
     /// ### Fields

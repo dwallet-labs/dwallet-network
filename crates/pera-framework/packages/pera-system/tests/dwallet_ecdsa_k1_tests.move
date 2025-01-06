@@ -29,6 +29,32 @@ module pera_system::dwallet_ecdsa_k1_tests {
     const EWrongSessionAddress: u64 = 7;
 
     #[test]
+    public fun test_create_encrypted_user_share() {
+        let mut scenario = test_scenario::begin(SENDER_ADDRESS);
+        scenario.next_tx(SENDER_ADDRESS);
+        {
+            let ctx = scenario.ctx();
+            dwallet_2pc_mpc_ecdsa_k1::create_encrypted_user_share(
+                object::id_from_address(@0x10),
+                vector[0xAA, 0xBB],
+                object::id_from_address(@0x10),
+                object::id_from_address(@0x10),
+                ctx,
+            );
+        };
+        let effects: TransactionEffects = scenario.end();
+
+        let events_num = test_scenario::num_user_events(&effects);
+        assert!(events_num == 1, EWrongEventNumber);
+
+        let created_objects = test_scenario::created(&effects);
+        assert!(std::vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+
+        let frozen_objects = test_scenario::frozen(&effects);
+        assert!(std::vector::length(&frozen_objects) == 1, EWrongFrozenObjectsNum);
+    }
+
+    #[test]
     public fun test_launch_dkg_first_round() {
         let mut scenario = test_scenario::begin(SENDER_ADDRESS);
         scenario.next_tx(SENDER_ADDRESS);

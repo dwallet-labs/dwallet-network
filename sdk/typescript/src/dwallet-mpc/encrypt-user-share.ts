@@ -14,11 +14,13 @@ import type { Config } from './globals.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
 	dWalletModuleName,
+	fetchCompletedEvent,
 	fetchObjectWithType,
 	packageId,
 } from './globals.js';
 
-export const encryptedSecretShareMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::EncryptedUserShare`;
+const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
+const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
 
 /**
  * A class groups key pair.
@@ -27,6 +29,24 @@ interface CGSecpKeyPair {
 	encryptionKey: Uint8Array;
 	decryptionKey: Uint8Array;
 	objectID: string;
+}
+
+/**
+ * TS representation of the Move CreatedEncryptedSecretShareEvent.
+ */
+interface CreatedEncryptedSecretShareEvent {
+	encrypted_share_obj_id: string;
+	dwallet_id: string;
+	encrypted_secret_share_and_proof: Uint8Array;
+	encryption_key_id: string;
+	session_id: string;
+}
+
+/**
+ * TS representation of the Move StartEncryptedShareVerificationEvent.
+ */
+interface StartEncryptedShareVerificationEvent {
+	session_id: string;
 }
 
 /**
@@ -75,7 +95,7 @@ export const sendUserShareToSuiPubKey = async (
 	dwallet: CreatedDwallet,
 	destinationPublicKey: PublicKey,
 	activeEncryptionKeysTableID: string,
-): Promise<string> => {
+): Promise<CreatedEncryptedSecretShareEvent> => {
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
 		destinationPublicKey.toPeraAddress(),
@@ -224,7 +244,7 @@ const transferEncryptedUserShare = async (
 	encryptedUserShareAndProof: Uint8Array,
 	encryptionKeyObjID: string,
 	dwallet: CreatedDwallet,
-): Promise<string> => {
+): Promise<CreatedEncryptedSecretShareEvent> => {
 	const tx = new Transaction();
 	const encryptionKey = tx.object(encryptionKeyObjID);
 	const dwalletObj = tx.object(dwallet.id);
@@ -239,16 +259,47 @@ const transferEncryptedUserShare = async (
 		],
 	});
 
-	const res = await conf.client.signAndExecuteTransaction({
+	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.keypair,
 		transaction: tx,
 		options: {
 			showEffects: true,
+			showEvents: true,
 		},
 	});
 
-	return res.effects?.created?.at(0)?.reference.objectId!;
+	let sessionData = result.events?.find(
+		(event) =>
+			event.type === startEncryptedShareVerificationMoveType &&
+			isStartEncryptedShareVerificationEvent(event.parsedJson),
+	)?.parsedJson as StartEncryptedShareVerificationEvent;
+
+	let completionEvent = await fetchCompletedEvent<CreatedEncryptedSecretShareEvent>(
+		conf,
+		sessionData.session_id,
+		createdEncryptedSecretShareEventMoveType,
+		isCreatedEncryptedSecretShareEvent,
+	);
+
+	return completionEvent;
 };
+
+function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSecretShareEvent {
+	return (
+		'encrypted_share_obj_id' in obj &&
+		'dwallet_id' in obj &&
+		'encrypted_secret_share_and_proof' in obj &&
+		'encryption_key_id' in obj &&
+		'session_id' in obj
+	);
+}
+
+function isStartEncryptedShareVerificationEvent(
+	obj: any,
+): obj is StartEncryptedShareVerificationEvent {
+	return 'session_id' in obj;
+}
+
 const isEncryptionKey = (obj: any): obj is EncryptionKey => {
 	return 'encryption_key' in obj && 'key_owner_address' in obj && 'encryption_key_signature' in obj;
 };

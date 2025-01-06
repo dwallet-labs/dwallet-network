@@ -7,15 +7,12 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
 	createActiveEncryptionKeysTable,
-	encryptedSecretShareMoveType,
-	EncryptedUserShare,
 	generateCGKeyPairFromSuiKeyPair,
 	getActiveEncryptionKeyObjID,
 	getOrCreateEncryptionKey,
-	isEncryptedUserShare,
 	sendUserShareToSuiPubKey,
 } from '../../src/dwallet-mpc/encrypt-user-share';
-import { Config, fetchObjectWithType } from '../../src/dwallet-mpc/globals';
+import { Config } from '../../src/dwallet-mpc/globals';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import {
 	DKGCentralizedPrivateOutput,
@@ -65,29 +62,16 @@ describe('encrypt user share', () => {
 		await new Promise((r) => setTimeout(r, checkpointCreationTime));
 
 		// ======================= Send DWallet Secret Share To Destination Keypair  =======================
-		let encryptedUserShareObjID = await sendUserShareToSuiPubKey(
+		let encryptedSecretShare = await sendUserShareToSuiPubKey(
 			senderConf,
 			createdDwallet,
 			dwalletReceiverToolbox.keypair.getPublicKey(),
 			activeEncryptionKeysTableID,
 		);
-
-		// ======================= Fetch the received DWallet =======================
-		await new Promise((r) => setTimeout(r, checkpointCreationTime));
-		let encryptedUserShare = await fetchObjectWithType<EncryptedUserShare>(
-			receiverConf,
-			encryptedSecretShareMoveType,
-			isEncryptedUserShare,
-			encryptedUserShareObjID,
-		);
-		// TODO (#467): Decrypt the encrypted user share and verify it is valid.
-
-		expect(encryptedUserShare).toBeDefined();
-
 		let decrypted = decrypt_user_share(
 			destination_cg_keypair.encryptionKey,
 			destination_cg_keypair.decryptionKey,
-			encryptedUserShare.encrypted_secret_share_and_proof,
+			encryptedSecretShare.encrypted_secret_share_and_proof,
 		);
 		expect(decrypted).toEqual(createdDwallet.centralizedDKGPrivateOutput);
 		let is_valid = verify_user_share(

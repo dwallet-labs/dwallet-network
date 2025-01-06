@@ -21,7 +21,7 @@
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet;
     use pera_system::dwallet::{DWallet, create_dwallet_cap, DWalletCap, get_dwallet_cap_id, get_dwallet_output,
-        EncryptionKey
+        EncryptionKey, get_encryption_key
     };
     use pera::event;
 
@@ -92,6 +92,31 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         first_round_session_id: ID,
         presign: vector<u8>,
     }
+
+    /// An event emitted to start an encrypted share verification process.
+    /// Since we cannot use native functions if we depend on Sui to hold our state,
+    /// we need to emit an event to start the verification process, like we start the other MPC processes.
+    public struct StartEncryptedShareVerificationEvent has copy, drop {
+        encrypted_secret_share_and_proof: vector<u8>,
+        /// The DKG decentralized output of the dwallet that its secret is being encrypted.
+        dwallet_output: vector<u8>,
+        dwallet_id: ID,
+        /// The encryption key used to encrypt the secret share to.
+        encryption_key: vector<u8>,
+        /// The encryption key Move object ID.
+        encryption_key_id: ID,
+        session_id: ID,
+    }
+
+    /// An event emitted when an encrypted share is created by the system transaction.
+    public struct CreatedEncryptedSecretShareEvent has copy, drop {
+        session_id: ID,
+        encrypted_share_obj_id: ID,
+        dwallet_id: ID,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key_id: ID,
+    }
+
 
     /// Messages that has been signed by a user, a.k.a the centralized party, but not yet by the blockchain.
     /// Used for scenarios where the user need to first agree to sign some transaction, and the blockchain signs this transaction only later,
@@ -432,6 +457,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id
     }
 
+
     /// Submits the given secret share encryption to the chain.
     /// The chain verifies that the encryption is actually the encryption of the secret share before creating the [`EncryptedUserShare`] object.
     public fun encrypt_user_share(
@@ -439,14 +465,41 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         encryption_key: &EncryptionKey,
         encrypted_secret_share_and_proof: vector<u8>,
         ctx: &mut TxContext,
+    ){
+        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        event::emit(StartEncryptedShareVerificationEvent {
+            encrypted_secret_share_and_proof,
+            dwallet_output: get_dwallet_output<Secp256K1>(dwallet),
+            dwallet_id: object::id(dwallet),
+            encryption_key: get_encryption_key(encryption_key),
+            encryption_key_id: object::id(encryption_key),
+            session_id,
+        });
+    }
+
+    #[allow(unused_function)]
+    /// This function is called by the blockchain itself to create the encrypted user share after it has been verified.
+    public(package) fun create_encrypted_user_share(
+        dwallet_id: ID,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key_id: ID,
+        session_id: ID,
+        ctx: &mut TxContext
     ) {
-        // TODO (#467): Verify the encrypted secret share
+        assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
         let encrypted_user_share = EncryptedUserShare {
             id: object::new(ctx),
-            dwallet_id: object::id(dwallet),
+            dwallet_id,
             encrypted_secret_share_and_proof,
-            encryption_key_id: object::id(encryption_key),
+            encryption_key_id,
         };
+        event::emit(CreatedEncryptedSecretShareEvent {
+            session_id,
+            encrypted_share_obj_id: object::id(&encrypted_user_share),
+            dwallet_id,
+            encrypted_secret_share_and_proof,
+            encryption_key_id,
+        });
         transfer::freeze_object(encrypted_user_share);
     }
 

@@ -34,6 +34,7 @@ ownership and control over a corresponding <code><a href="dwallet.md#0x3_dwallet
 -  [Resource `DWalletCap`](#0x3_dwallet_DWalletCap)
 -  [Resource `ActiveEncryptionKeys`](#0x3_dwallet_ActiveEncryptionKeys)
 -  [Constants](#@Constants_4)
+-  [Function `get_encryption_key`](#0x3_dwallet_get_encryption_key)
 -  [Function `create_dwallet`](#0x3_dwallet_create_dwallet)
 -  [Function `create_active_encryption_keys`](#0x3_dwallet_create_active_encryption_keys)
 -  [Function `get_active_encryption_key`](#0x3_dwallet_get_active_encryption_key)
@@ -281,6 +282,30 @@ and the value is the encryption key object ID.
 </code></pre>
 
 
+
+<a name="0x3_dwallet_get_encryption_key"></a>
+
+## Function `get_encryption_key`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_encryption_key">get_encryption_key</a>(key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">dwallet::EncryptionKey</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_encryption_key">get_encryption_key</a>(key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    key.encryption_key
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x3_dwallet_create_dwallet"></a>
 
