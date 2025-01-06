@@ -2798,7 +2798,7 @@ Extract required Balance from vector of Coin<PERA>, transfer the remainder back 
 
 ## Function `active_validators`
 
-Return the current validator set
+Return the current validator set.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_active_validators">active_validators</a>(self: &<a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>): &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;
