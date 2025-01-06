@@ -7,13 +7,8 @@ import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-was
 import { expect } from 'vitest';
 
 import { bcs } from '../../../src/bcs/index.js';
-import {
-	CreatedDwallet,
-	createDWallet,
-	DWallet,
-	dWalletMoveType,
-	isDWallet,
-} from '../../../src/dwallet-mpc/dkg.js';
+import type { CreatedDwallet, DWallet } from '../../../src/dwallet-mpc/dkg.js';
+import { createDWallet, dWalletMoveType, isDWallet } from '../../../src/dwallet-mpc/dkg.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
 	MPCKeyScheme,
@@ -22,7 +17,7 @@ import {
 import type { Config } from '../../../src/dwallet-mpc/globals.js';
 import { isPresign, presign, presignMoveType } from '../../../src/dwallet-mpc/presign.js';
 import type { Presign } from '../../../src/dwallet-mpc/presign.js';
-import { Hash, signMessageTransactionCall } from '../../../src/dwallet-mpc/sign';
+import { Hash, signMessageTransactionCall } from '../../../src/dwallet-mpc/sign.js';
 import { Transaction } from '../../../src/transactions/index.js';
 
 const DKGCentralizedPrivateOutput = 'JzXRzjOf/iAd6JWn5r0488W8nKqdWv2VMtmrQBzSBWc=';

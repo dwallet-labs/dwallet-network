@@ -1,5 +1,5 @@
-import { DwalletMPCNetworkKey } from '../client';
-import { Config, MPCKeyScheme } from './globals.js';
+import type { DwalletMPCNetworkKey } from '../client/index.js';
+import type { Config, MPCKeyScheme } from './globals.js';
 
 export async function fetchProtocolPublicParameters(
 	conf: Config,

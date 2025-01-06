@@ -5,7 +5,7 @@ import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-was
 import { bcs } from '@mysten/bcs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { DwalletMPCNetworkKey, MoveStruct, PeraClient } from '../../src/client';
+import { MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import { Config, MPCKeyScheme } from '../../src/dwallet-mpc/globals';
 import { fetchProtocolPublicParameters } from '../../src/dwallet-mpc/network-dkg';
