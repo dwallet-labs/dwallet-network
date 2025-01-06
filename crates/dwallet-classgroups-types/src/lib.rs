@@ -100,19 +100,74 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
 pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + Clone>(
     keypair: &ClassGroupsKeyPairAndProof,
     path: P,
-) -> anyhow::Result<String> {
+) -> DwalletMPCResult<String> {
     let serialized = bcs::to_bytes(keypair)?;
     let contents = Base64::encode(serialized);
-    std::fs::write(path.clone(), contents)?;
+    std::fs::write(path.clone(), contents)
+        .map_err(|e| DwalletMPCError::FailedToWriteCGKey(e.to_string()))?;
     Ok(Base64::encode(keypair.public_bytes()))
 }
 
 /// Reads a class group key pair and proof (encoded in Base64) from a file.
 pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
     path: P,
-) -> anyhow::Result<ClassGroupsKeyPairAndProof> {
-    let contents = std::fs::read_to_string(path)?;
-    let decoded = Base64::decode(contents.as_str()).map_err(|e| anyhow::anyhow!(e))?;
+) -> DwalletMPCResult<ClassGroupsKeyPairAndProof> {
+    let contents = std::fs::read_to_string(path)
+        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
+    let decoded = Base64::decode(contents.as_str())
+        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
     let keypair: ClassGroupsKeyPairAndProof = bcs::from_bytes(&decoded)?;
     Ok(keypair)
+}
+
+// Todo (#441): Solve the memory error and save valid public data on chain and
+// valid private data on validator config
+#[cfg(feature = "mock-class-groups")]
+use group::PartyID;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CGKeyPairAndProofForMockFromFile {
+    decryption_key: ClassGroupsDecryptionKey,
+    pub encryption_key_and_proof: [(
+        CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
+        KnowledgeOfDiscreteLogUCProof,
+    ); MAX_PRIMES],
+}
+
+pub fn mock_cg_encryption_keys_and_proofs() -> DwalletMPCResult<
+    HashMap<
+        PartyID,
+        [(
+            CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
+            KnowledgeOfDiscreteLogUCProof,
+        ); MAX_PRIMES],
+    >,
+> {
+    let contents = std::fs::read_to_string(
+        "class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key",
+    )
+    .unwrap();
+    let decoded = Base64::decode(contents.as_str())
+        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
+    let keypair: CGKeyPairAndProofForMockFromFile = bcs::from_bytes(&decoded)?;
+
+    let mut encryption_keys_and_proofs = HashMap::new();
+    (1..=4).for_each(|i| {
+        encryption_keys_and_proofs.insert(i as PartyID, keypair.encryption_key_and_proof.clone());
+    });
+    Ok(encryption_keys_and_proofs)
+}
+
+pub fn mock_cg_private_key() -> DwalletMPCResult<ClassGroupsDecryptionKey> {
+    let contents = std::fs::read_to_string(
+        "class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key",
+    )
+    .unwrap();
+    let decoded = Base64::decode(contents.as_str())
+        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
+    let keypair: CGKeyPairAndProofForMockFromFile = bcs::from_bytes(&decoded)?;
+
+    Ok(keypair.decryption_key)
 }

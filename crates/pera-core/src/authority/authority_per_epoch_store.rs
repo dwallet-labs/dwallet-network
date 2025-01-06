@@ -83,8 +83,14 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
+use class_groups::dkg::{PublicOutput, Secp256k1Party};
+use class_groups::{SecretKeyShareSizedNumber, SECP256K1_SCALAR_LIMBS};
+use dwallet_classgroups_types::ClassGroupsDecryptionKey;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
+use group::{secp256k1, PartyID};
+use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use move_bytecode_utils::module_cache::SyncModuleCache;
+use mpc::WeightedThresholdAccessStructure;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
@@ -981,7 +987,11 @@ impl AuthorityPerEpochStore {
     pub fn set_dwallet_mpc_network_keys(&self) {
         if self
             .dwallet_mpc_network_keys
-            .set(DwalletMPCNetworkKeyVersions::new(self))
+            .set(DwalletMPCNetworkKeyVersions::new(
+                self,
+                // Todo (#411): Change to value from validator config
+                ClassGroupsDecryptionKey::default(),
+            ))
             .is_err()
         {
             error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
@@ -1050,9 +1060,9 @@ impl AuthorityPerEpochStore {
         &self,
     ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<NetworkDecryptionKeyShares>>>
     {
-        let decryption_key_shares = (match self.epoch_start_state() {
+        let decryption_key_shares = match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
-        })
+        }
         .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
         .contents
         .into_iter()
@@ -1063,34 +1073,8 @@ impl AuthorityPerEpochStore {
             ))
         })
         .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
-        Ok(decryption_key_shares)
-    }
 
-    /// Retrieves the *running validator's* latest decryption key shares for each key scheme
-    /// if they exist in the system state.
-    ///
-    /// The data is sourced from the epoch's initial system state.
-    /// The returned value is a map where:
-    /// - The key represents the key scheme.
-    /// - The value is a `Vec<u8>`, containing the decryption key shares for the validator.
-    pub(crate) fn load_validator_decryption_key_shares_from_system_state(
-        &self,
-    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<Vec<u8>>>> {
-        let decryption_key_shares = self.load_decryption_key_shares_from_system_state()?;
-        let party_id = authority_name_to_party_id(&self.name, self)? as usize;
-        decryption_key_shares
-            .into_iter()
-            .map(|(key_type, encryption_shares)| {
-                let shares = encryption_shares
-                    .iter()
-                    .map(|share| {
-                        // TODO (#382): Decrypt the decryption key share
-                        Vec::new()
-                    })
-                    .collect();
-                Ok((key_type, shares))
-            })
-            .collect()
+        Ok(decryption_key_shares)
     }
 
     pub fn get_chain_identifier(&self) -> ChainIdentifier {

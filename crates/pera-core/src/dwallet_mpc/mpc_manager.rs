@@ -369,8 +369,9 @@ impl DWalletMPCManager {
             network_keys.add_key_version(
                 epoch_store.clone(),
                 key_type,
-                private_output.clone(),
+                bcs::from_bytes(&private_output)?,
                 public_output,
+                &self.weighted_threshold_access_structure,
             )?;
         }
         Ok(())
