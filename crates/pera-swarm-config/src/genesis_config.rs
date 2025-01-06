@@ -150,6 +150,9 @@ impl ValidatorGenesisConfigBuilder {
         self
     }
 
+    /// This function configures the validator with class-groups key pair and proof.
+    /// If the key pair is not provided at class-groups-{public-protocol-key}.key,
+    /// it will be generated from the seed of the protocol key pair.
     pub fn with_class_groups_key_pair_and_proof(mut self, key_pair: &AuthorityKeyPair) -> Self {
         // It is safe to unwrap here because the protocol_key_pair is always set before.
         // Also, the validator cannot be built without the class groups key.

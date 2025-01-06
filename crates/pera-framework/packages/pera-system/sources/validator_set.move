@@ -9,7 +9,7 @@ module pera_system::validator_set {
         Validator,
         staking_pool_id,
         pera_address,
-        get_cg_pubkey_and_proof,
+        get_class_group_pubkey_and_proof,
         get_validator_protocol_pubkey
     };
     use pera_system::validator_cap::{Self, UnverifiedValidatorOperationCap, ValidatorOperationCap};
@@ -352,14 +352,14 @@ module pera_system::validator_set {
     // ==== epoch change functions ====
 
     public(package) fun lock_next_epoch_committee(self: &mut ValidatorSet, epoch: u64) {
-        let mut _next_epoch_vals = vector::empty();
+        let mut next_epoch_vals = vector::empty();
         // TODO (#439): Emit each validator's Re-share data separately.
         let mut active_val_index = 0;
         while (active_val_index < self.active_validators.length()) {
             if (!self.pending_removals.contains(&active_val_index)) {
                 let validator = &self.active_validators[active_val_index];
-                _next_epoch_vals.push_back(ValidatorDataForDWalletSecretShare {
-                    cg_pubkey_and_proof: get_cg_pubkey_and_proof(validator),
+                next_epoch_vals.push_back(ValidatorDataForDWalletSecretShare {
+                    cg_pubkey_and_proof: get_class_group_pubkey_and_proof(validator),
                     protocol_pubkey_bytes: get_validator_protocol_pubkey(validator),
                 });
             };
@@ -368,8 +368,8 @@ module pera_system::validator_set {
         let mut pending_val_index = 0;
         while (pending_val_index < self.pending_active_validators.length()) {
             let validator = &self.pending_active_validators[pending_val_index];
-            _next_epoch_vals.push_back(ValidatorDataForDWalletSecretShare {
-                cg_pubkey_and_proof: get_cg_pubkey_and_proof(validator),
+            next_epoch_vals.push_back(ValidatorDataForDWalletSecretShare {
+                cg_pubkey_and_proof: get_class_group_pubkey_and_proof(validator),
                 protocol_pubkey_bytes: get_validator_protocol_pubkey(validator),
             });
             pending_val_index = pending_val_index + 1;
@@ -391,7 +391,7 @@ module pera_system::validator_set {
         while (i < validators.length()) {
             let validator = &validators[i];
             validators_data.push_back(ValidatorDataForDWalletSecretShare {
-                cg_pubkey_and_proof: get_cg_pubkey_and_proof(validator),
+                cg_pubkey_and_proof: get_class_group_pubkey_and_proof(validator),
                 protocol_pubkey_bytes: get_validator_protocol_pubkey(validator),
             });
             i = i + 1;

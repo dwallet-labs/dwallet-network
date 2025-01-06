@@ -233,7 +233,7 @@ struct ValidatorDataForDWalletSecretReShare {
 /// The data we need to know about a validator to run a re-share/network-dkg flow with it.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct ValidatorDataForDWalletSecretShare {
-    /// The class groups encryption key of the validator, 
+    /// The class groups encryption key of the validator,
     /// used to encrypt the validator's secret share to it.
     cg_pubkey_and_proof: Vec<u8>,
     /// The Ika public key of the validator, used as an identifier for the validator.
