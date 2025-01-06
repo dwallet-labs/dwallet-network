@@ -85,6 +85,8 @@ pub struct StartPresignFirstRoundEvent {
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
     pub batch_session_id: ID,
+    /// The dWallet mpc network key version
+    pub(super) dwallet_mpc_network_key_version: u8,
 }
 
 impl StartPresignFirstRoundEvent {
@@ -118,6 +120,8 @@ pub struct StartPresignSecondRoundEvent {
     /// A unique identifier for the first Presign round session.
     pub first_round_session_id: ID,
     pub batch_session_id: ID,
+    /// The dWallet mpc network key version
+    pub(super) dwallet_mpc_network_key_version: u8,
 }
 
 /// An event to start a batched sign session, i.e.,
@@ -178,6 +182,8 @@ pub struct StartSignRoundEvent {
     pub(super) presign: Vec<u8>,
     /// Centralized signed message
     pub(super) centralized_signed_message: Vec<u8>,
+    /// The dWallet mpc network key version
+    pub(super) dwallet_mpc_network_key_version: u8,
 }
 
 impl StartSignRoundEvent {

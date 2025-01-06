@@ -17,7 +17,7 @@ pub enum MPCRound {
     /// The first round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, and the batch session ID.
-    PresignFirst(ObjectID, MPCPublicOutput, ObjectID),
+    PresignFirst(ObjectID, MPCPublicOutput, ObjectID, u8),
     /// The second round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
     /// the Presign first round output, and the batch session ID.

@@ -16,6 +16,9 @@ get_dwallet_cap_id
 get_dwallet_output
 	public(package) fun
 	0x3::dwallet
+get_dwallet_mpc_network_key_version
+	public(package) fun
+	0x3::dwallet
 Secp256K1
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
