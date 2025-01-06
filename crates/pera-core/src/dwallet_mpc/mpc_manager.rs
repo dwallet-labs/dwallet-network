@@ -281,18 +281,16 @@ impl DWalletMPCManager {
                     _ => false,
                 };
 
+                let is_valid_dkg_transaction = matches!(session.session_info.mpc_round, MPCRound::NetworkDkg(..))
+                    && self.validators_data_for_network_dkg.len()
+                    == self
+                    .weighted_threshold_access_structure
+                    .party_to_weight
+                    .len();
+
                 let is_manager_ready = !cfg!(feature = "with-network-dkg")
-                    || matches!(
-                        mpc_network_key_status,
-                        DwalletMPCNetworkKeysStatus::Ready(_)
-                    )
                     || (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
-                        && matches!(session.session_info.mpc_round, MPCRound::NetworkDkg(..))
-                        && self.validators_data_for_network_dkg.len()
-                            == self
-                                .weighted_threshold_access_structure
-                                .party_to_weight
-                                .len()
+                        && is_valid_dkg_transaction
                         || matches!(
                             mpc_network_key_status,
                             DwalletMPCNetworkKeysStatus::Ready(_)
