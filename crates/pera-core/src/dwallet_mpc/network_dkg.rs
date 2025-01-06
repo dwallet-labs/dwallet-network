@@ -264,7 +264,7 @@ fn generate_ristretto_dkg_party_public_input(
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
 
-pub(crate) fn new_from_dkg_public_output(
+pub(crate) fn dwallet_mpc_network_key_from_session_output(
     epoch: u64,
     key_scheme: DWalletMPCNetworkKeyScheme,
     _weighted_threshold_access_structure: &WeightedThresholdAccessStructure,

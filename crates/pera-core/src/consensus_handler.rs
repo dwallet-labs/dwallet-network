@@ -491,11 +491,11 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         session_info.mpc_round
                                     {
                                         let key =
-                                            match crate::dwallet_mpc::network_dkg::new_from_dkg_public_output(
+                                            match crate::dwallet_mpc::network_dkg::dwallet_mpc_network_key_from_session_output(
                                                 self.epoch(),
                                                 key_scheme,
                                                 &dwallet_mpc_outputs_verifier
-                                                    .weighted_threshold_access_structure,
+                                                    .weighted_threshold_access_structure(&self.epoch_store),
                                                 output.clone(),
                                             ) {
                                                 Ok(key) => key,
