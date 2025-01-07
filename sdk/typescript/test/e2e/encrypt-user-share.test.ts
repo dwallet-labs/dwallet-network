@@ -6,6 +6,7 @@ import {
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
+	acceptUserShare,
 	createActiveEncryptionKeysTable,
 	generateCGKeyPairFromSuiKeyPair,
 	getActiveEncryptionKeyObjID,
@@ -54,11 +55,8 @@ describe('encrypt user share', () => {
 		// ======================= Create Source DWallet =======================
 		const createdDwallet = await mockCreateDwallet(senderConf);
 
-		// ======================= Create Destination Class Groups Keypair =======================
-		let destination_cg_keypair = await getOrCreateEncryptionKey(
-			receiverConf,
-			activeEncryptionKeysTableID,
-		);
+		// ======================= Create Destination Class Groups Keypair & Store it on chain =======================
+		await getOrCreateEncryptionKey(receiverConf, activeEncryptionKeysTableID);
 		await new Promise((r) => setTimeout(r, checkpointCreationTime));
 
 		// ======================= Send DWallet Secret Share To Destination Keypair  =======================
@@ -68,17 +66,14 @@ describe('encrypt user share', () => {
 			dwalletReceiverToolbox.keypair.getPublicKey(),
 			activeEncryptionKeysTableID,
 		);
-		let decrypted = decrypt_user_share(
-			destination_cg_keypair.encryptionKey,
-			destination_cg_keypair.decryptionKey,
-			encryptedSecretShare.encrypted_secret_share_and_proof,
+
+		// ======================= Verify Received DWallet is Valid & Encrypt it to Myself =======================
+		await acceptUserShare(
+			encryptedSecretShare,
+			senderConf.keypair.toPeraAddress(),
+			activeEncryptionKeysTableID,
+			receiverConf,
 		);
-		expect(decrypted).toEqual(createdDwallet.centralizedDKGPrivateOutput);
-		let is_valid = verify_user_share(
-			decrypted,
-			new Uint8Array(createdDwallet.decentralizedDKGOutput),
-		);
-		expect(is_valid).toBeTruthy();
 	});
 
 	it('creates an encryption key & stores it in the active encryption keys table', async () => {

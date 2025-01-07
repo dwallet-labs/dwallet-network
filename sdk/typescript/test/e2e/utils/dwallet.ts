@@ -37,11 +37,10 @@ export async function mockCreateDwallet(c: Config): Promise<CreatedDwallet> {
 
 	// Initiate the transaction
 	const tx = new Transaction();
-	const [dwallet] = tx.moveCall({
+	tx.moveCall({
 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_mock_dwallet`,
 		arguments: [tx.pure(bcs.vector(bcs.u8()).serialize(mockedDWallet.decentralizedDKGOutput))],
 	});
-	tx.transferObjects([dwallet], c.keypair.toPeraAddress());
 
 	// Execute the transaction
 	const res = await c.client.signAndExecuteTransaction({

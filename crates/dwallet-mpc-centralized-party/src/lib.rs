@@ -230,6 +230,14 @@ pub fn generate_secp_cg_keypair_from_seed_internal(
     Ok((encryption_key, decryption_key))
 }
 
+pub fn centralized_public_share_from_decentralized_output_inner(
+    dkg_output: Vec<u8>,
+) -> anyhow::Result<Vec<u8>> {
+    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
+        bcs::from_bytes(&dkg_output)?;
+    bcs::to_bytes(&dkg_output.public_key_share).map_err(Into::into)
+}
+
 /// Encrypts the given secret share to the given encryption key.
 /// Returns a tuple of the encryption key & proof.
 pub fn encrypt_secret_share_and_prove(

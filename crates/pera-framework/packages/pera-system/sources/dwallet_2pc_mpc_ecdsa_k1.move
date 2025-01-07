@@ -106,6 +106,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         /// The encryption key Move object ID.
         encryption_key_id: ID,
         session_id: ID,
+        /// The signed public share of the dwallet that its secret is being encrypted.
+        signed_public_share: vector<u8>,
+        /// The public key of the encryptor. Used to verify the signature on the public share.
+        encryptor_ed25519_pubkey: vector<u8>,
+        initiator: address,
     }
 
     /// An event emitted when an encrypted share is created by the system transaction.
@@ -115,6 +120,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_id: ID,
         encrypted_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
+        encryptor_address: address,
+        encryptor_ed25519_pubkey: vector<u8>,
+        signed_public_share: vector<u8>,
     }
 
 
@@ -184,6 +192,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         encrypted_secret_share_and_proof: vector<u8>,
         /// The encryption key used to encrypt the secret share to.
         encryption_key_id: ID,
+        signed_public_share: vector<u8>,
+        encryptor_ed25519_pubkey: vector<u8>,
+        encryptor_address: address,
     }
 
     /// Event emitted to start the second round of the DKG process.
@@ -464,6 +475,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet: &DWallet<Secp256K1>,
         encryption_key: &EncryptionKey,
         encrypted_secret_share_and_proof: vector<u8>,
+        signed_public_share: vector<u8>,
+        encryptor_ed25519_pubkey: vector<u8>,
         ctx: &mut TxContext,
     ){
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
@@ -474,6 +487,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             encryption_key: get_encryption_key(encryption_key),
             encryption_key_id: object::id(encryption_key),
             session_id,
+            signed_public_share,
+            encryptor_ed25519_pubkey,
+            initiator: tx_context::sender(ctx),
         });
     }
 
@@ -484,6 +500,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         encrypted_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
         session_id: ID,
+        signed_public_share: vector<u8>,
+        encryptor_ed25519_pubkey: vector<u8>,
+        initiator: address,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
@@ -492,6 +511,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             encrypted_secret_share_and_proof,
             encryption_key_id,
+            signed_public_share,
+            encryptor_ed25519_pubkey,
+            encryptor_address: initiator,
         };
         event::emit(CreatedEncryptedSecretShareEvent {
             session_id,
@@ -499,6 +521,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             encrypted_secret_share_and_proof,
             encryption_key_id,
+            signed_public_share,
+            encryptor_ed25519_pubkey,
+            encryptor_address: initiator,
         });
         transfer::freeze_object(encrypted_user_share);
     }
@@ -1009,7 +1034,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     ///
     /// ### Returns
     /// - `DWallet<Secp256K1>`: A mock dWallet object.
-    public fun create_mock_dwallet(
+    public(package) fun create_mock_dwallet_for_testing(
         dkg_output: vector<u8>,
         ctx: &mut TxContext
     ): DWallet<Secp256K1> {
@@ -1019,6 +1044,20 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         let dwallet_mpc_network_key_version: u8 = 1;
         dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, dwallet_mpc_network_key_version, ctx)
+    }
+
+    /// Created an immutable [`DWallet`] object with the given DKG output.
+    public fun create_mock_dwallet(
+        dkg_output: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        let dwallet_cap = create_dwallet_cap(ctx);
+        let dwallet_cap_id = object::id(&dwallet_cap);
+        transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
+        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        let dwallet_mpc_network_key_version: u8 = 1;
+        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, dwallet_mpc_network_key_version, ctx);
+        transfer::public_freeze_object(dwallet);
     }
 
     /// Generates a new mock `Presign` object with random IDs and data.

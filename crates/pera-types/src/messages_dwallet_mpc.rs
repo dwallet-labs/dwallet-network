@@ -102,6 +102,9 @@ pub struct StartEncryptedShareVerificationEvent {
     pub encryption_key: Vec<u8>,
     pub encryption_key_id: ID,
     pub session_id: ID,
+    pub signed_public_share: Vec<u8>,
+    pub encryptor_ed25519_pubkey: Vec<u8>,
+    pub initiator: PeraAddress,
 }
 
 impl StartEncryptedShareVerificationEvent {

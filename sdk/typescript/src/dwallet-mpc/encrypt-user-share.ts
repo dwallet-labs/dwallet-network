@@ -1,6 +1,9 @@
 import {
+	centralized_public_share_from_decentralized_output,
+	decrypt_user_share,
 	encrypt_secret_share,
 	generate_secp_cg_keypair_from_seed,
+	verify_user_share,
 } from '@dwallet-network/dwallet-mpc-wasm';
 
 import { bcs } from '../bcs/index.js';
@@ -8,8 +11,10 @@ import type { PeraClient, PeraObjectRef } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
 import { decodePeraPrivateKey } from '../cryptography/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
+import { Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
-import type { CreatedDwallet } from './dkg.js';
+import type { CreatedDwallet, DWallet } from './dkg.js';
+import { dWalletMoveType, isDWallet } from './dkg.js';
 import type { Config } from './globals.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
@@ -40,6 +45,9 @@ interface CreatedEncryptedSecretShareEvent {
 	encrypted_secret_share_and_proof: Uint8Array;
 	encryption_key_id: string;
 	session_id: string;
+	encryptor_address: string;
+	encryptor_ed25519_pubkey: Uint8Array;
+	signed_public_share: Uint8Array;
 }
 
 /**
@@ -239,6 +247,49 @@ export const generateCGKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8A
 	return generate_secp_cg_keypair_from_seed(decoded.secretKey);
 };
 
+/**
+ * Verifies that the given encryptedUserShare is valid, and then re-encrypts it to myself, i.e. the given conf's keypair.
+ *
+ * This is useful so at any later point a user can get all the secret shares ever encrypted to him,
+ * signed by him, and verify that they are valid.
+ */
+export async function acceptUserShare(
+	encryptedUserShare: CreatedEncryptedSecretShareEvent,
+	expectedSourceSuiAddress: string,
+	encryptionKeysHolderObjID: string,
+	conf: Config,
+) {
+	let dwalletID = encryptedUserShare.dwallet_id;
+	let dwallet = await fetchObjectWithType<DWallet>(conf, dWalletMoveType, isDWallet, dwalletID);
+
+	// This function also verifies that the dkg output has been signed by the source public key.
+	const decryptedKeyShare = await decryptAndVerifyUserShare(
+		conf,
+		encryptionKeysHolderObjID,
+		encryptedUserShare,
+		expectedSourceSuiAddress,
+		dwallet,
+	);
+
+	let dwalletToSend: CreatedDwallet = {
+		id: dwalletID,
+		centralizedDKGPrivateOutput: [...decryptedKeyShare],
+		decentralizedDKGOutput: dwallet.output,
+		dwalletCapID: dwallet.dwallet_cap_id,
+		dwalletMPCNetworkKeyVersion: dwallet.dwallet_mpc_network_key_version,
+		// TODO (#475): Store the DWallet's centralizedDKGPublicOutput on chain, and use here the real value.
+		centralizedDKGPublicOutput: [],
+	};
+	// Encrypt it to self, so that in the future we'd know that we already
+	// verified everything and only need to verify our signature.
+	await sendUserShareToSuiPubKey(
+		conf,
+		dwalletToSend,
+		conf.keypair.getPublicKey(),
+		encryptionKeysHolderObjID,
+	);
+}
+
 const transferEncryptedUserShare = async (
 	conf: Config,
 	encryptedUserShareAndProof: Uint8Array,
@@ -248,7 +299,10 @@ const transferEncryptedUserShare = async (
 	const tx = new Transaction();
 	const encryptionKey = tx.object(encryptionKeyObjID);
 	const dwalletObj = tx.object(dwallet.id);
-
+	let centralized_public_share = centralized_public_share_from_decentralized_output(
+		new Uint8Array(dwallet.decentralizedDKGOutput),
+	);
+	let signedPublicShare = await conf.keypair.sign(new Uint8Array(centralized_public_share));
 	tx.moveCall({
 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::encrypt_user_share`,
 		typeArguments: [],
@@ -256,6 +310,8 @@ const transferEncryptedUserShare = async (
 			dwalletObj,
 			encryptionKey,
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptedUserShareAndProof)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(signedPublicShare)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes())),
 		],
 	});
 
@@ -290,7 +346,10 @@ function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSe
 		'dwallet_id' in obj &&
 		'encrypted_secret_share_and_proof' in obj &&
 		'encryption_key_id' in obj &&
-		'session_id' in obj
+		'session_id' in obj &&
+		'encryptor_address' in obj &&
+		'encryptor_ed25519_pubkey' in obj &&
+		'signed_public_share' in obj
 	);
 }
 
@@ -374,4 +433,40 @@ function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
 	}
 
 	return arr1.every((value, index) => value === arr2[index]);
+}
+
+async function decryptAndVerifyUserShare(
+	conf: Config,
+	activeEncryptionKeysTableID: string,
+	encryptedUserShare: CreatedEncryptedSecretShareEvent,
+	expectedSourceSuiAddress: string,
+	encryptedDWallet: DWallet,
+): Promise<Uint8Array> {
+	let encryptorPubkey = new Ed25519PublicKey(encryptedUserShare.encryptor_ed25519_pubkey);
+	let encryptor_address = encryptorPubkey.toPeraAddress();
+	if (encryptor_address !== expectedSourceSuiAddress) {
+		throw new Error('The source public key does not match the expected Sui address');
+	}
+	let centralized_public_share = centralized_public_share_from_decentralized_output(
+		new Uint8Array(encryptedDWallet.output),
+	);
+	if (
+		!(await encryptorPubkey.verify(
+			new Uint8Array(centralized_public_share),
+			new Uint8Array(encryptedUserShare.signed_public_share),
+		))
+	) {
+		throw new Error('the DWallet public key share have not been signed by the desired Sui address');
+	}
+	let destination_cg_keypair = await getOrCreateEncryptionKey(conf, activeEncryptionKeysTableID);
+	let decrypted_share = decrypt_user_share(
+		destination_cg_keypair.encryptionKey,
+		destination_cg_keypair.decryptionKey,
+		encryptedUserShare.encrypted_secret_share_and_proof,
+	);
+	let is_valid = verify_user_share(decrypted_share, new Uint8Array(encryptedDWallet.output));
+	if (!is_valid) {
+		throw new Error("the decrypted key share doesn't match the dwallet's public key share");
+	}
+	return decrypted_share;
 }

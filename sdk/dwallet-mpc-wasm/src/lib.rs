@@ -1,10 +1,14 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use dwallet_mpc::{create_dkg_output, create_sign_output, generate_secp_cg_keypair_from_seed_internal, encrypt_secret_share_and_prove, verify_secret_share, decrypt_user_share_inner};
+use anyhow::Error;
+use dwallet_mpc::{
+    centralized_public_share_from_decentralized_output_inner, create_dkg_output,
+    create_sign_output, decrypt_user_share_inner, encrypt_secret_share_and_prove,
+    generate_secp_cg_keypair_from_seed_internal, verify_secret_share,
+};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
-use anyhow::Error;
 
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(
@@ -13,12 +17,20 @@ pub fn create_dkg_centralized_output(
     session_id: String,
 ) -> Result<JsValue, JsError> {
     let (public_key_share_and_proof, centralized_output, centralized_secret_output) =
-        create_dkg_output(protocol_public_parameters, dkg_first_round_output, session_id)
-            .map_err(|e| JsError::new(&e.to_string()))?;
+        create_dkg_output(
+            protocol_public_parameters,
+            dkg_first_round_output,
+            session_id,
+        )
+        .map_err(|e| JsError::new(&e.to_string()))?;
 
     // Serialize the result to JsValue and handle potential errors.
-    serde_wasm_bindgen::to_value(&(public_key_share_and_proof, centralized_output, centralized_secret_output))
-        .map_err(|e| JsError::new(&e.to_string()))
+    serde_wasm_bindgen::to_value(&(
+        public_key_share_and_proof,
+        centralized_output,
+        centralized_secret_output,
+    ))
+    .map_err(|e| JsError::new(&e.to_string()))
 }
 
 /// Derives a Secp256k1 class groups keypair from a given seed.
@@ -28,11 +40,10 @@ pub fn create_dkg_centralized_output(
 /// This function derives a class groups keypair to encrypt a Secp256k1 secret from the given seed.
 #[wasm_bindgen]
 pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsError> {
-    let (public_key, private_key) =
-        generate_secp_cg_keypair_from_seed_internal(
-            seed.try_into().expect("seed must be 32 bytes long"),
-        )
-            .map_err(to_js_err)?;
+    let (public_key, private_key) = generate_secp_cg_keypair_from_seed_internal(
+        seed.try_into().expect("seed must be 32 bytes long"),
+    )
+    .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
 }
 
@@ -40,6 +51,16 @@ pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErro
 pub fn encrypt_secret_share(secret: Vec<u8>, encryption_key: Vec<u8>) -> Result<JsValue, JsError> {
     let encryption_and_proof =
         encrypt_secret_share_and_prove(secret, encryption_key).map_err(to_js_err)?;
+    Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
+}
+
+#[wasm_bindgen]
+pub fn centralized_public_share_from_decentralized_output(
+    decentralized_output: Vec<u8>,
+) -> Result<JsValue, JsError> {
+    let encryption_and_proof =
+        centralized_public_share_from_decentralized_output_inner(decentralized_output)
+            .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
 }
 
@@ -53,14 +74,14 @@ pub fn decrypt_user_share(
         encryption_key,
         decryption_key,
         encrypted_user_share_and_proof,
-    ).map_err(to_js_err)?;
+    )
+    .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&decrypted_secret_share)?)
 }
 
 #[wasm_bindgen]
 pub fn verify_user_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> Result<JsValue, JsError> {
-    let is_matching =
-        verify_secret_share(secret_share, dkg_output).map_err(to_js_err)?;
+    let is_matching = verify_secret_share(secret_share, dkg_output).map_err(to_js_err)?;
     Ok(JsValue::from(is_matching))
 }
 
@@ -99,4 +120,3 @@ pub fn create_sign_centralized_output(
 fn to_js_err(e: Error) -> JsError {
     JsError::new(format!("{}", e).as_str())
 }
-

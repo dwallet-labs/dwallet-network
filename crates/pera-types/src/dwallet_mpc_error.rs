@@ -78,6 +78,9 @@ pub enum DwalletMPCError {
     #[error("verification of the encrypted user share failed")]
     EncryptedUserShareVerificationFailed,
 
+    #[error("the sent public key does not match the sender's address")]
+    EncryptedUserSharePublicKeyDoesNotMatchAddress,
+
     #[error(transparent)]
     DwalletNetworkMPCError(#[from] DwalletNetworkMPCError),
 }

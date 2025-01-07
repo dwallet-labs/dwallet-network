@@ -3,8 +3,13 @@ use class_groups::{
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use class_groups_constants::protocol_public_parameters;
+use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+use fastcrypto::traits::{ToFromBytes, VerifyingKey};
 use group::GroupElement;
 use homomorphic_encryption::GroupsPublicParametersAccessors;
+use pera_types::base_types::PeraAddress;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use pera_types::messages_dwallet_mpc::StartEncryptedShareVerificationEvent;
 use std::marker::PhantomData;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
@@ -20,8 +25,48 @@ type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
     secp256k1::GroupElement,
 >;
 
+/// Verifies that the given encrypted secret share is the encryption of the given dwallet's secret share,
+/// and that the given signature on the DWallet's public share is valid.
+/// Also verifies that the public key that signed the public user share is matching the address that initiated this TX.
+pub(crate) fn verify_encrypted_share(
+    verification_data: StartEncryptedShareVerificationEvent,
+) -> DwalletMPCResult<()> {
+    verify_signatures(&verification_data)?;
+    match chain_verify_secret_share_proof(
+        verification_data.encrypted_secret_share_and_proof.clone(),
+        verification_data.dwallet_output.clone(),
+        verification_data.encryption_key.clone(),
+    ) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(DwalletMPCError::EncryptedUserShareVerificationFailed),
+    }
+}
+
+/// Verify the signature on the public share of the DWallet,
+/// and that the public key that signed the public user share is matching the address that initiated this TX.
+fn verify_signatures(
+    verification_data: &StartEncryptedShareVerificationEvent,
+) -> DwalletMPCResult<()> {
+    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
+        bcs::from_bytes(&verification_data.dwallet_output)?;
+    let signature =
+        <Ed25519Signature as ToFromBytes>::from_bytes(&verification_data.signed_public_share)
+            .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
+    let public_key =
+        <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.encryptor_ed25519_pubkey)
+            .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
+    public_key
+        .verify(&bcs::to_bytes(&dkg_output.public_key_share)?, &signature)
+        .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
+    let derived_sui_addr = PeraAddress::from(&public_key);
+    if (derived_sui_addr != verification_data.initiator) {
+        return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
+    }
+    Ok(())
+}
+
 /// Verifies that the given secret encryption is the encryption of the given dwallet's secret share.
-pub fn chain_verify_secret_share_proof(
+fn chain_verify_secret_share_proof(
     encrypted_share_and_proof: Vec<u8>,
     dkg_output: Vec<u8>,
     encryption_key: Vec<u8>,

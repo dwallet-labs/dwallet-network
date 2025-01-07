@@ -1135,6 +1135,11 @@ mod checked {
                     ),
                     CallArg::Pure(verification_data.encryption_key_id.bytes.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&verification_data.signed_public_share).unwrap()),
+                    CallArg::Pure(
+                        bcs::to_bytes(&verification_data.encryptor_ed25519_pubkey).unwrap(),
+                    ),
+                    CallArg::Pure(verification_data.initiator.to_vec()),
                 ],
             ),
             MPCRound::DKGFirst => (
