@@ -311,7 +311,8 @@ impl DwalletMPCNetworkKeyVersions {
                         party_id,
                         secret_key_share,
                         &bcs::from_bytes(&new_key_version.decryption_public_parameters)?,
-                    ).map_err(|e| DwalletMPCError::ClassGroupsError(e.to_string()))?,
+                    )
+                    .map_err(|e| DwalletMPCError::ClassGroupsError(e.to_string()))?,
                 ))
             })
             .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
