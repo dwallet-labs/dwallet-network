@@ -42,6 +42,7 @@ use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
+use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use pera_types::executable_transaction::CertificateProof;
 use pera_types::message_envelope::VerifiedEnvelope;
 use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound, SessionInfo};
@@ -496,30 +497,33 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     if let MPCRound::NetworkDkg(key_scheme, _) =
                                         session_info.mpc_round
                                     {
-                                        let key =
-                                            match crate::dwallet_mpc::network_dkg::new_from_dkg_public_output(
-                                                self.epoch(),
+                                        let weighted_threshold_access_structure = match self
+                                            .epoch_store
+                                            .get_weighted_threshold_access_structure()
+                                        {
+                                            Ok(value) => value,
+                                            Err(e) => {
+                                                error!(
+                                                    "Failed to create access structure  {:?}",
+                                                    e
+                                                );
+                                                continue;
+                                            }
+                                        };
+
+                                        let transaction = match self
+                                            .create_dwallet_network_output_system_tx(
+                                                &session_info,
+                                                output,
+                                                &weighted_threshold_access_structure,
                                                 key_scheme,
-                                                &dwallet_mpc_outputs_verifier
-                                                    .weighted_threshold_access_structure,
-                                                output.clone(),
                                             ) {
-                                                Ok(key) => key,
-                                                Err(e) => {
-                                                    error!(
-                                                            "error creating new key from dkg public output: {:?}",
-                                                            e
-                                                        );
-                                                    continue;
-                                                }
-                                            };
-                                        let mut new_session_info = session_info.clone();
-                                        new_session_info.mpc_round =
-                                            MPCRound::NetworkDkg(key_scheme, Some(key));
-                                        let transaction = self.create_dwallet_mpc_output_system_tx(
-                                            &new_session_info,
-                                            output,
-                                        );
+                                            Ok(tx) => tx,
+                                            Err(e) => {
+                                                error!("Failed to create dwallet network output system tx`: {:?}", e);
+                                                continue;
+                                            }
+                                        };
                                         transactions.push((
                                             empty_bytes.as_slice(),
                                             SequencedConsensusTransactionKind::System(transaction),
@@ -650,6 +654,26 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         self.transaction_scheduler
             .schedule(transactions_to_schedule)
             .await;
+    }
+
+    fn create_dwallet_network_output_system_tx(
+        &self,
+        session_info: &SessionInfo,
+        verified_output: &[u8],
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+        key_scheme: DWalletMPCNetworkKeyScheme,
+    ) -> DwalletMPCResult<VerifiedEnvelope<SenderSignedData, CertificateProof>> {
+        let key = crate::dwallet_mpc::network_dkg::dwallet_mpc_network_key_from_session_output(
+            self.epoch(),
+            key_scheme,
+            &weighted_threshold_access_structure,
+            verified_output,
+        )?;
+
+        let mut new_session_info = session_info.clone();
+        new_session_info.mpc_round = MPCRound::NetworkDkg(key_scheme, Some(key));
+
+        Ok(self.create_dwallet_mpc_output_system_tx(&new_session_info, verified_output))
     }
 
     fn create_dwallet_mpc_output_system_tx(
