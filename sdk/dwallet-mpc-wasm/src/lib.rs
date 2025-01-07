@@ -4,7 +4,6 @@
 use dwallet_mpc::{create_dkg_output, create_sign_output, generate_secp_cg_keypair_from_seed_internal, encrypt_secret_share_and_prove};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
-use anyhow::Error;
 
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(
@@ -84,6 +83,6 @@ pub fn create_sign_centralized_output(
 
 // There is no way to implement From<anyhow::Error> for JsErr
 // since the current From<Error> is generic, and it results in a conflict.
-fn to_js_err(e: Error) -> JsError {
+fn to_js_err(e: anyhow::Error) -> JsError {
     JsError::new(format!("{}", e).as_str())
 }
