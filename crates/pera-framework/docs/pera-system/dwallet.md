@@ -37,7 +37,7 @@ ownership and control over a corresponding <code><a href="dwallet.md#0x3_dwallet
 -  [Function `create_dwallet`](#0x3_dwallet_create_dwallet)
 -  [Function `create_active_encryption_keys`](#0x3_dwallet_create_active_encryption_keys)
 -  [Function `get_active_encryption_key`](#0x3_dwallet_get_active_encryption_key)
--  [Function `set_active_encryption_key`](#0x3_dwallet_set_active_encryption_key)
+-  [Function `upsert_active_encryption_key`](#0x3_dwallet_upsert_active_encryption_key)
 -  [Function `register_encryption_key`](#0x3_dwallet_register_encryption_key)
 -  [Function `create_dwallet_cap`](#0x3_dwallet_create_dwallet_cap)
 -  [Function `get_dwallet_cap_id`](#0x3_dwallet_get_dwallet_cap_id)
@@ -372,7 +372,7 @@ Create a shared object that holds the active encryption keys per user.
 Get the active encryption key ID by user adderss.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_active_encryption_key">get_active_encryption_key</a>(encryption_key_holder: &<a href="dwallet.md#0x3_dwallet_ActiveEncryptionKeys">dwallet::ActiveEncryptionKeys</a>, key_owner: <b>address</b>): &<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_active_encryption_key">get_active_encryption_key</a>(encryption_key_holder: &<a href="dwallet.md#0x3_dwallet_ActiveEncryptionKeys">dwallet::ActiveEncryptionKeys</a>, key_owner: <b>address</b>): <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>
 </code></pre>
 
 
@@ -384,8 +384,8 @@ Get the active encryption key ID by user adderss.
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_active_encryption_key">get_active_encryption_key</a>(
     encryption_key_holder: &<a href="dwallet.md#0x3_dwallet_ActiveEncryptionKeys">ActiveEncryptionKeys</a>,
     key_owner: <b>address</b>,
-): &ID {
-    <a href="../pera-framework/table.md#0x2_table_borrow">table::borrow</a>(&encryption_key_holder.encryption_keys, key_owner)
+): ID {
+    *<a href="../pera-framework/table.md#0x2_table_borrow">table::borrow</a>(&encryption_key_holder.encryption_keys, key_owner)
 }
 </code></pre>
 
@@ -393,14 +393,14 @@ Get the active encryption key ID by user adderss.
 
 </details>
 
-<a name="0x3_dwallet_set_active_encryption_key"></a>
+<a name="0x3_dwallet_upsert_active_encryption_key"></a>
 
-## Function `set_active_encryption_key`
+## Function `upsert_active_encryption_key`
 
 Set the active encryption key for a user (the sender).
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_set_active_encryption_key">set_active_encryption_key</a>(encryption_key_holder: &<b>mut</b> <a href="dwallet.md#0x3_dwallet_ActiveEncryptionKeys">dwallet::ActiveEncryptionKeys</a>, encryption_key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">dwallet::EncryptionKey</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_upsert_active_encryption_key">upsert_active_encryption_key</a>(encryption_key_holder: &<b>mut</b> <a href="dwallet.md#0x3_dwallet_ActiveEncryptionKeys">dwallet::ActiveEncryptionKeys</a>, encryption_key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">dwallet::EncryptionKey</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -409,7 +409,7 @@ Set the active encryption key for a user (the sender).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_set_active_encryption_key">set_active_encryption_key</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_upsert_active_encryption_key">upsert_active_encryption_key</a>(
     encryption_key_holder: &<b>mut</b> <a href="dwallet.md#0x3_dwallet_ActiveEncryptionKeys">ActiveEncryptionKeys</a>,
     encryption_key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a>,
     ctx: &<b>mut</b> TxContext

@@ -1,7 +1,11 @@
+// noinspection ES6PreferShortImport
+
+// noinspection ES6PreferShortImport
 import {
 	encrypt_secret_share,
 	generate_secp_cg_keypair_from_seed,
 } from '@dwallet-network/dwallet-mpc-wasm';
+import { toHEX } from '@mysten/bcs';
 
 import { bcs } from '../bcs/index.js';
 import type { PeraClient, PeraObjectRef } from '../client/index.js';
@@ -20,10 +24,12 @@ import {
 
 export const encryptedSecretShareMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::EncryptedUserShare`;
 
+const encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
+
 /**
  * A class groups key pair.
  */
-interface CGSecpKeyPair {
+interface ClassGroupsSecpKeyPair {
 	encryptionKey: Uint8Array;
 	decryptionKey: Uint8Array;
 	objectID: string;
@@ -113,10 +119,9 @@ export const sendUserShareToSuiPubKey = async (
 };
 
 /**
- * Creates the table that maps a Sui address to the Class Groups encryption
- * key is derived from the Sui address secret.
+ * Creates a table that maps users` Sui addresses to Class Group encryption keys.
  */
-export const createActiveEncryptionKeysTable = async (client: PeraClient, keypair: Keypair) => {
+export async function createActiveEncryptionKeysTable(client: PeraClient, keypair: Keypair) {
 	const tx = new Transaction();
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::create_active_encryption_keys`,
@@ -131,16 +136,23 @@ export const createActiveEncryptionKeysTable = async (client: PeraClient, keypai
 		},
 	});
 
-	return result.effects?.created?.filter(
+	const activeEncryptionKeysObj = result.effects?.created?.filter(
 		(o) =>
 			typeof o.owner === 'object' &&
 			'Shared' in o.owner &&
 			o.owner.Shared.initial_shared_version !== undefined,
-	)[0].reference!;
-};
+	)[0].reference;
+	if (!activeEncryptionKeysObj) {
+		throw new Error('Failed to create the active encryption keys table');
+	}
+
+	return activeEncryptionKeysObj;
+}
 
 /**
- * Retrieves the active encryption key object ID for the given Sui address, if it exists. Throws an error otherwise.
+ * Retrieves the active encryption key object ID
+ * for the given Sui address if it exists.
+ * Throws an error otherwise.
  */
 export const getActiveEncryptionKeyObjID = async (
 	c: Config,
@@ -156,22 +168,25 @@ export const getActiveEncryptionKeyObjID = async (
 		arguments: [encryptionKeysHolder, tx.pure.address(keyOwnerAddress)],
 	});
 
+	// Safe to use this function as it has been used here:
+	// https://github.com/dwallet-labs/dwallet-network/blob/29929ded135f05578b6ce33b52e6ff5e894d0487/sdk/deepbook-v3/src/client.ts#L84
+	// in late 2024 (can be seen with git blame).
 	let res = await client.devInspectTransactionBlock({
 		sender: keyOwnerAddress,
 		transactionBlock: tx,
 	});
 
-	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
-	return Array.from(objIDArray)
-		.map((byte) => byte.toString(16).padStart(2, '0'))
-		.join('');
+	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0) as number[]);
+	return toHEX(objIDArray);
 };
 
 export const getOrCreateEncryptionKey = async (
 	c: Config,
 	activeEncryptionKeysTableID: string,
-): Promise<CGSecpKeyPair> => {
-	let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(c.keypair as Ed25519Keypair);
+): Promise<ClassGroupsSecpKeyPair> => {
+	let [encryptionKey, decryptionKey] = generateClassGroupKeyPairFromSuiKeyPair(
+		c.keypair as Ed25519Keypair,
+	);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
 		c.keypair.toPeraAddress(),
@@ -184,7 +199,7 @@ export const getOrCreateEncryptionKey = async (
 			isEncryptionKey,
 			activeEncryptionKeyObjID,
 		);
-		if (isEqual(encryptionKeyObj?.encryption_key!, encryptionKey)) {
+		if (isEqual(encryptionKeyObj?.encryption_key, encryptionKey)) {
 			return {
 				encryptionKey,
 				decryptionKey,
@@ -202,10 +217,10 @@ export const getOrCreateEncryptionKey = async (
 		c,
 	);
 
-	// Sleep for 5 seconds so the storeEncryptionKey transaction effects has time to
+	// Sleep for 5 seconds, so the storeEncryptionKey transaction effects have time to
 	// get written to the blockchain.
 	await new Promise((r) => setTimeout(r, 5000));
-	await setActiveEncryptionKey(encryptionKeyRef?.objectId!, activeEncryptionKeysTableID, c);
+	await upsertActiveEncryptionKey(encryptionKeyRef?.objectId, activeEncryptionKeysTableID, c);
 	return {
 		decryptionKey,
 		encryptionKey,
@@ -259,7 +274,7 @@ let encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
  * Sets the given encryption key as the active encryption key for the given keypair Sui
  * address & encryption keys holder table.
  */
-const setActiveEncryptionKey = async (
+const upsertActiveEncryptionKey = async (
 	encryptionKeyObjID: string,
 	encryptionKeysHolderID: string,
 	c: Config,
@@ -269,7 +284,7 @@ const setActiveEncryptionKey = async (
 	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
 
 	tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::set_active_encryption_key`,
+		target: `${packageId}::${dWalletModuleName}::upsert_active_encryption_key`,
 		arguments: [encryptionKeysHolder, EncKeyObj],
 	});
 
@@ -314,7 +329,11 @@ const storeEncryptionKey = async (
 			showEffects: true,
 		},
 	});
-	return result.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference!;
+	const encKeyRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference;
+	if (!encKeyRef) {
+		throw new Error('Failed to store the encryption key');
+	}
+	return encKeyRef;
 };
 
 function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {

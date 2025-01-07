@@ -89,7 +89,7 @@ impl TryFrom<u8> for Hash {
 /// # Errors
 /// Returns an error if decoding or advancing the protocol fails.
 pub fn create_dkg_output(
-    protocol_public_parameters: Vec<u8>,
+    _protocol_public_parameters: Vec<u8>,
     decentralized_first_round_output: Vec<u8>,
     session_id: String,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
@@ -144,7 +144,7 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 /// The `session_id` is a unique identifier for the session, represented as a hexadecimal string.
 /// The `hash` must fit the [`Hash`] enum.
 pub fn create_sign_output(
-    protocol_public_parameters: Vec<u8>,
+    _protocol_public_parameters: Vec<u8>,
     centralized_party_dkg_output: Vec<u8>,
     centralized_party_secret_key_share: Vec<u8>,
     presigns: Vec<Vec<u8>>,
@@ -197,7 +197,7 @@ pub fn create_sign_output(
 
 /// Derives a Secp256k1 class groups keypair from a given seed.
 ///
-/// The class groups key that is being used to encrypt a Secp256k1 keypair should be different from
+/// The class groups key being used to encrypt a Secp256k1 keypair should be different from
 /// the encryption key used to encrypt a Ristretto keypair, due to cryptographic reasons.
 /// This function derives a class groups keypair to encrypt a Secp256k1 secret from the given seed.
 pub fn generate_secp_cg_keypair_from_seed_internal(

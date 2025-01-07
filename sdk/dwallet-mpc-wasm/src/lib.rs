@@ -4,7 +4,6 @@
 use dwallet_mpc::{create_dkg_output, create_sign_output, generate_secp_cg_keypair_from_seed_internal, encrypt_secret_share_and_prove};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
-use anyhow::Error;
 
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(
@@ -13,26 +12,34 @@ pub fn create_dkg_centralized_output(
     session_id: String,
 ) -> Result<JsValue, JsError> {
     let (public_key_share_and_proof, centralized_output, centralized_secret_output) =
-        create_dkg_output(protocol_public_parameters, dkg_first_round_output, session_id)
-            .map_err(|e| JsError::new(&e.to_string()))?;
+        create_dkg_output(
+            protocol_public_parameters,
+            dkg_first_round_output,
+            session_id,
+        )
+        .map_err(|e| JsError::new(&e.to_string()))?;
 
     // Serialize the result to JsValue and handle potential errors.
-    serde_wasm_bindgen::to_value(&(public_key_share_and_proof, centralized_output, centralized_secret_output))
-        .map_err(|e| JsError::new(&e.to_string()))
+    serde_wasm_bindgen::to_value(&(
+        public_key_share_and_proof,
+        centralized_output,
+        centralized_secret_output,
+    ))
+    .map_err(|e| JsError::new(&e.to_string()))
 }
 
 /// Derives a Secp256k1 class groups keypair from a given seed.
 ///
-/// The class groups key that is being used to encrypt a Secp256k1 keypair should be different from
+/// The class groups key being used to encrypt a Secp256k1 keypair should be different from
 /// the encryption key used to encrypt a Ristretto keypair, due to cryptographic reasons.
 /// This function derives a class groups keypair to encrypt a Secp256k1 secret from the given seed.
 #[wasm_bindgen]
 pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsError> {
+    let seed: [u8; 32] = seed
+        .try_into()
+        .map_err(|_| JsError::new("seed must be 32 bytes long"))?;
     let (public_key, private_key) =
-        generate_secp_cg_keypair_from_seed_internal(
-            seed.try_into().expect("seed must be 32 bytes long"),
-        )
-            .map_err(to_js_err)?;
+        generate_secp_cg_keypair_from_seed_internal(seed).map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
 }
 
@@ -79,4 +86,3 @@ pub fn create_sign_centralized_output(
 fn to_js_err(e: Error) -> JsError {
     JsError::new(format!("{}", e).as_str())
 }
-
