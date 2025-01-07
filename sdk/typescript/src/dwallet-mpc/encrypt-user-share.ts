@@ -1,10 +1,7 @@
-;
 // noinspection ES6PreferShortImport
 
 import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
-import { toHEX } from "@mysten/bcs";
-
-
+import { toHEX } from '@mysten/bcs';
 
 import { bcs } from '../bcs/index.js';
 import type { PeraClient, PeraObjectRef } from '../client/index.js';
@@ -14,7 +11,6 @@ import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
 import type { Config } from './globals.js';
 import { dWalletModuleName, fetchObjectWithType, packageId } from './globals.js';
-
 
 /**
  * A class groups key pair.
@@ -95,9 +91,7 @@ export const getActiveEncryptionKeyObjID = async (
 	});
 
 	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
-	return Array.from(objIDArray)
-		.map((byte) => byte.toString(16).padStart(2, '0'))
-		.join('');
+	return toHEX(objIDArray);
 };
 
 const isEncryptionKey = (obj: any): obj is EncryptionKey => {
