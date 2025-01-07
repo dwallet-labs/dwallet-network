@@ -184,9 +184,7 @@ export const getOrCreateEncryptionKey = async (
 	c: Config,
 	activeEncryptionKeysTableID: string,
 ): Promise<ClassGroupsSecpKeyPair> => {
-	let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(
-		c.keypair as Ed25519Keypair,
-	);
+	let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(c.keypair as Ed25519Keypair);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
 		c.keypair.toPeraAddress(),
