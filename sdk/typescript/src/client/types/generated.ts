@@ -172,6 +172,7 @@ export interface DwalletMPCNetworkKey {
 	previous_epoch_shares: number[][];
 	protocol_public_parameters: number[];
 }
+
 export interface DynamicFieldInfo {
 	bcsName: string;
 	digest: string;
