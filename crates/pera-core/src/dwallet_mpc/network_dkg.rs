@@ -16,14 +16,14 @@ use class_groups::{
     SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS,
 };
 use commitment::CommitmentSizedNumber;
-use dwallet_classgroups_types::{
-    mock_cg_encryption_keys_and_proofs, mock_cg_private_key, ClassGroupsDecryptionKey,
-    ClassGroupsEncryptionKeyAndProof,
+use dwallet_classgroups_types::mock_class_groups::{
+    mock_cg_encryption_keys_and_proofs, mock_cg_private_key,
 };
+use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::{Weight, WeightedThresholdAccessStructure};
+use mpc::WeightedThresholdAccessStructure;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
@@ -188,6 +188,7 @@ impl DwalletMPCNetworkKeyVersions {
     }
 
     /// Returns the latest version of the given key type.
+    /// The latest version is the last element in the vector (length -1).
     pub fn key_version(&self, key_type: DWalletMPCNetworkKeyScheme) -> DwalletMPCResult<u8> {
         let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
         Ok(inner
@@ -247,8 +248,7 @@ impl DwalletMPCNetworkKeyVersions {
                         party_id,
                         secret_key_share,
                         &bcs::from_bytes(&new_key_version.decryption_public_parameters)?,
-                    )
-                    .unwrap(),
+                    )?,
                 ))
             })
             .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
