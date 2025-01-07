@@ -483,12 +483,12 @@ fn generate_ristretto_dkg_party_public_input(
     bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))
 }
 
-pub(crate) fn new_from_dkg_public_output(
+pub(crate) fn dwallet_mpc_network_key_from_session_output(
     epoch: u64,
     key_scheme: DWalletMPCNetworkKeyScheme,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-    public_output: Vec<u8>,
-) -> anyhow::Result<NetworkDecryptionKeyShares> {
+    public_output: &[u8],
+) -> DwalletMPCResult<NetworkDecryptionKeyShares> {
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             let public_output: <Secp256k1Party as mpc::Party>::PublicOutput =

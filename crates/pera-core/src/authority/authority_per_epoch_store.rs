@@ -1077,6 +1077,32 @@ impl AuthorityPerEpochStore {
         Ok(decryption_key_shares)
     }
 
+    /// Retrieves the *running validator's* latest decryption key shares for each key scheme
+    /// if they exist in the system state.
+    ///
+    /// The data is sourced from the epoch's initial system state.
+    /// The returned value is a map where:
+    /// - The key represents the key scheme.
+    /// - The value is a `Vec<u8>`, containing the decryption key shares for the validator.
+    pub(crate) fn load_validator_decryption_key_shares_from_system_state(
+        &self,
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<Vec<u8>>>> {
+        let decryption_key_shares = self.load_decryption_key_shares_from_system_state()?;
+        decryption_key_shares
+            .into_iter()
+            .map(|(key_type, encryption_shares)| {
+                let shares = encryption_shares
+                    .iter()
+                    .map(|share| {
+                        // TODO (#382): Decrypt the decryption key share
+                        Vec::new()
+                    })
+                    .collect();
+                Ok((key_type, shares))
+            })
+            .collect()
+    }
+
     pub fn get_chain_identifier(&self) -> ChainIdentifier {
         self.chain_identifier
     }
