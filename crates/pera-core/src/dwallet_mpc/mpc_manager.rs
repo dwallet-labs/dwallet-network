@@ -96,22 +96,8 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> DwalletMPCResult<DWalletMPCSender> {
-        let weighted_parties: HashMap<PartyID, Weight> = epoch_store
-            .committee()
-            .voting_rights
-            .iter()
-            .map(|(name, weight)| {
-                Ok((
-                    authority_name_to_party_id(&name, &epoch_store)?,
-                    *weight as Weight,
-                ))
-            })
-            .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
-
-        let quorum_threshold = epoch_store.committee().quorum_threshold();
         let weighted_threshold_access_structure =
-            WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
-                .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
+            epoch_store.get_weighted_threshold_access_structure()?;
 
         let (sender, mut receiver) =
             tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();

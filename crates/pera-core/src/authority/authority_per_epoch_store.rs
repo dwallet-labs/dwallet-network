@@ -90,7 +90,7 @@ use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecrypti
 use group::{secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use move_bytecode_utils::module_cache::SyncModuleCache;
-use mpc::WeightedThresholdAccessStructure;
+use mpc::{Weight, WeightedThresholdAccessStructure};
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
@@ -983,12 +983,30 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
+    pub fn get_weighted_threshold_access_structure(
+        &self,
+    ) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
+        let quorum_threshold = self.committee().quorum_threshold();
+        let weighted_parties: HashMap<PartyID, Weight> = self
+            .committee()
+            .voting_rights
+            .iter()
+            .map(|(name, weight)| {
+                Ok((authority_name_to_party_id(&name, &self)?, *weight as Weight))
+            })
+            .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
+
+        WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
+            .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
+    }
+
     /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
-    pub fn set_dwallet_mpc_network_keys(&self) {
+    pub fn set_dwallet_mpc_network_keys(&self) -> PeraResult<()> {
         if self
             .dwallet_mpc_network_keys
             .set(DwalletMPCNetworkKeyVersions::new(
                 self,
+                &self.get_weighted_threshold_access_structure()?,
                 // Todo (#411): Change to value from validator config
                 ClassGroupsDecryptionKey::default(),
             ))
@@ -996,6 +1014,7 @@ impl AuthorityPerEpochStore {
         {
             error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
         }
+        Ok(())
     }
 
     pub fn coin_deny_list_state_exists(&self) -> bool {

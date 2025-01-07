@@ -77,29 +77,6 @@ impl DWalletMPCOutputsVerifier {
         }
     }
 
-    pub(crate) fn weighted_threshold_access_structure(
-        &self,
-        epoch_store: &Arc<AuthorityPerEpochStore>,
-    ) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
-        let weighted_parties = self
-            .weighted_parties
-            .iter()
-            .map(|(name, weight)| {
-                Ok((
-                    authority_name_to_party_id(&name, &epoch_store)?,
-                    *weight as PartyID,
-                ))
-            })
-            .collect::<DwalletMPCResult<HashMap<PartyID, PartyID>>>()?;
-        let weighted_threshold_access_structure = WeightedThresholdAccessStructure::new(
-            self.quorum_threshold as PartyID,
-            weighted_parties.clone(),
-        )
-        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
-
-        Ok(weighted_threshold_access_structure)
-    }
-
     /// Determines whether the `lock_next_epoch_committee` system transaction should be called.
     ///
     /// This function tracks votes from authorities to decide if a quorum has been reached

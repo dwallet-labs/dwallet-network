@@ -493,20 +493,19 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     if let MPCRound::NetworkDkg(key_scheme, _) =
                                         session_info.mpc_round
                                     {
-                                        let weighted_threshold_access_structure =
-                                            match dwallet_mpc_outputs_verifier
-                                                .weighted_threshold_access_structure(
-                                                    &self.epoch_store,
-                                                ) {
-                                                Ok(value) => value,
-                                                Err(e) => {
-                                                    error!(
-                                                        "Failed to create access structure  {:?}",
-                                                        e
-                                                    );
-                                                    continue;
-                                                }
-                                            };
+                                        let weighted_threshold_access_structure = match self
+                                            .epoch_store
+                                            .get_weighted_threshold_access_structure()
+                                        {
+                                            Ok(value) => value,
+                                            Err(e) => {
+                                                error!(
+                                                    "Failed to create access structure  {:?}",
+                                                    e
+                                                );
+                                                continue;
+                                            }
+                                        };
 
                                         let transaction = match self
                                             .create_dwallet_network_output_system_tx(
