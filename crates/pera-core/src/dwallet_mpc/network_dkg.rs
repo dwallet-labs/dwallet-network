@@ -268,15 +268,15 @@ pub(crate) fn dwallet_mpc_network_key_from_session_output(
     epoch: u64,
     key_scheme: DWalletMPCNetworkKeyScheme,
     _weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-    public_output: Vec<u8>,
-) -> anyhow::Result<NetworkDecryptionKeyShares> {
+    public_output: &[u8],
+) -> DwalletMPCResult<NetworkDecryptionKeyShares> {
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             // Todo (#382): Extract the actual values from the public output once we use the real DKG party.
 
             Ok(NetworkDecryptionKeyShares {
                 epoch,
-                current_epoch_shares: public_output,
+                current_epoch_shares: public_output.to_vec(),
                 previous_epoch_shares: vec![],
                 protocol_public_parameters: vec![],
                 decryption_public_parameters: vec![],
