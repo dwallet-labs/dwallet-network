@@ -1,5 +1,6 @@
 // noinspection ES6PreferShortImport
 
+// noinspection ES6PreferShortImport
 import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
 import { toHEX } from '@mysten/bcs';
 
@@ -11,6 +12,8 @@ import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
 import type { Config } from './globals.js';
 import { dWalletModuleName, fetchObjectWithType, packageId } from './globals.js';
+
+const encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
 
 /**
  * A class groups key pair.
@@ -33,8 +36,6 @@ interface EncryptionKey {
 export enum EncryptionKeyScheme {
 	ClassGroups = 0,
 }
-
-const encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
 
 /**
  * Creates a table that maps users` Sui addresses to Class Group encryption keys.
@@ -68,7 +69,9 @@ export async function createActiveEncryptionKeysTable(client: PeraClient, keypai
 }
 
 /**
- * Retrieves the active encryption key object ID for the given Sui address, if it exists. Throws an error otherwise.
+ * Retrieves the active encryption key object ID
+ * for the given Sui address if it exists.
+ * Throws an error otherwise.
  */
 export const getActiveEncryptionKeyObjID = async (
 	c: Config,
@@ -83,14 +86,16 @@ export const getActiveEncryptionKeyObjID = async (
 		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
 		arguments: [encryptionKeysHolder, tx.pure.address(keyOwnerAddress)],
 	});
-	// Safe to use this function as it is has been used here: https://github.com/dwallet-labs/dwallet-network/blob/29929ded135f05578b6ce33b52e6ff5e894d0487/sdk/deepbook-v3/src/client.ts#L84
+
+	// Safe to use this function as it has been used here:
+	// https://github.com/dwallet-labs/dwallet-network/blob/29929ded135f05578b6ce33b52e6ff5e894d0487/sdk/deepbook-v3/src/client.ts#L84
 	// in late 2024 (can be seen with git blame).
 	let res = await client.devInspectTransactionBlock({
 		sender: keyOwnerAddress,
 		transactionBlock: tx,
 	});
 
-	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
+	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0) as number[]);
 	return toHEX(objIDArray);
 };
 
