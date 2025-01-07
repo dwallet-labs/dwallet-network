@@ -98,7 +98,7 @@ export async function mockCreateDwallet(c: Config): Promise<CreatedDwallet> {
 			};
 		}
 	}
-	throw new Error(`mockCreateDwallet error: failed to create object of type ${dWalletMoveType}`);
+	throw new Error(`mockCreateDwallet error: failed to create an object of type ${dWalletMoveType}`);
 }
 
 export async function mockCreatePresign(c: Config, dwallet: CreatedDwallet): Promise<Presign> {
@@ -145,6 +145,9 @@ export async function mockCreatePresign(c: Config, dwallet: CreatedDwallet): Pro
 	return preSignObj;
 }
 
+/**
+ * Run the Full MPC User Sessions
+ */
 export async function fullMPCUserSessions(conf: Config, protocolPublicParameters: Uint8Array) {
 	const dWallet = await createDWallet(conf, protocolPublicParameters);
 	console.log({ dWallet });
