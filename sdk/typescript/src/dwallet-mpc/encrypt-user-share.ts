@@ -184,7 +184,7 @@ export const getOrCreateEncryptionKey = async (
 	c: Config,
 	activeEncryptionKeysTableID: string,
 ): Promise<ClassGroupsSecpKeyPair> => {
-	let [encryptionKey, decryptionKey] = generateClassGroupKeyPairFromSuiKeyPair(
+	let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(
 		c.keypair as Ed25519Keypair,
 	);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
@@ -267,8 +267,6 @@ const transferEncryptedUserShare = async (
 const isEncryptionKey = (obj: any): obj is EncryptionKey => {
 	return 'encryption_key' in obj && 'key_owner_address' in obj && 'encryption_key_signature' in obj;
 };
-
-let encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
 
 /**
  * Sets the given encryption key as the active encryption key for the given keypair Sui
