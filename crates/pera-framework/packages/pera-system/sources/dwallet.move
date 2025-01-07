@@ -119,7 +119,7 @@ module pera_system::dwallet {
     }
 
     /// Set the active encryption key for a user (the sender).
-    public fun set_active_encryption_key(
+    public fun upsert_active_encryption_key(
         encryption_key_holder: &mut ActiveEncryptionKeys,
         encryption_key: &EncryptionKey,
         ctx: &mut TxContext

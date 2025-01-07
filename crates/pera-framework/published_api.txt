@@ -1,13 +1,13 @@
 DWallet
 	public struct
 	0x3::dwallet
+EncryptionKey
+	public struct
+	0x3::dwallet
 DWalletCap
 	public struct
 	0x3::dwallet
 ActiveEncryptionKeys
-	public struct
-	0x3::dwallet
-EncryptionKey
 	public struct
 	0x3::dwallet
 create_dwallet
@@ -19,14 +19,11 @@ create_active_encryption_keys
 get_active_encryption_key
 	public fun
 	0x3::dwallet
-set_active_encryption_key
+upsert_active_encryption_key
 	public fun
 	0x3::dwallet
 register_encryption_key
 	public fun
-	0x3::dwallet
-is_valid_encryption_key_scheme
-	fun
 	0x3::dwallet
 create_dwallet_cap
 	public(package) fun
@@ -36,6 +33,9 @@ get_dwallet_cap_id
 	0x3::dwallet
 get_dwallet_output
 	public(package) fun
+	0x3::dwallet
+is_valid_encryption_key_scheme
+	fun
 	0x3::dwallet
 Secp256K1
 	public struct

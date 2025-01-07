@@ -1,6 +1,10 @@
+;
 // noinspection ES6PreferShortImport
 
 import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
+import { toHEX } from "@mysten/bcs";
+
+
 
 import { bcs } from '../bcs/index.js';
 import type { PeraClient, PeraObjectRef } from '../client/index.js';
@@ -10,6 +14,7 @@ import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
 import type { Config } from './globals.js';
 import { dWalletModuleName, fetchObjectWithType, packageId } from './globals.js';
+
 
 /**
  * A class groups key pair.
@@ -67,34 +72,33 @@ export async function createActiveEncryptionKeysTable(client: PeraClient, keypai
 }
 
 /**
- * Retrieves the active encryption key object ID for the given Sui address if it exists.
- * Throws an error otherwise.
+ * Retrieves the active encryption key object ID for the given Sui address, if it exists. Throws an error otherwise.
  */
-export async function getActiveEncryptionKeyObjID(
+export const getActiveEncryptionKeyObjID = async (
 	c: Config,
-	activeEncryptionKeysTableID: string,
-): Promise<string> {
-	const tx = new Transaction();
-	const activeEncryptionKeysTableIDParam = tx.object(activeEncryptionKeysTableID);
-
+	encryptionKeysHolderID: string,
+): Promise<string> => {
 	let keyOwnerAddress = c.keypair.toPeraAddress();
+	let client = c.client;
+	const tx = new Transaction();
+	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
+
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
-		arguments: [activeEncryptionKeysTableIDParam, tx.pure.address(keyOwnerAddress)],
+		arguments: [encryptionKeysHolder, tx.pure.address(keyOwnerAddress)],
 	});
-
-	// todo(Itay): see if it's ok to use this func, it sounds like it's not meant for prod.
-	let res = await c.client.devInspectTransactionBlock({
+	// Safe to use this function as it is has been used here: https://github.com/dwallet-labs/dwallet-network/blob/29929ded135f05578b6ce33b52e6ff5e894d0487/sdk/deepbook-v3/src/client.ts#L84
+	// in late 2024 (can be seen with git blame).
+	let res = await client.devInspectTransactionBlock({
 		sender: keyOwnerAddress,
 		transactionBlock: tx,
 	});
 
-	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0) as number[]);
-	// todo(Itay): please explain why 16 and why do we need a padding.
+	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
 	return Array.from(objIDArray)
 		.map((byte) => byte.toString(16).padStart(2, '0'))
 		.join('');
-}
+};
 
 const isEncryptionKey = (obj: any): obj is EncryptionKey => {
 	return 'encryptionKey' in obj && 'key_owner_address' in obj && 'encryption_key_signature' in obj;
@@ -139,7 +143,7 @@ export const getOrCreateEncryptionKey = async (
 	// Sleep for 5 seconds, so the storeEncryptionKey transaction effects have time to
 	// get written to the blockchain.
 	await new Promise((r) => setTimeout(r, 5000));
-	await setActiveEncryptionKey(encryptionKeyRef?.objectId, activeEncryptionKeysTableID, c);
+	await upsertActiveEncryptionKey(encryptionKeyRef?.objectId, activeEncryptionKeysTableID, c);
 	return {
 		decryptionKey,
 		encryptionKey,
@@ -151,8 +155,7 @@ export const getOrCreateEncryptionKey = async (
  * Sets the given encryption key as the active encryption key for the given keypair Sui
  * address & encryption keys holder table.
  */
-// todo(itay): this func is overriding the active key, change this func and the move func to `upsert()`.
-const setActiveEncryptionKey = async (
+const upsertActiveEncryptionKey = async (
 	encryptionKeyObjID: string,
 	encryptionKeysHolderID: string,
 	c: Config,
@@ -162,7 +165,7 @@ const setActiveEncryptionKey = async (
 	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
 
 	tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::set_active_encryption_key`,
+		target: `${packageId}::${dWalletModuleName}::upsert_active_encryption_key`,
 		arguments: [encryptionKeysHolder, EncKeyObj],
 	});
 
