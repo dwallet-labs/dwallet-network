@@ -321,10 +321,11 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             validator_low_stake_grace_period,
             stake_subsidy_period_length,
             stake_subsidy_decrease_rate,
-            decryption_key_shares: encrypted_decryption_key_share
-                .contents
+            decryption_key_shares: encrypted_decryption_key_share.contents
                 .iter()
-                .map(|e| (e.key, e.value.clone()))
+                .flat_map(|e| {
+                    e.value.iter().map(|share| (e.key, share.clone()))
+                })
                 .collect(),
         }
     }

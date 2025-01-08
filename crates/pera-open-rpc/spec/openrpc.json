@@ -5910,62 +5910,6 @@
           }
         }
       },
-      "DwalletMPCNetworkKey": {
-        "description": "Rust representation of the move struct `DwalletMPCNetworkKey`",
-        "type": "object",
-        "required": [
-          "current_epoch_shares",
-          "decryption_public_parameters",
-          "epoch",
-          "previous_epoch_shares",
-          "protocol_public_parameters"
-        ],
-        "properties": {
-          "current_epoch_shares": {
-            "type": "array",
-            "items": {
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "format": "uint8",
-                "minimum": 0.0
-              }
-            }
-          },
-          "decryption_public_parameters": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "uint8",
-              "minimum": 0.0
-            }
-          },
-          "epoch": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "previous_epoch_shares": {
-            "type": "array",
-            "items": {
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "format": "uint8",
-                "minimum": 0.0
-              }
-            }
-          },
-          "protocol_public_parameters": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "uint8",
-              "minimum": 0.0
-            }
-          }
-        }
-      },
       "DynamicFieldInfo": {
         "type": "object",
         "required": [
@@ -6979,6 +6923,81 @@
           }
         }
       },
+      "NetworkDecryptionKeyShares": {
+        "description": "Rust representation of the Move struct `NetworkDecryptionKeyShares`",
+        "type": "object",
+        "required": [
+          "current_epoch_shares",
+          "decryption_public_parameters",
+          "encryption_key",
+          "epoch",
+          "previous_epoch_shares",
+          "protocol_public_parameters",
+          "reconstructed_commitments_to_sharing"
+        ],
+        "properties": {
+          "current_epoch_shares": {
+            "description": "Decryption key shares for the current epoch. Updated at the reconfiguration or when a new key version is created at network DKG.",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          },
+          "decryption_public_parameters": {
+            "description": "The public parameters of the decryption key shares, updated only after a successful network DKG.",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          },
+          "encryption_key": {
+            "description": "The network encryption, updated only after a successful network DKG.",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          },
+          "epoch": {
+            "description": "The epoch of the last version update.",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "previous_epoch_shares": {
+            "description": "Decryption key shares for the previous epoch. Updated at the reconfiguration.",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          },
+          "protocol_public_parameters": {
+            "description": "The public parameters of the network DKG, updated only after a successful network DKG.",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          },
+          "reconstructed_commitments_to_sharing": {
+            "description": "Validators' commitments to the secret sharing constructed in the network DKG.",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
       "ObjectChange": {
         "description": "ObjectChange are derived from the object mutations in the TransactionEffect to provide richer object information.",
         "oneOf": [
@@ -7954,412 +7973,6 @@
           "client_data_json": {
             "description": "`clientDataJSON` contains a JSON-compatible UTF-8 encoded string of the client data which is passed to the authenticator by the client during the authentication request (see [CollectedClientData](https://www.w3.org/TR/webauthn-2/#dictdef-collectedclientdata))",
             "type": "string"
-          }
-        }
-      },
-      "ProtocolConfig": {
-        "type": "object",
-        "required": [
-          "attributes",
-          "featureFlags",
-          "maxSupportedProtocolVersion",
-          "minSupportedProtocolVersion",
-          "protocolVersion"
-        ],
-        "properties": {
-          "attributes": {
-            "type": "object",
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/ProtocolConfigValue"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            }
-          },
-          "featureFlags": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "maxSupportedProtocolVersion": {
-            "$ref": "#/components/schemas/ProtocolVersion"
-          },
-          "minSupportedProtocolVersion": {
-            "$ref": "#/components/schemas/ProtocolVersion"
-          },
-          "protocolVersion": {
-            "$ref": "#/components/schemas/ProtocolVersion"
-          }
-        }
-      },
-      "ProtocolConfigValue": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "u16"
-            ],
-            "properties": {
-              "u16": {
-                "$ref": "#/components/schemas/BigInt_for_uint16"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "u32"
-            ],
-            "properties": {
-              "u32": {
-                "$ref": "#/components/schemas/BigInt_for_uint32"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "u64"
-            ],
-            "properties": {
-              "u64": {
-                "$ref": "#/components/schemas/BigInt_for_uint64"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "f64"
-            ],
-            "properties": {
-              "f64": {
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "bool"
-            ],
-            "properties": {
-              "bool": {
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
-      },
-      "ProtocolVersion": {
-        "$ref": "#/components/schemas/BigInt_for_uint64"
-      },
-      "PublicKey": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "Ed25519"
-            ],
-            "properties": {
-              "Ed25519": {
-                "$ref": "#/components/schemas/Base64"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "Secp256k1"
-            ],
-            "properties": {
-              "Secp256k1": {
-                "$ref": "#/components/schemas/Base64"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "Secp256r1"
-            ],
-            "properties": {
-              "Secp256r1": {
-                "$ref": "#/components/schemas/Base64"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "ZkLogin"
-            ],
-            "properties": {
-              "ZkLogin": {
-                "$ref": "#/components/schemas/ZkLoginPublicIdentifier"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "Passkey"
-            ],
-            "properties": {
-              "Passkey": {
-                "$ref": "#/components/schemas/Base64"
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
-      },
-      "RPCTransactionRequestParams": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "transferObjectRequestParams"
-            ],
-            "properties": {
-              "transferObjectRequestParams": {
-                "$ref": "#/components/schemas/TransferObjectParams"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "moveCallRequestParams"
-            ],
-            "properties": {
-              "moveCallRequestParams": {
-                "$ref": "#/components/schemas/MoveCallParams"
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
-      },
-      "RawData": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "bcsBytes",
-              "dataType",
-              "hasPublicTransfer",
-              "type",
-              "version"
-            ],
-            "properties": {
-              "bcsBytes": {
-                "$ref": "#/components/schemas/Base64"
-              },
-              "dataType": {
-                "type": "string",
-                "enum": [
-                  "moveObject"
-                ]
-              },
-              "hasPublicTransfer": {
-                "type": "boolean"
-              },
-              "type": {
-                "type": "string"
-              },
-              "version": {
-                "$ref": "#/components/schemas/SequenceNumber2"
-              }
-            }
-          },
-          {
-            "type": "object",
-            "required": [
-              "dataType",
-              "id",
-              "linkageTable",
-              "moduleMap",
-              "typeOriginTable",
-              "version"
-            ],
-            "properties": {
-              "dataType": {
-                "type": "string",
-                "enum": [
-                  "package"
-                ]
-              },
-              "id": {
-                "$ref": "#/components/schemas/ObjectID"
-              },
-              "linkageTable": {
-                "type": "object",
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/UpgradeInfo"
-                }
-              },
-              "moduleMap": {
-                "type": "object",
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/Base64"
-                }
-              },
-              "typeOriginTable": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/TypeOrigin"
-                }
-              },
-              "version": {
-                "$ref": "#/components/schemas/SequenceNumber2"
-              }
-            }
-          }
-        ]
-      },
-      "Secp256k1PeraSignature": {
-        "$ref": "#/components/schemas/Base64"
-      },
-      "Secp256r1PeraSignature": {
-        "$ref": "#/components/schemas/Base64"
-      },
-      "SequenceNumber": {
-        "type": "integer",
-        "format": "uint64",
-        "minimum": 0.0
-      },
-      "SequenceNumber2": {
-        "$ref": "#/components/schemas/BigInt_for_uint64"
-      },
-      "Signature": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "Ed25519PeraSignature"
-            ],
-            "properties": {
-              "Ed25519PeraSignature": {
-                "$ref": "#/components/schemas/Ed25519PeraSignature"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "Secp256k1PeraSignature"
-            ],
-            "properties": {
-              "Secp256k1PeraSignature": {
-                "$ref": "#/components/schemas/Secp256k1PeraSignature"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "Secp256r1PeraSignature"
-            ],
-            "properties": {
-              "Secp256r1PeraSignature": {
-                "$ref": "#/components/schemas/Secp256r1PeraSignature"
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
-      },
-      "Stake": {
-        "type": "object",
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "status"
-            ],
-            "properties": {
-              "status": {
-                "type": "string",
-                "enum": [
-                  "Pending"
-                ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "required": [
-              "estimatedReward",
-              "status"
-            ],
-            "properties": {
-              "estimatedReward": {
-                "$ref": "#/components/schemas/BigInt_for_uint64"
-              },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "Active"
-                ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "required": [
-              "status"
-            ],
-            "properties": {
-              "status": {
-                "type": "string",
-                "enum": [
-                  "Unstaked"
-                ]
-              }
-            }
-          }
-        ],
-        "required": [
-          "principal",
-          "stakeActiveEpoch",
-          "stakeRequestEpoch",
-          "stakedPeraId"
-        ],
-        "properties": {
-          "principal": {
-            "$ref": "#/components/schemas/BigInt_for_uint64"
-          },
-          "stakeActiveEpoch": {
-            "$ref": "#/components/schemas/BigInt_for_uint64"
-          },
-          "stakeRequestEpoch": {
-            "$ref": "#/components/schemas/BigInt_for_uint64"
-          },
-          "stakedPeraId": {
-            "description": "ID of the StakedPera receipt object.",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ObjectID"
-              }
-            ]
           }
         }
       },
@@ -9399,6 +9012,7 @@
             }
           },
           "decryptionKeyShares": {
+            "description": "dWallet MPC network keys",
             "type": "array",
             "items": {
               "type": "array",
@@ -9409,10 +9023,7 @@
                   "minimum": 0.0
                 },
                 {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DwalletMPCNetworkKey"
-                  }
+                  "$ref": "#/components/schemas/NetworkDecryptionKeyShares"
                 }
               ],
               "maxItems": 2,
@@ -9898,7 +9509,6 @@
         "description": "This is the JSON-RPC type for the PERA validator. It flattens all inner structures to top-level fields so that they are decoupled from the internal definitions.",
         "type": "object",
         "required": [
-          "classGroupsPublicKeyAndProof",
           "commissionRate",
           "description",
           "exchangeRatesId",
@@ -9916,6 +9526,7 @@
           "pendingPoolTokenWithdraw",
           "pendingStake",
           "pendingTotalPeraWithdraw",
+          "peraAddress",
           "poolTokenBalance",
           "primaryAddress",
           "projectUrl",
@@ -9924,15 +9535,11 @@
           "rewardsPool",
           "stakingPoolId",
           "stakingPoolPeraBalance",
-          "peraAddress",
           "votingPower",
           "workerAddress",
           "workerPubkeyBytes"
         ],
         "properties": {
-          "classGroupsPublicKeyAndProof": {
-            "$ref": "#/components/schemas/Base64"
-          },
           "commissionRate": {
             "$ref": "#/components/schemas/BigInt_for_uint64"
           },
@@ -10077,6 +9684,9 @@
               }
             ]
           },
+          "peraAddress": {
+            "$ref": "#/components/schemas/PeraAddress"
+          },
           "poolTokenBalance": {
             "description": "Total number of pool tokens issued by the pool.",
             "allOf": [
@@ -10145,9 +9755,6 @@
               }
             ]
           },
-          "peraAddress": {
-            "$ref": "#/components/schemas/PeraAddress"
-          },
           "votingPower": {
             "$ref": "#/components/schemas/BigInt_for_uint64"
           },
@@ -10156,6 +9763,412 @@
           },
           "workerPubkeyBytes": {
             "$ref": "#/components/schemas/Base64"
+          }
+        }
+      },
+      "ProtocolConfig": {
+        "type": "object",
+        "required": [
+          "attributes",
+          "featureFlags",
+          "maxSupportedProtocolVersion",
+          "minSupportedProtocolVersion",
+          "protocolVersion"
+        ],
+        "properties": {
+          "attributes": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProtocolConfigValue"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "featureFlags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "maxSupportedProtocolVersion": {
+            "$ref": "#/components/schemas/ProtocolVersion"
+          },
+          "minSupportedProtocolVersion": {
+            "$ref": "#/components/schemas/ProtocolVersion"
+          },
+          "protocolVersion": {
+            "$ref": "#/components/schemas/ProtocolVersion"
+          }
+        }
+      },
+      "ProtocolConfigValue": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "u16"
+            ],
+            "properties": {
+              "u16": {
+                "$ref": "#/components/schemas/BigInt_for_uint16"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "u32"
+            ],
+            "properties": {
+              "u32": {
+                "$ref": "#/components/schemas/BigInt_for_uint32"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "u64"
+            ],
+            "properties": {
+              "u64": {
+                "$ref": "#/components/schemas/BigInt_for_uint64"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "f64"
+            ],
+            "properties": {
+              "f64": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "bool"
+            ],
+            "properties": {
+              "bool": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "ProtocolVersion": {
+        "$ref": "#/components/schemas/BigInt_for_uint64"
+      },
+      "PublicKey": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Ed25519"
+            ],
+            "properties": {
+              "Ed25519": {
+                "$ref": "#/components/schemas/Base64"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "Secp256k1"
+            ],
+            "properties": {
+              "Secp256k1": {
+                "$ref": "#/components/schemas/Base64"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "Secp256r1"
+            ],
+            "properties": {
+              "Secp256r1": {
+                "$ref": "#/components/schemas/Base64"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "ZkLogin"
+            ],
+            "properties": {
+              "ZkLogin": {
+                "$ref": "#/components/schemas/ZkLoginPublicIdentifier"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "Passkey"
+            ],
+            "properties": {
+              "Passkey": {
+                "$ref": "#/components/schemas/Base64"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "RPCTransactionRequestParams": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "transferObjectRequestParams"
+            ],
+            "properties": {
+              "transferObjectRequestParams": {
+                "$ref": "#/components/schemas/TransferObjectParams"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "moveCallRequestParams"
+            ],
+            "properties": {
+              "moveCallRequestParams": {
+                "$ref": "#/components/schemas/MoveCallParams"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "RawData": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "bcsBytes",
+              "dataType",
+              "hasPublicTransfer",
+              "type",
+              "version"
+            ],
+            "properties": {
+              "bcsBytes": {
+                "$ref": "#/components/schemas/Base64"
+              },
+              "dataType": {
+                "type": "string",
+                "enum": [
+                  "moveObject"
+                ]
+              },
+              "hasPublicTransfer": {
+                "type": "boolean"
+              },
+              "type": {
+                "type": "string"
+              },
+              "version": {
+                "$ref": "#/components/schemas/SequenceNumber2"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "dataType",
+              "id",
+              "linkageTable",
+              "moduleMap",
+              "typeOriginTable",
+              "version"
+            ],
+            "properties": {
+              "dataType": {
+                "type": "string",
+                "enum": [
+                  "package"
+                ]
+              },
+              "id": {
+                "$ref": "#/components/schemas/ObjectID"
+              },
+              "linkageTable": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/UpgradeInfo"
+                }
+              },
+              "moduleMap": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/Base64"
+                }
+              },
+              "typeOriginTable": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TypeOrigin"
+                }
+              },
+              "version": {
+                "$ref": "#/components/schemas/SequenceNumber2"
+              }
+            }
+          }
+        ]
+      },
+      "Secp256k1PeraSignature": {
+        "$ref": "#/components/schemas/Base64"
+      },
+      "Secp256r1PeraSignature": {
+        "$ref": "#/components/schemas/Base64"
+      },
+      "SequenceNumber": {
+        "type": "integer",
+        "format": "uint64",
+        "minimum": 0.0
+      },
+      "SequenceNumber2": {
+        "$ref": "#/components/schemas/BigInt_for_uint64"
+      },
+      "Signature": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Ed25519PeraSignature"
+            ],
+            "properties": {
+              "Ed25519PeraSignature": {
+                "$ref": "#/components/schemas/Ed25519PeraSignature"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "Secp256k1PeraSignature"
+            ],
+            "properties": {
+              "Secp256k1PeraSignature": {
+                "$ref": "#/components/schemas/Secp256k1PeraSignature"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "Secp256r1PeraSignature"
+            ],
+            "properties": {
+              "Secp256r1PeraSignature": {
+                "$ref": "#/components/schemas/Secp256r1PeraSignature"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Stake": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Pending"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "estimatedReward",
+              "status"
+            ],
+            "properties": {
+              "estimatedReward": {
+                "$ref": "#/components/schemas/BigInt_for_uint64"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Active"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Unstaked"
+                ]
+              }
+            }
+          }
+        ],
+        "required": [
+          "principal",
+          "stakeActiveEpoch",
+          "stakeRequestEpoch",
+          "stakedPeraId"
+        ],
+        "properties": {
+          "principal": {
+            "$ref": "#/components/schemas/BigInt_for_uint64"
+          },
+          "stakeActiveEpoch": {
+            "$ref": "#/components/schemas/BigInt_for_uint64"
+          },
+          "stakeRequestEpoch": {
+            "$ref": "#/components/schemas/BigInt_for_uint64"
+          },
+          "stakedPeraId": {
+            "description": "ID of the StakedPera receipt object.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            ]
           }
         }
       },
@@ -10670,6 +10683,51 @@
                   {
                     "type": "null"
                   }
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "sender_address",
+              "session_id",
+              "value"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "DWalletMPCOutput"
+                ]
+              },
+              "sender_address": {
+                "$ref": "#/components/schemas/PeraAddress"
+              },
+              "session_id": {
+                "$ref": "#/components/schemas/ObjectID"
+              },
+              "value": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "LockNextCommittee"
                 ]
               }
             }

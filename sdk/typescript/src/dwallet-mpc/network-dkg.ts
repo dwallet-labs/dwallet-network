@@ -2,7 +2,7 @@
 
 // noinspection ES6PreferShortImport
 // noinspection ES6PreferShortImport
-import type { DwalletMPCNetworkKey } from '../client/index.js';
+import { NetworkDecryptionKeyShares } from '../client/index.js';
 import type { Config, MPCKeyScheme } from './globals.js';
 
 /**
@@ -30,11 +30,9 @@ export async function fetchProtocolPublicParameters(
 			keyVersionNum = keyVersionNum ?? keyVersionsByScheme.length - 1;
 			if (keyVersionsByScheme.length > keyVersionNum) {
 				const keyAtVersion = keyVersionsByScheme[keyVersionNum];
-				if (keyAtVersion && keyAtVersion.length > keyVersionNum) {
-					const protocolPublicParameters = keyAtVersion[keyVersionNum]?.protocol_public_parameters;
-					if (protocolPublicParameters) {
-						return protocolPublicParameters;
-					}
+				const protocolPublicParameters = keyAtVersion.protocol_public_parameters;
+				if (protocolPublicParameters) {
+					return protocolPublicParameters;
 				}
 			}
 		}
@@ -52,9 +50,9 @@ export async function fetchProtocolPublicParameters(
 }
 
 function convertToMap(
-	input: [number, DwalletMPCNetworkKey[]][],
-): Map<number, DwalletMPCNetworkKey[][]> {
-	const resultMap = new Map<number, DwalletMPCNetworkKey[][]>();
+	input: [number, NetworkDecryptionKeyShares][],
+): Map<number, NetworkDecryptionKeyShares[]> {
+	const resultMap = new Map<number, NetworkDecryptionKeyShares[]>();
 
 	input.forEach(([key, value]) => {
 		if (!resultMap.has(key)) {
