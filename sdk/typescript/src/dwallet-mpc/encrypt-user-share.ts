@@ -268,6 +268,7 @@ export async function acceptUserShare(
 	};
 	// Encrypt it to self, so that in the future we'd know that we already
 	// verified everything and only need to verify our signature.
+	// Need to verify the signature to not trust the blockchain to provide this data.
 	await encryptUserShareWithSuiPubKey(
 		conf,
 		dwalletToSend,
