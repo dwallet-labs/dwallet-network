@@ -331,7 +331,7 @@ const transferEncryptedUserShare = async (
 	);
 	let signedPublicShare = await conf.keypair.sign(new Uint8Array(centralized_public_share));
 	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::publish_encryped_user_share`,
+		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::publish_encrypted_user_share`,
 		typeArguments: [],
 		arguments: [
 			dwalletObj,
