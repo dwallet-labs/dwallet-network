@@ -170,7 +170,6 @@ export async function fullMPCUserSessions(conf: Config, protocolPublicParameters
 		)
 		.toBytes();
 	const [centralizedSignedMsg, hashedMsgs] = create_sign_centralized_output(
-		// Todo (#382): Change to real value.
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
 		Uint8Array.from(dWallet.centralizedDKGPublicOutput),
