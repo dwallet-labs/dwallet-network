@@ -27,21 +27,19 @@ type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
     secp256k1::GroupElement,
 >;
 
-/// Verifies that the given encrypted secret share is the encryption of the given dwallet's secret share,
-/// and that the given signature on the DWallet's public share is valid.
-/// Also verifies that the public key that signed the public user share is matching the address that initiated this TX.
+/// Verifies that the given encrypted secret share matches the encryption of the dWallet's
+/// secret share, validates the signature on the dWallet's public share,
+/// and ensures the signing public key matches the address that initiated this transaction.
 pub(crate) fn verify_encrypted_share(
     verification_data: StartEncryptedShareVerificationEvent,
 ) -> DwalletMPCResult<()> {
     verify_signatures(&verification_data)?;
-    match chain_verify_secret_share_proof(
+    chain_verify_secret_share_proof(
         verification_data.encrypted_secret_share_and_proof.clone(),
         verification_data.dwallet_output.clone(),
         verification_data.encryption_key.clone(),
-    ) {
-        Ok(_) => Ok(()),
-        Err(_) => Err(DwalletMPCError::EncryptedUserShareVerificationFailed),
-    }
+    )
+    .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
 }
 
 /// Verifies that the verification_data's public key is matching the initiator Sui address.
@@ -75,7 +73,7 @@ fn verify_signatures(
         .verify(&bcs::to_bytes(&dkg_output.public_key_share)?, &signature)
         .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     let derived_sui_addr = PeraAddress::from(&public_key);
-    if (derived_sui_addr != verification_data.initiator) {
+    if derived_sui_addr != verification_data.initiator {
         return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
     }
     Ok(())

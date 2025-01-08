@@ -8,6 +8,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import {
 	acceptUserShare,
 	createActiveEncryptionKeysTable,
+	encryptUserShareWithSuiPubKey,
 	generateCGKeyPairFromSuiKeyPair,
 	getActiveEncryptionKeyObjID,
 	getOrCreateEncryptionKey,
@@ -30,11 +31,11 @@ describe('encrypt user share', () => {
 	beforeAll(async () => {
 		dwalletSenderToolbox = await setup();
 		dwalletReceiverToolbox = await setup();
-		const encryptionKeysRef = await createActiveEncryptionKeysTable(
+		const { objectId } = await createActiveEncryptionKeysTable(
 			dwalletSenderToolbox.client,
 			dwalletSenderToolbox.keypair,
 		);
-		activeEncryptionKeysTableID = encryptionKeysRef.objectId;
+		activeEncryptionKeysTableID = objectId;
 	});
 
 	it('encrypts a secret share to a given Sui public key', async () => {
@@ -60,7 +61,7 @@ describe('encrypt user share', () => {
 		await new Promise((r) => setTimeout(r, checkpointCreationTime));
 
 		// ======================= Send DWallet Secret Share To Destination Keypair  =======================
-		let encryptedSecretShare = await sendUserShareToSuiPubKey(
+		let encryptedSecretShare = await encryptUserShareWithSuiPubKey(
 			senderConf,
 			createdDwallet,
 			dwalletReceiverToolbox.keypair.getPublicKey(),
@@ -101,8 +102,9 @@ describe('encrypt user share', () => {
 	});
 });
 
-describe('encrypt user share - tests that can run without the blockchain is running', () => {
-	it("successfully encrypts a secret share, decrypt it, and verify the decrypted share is matching the DWallet's public share", () => {
+// tests that can run without the blockchain running.
+describe('encrypt user share — offline', () => {
+	it("successfully encrypts a secret share, decrypt it, and verify the decrypted share is matching the dWallets' public share", () => {
 		let keypair = Ed25519Keypair.generate();
 		let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(keypair);
 		let dwallet_secret_key_share = Array.from(Buffer.from(DKGCentralizedPrivateOutput, 'base64'));
