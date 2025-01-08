@@ -32,14 +32,12 @@ pub(crate) fn verify_encrypted_share(
     verification_data: StartEncryptedShareVerificationEvent,
 ) -> DwalletMPCResult<()> {
     verify_signatures(&verification_data)?;
-    match chain_verify_secret_share_proof(
+    chain_verify_secret_share_proof(
         verification_data.encrypted_secret_share_and_proof.clone(),
         verification_data.dwallet_output.clone(),
         verification_data.encryption_key.clone(),
-    ) {
-        Ok(_) => Ok(()),
-        Err(_) => Err(DwalletMPCError::EncryptedUserShareVerificationFailed),
-    }
+    )
+    .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
 }
 
 /// Verify the signature on the public share of the DWallet,
