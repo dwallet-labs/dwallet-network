@@ -77,7 +77,7 @@ export enum EncryptionKeyScheme {
  * @param destinationPublicKey The ed2551 public key of the destination Sui address.
  * @param activeEncryptionKeysTableID The ID of the table that holds the active encryption keys.
  */
-export const sendUserShareToSuiPubKey = async (
+export const encryptUserShareWithSuiPubKey = async (
 	c: Config,
 	dwallet: CreatedDwallet,
 	destinationPublicKey: PublicKey,
@@ -268,7 +268,7 @@ export async function acceptUserShare(
 	};
 	// Encrypt it to self, so that in the future we'd know that we already
 	// verified everything and only need to verify our signature.
-	await sendUserShareToSuiPubKey(
+	await encryptUserShareWithSuiPubKey(
 		conf,
 		dwalletToSend,
 		conf.keypair.getPublicKey(),

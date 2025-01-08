@@ -11,7 +11,7 @@ import {
 	generateCGKeyPairFromSuiKeyPair,
 	getActiveEncryptionKeyObjID,
 	getOrCreateEncryptionKey,
-	sendUserShareToSuiPubKey,
+	encryptUserShareWithSuiPubKey,
 } from '../../src/dwallet-mpc/encrypt-user-share';
 import { Config } from '../../src/dwallet-mpc/globals';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
@@ -60,7 +60,7 @@ describe('encrypt user share', () => {
 		await new Promise((r) => setTimeout(r, checkpointCreationTime));
 
 		// ======================= Send DWallet Secret Share To Destination Keypair  =======================
-		let encryptedSecretShare = await sendUserShareToSuiPubKey(
+		let encryptedSecretShare = await encryptUserShareWithSuiPubKey(
 			senderConf,
 			createdDwallet,
 			dwalletReceiverToolbox.keypair.getPublicKey(),
