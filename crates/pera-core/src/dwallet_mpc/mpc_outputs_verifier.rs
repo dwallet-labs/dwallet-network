@@ -30,7 +30,7 @@ pub struct DWalletMPCOutputsVerifier {
     voted_to_lock_committee: HashSet<AuthorityName>,
 }
 
-/// The possible verification statuses of an MPC session.
+/// The possible verification status of an MPC session.
 #[derive(Clone, PartialEq)]
 enum VerificationStatus {
     /// The session is still active, and we are waiting for more outputs.
