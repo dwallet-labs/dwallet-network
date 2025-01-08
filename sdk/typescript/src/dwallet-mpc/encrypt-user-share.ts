@@ -166,11 +166,10 @@ export async function getActiveEncryptionKeyObjID(
 	activeEncryptionKeysTableID: string,
 ): Promise<string> {
 	const tx = new Transaction();
-	const encryptionKeysHolder = tx.object(activeEncryptionKeysTableID);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
-		arguments: [encryptionKeysHolder, tx.pure.address(keyOwnerAddress)],
+		arguments: [tx.object(activeEncryptionKeysTableID), tx.pure.address(keyOwnerAddress)],
 	});
 
 	// Safe to use this function as it has been used here:
