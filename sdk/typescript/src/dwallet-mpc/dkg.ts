@@ -69,14 +69,9 @@ export async function createDWallet(
 	conf: Config,
 	protocolPublicParameters: Uint8Array,
 ): Promise<CreatedDwallet> {
-	const dkgFirstRoundOutput: DKGFirstRoundOutput = await launchDKGFirstRound(conf);
-	console.log('DKG First Round Output:', dkgFirstRoundOutput);
+	const dkgFirstRoundOutput = await launchDKGFirstRound(conf);
 	let [publicKeyShareAndProof, centralizedPublicOutput, centralizedPrivateOutput] =
 		create_dkg_centralized_output(
-			// Todo (#382): Pass the actual chain's public parameters.
-			// Right now we pass an empty array, and the wasm
-			// function behind the scenes uses the default, mock public parameters.
-			// Can't be an empty array as it makes the wasm crash for some reason
 			protocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
 			Uint8Array.from(dkgFirstRoundOutput.output),
