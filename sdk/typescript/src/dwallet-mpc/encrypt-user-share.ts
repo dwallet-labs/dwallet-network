@@ -56,7 +56,6 @@ interface StartEncryptedShareVerificationEvent {
 /**
  * A class groups Move encryption key object.
  */
-
 interface EncryptionKey {
 	encryption_key: Uint8Array;
 	key_owner_address: string;
