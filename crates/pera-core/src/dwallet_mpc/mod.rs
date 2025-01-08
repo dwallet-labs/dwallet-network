@@ -30,7 +30,7 @@ use std::collections::HashMap;
 
 pub mod batches_manager;
 mod dkg;
-mod transfer_encrypted_user_share;
+mod publish_encryped_user_share;
 pub(crate) mod mpc_events;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;

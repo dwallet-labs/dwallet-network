@@ -14,7 +14,7 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
-use crate::dwallet_mpc::transfer_encrypted_user_share::verify_encrypted_share;
+use crate::dwallet_mpc::publish_encryped_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
