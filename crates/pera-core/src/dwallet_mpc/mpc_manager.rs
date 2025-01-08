@@ -238,7 +238,6 @@ impl DWalletMPCManager {
         key_version: Option<usize>,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let epoch_store = self.epoch_store()?;
-        let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
 
         let decryption_shares = epoch_store
             .dwallet_mpc_network_keys
@@ -463,14 +462,14 @@ impl DWalletMPCManager {
             session_info.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
-            if !matches!(session_info.mpc_round, MPCRound::NetworkDkg(..)) {
-                self.get_decryption_share(
+            match session_info.mpc_round {
+                MPCRound::NetworkDkg(..) => HashMap::new(),
+                _ => self.get_decryption_share(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
-                )?
-            } else {
-                HashMap::new()
-            },
+                )?,
+            }
+
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing
