@@ -165,7 +165,6 @@ export async function getActiveEncryptionKeyObjID(
 	keyOwnerAddress: string,
 	encryptionKeysHolderID: string,
 ): Promise<string> {
-	let client = c.client;
 	const tx = new Transaction();
 	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
 
@@ -177,7 +176,7 @@ export async function getActiveEncryptionKeyObjID(
 	// Safe to use this function as it has been used here:
 	// https://github.com/dwallet-labs/dwallet-network/blob/29929ded135f05578b6ce33b52e6ff5e894d0487/sdk/deepbook-v3/src/client.ts#L84
 	// in late 2024 (can be seen with git blame).
-	let res = await client.devInspectTransactionBlock({
+	let res = await c.client.devInspectTransactionBlock({
 		sender: keyOwnerAddress,
 		transactionBlock: tx,
 	});
