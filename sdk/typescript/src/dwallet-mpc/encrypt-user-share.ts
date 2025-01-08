@@ -232,7 +232,11 @@ export async function getOrCreateEncryptionKey(
 	// Sleep for 5 seconds, so the storeEncryptionKey transaction effects have time to
 	// get written to the blockchain.
 	await new Promise((r) => setTimeout(r, 5000));
-	await upsertActiveEncryptionKey(encryptionKeyCreationEvent.encryption_key_id, activeEncryptionKeysTableID, c);
+	await upsertActiveEncryptionKey(
+		encryptionKeyCreationEvent.encryption_key_id,
+		activeEncryptionKeysTableID,
+		c,
+	);
 	return {
 		decryptionKey,
 		encryptionKey,
@@ -352,9 +356,7 @@ function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSe
 	);
 }
 
-function isStartSessionEvent(
-	obj: any,
-): obj is StartSessionEvent {
+function isStartSessionEvent(obj: any): obj is StartSessionEvent {
 	return 'session_id' in obj;
 }
 
