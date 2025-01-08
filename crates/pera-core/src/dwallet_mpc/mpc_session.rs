@@ -14,7 +14,7 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
-use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
+use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
@@ -194,8 +194,18 @@ impl DWalletMPCSession {
                 key_type,
                 self.pending_messages.clone(),
             ),
-            MPCRound::EncryptionKeyVerification(verification_data) => {
+            MPCRound::EncryptedShareVerification(verification_data) => {
                 match verify_encrypted_share(verification_data.clone()) {
+                    Ok(_) => Ok(AsynchronousRoundResult::Finalize {
+                        public_output: vec![],
+                        private_output: vec![],
+                        malicious_parties: vec![],
+                    }),
+                    Err(err) => Err(err),
+                }
+            }
+            MPCRound::EncryptionKeyVerification(verification_data) => {
+                match verify_encryption_key(verification_data.clone()) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
                         public_output: vec![],
                         private_output: vec![],
