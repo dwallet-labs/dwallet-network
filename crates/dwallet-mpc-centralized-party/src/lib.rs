@@ -1,6 +1,7 @@
 //! This crate contains the cryptographic logic for the centralized 2PC-MPC party.
 
 use anyhow::Context;
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use k256::ecdsa::hazmat::bits2field;
 use k256::ecdsa::signature::digest::{Digest, FixedOutput};
 use k256::elliptic_curve::ops::Reduce;
@@ -8,7 +9,10 @@ use k256::{elliptic_curve, U256};
 use mpc::two_party::Round;
 use rand_core::OsRng;
 use std::fmt;
-use twopc_mpc::secp256k1;
+use twopc_mpc::secp256k1::class_groups::{
+    FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+};
+use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
 type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
@@ -73,13 +77,17 @@ impl TryFrom<u8> for Hash {
 /// Returns an error if decoding or advancing the protocol fails.
 pub fn create_dkg_output(
     protocol_public_parameters: Vec<u8>,
+    key_scheme: u8,
     decentralized_first_round_output: Vec<u8>,
     session_id: String,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
         bcs::from_bytes(&decentralized_first_round_output)
             .context("Failed to deserialize decentralized first round output")?;
-    let public_parameters = class_groups_constants::protocol_public_parameters();
+    let public_parameters = bcs::from_bytes(&get_protocol_public_parameters(
+        protocol_public_parameters,
+        key_scheme,
+    )?)?;
 
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
 
@@ -128,6 +136,7 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 /// The `hash` must fit the [`Hash`] enum.
 pub fn create_sign_output(
     protocol_public_parameters: Vec<u8>,
+    key_scheme: u8,
     centralized_party_dkg_output: Vec<u8>,
     centralized_party_secret_key_share: Vec<u8>,
     presigns: Vec<Vec<u8>>,
@@ -135,8 +144,6 @@ pub fn create_sign_output(
     hash: u8,
     session_ids: Vec<String>,
 ) -> anyhow::Result<(Vec<HashedMessages>, Vec<SignedMessages>)> {
-    let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
-
     let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
         bcs::from_bytes(&centralized_party_dkg_output)?;
     let (signed_messages, hashed_messages): (Vec<_>, Vec<_>) = messages
@@ -154,7 +161,10 @@ pub fn create_sign_output(
                         hashed_message,
                         centralized_party_dkg_output.clone(),
                         presign,
-                        protocol_public_parameters.clone(),
+                        bcs::from_bytes(&get_protocol_public_parameters(
+                            protocol_public_parameters.clone(),
+                            key_scheme,
+                        )?)?,
                         session_id,
                     ),
                 );
@@ -176,4 +186,27 @@ pub fn create_sign_output(
         .unzip();
 
     Ok((signed_messages, hashed_messages))
+}
+
+fn get_protocol_public_parameters(
+    protocol_public_parameters: Vec<u8>,
+    key_scheme: u8,
+) -> anyhow::Result<Vec<u8>> {
+    let key_scheme = DWalletMPCNetworkKeyScheme::try_from(key_scheme)?;
+
+    match key_scheme {
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            Ok(bcs::to_bytes(&ProtocolPublicParameters::new::<
+                { secp256k1::SCALAR_LIMBS },
+                { FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                secp256k1::GroupElement,
+            >(bcs::from_bytes(
+                &protocol_public_parameters,
+            )?))?)
+        }
+        DWalletMPCNetworkKeyScheme::Ristretto => {
+            todo!()
+        }
+    }
 }

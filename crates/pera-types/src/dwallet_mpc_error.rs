@@ -77,6 +77,15 @@ pub enum DwalletMPCError {
 
     #[error(transparent)]
     DwalletNetworkMPCError(#[from] DwalletNetworkMPCError),
+
+    #[error("Class Groups Error: {0}")]
+    ClassGroupsError(String),
+
+    #[error("Failed to read Class Groups key: {0}")]
+    FailedToReadCGKey(String),
+
+    #[error("Failed to write Class Groups key: {0}")]
+    FailedToWriteCGKey(String),
 }
 
 /// A wrapper type for the result of a runtime operation.

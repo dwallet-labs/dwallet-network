@@ -8,14 +8,8 @@ use std::{
     sync::Arc,
 };
 
-use arc_swap::ArcSwap;
-use async_trait::async_trait;
-use lru::LruCache;
-use mpc::WeightedThresholdAccessStructure;
-use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, instrument, trace_span, warn};
-
 use crate::dwallet_mpc::mpc_outputs_verifier::{OutputResult, OutputVerificationResult};
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -33,8 +27,15 @@ use crate::{
     scoring_decision::update_low_scoring_authorities,
     transaction_manager::TransactionManager,
 };
+use arc_swap::ArcSwap;
+use async_trait::async_trait;
+use class_groups::dkg::Secp256k1Party;
+use class_groups::{SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS};
 use consensus_core::CommitConsumerMonitor;
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
+use group::PartyID;
+use lru::LruCache;
+use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
 use narwhal_config::Committee;
 use narwhal_executor::{ExecutionIndices, ExecutionState};
@@ -54,6 +55,9 @@ use pera_types::{
     pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
     transaction::{SenderSignedData, VerifiedTransaction},
 };
+use serde::{Deserialize, Serialize};
+use tracing::{debug, error, info, instrument, trace_span, warn};
+use twopc_mpc::secp256k1;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -493,20 +497,19 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     if let MPCRound::NetworkDkg(key_scheme, _) =
                                         session_info.mpc_round
                                     {
-                                        let weighted_threshold_access_structure =
-                                            match dwallet_mpc_outputs_verifier
-                                                .weighted_threshold_access_structure(
-                                                    &self.epoch_store,
-                                                ) {
-                                                Ok(value) => value,
-                                                Err(e) => {
-                                                    error!(
-                                                        "Failed to create access structure  {:?}",
-                                                        e
-                                                    );
-                                                    continue;
-                                                }
-                                            };
+                                        let weighted_threshold_access_structure = match self
+                                            .epoch_store
+                                            .get_weighted_threshold_access_structure()
+                                        {
+                                            Ok(value) => value,
+                                            Err(e) => {
+                                                error!(
+                                                    "Failed to create access structure  {:?}",
+                                                    e
+                                                );
+                                                continue;
+                                            }
+                                        };
 
                                         let transaction = match self
                                             .create_dwallet_network_output_system_tx(

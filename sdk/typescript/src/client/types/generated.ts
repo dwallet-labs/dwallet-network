@@ -452,6 +452,26 @@ export interface MultiSigPublicKeyLegacy {
 	 */
 	threshold: number;
 }
+/** Rust representation of the Move struct `NetworkDecryptionKeyShares` */
+export interface NetworkDecryptionKeyShares {
+	/**
+	 * Decryption key shares for the current epoch. Updated at the reconfiguration or when a new key
+	 * version is created at network DKG.
+	 */
+	current_epoch_shares: number[];
+	/** The public parameters of the decryption key shares, updated only after a successful network DKG. */
+	decryption_public_parameters: number[];
+	/** The network encryption, updated only after a successful network DKG. */
+	encryption_key: number[];
+	/** The epoch of the last version update. */
+	epoch: string;
+	/** Decryption key shares for the previous epoch. Updated at the reconfiguration. */
+	previous_epoch_shares: number[];
+	/** The public parameters of the network DKG, updated only after a successful network DKG. */
+	protocol_public_parameters: number[];
+	/** Validators' commitments to the secret sharing constructed in the network DKG. */
+	reconstructed_commitments_to_sharing: number[];
+}
 /**
  * ObjectChange are derived from the object mutations in the TransactionEffect to provide richer object
  * information.
@@ -738,112 +758,6 @@ export interface PasskeyAuthenticator {
 	 */
 	client_data_json: string;
 }
-export interface ProtocolConfig {
-	attributes: {
-		[key: string]: ProtocolConfigValue | null;
-	};
-	featureFlags: {
-		[key: string]: boolean;
-	};
-	maxSupportedProtocolVersion: string;
-	minSupportedProtocolVersion: string;
-	protocolVersion: string;
-}
-export type ProtocolConfigValue =
-	| {
-			u16: string;
-	  }
-	| {
-			u32: string;
-	  }
-	| {
-			u64: string;
-	  }
-	| {
-			f64: string;
-	  }
-	| {
-			bool: string;
-	  };
-export type PublicKey =
-	| {
-			Ed25519: string;
-	  }
-	| {
-			Secp256k1: string;
-	  }
-	| {
-			Secp256r1: string;
-	  }
-	| {
-			ZkLogin: string;
-	  }
-	| {
-			Passkey: string;
-	  };
-export type RPCTransactionRequestParams =
-	| {
-			transferObjectRequestParams: TransferObjectParams;
-	  }
-	| {
-			moveCallRequestParams: MoveCallParams;
-	  };
-export type RawData =
-	| {
-			bcsBytes: string;
-			dataType: 'moveObject';
-			hasPublicTransfer: boolean;
-			type: string;
-			version: string;
-	  }
-	| {
-			dataType: 'package';
-			id: string;
-			linkageTable: {
-				[key: string]: UpgradeInfo;
-			};
-			moduleMap: {
-				[key: string]: string;
-			};
-			typeOriginTable: TypeOrigin[];
-			version: string;
-	  };
-export type Signature =
-	| {
-			Ed25519PeraSignature: string;
-	  }
-	| {
-			Secp256k1PeraSignature: string;
-	  }
-	| {
-			Secp256r1PeraSignature: string;
-	  };
-export type StakeObject =
-	| {
-			principal: string;
-			stakeActiveEpoch: string;
-			stakeRequestEpoch: string;
-			/** ID of the StakedPera receipt object. */
-			stakedPeraId: string;
-			status: 'Pending';
-	  }
-	| {
-			principal: string;
-			stakeActiveEpoch: string;
-			stakeRequestEpoch: string;
-			/** ID of the StakedPera receipt object. */
-			stakedPeraId: string;
-			estimatedReward: string;
-			status: 'Active';
-	  }
-	| {
-			principal: string;
-			stakeActiveEpoch: string;
-			stakeRequestEpoch: string;
-			/** ID of the StakedPera receipt object. */
-			stakedPeraId: string;
-			status: 'Unstaked';
-	  };
 export interface PeraActiveJwk {
 	epoch: string;
 	jwk: PeraJWK;
@@ -1087,6 +1001,8 @@ export interface PeraSystemStateSummary {
 	activeValidators: PeraValidatorSummary[];
 	/** Map storing the number of epochs for which each validator has been below the low stake threshold. */
 	atRiskValidators: [string, string][];
+	/** dWallet MPC network keys */
+	decryptionKeyShares: [number, NetworkDecryptionKeyShares][];
 	/** The current epoch ID, starting from 0. */
 	epoch: string;
 	/** The duration of an epoch, in milliseconds. */
@@ -1263,6 +1179,7 @@ export interface PeraValidatorSummary {
 	pendingStake: string;
 	/** Pending stake withdrawn during the current epoch, emptied at epoch boundaries. */
 	pendingTotalPeraWithdraw: string;
+	peraAddress: string;
 	/** Total number of pool tokens issued by the pool. */
 	poolTokenBalance: string;
 	primaryAddress: string;
@@ -1279,11 +1196,116 @@ export interface PeraValidatorSummary {
 	stakingPoolId: string;
 	/** The total number of PERA tokens in this pool. */
 	stakingPoolPeraBalance: string;
-	peraAddress: string;
 	votingPower: string;
 	workerAddress: string;
 	workerPubkeyBytes: string;
 }
+export interface ProtocolConfig {
+	attributes: {
+		[key: string]: ProtocolConfigValue | null;
+	};
+	featureFlags: {
+		[key: string]: boolean;
+	};
+	maxSupportedProtocolVersion: string;
+	minSupportedProtocolVersion: string;
+	protocolVersion: string;
+}
+export type ProtocolConfigValue =
+	| {
+			u16: string;
+	  }
+	| {
+			u32: string;
+	  }
+	| {
+			u64: string;
+	  }
+	| {
+			f64: string;
+	  }
+	| {
+			bool: string;
+	  };
+export type PublicKey =
+	| {
+			Ed25519: string;
+	  }
+	| {
+			Secp256k1: string;
+	  }
+	| {
+			Secp256r1: string;
+	  }
+	| {
+			ZkLogin: string;
+	  }
+	| {
+			Passkey: string;
+	  };
+export type RPCTransactionRequestParams =
+	| {
+			transferObjectRequestParams: TransferObjectParams;
+	  }
+	| {
+			moveCallRequestParams: MoveCallParams;
+	  };
+export type RawData =
+	| {
+			bcsBytes: string;
+			dataType: 'moveObject';
+			hasPublicTransfer: boolean;
+			type: string;
+			version: string;
+	  }
+	| {
+			dataType: 'package';
+			id: string;
+			linkageTable: {
+				[key: string]: UpgradeInfo;
+			};
+			moduleMap: {
+				[key: string]: string;
+			};
+			typeOriginTable: TypeOrigin[];
+			version: string;
+	  };
+export type Signature =
+	| {
+			Ed25519PeraSignature: string;
+	  }
+	| {
+			Secp256k1PeraSignature: string;
+	  }
+	| {
+			Secp256r1PeraSignature: string;
+	  };
+export type StakeObject =
+	| {
+			principal: string;
+			stakeActiveEpoch: string;
+			stakeRequestEpoch: string;
+			/** ID of the StakedPera receipt object. */
+			stakedPeraId: string;
+			status: 'Pending';
+	  }
+	| {
+			principal: string;
+			stakeActiveEpoch: string;
+			stakeRequestEpoch: string;
+			/** ID of the StakedPera receipt object. */
+			stakedPeraId: string;
+			estimatedReward: string;
+			status: 'Active';
+	  }
+	| {
+			principal: string;
+			stakeActiveEpoch: string;
+			stakeRequestEpoch: string;
+			/** ID of the StakedPera receipt object. */
+			stakedPeraId: string;
+			status: 'Unstaked';
+	  };
 export interface CoinSupply {
 	value: string;
 }
@@ -1419,6 +1441,15 @@ export type PeraTransactionBlockKind =
 			kind: 'ConsensusCommitPrologueV3';
 			round: string;
 			sub_dag_index?: string | null;
+	  }
+	| {
+			kind: 'DWalletMPCOutput';
+			sender_address: string;
+			session_id: string;
+			value: number[];
+	  }
+	| {
+			kind: 'LockNextCommittee';
 	  };
 export interface PeraTransactionBlockResponse {
 	balanceChanges?: BalanceChange[] | null;

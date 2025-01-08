@@ -1145,7 +1145,12 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&dwallet_network_key_version)?),
                 ],
             ),
-            MPCRound::PresignFirst(dwallet_id, dkg_output, batch_session_id) => (
+            MPCRound::PresignFirst(
+                dwallet_id,
+                dkg_output,
+                batch_session_id,
+                network_key_version,
+            ) => (
                 "launch_presign_second_round",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
@@ -1154,6 +1159,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                     CallArg::Pure(batch_session_id.to_vec()),
+                    CallArg::Pure(bcs_to_bytes(&network_key_version)?),
                 ],
             ),
             MPCRound::PresignSecond(dwallet_id, _first_round_output, batch_session_id) => {
