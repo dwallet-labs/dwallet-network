@@ -1,10 +1,10 @@
 use commitment::CommitmentSizedNumber;
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput, MPCSessionStatus};
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput, MPCSessionStatus};
+use twopc_mpc::sign::Protocol;
 
 use pera_types::base_types::EpochId;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -14,6 +14,7 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
+use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
@@ -44,7 +45,7 @@ pub(super) struct DWalletMPCSession {
     pub(super) round_number: usize,
     party_id: PartyID,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-    decryption_share: twopc_mpc::secp256k1::class_groups::DecryptionKeyShare,
+    decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
 }
 
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
@@ -59,7 +60,7 @@ impl DWalletMPCSession {
         session_info: SessionInfo,
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        decryption_share: twopc_mpc::secp256k1::class_groups::DecryptionKeyShare,
+        decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     ) -> Self {
         Self {
             status,
@@ -182,12 +183,10 @@ impl DWalletMPCSession {
                     &self.weighted_threshold_access_structure,
                     self.pending_messages.clone(),
                     public_input,
-                    vec![(self.party_id, self.decryption_share.clone())]
-                        .into_iter()
-                        .collect(),
+                    self.decryption_share.clone(),
                 )
             }
-            MPCRound::NetworkDkg(key_type) => advance_network_dkg(
+            MPCRound::NetworkDkg(key_type, _) => advance_network_dkg(
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
@@ -195,6 +194,16 @@ impl DWalletMPCSession {
                 key_type,
                 self.pending_messages.clone(),
             ),
+            MPCRound::EncryptionKeyVerification(verification_data) => {
+                match verify_encrypted_share(verification_data.clone()) {
+                    Ok(_) => Ok(AsynchronousRoundResult::Finalize {
+                        public_output: vec![],
+                        private_output: vec![],
+                        malicious_parties: vec![],
+                    }),
+                    Err(err) => Err(err),
+                }
+            }
             MPCRound::BatchedPresign(..) | MPCRound::BatchedSign(..) => {
                 unreachable!("advance should never be called on a batched session")
             }

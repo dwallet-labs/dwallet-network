@@ -20,7 +20,16 @@
 /// - Ensure secure and decentralized key generation and management.
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet;
-    use pera_system::dwallet::{DWallet, create_dwallet_cap, DWalletCap, get_dwallet_cap_id, get_dwallet_output};
+    use pera_system::dwallet::{
+        DWallet,
+        create_dwallet_cap,
+        DWalletCap,
+        get_dwallet_cap_id,
+        get_dwallet_output,
+        get_dwallet_mpc_network_key_version,
+        EncryptionKey,
+        get_encryption_key
+    };
     use pera::event;
 
     /// Represents the `Secp256K1` dWallet type.
@@ -91,6 +100,39 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         presign: vector<u8>,
     }
 
+    /// An event emitted to start an encrypted share verification process.
+    /// Since we cannot use native functions if we depend on Sui to hold our state,
+    /// we need to emit an event to start the verification process, like we start the other MPC processes.
+    public struct StartEncryptedShareVerificationEvent has copy, drop {
+        encrypted_secret_share_and_proof: vector<u8>,
+        /// The DKG decentralized output of the dwallet that its secret is being encrypted.
+        dwallet_output: vector<u8>,
+        dwallet_id: ID,
+        /// The encryption key used to encrypt the secret share to.
+        encryption_key: vector<u8>,
+        /// The encryption key Move object ID.
+        encryption_key_id: ID,
+        session_id: ID,
+        /// The signed public share of the dwallet that its secret is being encrypted.
+        signed_public_share: vector<u8>,
+        /// The public key of the encryptor. Used to verify the signature on the public share.
+        encryptor_ed25519_pubkey: vector<u8>,
+        initiator: address,
+    }
+
+    /// An event emitted when an encrypted share is created by the system transaction.
+    public struct CreatedEncryptedSecretShareEvent has copy, drop {
+        session_id: ID,
+        encrypted_share_obj_id: ID,
+        dwallet_id: ID,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key_id: ID,
+        encryptor_address: address,
+        encryptor_ed25519_pubkey: vector<u8>,
+        signed_public_share: vector<u8>,
+    }
+
+
     /// Messages that has been signed by a user, a.k.a the centralized party, but not yet by the blockchain.
     /// Used for scenarios where the user need to first agree to sign some transaction, and the blockchain signs this transaction only later,
     /// when some other conditions are met.
@@ -114,6 +156,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         /// The DKG output of the DWallet.
         dwallet_output: vector<u8>,
         dwallet_cap_id: ID,
+        dwallet_mpc_network_key_version: u8,
     }
 
     /// Event emitted when a [`PartiallySignedMessages`] object is created.
@@ -146,6 +189,20 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public struct CompletedSignEvent has copy, drop {
         session_id: ID,
         signed_messages: vector<vector<u8>>,
+    }
+
+    /// A verified encrypted user share.
+    public struct EncryptedUserShare has key {
+        id: UID,
+        /// The id of the DWallet that its secret share is encrypted.
+        dwallet_id: ID,
+        /// The encrypted secret share and a proof that the encryption is actually the encryption of the `dwallet_id`'s secret share.
+        encrypted_secret_share_and_proof: vector<u8>,
+        /// The encryption key used to encrypt the secret share to.
+        encryption_key_id: ID,
+        signed_public_share: vector<u8>,
+        encryptor_ed25519_pubkey: vector<u8>,
+        encryptor_address: address,
     }
 
     /// Event emitted to start the second round of the DKG process.
@@ -204,6 +261,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_id: ID,
         dkg_output: vector<u8>,
         batch_session_id: ID,
+        dwallet_mpc_network_key_version: u8,
     }
 
     /// Event emitted to initiate the second round of a `Presign` session.
@@ -228,6 +286,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         first_round_output: vector<u8>,
         first_round_session_id: ID,
         batch_session_id: ID,
+        dwallet_mpc_network_key_version: u8,
     }
 
     /// Event emitted when the presign batch is completed.
@@ -274,6 +333,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         hashed_message: vector<u8>,
         presign: vector<u8>,
         centralized_signed_message: vector<u8>,
+        dwallet_mpc_network_key_version: u8,
     }
 
     /// Event emitted to start a batched sign process.
@@ -419,6 +479,66 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id
     }
 
+
+    /// Submits the given secret share encryption to the chain.
+    /// The chain verifies that the encryption is actually the encryption of the secret share before creating the [`EncryptedUserShare`] object.
+    public fun publish_encrypted_user_share(
+        dwallet: &DWallet<Secp256K1>,
+        encryption_key: &EncryptionKey,
+        encrypted_secret_share_and_proof: vector<u8>,
+        signed_public_share: vector<u8>,
+        encryptor_ed25519_pubkey: vector<u8>,
+        ctx: &mut TxContext,
+    ){
+        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        event::emit(StartEncryptedShareVerificationEvent {
+            encrypted_secret_share_and_proof,
+            dwallet_output: get_dwallet_output<Secp256K1>(dwallet),
+            dwallet_id: object::id(dwallet),
+            encryption_key: get_encryption_key(encryption_key),
+            encryption_key_id: object::id(encryption_key),
+            session_id,
+            signed_public_share,
+            encryptor_ed25519_pubkey,
+            initiator: tx_context::sender(ctx),
+        });
+    }
+
+    #[allow(unused_function)]
+    /// This function is called by the blockchain itself to create the encrypted user share after it has been verified.
+    public(package) fun create_encrypted_user_share(
+        dwallet_id: ID,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key_id: ID,
+        session_id: ID,
+        signed_public_share: vector<u8>,
+        encryptor_ed25519_pubkey: vector<u8>,
+        initiator: address,
+        ctx: &mut TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
+        let encrypted_user_share = EncryptedUserShare {
+            id: object::new(ctx),
+            dwallet_id,
+            encrypted_secret_share_and_proof,
+            encryption_key_id,
+            signed_public_share,
+            encryptor_ed25519_pubkey,
+            encryptor_address: initiator,
+        };
+        event::emit(CreatedEncryptedSecretShareEvent {
+            session_id,
+            encrypted_share_obj_id: object::id(&encrypted_user_share),
+            dwallet_id,
+            encrypted_secret_share_and_proof,
+            encryption_key_id,
+            signed_public_share,
+            encryptor_ed25519_pubkey,
+            encryptor_address: initiator,
+        });
+        transfer::freeze_object(encrypted_user_share);
+    }
+
     /// Completes the second DKG round and creates the final [`DWallet`].
     /// This function finalizes the DKG process and emits an event with all relevant data.
     /// This function is called by blockchain itself.
@@ -483,6 +603,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         signatures: vector<vector<u8>>,
         dwallet_id: ID,
         dwallet_cap_id: ID,
+        dwallet_mpc_network_key_version: u8,
         ctx: &mut TxContext
     ) : PartiallySignedMessages {
         PartiallySignedMessages {
@@ -494,6 +615,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_output: vector::empty(),
             dwallet_cap_id,
+            dwallet_mpc_network_key_version,
         }
     }
 
@@ -558,6 +680,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 dwallet_id: object::id(dwallet),
                 dkg_output: get_dwallet_output<Secp256K1>(dwallet),
                 batch_session_id,
+                dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version(dwallet),
             });
         };
     }
@@ -590,6 +713,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         first_round_output: vector<u8>,
         first_round_session_id: ID,
         batch_session_id: ID,
+        dwallet_mpc_network_key_version: u8,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
@@ -604,6 +728,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             first_round_output,
             first_round_session_id,
             batch_session_id,
+            dwallet_mpc_network_key_version,
         });
     }
 
@@ -620,6 +745,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         batch_session_id: ID,
         ctx: &mut TxContext
     ) {
+        let mpc_network_key_version = 0;
         launch_presign_second_round(
             initiator,
             dwallet_id,
@@ -627,6 +753,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             first_round_output,
             first_round_session_id,
             batch_session_id,
+            mpc_network_key_version,
             ctx
         );
     }
@@ -833,6 +960,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 centralized_signed_message,
                 dkg_output: get_dwallet_output<Secp256K1>(dwallet),
                 hashed_message: message,
+                dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version<Secp256K1>(dwallet),
             });
             transfer::transfer(presign, SYSTEM_ADDRESS);
             i = i + 1;
@@ -925,7 +1053,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     ///
     /// ### Returns
     /// - `DWallet<Secp256K1>`: A mock dWallet object.
-    public fun create_mock_dwallet(
+    public(package) fun create_mock_dwallet_for_testing(
         dkg_output: vector<u8>,
         ctx: &mut TxContext
     ): DWallet<Secp256K1> {
@@ -935,6 +1063,20 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         let dwallet_mpc_network_key_version: u8 = 1;
         dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, dwallet_mpc_network_key_version, ctx)
+    }
+
+    /// Created an immutable [`DWallet`] object with the given DKG output.
+    public fun create_mock_dwallet(
+        dkg_output: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        let dwallet_cap = create_dwallet_cap(ctx);
+        let dwallet_cap_id = object::id(&dwallet_cap);
+        transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
+        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        let dwallet_mpc_network_key_version: u8 = 1;
+        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, dwallet_mpc_network_key_version, ctx);
+        transfer::public_freeze_object(dwallet);
     }
 
     /// Generates a new mock `Presign` object with random IDs and data.
@@ -1004,6 +1146,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_output: get_dwallet_output(dwallet),
             dwallet_id: object::id(dwallet),
             dwallet_cap_id: get_dwallet_cap_id(dwallet),
+            dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version(dwallet),
         };
         event::emit(CreatedPartiallySignedMessagesEvent {
             partial_signatures_object_id: object::id(&partial_signatures),
@@ -1028,6 +1171,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_cap_id,
             dwallet_output,
+            dwallet_mpc_network_key_version,
         } = partial_signature;
         object::delete(id);
         let message_approvals_len = vector::length(message_approvals);
@@ -1057,6 +1201,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 centralized_signed_message,
                 dkg_output: dwallet_output,
                 hashed_message: message,
+                dwallet_mpc_network_key_version,
             });
             i = i + 1;
         };

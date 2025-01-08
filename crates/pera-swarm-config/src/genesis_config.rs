@@ -7,7 +7,8 @@ use std::net::{IpAddr, SocketAddr};
 use anyhow::Result;
 use class_groups::SecretKeyShareSizedNumber;
 use dwallet_classgroups_types::{
-    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
+    generate_class_groups_keypair_and_proof_from_seed, read_class_groups_from_file,
+    ClassGroupsKeyPairAndProof,
 };
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use group::PartyID;
@@ -24,7 +25,7 @@ use pera_types::multiaddr::Multiaddr;
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::info;
-pub use twopc_mpc::secp256k1::class_groups::{AsyncProtocol, DecryptionSharePublicParameters};
+pub use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 // All information needed to build a NodeConfig for a state sync fullnode.
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,12 +36,6 @@ pub struct SsfnGenesisConfig {
 // All information needed to build a NodeConfig for a validator.
 #[derive(Serialize, Deserialize)]
 pub struct ValidatorGenesisConfig {
-    // todo (#348): Update the system to ensure that each validator saves only their own decryption share
-    #[serde(default)]
-    pub dwallet_mpc_class_groups_public_parameters: Option<DecryptionSharePublicParameters>,
-    #[serde(default)]
-    pub dwallet_mpc_class_groups_decryption_shares:
-        Option<HashMap<PartyID, SecretKeyShareSizedNumber>>,
     pub class_groups_keypair_and_proof: ClassGroupsKeyPairAndProof,
     #[serde(default = "default_bls12381_key_pair")]
     pub key_pair: AuthorityKeyPair,
@@ -74,8 +69,7 @@ impl ValidatorGenesisConfig {
         let network_key: NetworkPublicKey = self.network_key_pair.public().clone();
         let worker_key: NetworkPublicKey = self.worker_key_pair.public().clone();
         let network_address = self.network_address.clone();
-        let class_groups_public_key_and_proof =
-            self.class_groups_keypair_and_proof.public_bytes().unwrap();
+        let class_groups_public_key_and_proof = self.class_groups_keypair_and_proof.public_bytes();
 
         let info = ValidatorInfo {
             name,
@@ -119,8 +113,9 @@ pub struct ValidatorGenesisConfigBuilder {
     port_offset: Option<u16>,
     /// Whether to use a specific p2p listen ip address. This is useful for testing on AWS.
     p2p_listen_ip_address: Option<IpAddr>,
-    dwallet_mpc_class_groups_public_parameters: Option<DecryptionSharePublicParameters>,
+    dwallet_mpc_class_groups_public_parameters: Option<twopc_mpc::sign::ClassGroupsPublicParams>,
     dwallet_mpc_decryption_shares: Option<HashMap<PartyID, SecretKeyShareSizedNumber>>,
+    class_groups_key_pair_and_proof: Option<ClassGroupsKeyPairAndProof>,
 }
 
 impl ValidatorGenesisConfigBuilder {
@@ -130,7 +125,7 @@ impl ValidatorGenesisConfigBuilder {
 
     pub fn with_dwallet_mpc_class_groups_public_parameters(
         mut self,
-        dwallet_mpc_class_groups_public_parameters: DecryptionSharePublicParameters,
+        dwallet_mpc_class_groups_public_parameters: twopc_mpc::sign::ClassGroupsPublicParams,
     ) -> Self {
         self.dwallet_mpc_class_groups_public_parameters =
             Some(dwallet_mpc_class_groups_public_parameters);
@@ -152,6 +147,21 @@ impl ValidatorGenesisConfigBuilder {
 
     pub fn with_account_key_pair(mut self, key_pair: AccountKeyPair) -> Self {
         self.account_key_pair = Some(key_pair);
+        self
+    }
+
+    /// This function configures the validator with class-groups key pair and proof.
+    /// If the key pair is not provided at class-groups-{public-protocol-key}.key,
+    /// it will be generated from the seed of the protocol key pair.
+    pub fn with_class_groups_key_pair_and_proof(mut self, key_pair: &AuthorityKeyPair) -> Self {
+        // It is safe to unwrap here because the protocol_key_pair is always set before.
+        // Also, the validator cannot be built without the class groups key.
+        let seed = key_pair.copy().private().as_bytes().try_into().unwrap();
+        let authority_address: PeraAddress = key_pair.public().into();
+        let file_path = format!("class-groups-{}.key", authority_address);
+        let class_groups_keypair_and_proof = read_class_groups_from_file(file_path)
+            .unwrap_or_else(|_| generate_class_groups_keypair_and_proof_from_seed(seed));
+        self.class_groups_key_pair_and_proof = Some(class_groups_keypair_and_proof);
         self
     }
 
@@ -198,8 +208,9 @@ impl ValidatorGenesisConfigBuilder {
             .as_bytes()
             .try_into()
             .unwrap();
-        let class_groups_keypair_and_proof =
-            generate_class_groups_keypair_and_proof_from_seed(seed);
+        let class_groups_keypair_and_proof = self
+            .class_groups_key_pair_and_proof
+            .unwrap_or_else(|| generate_class_groups_keypair_and_proof_from_seed(seed));
 
         let (
             network_address,
@@ -239,9 +250,6 @@ impl ValidatorGenesisConfigBuilder {
             .map(|ip| SocketAddr::new(ip, p2p_address.port().unwrap()));
 
         ValidatorGenesisConfig {
-            dwallet_mpc_class_groups_public_parameters: self
-                .dwallet_mpc_class_groups_public_parameters,
-            dwallet_mpc_class_groups_decryption_shares: self.dwallet_mpc_decryption_shares,
             class_groups_keypair_and_proof,
             key_pair: protocol_key_pair,
             worker_key_pair,

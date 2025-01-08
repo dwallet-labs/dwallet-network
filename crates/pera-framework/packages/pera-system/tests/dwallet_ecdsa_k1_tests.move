@@ -5,7 +5,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
     use pera::test_utils;
     use pera::vec_map::VecMap;
     use pera_system::dwallet;
-    use pera_system::dwallet::DWalletCap;
+    use pera_system::dwallet::{DWalletCap, get_dwallet_mpc_network_key_version};
     use pera_system::dwallet_2pc_mpc_ecdsa_k1;
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{Presign, create_dkg_first_round_output_for_testing};
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{
@@ -27,6 +27,35 @@ module pera_system::dwallet_ecdsa_k1_tests {
     const EObjectTransferredToWrongAddress: u64 = 4;
     const EWrongTransferredObject: u64 = 5;
     const EWrongSessionAddress: u64 = 7;
+
+    #[test]
+    public fun test_create_encrypted_user_share() {
+        let mut scenario = test_scenario::begin(SYSTEM_ADDRESS);
+        scenario.next_tx(SYSTEM_ADDRESS);
+        {
+            let ctx = scenario.ctx();
+            dwallet_2pc_mpc_ecdsa_k1::create_encrypted_user_share(
+                object::id_from_address(@0x10),
+                vector[0xAA, 0xBB],
+                object::id_from_address(@0x10),
+                object::id_from_address(@0x10),
+                vector[0xCC, 0xDD],
+                vector[0xEE, 0xFF],
+                @0x10,
+                ctx,
+            );
+        };
+        let effects: TransactionEffects = scenario.end();
+
+        let events_num = test_scenario::num_user_events(&effects);
+        assert!(events_num == 1, EWrongEventNumber);
+
+        let created_objects = test_scenario::created(&effects);
+        assert!(std::vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+
+        let frozen_objects = test_scenario::frozen(&effects);
+        assert!(std::vector::length(&frozen_objects) == 1, EWrongFrozenObjectsNum);
+    }
 
     #[test]
     public fun test_launch_dkg_first_round() {
@@ -216,7 +245,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let ctx = test_scenario::ctx(&mut scenario);
             dwallet_cap = dwallet::create_dwallet_cap(ctx);
             let dkg_output: vector<u8> = std::vector::singleton(0xAA);
-            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
+            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
         };
 
         // Call `launch_batched_presign` in a new transaction
@@ -340,7 +369,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let dkg_output: vector<u8> = std::vector::singleton(0xAA);
-            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
+            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
             dwallet_cap_id = dwallet::get_dwallet_cap_id(&dwallet);
         };
 
@@ -364,6 +393,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
+                get_dwallet_mpc_network_key_version(&dwallet),
                 ctx
             );
             pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(
@@ -394,7 +424,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let dkg_output: vector<u8> = std::vector::singleton(0xAA);
-            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
+            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
             dwallet_cap_id = dwallet::get_dwallet_cap_id(&dwallet);
         };
 
@@ -411,6 +441,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
+                get_dwallet_mpc_network_key_version(&dwallet),
                 ctx
             );
             pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(
@@ -441,7 +472,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let dkg_output: vector<u8> = std::vector::singleton(0xAA);
-            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
+            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
             dwallet_cap_id = dwallet::get_dwallet_cap_id(&dwallet);
         };
 
@@ -465,6 +496,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
+                get_dwallet_mpc_network_key_version(&dwallet),
                 ctx
             );
             pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(
@@ -493,7 +525,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let dkg_output: vector<u8> = std::vector::singleton(0xAA);
-            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
+            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
         };
 
         let presign;
@@ -604,7 +636,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let dkg_output: vector<u8> = std::vector::singleton(0xAA);
-            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
+            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
         };
 
         test_scenario::next_tx(&mut scenario, sender);
@@ -679,8 +711,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let dkg_output: vector<u8> = std::vector::singleton(0xAA);
             let dkg_output2: vector<u8> = std::vector::singleton(0xAB);
 
-            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
-            invalid_dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output2, ctx);
+            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
+            invalid_dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output2, ctx);
         };
 
         test_scenario::next_tx(&mut scenario, sender);
@@ -749,7 +781,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let dkg_output: vector<u8> = std::vector::singleton(0xAA);
-            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
+            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
         };
 
         test_scenario::next_tx(&mut scenario, sender);
@@ -821,7 +853,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let dkg_output: vector<u8> = std::vector::singleton(0xAA);
-            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
+            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
         };
 
         test_scenario::next_tx(&mut scenario, sender);
@@ -908,7 +940,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let dkg_output: vector<u8> = std::vector::singleton(0xAA);
-            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
+            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
         };
 
         test_scenario::next_tx(&mut scenario, sender);
