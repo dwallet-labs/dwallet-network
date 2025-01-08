@@ -87,8 +87,7 @@ pub fn decrypt_user_share(
 /// Verifies the given secret share matches the given DWallet's DKG output centralized_party_public_key_share.
 #[wasm_bindgen]
 pub fn verify_user_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> Result<JsValue, JsError> {
-    let is_matching = verify_secret_share(secret_share, dkg_output).map_err(to_js_err)?;
-    Ok(JsValue::from(is_matching))
+    Ok(JsValue::from(verify_secret_share(secret_share, dkg_output).map_err(to_js_err)?))
 }
 
 #[wasm_bindgen]
