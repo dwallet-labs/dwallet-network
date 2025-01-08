@@ -239,7 +239,7 @@ pub fn centralized_public_share_from_decentralized_output_inner(
 }
 
 /// Encrypts the given secret share to the given encryption key.
-/// Returns a tuple of the encryption key & proof.
+/// Returns a tuple of the encryption key and proof of encryption.
 pub fn encrypt_secret_share_and_prove(
     secret_share: Vec<u8>,
     encryption_key: Vec<u8>,
