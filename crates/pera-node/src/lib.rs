@@ -416,6 +416,7 @@ impl PeraNode {
         }
     }
 
+    // Note(zeev): main func to start the Validator/Node.
     pub async fn start_async(
         config: NodeConfig,
         registry_service: RegistryService,
@@ -746,6 +747,7 @@ impl PeraNode {
             None
         };
 
+        // Start the HTTP Server for the FullNode.
         let http_server = build_http_server(
             state.clone(),
             state_sync_store,
@@ -1175,6 +1177,8 @@ impl PeraNode {
             .ok_or_else(|| anyhow!("Validator is missing consensus config"))?;
 
         let client = Arc::new(ConsensusClient::new());
+        // Note(zeev): this is where the consensus functionality is created.
+        // The client is empty and is set later based on the config (Narwhal or Mysticeti).
         let consensus_adapter = Arc::new(Self::construct_consensus_adapter(
             &committee,
             consensus_config,
@@ -1296,7 +1300,7 @@ impl PeraNode {
         }
 
         // Start the dWallet MPC manager on epoch start.
-        epoch_store.set_dwallet_mpc_network_keys();
+        epoch_store.set_dwallet_mpc_network_keys()?;
         // This verifier is in sync with the consensus,
         // used to verify outputs before sending a system TX to store them.
         epoch_store
@@ -1336,6 +1340,7 @@ impl PeraNode {
             throughput_calculator,
         );
 
+        // Note(zeev): Starts the ConsensusManager, including Primary and Worker nodes.
         consensus_manager
             .start(
                 config,

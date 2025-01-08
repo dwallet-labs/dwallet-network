@@ -12,6 +12,7 @@ use crate::pera_serde::BigInt;
 use crate::pera_serde::Readable;
 use crate::pera_system_state::get_validator_from_table;
 use crate::storage::ObjectStore;
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 use fastcrypto::encoding::Base64;
 use fastcrypto::traits::ToFromBytes;
 use schemars::JsonSchema;
@@ -182,6 +183,8 @@ pub struct PeraSystemStateSummary {
     pub at_risk_validators: Vec<(PeraAddress, u64)>,
     /// A map storing the records of validator reporting each other.
     pub validator_report_records: Vec<(PeraAddress, Vec<PeraAddress>)>,
+    /// dWallet MPC network keys, KeyScheme -> NetworkDecryptionKeyShares
+    pub decryption_key_shares: Vec<(u8, NetworkDecryptionKeyShares)>,
 }
 
 impl PeraSystemStateSummary {
@@ -228,9 +231,6 @@ pub struct PeraValidatorSummary {
     #[schemars(with = "Base64")]
     #[serde_as(as = "Base64")]
     pub worker_pubkey_bytes: Vec<u8>,
-    #[schemars(with = "Base64")]
-    #[serde_as(as = "Base64")]
-    pub class_groups_public_key_and_proof: Vec<u8>,
     #[schemars(with = "Base64")]
     #[serde_as(as = "Base64")]
     pub proof_of_possession_bytes: Vec<u8>,
@@ -362,6 +362,7 @@ impl Default for PeraSystemStateSummary {
             validator_candidates_size: 0,
             at_risk_validators: vec![],
             validator_report_records: vec![],
+            decryption_key_shares: vec![],
         }
     }
 }
@@ -373,7 +374,6 @@ impl Default for PeraValidatorSummary {
             protocol_pubkey_bytes: vec![],
             network_pubkey_bytes: vec![],
             worker_pubkey_bytes: vec![],
-            class_groups_public_key_and_proof: vec![],
             proof_of_possession_bytes: vec![],
             name: String::new(),
             description: String::new(),

@@ -7,7 +7,8 @@ use std::net::{IpAddr, SocketAddr};
 use anyhow::Result;
 use class_groups::SecretKeyShareSizedNumber;
 use dwallet_classgroups_types::{
-    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
+    generate_class_groups_keypair_and_proof_from_seed, read_class_groups_from_file,
+    ClassGroupsKeyPairAndProof,
 };
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use group::PartyID;
@@ -114,6 +115,7 @@ pub struct ValidatorGenesisConfigBuilder {
     p2p_listen_ip_address: Option<IpAddr>,
     dwallet_mpc_class_groups_public_parameters: Option<twopc_mpc::sign::ClassGroupsPublicParams>,
     dwallet_mpc_decryption_shares: Option<HashMap<PartyID, SecretKeyShareSizedNumber>>,
+    class_groups_key_pair_and_proof: Option<ClassGroupsKeyPairAndProof>,
 }
 
 impl ValidatorGenesisConfigBuilder {
@@ -145,6 +147,21 @@ impl ValidatorGenesisConfigBuilder {
 
     pub fn with_account_key_pair(mut self, key_pair: AccountKeyPair) -> Self {
         self.account_key_pair = Some(key_pair);
+        self
+    }
+
+    /// This function configures the validator with class-groups key pair and proof.
+    /// If the key pair is not provided at class-groups-{public-protocol-key}.key,
+    /// it will be generated from the seed of the protocol key pair.
+    pub fn with_class_groups_key_pair_and_proof(mut self, key_pair: &AuthorityKeyPair) -> Self {
+        // It is safe to unwrap here because the protocol_key_pair is always set before.
+        // Also, the validator cannot be built without the class groups key.
+        let seed = key_pair.copy().private().as_bytes().try_into().unwrap();
+        let authority_address: PeraAddress = key_pair.public().into();
+        let file_path = format!("class-groups-{}.key", authority_address);
+        let class_groups_keypair_and_proof = read_class_groups_from_file(file_path)
+            .unwrap_or_else(|_| generate_class_groups_keypair_and_proof_from_seed(seed));
+        self.class_groups_key_pair_and_proof = Some(class_groups_keypair_and_proof);
         self
     }
 
@@ -191,8 +208,9 @@ impl ValidatorGenesisConfigBuilder {
             .as_bytes()
             .try_into()
             .unwrap();
-        let class_groups_keypair_and_proof =
-            generate_class_groups_keypair_and_proof_from_seed(seed);
+        let class_groups_keypair_and_proof = self
+            .class_groups_key_pair_and_proof
+            .unwrap_or_else(|| generate_class_groups_keypair_and_proof_from_seed(seed));
 
         let (
             network_address,
@@ -215,6 +233,7 @@ impl ValidatorGenesisConfigBuilder {
                 local_ip_utils::new_deterministic_tcp_address_for_testing(&ip, offset + 6),
             )
         } else {
+            // Note(zeev): this code generates random addresses for the swarm.
             (
                 local_ip_utils::new_tcp_address_for_testing(&ip),
                 local_ip_utils::new_udp_address_for_testing(&ip),

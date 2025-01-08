@@ -228,6 +228,14 @@ strip = 'none'
 # For convenience.
 strip = 'none'
 
+# The Class-Groups key generation output was too large,
+# causing runtime stack overflow errors.
+# This optimization resolved the issue.
+# Note: This flag causes issues with the debugger (#441)
+#[profile.dev]
+#opt-level = 2
+#opt-level = 2
+
 [profile.test.package.move-compiler]
 # opt-level 2 for move-compiler reduces the size of some of its
 # (recursive) stack frames by up to 10x, avoiding stack overflows.
@@ -613,7 +621,7 @@ pera-benchmark = { path = "crates/pera-benchmark" }
 pera-bridge = { path = "crates/pera-bridge" }
 pera-cluster-test = { path = "crates/pera-cluster-test" }
 pera-config = { path = "crates/pera-config" }
-pera-core = { path = "crates/pera-core" }
+pera-core = { path = "crates/pera-core" } #, features = ["with-network-dkg"]}
 pera-cost = { path = "crates/pera-cost" }
 pera-data-ingestion = { path = "crates/pera-data-ingestion" }
 pera-data-ingestion-core = { path = "crates/pera-data-ingestion-core" }
@@ -640,7 +648,7 @@ pera-metric-checker = { path = "crates/pera-metric-checker" }
 pera-move = { path = "crates/pera-move" }
 pera-move-build = { path = "crates/pera-move-build" }
 pera-move-lsp = { path = "crates/pera-move-lsp" }
-dwallet-mpc-types = { path = "crates/dwallet-mpc-types" }
+dwallet-mpc-types = { path = "crates/dwallet-mpc-types"}
 dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types", features = ["mock-class-groups"] }
 pera-network = { path = "crates/pera-network" }
 pera-node = { path = "crates/pera-node" }

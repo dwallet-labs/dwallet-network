@@ -41,6 +41,8 @@ mod transaction_manager_tests;
 /// Minimum capacity of HashMaps used in TransactionManager.
 const MIN_HASHMAP_CAPACITY: usize = 1000;
 
+// Note(zeev):
+// This part receives the verified transactions from the consensus layer and sends them for execution.
 /// TransactionManager is responsible for managing object dependencies of pending transactions,
 /// and publishing a stream of certified transactions (certificates) ready to execute.
 /// It receives certificates from Narwhal, validator RPC handlers, and checkpoint executor.

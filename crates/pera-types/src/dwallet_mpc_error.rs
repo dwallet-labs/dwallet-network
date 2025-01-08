@@ -13,8 +13,8 @@ pub enum DwalletMPCError {
     #[error("Operations for the epoch {0} have ended")]
     EpochEnded(EpochId),
 
-    #[error("non MPC event")]
-    NonMPCEvent,
+    #[error("non MPC event {0}")]
+    NonMPCEvent(String),
 
     #[error("authority with a name: `{0}` not found")]
     AuthorityNameNotFound(AuthorityName),
@@ -83,6 +83,15 @@ pub enum DwalletMPCError {
 
     #[error(transparent)]
     DwalletNetworkMPCError(#[from] DwalletNetworkMPCError),
+
+    #[error("Class Groups Error: {0}")]
+    ClassGroupsError(String),
+
+    #[error("Failed to read Class Groups key: {0}")]
+    FailedToReadCGKey(String),
+
+    #[error("Failed to write Class Groups key: {0}")]
+    FailedToWriteCGKey(String),
 }
 
 /// A wrapper type for the result of a runtime operation.

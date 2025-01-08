@@ -4,6 +4,7 @@ use std::fmt;
 use thiserror::Error;
 
 pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
+pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
 pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet");
 pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartDKGFirstRoundEvent");
@@ -19,6 +20,8 @@ pub const START_BATCHED_PRESIGN_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartBatchedPresignEvent");
 pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("LockedNextEpochCommitteeEvent");
+pub const VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME: &IdentStr =
+    ident_str!("ValidatorDataForDWalletSecretShare");
 pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartNetworkDKGEvent");
 
 /// Alias for an MPC message.
@@ -81,17 +84,31 @@ impl fmt::Display for MPCSessionStatus {
     }
 }
 
-/// Rust representation of the move struct `NetworkDecryptionKeyShares`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// Rust representation of the Move struct `NetworkDecryptionKeyShares`
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
 pub struct NetworkDecryptionKeyShares {
+    /// The epoch of the last version update.
     pub epoch: u64,
-    pub current_epoch_shares: Vec<Vec<u8>>,
-    pub previous_epoch_shares: Vec<Vec<u8>>,
+    /// Decryption key shares for the current epoch.
+    /// Updated at the reconfiguration or when a new key version is created at network DKG.
+    pub current_epoch_shares: Vec<u8>,
+    /// Decryption key shares for the previous epoch.
+    /// Updated at the reconfiguration.
+    pub previous_epoch_shares: Vec<u8>,
+    /// The public parameters of the network DKG, updated only after a successful network DKG.
+    pub protocol_public_parameters: Vec<u8>,
+    /// The public parameters of the decryption key shares,
+    /// updated only after a successful network DKG.
+    pub decryption_public_parameters: Vec<u8>,
+    ///  The network encryption, updated only after a successful network DKG.
+    pub encryption_key: Vec<u8>,
+    /// Validators' commitments to the secret sharing constructed in the network DKG.
+    pub reconstructed_commitments_to_sharing: Vec<u8>,
 }
 
 #[repr(u8)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash, Copy)]
-pub enum DWalletMPCNetworkKey {
+pub enum DWalletMPCNetworkKeyScheme {
     Secp256k1 = 1,
     Ristretto = 2,
 }
@@ -104,13 +121,13 @@ pub enum DwalletNetworkMPCError {
     InvalidDWalletMPCNetworkKey(u8),
 }
 
-impl TryFrom<u8> for DWalletMPCNetworkKey {
+impl TryFrom<u8> for DWalletMPCNetworkKeyScheme {
     type Error = DwalletNetworkMPCError;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            1 => Ok(DWalletMPCNetworkKey::Secp256k1),
-            2 => Ok(DWalletMPCNetworkKey::Ristretto),
+            1 => Ok(DWalletMPCNetworkKeyScheme::Secp256k1),
+            2 => Ok(DWalletMPCNetworkKeyScheme::Ristretto),
             v => Err(DwalletNetworkMPCError::InvalidDWalletMPCNetworkKey(v)),
         }
     }

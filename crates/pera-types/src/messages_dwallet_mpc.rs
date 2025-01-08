@@ -3,6 +3,9 @@ use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::id::ID;
 use crate::message_envelope::Message;
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme,  NetworkDecryptionKeyShares,
+};
 use crate::PERA_SYSTEM_ADDRESS;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKey, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
@@ -22,8 +25,9 @@ pub enum MPCRound {
     DKGSecond(ObjectID, u8),
     /// The first round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
-    /// the DKG decentralized output, and the batch session ID.
-    PresignFirst(ObjectID, MPCPublicOutput, ObjectID),
+    /// the DKG decentralized output, the batch session ID,
+    /// and the dWallets' network key version.
+    PresignFirst(ObjectID, MPCPublicOutput, ObjectID, u8),
     /// The second round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
     /// the Presign first round output, and the batch session ID.
@@ -34,7 +38,10 @@ pub enum MPCRound {
     BatchedSign(Vec<Vec<u8>>),
     BatchedPresign(u64),
     /// The round of the network DKG protocol.
-    NetworkDkg(DWalletMPCNetworkKey),
+    NetworkDkg(
+        DWalletMPCNetworkKeyScheme,
+        Option<NetworkDecryptionKeyShares>,
+    ),
     /// The round of verifying the encrypted share proof is valid and
     /// that the signature on it is valid.
     EncryptedShareVerification(StartEncryptedShareVerificationEvent),

@@ -209,6 +209,7 @@ impl ConsensusManagerTrait for ConsensusManager {
             });
             let protocol = Self::get_consensus_protocol_in_epoch(&epoch_store);
             info!("Starting consensus protocol {protocol:?} ...");
+            // Note(zeev): this is where the consensus protocol is chosen.
             match protocol {
                 ConsensusProtocol::Narwhal => {
                     active[0] = true;

@@ -113,20 +113,6 @@ impl EpochStartSystemStateV1 {
         self.decryption_key_shares.clone()
     }
 
-    pub fn get_active_validators_class_groups_public_key_and_proof(
-        &self,
-    ) -> HashMap<AuthorityName, Vec<u8>> {
-        self.active_validators
-            .iter()
-            .map(|validator| {
-                (
-                    validator.authority_name().clone(),
-                    validator.class_groups_public_key_and_proof.clone(),
-                )
-            })
-            .collect()
-    }
-
     pub fn new_for_testing() -> Self {
         Self::new_for_testing_with_epoch(0)
     }
@@ -341,7 +327,6 @@ pub struct EpochStartValidatorInfoV1 {
     pub protocol_pubkey: narwhal_crypto::PublicKey,
     pub narwhal_network_pubkey: narwhal_crypto::NetworkPublicKey,
     pub narwhal_worker_pubkey: narwhal_crypto::NetworkPublicKey,
-    pub class_groups_public_key_and_proof: Vec<u8>,
     pub pera_net_address: Multiaddr,
     pub p2p_address: Multiaddr,
     pub narwhal_primary_address: Multiaddr,
@@ -384,7 +369,6 @@ mod test {
                 protocol_pubkey: protocol_key.public().clone(),
                 narwhal_network_pubkey: narwhal_network_key.public().clone(),
                 narwhal_worker_pubkey: narwhal_network_key.public().clone(),
-                class_groups_public_key_and_proof: vec![],
                 pera_net_address: Multiaddr::empty(),
                 p2p_address: Multiaddr::empty(),
                 narwhal_primary_address: Multiaddr::empty(),
@@ -402,6 +386,7 @@ mod test {
             epoch_start_timestamp_ms: 0,
             epoch_duration_ms: 0,
             active_validators,
+            decryption_key_shares: None,
         };
 
         // WHEN

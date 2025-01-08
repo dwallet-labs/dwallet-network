@@ -5,6 +5,7 @@ use crate::zklogin_commands_util::{perform_zk_login_test_tx, read_cli_line};
 use anyhow::anyhow;
 use bip32::DerivationPath;
 use clap::*;
+use dwallet_classgroups_types::write_class_groups_keypair_and_proof_to_file;
 use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::encoding::{Base64, Encoding, Hex};
 use fastcrypto::hash::HashFunction;
@@ -24,7 +25,7 @@ use num_bigint::BigUint;
 use pera_keys::key_derive::{generate_new_class_groups_keypair_and_proof, generate_new_key};
 use pera_keys::keypair_file::{
     read_authority_keypair_from_file, read_keypair_from_file, write_authority_keypair_to_file,
-    write_class_groups_keypair_and_proof_to_file, write_keypair_to_file,
+    write_keypair_to_file,
 };
 use pera_keys::keystore::{AccountKeystore, Keystore};
 use pera_types::base_types::PeraAddress;
@@ -57,6 +58,7 @@ use tabled::builder::Builder;
 use tabled::settings::Rotate;
 use tabled::settings::{object::Rows, Modify, Width};
 use tracing::info;
+
 #[cfg(test)]
 #[path = "unit_tests/keytool_tests.rs"]
 mod keytool_tests;
