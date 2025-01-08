@@ -106,7 +106,7 @@ pub struct NetworkDecryptionKeyShares {
 }
 
 #[repr(u8)]
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash, Copy, schemars::JsonSchema,)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash, Copy)]
 pub enum DWalletMPCNetworkKeyScheme {
     Secp256k1 = 1,
     Ristretto = 2,
