@@ -59,7 +59,7 @@ fn verify_signatures(
         .verify(&bcs::to_bytes(&dkg_output.public_key_share)?, &signature)
         .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     let derived_sui_addr = PeraAddress::from(&public_key);
-    if (derived_sui_addr != verification_data.initiator) {
+    if derived_sui_addr != verification_data.initiator {
         return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
     }
     Ok(())
