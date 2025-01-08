@@ -17,6 +17,7 @@ pub(super) type SignPublicInput =
 /// when accessing [`mpc::Party::PublicInput`].
 pub(super) trait SignPartyPublicInputGenerator: mpc::Party {
     fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
         dkg_output: MPCPublicOutput,
         hashed_message: Vec<u8>,
         presign: MPCPublicOutput,
@@ -27,24 +28,22 @@ pub(super) trait SignPartyPublicInputGenerator: mpc::Party {
 
 impl SignPartyPublicInputGenerator for SignFirstParty {
     fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
         dkg_output: MPCPublicOutput,
         hashed_message: Vec<u8>,
         presign: MPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
     ) -> DwalletMPCResult<MPCPublicInput> {
-        let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
-            bcs::from_bytes(&presign)?;
-
         let auxiliary = SignPublicInput::from((
-            class_groups_constants::protocol_public_parameters(),
+            bcs::from_bytes(&protocol_public_parameters)?,
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::Message>(
                 &hashed_message,
             )?,
             bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(
                 &dkg_output,
             )?,
-            presign,
+            bcs::from_bytes::<<AsyncProtocol as twopc_mpc::presign::Protocol>::Presign>(&presign)?,
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage>(
                 &centralized_signed_message,
             )?,

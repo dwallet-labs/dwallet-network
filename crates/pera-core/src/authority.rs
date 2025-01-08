@@ -1571,8 +1571,6 @@ impl AuthorityState {
                 Self::handle_validator_data_for_network_dkg_event(epoch_store, event)?;
                 continue;
             }
-            // Todo (#427): Receive the key version
-            // Todo (#427): from the MPC event and check its validity.
             let key_version = epoch_store
                 .dwallet_mpc_network_keys
                 .get()

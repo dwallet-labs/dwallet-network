@@ -106,4 +106,8 @@ module pera_system::dwallet {
     public(package) fun get_dwallet_output<T: drop>(dwallet: &DWallet<T>): vector<u8> {
         dwallet.output
     }
+
+    public(package) fun get_dwallet_mpc_network_key_version<T: drop>(dwallet: &DWallet<T>): u8 {
+        dwallet.dwallet_mpc_network_key_version
+    }
 }

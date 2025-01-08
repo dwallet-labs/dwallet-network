@@ -181,7 +181,7 @@ It emits a [<code><a href="dwallet_network_key.md#0x3_dwallet_network_key_StartN
 with its public key and proof, that are needed for the DKG process.
 
 Each validator's data is being emitted separately because the proof size is
-almost 250KB, which is the maximum event size in Sui.
+almost 250 KB, which is the maximum event size in Sui.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_scheme: u8, validators_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator_set.md#0x3_validator_set_ValidatorDataForDWalletSecretShare">validator_set::ValidatorDataForDWalletSecretShare</a>&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)

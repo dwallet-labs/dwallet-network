@@ -16,6 +16,11 @@ export interface Config {
 	timeout: number;
 }
 
+export enum MPCKeyScheme {
+	Secp256k1 = 1,
+	Ristretto = 2,
+}
+
 interface FetchObjectFromEventParams<TEvent, TObject> {
 	conf: Config;
 	eventType: string;
