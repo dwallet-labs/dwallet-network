@@ -12,7 +12,6 @@ import {
 	generateCGKeyPairFromSuiKeyPair,
 	getActiveEncryptionKeyObjID,
 	getOrCreateEncryptionKey,
-	sendUserShareToSuiPubKey,
 } from '../../src/dwallet-mpc/encrypt-user-share';
 import { Config } from '../../src/dwallet-mpc/globals';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
