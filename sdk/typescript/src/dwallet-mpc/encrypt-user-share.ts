@@ -1,7 +1,6 @@
 ;
 // noinspection ES6PreferShortImport
 
-// noinspection ES6PreferShortImport
 import { centralized_public_share_from_decentralized_output, decrypt_user_share, encrypt_secret_share, generate_secp_cg_keypair_from_seed, verify_user_share } from '@dwallet-network/dwallet-mpc-wasm';
 import { toHEX } from '@mysten/bcs';
 
@@ -22,7 +21,6 @@ import { dWallet2PCMPCECDSAK1ModuleName, dWalletModuleName, fetchCompletedEvent,
 
 const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
 const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
-
 const encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
 
 /**
@@ -58,7 +56,6 @@ interface StartEncryptedShareVerificationEvent {
 /**
  * A class groups Move encryption key object.
  */
-
 interface EncryptionKey {
 	encryption_key: Uint8Array;
 	key_owner_address: string;

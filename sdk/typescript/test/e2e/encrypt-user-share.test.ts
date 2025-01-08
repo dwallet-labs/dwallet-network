@@ -101,7 +101,8 @@ describe('encrypt user share', () => {
 	});
 });
 
-describe('encrypt user share - tests that can run without the blockchain is running', () => {
+// tests that can run without the blockchain running.
+describe('encrypt user share — offline', () => {
 	it("successfully encrypts a secret share, decrypt it, and verify the decrypted share is matching the dWallets' public share", () => {
 		let keypair = Ed25519Keypair.generate();
 		let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(keypair);
