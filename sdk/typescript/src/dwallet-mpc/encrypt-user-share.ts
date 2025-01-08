@@ -1,7 +1,6 @@
 ;
 // noinspection ES6PreferShortImport
 
-// noinspection ES6PreferShortImport
 import { centralized_public_share_from_decentralized_output, decrypt_user_share, encrypt_secret_share, generate_secp_cg_keypair_from_seed, verify_user_share } from '@dwallet-network/dwallet-mpc-wasm';
 import { toHEX } from '@mysten/bcs';
 
