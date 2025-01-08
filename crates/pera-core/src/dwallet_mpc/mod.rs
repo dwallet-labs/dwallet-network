@@ -462,10 +462,6 @@ pub(crate) fn public_input_from_event(
                 protocol_public_parameters,
             )
         }
-        t if t == &StartNetworkDKGEvent::type_() => {
-            let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
-            network_dkg::network_dkg_public_input(deserialized_event)
-        }
         t if t == &StartEncryptedShareVerificationEvent::type_() => Ok(vec![]),
         t if t == &StartEncryptionKeyVerificationEvent::type_() => Ok(vec![]),
         _ => Err(DwalletMPCError::NonMPCEvent.into()),
