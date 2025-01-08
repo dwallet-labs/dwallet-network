@@ -14,7 +14,9 @@ use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, NetworkDecryptionKeyS
 use group::PartyID;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
+use pera_types::messages_dwallet_mpc::{
+    MPCRound, SessionInfo, StartEncryptedShareVerificationEvent,
+};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 

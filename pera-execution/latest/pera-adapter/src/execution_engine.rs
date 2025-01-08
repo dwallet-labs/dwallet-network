@@ -1126,6 +1126,22 @@ mod checked {
         let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 
         let (move_function_name, args) = match data.session_info.mpc_round {
+            MPCRound::EncryptionKeyVerification(verification_data) => (
+                "create_encrypted_user_share",
+                vec![
+                    CallArg::Pure(verification_data.dwallet_id.bytes.to_vec()),
+                    CallArg::Pure(
+                        bcs::to_bytes(&verification_data.encrypted_secret_share_and_proof).unwrap(),
+                    ),
+                    CallArg::Pure(verification_data.encryption_key_id.bytes.to_vec()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&verification_data.signed_public_share).unwrap()),
+                    CallArg::Pure(
+                        bcs::to_bytes(&verification_data.encryptor_ed25519_pubkey).unwrap(),
+                    ),
+                    CallArg::Pure(verification_data.initiator.to_vec()),
+                ],
+            ),
             MPCRound::DKGFirst => (
                 "create_dkg_first_round_output",
                 vec![

@@ -22,12 +22,15 @@ use pera_types::base_types::AuthorityName;
 use pera_types::base_types::{EpochId, ObjectID};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
-use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo, SignMessageData};
+use pera_types::messages_dwallet_mpc::{
+    MPCRound, SessionInfo, SignMessageData, StartEncryptedShareVerificationEvent,
+};
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 
 pub mod batches_manager;
 mod dkg;
+mod encrypt_user_share;
 pub(crate) mod mpc_events;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
@@ -115,7 +118,25 @@ pub(crate) fn session_info_from_event(
                 deserialized_event,
             )?))
         }
+        t if t == &StartEncryptedShareVerificationEvent::type_() => {
+            let deserialized_event: StartEncryptedShareVerificationEvent =
+                bcs::from_bytes(&event.contents)?;
+            Ok(Some(start_encrypted_share_verification_session_info(
+                deserialized_event,
+            )))
+        }
         _ => Ok(None),
+    }
+}
+
+fn start_encrypted_share_verification_session_info(
+    deserialized_event: StartEncryptedShareVerificationEvent,
+) -> SessionInfo {
+    SessionInfo {
+        flow_session_id: deserialized_event.session_id.bytes,
+        session_id: deserialized_event.session_id.bytes,
+        initiating_user_address: Default::default(),
+        mpc_round: MPCRound::EncryptionKeyVerification(deserialized_event),
     }
 }
 
@@ -368,6 +389,7 @@ pub(crate) fn public_input_from_event(
             let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
             network_dkg::network_dkg_public_input(deserialized_event)
         }
+        t if t == &StartEncryptedShareVerificationEvent::type_() => Ok(vec![]),
         _ => Err(DwalletMPCError::NonMPCEvent.into()),
     }
 }
