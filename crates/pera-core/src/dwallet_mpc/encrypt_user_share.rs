@@ -42,9 +42,9 @@ pub(crate) fn verify_encrypted_share(
     .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
 }
 
-/// Verifies that the verification_data's public key is matching the initiator Sui address.
+/// Verifies that the `verification_data`'s public key is matching the initiator Sui address.
 pub(crate) fn verify_encryption_key(
-    verification_data: StartEncryptionKeyVerificationEvent,
+    verification_data: &StartEncryptionKeyVerificationEvent,
 ) -> DwalletMPCResult<()> {
     let public_key =
         <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.sender_sui_pubkey)
