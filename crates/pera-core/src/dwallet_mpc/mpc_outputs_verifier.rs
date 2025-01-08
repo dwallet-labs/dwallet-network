@@ -35,7 +35,8 @@ pub struct DWalletMPCOutputsVerifier {
 enum VerificationStatus {
     /// The session is still active, and we are waiting for more outputs.
     Active,
-    /// The session has received enough votes to decide on the output & the output has been committed.
+    /// The session has received enough votes to decide on the output,
+    /// and the output has been committed.
     Verified,
 }
 
