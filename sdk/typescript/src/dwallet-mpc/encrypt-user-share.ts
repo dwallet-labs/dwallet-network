@@ -1,14 +1,11 @@
+;
 // noinspection ES6PreferShortImport
 
 // noinspection ES6PreferShortImport
-import {
-	centralized_public_share_from_decentralized_output,
-	decrypt_user_share,
-	encrypt_secret_share,
-	generate_secp_cg_keypair_from_seed,
-	verify_user_share,
-} from '@dwallet-network/dwallet-mpc-wasm';
+import { centralized_public_share_from_decentralized_output, decrypt_user_share, encrypt_secret_share, generate_secp_cg_keypair_from_seed, verify_user_share } from '@dwallet-network/dwallet-mpc-wasm';
 import { toHEX } from '@mysten/bcs';
+
+
 
 import { bcs } from '../bcs/index.js';
 import type { PeraClient, PeraObjectRef } from '../client/index.js';
@@ -20,13 +17,8 @@ import { Transaction } from '../transactions/index.js';
 import type { CreatedDwallet, DWallet } from './dkg.js';
 import { dWalletMoveType, isDWallet } from './dkg.js';
 import type { Config } from './globals.js';
-import {
-	dWallet2PCMPCECDSAK1ModuleName,
-	dWalletModuleName,
-	fetchCompletedEvent,
-	fetchObjectWithType,
-	packageId,
-} from './globals.js';
+import { dWallet2PCMPCECDSAK1ModuleName, dWalletModuleName, fetchCompletedEvent, fetchObjectWithType, packageId } from './globals.js';
+
 
 const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
 const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
@@ -324,14 +316,12 @@ const transferEncryptedUserShare = async (
 			isStartEncryptedShareVerificationEvent(event.parsedJson),
 	)?.parsedJson as StartEncryptedShareVerificationEvent;
 
-	let completionEvent = await fetchCompletedEvent<CreatedEncryptedSecretShareEvent>(
+	return await fetchCompletedEvent<CreatedEncryptedSecretShareEvent>(
 		conf,
 		sessionData.session_id,
 		createdEncryptedSecretShareEventMoveType,
 		isCreatedEncryptedSecretShareEvent,
 	);
-
-	return completionEvent;
 };
 
 function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSecretShareEvent {
