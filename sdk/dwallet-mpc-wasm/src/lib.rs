@@ -35,15 +35,16 @@ pub fn create_dkg_centralized_output(
 
 /// Derives a Secp256k1 class groups keypair from a given seed.
 ///
-/// The class groups key that is being used to encrypt a Secp256k1 keypair should be different from
+/// The class groups key being used to encrypt a Secp256k1 keypair should be different from
 /// the encryption key used to encrypt a Ristretto keypair, due to cryptographic reasons.
 /// This function derives a class groups keypair to encrypt a Secp256k1 secret from the given seed.
 #[wasm_bindgen]
 pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsError> {
-    let (public_key, private_key) = generate_secp_cg_keypair_from_seed_internal(
-        seed.try_into().expect("seed must be 32 bytes long"),
-    )
-    .map_err(to_js_err)?;
+    let seed: [u8; 32] = seed
+        .try_into()
+        .map_err(|_| JsError::new("seed must be 32 bytes long"))?;
+    let (public_key, private_key) =
+    generate_secp_cg_keypair_from_seed_internal(seed).map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
 }
 
@@ -117,6 +118,6 @@ pub fn create_sign_centralized_output(
 
 // There is no way to implement From<anyhow::Error> for JsErr
 // since the current From<Error> is generic, and it results in a conflict.
-fn to_js_err(e: Error) -> JsError {
+fn to_js_err(e: anyhow::Error) -> JsError {
     JsError::new(format!("{}", e).as_str())
 }

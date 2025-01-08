@@ -96,7 +96,6 @@ module pera_system::dwallet {
         }
     }
 
-
     /// Shared object that holds the active encryption keys per user.
     /// 'encryption_keys' is a key-value table where the key is the user address
     /// and the value is the encryption key object ID.
@@ -107,11 +106,10 @@ module pera_system::dwallet {
 
     /// Create a shared object that holds the active encryption keys per user.
     public fun create_active_encryption_keys(ctx: &mut TxContext) {
-        let holder = ActiveEncryptionKeys {
+        transfer::share_object(ActiveEncryptionKeys {
             id: object::new(ctx),
             encryption_keys: table::new(ctx),
-        };
-        transfer::share_object(holder);
+        });
     }
 
     /// Get the active encryption key ID by user adderss.
@@ -123,7 +121,7 @@ module pera_system::dwallet {
     }
 
     /// Set the active encryption key for a user (the sender).
-    public fun set_active_encryption_key(
+    public fun upsert_active_encryption_key(
         encryption_key_holder: &mut ActiveEncryptionKeys,
         encryption_key: &EncryptionKey,
         ctx: &mut TxContext
@@ -150,15 +148,14 @@ module pera_system::dwallet {
     ) {
         assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
         assert!(ed25519_verify(&signature, &sender_sui_pubkey, &key), EInvalidEncryptionKeySignature);
-        // TODO (#453): Verify the ed2551 public key matches the sender's address
-        let encryption_key = EncryptionKey {
+        // TODO (#453): Verify the ed2551 public key matches the sender's address.
+        transfer::freeze_object(EncryptionKey {
             id: object::new(ctx),
             scheme,
             encryption_key: key,
             key_owner_address: tx_context::sender(ctx),
             encryption_key_signature: signature,
-        };
-        transfer::freeze_object(encryption_key);
+        });
     }
 
     /// Create a new [`DWalletCap`] object.
@@ -200,6 +197,6 @@ module pera_system::dwallet {
     }
 
     fun is_valid_encryption_key_scheme(scheme: u8): bool {
-        scheme == CLASS_GROUPS // || scheme == ...
+        scheme == CLASS_GROUPS
     }
 }

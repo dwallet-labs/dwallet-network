@@ -22,7 +22,7 @@ create_active_encryption_keys
 get_active_encryption_key
 	public fun
 	0x3::dwallet
-set_active_encryption_key
+upsert_active_encryption_key
 	public fun
 	0x3::dwallet
 register_encryption_key

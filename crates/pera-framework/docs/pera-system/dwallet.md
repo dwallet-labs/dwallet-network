@@ -38,7 +38,7 @@ ownership and control over a corresponding <code><a href="dwallet.md#0x3_dwallet
 -  [Function `create_dwallet`](#0x3_dwallet_create_dwallet)
 -  [Function `create_active_encryption_keys`](#0x3_dwallet_create_active_encryption_keys)
 -  [Function `get_active_encryption_key`](#0x3_dwallet_get_active_encryption_key)
--  [Function `set_active_encryption_key`](#0x3_dwallet_set_active_encryption_key)
+-  [Function `upsert_active_encryption_key`](#0x3_dwallet_upsert_active_encryption_key)
 -  [Function `register_encryption_key`](#0x3_dwallet_register_encryption_key)
 -  [Function `create_dwallet_cap`](#0x3_dwallet_create_dwallet_cap)
 -  [Function `get_dwallet_cap_id`](#0x3_dwallet_get_dwallet_cap_id)
@@ -378,11 +378,10 @@ Create a shared object that holds the active encryption keys per user.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_active_encryption_keys">create_active_encryption_keys</a>(ctx: &<b>mut</b> TxContext) {
-    <b>let</b> holder = <a href="dwallet.md#0x3_dwallet_ActiveEncryptionKeys">ActiveEncryptionKeys</a> {
+    <a href="../pera-framework/transfer.md#0x2_transfer_share_object">transfer::share_object</a>(<a href="dwallet.md#0x3_dwallet_ActiveEncryptionKeys">ActiveEncryptionKeys</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         encryption_keys: <a href="../pera-framework/table.md#0x2_table_new">table::new</a>(ctx),
-    };
-    <a href="../pera-framework/transfer.md#0x2_transfer_share_object">transfer::share_object</a>(holder);
+    });
 }
 </code></pre>
 
@@ -418,14 +417,14 @@ Get the active encryption key ID by user adderss.
 
 </details>
 
-<a name="0x3_dwallet_set_active_encryption_key"></a>
+<a name="0x3_dwallet_upsert_active_encryption_key"></a>
 
-## Function `set_active_encryption_key`
+## Function `upsert_active_encryption_key`
 
 Set the active encryption key for a user (the sender).
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_set_active_encryption_key">set_active_encryption_key</a>(encryption_key_holder: &<b>mut</b> <a href="dwallet.md#0x3_dwallet_ActiveEncryptionKeys">dwallet::ActiveEncryptionKeys</a>, encryption_key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">dwallet::EncryptionKey</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_upsert_active_encryption_key">upsert_active_encryption_key</a>(encryption_key_holder: &<b>mut</b> <a href="dwallet.md#0x3_dwallet_ActiveEncryptionKeys">dwallet::ActiveEncryptionKeys</a>, encryption_key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">dwallet::EncryptionKey</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -434,7 +433,7 @@ Set the active encryption key for a user (the sender).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_set_active_encryption_key">set_active_encryption_key</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_upsert_active_encryption_key">upsert_active_encryption_key</a>(
     encryption_key_holder: &<b>mut</b> <a href="dwallet.md#0x3_dwallet_ActiveEncryptionKeys">ActiveEncryptionKeys</a>,
     encryption_key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a>,
     ctx: &<b>mut</b> TxContext
@@ -481,15 +480,14 @@ The key is saved as an immutable object.
 ) {
     <b>assert</b>!(<a href="dwallet.md#0x3_dwallet_is_valid_encryption_key_scheme">is_valid_encryption_key_scheme</a>(scheme), <a href="dwallet.md#0x3_dwallet_EInvalidEncryptionKeyScheme">EInvalidEncryptionKeyScheme</a>);
     <b>assert</b>!(ed25519_verify(&signature, &sender_sui_pubkey, &key), <a href="dwallet.md#0x3_dwallet_EInvalidEncryptionKeySignature">EInvalidEncryptionKeySignature</a>);
-    // TODO (#453): Verify the ed2551 <b>public</b> key matches the sender's <b>address</b>
-    <b>let</b> encryption_key = <a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a> {
+    // TODO (#453): Verify the ed2551 <b>public</b> key matches the sender's <b>address</b>.
+    <a href="../pera-framework/transfer.md#0x2_transfer_freeze_object">transfer::freeze_object</a>(<a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         scheme,
         encryption_key: key,
         key_owner_address: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
         encryption_key_signature: signature,
-    };
-    <a href="../pera-framework/transfer.md#0x2_transfer_freeze_object">transfer::freeze_object</a>(encryption_key);
+    });
 }
 </code></pre>
 
@@ -635,7 +633,7 @@ A <code><a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code
 
 
 <pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_valid_encryption_key_scheme">is_valid_encryption_key_scheme</a>(scheme: u8): bool {
-    scheme == <a href="dwallet.md#0x3_dwallet_CLASS_GROUPS">CLASS_GROUPS</a> // || scheme == ...
+    scheme == <a href="dwallet.md#0x3_dwallet_CLASS_GROUPS">CLASS_GROUPS</a>
 }
 </code></pre>
 
