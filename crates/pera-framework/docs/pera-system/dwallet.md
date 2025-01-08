@@ -251,7 +251,8 @@ An event emitted when an encryption key is created.
 
 An event emitted to start an encryption key verification process.
 Since we cannot use native functions if we depend on Sui to hold our state,
-we need to emit an event to start the verification process, like we start the other MPC processes.
+we need to emit an event to start the verification process,
+like we start the other MPC processes.
 
 
 <pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_StartEncryptionKeyVerificationEvent">StartEncryptionKeyVerificationEvent</a> <b>has</b> <b>copy</b>, drop
@@ -660,6 +661,9 @@ The key is saved as an immutable object.
 
 ## Function `create_encryption_key`
 
+Creates an encryption key object.
+Being called by the blockchain after it verifies the sender_sui_pubkey matches the initiator address.
+We need to run the flow this way as this verification can only be done in rust.
 
 
 <pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_create_encryption_key">create_encryption_key</a>(key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, sender_sui_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, scheme: u8, initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
