@@ -324,7 +324,8 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             decryption_key_shares: encrypted_decryption_key_share.contents
                 .iter()
                 .flat_map(|e| {
-                    e.value.iter().map(|share| (e.key, share.clone()))
+                    e.value.iter().map(|share|
+                        (e.key, share.clone()))
                 })
                 .collect(),
         }
