@@ -48,6 +48,8 @@ pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErro
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
 }
 
+/// Encrypts the given secret share to the given encryption key.
+/// Returns a tuple of the encryption key and proof of encryption.
 #[wasm_bindgen]
 pub fn encrypt_secret_share(secret: Vec<u8>, encryption_key: Vec<u8>) -> Result<JsValue, JsError> {
     let encryption_and_proof =
@@ -55,6 +57,7 @@ pub fn encrypt_secret_share(secret: Vec<u8>, encryption_key: Vec<u8>) -> Result<
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
 }
 
+/// Get the centralized party public share out of the decentralized dkg output.
 #[wasm_bindgen]
 pub fn centralized_public_share_from_decentralized_output(
     decentralized_output: Vec<u8>,
@@ -65,6 +68,7 @@ pub fn centralized_public_share_from_decentralized_output(
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
 }
 
+/// Decrypts the given encrypted user share using the given decryption key.
 #[wasm_bindgen]
 pub fn decrypt_user_share(
     encryption_key: Vec<u8>,
@@ -80,10 +84,10 @@ pub fn decrypt_user_share(
     Ok(serde_wasm_bindgen::to_value(&decrypted_secret_share)?)
 }
 
+/// Verifies the given secret share matches the given DWallet's DKG output centralized_party_public_key_share.
 #[wasm_bindgen]
 pub fn verify_user_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> Result<JsValue, JsError> {
-    let is_matching = verify_secret_share(secret_share, dkg_output).map_err(to_js_err)?;
-    Ok(JsValue::from(is_matching))
+    Ok(JsValue::from(verify_secret_share(secret_share, dkg_output).map_err(to_js_err)?))
 }
 
 #[wasm_bindgen]
