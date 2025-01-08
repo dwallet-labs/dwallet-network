@@ -27,7 +27,6 @@ use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
 use group::KnownOrderGroupElement;
-use k256::elliptic_curve::subtle::CtOption;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
