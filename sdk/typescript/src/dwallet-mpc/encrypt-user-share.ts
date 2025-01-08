@@ -1,10 +1,13 @@
-;
 // noinspection ES6PreferShortImport
 
-import { centralized_public_share_from_decentralized_output, decrypt_user_share, encrypt_secret_share, generate_secp_cg_keypair_from_seed, verify_user_share } from '@dwallet-network/dwallet-mpc-wasm';
+import {
+	centralized_public_share_from_decentralized_output,
+	decrypt_user_share,
+	encrypt_secret_share,
+	generate_secp_cg_keypair_from_seed,
+	verify_user_share,
+} from '@dwallet-network/dwallet-mpc-wasm';
 import { toHEX } from '@mysten/bcs';
-
-
 
 import { bcs } from '../bcs/index.js';
 import type { PeraClient, PeraObjectRef } from '../client/index.js';
@@ -16,8 +19,13 @@ import { Transaction } from '../transactions/index.js';
 import type { CreatedDwallet, DWallet } from './dkg.js';
 import { dWalletMoveType, isDWallet } from './dkg.js';
 import type { Config } from './globals.js';
-import { dWallet2PCMPCECDSAK1ModuleName, dWalletModuleName, fetchCompletedEvent, fetchObjectWithType, packageId } from './globals.js';
-
+import {
+	dWallet2PCMPCECDSAK1ModuleName,
+	dWalletModuleName,
+	fetchCompletedEvent,
+	fetchObjectWithType,
+	packageId,
+} from './globals.js';
 
 const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
 const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
@@ -114,7 +122,7 @@ export async function encryptUserShareWithSuiPubKey(
 		destinationEncryptionKeyObjID,
 		dwallet,
 	);
-};
+}
 
 /**
  * Creates a table that maps users` Sui addresses to Class Group encryption keys.
@@ -176,12 +184,12 @@ export async function getActiveEncryptionKeyObjID(
 
 	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0) as number[]);
 	return toHEX(objIDArray);
-};
+}
 
-export const getOrCreateEncryptionKey = async (
+export async function getOrCreateEncryptionKey(
 	c: Config,
 	activeEncryptionKeysTableID: string,
-): Promise<ClassGroupsSecpKeyPair> => {
+): Promise<ClassGroupsSecpKeyPair> {
 	let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(c.keypair as Ed25519Keypair);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
@@ -222,13 +230,13 @@ export const getOrCreateEncryptionKey = async (
 		encryptionKey,
 		objectID: encryptionKeyRef.objectId,
 	};
-};
+}
 
-export const generateCGKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
+export function generateCGKeyPairFromSuiKeyPair(keypair: Ed25519Keypair): Uint8Array[] {
 	let secretKey = keypair.getSecretKey();
 	let decoded = decodePeraPrivateKey(secretKey);
 	return generate_secp_cg_keypair_from_seed(decoded.secretKey);
-};
+}
 
 /**
  * Validates the provided `encryptedUserShare` and re-encrypts it for the caller's keypair.
