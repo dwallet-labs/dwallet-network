@@ -76,7 +76,7 @@ describe('encrypt user share', () => {
 		);
 	});
 
-	it('creates an encryption key & stores it in the active encryption keys table', async () => {
+	it('creates an encryption key and stores it in the active encryption keys table', async () => {
 		let conf: Config = {
 			keypair: dwalletSenderToolbox.keypair,
 			client: dwalletSenderToolbox.client,
