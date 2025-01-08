@@ -73,28 +73,9 @@ interface EncryptionKey {
 	encryption_key_signature: Uint8Array;
 }
 
-/**
- * The Move encrypted user share object.
- */
-export interface EncryptedUserShare {
-	id: string;
-	dwallet_id: string;
-	encrypted_secret_share_and_proof: Uint8Array;
-	encryption_key_id: string;
-}
-
 export enum EncryptionKeyScheme {
 	ClassGroups = 0,
 }
-
-export const isEncryptedUserShare = (obj: any): obj is EncryptedUserShare => {
-	return (
-		'id' in obj &&
-		'dwallet_id' in obj &&
-		'encrypted_secret_share_and_proof' in obj &&
-		'encryption_key_id' in obj
-	);
-};
 
 /**
  * Encrypts and sends the given secret user share to the given destination public key.
