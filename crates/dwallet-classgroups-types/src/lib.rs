@@ -97,7 +97,8 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
     }
 }
 
-/// Writes a class group key pair and proof, encoded in Base64, to a file and returns the public key.
+/// Writes a class group key pair and proof, encoded in Base64,
+/// to a file and returns the public key.
 pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + Clone>(
     keypair: &ClassGroupsKeyPairAndProof,
     path: P,
@@ -117,6 +118,5 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
     let decoded = Base64::decode(contents.as_str())
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
-    let keypair: ClassGroupsKeyPairAndProof = bcs::from_bytes(&decoded)?;
-    Ok(keypair)
+    Ok(bcs::from_bytes(&decoded)?)
 }

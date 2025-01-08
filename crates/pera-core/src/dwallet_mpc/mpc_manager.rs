@@ -196,7 +196,7 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    pub fn get_protocol_public_parameters(
+    pub(super) fn get_decryption_public_parameters(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
         key_version: u8,
@@ -232,7 +232,7 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    pub fn get_decryption_share(
+    fn get_decryption_share(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
         key_version: Option<usize>,

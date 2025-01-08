@@ -19,9 +19,9 @@ pub struct CGKeyPairAndProofForMockFromFile {
     ); MAX_PRIMES],
 }
 
-/// Mocks the class groups encryption keys and proofs of all validators.
-/// Reads the generated key from file and
-/// returns a map from party id to the same encryption key and proof.
+/// Mocks the Class Group encryption keys and proofs of all validators.
+/// Reads the generated key from a file and return a map from `PartyID` to
+/// the encryption key and proof.
 pub fn mock_cg_encryption_keys_and_proofs() -> DwalletMPCResult<
     HashMap<
         PartyID,
@@ -44,7 +44,7 @@ pub fn mock_cg_encryption_keys_and_proofs() -> DwalletMPCResult<
     Ok(encryption_keys_and_proofs)
 }
 
-/// Mocks the class groups decryption key, by reading generated key from file.
+/// Mocks the class groups decryption key, by reading generated key from a file.
 pub fn mock_cg_private_key() -> DwalletMPCResult<ClassGroupsDecryptionKey> {
     let contents = std::fs::read_to_string("class-groups-mock-key")
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
