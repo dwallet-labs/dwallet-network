@@ -83,8 +83,6 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
-use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, NetworkDecryptionKeyShares};
 use class_groups::dkg::{PublicOutput, Secp256k1Party};
 use class_groups::{SecretKeyShareSizedNumber, SECP256K1_SCALAR_LIMBS};
 use dwallet_classgroups_types::ClassGroupsDecryptionKey;
