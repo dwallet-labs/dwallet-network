@@ -66,7 +66,9 @@ interface CreatedEncryptedSecretShareEvent {
 }
 
 /**
- * TS representation of the Move StartEncryptedShareVerificationEvent.
+ * TS representation of an event to start an MPC session.
+ * Usually the only thing that is needed from this event is the session_id, which is used to fetch the
+ * completion event.
  */
 interface StartSessionEvent {
 	session_id: string;
