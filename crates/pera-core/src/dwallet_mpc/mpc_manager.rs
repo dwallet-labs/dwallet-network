@@ -468,8 +468,7 @@ impl DWalletMPCManager {
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
                 )?,
-            }
-
+            },
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing
