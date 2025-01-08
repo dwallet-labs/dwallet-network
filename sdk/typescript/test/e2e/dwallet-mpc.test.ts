@@ -106,7 +106,6 @@ describe('Test dWallet MPC', () => {
 			])
 			.toBytes();
 		const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
-			// Todo (#382): Change to real value.
 			mockedProtocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
 			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
@@ -224,7 +223,8 @@ describe('Test dWallet MPC', () => {
 			timeout: 5 * 60 * 1000,
 		};
 
-		console.log(fetchProtocolPublicParameters(conf, MPCKeyScheme.Secp256k1, 0));
+		const keyVersionNum = 0;
+		console.log(fetchProtocolPublicParameters(conf, MPCKeyScheme.Secp256k1, keyVersionNum));
 
 		pollRef.value = false;
 	});

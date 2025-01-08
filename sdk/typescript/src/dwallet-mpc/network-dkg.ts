@@ -1,7 +1,4 @@
 // noinspection ES6PreferShortImport
-
-// noinspection ES6PreferShortImport
-// noinspection ES6PreferShortImport
 import type { NetworkDecryptionKeyShares } from '../client/index.js';
 import type { Config, MPCKeyScheme } from './globals.js';
 
@@ -14,7 +11,7 @@ import type { Config, MPCKeyScheme } from './globals.js';
 export async function fetchProtocolPublicParameters(
 	conf: Config,
 	keyScheme: MPCKeyScheme,
-	keyVersionNum: number | null | undefined,
+	keyVersionNum?: number | null,
 ): Promise<any> {
 	const startTime = Date.now();
 
@@ -22,23 +19,23 @@ export async function fetchProtocolPublicParameters(
 		const systemStateSummary = await conf.client.getLatestPeraSystemState();
 		const decryptionKeyShares = convertToMap(systemStateSummary.decryptionKeyShares);
 
-		if (decryptionKeyShares.has(keyScheme)) {
-			const keyVersionsByScheme = decryptionKeyShares.get(keyScheme);
-			if (!keyVersionsByScheme) {
-				continue;
-			}
-			keyVersionNum = keyVersionNum ?? keyVersionsByScheme.length - 1;
-			if (keyVersionsByScheme.length > keyVersionNum) {
-				const keyAtVersion = keyVersionsByScheme[keyVersionNum];
-				const protocolPublicParameters = keyAtVersion.protocol_public_parameters;
-				if (protocolPublicParameters) {
-					return protocolPublicParameters;
-				}
+		if (!decryptionKeyShares.has(keyScheme)) {
+			// Wait for 5 seconds before the next attempt.
+			await new Promise((resolve) => setTimeout(resolve, 5000));
+			continue;
+		}
+		const keyVersionsByScheme = decryptionKeyShares.get(keyScheme);
+		if (!keyVersionsByScheme) {
+			continue;
+		}
+		keyVersionNum = keyVersionNum ?? keyVersionsByScheme.length - 1;
+		if (keyVersionsByScheme.length > keyVersionNum) {
+			const keyAtVersion = keyVersionsByScheme[keyVersionNum];
+			const protocolPublicParameters = keyAtVersion.protocol_public_parameters;
+			if (protocolPublicParameters) {
+				return protocolPublicParameters;
 			}
 		}
-
-		// Wait for 5 seconds before the next attempt
-		await new Promise((resolve) => setTimeout(resolve, 5000));
 	}
 
 	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
@@ -50,15 +47,15 @@ export async function fetchProtocolPublicParameters(
 }
 
 function convertToMap(
-	input: [number, NetworkDecryptionKeyShares][],
-): Map<number, NetworkDecryptionKeyShares[]> {
-	const resultMap = new Map<number, NetworkDecryptionKeyShares[]>();
+	input: [MPCKeyScheme, NetworkDecryptionKeyShares][],
+): Map<MPCKeyScheme, NetworkDecryptionKeyShares[]> {
+	const resultMap = new Map<MPCKeyScheme, NetworkDecryptionKeyShares[]>();
 
 	input.forEach(([key, value]) => {
 		if (!resultMap.has(key)) {
 			resultMap.set(key, []);
 		}
-		resultMap.get(key)!.push(value);
+		resultMap.get(key)?.push(value);
 	});
 
 	return resultMap;
