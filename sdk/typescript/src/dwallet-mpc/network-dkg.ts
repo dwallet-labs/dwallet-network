@@ -2,7 +2,7 @@
 
 // noinspection ES6PreferShortImport
 // noinspection ES6PreferShortImport
-import { NetworkDecryptionKeyShares } from '../client/index.js';
+import type { NetworkDecryptionKeyShares } from '../client/index.js';
 import type { Config, MPCKeyScheme } from './globals.js';
 
 /**
