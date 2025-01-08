@@ -234,10 +234,10 @@ export const generateCGKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8A
 };
 
 /**
- * Verifies that the given encryptedUserShare is valid, and then re-encrypts it to myself, i.e. the given conf's keypair.
+ * Validates the provided `encryptedUserShare` and re-encrypts it for the caller's keypair.
  *
- * This is useful so at any later point a user can get all the secret shares ever encrypted to him,
- * signed by him, and verify that they are valid.
+ * This process ensures that users can later retrieve all secret shares ever encrypted for them,
+ * verify their validity, and confirm they are signed by the original source.
  */
 export async function acceptUserShare(
 	encryptedUserShare: CreatedEncryptedSecretShareEvent,
