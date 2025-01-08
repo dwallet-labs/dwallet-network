@@ -411,7 +411,7 @@ const storeEncryptionKey = async (
 			showEffects: true,
 		},
 	});
-	const encKeyRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference;
+	const encKeyRef = result.effects?.created?.find((o) => o.owner === 'Immutable')?.reference;
 	if (!encKeyRef) {
 		throw new Error('Failed to store the encryption key');
 	}
