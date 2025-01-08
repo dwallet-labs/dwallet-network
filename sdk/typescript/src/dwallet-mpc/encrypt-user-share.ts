@@ -163,10 +163,10 @@ export async function createActiveEncryptionKeysTable(client: PeraClient, keypai
 export async function getActiveEncryptionKeyObjID(
 	c: Config,
 	keyOwnerAddress: string,
-	encryptionKeysHolderID: string,
+	activeEncryptionKeysTableID: string,
 ): Promise<string> {
 	const tx = new Transaction();
-	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
+	const encryptionKeysHolder = tx.object(activeEncryptionKeysTableID);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
