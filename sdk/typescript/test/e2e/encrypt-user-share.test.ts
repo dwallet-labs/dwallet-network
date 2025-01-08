@@ -30,11 +30,11 @@ describe('encrypt user share', () => {
 	beforeAll(async () => {
 		dwalletSenderToolbox = await setup();
 		dwalletReceiverToolbox = await setup();
-		const encryptionKeysRef = await createActiveEncryptionKeysTable(
+		const { objectId } = await createActiveEncryptionKeysTable(
 			dwalletSenderToolbox.client,
 			dwalletSenderToolbox.keypair,
 		);
-		activeEncryptionKeysTableID = encryptionKeysRef.objectId;
+		activeEncryptionKeysTableID = objectId;
 	});
 
 	it('encrypts a secret share to a given Sui public key', async () => {

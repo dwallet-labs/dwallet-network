@@ -142,12 +142,12 @@ export async function createActiveEncryptionKeysTable(client: PeraClient, keypai
 		},
 	});
 
-	const activeEncryptionKeysObj = result.effects?.created?.filter(
+	const activeEncryptionKeysObj = result.effects?.created?.find(
 		(o) =>
 			typeof o.owner === 'object' &&
 			'Shared' in o.owner &&
 			o.owner.Shared.initial_shared_version !== undefined,
-	)[0].reference;
+	)?.reference;
 	if (!activeEncryptionKeysObj) {
 		throw new Error('Failed to create the active encryption keys table');
 	}
