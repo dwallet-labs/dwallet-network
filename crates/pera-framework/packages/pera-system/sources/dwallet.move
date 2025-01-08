@@ -73,9 +73,10 @@ module pera_system::dwallet {
         encryption_key_id: ID,
     }
 
-    /// An event emitted to start an encryption key verification process.
-    /// Since we cannot use native functions if we depend on Sui to hold our state,
-    /// we need to emit an event to start the verification process, like we start the other MPC processes.
+     /// An event emitted to start an encryption key verification process.
+     /// Since we cannot use native functions if we depend on Sui to hold our state,
+     /// we need to emit an event to start the verification process,
+     /// like we start the other MPC processes.
     public struct StartEncryptionKeyVerificationEvent has copy, drop {
         scheme: u8,
         encryption_key: vector<u8>,
