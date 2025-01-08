@@ -29,6 +29,7 @@ import {
 
 const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
 const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
+const startEncryptionKeyVerificationEventMoveType = `${packageId}::${dWalletModuleName}::StartEncryptionKeyVerificationEvent`;
 const encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
 
 interface CreatedEncryptionKeyEvent {
@@ -423,10 +424,11 @@ const storeEncryptionKey = async (
 			showEvents: true,
 		},
 	});
+
 	let sessionID = (
 		result.events?.find(
 			(event) =>
-				event.type === `${packageId}::${dWalletModuleName}::StartEncryptionKeyVerificationEvent` &&
+				event.type === startEncryptionKeyVerificationEventMoveType &&
 				isStartSessionEvent(event.parsedJson),
 		)?.parsedJson as StartSessionEvent
 	).session_id;
