@@ -110,19 +110,19 @@ export const sendUserShareToSuiPubKey = async (
 	destinationPublicKey: PublicKey,
 	activeEncryptionKeysTableID: string,
 ): Promise<CreatedEncryptedSecretShareEvent> => {
-	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
+	const destinationEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
 		destinationPublicKey.toPeraAddress(),
 		activeEncryptionKeysTableID,
 	);
-	if (!activeEncryptionKeyObjID) {
+	if (!destinationEncryptionKeyObjID) {
 		throw new Error('The destination public key does not have an active encryption key');
 	}
 	const recipientData = await fetchObjectWithType<EncryptionKey>(
 		c,
 		encryptionKeyMoveType,
 		isEncryptionKey,
-		activeEncryptionKeyObjID,
+		destinationEncryptionKeyObjID,
 	);
 	let isValidEncryptionKey = await destinationPublicKey.verify(
 		new Uint8Array(recipientData.encryption_key),
@@ -141,7 +141,7 @@ export const sendUserShareToSuiPubKey = async (
 	return await transferEncryptedUserShare(
 		c,
 		encryptedUserShareAndProof,
-		activeEncryptionKeyObjID,
+		destinationEncryptionKeyObjID,
 		dwallet,
 	);
 };
@@ -317,7 +317,7 @@ const transferEncryptedUserShare = async (
 	);
 	let signedPublicShare = await conf.keypair.sign(new Uint8Array(centralized_public_share));
 	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::encrypt_user_share`,
+		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::transfer_encrypted_user_share`,
 		typeArguments: [],
 		arguments: [
 			dwalletObj,

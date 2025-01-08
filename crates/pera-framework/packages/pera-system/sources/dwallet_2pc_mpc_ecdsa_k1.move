@@ -471,7 +471,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     /// Submits the given secret share encryption to the chain.
     /// The chain verifies that the encryption is actually the encryption of the secret share before creating the [`EncryptedUserShare`] object.
-    public fun encrypt_user_share(
+    public fun transfer_encrypted_user_share(
         dwallet: &DWallet<Secp256K1>,
         encryption_key: &EncryptionKey,
         encrypted_secret_share_and_proof: vector<u8>,
