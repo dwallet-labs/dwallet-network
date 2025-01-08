@@ -74,12 +74,12 @@ export enum EncryptionKeyScheme {
  * @param destinationPublicKey The ed2551 public key of the destination Sui address.
  * @param activeEncryptionKeysTableID The ID of the table that holds the active encryption keys.
  */
-export const encryptUserShareWithSuiPubKey = async (
+export async function encryptUserShareWithSuiPubKey(
 	c: Config,
 	dwallet: CreatedDwallet,
 	destinationPublicKey: PublicKey,
 	activeEncryptionKeysTableID: string,
-): Promise<CreatedEncryptedSecretShareEvent> => {
+): Promise<CreatedEncryptedSecretShareEvent> {
 	const destinationEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
 		destinationPublicKey.toPeraAddress(),
@@ -152,11 +152,11 @@ export async function createActiveEncryptionKeysTable(client: PeraClient, keypai
  * for the given Sui address if it exists.
  * Throws an error otherwise.
  */
-export const getActiveEncryptionKeyObjID = async (
+export async function getActiveEncryptionKeyObjID(
 	c: Config,
 	keyOwnerAddress: string,
 	encryptionKeysHolderID: string,
-): Promise<string> => {
+): Promise<string> {
 	let client = c.client;
 	const tx = new Transaction();
 	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
