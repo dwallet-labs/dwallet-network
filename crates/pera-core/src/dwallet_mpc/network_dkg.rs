@@ -26,7 +26,7 @@ use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{
-    MPCRound, SessionInfo, StartEncryptedShareVerificationEvent,
+    MPCRound, SessionInfo,
 };
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
