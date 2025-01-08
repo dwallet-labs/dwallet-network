@@ -21,7 +21,6 @@ import { dWallet2PCMPCECDSAK1ModuleName, dWalletModuleName, fetchCompletedEvent,
 
 const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
 const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
-
 const encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
 
 /**
