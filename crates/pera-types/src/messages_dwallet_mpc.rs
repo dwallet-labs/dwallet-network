@@ -1,10 +1,15 @@
 use crate::base_types::{ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
+use crate::id::ID;
 use crate::message_envelope::Message;
+use crate::PERA_SYSTEM_ADDRESS;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
+    NetworkDecryptionKeyShares, DWalletMPCNetworkKeyScheme, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
 };
+use move_core_types::ident_str;
+use move_core_types::language_storage::StructTag;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
@@ -33,6 +38,7 @@ pub enum MPCRound {
         DWalletMPCNetworkKeyScheme,
         Option<NetworkDecryptionKeyShares>,
     ),
+    EncryptionKeyVerification(StartEncryptedShareVerificationEvent),
 }
 
 /// The message and data for the Sign round.
@@ -88,4 +94,30 @@ pub struct SessionInfo {
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
     pub mpc_round: MPCRound,
+}
+
+/// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
+/// Defined here so that we can use it in the [`MPCRound`] enum, as the inner data of the [`MPCRound::EncryptionKeyVerification`].
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub struct StartEncryptedShareVerificationEvent {
+    pub encrypted_secret_share_and_proof: Vec<u8>,
+    pub dwallet_output: Vec<u8>,
+    pub dwallet_id: ID,
+    pub encryption_key: Vec<u8>,
+    pub encryption_key_id: ID,
+    pub session_id: ID,
+    pub signed_public_share: Vec<u8>,
+    pub encryptor_ed25519_pubkey: Vec<u8>,
+    pub initiator: PeraAddress,
+}
+
+impl StartEncryptedShareVerificationEvent {
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: ident_str!("StartEncryptedShareVerificationEvent").to_owned(),
+            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }

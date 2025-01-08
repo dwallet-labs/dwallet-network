@@ -256,6 +256,7 @@ mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "
 class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-network-dkg", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
 twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], branch = "pera-network-dkg" }
 group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", branch = "pera-network-dkg" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "pera-network-dkg" }
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
