@@ -1,6 +1,5 @@
 // noinspection ES6PreferShortImport
 
-// noinspection ES6PreferShortImport
 import {
 	centralized_public_share_from_decentralized_output,
 	decrypt_user_share,
@@ -11,7 +10,7 @@ import {
 import { toHEX } from '@mysten/bcs';
 
 import { bcs } from '../bcs/index.js';
-import type { PeraClient } from '../client/index.js';
+import type { PeraClient, PeraObjectRef } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
 import { decodePeraPrivateKey } from '../cryptography/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
@@ -30,7 +29,6 @@ import {
 
 const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
 const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
-
 const encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
 
 /**
@@ -40,16 +38,6 @@ interface ClassGroupsSecpKeyPair {
 	encryptionKey: Uint8Array;
 	decryptionKey: Uint8Array;
 	objectID: string;
-}
-
-interface CreatedEncryptionKeyEvent {
-	scheme: number;
-	encryption_key: Uint8Array;
-	key_owner_address: string;
-	encryption_key_signature: Uint8Array;
-	key_owner_pubkey: Uint8Array;
-	session_id: string;
-	encryption_key_id: string;
 }
 
 /**
@@ -69,42 +57,22 @@ interface CreatedEncryptedSecretShareEvent {
 /**
  * TS representation of the Move StartEncryptedShareVerificationEvent.
  */
-interface StartSessionEvent {
+interface StartEncryptedShareVerificationEvent {
 	session_id: string;
 }
 
 /**
  * A class groups Move encryption key object.
  */
-
 interface EncryptionKey {
 	encryption_key: Uint8Array;
 	key_owner_address: string;
 	encryption_key_signature: Uint8Array;
 }
 
-/**
- * The Move encrypted user share object.
- */
-export interface EncryptedUserShare {
-	id: string;
-	dwallet_id: string;
-	encrypted_secret_share_and_proof: Uint8Array;
-	encryption_key_id: string;
-}
-
 export enum EncryptionKeyScheme {
 	ClassGroups = 0,
 }
-
-export const isEncryptedUserShare = (obj: any): obj is EncryptedUserShare => {
-	return (
-		'id' in obj &&
-		'dwallet_id' in obj &&
-		'encrypted_secret_share_and_proof' in obj &&
-		'encryption_key_id' in obj
-	);
-};
 
 /**
  * Encrypts and sends the given secret user share to the given destination public key.
@@ -114,12 +82,12 @@ export const isEncryptedUserShare = (obj: any): obj is EncryptedUserShare => {
  * @param destinationPublicKey The ed2551 public key of the destination Sui address.
  * @param activeEncryptionKeysTableID The ID of the table that holds the active encryption keys.
  */
-export const sendUserShareToSuiPubKey = async (
+export async function encryptUserShareWithSuiPubKey(
 	c: Config,
 	dwallet: CreatedDwallet,
 	destinationPublicKey: PublicKey,
 	activeEncryptionKeysTableID: string,
-): Promise<CreatedEncryptedSecretShareEvent> => {
+): Promise<CreatedEncryptedSecretShareEvent> {
 	const destinationEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
 		destinationPublicKey.toPeraAddress(),
@@ -154,7 +122,7 @@ export const sendUserShareToSuiPubKey = async (
 		destinationEncryptionKeyObjID,
 		dwallet,
 	);
-};
+}
 
 /**
  * Creates a table that maps users` Sui addresses to Class Group encryption keys.
@@ -174,12 +142,12 @@ export async function createActiveEncryptionKeysTable(client: PeraClient, keypai
 		},
 	});
 
-	const activeEncryptionKeysObj = result.effects?.created?.filter(
+	const activeEncryptionKeysObj = result.effects?.created?.find(
 		(o) =>
 			typeof o.owner === 'object' &&
 			'Shared' in o.owner &&
 			o.owner.Shared.initial_shared_version !== undefined,
-	)[0].reference;
+	)?.reference;
 	if (!activeEncryptionKeysObj) {
 		throw new Error('Failed to create the active encryption keys table');
 	}
@@ -192,36 +160,34 @@ export async function createActiveEncryptionKeysTable(client: PeraClient, keypai
  * for the given Sui address if it exists.
  * Throws an error otherwise.
  */
-export const getActiveEncryptionKeyObjID = async (
+export async function getActiveEncryptionKeyObjID(
 	c: Config,
 	keyOwnerAddress: string,
-	encryptionKeysHolderID: string,
-): Promise<string> => {
-	let client = c.client;
+	activeEncryptionKeysTableID: string,
+): Promise<string> {
 	const tx = new Transaction();
-	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
-		arguments: [encryptionKeysHolder, tx.pure.address(keyOwnerAddress)],
+		arguments: [tx.object(activeEncryptionKeysTableID), tx.pure.address(keyOwnerAddress)],
 	});
 
 	// Safe to use this function as it has been used here:
 	// https://github.com/dwallet-labs/dwallet-network/blob/29929ded135f05578b6ce33b52e6ff5e894d0487/sdk/deepbook-v3/src/client.ts#L84
 	// in late 2024 (can be seen with git blame).
-	let res = await client.devInspectTransactionBlock({
+	let res = await c.client.devInspectTransactionBlock({
 		sender: keyOwnerAddress,
 		transactionBlock: tx,
 	});
 
 	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0) as number[]);
 	return toHEX(objIDArray);
-};
+}
 
-export const getOrCreateEncryptionKey = async (
+export async function getOrCreateEncryptionKey(
 	c: Config,
 	activeEncryptionKeysTableID: string,
-): Promise<ClassGroupsSecpKeyPair> => {
+): Promise<ClassGroupsSecpKeyPair> {
 	let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(c.keypair as Ed25519Keypair);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		c,
@@ -247,7 +213,7 @@ export const getOrCreateEncryptionKey = async (
 		);
 	}
 
-	const createdEncryptionKeyEvent = await storeEncryptionKey(
+	const encryptionKeyRef = await storeEncryptionKey(
 		encryptionKey,
 		EncryptionKeyScheme.ClassGroups,
 		c,
@@ -256,29 +222,25 @@ export const getOrCreateEncryptionKey = async (
 	// Sleep for 5 seconds, so the storeEncryptionKey transaction effects have time to
 	// get written to the blockchain.
 	await new Promise((r) => setTimeout(r, 5000));
-	await upsertActiveEncryptionKey(
-		createdEncryptionKeyEvent.encryption_key_id,
-		activeEncryptionKeysTableID,
-		c,
-	);
+	await upsertActiveEncryptionKey(encryptionKeyRef?.objectId, activeEncryptionKeysTableID, c);
 	return {
 		decryptionKey,
 		encryptionKey,
-		objectID: createdEncryptionKeyEvent.encryption_key_id,
+		objectID: encryptionKeyRef.objectId,
 	};
-};
+}
 
-export const generateCGKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
+export function generateCGKeyPairFromSuiKeyPair(keypair: Ed25519Keypair): Uint8Array[] {
 	let secretKey = keypair.getSecretKey();
 	let decoded = decodePeraPrivateKey(secretKey);
 	return generate_secp_cg_keypair_from_seed(decoded.secretKey);
-};
+}
 
 /**
- * Verifies that the given encryptedUserShare is valid, and then re-encrypts it to myself, i.e. the given conf's keypair.
+ * Validates the provided `encryptedUserShare` and re-encrypts it for the caller's keypair.
  *
- * This is useful so at any later point a user can get all the secret shares ever encrypted to him,
- * signed by him, and verify that they are valid.
+ * This process ensures that users can later retrieve all secret shares ever encrypted for them,
+ * verify their validity, and confirm they are signed by the original source.
  */
 export async function acceptUserShare(
 	encryptedUserShare: CreatedEncryptedSecretShareEvent,
@@ -307,9 +269,11 @@ export async function acceptUserShare(
 		// TODO (#475): Store the DWallet's centralizedDKGPublicOutput on chain, and use here the real value.
 		centralizedDKGPublicOutput: [],
 	};
+
 	// Encrypt it to self, so that in the future we'd know that we already
 	// verified everything and only need to verify our signature.
-	await sendUserShareToSuiPubKey(
+	// Need to verify the signature to not trust the blockchain to provide this data.
+	await encryptUserShareWithSuiPubKey(
 		conf,
 		dwalletToSend,
 		conf.keypair.getPublicKey(),
@@ -354,17 +318,15 @@ const transferEncryptedUserShare = async (
 	let sessionData = result.events?.find(
 		(event) =>
 			event.type === startEncryptedShareVerificationMoveType &&
-			isStartSessionEvent(event.parsedJson),
-	)?.parsedJson as StartSessionEvent;
+			isStartEncryptedShareVerificationEvent(event.parsedJson),
+	)?.parsedJson as StartEncryptedShareVerificationEvent;
 
-	let completionEvent = await fetchCompletedEvent<CreatedEncryptedSecretShareEvent>(
+	return await fetchCompletedEvent<CreatedEncryptedSecretShareEvent>(
 		conf,
 		sessionData.session_id,
 		createdEncryptedSecretShareEventMoveType,
 		isCreatedEncryptedSecretShareEvent,
 	);
-
-	return completionEvent;
 };
 
 function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSecretShareEvent {
@@ -380,7 +342,9 @@ function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSe
 	);
 }
 
-function isStartSessionEvent(obj: any): obj is StartSessionEvent {
+function isStartEncryptedShareVerificationEvent(
+	obj: any,
+): obj is StartEncryptedShareVerificationEvent {
 	return 'session_id' in obj;
 }
 
@@ -422,7 +386,7 @@ const storeEncryptionKey = async (
 	encryptionKey: Uint8Array,
 	encryptionKeyScheme: EncryptionKeyScheme,
 	c: Config,
-): Promise<CreatedEncryptionKeyEvent> => {
+): Promise<PeraObjectRef> => {
 	let signedEncryptionKey = await c.keypair.sign(new Uint8Array(encryptionKey));
 	const tx = new Transaction();
 	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey));
@@ -444,42 +408,18 @@ const storeEncryptionKey = async (
 		signer: c.keypair,
 		transaction: tx,
 		options: {
-			showEvents: true,
+			showEffects: true,
 		},
 	});
-	let sessionID = (
-		result.events?.find(
-			(event) =>
-				event.type === `${packageId}::${dWalletModuleName}::StartEncryptionKeyVerificationEvent` &&
-				isStartSessionEvent(event.parsedJson),
-		)?.parsedJson as StartSessionEvent
-	).session_id;
-	return await fetchCompletedEvent<CreatedEncryptionKeyEvent>(
-		c,
-		sessionID,
-		`${packageId}::${dWalletModuleName}::CreatedEncryptionKeyEvent`,
-		isCreatedEncryptionKeyEvent,
-	);
+	const encKeyRef = result.effects?.created?.find((o) => o.owner === 'Immutable')?.reference;
+	if (!encKeyRef) {
+		throw new Error('Failed to store the encryption key');
+	}
+	return encKeyRef;
 };
 
-function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent {
-	return (
-		'scheme' in obj &&
-		'encryption_key' in obj &&
-		'key_owner_address' in obj &&
-		'encryption_key_signature' in obj &&
-		'key_owner_pubkey' in obj &&
-		'session_id' in obj &&
-		'encryption_key_id' in obj
-	);
-}
-
 function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
-	if (arr1.length !== arr2.length) {
-		return false;
-	}
-
-	return arr1.every((value, index) => value === arr2[index]);
+	return arr1.length === arr2.length && arr1.every((value, index) => value === arr2[index]);
 }
 
 async function decryptAndVerifyUserShare(
@@ -503,7 +443,7 @@ async function decryptAndVerifyUserShare(
 			new Uint8Array(encryptedUserShare.signed_public_share),
 		))
 	) {
-		throw new Error('the DWallet public key share have not been signed by the desired Sui address');
+		throw new Error('the dWallet public key share has not been signed by the desired Sui address');
 	}
 	let destination_cg_keypair = await getOrCreateEncryptionKey(conf, activeEncryptionKeysTableID);
 	let decrypted_share = decrypt_user_share(
