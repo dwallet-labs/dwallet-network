@@ -35,7 +35,8 @@ pub enum MPCRound {
     BatchedPresign(u64),
     /// The round of the network DKG protocol.
     NetworkDkg(DWalletMPCNetworkKey),
-    /// The round of verifying the encrypted share proof is valid & that the signature on it is valid.
+    /// The round of verifying the encrypted share proof is valid and
+    /// that the signature on it is valid.
     EncryptedShareVerification(StartEncryptedShareVerificationEvent),
     /// The round of verifying the public key that signed on the encryption key is matching the initiator address.
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
