@@ -25,9 +25,9 @@ type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
     secp256k1::GroupElement,
 >;
 
-/// Verifies that the given encrypted secret share is the encryption of the given dwallet's secret share,
-/// and that the given signature on the DWallet's public share is valid.
-/// Also verifies that the public key that signed the public user share is matching the address that initiated this TX.
+/// Verifies that the given encrypted secret share matches the encryption of the dWallet's
+/// secret share, validates the signature on the dWallet's public share,
+/// and ensures the signing public key matches the address that initiated this transaction.
 pub(crate) fn verify_encrypted_share(
     verification_data: StartEncryptedShareVerificationEvent,
 ) -> DwalletMPCResult<()> {
