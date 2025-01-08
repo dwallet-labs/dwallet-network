@@ -20,8 +20,15 @@
 /// - Ensure secure and decentralized key generation and management.
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet;
-    use pera_system::dwallet::{DWallet, create_dwallet_cap, DWalletCap, get_dwallet_cap_id, get_dwallet_output,
-        EncryptionKey, get_encryption_key
+    use pera_system::dwallet::{
+        DWallet,
+        create_dwallet_cap,
+        DWalletCap,
+        get_dwallet_cap_id,
+        get_dwallet_output,
+        get_dwallet_mpc_network_key_version,
+        EncryptionKey,
+        get_encryption_key
     };
     use pera::event;
 
@@ -149,6 +156,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         /// The DKG output of the DWallet.
         dwallet_output: vector<u8>,
         dwallet_cap_id: ID,
+        dwallet_mpc_network_key_version: u8,
     }
 
     /// Event emitted when a [`PartiallySignedMessages`] object is created.
@@ -253,6 +261,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_id: ID,
         dkg_output: vector<u8>,
         batch_session_id: ID,
+        dwallet_mpc_network_key_version: u8,
     }
 
     /// Event emitted to initiate the second round of a `Presign` session.
@@ -277,6 +286,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         first_round_output: vector<u8>,
         first_round_session_id: ID,
         batch_session_id: ID,
+        dwallet_mpc_network_key_version: u8,
     }
 
     /// Event emitted when the presign batch is completed.
@@ -323,6 +333,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         hashed_message: vector<u8>,
         presign: vector<u8>,
         centralized_signed_message: vector<u8>,
+        dwallet_mpc_network_key_version: u8,
     }
 
     /// Event emitted to start a batched sign process.
@@ -592,6 +603,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         signatures: vector<vector<u8>>,
         dwallet_id: ID,
         dwallet_cap_id: ID,
+        dwallet_mpc_network_key_version: u8,
         ctx: &mut TxContext
     ) : PartiallySignedMessages {
         PartiallySignedMessages {
@@ -603,6 +615,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_output: vector::empty(),
             dwallet_cap_id,
+            dwallet_mpc_network_key_version,
         }
     }
 
@@ -667,6 +680,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 dwallet_id: object::id(dwallet),
                 dkg_output: get_dwallet_output<Secp256K1>(dwallet),
                 batch_session_id,
+                dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version(dwallet),
             });
         };
     }
@@ -699,6 +713,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         first_round_output: vector<u8>,
         first_round_session_id: ID,
         batch_session_id: ID,
+        dwallet_mpc_network_key_version: u8,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
@@ -713,6 +728,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             first_round_output,
             first_round_session_id,
             batch_session_id,
+            dwallet_mpc_network_key_version,
         });
     }
 
@@ -729,6 +745,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         batch_session_id: ID,
         ctx: &mut TxContext
     ) {
+        let mpc_network_key_version = 0;
         launch_presign_second_round(
             initiator,
             dwallet_id,
@@ -736,6 +753,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             first_round_output,
             first_round_session_id,
             batch_session_id,
+            mpc_network_key_version,
             ctx
         );
     }
@@ -942,6 +960,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 centralized_signed_message,
                 dkg_output: get_dwallet_output<Secp256K1>(dwallet),
                 hashed_message: message,
+                dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version<Secp256K1>(dwallet),
             });
             transfer::transfer(presign, SYSTEM_ADDRESS);
             i = i + 1;
@@ -1127,6 +1146,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_output: get_dwallet_output(dwallet),
             dwallet_id: object::id(dwallet),
             dwallet_cap_id: get_dwallet_cap_id(dwallet),
+            dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version(dwallet),
         };
         event::emit(CreatedPartiallySignedMessagesEvent {
             partial_signatures_object_id: object::id(&partial_signatures),
@@ -1151,6 +1171,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_cap_id,
             dwallet_output,
+            dwallet_mpc_network_key_version,
         } = partial_signature;
         object::delete(id);
         let message_approvals_len = vector::length(message_approvals);
@@ -1180,6 +1201,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 centralized_signed_message,
                 dkg_output: dwallet_output,
                 hashed_message: message,
+                dwallet_mpc_network_key_version,
             });
             i = i + 1;
         };

@@ -61,7 +61,7 @@ use self::authority_store_pruner::AuthorityStorePruningMetrics;
 pub use authority_store::{AuthorityStore, ResolverWrapper, UpdateType};
 use mysten_metrics::{monitored_scope, spawn_monitored_task};
 
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKey;
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use once_cell::sync::OnceCell;
 use pera_archival::reader::ArchiveReaderBalancer;
 use pera_config::genesis::Genesis;
@@ -144,7 +144,9 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc::mpc_events::LockedNextEpochCommitteeEvent;
+use crate::dwallet_mpc::mpc_events::{
+    LockedNextEpochCommitteeEvent, ValidatorDataForDWalletSecretShare,
+};
 use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use crate::epoch::committee_store::CommitteeStore;
@@ -166,7 +168,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
-use pera_types::dwallet_mpc_error::DwalletMPCError;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::execution_config_utils::to_binary_config;
 
 #[cfg(test)]
@@ -1565,13 +1567,15 @@ impl AuthorityState {
                 dwallet_mpc_outputs_verifier.completed_locking_next_committee = true;
                 continue;
             }
-            // Todo (#427): Receive the key version
-            // Todo (#427): from the MPC event and check its validity.
+            if ValidatorDataForDWalletSecretShare::type_() == event.type_ {
+                Self::handle_validator_data_for_network_dkg_event(epoch_store, event)?;
+                continue;
+            }
             let key_version = epoch_store
                 .dwallet_mpc_network_keys
                 .get()
                 .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-                .key_version(DWalletMPCNetworkKey::Secp256k1)
+                .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
                 .unwrap_or_default();
             let Ok(Some(session_info)) =
                 session_info_from_event(event, party_id, Some(key_version))
@@ -1594,7 +1598,24 @@ impl AuthorityState {
                 .send(DWalletMPCChannelMessage::Event(event.clone(), session_info))
                 .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
         }
+        Ok(())
+    }
 
+    fn handle_validator_data_for_network_dkg_event(
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+        event: &Event,
+    ) -> DwalletMPCResult<()> {
+        let deserialized_event: ValidatorDataForDWalletSecretShare =
+            bcs::from_bytes(&event.contents)?;
+        let dwallet_mpc_sender = epoch_store
+            .dwallet_mpc_sender
+            .get()
+            .ok_or(DwalletMPCError::MissingDWalletMPCSender)?;
+        dwallet_mpc_sender
+            .send(DWalletMPCChannelMessage::ValidatorDataForDKG(
+                deserialized_event,
+            ))
+            .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
         Ok(())
     }
 

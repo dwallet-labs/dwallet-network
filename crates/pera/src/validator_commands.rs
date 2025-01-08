@@ -28,7 +28,10 @@ use tap::tap::TapOptional;
 use crate::fire_drill::get_gas_obj_ref;
 use clap::*;
 use colored::Colorize;
-use dwallet_classgroups_types::generate_class_groups_keypair_and_proof_from_seed;
+use dwallet_classgroups_types::{
+    generate_class_groups_keypair_and_proof_from_seed, read_class_groups_from_file,
+    write_class_groups_keypair_and_proof_to_file,
+};
 use fastcrypto::traits::ToFromBytes;
 use fastcrypto::{
     encoding::{Base64, Encoding},
@@ -40,9 +43,6 @@ use pera_bridge::pera_transaction_builder::{
 };
 use pera_json_rpc_types::{
     PeraObjectDataOptions, PeraTransactionBlockResponse, PeraTransactionBlockResponseOptions,
-};
-use pera_keys::keypair_file::{
-    read_class_groups_from_file, write_class_groups_keypair_and_proof_to_file,
 };
 use pera_keys::{
     key_derive::generate_new_key,
@@ -250,7 +250,6 @@ fn make_key_files(
         write_authority_keypair_to_file(&keypair, file_name.clone())?;
         println!("Generated new key file: {:?}.", file_name);
     } else if let Some(seed) = class_groups_key_seed {
-        // Todo (#369): let (decryption_key, proof, encryption_key) = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut seed).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
         let keypair = generate_class_groups_keypair_and_proof_from_seed(seed);
         write_class_groups_keypair_and_proof_to_file(&keypair, file_name.clone())?;
     } else {

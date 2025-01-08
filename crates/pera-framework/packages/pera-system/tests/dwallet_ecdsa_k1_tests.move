@@ -5,7 +5,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
     use pera::test_utils;
     use pera::vec_map::VecMap;
     use pera_system::dwallet;
-    use pera_system::dwallet::DWalletCap;
+    use pera_system::dwallet::{DWalletCap, get_dwallet_mpc_network_key_version};
     use pera_system::dwallet_2pc_mpc_ecdsa_k1;
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{Presign, create_dkg_first_round_output_for_testing};
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{
@@ -30,8 +30,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
     #[test]
     public fun test_create_encrypted_user_share() {
-        let mut scenario = test_scenario::begin(SENDER_ADDRESS);
-        scenario.next_tx(SENDER_ADDRESS);
+        let mut scenario = test_scenario::begin(SYSTEM_ADDRESS);
+        scenario.next_tx(SYSTEM_ADDRESS);
         {
             let ctx = scenario.ctx();
             dwallet_2pc_mpc_ecdsa_k1::create_encrypted_user_share(
@@ -39,6 +39,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[0xAA, 0xBB],
                 object::id_from_address(@0x10),
                 object::id_from_address(@0x10),
+                vector[0xCC, 0xDD],
+                vector[0xEE, 0xFF],
+                @0x10,
                 ctx,
             );
         };
@@ -390,6 +393,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
+                get_dwallet_mpc_network_key_version(&dwallet),
                 ctx
             );
             pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(
@@ -437,6 +441,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
+                get_dwallet_mpc_network_key_version(&dwallet),
                 ctx
             );
             pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(
@@ -491,6 +496,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
+                get_dwallet_mpc_network_key_version(&dwallet),
                 ctx
             );
             pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(

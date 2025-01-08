@@ -18,8 +18,10 @@ module pera_system::pera_system_state_inner {
     use pera::table::Table;
     use pera::bag::Bag;
     use pera::bag;
-    use pera_system::dwallet_network_key::{NetworkDecryptionKeyShares,
-        new_encrypted_network_decryption_key_shares, is_valid_key_scheme,
+    use pera_system::dwallet_network_key::{
+        NetworkDecryptionKeyShares,
+        new_encrypted_network_decryption_key_shares,
+        is_valid_key_scheme,
     };
 
     // same as in validator_set
@@ -368,9 +370,25 @@ module pera_system::pera_system_state_inner {
     }
 
     /// Update the system state with a new version dwallet mpc network key shares after the network DKG.
-    public(package) fun new_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_scheme: u8) {
+    public(package) fun new_decryption_key_shares_version(
+        self: &mut PeraSystemStateInnerV2,
+        shares: vector<u8>,
+        protocol_public_parameters: vector<u8>,
+        decryption_public_parameters: vector<u8>,
+        encryption_key: vector<u8>,
+        reconstructed_commitments_to_sharing: vector<u8>,
+        key_scheme: u8
+    ) {
         assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
-        let new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty());
+        let new_version = new_encrypted_network_decryption_key_shares(
+            self.epoch,
+            shares,
+            vector::empty(),
+            protocol_public_parameters,
+            decryption_public_parameters,
+            encryption_key,
+            reconstructed_commitments_to_sharing,
+        );
 
         if (self.decryption_key_shares.contains(&key_scheme)) {
             self.decryption_key_shares.get_mut(&key_scheme).push_back(new_version);
@@ -383,7 +401,7 @@ module pera_system::pera_system_state_inner {
     /// Update the system state with new encryption of decryption key shares after re-configuring the network.
     public(package) fun store_decryption_key_shares(
         self: &mut PeraSystemStateInnerV2,
-        shares: vector<vector<u8>>,
+        shares: vector<u8>,
         key_scheme: u8,
     ) {
         assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
@@ -394,11 +412,6 @@ module pera_system::pera_system_state_inner {
             ).update_new_shares(shares, self.epoch);
             return
         };
-
-        self.decryption_key_shares.insert(
-            key_scheme,
-            vector[new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty())]
-        );
     }
 
     /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
@@ -412,7 +425,7 @@ module pera_system::pera_system_state_inner {
         pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
-        class_groups_public_key_and_proof_bytes: vector<u8>,
+        cg_pubkey_and_proof: vector<u8>,
         proof_of_possession: vector<u8>,
         name: vector<u8>,
         description: vector<u8>,
@@ -431,7 +444,7 @@ module pera_system::pera_system_state_inner {
             pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
-            class_groups_public_key_and_proof_bytes,
+            cg_pubkey_and_proof,
             proof_of_possession,
             name,
             description,
@@ -1119,6 +1132,11 @@ module pera_system::pera_system_state_inner {
         } else {
             total_balance
         }
+    }
+
+    /// Return the current validator set.
+    public(package) fun active_validators(self: &PeraSystemStateInnerV2): &vector<Validator> {
+        self.validators.active_validators()
     }
 
     #[test_only]

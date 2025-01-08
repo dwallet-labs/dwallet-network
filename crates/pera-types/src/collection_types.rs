@@ -93,7 +93,23 @@ pub struct Bag {
     pub size: u64,
 }
 
+/// Rust version of the Move pera::bag::Bag type.
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct ObjectBag {
+    pub id: UID,
+    pub size: u64,
+}
+
 impl Default for Bag {
+    fn default() -> Self {
+        Self {
+            id: UID::new(ObjectID::ZERO),
+            size: 0,
+        }
+    }
+}
+
+impl Default for ObjectBag {
     fn default() -> Self {
         Self {
             id: UID::new(ObjectID::ZERO),

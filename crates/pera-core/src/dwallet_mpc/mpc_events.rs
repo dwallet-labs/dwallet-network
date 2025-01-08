@@ -10,6 +10,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
     START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
     START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
+    VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME, VALIDATOR_SET_MODULE_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
@@ -84,6 +85,8 @@ pub struct StartPresignFirstRoundEvent {
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
     pub batch_session_id: ID,
+    /// The dWallet mpc network key version
+    pub(super) dwallet_mpc_network_key_version: u8,
 }
 
 impl StartPresignFirstRoundEvent {
@@ -117,6 +120,8 @@ pub struct StartPresignSecondRoundEvent {
     /// A unique identifier for the first Presign round session.
     pub first_round_session_id: ID,
     pub batch_session_id: ID,
+    /// The dWallet mpc network key version
+    pub(super) dwallet_mpc_network_key_version: u8,
 }
 
 /// An event to start a batched sign session, i.e.,
@@ -177,6 +182,8 @@ pub struct StartSignRoundEvent {
     pub(super) presign: Vec<u8>,
     /// Centralized signed message
     pub(super) centralized_signed_message: Vec<u8>,
+    /// The dWallet mpc network key version
+    pub(super) dwallet_mpc_network_key_version: u8,
 }
 
 impl StartSignRoundEvent {
@@ -220,13 +227,34 @@ impl StartBatchedPresignEvent {
 
 /// Rust version of the Move [`pera_system::validator_set::LockedNextEpochCommitteeEvent`] type.
 pub struct LockedNextEpochCommitteeEvent {
-    _next_committee_validators: Vec<ValidatorDataForDWalletSecretReShare>,
-    _epoch: u64,
+    epoch: u64,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 struct ValidatorDataForDWalletSecretReShare {
-    _class_groups_public_key_and_proof_bytes: Vec<u8>,
-    _protocol_pubkey_bytes: Vec<u8>,
+    cg_pubkey_and_proof: Vec<u8>,
+    protocol_pubkey_bytes: Vec<u8>,
+}
+
+/// The data we need to know about a validator to run a re-share/network-dkg flow with it.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+pub struct ValidatorDataForDWalletSecretShare {
+    /// The class groups encryption key of the validator,
+    /// used to encrypt the validator's secret share to it.
+    cg_pubkey_and_proof: Vec<u8>,
+    /// The Ika public key of the validator, used as an identifier for the validator.
+    protocol_pubkey_bytes: Vec<u8>,
+}
+
+impl ValidatorDataForDWalletSecretShare {
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME.to_owned(),
+            module: VALIDATOR_SET_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }
 
 impl LockedNextEpochCommitteeEvent {
@@ -237,7 +265,7 @@ impl LockedNextEpochCommitteeEvent {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME.to_owned(),
-            module: ident_str!("validator_set").to_owned(),
+            module: VALIDATOR_SET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

@@ -162,6 +162,7 @@ module pera_system::validator_tests {
             VALID_CONSENSUS_ADDR.to_string(),
             VALID_WORKER_ADDR.to_string(),
             bag::new(ctx),
+            ctx,
         );
 
         validator::validate_metadata(&metadata);
@@ -190,6 +191,7 @@ module pera_system::validator_tests {
             VALID_CONSENSUS_ADDR.to_string(),
             VALID_WORKER_ADDR.to_string(),
             bag::new(ctx),
+            ctx,
         );
 
         validator::validate_metadata(&metadata);
@@ -218,6 +220,7 @@ module pera_system::validator_tests {
             VALID_CONSENSUS_ADDR.to_string(),
             VALID_WORKER_ADDR.to_string(),
             bag::new(ctx),
+            ctx,
         );
 
         validator::validate_metadata(&metadata);
@@ -246,6 +249,7 @@ module pera_system::validator_tests {
             VALID_CONSENSUS_ADDR.to_string(),
             VALID_WORKER_ADDR.to_string(),
             bag::new(ctx),
+            ctx,
         );
 
         validator::validate_metadata(&metadata);
@@ -274,6 +278,7 @@ module pera_system::validator_tests {
             VALID_CONSENSUS_ADDR.to_string(),
             VALID_WORKER_ADDR.to_string(),
             bag::new(ctx),
+            ctx,
         );
 
         validator::validate_metadata(&metadata);
@@ -302,6 +307,7 @@ module pera_system::validator_tests {
             VALID_CONSENSUS_ADDR.to_string(),
             VALID_WORKER_ADDR.to_string(),
             bag::new(ctx),
+            ctx,
         );
 
         validator::validate_metadata(&metadata);
@@ -330,6 +336,7 @@ module pera_system::validator_tests {
             b"42".to_string(),
             VALID_WORKER_ADDR.to_string(),
             bag::new(ctx),
+            ctx,
         );
 
         validator::validate_metadata(&metadata);
@@ -358,6 +365,7 @@ module pera_system::validator_tests {
             VALID_CONSENSUS_ADDR.to_string(),
             b"42".to_string(),
             bag::new(ctx),
+            ctx,
         );
 
         validator::validate_metadata(&metadata);

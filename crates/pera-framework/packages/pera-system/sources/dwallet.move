@@ -196,6 +196,10 @@ module pera_system::dwallet {
         dwallet.output
     }
 
+    public(package) fun get_dwallet_mpc_network_key_version<T: drop>(dwallet: &DWallet<T>): u8 {
+        dwallet.dwallet_mpc_network_key_version
+    }
+
     fun is_valid_encryption_key_scheme(scheme: u8): bool {
         scheme == CLASS_GROUPS
     }

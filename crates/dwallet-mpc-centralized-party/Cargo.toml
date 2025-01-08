@@ -13,7 +13,7 @@ class_groups.workspace = true
 group.workspace = true
 homomorphic_encryption.workspace = true
 maurer = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-network-dkg", subdir = "maurer" }
-
+dwallet-mpc-types.workspace = true
 
 anyhow.workspace = true
 bcs.workspace = true

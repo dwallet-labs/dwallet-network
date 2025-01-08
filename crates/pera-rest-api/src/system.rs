@@ -239,7 +239,6 @@ pub struct ValidatorSummary {
     pub protocol_public_key: pera_sdk2::types::Bls12381PublicKey,
     pub network_public_key: pera_sdk2::types::Ed25519PublicKey,
     pub worker_public_key: pera_sdk2::types::Ed25519PublicKey,
-    pub class_groups_public_key_and_proof: Vec<u8>,
     #[serde_as(as = "fastcrypto::encoding::Base64")]
     #[schemars(with = "String")]
     pub proof_of_possession_bytes: Vec<u8>,
@@ -336,7 +335,6 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraValidato
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
-            class_groups_public_key_and_proof,
             proof_of_possession_bytes,
             name,
             description,
@@ -386,7 +384,6 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraValidato
             .unwrap(),
             worker_public_key: pera_sdk2::types::Ed25519PublicKey::from_bytes(worker_pubkey_bytes)
                 .unwrap(),
-            class_groups_public_key_and_proof,
             proof_of_possession_bytes,
             name,
             description,
@@ -473,6 +470,7 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraSystemSt
             validator_candidates_size,
             at_risk_validators,
             validator_report_records,
+            decryption_key_shares,
         } = value;
 
         Self {

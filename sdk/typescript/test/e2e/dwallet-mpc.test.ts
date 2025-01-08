@@ -7,8 +7,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
-import { Config } from '../../src/dwallet-mpc/globals';
-import { launchNetworkDKG } from '../../src/dwallet-mpc/network-dkg';
+import { Config, MPCKeyScheme } from '../../src/dwallet-mpc/globals';
+import { fetchProtocolPublicParameters } from '../../src/dwallet-mpc/network-dkg';
 import { presign } from '../../src/dwallet-mpc/presign';
 import {
 	futureSignTransactionCall,
@@ -17,7 +17,12 @@ import {
 	signMessageTransactionCall,
 } from '../../src/dwallet-mpc/sign';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
-import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet';
+import {
+	fullMPCUserSessions,
+	mockCreateDwallet,
+	mockCreatePresign,
+	mockedProtocolPublicParameters,
+} from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test dWallet MPC', () => {
@@ -36,7 +41,7 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: 5 * 60 * 1000,
 		};
-		const dWallet = await createDWallet(conf);
+		const dWallet = await createDWallet(conf, mockedProtocolPublicParameters);
 
 		expect(dWallet).toBeDefined();
 		pollRef.value = false;
@@ -63,7 +68,7 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: 10 * 60 * 1000,
 		};
-		const dWallet = await createDWallet(conf);
+		const dWallet = await createDWallet(conf, mockedProtocolPublicParameters);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
 		const presignOutput = await presign(conf, dWallet.id, 1);
@@ -101,8 +106,8 @@ describe('Test dWallet MPC', () => {
 			])
 			.toBytes();
 		const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
-			// Todo (#382): Change to real value.
-			Uint8Array.from([1, 2]),
+			mockedProtocolPublicParameters,
+			MPCKeyScheme.Secp256k1,
 			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
 			Uint8Array.from(dWallet.centralizedDKGPrivateOutput),
 			serializedPresigns,
@@ -123,59 +128,30 @@ describe('Test dWallet MPC', () => {
 		console.log({ signOutput });
 	});
 
-	it(
-		'Full flow: DKG, Presign, Sign',
-		async () => {
-			let conf: Config = {
-				keypair: toolbox.keypair,
-				client: toolbox.client,
-				timeout: 10 * 60 * 1000,
-			};
-			const dWallet = await createDWallet(conf);
-			console.log({ dWallet });
-			expect(dWallet).toBeDefined();
-			const presignCompletionEvent = await presign(conf, dWallet.id, 2);
-			console.log({ presignCompletionEvent });
-			expect(presignCompletionEvent).toBeDefined();
-			let serializedMsgs = bcs
-				.vector(bcs.vector(bcs.u8()))
-				.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
-				.toBytes();
-			let serializedPresigns = bcs
-				.vector(bcs.vector(bcs.u8()))
-				.serialize(presignCompletionEvent.presigns)
-				.toBytes();
-			let serializedPresignFirstRoundSessionIds = bcs
-				.vector(bcs.string())
-				.serialize(
-					presignCompletionEvent.first_round_session_ids.map((session_id) => session_id.slice(2)),
-				)
-				.toBytes();
-			const [centralizedSignedMsg, hashedMsgs] = create_sign_centralized_output(
-				// Todo (#382): Change to real value.
-				Uint8Array.from([1, 2]),
-				Uint8Array.from(dWallet.centralizedDKGPublicOutput),
-				Uint8Array.from(dWallet.centralizedDKGPrivateOutput),
-				serializedPresigns,
-				serializedMsgs,
-				Hash.SHA256,
-				serializedPresignFirstRoundSessionIds,
-			);
+	it('Full user-side triggered flow: DKG, Presign, Sign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 10 * 60 * 1000,
+		};
+		await fullMPCUserSessions(conf, mockedProtocolPublicParameters);
+	});
 
-			console.log('Signing messages');
-			let signOutput = await signMessageTransactionCall(
-				conf,
-				dWallet.dwalletCapID,
-				hashedMsgs,
-				dWallet.id,
-				presignCompletionEvent.presign_ids,
-				centralizedSignedMsg,
-			);
-			expect(signOutput).toBeDefined();
-			console.log({ signOutput });
-		},
-		1000 * 60 * 20,
-	);
+	it('Full flow: Network DKG, DKG, Presign, Sign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 30 * 60 * 1000,
+		};
+		// Todo (#472): Start the network DKG flow from the test.
+		let protocolPublicParams = await fetchProtocolPublicParameters(
+			conf,
+			MPCKeyScheme.Secp256k1,
+			null,
+		);
+		conf.timeout = 10 * 60 * 1000;
+		await fullMPCUserSessions(conf, protocolPublicParams);
+	});
 
 	it('should run future sign', async () => {
 		let conf: Config = {
@@ -208,7 +184,8 @@ describe('Test dWallet MPC', () => {
 			.toBytes();
 		const [centralizedSignMsg, hashedMsgs] = create_sign_centralized_output(
 			// Todo (#382): Change to real value.
-			Uint8Array.from([1, 2]),
+			mockedProtocolPublicParameters,
+			MPCKeyScheme.Secp256k1,
 			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
 			Uint8Array.from(dWallet.centralizedDKGPrivateOutput),
 			serializedPresigns,
@@ -245,7 +222,10 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: 5 * 60 * 1000,
 		};
-		await launchNetworkDKG(conf);
+
+		const keyVersionNum = 0;
+		console.log(fetchProtocolPublicParameters(conf, MPCKeyScheme.Secp256k1, keyVersionNum));
+
 		pollRef.value = false;
 	});
 });

@@ -60,7 +60,7 @@ pub struct PeraSystemStateInnerV2 {
     pub epoch: u64,
     pub protocol_version: u64,
     pub system_state_version: u64,
-    pub encrypted_decryption_key_share: VecMap<u8, Vec<NetworkDecryptionKeyShares>>,
+    pub network_decryption_key_shares: VecMap<u8, Vec<NetworkDecryptionKeyShares>>,
     pub validators: ValidatorSetV1,
     pub storage_fund: StorageFundV1,
     pub parameters: SystemParametersV2,
@@ -175,9 +175,6 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
                         protocol_pubkey: metadata.protocol_pubkey.clone(),
                         narwhal_network_pubkey: metadata.network_pubkey.clone(),
                         narwhal_worker_pubkey: metadata.worker_pubkey.clone(),
-                        class_groups_public_key_and_proof: metadata
-                            .class_groups_public_key_and_proof
-                            .clone(),
                         pera_net_address: metadata.net_address.clone(),
                         p2p_address: metadata.p2p_address.clone(),
                         narwhal_primary_address: metadata.primary_address.clone(),
@@ -187,10 +184,10 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
                     }
                 })
                 .collect(),
-            if self.encrypted_decryption_key_share.contents.is_empty() {
+            if self.network_decryption_key_shares.contents.is_empty() {
                 None
             } else {
-                Some(self.encrypted_decryption_key_share)
+                Some(self.network_decryption_key_shares)
             },
         )
     }
@@ -203,7 +200,7 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             epoch,
             protocol_version,
             system_state_version,
-            encrypted_decryption_key_share: _,
+            network_decryption_key_shares,
             validators:
                 ValidatorSetV1 {
                     locked: _,
@@ -324,6 +321,11 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             validator_low_stake_grace_period,
             stake_subsidy_period_length,
             stake_subsidy_decrease_rate,
+            decryption_key_shares: network_decryption_key_shares
+                .contents
+                .iter()
+                .flat_map(|e| e.value.iter().map(|share| (e.key, share.clone())))
+                .collect(),
         }
     }
 }
