@@ -50,6 +50,8 @@ impl ClassGroupsKeyPairAndProof {
 }
 
 /// Generate a class groups keypair and proof from a seed.
+/// When using the `mock-class-groups` feature, this function will return a mock keypair and proof.
+/// Note that the mock feature is **only** for development and testing purposes.
 pub fn generate_class_groups_keypair_and_proof_from_seed(
     seed: [u8; 32],
 ) -> ClassGroupsKeyPairAndProof {

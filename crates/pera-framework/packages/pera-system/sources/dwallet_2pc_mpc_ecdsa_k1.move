@@ -745,6 +745,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         batch_session_id: ID,
         ctx: &mut TxContext
     ) {
+        let mpc_network_key_version = 0;
         launch_presign_second_round(
             initiator,
             dwallet_id,
@@ -752,7 +753,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             first_round_output,
             first_round_session_id,
             batch_session_id,
-            0,
+            mpc_network_key_version,
             ctx
         );
     }
