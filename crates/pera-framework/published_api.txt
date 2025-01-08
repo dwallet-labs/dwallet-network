@@ -7,13 +7,13 @@ EncryptionKey
 CreatedEncryptionKeyEvent
 	public struct
 	0x3::dwallet
+StartEncryptionKeyVerificationEvent
+	public struct
+	0x3::dwallet
 DWalletCap
 	public struct
 	0x3::dwallet
 ActiveEncryptionKeys
-	public struct
-	0x3::dwallet
-StartEncryptionKeyVerificationEvent
 	public struct
 	0x3::dwallet
 get_encryption_key

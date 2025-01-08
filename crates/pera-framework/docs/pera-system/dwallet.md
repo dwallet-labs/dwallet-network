@@ -32,9 +32,9 @@ ownership and control over a corresponding <code><a href="dwallet.md#0x3_dwallet
 -  [Resource `DWallet`](#0x3_dwallet_DWallet)
 -  [Resource `EncryptionKey`](#0x3_dwallet_EncryptionKey)
 -  [Struct `CreatedEncryptionKeyEvent`](#0x3_dwallet_CreatedEncryptionKeyEvent)
+-  [Struct `StartEncryptionKeyVerificationEvent`](#0x3_dwallet_StartEncryptionKeyVerificationEvent)
 -  [Resource `DWalletCap`](#0x3_dwallet_DWalletCap)
 -  [Resource `ActiveEncryptionKeys`](#0x3_dwallet_ActiveEncryptionKeys)
--  [Struct `StartEncryptionKeyVerificationEvent`](#0x3_dwallet_StartEncryptionKeyVerificationEvent)
 -  [Constants](#@Constants_4)
 -  [Function `get_encryption_key`](#0x3_dwallet_get_encryption_key)
 -  [Function `create_dwallet`](#0x3_dwallet_create_dwallet)
@@ -185,9 +185,7 @@ the recipient can sign with a dWallet when it is transferred or access is grante
 
 ## Struct `CreatedEncryptionKeyEvent`
 
-An Additively Homomorphic Encryption (AHE) public key
-that can be used to encrypt a user share in order to prove to the network that
-the recipient can sign with a dWallet when it is transferred or access is granted to it.
+An event emitted when an encryption key is created.
 
 
 <pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_CreatedEncryptionKeyEvent">CreatedEncryptionKeyEvent</a> <b>has</b> <b>copy</b>, drop
@@ -238,6 +236,72 @@ the recipient can sign with a dWallet when it is transferred or access is grante
 </dd>
 <dt>
 <code>encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_StartEncryptionKeyVerificationEvent"></a>
+
+## Struct `StartEncryptionKeyVerificationEvent`
+
+An event emitted to start an encryption key verification process.
+Since we cannot use native functions if we depend on Sui to hold our state,
+we need to emit an event to start the verification process, like we start the other MPC processes.
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_StartEncryptionKeyVerificationEvent">StartEncryptionKeyVerificationEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>scheme: u8</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>key_owner_address: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>encryption_key_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>sender_sui_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>initiator: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
 
@@ -318,72 +382,6 @@ and the value is the encryption key object ID.
 
 </details>
 
-<a name="0x3_dwallet_StartEncryptionKeyVerificationEvent"></a>
-
-## Struct `StartEncryptionKeyVerificationEvent`
-
-An event emitted to start an encrypted share verification process.
-Since we cannot use native functions if we depend on Sui to hold our state,
-we need to emit an event to start the verification process, like we start the other MPC processes.
-
-
-<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_StartEncryptionKeyVerificationEvent">StartEncryptionKeyVerificationEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>scheme: u8</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>key_owner_address: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>encryption_key_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>sender_sui_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>initiator: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="@Constants_4"></a>
 
 ## Constants
@@ -393,7 +391,7 @@ we need to emit an event to start the verification process, like we start the ot
 
 
 
-<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_ENotSystemAddress">ENotSystemAddress</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 0;
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_ENotSystemAddress">ENotSystemAddress</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 3;
 </code></pre>
 
 
