@@ -50,7 +50,7 @@ pub(crate) fn verify_encryption_key(
         <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.sender_sui_pubkey)
             .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     let derived_sui_addr = PeraAddress::from(&public_key);
-    if (derived_sui_addr != verification_data.initiator) {
+    if derived_sui_addr != verification_data.initiator {
         return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
     }
     Ok(())
