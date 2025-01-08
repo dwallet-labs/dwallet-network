@@ -205,14 +205,13 @@ impl DWalletMPCSession {
                 }
             }
             MPCRound::EncryptionKeyVerification(verification_data) => {
-                match verify_encryption_key(verification_data.clone()) {
-                    Ok(_) => Ok(AsynchronousRoundResult::Finalize {
+                verify_encryption_key(verification_data)
+                    .map(|_| AsynchronousRoundResult::Finalize {
                         public_output: vec![],
                         private_output: vec![],
                         malicious_parties: vec![],
-                    }),
-                    Err(err) => Err(err),
-                }
+                    })
+                    .map_err(|err| err)
             }
             MPCRound::BatchedPresign(..) | MPCRound::BatchedSign(..) => {
                 unreachable!("advance should never be called on a batched session")
