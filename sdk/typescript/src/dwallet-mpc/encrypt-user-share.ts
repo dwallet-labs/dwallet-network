@@ -10,7 +10,7 @@ import {
 import { toHEX } from '@mysten/bcs';
 
 import { bcs } from '../bcs/index.js';
-import type { PeraClient, PeraObjectRef } from '../client/index.js';
+import type { PeraClient } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
 import { decodePeraPrivateKey } from '../cryptography/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
