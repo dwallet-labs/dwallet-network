@@ -168,7 +168,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
-use pera_types::dwallet_mpc_error::DwalletMPCError;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::execution_config_utils::to_binary_config;
 
 #[cfg(test)]
@@ -1568,7 +1568,7 @@ impl AuthorityState {
                 continue;
             }
             if ValidatorDataForDWalletSecretShare::type_() == event.type_ {
-                Self::handle_validator_data_for_network_dkg_event(epoch_store, &event)?;
+                Self::handle_validator_data_for_network_dkg_event(epoch_store, event)?;
                 continue;
             }
             let key_version = epoch_store
@@ -1603,22 +1603,19 @@ impl AuthorityState {
 
     fn handle_validator_data_for_network_dkg_event(
         epoch_store: &Arc<AuthorityPerEpochStore>,
-        event: &&Event,
-    ) -> Result<(), PeraError> {
+        event: &Event,
+    ) -> DwalletMPCResult<()> {
         let deserialized_event: ValidatorDataForDWalletSecretShare =
             bcs::from_bytes(&event.contents)?;
-        let dwallet_mpc_sender = epoch_store.dwallet_mpc_sender.get().ok_or(PeraError::from(
-            "DWallet MPC sender not initialized when iterating over events",
-        ))?;
+        let dwallet_mpc_sender = epoch_store
+            .dwallet_mpc_sender
+            .get()
+            .ok_or(DwalletMPCError::MissingDWalletMPCSender)?;
         dwallet_mpc_sender
             .send(DWalletMPCChannelMessage::ValidatorDataForDKG(
                 deserialized_event,
             ))
-            .map_err(|err| {
-                PeraError::from(format!(
-                    "Failed to send MPC event to DWallet MPC service: {err}"
-                ))
-            })?;
+            .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
         Ok(())
     }
 

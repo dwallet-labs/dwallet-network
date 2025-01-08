@@ -81,10 +81,11 @@ pub enum DWalletMPCChannelMessage {
     /// This starts when the current epoch time has ended, and it's time to start the
     /// reconfiguration process for the next epoch.
     StartLockNextEpochCommittee,
-    /// A validator's public key and proof for the network DKG protocol
+    /// A validator's public key and proof for the network DKG protocol.
     /// Each validator's data is being emitted separately because the proof size is
-    /// almost 250KB, which is the maximum event size in Sui.
-    /// The manager accumulates the data until it received such an event for all validators, and then it starts the network DKG protocol.
+    /// almost 250 KB, which is the maximum event size in Sui.
+    /// The manager accumulates the data until it receives such an event for all validators,
+    /// and then it starts the network DKG protocol.
     ValidatorDataForDKG(ValidatorDataForDWalletSecretShare),
 }
 
@@ -95,22 +96,8 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> DwalletMPCResult<DWalletMPCSender> {
-        let weighted_parties: HashMap<PartyID, Weight> = epoch_store
-            .committee()
-            .voting_rights
-            .iter()
-            .map(|(name, weight)| {
-                Ok((
-                    authority_name_to_party_id(&name, &epoch_store)?,
-                    *weight as Weight,
-                ))
-            })
-            .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
-
-        let quorum_threshold = epoch_store.committee().quorum_threshold();
         let weighted_threshold_access_structure =
-            WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
-                .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
+            epoch_store.get_weighted_threshold_access_structure()?;
 
         let (sender, mut receiver) =
             tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
@@ -305,18 +292,16 @@ impl DWalletMPCManager {
                     _ => false,
                 };
 
-                let is_manager_ready = !cfg!(feature = "with-network-dkg")
-                    || matches!(
-                        mpc_network_key_status,
-                        DwalletMPCNetworkKeysStatus::Ready(_)
-                    )
-                    || (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
-                        && matches!(session.session_info.mpc_round, MPCRound::NetworkDkg(..))
+                let is_valid_network_dkg_transaction =
+                    matches!(session.session_info.mpc_round, MPCRound::NetworkDkg(..))
                         && self.validators_data_for_network_dkg.len()
                             == self
                                 .weighted_threshold_access_structure
                                 .party_to_weight
-                                .len()
+                                .len();
+
+                let is_manager_ready = !cfg!(feature = "with-network-dkg")
+                    || (is_valid_network_dkg_transaction
                         || matches!(
                             mpc_network_key_status,
                             DwalletMPCNetworkKeysStatus::Ready(_)

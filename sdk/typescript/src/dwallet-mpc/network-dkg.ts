@@ -1,32 +1,38 @@
-import type { DwalletMPCNetworkKey } from '../client/index.js';
+// noinspection ES6PreferShortImport
+
+// noinspection ES6PreferShortImport
+// noinspection ES6PreferShortImport
+import type { NetworkDecryptionKeyShares } from '../client/index.js';
 import type { Config, MPCKeyScheme } from './globals.js';
 
+/**
+ * Fetch the protocol public parameters from the network.
+ * @param conf
+ * @param keyScheme
+ * @param keyVersionNum
+ */
 export async function fetchProtocolPublicParameters(
 	conf: Config,
 	keyScheme: MPCKeyScheme,
-	keyVersion: number | null | undefined,
+	keyVersionNum: number | null | undefined,
 ): Promise<any> {
 	const startTime = Date.now();
 
 	while (Date.now() - startTime <= conf.timeout) {
-		// Wait for 5 seconds between queries
 		const systemStateSummary = await conf.client.getLatestPeraSystemState();
 		const decryptionKeyShares = convertToMap(systemStateSummary.decryptionKeyShares);
 
 		if (decryptionKeyShares.has(keyScheme)) {
-			const versions_by_scheme = decryptionKeyShares.get(keyScheme);
-			if (versions_by_scheme) {
-				if (keyVersion === null || keyVersion === undefined) {
-					keyVersion = versions_by_scheme.length - 1;
-				}
-				if (versions_by_scheme.length > keyVersion) {
-					const latest_version = versions_by_scheme[keyVersion];
-					if (latest_version && latest_version.length > keyVersion) {
-						const protocolPublicParameters = latest_version[keyVersion]?.protocol_public_parameters;
-						if (protocolPublicParameters) {
-							return protocolPublicParameters;
-						}
-					}
+			const keyVersionsByScheme = decryptionKeyShares.get(keyScheme);
+			if (!keyVersionsByScheme) {
+				continue;
+			}
+			keyVersionNum = keyVersionNum ?? keyVersionsByScheme.length - 1;
+			if (keyVersionsByScheme.length > keyVersionNum) {
+				const keyAtVersion = keyVersionsByScheme[keyVersionNum];
+				const protocolPublicParameters = keyAtVersion.protocol_public_parameters;
+				if (protocolPublicParameters) {
+					return protocolPublicParameters;
 				}
 			}
 		}
@@ -44,9 +50,9 @@ export async function fetchProtocolPublicParameters(
 }
 
 function convertToMap(
-	input: [number, DwalletMPCNetworkKey[]][],
-): Map<number, DwalletMPCNetworkKey[][]> {
-	const resultMap = new Map<number, DwalletMPCNetworkKey[][]>();
+	input: [number, NetworkDecryptionKeyShares][],
+): Map<number, NetworkDecryptionKeyShares[]> {
+	const resultMap = new Map<number, NetworkDecryptionKeyShares[]>();
 
 	input.forEach(([key, value]) => {
 		if (!resultMap.has(key)) {

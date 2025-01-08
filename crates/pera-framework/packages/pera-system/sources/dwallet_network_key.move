@@ -26,7 +26,7 @@ module pera_system::dwallet_network_key {
     /// with its public key and proof, that are needed for the DKG process.
     ///
     /// Each validator's data is being emitted separately because the proof size is
-    /// almost 250KB, which is the maximum event size in Sui.
+    /// almost 250 KB, which is the maximum event size in Sui.
     public(package) fun start_network_dkg(
         key_scheme: u8,
         validators_data: vector<ValidatorDataForDWalletSecretShare>,
@@ -38,9 +38,8 @@ module pera_system::dwallet_network_key {
             session_id,
             key_scheme,
         });
-        let validators_len = validators_data.length();
         let mut i = 0;
-        while (i < validators_len) {
+        while (i < validators_data.length()) {
             let validator_data = validators_data[i];
             emit_validator_data_for_secret_share(validator_data);
             i = i + 1;

@@ -268,7 +268,7 @@ PersistentCGPubKeyAndProof
 get_validator_protocol_pubkey
 	public(package) fun
 	0x3::validator
-get_cg_pubkey_and_proof
+get_class_group_pubkey_and_proof
 	public(package) fun
 	0x3::validator
 new_metadata

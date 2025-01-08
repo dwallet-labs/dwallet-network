@@ -11,7 +11,7 @@ title: Module `0x3::validator`
 -  [Resource `PersistentCGPubKeyAndProof`](#0x3_validator_PersistentCGPubKeyAndProof)
 -  [Constants](#@Constants_0)
 -  [Function `get_validator_protocol_pubkey`](#0x3_validator_get_validator_protocol_pubkey)
--  [Function `get_cg_pubkey_and_proof`](#0x3_validator_get_cg_pubkey_and_proof)
+-  [Function `get_class_group_pubkey_and_proof`](#0x3_validator_get_class_group_pubkey_and_proof)
 -  [Function `new_metadata`](#0x3_validator_new_metadata)
 -  [Function `new`](#0x3_validator_new)
 -  [Function `deactivate`](#0x3_validator_deactivate)
@@ -733,14 +733,14 @@ Max gas price a validator can set is 100K NPERA.
 
 </details>
 
-<a name="0x3_validator_get_cg_pubkey_and_proof"></a>
+<a name="0x3_validator_get_class_group_pubkey_and_proof"></a>
 
-## Function `get_cg_pubkey_and_proof`
+## Function `get_class_group_pubkey_and_proof`
 
 Retrieves the validator's class groups public key and proof.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x3_validator_get_cg_pubkey_and_proof">get_cg_pubkey_and_proof</a>(val: &<a href="validator.md#0x3_validator_Validator">validator::Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x3_validator_get_class_group_pubkey_and_proof">get_class_group_pubkey_and_proof</a>(val: &<a href="validator.md#0x3_validator_Validator">validator::Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -749,7 +749,7 @@ Retrieves the validator's class groups public key and proof.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="validator.md#0x3_validator_get_cg_pubkey_and_proof">get_cg_pubkey_and_proof</a>(val: &<a href="validator.md#0x3_validator_Validator">Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="validator.md#0x3_validator_get_class_group_pubkey_and_proof">get_class_group_pubkey_and_proof</a>(val: &<a href="validator.md#0x3_validator_Validator">Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
     <b>let</b> cg_pubkey_and_proof: &<a href="validator.md#0x3_validator_PersistentCGPubKeyAndProof">PersistentCGPubKeyAndProof</a> = val.metadata.persistent_extra_fields.borrow(
         <a href="validator.md#0x3_validator_CG_PUBKEY_AND_PROOF_BAG_KEY">CG_PUBKEY_AND_PROOF_BAG_KEY</a>
     );

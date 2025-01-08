@@ -68,7 +68,7 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: 10 * 60 * 1000,
 		};
-		const dWallet = await createDWallet(conf);
+		const dWallet = await createDWallet(conf, mockedProtocolPublicParameters);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
 		const presignOutput = await presign(conf, dWallet.id, 1);
@@ -129,7 +129,7 @@ describe('Test dWallet MPC', () => {
 		console.log({ signOutput });
 	});
 
-	it('Full flow: DKG, Presign, Sign', async () => {
+	it('Full user-side triggered flow: DKG, Presign, Sign', async () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
@@ -144,7 +144,7 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: 30 * 60 * 1000,
 		};
-		// Todo (#472): Start the network DKG flow from the test
+		// Todo (#472): Start the network DKG flow from the test.
 		let protocolPublicParams = await fetchProtocolPublicParameters(
 			conf,
 			MPCKeyScheme.Secp256k1,

@@ -16,14 +16,14 @@ use class_groups::{
     SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS,
 };
 use commitment::CommitmentSizedNumber;
-use dwallet_classgroups_types::{
-    mock_cg_encryption_keys_and_proofs, mock_cg_private_key, ClassGroupsDecryptionKey,
-    ClassGroupsEncryptionKeyAndProof,
+use dwallet_classgroups_types::mock_class_groups::{
+    mock_cg_encryption_keys_and_proofs, mock_cg_private_key,
 };
+use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::{Weight, WeightedThresholdAccessStructure};
+use mpc::WeightedThresholdAccessStructure;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
@@ -66,25 +66,10 @@ impl DwalletMPCNetworkKeyVersions {
     /// Creates a new instance of the network encryption key shares.
     pub fn new(
         epoch_store: &AuthorityPerEpochStore,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
         class_groups_decryption_key: ClassGroupsDecryptionKey,
     ) -> Self {
-        let weighted_parties: HashMap<PartyID, Weight> = epoch_store
-            .committee()
-            .voting_rights
-            .iter()
-            .map(|(name, weight)| {
-                Ok((
-                    authority_name_to_party_id(&name, &epoch_store).unwrap(),
-                    *weight as Weight,
-                ))
-            })
-            .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()
-            .unwrap();
-        let quorum_threshold = epoch_store.committee().quorum_threshold();
-        let weighted_threshold_access_structure =
-            WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
-                .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))
-                .unwrap();
+        // Safe to unwrap because the authority name is always present in the epoch store.
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store).unwrap();
 
         #[cfg(not(feature = "with-network-dkg"))]
@@ -101,7 +86,7 @@ impl DwalletMPCNetworkKeyVersions {
             .unwrap_or(HashMap::new());
         let decryption_key_share = Self::validator_decryption_key_shares(
             &encryption,
-            &weighted_threshold_access_structure,
+            weighted_threshold_access_structure,
             class_groups_decryption_key,
             party_id,
         )
@@ -266,6 +251,7 @@ impl DwalletMPCNetworkKeyVersions {
     }
 
     /// Returns the latest version of the given key type.
+    /// The latest version is the last element in the vector (length -1).
     pub fn key_version(&self, key_type: DWalletMPCNetworkKeyScheme) -> DwalletMPCResult<u8> {
         let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
         Ok(inner
@@ -326,7 +312,7 @@ impl DwalletMPCNetworkKeyVersions {
                         secret_key_share,
                         &bcs::from_bytes(&new_key_version.decryption_public_parameters)?,
                     )
-                    .unwrap(),
+                    .map_err(|e| DwalletMPCError::ClassGroupsError(e.to_string()))?,
                 ))
             })
             .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
@@ -560,12 +546,12 @@ fn generate_ristretto_dkg_party_public_input(
     bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))
 }
 
-pub(crate) fn new_from_dkg_public_output(
+pub(crate) fn dwallet_mpc_network_key_from_session_output(
     epoch: u64,
     key_scheme: DWalletMPCNetworkKeyScheme,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-    public_output: Vec<u8>,
-) -> anyhow::Result<NetworkDecryptionKeyShares> {
+    public_output: &[u8],
+) -> DwalletMPCResult<NetworkDecryptionKeyShares> {
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             let public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
@@ -575,12 +561,12 @@ pub(crate) fn new_from_dkg_public_output(
                     SECP256K1_SCALAR_LIMBS,
                     SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
                     secp256k1::GroupElement,
-                >()?;
+                >().map_err(|e| DwalletMPCError::ClassGroupsError(e.to_string()))?;
             let decryption_public_parameters = public_output.default_decryption_key_share_public_parameters::<
                 SECP256K1_SCALAR_LIMBS,
                 SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
                 secp256k1::GroupElement,
-            >(weighted_threshold_access_structure)?;
+            >(weighted_threshold_access_structure).map_err(|e| DwalletMPCError::ClassGroupsError(e.to_string()))?;
 
             Ok(NetworkDecryptionKeyShares {
                 epoch,

@@ -1,25 +1,26 @@
+#[cfg(feature = "mock-class-groups")]
+pub mod mock_class_groups;
+
 use class_groups::{
-    construct_knowledge_of_decryption_key_public_parameters_per_crt_prime,
-    construct_setup_parameters_per_crt_prime, generate_keypairs_per_crt_prime,
-    generate_knowledge_of_decryption_key_proofs_per_crt_prime, CompactIbqf,
-    KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
+    CompactIbqf, KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
 };
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
+#[cfg(feature = "mock-class-groups")]
+use mock_class_groups::ClassGroupsProof;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
 
+#[cfg(not(feature = "mock-class-groups"))]
+pub type ClassGroupsProof = KnowledgeOfDiscreteLogUCProof;
 pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
 pub type ClassGroupsDecryptionKey = [Uint<{ CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS }>; MAX_PRIMES];
 pub type ClassGroupsEncryptionKeyAndProof = [(
     CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
     ClassGroupsProof,
 ); MAX_PRIMES];
-#[cfg(feature = "mock-class-groups")]
-pub type ClassGroupsProof = [u8; 5];
-#[cfg(not(feature = "mock-class-groups"))]
-pub type ClassGroupsProof = KnowledgeOfDiscreteLogUCProof;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClassGroupsKeyPairAndProof {
@@ -118,56 +119,4 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
     let keypair: ClassGroupsKeyPairAndProof = bcs::from_bytes(&decoded)?;
     Ok(keypair)
-}
-
-// Todo (#441): Solve the memory error and save valid public data on chain and
-// valid private data on validator config
-#[cfg(feature = "mock-class-groups")]
-use group::PartyID;
-use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use std::collections::HashMap;
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CGKeyPairAndProofForMockFromFile {
-    decryption_key: ClassGroupsDecryptionKey,
-    pub encryption_key_and_proof: [(
-        CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
-        KnowledgeOfDiscreteLogUCProof,
-    ); MAX_PRIMES],
-}
-
-pub fn mock_cg_encryption_keys_and_proofs() -> DwalletMPCResult<
-    HashMap<
-        PartyID,
-        [(
-            CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
-            KnowledgeOfDiscreteLogUCProof,
-        ); MAX_PRIMES],
-    >,
-> {
-    let contents = std::fs::read_to_string(
-        "class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key",
-    )
-    .unwrap();
-    let decoded = Base64::decode(contents.as_str())
-        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
-    let keypair: CGKeyPairAndProofForMockFromFile = bcs::from_bytes(&decoded)?;
-
-    let mut encryption_keys_and_proofs = HashMap::new();
-    (1..=4).for_each(|i| {
-        encryption_keys_and_proofs.insert(i as PartyID, keypair.encryption_key_and_proof.clone());
-    });
-    Ok(encryption_keys_and_proofs)
-}
-
-pub fn mock_cg_private_key() -> DwalletMPCResult<ClassGroupsDecryptionKey> {
-    let contents = std::fs::read_to_string(
-        "class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key",
-    )
-    .unwrap();
-    let decoded = Base64::decode(contents.as_str())
-        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
-    let keypair: CGKeyPairAndProofForMockFromFile = bcs::from_bytes(&decoded)?;
-
-    Ok(keypair.decryption_key)
 }
