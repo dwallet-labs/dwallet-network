@@ -17,16 +17,19 @@
 /// - **DWalletCap**: A capability object granting control over a specific dWallet.
 /// - **Session ID**: A unique identifier for the DKG session.
 module pera_system::dwallet {
+    use pera::event;
     use pera::table::{Self, Table};
     use pera::ed25519::ed25519_verify;
 
     const CLASS_GROUPS: u8 = 0;
+    const SYSTEM_ADDRESS: address = @0x0;
 
     // >>>>>>>>>>>>>>> Error Codes >>>>>>>>>>>>>>
 
     const EInvalidEncryptionKeyScheme: u64 = 0;
     const EInvalidEncryptionKeySignature: u64 = 1;
     const EInvalidEncryptionKeyOwner: u64 = 2;
+    const ENotSystemAddress: u64 = 3;
 
     // <<<<<<<<<<<<<<< Error Codes <<<<<<<<<<<<<<
 
@@ -56,10 +59,31 @@ module pera_system::dwallet {
         encryption_key: vector<u8>,
         key_owner_address: address,
         encryption_key_signature: vector<u8>,
+        key_owner_pubkey: vector<u8>,
     }
 
-    public(package) fun get_encryption_key(key: &EncryptionKey): vector<u8> {
-        key.encryption_key
+    /// An event emitted when an encryption key is created.
+    public struct CreatedEncryptionKeyEvent has copy, drop {
+        scheme: u8,
+        encryption_key: vector<u8>,
+        key_owner_address: address,
+        encryption_key_signature: vector<u8>,
+        key_owner_pubkey: vector<u8>,
+        session_id: ID,
+        encryption_key_id: ID,
+    }
+
+    /// An event emitted to start an encryption key verification process.
+    /// Since we cannot use native functions if we depend on Sui to hold our state,
+    /// we need to emit an event to start the verification process, like we start the other MPC processes.
+    public struct StartEncryptionKeyVerificationEvent has copy, drop {
+        scheme: u8,
+        encryption_key: vector<u8>,
+        key_owner_address: address,
+        encryption_key_signature: vector<u8>,
+        sender_sui_pubkey: vector<u8>,
+        initiator: address,
+        session_id: ID,
     }
 
     /// `DWalletCap` holder controls a corresponding `DWallet`.
@@ -68,6 +92,10 @@ module pera_system::dwallet {
     /// - `id`: The unique identifier for the dWallet capability object.
     public struct DWalletCap has key, store {
         id: UID,
+    }
+
+    public(package) fun get_encryption_key(key: &EncryptionKey): vector<u8> {
+        key.encryption_key
     }
 
     /// A generic function to create a new [`DWallet`] object of type `T`.
@@ -148,14 +176,48 @@ module pera_system::dwallet {
     ) {
         assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
         assert!(ed25519_verify(&signature, &sender_sui_pubkey, &key), EInvalidEncryptionKeySignature);
-        // TODO (#453): Verify the ed2551 public key matches the sender's address.
-        transfer::freeze_object(EncryptionKey {
+        event::emit(
+            StartEncryptionKeyVerificationEvent {
+                scheme,
+                encryption_key: key,
+                key_owner_address: tx_context::sender(ctx),
+                encryption_key_signature: signature,
+                sender_sui_pubkey,
+                initiator: tx_context::sender(ctx),
+                session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+            }
+        );
+    }
+
+    #[allow(unused_function)]
+    fun create_encryption_key(
+        key: vector<u8>,
+        signature: vector<u8>,
+        sender_sui_pubkey: vector<u8>,
+        scheme: u8,
+        initiator: address,
+        session_id: ID,
+        ctx: &mut TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
+        let encryption_key = EncryptionKey {
             id: object::new(ctx),
             scheme,
             encryption_key: key,
-            key_owner_address: tx_context::sender(ctx),
+            key_owner_address: initiator,
             encryption_key_signature: signature,
+            key_owner_pubkey: sender_sui_pubkey,
+        };
+        event::emit(CreatedEncryptionKeyEvent {
+            scheme,
+            encryption_key: key,
+            key_owner_address: initiator,
+            encryption_key_signature: signature,
+            key_owner_pubkey: sender_sui_pubkey,
+            encryption_key_id: object::id(&encryption_key),
+            session_id,
         });
+        transfer::freeze_object(encryption_key);
     }
 
     /// Create a new [`DWalletCap`] object.

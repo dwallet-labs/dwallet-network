@@ -6,6 +6,7 @@ use crate::message_envelope::Message;
 use crate::PERA_SYSTEM_ADDRESS;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKey, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
+    DWALLET_MODULE_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
@@ -34,7 +35,10 @@ pub enum MPCRound {
     BatchedPresign(u64),
     /// The round of the network DKG protocol.
     NetworkDkg(DWalletMPCNetworkKey),
-    EncryptionKeyVerification(StartEncryptedShareVerificationEvent),
+    /// The round of verifying the encrypted share proof is valid & that the signature on it is valid.
+    EncryptedShareVerification(StartEncryptedShareVerificationEvent),
+    /// The round of verifying the public key that signed on the encryption key is matching the initiator address.
+    EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
 }
 
 /// The message and data for the Sign round.
@@ -93,7 +97,7 @@ pub struct SessionInfo {
 }
 
 /// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
-/// Defined here so that we can use it in the [`MPCRound`] enum, as the inner data of the [`MPCRound::EncryptionKeyVerification`].
+/// Defined here so that we can use it in the [`MPCRound`] enum, as the inner data of the [`MPCRound::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
     pub encrypted_secret_share_and_proof: Vec<u8>,
@@ -113,6 +117,31 @@ impl StartEncryptedShareVerificationEvent {
             address: PERA_SYSTEM_ADDRESS,
             name: ident_str!("StartEncryptedShareVerificationEvent").to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+/// An event emitted to start an encryption key verification process.
+/// Since we cannot use native functions if we depend on Sui to hold our state,
+/// we need to emit an event to start the verification process, like we start the other MPC processes.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub struct StartEncryptionKeyVerificationEvent {
+    pub scheme: u8,
+    pub encryption_key: Vec<u8>,
+    pub key_owner_address: PeraAddress,
+    pub encryption_key_signature: Vec<u8>,
+    pub sender_sui_pubkey: Vec<u8>,
+    pub initiator: PeraAddress,
+    pub session_id: ID,
+}
+
+impl StartEncryptionKeyVerificationEvent {
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: ident_str!("StartEncryptionKeyVerificationEvent").to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

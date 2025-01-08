@@ -30,8 +30,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
     #[test]
     public fun test_create_encrypted_user_share() {
-        let mut scenario = test_scenario::begin(SENDER_ADDRESS);
-        scenario.next_tx(SENDER_ADDRESS);
+        let mut scenario = test_scenario::begin(SYSTEM_ADDRESS);
+        scenario.next_tx(SYSTEM_ADDRESS);
         {
             let ctx = scenario.ctx();
             dwallet_2pc_mpc_ecdsa_k1::create_encrypted_user_share(
@@ -39,6 +39,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[0xAA, 0xBB],
                 object::id_from_address(@0x10),
                 object::id_from_address(@0x10),
+                vector[0xCC, 0xDD],
+                vector[0xCC, 0xDD],
+                @0x0,
                 ctx,
             );
         };

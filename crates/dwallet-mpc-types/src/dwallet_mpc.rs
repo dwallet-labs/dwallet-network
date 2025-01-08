@@ -4,6 +4,7 @@ use std::fmt;
 use thiserror::Error;
 
 pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
+pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet");
 pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartDKGFirstRoundEvent");
 pub const START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
