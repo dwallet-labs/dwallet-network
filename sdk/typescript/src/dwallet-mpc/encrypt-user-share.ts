@@ -266,6 +266,7 @@ export async function acceptUserShare(
 		// TODO (#475): Store the DWallet's centralizedDKGPublicOutput on chain, and use here the real value.
 		centralizedDKGPublicOutput: [],
 	};
+
 	// Encrypt it to self, so that in the future we'd know that we already
 	// verified everything and only need to verify our signature.
 	// Need to verify the signature to not trust the blockchain to provide this data.
