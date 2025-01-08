@@ -444,7 +444,7 @@ async function decryptAndVerifyUserShare(
 			new Uint8Array(encryptedUserShare.signed_public_share),
 		))
 	) {
-		throw new Error('the DWallet public key share have not been signed by the desired Sui address');
+		throw new Error('the dWallet public key share has not been signed by the desired Sui address');
 	}
 	let destination_cg_keypair = await getOrCreateEncryptionKey(conf, activeEncryptionKeysTableID);
 	let decrypted_share = decrypt_user_share(
