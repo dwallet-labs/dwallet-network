@@ -7,12 +7,12 @@ use class_groups::{
     Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use group::{CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors,
 };
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use k256::ecdsa::hazmat::bits2field;
 use k256::ecdsa::signature::digest::{Digest, FixedOutput};
 use k256::elliptic_curve::bigint::{Encoding, Uint};
