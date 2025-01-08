@@ -102,7 +102,7 @@ describe('encrypt user share', () => {
 });
 
 describe('encrypt user share - tests that can run without the blockchain is running', () => {
-	it("successfully encrypts a secret share, decrypt it, and verify the decrypted share is matching the DWallet's public share", () => {
+	it("successfully encrypts a secret share, decrypt it, and verify the decrypted share is matching the dWallets' public share", () => {
 		let keypair = Ed25519Keypair.generate();
 		let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(keypair);
 		let dwallet_secret_key_share = Array.from(Buffer.from(DKGCentralizedPrivateOutput, 'base64'));
