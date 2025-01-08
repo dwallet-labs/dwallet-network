@@ -386,6 +386,7 @@ mod test {
             epoch_start_timestamp_ms: 0,
             epoch_duration_ms: 0,
             active_validators,
+            decryption_key_shares: None,
         };
 
         // WHEN

@@ -61,7 +61,7 @@ use self::authority_store_pruner::AuthorityStorePruningMetrics;
 pub use authority_store::{AuthorityStore, ResolverWrapper, UpdateType};
 use mysten_metrics::{monitored_scope, spawn_monitored_task};
 
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKey;
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use once_cell::sync::OnceCell;
 use pera_archival::reader::ArchiveReaderBalancer;
 use pera_config::genesis::Genesis;
@@ -1571,13 +1571,11 @@ impl AuthorityState {
                 Self::handle_validator_data_for_network_dkg_event(epoch_store, event)?;
                 continue;
             }
-            // Todo (#427): Receive the key version
-            // Todo (#427): from the MPC event and check its validity.
             let key_version = epoch_store
                 .dwallet_mpc_network_keys
                 .get()
                 .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-                .key_version(DWalletMPCNetworkKey::Secp256k1)
+                .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
                 .unwrap_or_default();
             let Ok(Some(session_info)) =
                 session_info_from_event(event, party_id, Some(key_version))

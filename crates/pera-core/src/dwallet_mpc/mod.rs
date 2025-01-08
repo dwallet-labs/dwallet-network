@@ -15,7 +15,7 @@ use crate::dwallet_mpc::presign::{
 };
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessage, MPCPublicInput};
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::AuthorityName;
@@ -121,8 +121,10 @@ pub(crate) fn session_info_from_event(
 
 fn dkg_second_public_input(
     deserialized_event: StartDKGSecondRoundEvent,
+    protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
     Ok(DKGSecondParty::generate_public_input(
+        protocol_public_parameters,
         deserialized_event.first_round_output.clone(),
         deserialized_event.public_key_share_and_proof.clone(),
     )?)
@@ -143,8 +145,10 @@ fn dkg_second_party_session_info(
     }
 }
 
-fn dkg_first_public_input() -> DwalletMPCResult<Vec<u8>> {
-    <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input()
+fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResult<Vec<u8>> {
+    <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
+        protocol_public_parameters,
+    )
 }
 
 fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
@@ -158,9 +162,11 @@ fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> 
 
 fn presign_first_public_input(
     deserialized_event: StartPresignFirstRoundEvent,
+    protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
     Ok(
         <PresignFirstParty as PresignFirstPartyPublicInputGenerator>::generate_public_input(
+            protocol_public_parameters,
             deserialized_event.dkg_output.clone(),
         )?,
     )
@@ -177,15 +183,18 @@ fn presign_first_party_session_info(
             deserialized_event.dwallet_id.bytes,
             deserialized_event.dkg_output,
             deserialized_event.batch_session_id.bytes,
+            deserialized_event.dwallet_mpc_network_key_version,
         ),
     }
 }
 
 fn presign_second_public_input(
     deserialized_event: StartPresignSecondRoundEvent,
+    protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
     Ok(
         <PresignSecondParty as PresignSecondPartyPublicInputGenerator>::generate_public_input(
+            protocol_public_parameters,
             deserialized_event.dkg_output.clone(),
             deserialized_event.first_round_output.clone(),
         )?,
@@ -210,14 +219,22 @@ fn presign_second_party_session_info(
 fn sign_public_input(
     deserialized_event: StartSignRoundEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
+    protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
+    let decryption_pp = dwallet_mpc_manager.get_decryption_public_parameters(
+        // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
+        // Todo (#473): Support generic network key scheme
+        DWalletMPCNetworkKeyScheme::Secp256k1,
+        deserialized_event.dwallet_mpc_network_key_version,
+    )?;
     Ok(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
+            protocol_public_parameters,
             deserialized_event.dkg_output.clone(),
             deserialized_event.hashed_message.clone(),
             deserialized_event.presign.clone(),
             deserialized_event.centralized_signed_message.clone(),
-            bcs::from_bytes(&class_groups_constants::decryption_key_share_public_parameters())?,
+            bcs::from_bytes(&decryption_pp)?,
         )?,
     )
 }
@@ -287,14 +304,15 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
         },
         mpc::AsynchronousRoundResult::Finalize {
             malicious_parties,
-            private_output: _,
+            private_output,
             public_output,
         } => {
             let public_output: P::PublicOutputValue = public_output.into();
             let public_output = bcs::to_bytes(&public_output)?;
+            let private_output = bcs::to_bytes(&private_output)?;
             mpc::AsynchronousRoundResult::Finalize {
                 malicious_parties,
-                private_output: Vec::new(),
+                private_output,
                 public_output,
             }
         }
@@ -345,28 +363,64 @@ pub(crate) fn public_input_from_event(
     event: &Event,
     dwallet_mpc_manager: &DWalletMPCManager,
 ) -> DwalletMPCResult<MPCPublicInput> {
+    if &event.type_ == &StartNetworkDKGEvent::type_() {
+        let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
+        return network_dkg::network_dkg_public_input(deserialized_event);
+    }
     match &event.type_ {
-        t if t == &StartDKGFirstRoundEvent::type_() => dkg_first_public_input(),
+        t if t == &StartDKGFirstRoundEvent::type_() => {
+            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+                // The event is assign with a Secp256k1 dwallet.
+                // Todo (#473): Support generic network key scheme
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+                dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?,
+            )?;
+            dkg_first_public_input(protocol_public_parameters)
+        }
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
-            dkg_second_public_input(deserialized_event)
+            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+                // The event is assign with a Secp256k1 dwallet.
+                // Todo (#473): Support generic network key scheme
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+                dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?,
+            )?;
+            dkg_second_public_input(deserialized_event, protocol_public_parameters)
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
             let deserialized_event: StartPresignFirstRoundEvent = bcs::from_bytes(&event.contents)?;
-            presign_first_public_input(deserialized_event)
+            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+                // The event is assign with a Secp256k1 dwallet.
+                // Todo (#473): Support generic network key scheme
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+                deserialized_event.dwallet_mpc_network_key_version,
+            )?;
+            presign_first_public_input(deserialized_event, protocol_public_parameters)
         }
         t if t == &StartPresignSecondRoundEvent::type_() => {
             let deserialized_event: StartPresignSecondRoundEvent =
                 bcs::from_bytes(&event.contents)?;
-            presign_second_public_input(deserialized_event)
+            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+                // The event is assign with a Secp256k1 dwallet.
+                // Todo (#473): Support generic network key scheme
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+                deserialized_event.dwallet_mpc_network_key_version,
+            )?;
+            presign_second_public_input(deserialized_event, protocol_public_parameters)
         }
         t if t == &StartSignRoundEvent::type_() => {
             let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
-            sign_public_input(deserialized_event, dwallet_mpc_manager)
-        }
-        t if t == &StartNetworkDKGEvent::type_() => {
-            let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
-            network_dkg::network_dkg_public_input(deserialized_event)
+            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+                // The event is assign with a Secp256k1 dwallet.
+                // Todo (#473): Support generic network key scheme
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+                deserialized_event.dwallet_mpc_network_key_version,
+            )?;
+            sign_public_input(
+                deserialized_event,
+                dwallet_mpc_manager,
+                protocol_public_parameters,
+            )
         }
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),
     }
