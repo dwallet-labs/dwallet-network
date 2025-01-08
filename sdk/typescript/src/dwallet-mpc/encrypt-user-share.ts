@@ -7,18 +7,18 @@ import {
 	generate_secp_cg_keypair_from_seed,
 	verify_user_share,
 } from '@dwallet-network/dwallet-mpc-wasm';
-import {toHEX} from '@mysten/bcs';
+import { toHEX } from '@mysten/bcs';
 
-import {bcs} from '../bcs/index.js';
-import type {PeraClient} from '../client/index.js';
-import type {Keypair, PublicKey} from '../cryptography/index.js';
-import {decodePeraPrivateKey} from '../cryptography/index.js';
-import type {Ed25519Keypair} from '../keypairs/ed25519/index.js';
-import {Ed25519PublicKey} from '../keypairs/ed25519/index.js';
-import {Transaction} from '../transactions/index.js';
-import type {CreatedDwallet, DWallet} from './dkg.js';
-import {dWalletMoveType, isDWallet} from './dkg.js';
-import type {Config} from './globals.js';
+import { bcs } from '../bcs/index.js';
+import type { PeraClient, PeraObjectRef } from '../client/index.js';
+import type { Keypair, PublicKey } from '../cryptography/index.js';
+import { decodePeraPrivateKey } from '../cryptography/index.js';
+import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
+import { Ed25519PublicKey } from '../keypairs/ed25519/index.js';
+import { Transaction } from '../transactions/index.js';
+import type { CreatedDwallet, DWallet } from './dkg.js';
+import { dWalletMoveType, isDWallet } from './dkg.js';
+import type { Config } from './globals.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
 	dWalletModuleName,
