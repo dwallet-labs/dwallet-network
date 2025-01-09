@@ -35,16 +35,6 @@ pub struct DWalletMPCOutputsVerifier {
     voted_to_lock_committee: HashSet<AuthorityName>,
 }
 
-/// The possible verification status of an MPC session.
-#[derive(Clone, PartialEq)]
-enum VerificationStatus {
-    /// The session is still active, and we are waiting for more outputs.
-    Active,
-    /// The session has received enough votes to decide on the output,
-    /// and the output has been committed.
-    Verified,
-}
-
 /// The data needed to manage the outputs of an MPC session.
 #[derive(Clone)]
 pub struct SessionOutputsData {
@@ -55,18 +45,20 @@ pub struct SessionOutputsData {
         HashMap<(MPCPublicOutput, SessionInfo), HashSet<AuthorityName>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
     pub authorities_that_sent_output: HashSet<AuthorityName>,
-    pub(crate) status: VerificationStatus,
+    pub(crate) current_result: OutputResult,
 }
 
 /// The result of verifying an incoming output for an MPC session.
 /// We need to differentiate between a duplicate and a malicious output,
 /// as the output can be sent twice by honest parties.
-#[derive(PartialOrd, PartialEq)]
+#[derive(PartialOrd, PartialEq, Clone)]
 pub enum OutputResult {
     Valid,
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
+    /// The output has already been verified and committed to the chain
+    AlreadyCommitted,
     Duplicate,
 }
 
@@ -126,7 +118,7 @@ impl DWalletMPCOutputsVerifier {
                 malicious_actors: vec![origin_authority],
             });
         };
-        if session.status == VerificationStatus::Verified {
+        if session.current_result == OutputResult::AlreadyCommitted {
             return Ok(OutputVerificationResult {
                 result: OutputResult::Duplicate,
                 malicious_actors: vec![],
@@ -171,7 +163,7 @@ impl DWalletMPCOutputsVerifier {
                 .flat_map(|(_, voters)| voters)
                 .cloned()
                 .collect();
-            session.status = VerificationStatus::Verified;
+            session.current_result = OutputResult::AlreadyCommitted;
             return Ok(OutputVerificationResult {
                 result: OutputResult::Valid,
                 malicious_actors: voted_for_other_outputs,
@@ -194,7 +186,7 @@ impl DWalletMPCOutputsVerifier {
             SessionOutputsData {
                 session_output_to_voting_authorities: HashMap::new(),
                 authorities_that_sent_output: HashSet::new(),
-                status: VerificationStatus::Active,
+                current_result: OutputResult::NotEnoughVotes,
             },
         );
     }
