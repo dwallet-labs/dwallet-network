@@ -189,7 +189,7 @@ impl DWalletMPCManager {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(
             &AuthorityPublicKeyBytes::from_bytes(&data.protocol_pubkey_bytes)
-                .map_err(|e| DwalletMPCError::InvalidMPCPartyType)?,
+                .map_err(|e| DwalletMPCError::InvalidPartyPublicKey(e))?,
             &epoch_store,
         )?;
         if self.validators_data_for_network_dkg.contains_key(&party_id) {

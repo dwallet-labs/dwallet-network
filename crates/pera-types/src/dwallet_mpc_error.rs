@@ -96,8 +96,8 @@ pub enum DwalletMPCError {
     #[error("Missing MPC private session input")]
     MissingMPCPrivateInput,
 
-    #[error("Data for party ID {0} already exists")]
-    DuplicateDataForPartyID(PartyID),
+    #[error("Failed to deserialize party public key: {0}")]
+    InvalidPartyPublicKey(#[from] fastcrypto::error::FastCryptoError),
 }
 
 /// A wrapper type for the result of a runtime operation.
