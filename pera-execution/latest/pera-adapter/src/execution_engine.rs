@@ -6,7 +6,9 @@ pub use checked::*;
 #[pera_macros::with_checked_arithmetic]
 mod checked {
     use crate::execution_mode::{self, ExecutionMode};
-    use dwallet_mpc_types::dwallet_mpc::{MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME};
+    use dwallet_mpc_types::dwallet_mpc::{
+        MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
+    };
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
     use pera_types::balance::{
@@ -1127,7 +1129,7 @@ mod checked {
         let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 
         let (move_function_name, args) = match data.session_info.mpc_round {
-            MPCRound::EncryptionKeyVerification(verification_data) => (
+            MPCRound::EncryptedShareVerification(verification_data) => (
                 "create_encrypted_user_share",
                 vec![
                     CallArg::Pure(verification_data.dwallet_id.bytes.to_vec()),
@@ -1143,6 +1145,23 @@ mod checked {
                     CallArg::Pure(verification_data.initiator.to_vec()),
                 ],
             ),
+
+            MPCRound::EncryptionKeyVerification(verification_data) => {
+                module_name = DWALLET_MODULE_NAME;
+                (
+                    "create_encryption_key",
+                    vec![
+                        CallArg::Pure(bcs::to_bytes(&verification_data.encryption_key).unwrap()),
+                        CallArg::Pure(
+                            bcs::to_bytes(&verification_data.encryption_key_signature).unwrap(),
+                        ),
+                        CallArg::Pure(bcs::to_bytes(&verification_data.sender_sui_pubkey).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&verification_data.scheme).unwrap()),
+                        CallArg::Pure(verification_data.initiator.to_vec()),
+                        CallArg::Pure(data.session_info.session_id.to_vec()),
+                    ],
+                )
+            }
             MPCRound::DKGFirst => (
                 "create_dkg_first_round_output",
                 vec![

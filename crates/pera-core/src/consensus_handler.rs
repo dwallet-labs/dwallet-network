@@ -543,7 +543,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     }
                                 }
                             }
-                            OutputResult::NotEnoughVotes | OutputResult::Malicious => {
+                            OutputResult::NotEnoughVotes
+                            | OutputResult::Malicious
+                            | OutputResult::Duplicate => {
                                 // Ignore this output,
                                 continue;
                             }
