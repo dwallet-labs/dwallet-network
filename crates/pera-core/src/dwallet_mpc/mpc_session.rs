@@ -6,10 +6,13 @@ use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use twopc_mpc::sign::Protocol;
 
-use pera_types::base_types::EpochId;
+use pera_types::base_types::{EpochId, ObjectID};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use pera_types::id::ID;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
-use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
+use pera_types::messages_dwallet_mpc::{
+    MPCRound, SessionInfo, StartEncryptedShareVerificationEvent,
+};
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
@@ -142,16 +145,42 @@ impl DWalletMPCSession {
                     (),
                 )
             }
-            MPCRound::DKGSecond(..) => {
+            MPCRound::DKGSecond(event_data, _) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance::<DKGSecondParty>(
+                match crate::dwallet_mpc::advance::<DKGSecondParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.pending_messages.clone(),
                     public_input,
                     (),
-                )
+                ) {
+                    Ok(result) => match &result {
+                        AsynchronousRoundResult::Advance { .. } => Ok(result),
+                        AsynchronousRoundResult::Finalize { public_output, .. } => {
+                            verify_encrypted_share(&StartEncryptedShareVerificationEvent {
+                                dwallet_output: public_output.clone(),
+                                encrypted_secret_share_and_proof: event_data
+                                    .encrypted_secret_share_and_proof
+                                    .clone(),
+                                encryption_key: event_data.encryption_key.clone(),
+                                encryption_key_id: event_data.encryption_key_id.clone(),
+                                initiator: event_data.initiator.clone(),
+                                signed_public_share: event_data.signed_public_share.clone(),
+                                encryptor_ed25519_pubkey: event_data
+                                    .encryptor_ed25519_pubkey
+                                    .clone(),
+
+                                // those fields are not relevant for the verification,
+                                // so we can pass empty values to them
+                                dwallet_id: ID::new(ObjectID::new([0; 32])),
+                                session_id: ID::new(ObjectID::new([0; 32])),
+                            })?;
+                            Ok(result)
+                        }
+                    },
+                    Err(e) => Err(e),
+                }
             }
             MPCRound::PresignFirst(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
@@ -195,7 +224,7 @@ impl DWalletMPCSession {
                 self.pending_messages.clone(),
             ),
             MPCRound::EncryptedShareVerification(verification_data) => {
-                match verify_encrypted_share(verification_data.clone()) {
+                match verify_encrypted_share(verification_data) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
                         public_output: vec![],
                         private_output: vec![],

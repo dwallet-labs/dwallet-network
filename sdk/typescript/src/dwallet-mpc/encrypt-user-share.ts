@@ -16,14 +16,15 @@ import { decodePeraPrivateKey } from '../cryptography/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 import { Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
-import type { CreatedDwallet, DWallet } from './dkg.js';
-import { dWalletMoveType, isDWallet } from './dkg.js';
-import type { Config } from './globals.js';
+import type { Config, CreatedDwallet, DWallet } from './globals.js';
 import {
+	checkpointCreationTime,
 	dWallet2PCMPCECDSAK1ModuleName,
 	dWalletModuleName,
+	dWalletMoveType,
 	fetchCompletedEvent,
 	fetchObjectWithType,
+	isDWallet,
 	packageId,
 } from './globals.js';
 
@@ -165,6 +166,8 @@ export async function createActiveEncryptionKeysTable(client: PeraClient, keypai
 		throw new Error('Failed to create the active encryption keys table');
 	}
 
+	await new Promise((r) => setTimeout(r, checkpointCreationTime));
+
 	return activeEncryptionKeysObj;
 }
 
@@ -232,14 +235,15 @@ export async function getOrCreateEncryptionKey(
 		c,
 	);
 
-	// Sleep for 5 seconds, so the storeEncryptionKey transaction effects have time to
+	// Sleep for 2 seconds, so the storeEncryptionKey transaction effects have time to
 	// get written to the blockchain.
-	await new Promise((r) => setTimeout(r, 5000));
+	await new Promise((r) => setTimeout(r, checkpointCreationTime));
 	await upsertActiveEncryptionKey(
 		encryptionKeyCreationEvent.encryption_key_id,
 		activeEncryptionKeysTableID,
 		c,
 	);
+	await new Promise((r) => setTimeout(r, checkpointCreationTime));
 	return {
 		decryptionKey,
 		encryptionKey,

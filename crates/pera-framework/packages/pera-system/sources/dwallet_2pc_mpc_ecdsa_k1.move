@@ -222,6 +222,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         public_key_share_and_proof: vector<u8>,
         dwallet_cap_id: ID,
         first_round_session_id: ID,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key: vector<u8>,
+        encryption_key_id: ID,
+        signed_public_share: vector<u8>,
+        encryptor_ed25519_pubkey: vector<u8>,
     }
 
     /// Event emitted when the second round of the
@@ -465,6 +470,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         public_key_share_and_proof: vector<u8>,
         first_round_output: &DKGFirstRoundOutput,
         first_round_session_id: ID,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key: &EncryptionKey,
+        signed_public_share: vector<u8>,
+        encryptor_ed25519_pubkey: vector<u8>,
         ctx: &mut TxContext
     ): address {
         let session_id = tx_context::fresh_object_address(ctx);
@@ -475,6 +484,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             public_key_share_and_proof,
             dwallet_cap_id: object::id(dwallet_cap),
             first_round_session_id,
+            encrypted_secret_share_and_proof,
+            encryption_key: get_encryption_key(encryption_key),
+            encryption_key_id: object::id(encryption_key),
+            signed_public_share,
+            encryptor_ed25519_pubkey,
         });
         session_id
     }
@@ -557,9 +571,14 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         output: vector<u8>,
         dwallet_cap_id: ID,
         dwallet_mpc_network_key_version: u8,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key_id: ID,
+        signed_public_share: vector<u8>,
+        encryptor_ed25519_pubkey: vector<u8>,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
+
         let dwallet = dwallet::create_dwallet<Secp256K1>(
             session_id,
             dwallet_cap_id,
@@ -567,6 +586,17 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_mpc_network_key_version,
             ctx
         );
+
+        create_encrypted_user_share(object::id(&dwallet),
+            encrypted_secret_share_and_proof,
+            encryption_key_id,
+            session_id,
+            signed_public_share,
+            encryptor_ed25519_pubkey,
+            initiator,
+            ctx
+        );
+
         event::emit(CompletedDKGSecondRoundEvent {
             session_id,
             initiator,

@@ -7,6 +7,7 @@ use crate::PERA_SYSTEM_ADDRESS;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
+    START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
@@ -19,7 +20,7 @@ pub enum MPCRound {
     /// The first round of the DKG protocol.
     DKGFirst,
     /// The second round of the DKG protocol.
-    DKGSecond(ObjectID, u8),
+    DKGSecond(StartDKGSecondRoundEvent, u8),
     /// The first round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID,
@@ -148,6 +149,41 @@ impl StartEncryptionKeyVerificationEvent {
             address: PERA_SYSTEM_ADDRESS,
             name: ident_str!("StartEncryptionKeyVerificationEvent").to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+/// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGSecondRoundEvent`.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub struct StartDKGSecondRoundEvent {
+    /// Unique identifier for the MPC session.
+    pub session_id: PeraAddress,
+    /// The address of the user that initiated this session.
+    pub initiator: PeraAddress,
+    /// The DKG first decentralized round output.
+    pub first_round_output: Vec<u8>,
+    /// The DKG centralized round output.
+    pub public_key_share_and_proof: Vec<u8>,
+    /// The `DWalletCap` object's ID associated with the `DWallet`.
+    pub dwallet_cap_id: ID,
+    pub first_round_session_id: ID,
+    pub encrypted_secret_share_and_proof: Vec<u8>,
+    pub encryption_key: Vec<u8>,
+    pub encryption_key_id: ID,
+    pub signed_public_share: Vec<u8>,
+    pub encryptor_ed25519_pubkey: Vec<u8>,
+}
+
+impl StartDKGSecondRoundEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`StartDKGSecondRoundEvent`] events from the chain
+    /// and initiate the MPC session.
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

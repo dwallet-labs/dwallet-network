@@ -27,6 +27,7 @@ use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
 use group::KnownOrderGroupElement;
+use k256::elliptic_curve::subtle::CtOption;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -114,7 +115,7 @@ pub fn create_dkg_output(
     key_scheme: u8,
     decentralized_first_round_output: Vec<u8>,
     session_id: String,
-) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
         bcs::from_bytes(&decentralized_first_round_output)
             .context("Failed to deserialize decentralized first round output")?;
@@ -136,11 +137,13 @@ pub fn create_dkg_output(
     let public_key_share_and_proof = bcs::to_bytes(&round_result.outgoing_message)?;
     let centralized_public_output = bcs::to_bytes(&round_result.public_output)?;
     let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
+    let centralized_public_share = bcs::to_bytes(&round_result.public_output.public_key_share)?;
 
     Ok((
         public_key_share_and_proof,
         centralized_public_output,
         centralized_secret_output,
+        centralized_public_share,
     ))
 }
 
@@ -262,13 +265,12 @@ pub fn generate_secp_cg_keypair_from_seed_internal(
     Ok((encryption_key, decryption_key))
 }
 
-/// Get the centralized party public share out of the decentralized dkg output.
 pub fn centralized_public_share_from_decentralized_output_inner(
     dkg_output: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
     let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
         bcs::from_bytes(&dkg_output)?;
-    bcs::to_bytes(&dkg_output.public_key_share).map_err(Into::into)
+    bcs::to_bytes(&dkg_output.centralized_party_public_key_share).map_err(Into::into)
 }
 
 /// Encrypts the given secret share to the given encryption key.

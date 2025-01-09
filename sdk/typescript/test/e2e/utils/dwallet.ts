@@ -7,14 +7,14 @@ import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-was
 import { expect } from 'vitest';
 
 import { bcs } from '../../../src/bcs/index.js';
-import type { CreatedDwallet, DWallet } from '../../../src/dwallet-mpc/dkg.js';
-import { createDWallet, dWalletMoveType, isDWallet } from '../../../src/dwallet-mpc/dkg.js';
+import { createDWallet, dWalletMoveType } from '../../../src/dwallet-mpc/dkg.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
+	isDWallet,
 	MPCKeyScheme,
 	packageId,
 } from '../../../src/dwallet-mpc/globals.js';
-import type { Config } from '../../../src/dwallet-mpc/globals.js';
+import type { Config, CreatedDwallet, DWallet } from '../../../src/dwallet-mpc/globals.js';
 import { isPresign, presign, presignMoveType } from '../../../src/dwallet-mpc/presign.js';
 import type { Presign } from '../../../src/dwallet-mpc/presign.js';
 import { Hash, signMessageTransactionCall } from '../../../src/dwallet-mpc/sign.js';
@@ -147,8 +147,12 @@ export async function mockCreatePresign(c: Config, dwallet: CreatedDwallet): Pro
 /**
  * Run the Full MPC User Sessions
  */
-export async function fullMPCUserSessions(conf: Config, protocolPublicParameters: Uint8Array) {
-	const dWallet = await createDWallet(conf, protocolPublicParameters);
+export async function fullMPCUserSessions(
+	conf: Config,
+	protocolPublicParameters: Uint8Array,
+	activeEncryptionKeysTableID: string,
+) {
+	const dWallet = await createDWallet(conf, protocolPublicParameters, activeEncryptionKeysTableID);
 	console.log({ dWallet });
 	expect(dWallet).toBeDefined();
 	const presignCompletionEvent = await presign(conf, dWallet.id, 2);
