@@ -5,17 +5,12 @@
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::authority_name_to_party_id;
 use dwallet_mpc_types::dwallet_mpc::MPCPublicOutput;
-use group::PartyID;
-use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
-use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::SessionInfo;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 
 /// Verify the DWallet MPC outputs.
 ///
