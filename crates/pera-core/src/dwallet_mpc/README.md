@@ -4,6 +4,27 @@ This module contains the core logic of the MPC protocol for the dWallet.
 
 ## Development Notes
 
+### Running the Network DKG Protocol
+
+To run the network DKG protocol, you must configure your address as the dWallet admin address and execute the start
+transaction.
+
+#### Configuring the Admin Address
+
+There are two ways to configure the admin address:
+
+1. Run `pera genesis-ceremony init` and modify the admin address.
+2. Update it directly in the code at `crates/pera-config/src/genesis.rs:L463`.
+
+#### Executing the Start Transaction
+
+Run the following commands:
+
+```bash
+pera client faucet 
+pera client call --package 0x3 --module pera_system --function request_start_network_dkg --args 1 0x5 --gas-budget 1000000000
+```
+
 ### Mocks for Development
 
 The MPC includes complex logic, some of which takes a significant amount of time to run in `dev` mode.
@@ -30,3 +51,32 @@ To generate the RPC schema, follow these steps:
 
 1. Run the `main` function from `crates/pera-open-rpc/src/generate_json_rpc_spec.rs`.
 2. Then, run `pnpm tsx scripts/generate.ts` from the `sdk/typescript` directory.
+
+## How to Configure and Run `Run pera`
+
+1. **Create a Debug Configuration**:
+    - Open "Run/Debug Configurations" in your IDE (Intellij/Rustrover)and create a new configuration.
+
+2. **Set Command**:
+   ```bash
+   run --bin pera -- start --with-faucet --force-regenesis --epoch-duration-ms 1000000000000
+   ```
+
+3. **Enable Options**:
+    - Check:
+        - **Automatically add required features if possible**
+        - **Emulate terminal in output console**
+
+4. **Environment Variables**:
+   ```plaintext
+   RUST_LOG=off,pera_node=info,pera_core=error;RUST_MIN_STACK=16777216
+   ```
+
+5. **Working Directory**:
+   ```plaintext
+   /Users/yaelabergel/projects/dwallet_labs/dwallet-network-original
+   ```
+
+6. **Backtrace**: Set to `Short`.
+
+7. **Run**: Select the configuration and click **Run** or **Debug**.
