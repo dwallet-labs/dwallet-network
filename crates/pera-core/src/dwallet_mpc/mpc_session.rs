@@ -147,40 +147,41 @@ impl DWalletMPCSession {
             }
             MPCRound::DKGSecond(event_data, _) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                match crate::dwallet_mpc::advance::<DKGSecondParty>(
+                let result = crate::dwallet_mpc::advance::<DKGSecondParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.pending_messages.clone(),
                     public_input,
                     (),
-                ) {
-                    Ok(result) => match &result {
-                        AsynchronousRoundResult::Advance { .. } => Ok(result),
-                        AsynchronousRoundResult::Finalize { public_output, .. } => {
-                            verify_encrypted_share(&StartEncryptedShareVerificationEvent {
-                                dwallet_output: public_output.clone(),
-                                encrypted_secret_share_and_proof: event_data
-                                    .encrypted_secret_share_and_proof
-                                    .clone(),
-                                encryption_key: event_data.encryption_key.clone(),
-                                encryption_key_id: event_data.encryption_key_id.clone(),
-                                initiator: event_data.initiator.clone(),
-                                signed_public_share: event_data.signed_public_share.clone(),
-                                encryptor_ed25519_pubkey: event_data
-                                    .encryptor_ed25519_pubkey
-                                    .clone(),
+                );
+                let public_input = bcs::from_bytes(&self.public_input)?;
+                let result = crate::dwallet_mpc::advance::<DKGSecondParty>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.pending_messages.clone(),
+                    public_input,
+                    (),
+                )?;
+                if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
+                    verify_encrypted_share(&StartEncryptedShareVerificationEvent {
+                        dwallet_output: public_output.clone(),
+                        encrypted_secret_share_and_proof: event_data
+                            .encrypted_secret_share_and_proof
+                            .clone(),
+                        encryption_key: event_data.encryption_key.clone(),
+                        encryption_key_id: event_data.encryption_key_id.clone(),
+                        initiator: event_data.initiator.clone(),
+                        signed_public_share: event_data.signed_public_share.clone(),
+                        encryptor_ed25519_pubkey: event_data.encryptor_ed25519_pubkey.clone(),
 
-                                // those fields are not relevant for the verification,
-                                // so we can pass empty values to them
-                                dwallet_id: ID::new(ObjectID::new([0; 32])),
-                                session_id: ID::new(ObjectID::new([0; 32])),
-                            })?;
-                            Ok(result)
-                        }
-                    },
-                    Err(e) => Err(e),
+                        // Fields not relevant for verification; passing empty values.
+                        dwallet_id: ID::new(ObjectID::new([0; 32])),
+                        session_id: ID::new(ObjectID::new([0; 32])),
+                    })?;
                 }
+                Ok(result)
             }
             MPCRound::PresignFirst(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
