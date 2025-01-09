@@ -77,6 +77,4 @@ To generate the RPC schema, follow these steps:
    /Users/yaelabergel/projects/dwallet_labs/dwallet-network-original
    ```
 
-6. **Backtrace**: Set to `Short`.
-
-7. **Run**: Select the configuration and click **Run** or **Debug**.
+6. **Run**: Select the configuration and click **Run** or **Debug**.
