@@ -79,7 +79,7 @@ impl DwalletMPCNetworkKeyVersions {
         }
 
         #[cfg(feature = "mock-class-groups")]
-        // This is used only for development purposes, the key is valid so it is safe to unwrap.
+        // This is used only for development purposes, the key is valid, so it is safe to unwrap.
         let class_groups_decryption_key =
             dwallet_classgroups_types::mock_class_groups::mock_cg_private_key().unwrap();
 

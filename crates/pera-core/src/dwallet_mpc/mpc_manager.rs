@@ -174,7 +174,7 @@ impl DWalletMPCManager {
             DWalletMPCChannelMessage::ValidatorDataForDKG(data) => {
                 if let Err(err) = self.handle_validator_data_for_dkg(data) {
                     error!(
-                        "Failed to handle validator data for DKG with error: {:?}",
+                        "failed to handle validator data for DKG session with error: {:?}",
                         err
                     );
                 }
