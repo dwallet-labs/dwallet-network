@@ -52,7 +52,7 @@ To generate the RPC schema, follow these steps:
 1. Run the `main` function from `crates/pera-open-rpc/src/generate_json_rpc_spec.rs`.
 2. Then, run `pnpm tsx scripts/generate.ts` from the `sdk/typescript` directory.
 
-## How to Configure and run a local blockchain
+## Running a local blockchain from the IDE
 
 1. **Create a Debug Configuration**:
     - Open "Run/Debug Configurations" in your IDE (IntelliK/RustRover) and create a new configuration.
@@ -79,3 +79,10 @@ To generate the RPC schema, follow these steps:
    ```
 
 6. **Run**: Select the configuration and click **Run** or **Debug**.
+
+## Running a local blockchain from the CLI
+
+```bash
+RUST_LOG=off,pera_node=info,pera_core=error;RUST_MIN_STACK=16777216 cargo run --bin pera -- start --with-faucet --force-regenesis --epoch-duration-ms 1000000000000
+```
+
