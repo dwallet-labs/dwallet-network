@@ -663,7 +663,8 @@ The key is saved as an immutable object.
 ## Function `create_encryption_key`
 
 Creates an encryption key object.
-Being called by the blockchain after it verifies the sender_sui_pubkey matches the initiator address.
+Being called by the blockchain after it verifies
+the <code>sender_sui_pubkey</code> matches the initiator address.
 We need to run the flow this way as this verification can only be done in rust.
 
 
