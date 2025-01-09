@@ -36,7 +36,7 @@ To simplify development, you can use the following mocks:
 Each validator must generate a Class Groups key pair and proof of validity,
 publish the public data (encryption key + proof), and store the decryption key.  
 To bypass this process during development, you can mock the key generation by enabling the `mock-class-groups` feature
-on the `dwallet-classgroups-types` crate.
+on both `dwallet-classgroups-types` and `pera-core` crates.
 
 #### Mocking the Network DKG Protocol
 
