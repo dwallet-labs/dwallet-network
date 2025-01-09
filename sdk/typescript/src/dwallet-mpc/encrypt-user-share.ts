@@ -68,7 +68,7 @@ interface CreatedEncryptedSecretShareEvent {
 
 /**
  * TS representation of an event to start an MPC session.
- * Usually the only thing that is needed from this event is the session_id, which is used to fetch the
+ * Usually the only thing needed from this event is the `session_id`, which is used to fetch the
  * completion event.
  */
 interface StartSessionEvent {
