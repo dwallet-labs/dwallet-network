@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
+import { createActiveEncryptionKeysTable } from '../../src/dwallet-mpc/encrypt-user-share';
 import { Config, MPCKeyScheme } from '../../src/dwallet-mpc/globals';
 import { fetchProtocolPublicParameters } from '../../src/dwallet-mpc/network-dkg';
 import { presign } from '../../src/dwallet-mpc/presign';
@@ -27,21 +28,31 @@ import { setup, TestToolbox } from './utils/setup';
 
 describe('Test dWallet MPC', () => {
 	let toolbox: TestToolbox;
+	let activeEncryptionKeysTableID: string;
 
 	beforeEach(async () => {
 		toolbox = await setup();
 		console.log('Address', toolbox.keypair.toPeraAddress());
+		const encryptionKeysRef = await createActiveEncryptionKeysTable(
+			toolbox.client,
+			toolbox.keypair,
+		);
+
+		activeEncryptionKeysTableID = encryptionKeysRef.objectId;
 	});
 
 	it('should create a dWallet (DKG)', async () => {
 		const pollRef = { value: true };
-		void printOwnedObjects(toolbox.keypair, toolbox.client, pollRef);
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
 			timeout: 5 * 60 * 1000,
 		};
-		const dWallet = await createDWallet(conf, mockedProtocolPublicParameters);
+		const dWallet = await createDWallet(
+			conf,
+			mockedProtocolPublicParameters,
+			activeEncryptionKeysTableID,
+		);
 
 		expect(dWallet).toBeDefined();
 		pollRef.value = false;
@@ -68,7 +79,11 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: 10 * 60 * 1000,
 		};
-		const dWallet = await createDWallet(conf, mockedProtocolPublicParameters);
+		const dWallet = await createDWallet(
+			conf,
+			mockedProtocolPublicParameters,
+			activeEncryptionKeysTableID,
+		);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
 		const presignOutput = await presign(conf, dWallet.id, 1);
@@ -134,7 +149,7 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: 10 * 60 * 1000,
 		};
-		await fullMPCUserSessions(conf, mockedProtocolPublicParameters);
+		await fullMPCUserSessions(conf, mockedProtocolPublicParameters, activeEncryptionKeysTableID);
 	});
 
 	it('Full flow: Network DKG, DKG, Presign, Sign', async () => {
@@ -150,7 +165,7 @@ describe('Test dWallet MPC', () => {
 			null,
 		);
 		conf.timeout = 10 * 60 * 1000;
-		await fullMPCUserSessions(conf, protocolPublicParams);
+		await fullMPCUserSessions(conf, protocolPublicParams, activeEncryptionKeysTableID);
 	});
 
 	it('should run future sign', async () => {
