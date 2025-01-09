@@ -154,15 +154,6 @@ impl DWalletMPCSession {
                     self.pending_messages.clone(),
                     public_input,
                     (),
-                );
-                let public_input = bcs::from_bytes(&self.public_input)?;
-                let result = crate::dwallet_mpc::advance::<DKGSecondParty>(
-                    session_id,
-                    self.party_id,
-                    &self.weighted_threshold_access_structure,
-                    self.pending_messages.clone(),
-                    public_input,
-                    (),
                 )?;
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
                     verify_encrypted_share(&StartEncryptedShareVerificationEvent {
