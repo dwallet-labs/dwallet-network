@@ -4080,6 +4080,7 @@ dependencies = [
  "class_groups",
  "class_groups_constants",
  "commitment",
+ "dwallet-mpc-types",
  "group 0.1.0",
  "homomorphic_encryption",
  "k256 0.13.3",
@@ -4096,8 +4097,12 @@ dependencies = [
 name = "dwallet-mpc-types"
 version = "1.32.2"
 dependencies = [
+ "anyhow",
+ "bcs",
  "move-core-types",
+ "schemars",
  "serde",
+ "serde_json",
  "thiserror 1.0.69",
 ]
 

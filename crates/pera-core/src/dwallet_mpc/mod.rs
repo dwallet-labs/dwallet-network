@@ -464,6 +464,10 @@ pub(crate) fn public_input_from_event(
         }
         t if t == &StartEncryptedShareVerificationEvent::type_() => Ok(vec![]),
         t if t == &StartEncryptionKeyVerificationEvent::type_() => Ok(vec![]),
-        _ => Err(DwalletMPCError::NonMPCEvent.into()),
+        _ => Err(DwalletMPCError::NonMPCEvent(
+            StartEncryptionKeyVerificationEvent::type_()
+                .name
+                .to_string(),
+        )),
     }
 }
