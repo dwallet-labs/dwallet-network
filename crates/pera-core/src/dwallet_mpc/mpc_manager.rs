@@ -29,7 +29,7 @@ use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::log::warn;
+use tracing::log::{debug, warn};
 use tracing::{error, info};
 use twopc_mpc::sign::Protocol;
 
@@ -193,12 +193,11 @@ impl DWalletMPCManager {
             &epoch_store,
         )?;
         if self.validators_data_for_network_dkg.contains_key(&party_id) {
-            error!("Received duplicate data for party_id: {:?}", party_id);
-            Err(DwalletMPCError::DuplicateDataForPartyID(party_id))
+            debug!("Received duplicate data for party_id: {:?}", party_id);
         } else {
             self.validators_data_for_network_dkg.insert(party_id, data);
-            Ok(())
         }
+        Ok(())
     }
 
     async fn start_lock_next_epoch(&mut self) -> PeraResult {
