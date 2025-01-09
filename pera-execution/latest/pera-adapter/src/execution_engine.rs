@@ -1170,14 +1170,20 @@ mod checked {
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                 ],
             ),
-            MPCRound::DKGSecond(dwallet_cap_id, dwallet_network_key_version) => (
+            MPCRound::DKGSecond(event_data, dwallet_network_key_version) => (
                 "create_dkg_second_round_output",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
-                    CallArg::Pure(dwallet_cap_id.to_vec()),
+                    CallArg::Pure(event_data.dwallet_cap_id.bytes.to_vec()),
                     CallArg::Pure(bcs_to_bytes(&dwallet_network_key_version)?),
+                    CallArg::Pure(
+                        bcs::to_bytes(&event_data.encrypted_secret_share_and_proof).unwrap(),
+                    ),
+                    CallArg::Pure(event_data.encryption_key_id.bytes.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&event_data.signed_public_share).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&event_data.encryptor_ed25519_pubkey).unwrap()),
                 ],
             ),
             MPCRound::PresignFirst(

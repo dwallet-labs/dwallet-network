@@ -9,6 +9,9 @@ export const packageId = '0x3';
 export const dWalletModuleName = 'dwallet';
 export const dWalletPackageID = '0x3';
 export const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
+const dwalletSecp256K1MoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::Secp256K1`;
+export const dWalletMoveType = `${dWalletPackageID}::${dWalletModuleName}::DWallet<${dwalletSecp256K1MoveType}>`;
+export const checkpointCreationTime = 2000;
 
 export interface Config {
 	keypair: Keypair;
@@ -29,6 +32,24 @@ interface FetchObjectFromEventParams<TEvent, TObject> {
 	isObject: (obj: any) => obj is TObject;
 	filterEvent: (event: TEvent) => boolean;
 	getObjectId: (event: TEvent) => string;
+}
+
+// The Move type.
+export interface DWallet {
+	id: { id: string };
+	session_id: string;
+	dwallet_cap_id: string;
+	output: number[];
+	dwallet_mpc_network_key_version: number;
+}
+
+export interface CreatedDwallet {
+	id: string;
+	centralizedDKGPublicOutput: number[];
+	centralizedDKGPrivateOutput: number[];
+	decentralizedDKGOutput: number[];
+	dwalletCapID: string;
+	dwalletMPCNetworkKeyVersion: number;
 }
 
 export async function fetchObjectFromEvent<TEvent, TObject>({
@@ -154,4 +175,8 @@ export async function fetchObjectWithType<TObject>(
 	}
 
 	return objectData;
+}
+
+export function isDWallet(obj: any): obj is DWallet {
+	return obj && 'id' in obj && 'session_id' in obj && 'dwallet_cap_id' in obj && 'output' in obj;
 }

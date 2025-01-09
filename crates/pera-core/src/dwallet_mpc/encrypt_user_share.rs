@@ -31,13 +31,13 @@ type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
 /// secret share, validates the signature on the dWallet's public share,
 /// and ensures the signing public key matches the address that initiated this transaction.
 pub(crate) fn verify_encrypted_share(
-    verification_data: StartEncryptedShareVerificationEvent,
+    verification_data: &StartEncryptedShareVerificationEvent,
 ) -> DwalletMPCResult<()> {
     verify_signatures(&verification_data)?;
     chain_verify_secret_share_proof(
-        verification_data.encrypted_secret_share_and_proof.clone(),
-        verification_data.dwallet_output.clone(),
-        verification_data.encryption_key.clone(),
+        &verification_data.encrypted_secret_share_and_proof,
+        &verification_data.dwallet_output,
+        &verification_data.encryption_key,
     )
     .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
 }
@@ -70,7 +70,10 @@ fn verify_signatures(
         <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.encryptor_ed25519_pubkey)
             .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     public_key
-        .verify(&bcs::to_bytes(&dkg_output.public_key_share)?, &signature)
+        .verify(
+            &bcs::to_bytes(&dkg_output.centralized_party_public_key_share)?,
+            &signature,
+        )
         .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     let derived_sui_addr = PeraAddress::from(&public_key);
     if derived_sui_addr != verification_data.initiator {
@@ -81,9 +84,9 @@ fn verify_signatures(
 
 /// Verifies that the given secret encryption is the encryption of the given dwallet's secret share.
 fn chain_verify_secret_share_proof(
-    encrypted_share_and_proof: Vec<u8>,
-    dkg_output: Vec<u8>,
-    encryption_key: Vec<u8>,
+    encrypted_share_and_proof: &Vec<u8>,
+    dkg_output: &Vec<u8>,
+    encryption_key: &Vec<u8>,
 ) -> anyhow::Result<()> {
     let protocol_public_params = protocol_public_parameters();
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
@@ -96,14 +99,14 @@ fn chain_verify_secret_share_proof(
             .scalar_group_public_parameters
             .clone(),
         protocol_public_params.group_public_parameters.clone(),
-        bcs::from_bytes(&encryption_key)?,
+        bcs::from_bytes(encryption_key)?,
     );
     let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
-        bcs::from_bytes(&dkg_output)?;
+        bcs::from_bytes(dkg_output)?;
     let (proof, encrypted_secret_share): (
         SecretShareEncryptionProof,
         CiphertextSpaceValue<SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
-    ) = bcs::from_bytes(&encrypted_share_and_proof)?;
+    ) = bcs::from_bytes(encrypted_share_and_proof)?;
     let encrypted_secret_share = CiphertextSpaceGroupElement::new(
         encrypted_secret_share,
         &language_public_parameters
