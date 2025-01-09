@@ -6,8 +6,9 @@ This module contains the core logic of the MPC protocol for the dWallet.
 
 ### Running the Network DKG Protocol
 
-To run the network DKG protocol, you must configure your address as the dWallet admin address and execute the start
-transaction.
+To run the network DKG protocol,
+you must configure your address as the dWallet admin address and execute the start transaction.
+The dWallet "admin" is the address that can initiate the network DKG.
 
 #### Configuring the Admin Address
 
