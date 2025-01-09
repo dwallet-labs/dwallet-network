@@ -92,6 +92,12 @@ pub enum DwalletMPCError {
 
     #[error("Failed to write Class Groups key: {0}")]
     FailedToWriteCGKey(String),
+
+    #[error("Missing MPC private session input")]
+    MissingMPCPrivateInput,
+
+    #[error("Data for party ID {0} already exists")]
+    DuplicateDataForPartyID(PartyID),
 }
 
 /// A wrapper type for the result of a runtime operation.

@@ -1001,14 +1001,16 @@ impl AuthorityPerEpochStore {
     }
 
     /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
-    pub fn set_dwallet_mpc_network_keys(&self) -> PeraResult<()> {
+    pub fn set_dwallet_mpc_network_keys(
+        &self,
+        class_groups_decryption_key: ClassGroupsDecryptionKey,
+    ) -> PeraResult<()> {
         if self
             .dwallet_mpc_network_keys
             .set(DwalletMPCNetworkKeyVersions::new(
                 self,
                 &self.get_weighted_threshold_access_structure()?,
-                // Todo (#411): Change to value from validator config
-                ClassGroupsDecryptionKey::default(),
+                class_groups_decryption_key,
             ))
             .is_err()
         {

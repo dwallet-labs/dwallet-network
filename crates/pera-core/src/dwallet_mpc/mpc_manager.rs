@@ -7,17 +7,20 @@ use crate::dwallet_mpc::mpc_events::ValidatorDataForDWalletSecretShare;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
-use crate::dwallet_mpc::public_input_from_event;
+use crate::dwallet_mpc::session_input_from_event;
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
 use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus,
+    DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
+    MPCSessionStatus,
 };
+use fastcrypto::traits::ToFromBytes;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Weight, WeightedThresholdAccessStructure};
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
+use pera_types::crypto::AuthorityPublicKeyBytes;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
@@ -62,7 +65,8 @@ pub struct DWalletMPCManager {
     /// Each Validator holds the Malicious state for itself,
     /// this is not in sync with the blockchain.
     outputs_verifier: DWalletMPCOutputsVerifier,
-    validators_data_for_network_dkg: Vec<ValidatorDataForDWalletSecretShare>,
+    pub(crate) validators_data_for_network_dkg:
+        HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -114,7 +118,7 @@ impl DWalletMPCManager {
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
             outputs_verifier: DWalletMPCOutputsVerifier::new(&epoch_store),
-            validators_data_for_network_dkg: Vec::new(),
+            validators_data_for_network_dkg: HashMap::new(),
         };
 
         tokio::spawn(async move {
@@ -168,8 +172,32 @@ impl DWalletMPCManager {
                 }
             }
             DWalletMPCChannelMessage::ValidatorDataForDKG(data) => {
-                self.validators_data_for_network_dkg.push(data);
+                if let Err(err) = self.handle_validator_data_for_dkg(data) {
+                    error!(
+                        "Failed to handle validator data for DKG with error: {:?}",
+                        err
+                    );
+                }
             }
+        }
+    }
+
+    fn handle_validator_data_for_dkg(
+        &mut self,
+        data: ValidatorDataForDWalletSecretShare,
+    ) -> DwalletMPCResult<()> {
+        let epoch_store = self.epoch_store()?;
+        let party_id = authority_name_to_party_id(
+            &AuthorityPublicKeyBytes::from_bytes(&data.protocol_pubkey_bytes)
+                .map_err(|e| DwalletMPCError::InvalidMPCPartyType)?,
+            &epoch_store,
+        )?;
+        if self.validators_data_for_network_dkg.contains_key(&party_id) {
+            error!("Received duplicate data for party_id: {:?}", party_id);
+            Err(DwalletMPCError::DuplicateDataForPartyID(party_id))
+        } else {
+            self.validators_data_for_network_dkg.insert(party_id, data);
+            Ok(())
         }
     }
 
@@ -192,7 +220,8 @@ impl DWalletMPCManager {
 
     fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {
         self.outputs_verifier.handle_new_event(&session_info);
-        self.push_new_mpc_session(public_input_from_event(&event, &self)?, session_info)?;
+        let (public_input, private_input) = session_input_from_event(&event, &self)?;
+        self.push_new_mpc_session(public_input, private_input, session_info)?;
         Ok(())
     }
 
@@ -439,7 +468,8 @@ impl DWalletMPCManager {
     /// Otherwise, add the session to the pending queue.
     pub(crate) fn push_new_mpc_session(
         &mut self,
-        auxiliary_input: Vec<u8>,
+        public_input: MPCPublicInput,
+        private_input: MPCPrivateInput,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
         if self.mpc_sessions.contains_key(&session_info.session_id) {
@@ -458,7 +488,7 @@ impl DWalletMPCManager {
             self.epoch_store.clone(),
             self.epoch_id,
             MPCSessionStatus::Pending,
-            auxiliary_input,
+            public_input,
             session_info.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
@@ -469,6 +499,7 @@ impl DWalletMPCManager {
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
                 )?,
             },
+            private_input,
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing

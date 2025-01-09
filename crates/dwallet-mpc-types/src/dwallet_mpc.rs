@@ -35,6 +35,9 @@ pub type MPCPrivateOutput = Vec<u8>;
 /// Alias for MPC public input.
 pub type MPCPublicInput = Vec<u8>;
 
+/// Alias for MPC private input.
+pub type MPCPrivateInput = Option<Vec<u8>>;
+
 /// Possible statuses of an MPC Session:
 ///
 /// - `Pending`:
