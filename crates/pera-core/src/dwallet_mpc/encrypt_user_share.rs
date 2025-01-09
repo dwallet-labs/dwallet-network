@@ -9,7 +9,9 @@ use group::GroupElement;
 use homomorphic_encryption::GroupsPublicParametersAccessors;
 use pera_types::base_types::PeraAddress;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::messages_dwallet_mpc::StartEncryptedShareVerificationEvent;
+use pera_types::messages_dwallet_mpc::{
+    StartEncryptedShareVerificationEvent, StartEncryptionKeyVerificationEvent,
+};
 use std::marker::PhantomData;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
@@ -38,6 +40,20 @@ pub(crate) fn verify_encrypted_share(
         verification_data.encryption_key.clone(),
     )
     .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
+}
+
+/// Verifies that the `verification_data`'s public key is matching the initiator Sui address.
+pub(crate) fn verify_encryption_key(
+    verification_data: &StartEncryptionKeyVerificationEvent,
+) -> DwalletMPCResult<()> {
+    let public_key =
+        <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.sender_sui_pubkey)
+            .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
+    let derived_sui_addr = PeraAddress::from(&public_key);
+    if derived_sui_addr != verification_data.initiator {
+        return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
+    }
+    Ok(())
 }
 
 /// Verify the signature on the public share of the DWallet,

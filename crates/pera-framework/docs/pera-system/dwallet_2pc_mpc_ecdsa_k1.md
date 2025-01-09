@@ -1346,6 +1346,16 @@ Error raised when the sender is not the system address.
 
 
 
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS"></a>
+
+System address for asserting system-level actions.
+
+
+<pre><code><b>const</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>: <b>address</b> = 0;
+</code></pre>
+
+
+
 <a name="0x3_dwallet_2pc_mpc_ecdsa_k1_EApprovalsAndMessagesLenMismatch"></a>
 
 
@@ -1414,16 +1424,6 @@ Error raised when the sender is not the system address.
 
 
 <pre><code><b>const</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EPresignsAndMessagesLenMismatch">EPresignsAndMessagesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 6;
-</code></pre>
-
-
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS"></a>
-
-System address for asserting system-level actions.
-
-
-<pre><code><b>const</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>: <b>address</b> = 0;
 </code></pre>
 
 

@@ -3,17 +3,14 @@
 //! and deciding whether an output is valid
 //! by checking if a validators with quorum of stake voted for it.
 //! Any validator that voted for a different output is considered malicious.
+
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::authority_name_to_party_id;
 use dwallet_mpc_types::dwallet_mpc::MPCPublicOutput;
-use group::PartyID;
-use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
-use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::SessionInfo;
+use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -43,17 +40,21 @@ pub struct SessionOutputsData {
         HashMap<(MPCPublicOutput, SessionInfo), HashSet<AuthorityName>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
     pub authorities_that_sent_output: HashSet<AuthorityName>,
+    pub(crate) current_result: OutputResult,
 }
 
 /// The result of verifying an incoming output for an MPC session.
 /// We need to differentiate between a duplicate and a malicious output,
 /// as the output can be sent twice by honest parties.
-#[derive(PartialOrd, PartialEq)]
+#[derive(PartialOrd, PartialEq, Clone)]
 pub enum OutputResult {
     Valid,
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
+    /// The output has already been verified and committed to the chain
+    AlreadyCommitted,
+    Duplicate,
 }
 
 pub struct OutputVerificationResult {
@@ -112,6 +113,12 @@ impl DWalletMPCOutputsVerifier {
                 malicious_actors: vec![origin_authority],
             });
         };
+        if session.current_result == OutputResult::AlreadyCommitted {
+            return Ok(OutputVerificationResult {
+                result: OutputResult::Duplicate,
+                malicious_actors: vec![],
+            });
+        }
         // Sent more than once.
         if session
             .authorities_that_sent_output
@@ -151,7 +158,7 @@ impl DWalletMPCOutputsVerifier {
                 .flat_map(|(_, voters)| voters)
                 .cloned()
                 .collect();
-
+            session.current_result = OutputResult::AlreadyCommitted;
             return Ok(OutputVerificationResult {
                 result: OutputResult::Valid,
                 malicious_actors: voted_for_other_outputs,
@@ -174,6 +181,7 @@ impl DWalletMPCOutputsVerifier {
             SessionOutputsData {
                 session_output_to_voting_authorities: HashMap::new(),
                 authorities_that_sent_output: HashSet::new(),
+                current_result: OutputResult::NotEnoughVotes,
             },
         );
     }

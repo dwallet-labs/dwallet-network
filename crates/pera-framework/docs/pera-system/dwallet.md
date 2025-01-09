@@ -31,6 +31,8 @@ ownership and control over a corresponding <code><a href="dwallet.md#0x3_dwallet
     -  [Key Concepts](#@Key_Concepts_1)
 -  [Resource `DWallet`](#0x3_dwallet_DWallet)
 -  [Resource `EncryptionKey`](#0x3_dwallet_EncryptionKey)
+-  [Struct `CreatedEncryptionKeyEvent`](#0x3_dwallet_CreatedEncryptionKeyEvent)
+-  [Struct `StartEncryptionKeyVerificationEvent`](#0x3_dwallet_StartEncryptionKeyVerificationEvent)
 -  [Resource `DWalletCap`](#0x3_dwallet_DWalletCap)
 -  [Resource `ActiveEncryptionKeys`](#0x3_dwallet_ActiveEncryptionKeys)
 -  [Constants](#@Constants_4)
@@ -40,6 +42,7 @@ ownership and control over a corresponding <code><a href="dwallet.md#0x3_dwallet
 -  [Function `get_active_encryption_key`](#0x3_dwallet_get_active_encryption_key)
 -  [Function `upsert_active_encryption_key`](#0x3_dwallet_upsert_active_encryption_key)
 -  [Function `register_encryption_key`](#0x3_dwallet_register_encryption_key)
+-  [Function `create_encryption_key`](#0x3_dwallet_create_encryption_key)
 -  [Function `create_dwallet_cap`](#0x3_dwallet_create_dwallet_cap)
 -  [Function `get_dwallet_cap_id`](#0x3_dwallet_get_dwallet_cap_id)
 -  [Function `get_dwallet_output`](#0x3_dwallet_get_dwallet_output)
@@ -48,6 +51,7 @@ ownership and control over a corresponding <code><a href="dwallet.md#0x3_dwallet
 
 
 <pre><code><b>use</b> <a href="../pera-framework/ed25519.md#0x2_ed25519">0x2::ed25519</a>;
+<b>use</b> <a href="../pera-framework/event.md#0x2_event">0x2::event</a>;
 <b>use</b> <a href="../pera-framework/object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="../pera-framework/table.md#0x2_table">0x2::table</a>;
 <b>use</b> <a href="../pera-framework/transfer.md#0x2_transfer">0x2::transfer</a>;
@@ -167,6 +171,143 @@ the recipient can sign with a dWallet when it is transferred or access is grante
 <dd>
 
 </dd>
+<dt>
+<code>key_owner_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_CreatedEncryptionKeyEvent"></a>
+
+## Struct `CreatedEncryptionKeyEvent`
+
+An event emitted when an encryption key is created.
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_CreatedEncryptionKeyEvent">CreatedEncryptionKeyEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>scheme: u8</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>key_owner_address: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>encryption_key_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>key_owner_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_StartEncryptionKeyVerificationEvent"></a>
+
+## Struct `StartEncryptionKeyVerificationEvent`
+
+An event emitted to start an encryption key verification process.
+Since we cannot use native functions if we depend on Sui to hold our state,
+we need to emit an event to start the verification process,
+like we start the other MPC processes.
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_StartEncryptionKeyVerificationEvent">StartEncryptionKeyVerificationEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>scheme: u8</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>key_owner_address: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>encryption_key_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>sender_sui_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>initiator: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
 </dl>
 
 
@@ -248,6 +389,15 @@ and the value is the encryption key object ID.
 ## Constants
 
 
+<a name="0x3_dwallet_ENotSystemAddress"></a>
+
+
+
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_ENotSystemAddress">ENotSystemAddress</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 3;
+</code></pre>
+
+
+
 <a name="0x3_dwallet_CLASS_GROUPS"></a>
 
 
@@ -280,6 +430,15 @@ and the value is the encryption key object ID.
 
 
 <pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EInvalidEncryptionKeySignature">EInvalidEncryptionKeySignature</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 1;
+</code></pre>
+
+
+
+<a name="0x3_dwallet_SYSTEM_ADDRESS"></a>
+
+
+
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>: <b>address</b> = 0;
 </code></pre>
 
 
@@ -481,14 +640,70 @@ The key is saved as an immutable object.
 ) {
     <b>assert</b>!(<a href="dwallet.md#0x3_dwallet_is_valid_encryption_key_scheme">is_valid_encryption_key_scheme</a>(scheme), <a href="dwallet.md#0x3_dwallet_EInvalidEncryptionKeyScheme">EInvalidEncryptionKeyScheme</a>);
     <b>assert</b>!(ed25519_verify(&signature, &sender_sui_pubkey, &key), <a href="dwallet.md#0x3_dwallet_EInvalidEncryptionKeySignature">EInvalidEncryptionKeySignature</a>);
-    // TODO (#453): Verify the ed2551 <b>public</b> key matches the sender's <b>address</b>.
-    <a href="../pera-framework/transfer.md#0x2_transfer_freeze_object">transfer::freeze_object</a>(<a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a> {
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(
+        <a href="dwallet.md#0x3_dwallet_StartEncryptionKeyVerificationEvent">StartEncryptionKeyVerificationEvent</a> {
+            scheme,
+            encryption_key: key,
+            key_owner_address: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
+            encryption_key_signature: signature,
+            sender_sui_pubkey,
+            initiator: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
+            session_id: <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx)),
+        }
+    );
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_create_encryption_key"></a>
+
+## Function `create_encryption_key`
+
+Creates an encryption key object.
+Being called by the blockchain after it verifies the sender_sui_pubkey matches the initiator address.
+We need to run the flow this way as this verification can only be done in rust.
+
+
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_create_encryption_key">create_encryption_key</a>(key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, sender_sui_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, scheme: u8, initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_create_encryption_key">create_encryption_key</a>(
+    key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    sender_sui_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    scheme: u8,
+    initiator: <b>address</b>,
+    session_id: ID,
+    ctx: &<b>mut</b> TxContext
+) {
+    <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == <a href="dwallet.md#0x3_dwallet_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>, <a href="dwallet.md#0x3_dwallet_ENotSystemAddress">ENotSystemAddress</a>);
+    <b>let</b> encryption_key = <a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         scheme,
         encryption_key: key,
-        key_owner_address: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
+        key_owner_address: initiator,
         encryption_key_signature: signature,
+        key_owner_pubkey: sender_sui_pubkey,
+    };
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet.md#0x3_dwallet_CreatedEncryptionKeyEvent">CreatedEncryptionKeyEvent</a> {
+        scheme,
+        encryption_key: key,
+        key_owner_address: initiator,
+        encryption_key_signature: signature,
+        key_owner_pubkey: sender_sui_pubkey,
+        encryption_key_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&encryption_key),
+        session_id,
     });
+    <a href="../pera-framework/transfer.md#0x2_transfer_freeze_object">transfer::freeze_object</a>(encryption_key);
 }
 </code></pre>
 

@@ -4,6 +4,12 @@ DWallet
 EncryptionKey
 	public struct
 	0x3::dwallet
+CreatedEncryptionKeyEvent
+	public struct
+	0x3::dwallet
+StartEncryptionKeyVerificationEvent
+	public struct
+	0x3::dwallet
 DWalletCap
 	public struct
 	0x3::dwallet
@@ -27,6 +33,9 @@ upsert_active_encryption_key
 	0x3::dwallet
 register_encryption_key
 	public fun
+	0x3::dwallet
+create_encryption_key
+	fun
 	0x3::dwallet
 create_dwallet_cap
 	public(package) fun
