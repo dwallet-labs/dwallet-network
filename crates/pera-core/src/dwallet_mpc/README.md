@@ -21,7 +21,7 @@ There are two ways to configure the admin address:
 Run the following commands:
 
 ```bash
-pera client faucet 
+pera client faucet
 pera client call --package 0x3 --module pera_system --function request_start_network_dkg --args 1 0x5 --gas-budget 1000000000
 ```
 
@@ -52,12 +52,13 @@ To generate the RPC schema, follow these steps:
 1. Run the `main` function from `crates/pera-open-rpc/src/generate_json_rpc_spec.rs`.
 2. Then, run `pnpm tsx scripts/generate.ts` from the `sdk/typescript` directory.
 
-## How to Configure and Run `Run pera`
+## How to Configure and run a local blockchain
 
 1. **Create a Debug Configuration**:
-    - Open "Run/Debug Configurations" in your IDE (Intellij/Rustrover)and create a new configuration.
+    - Open "Run/Debug Configurations" in your IDE (IntelliK/RustRover) and create a new configuration.
 
 2. **Set Command**:
+
    ```bash
    run --bin pera -- start --with-faucet --force-regenesis --epoch-duration-ms 1000000000000
    ```
@@ -68,13 +69,13 @@ To generate the RPC schema, follow these steps:
         - **Emulate terminal in output console**
 
 4. **Environment Variables**:
-   ```plaintext
+   ```bash
    RUST_LOG=off,pera_node=info,pera_core=error;RUST_MIN_STACK=16777216
    ```
 
 5. **Working Directory**:
    ```plaintext
-   /Users/yaelabergel/projects/dwallet_labs/dwallet-network-original
+   /<PATH_TO_PROJECT-DIR>
    ```
 
 6. **Run**: Select the configuration and click **Run** or **Debug**.
