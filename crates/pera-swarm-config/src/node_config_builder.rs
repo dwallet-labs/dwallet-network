@@ -185,6 +185,7 @@ impl ValidatorConfigBuilder {
         };
 
         NodeConfig {
+            class_groups_private_key: validator.class_groups_keypair_and_proof.decryption_key(),
             max_active_dwallet_mpc_sessions: DEFAULT_MAX_ACTIVE_DWALLET_MPC_SESSIONS,
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator.key_pair),
             network_key_pair: KeyPairWithPath::new(PeraKeyPair::Ed25519(
@@ -459,6 +460,9 @@ impl FullnodeConfigBuilder {
         };
 
         NodeConfig {
+            class_groups_private_key: validator_config
+                .class_groups_keypair_and_proof
+                .decryption_key(),
             max_active_dwallet_mpc_sessions: DEFAULT_MAX_ACTIVE_DWALLET_MPC_SESSIONS,
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator_config.key_pair),
             account_key_pair: KeyPairWithPath::new(validator_config.account_key_pair),

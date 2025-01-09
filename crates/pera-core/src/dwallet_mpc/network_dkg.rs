@@ -5,7 +5,7 @@
 //! It provides inner mutability for the [`EpochStore`]
 //! to update the network decryption key shares synchronously.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
+use crate::dwallet_mpc::mpc_events::{StartNetworkDKGEvent, ValidatorDataForDWalletSecretShare};
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::{advance, authority_name_to_party_id};
 use class_groups::dkg::{
@@ -16,9 +16,6 @@ use class_groups::{
     SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS,
 };
 use commitment::CommitmentSizedNumber;
-use dwallet_classgroups_types::mock_class_groups::{
-    mock_cg_encryption_keys_and_proofs, mock_cg_private_key,
-};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use group::{ristretto, secp256k1, PartyID};
@@ -80,6 +77,11 @@ impl DwalletMPCNetworkKeyVersions {
                 party_id,
             );
         }
+
+        #[cfg(feature = "mock-class-groups")]
+        // This is used only for development purposes, the key is valid, so it is safe to unwrap.
+        let class_groups_decryption_key =
+            dwallet_classgroups_types::mock_class_groups::mock_cg_private_key().unwrap();
 
         let encryption = epoch_store
             .load_decryption_key_shares_from_system_state()
@@ -452,37 +454,37 @@ pub(crate) fn advance_network_dkg(
     public_input: &[u8],
     key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
+    class_groups_decryption_key: ClassGroupsDecryptionKey,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
     match key_scheme {
-        // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
         DWalletMPCNetworkKeyScheme::Secp256k1 => advance::<Secp256k1Party>(
             session_id,
             party_id,
             &weighted_threshold_access_structure,
             messages,
             bcs::from_bytes(public_input)?,
-            mock_cg_private_key()?,
+            class_groups_decryption_key,
         ),
-        // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
         DWalletMPCNetworkKeyScheme::Ristretto => advance::<RistrettoParty>(
             session_id,
             party_id,
             &weighted_threshold_access_structure,
             messages,
             bcs::from_bytes(public_input)?,
-            mock_cg_private_key()?,
+            class_groups_decryption_key,
         ),
     }
 }
 pub(super) fn network_dkg_public_input(
     deserialized_event: StartNetworkDKGEvent,
+    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
 ) -> DwalletMPCResult<Vec<u8>> {
     match DWalletMPCNetworkKeyScheme::try_from(deserialized_event.key_scheme)? {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            generate_secp256k1_dkg_party_public_input(HashMap::new())
+            generate_secp256k1_dkg_party_public_input(encryption_keys_and_proofs)
         }
         DWalletMPCNetworkKeyScheme::Ristretto => {
-            generate_ristretto_dkg_party_public_input(HashMap::new())
+            generate_ristretto_dkg_party_public_input(encryption_keys_and_proofs)
         }
     }
 }
@@ -514,33 +516,53 @@ fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
     }
 }
 
-// Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
+#[cfg(feature = "mock-class-groups")]
+fn encryption_keys_and_proofs_from_validator_data(
+    _: &HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
+) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
+    dwallet_classgroups_types::mock_class_groups::mock_cg_encryption_keys_and_proofs()?
+}
+
+#[cfg(not(feature = "mock-class-groups"))]
+fn encryption_keys_and_proofs_from_validator_data(
+    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
+) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
+    encryption_keys_and_proofs
+        .iter()
+        .map(|(party_id, data)| {
+            Ok((
+                party_id.clone(),
+                bcs::from_bytes(&data.cg_pubkey_and_proof)?,
+            ))
+        })
+        .collect::<DwalletMPCResult<HashMap<_, _>>>()
+}
+
 fn generate_secp256k1_dkg_party_public_input(
-    _secret_key_share_sized_encryption_keys_and_proofs: HashMap<
-        PartyID,
-        ClassGroupsEncryptionKeyAndProof,
-    >,
+    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
 ) -> DwalletMPCResult<Vec<u8>> {
+    let encryption_keys_and_proofs =
+        encryption_keys_and_proofs_from_validator_data(encryption_keys_and_proofs)?;
+
     let public_params = Secp256k1PublicInput::new::<secp256k1::GroupElement>(
         secp256k1::scalar::PublicParameters::default(),
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
-        mock_cg_encryption_keys_and_proofs()?,
+        encryption_keys_and_proofs,
     )
-    .map_err(|e| DwalletMPCError::InvalidMPCPartyType)?; // change to the actual error
+    .map_err(|e| DwalletMPCError::InvalidMPCPartyType)?;
     bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))
 }
 
-// Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
 fn generate_ristretto_dkg_party_public_input(
-    _secret_key_share_sized_encryption_keys_and_proofs: HashMap<
-        PartyID,
-        ClassGroupsEncryptionKeyAndProof,
-    >,
+    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
 ) -> DwalletMPCResult<Vec<u8>> {
+    let encryption_keys_and_proofs =
+        encryption_keys_and_proofs_from_validator_data(encryption_keys_and_proofs)?;
+
     let public_params = RistrettoPublicInput::new::<ristretto::GroupElement>(
         ristretto::scalar::PublicParameters::default(),
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
-        mock_cg_encryption_keys_and_proofs()?,
+        encryption_keys_and_proofs,
     )
     .map_err(|e| DwalletMPCError::InvalidMPCPartyType)?;
     bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))

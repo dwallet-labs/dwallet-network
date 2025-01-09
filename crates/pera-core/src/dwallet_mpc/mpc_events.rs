@@ -210,9 +210,9 @@ struct ValidatorDataForDWalletSecretReShare {
 pub struct ValidatorDataForDWalletSecretShare {
     /// The class groups encryption key of the validator,
     /// used to encrypt the validator's secret share to it.
-    cg_pubkey_and_proof: Vec<u8>,
+    pub(crate) cg_pubkey_and_proof: Vec<u8>,
     /// The Ika public key of the validator, used as an identifier for the validator.
-    protocol_pubkey_bytes: Vec<u8>,
+    pub(crate) protocol_pubkey_bytes: Vec<u8>,
 }
 
 impl ValidatorDataForDWalletSecretShare {

@@ -1247,8 +1247,8 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&dwallet_id).unwrap()),
                 ],
             ),
-            MPCRound::NetworkDkg(key_type, ppp) => {
-                let ppp = ppp.ok_or(ExecutionError::new(
+            MPCRound::NetworkDkg(key_type, new_key) => {
+                let new_key = new_key.ok_or(ExecutionError::new(
                     ExecutionErrorKind::TypeArgumentError {
                         argument_idx: 0,
                         kind: pera_types::execution_status::TypeArgumentError::TypeNotFound,
@@ -1260,11 +1260,11 @@ mod checked {
                     "new_decryption_key_shares_version",
                     vec![
                         CallArg::PERA_SYSTEM_MUT,
-                        CallArg::Pure(bcs_to_bytes(&ppp.current_epoch_shares)?),
-                        CallArg::Pure(bcs_to_bytes(&ppp.protocol_public_parameters)?),
-                        CallArg::Pure(bcs_to_bytes(&ppp.decryption_public_parameters)?),
-                        CallArg::Pure(bcs_to_bytes(&ppp.encryption_key)?),
-                        CallArg::Pure(bcs_to_bytes(&ppp.reconstructed_commitments_to_sharing)?),
+                        CallArg::Pure(bcs_to_bytes(&new_key.current_epoch_shares)?),
+                        CallArg::Pure(bcs_to_bytes(&new_key.protocol_public_parameters)?),
+                        CallArg::Pure(bcs_to_bytes(&new_key.decryption_public_parameters)?),
+                        CallArg::Pure(bcs_to_bytes(&new_key.encryption_key)?),
+                        CallArg::Pure(bcs_to_bytes(&new_key.reconstructed_commitments_to_sharing)?),
                         CallArg::Pure(bcs_to_bytes(&(key_type as u8))?),
                     ],
                 )

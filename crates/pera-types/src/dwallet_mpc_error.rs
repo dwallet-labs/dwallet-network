@@ -49,7 +49,7 @@ pub enum DwalletMPCError {
     #[error("dwallet MPC Sender failed: {0}")]
     DWalletMPCSenderSendFailed(String),
 
-    #[error("MPC class groups decryption share missing for the party ID: {0}")]
+    #[error("the MPC class groups decryption share missing for the party ID: {0}")]
     DwalletMPCClassGroupsDecryptionShareMissing(PartyID),
 
     #[error("missing MPC public parameters in config")]
@@ -84,14 +84,20 @@ pub enum DwalletMPCError {
     #[error(transparent)]
     DwalletNetworkMPCError(#[from] DwalletNetworkMPCError),
 
-    #[error("Class Groups Error: {0}")]
+    #[error("error in Class Groups: {0}")]
     ClassGroupsError(String),
 
-    #[error("Failed to read Class Groups key: {0}")]
+    #[error("failed to read Class Groups key: {0}")]
     FailedToReadCGKey(String),
 
-    #[error("Failed to write Class Groups key: {0}")]
+    #[error("failed to write Class Groups key: {0}")]
     FailedToWriteCGKey(String),
+
+    #[error("missing MPC private session input")]
+    MissingMPCPrivateInput,
+
+    #[error("failed to deserialize party public key: {0}")]
+    InvalidPartyPublicKey(#[from] fastcrypto::error::FastCryptoError),
 }
 
 /// A wrapper type for the result of a runtime operation.

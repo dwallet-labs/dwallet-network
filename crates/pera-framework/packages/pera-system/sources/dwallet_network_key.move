@@ -32,18 +32,18 @@ module pera_system::dwallet_network_key {
         validators_data: vector<ValidatorDataForDWalletSecretShare>,
         ctx: &mut TxContext
     ) {
-        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-
-        event::emit(StartNetworkDKGEvent {
-            session_id,
-            key_scheme,
-        });
         let mut i = 0;
         while (i < validators_data.length()) {
             let validator_data = validators_data[i];
             emit_validator_data_for_secret_share(validator_data);
             i = i + 1;
-        }
+        };
+
+        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        event::emit(StartNetworkDKGEvent {
+            session_id,
+            key_scheme,
+        });
     }
 
     /// Struct to store the network encryption of decryption key shares

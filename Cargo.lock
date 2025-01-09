@@ -10467,6 +10467,7 @@ dependencies = [
  "consensus-config",
  "csv",
  "dirs 4.0.0",
+ "dwallet-classgroups-types",
  "fastcrypto",
  "insta",
  "mpc",

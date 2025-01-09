@@ -30,6 +30,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
+use dwallet_classgroups_types::ClassGroupsDecryptionKey;
 use pera_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair};
 use pera_types::multiaddr::Multiaddr;
 use tracing::info;
@@ -50,6 +51,8 @@ pub const DEFAULT_MAX_ACTIVE_DWALLET_MPC_SESSIONS: usize = 3000;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
+    /// The Class Groups private key of the validator used for dWallet MPC secret sharing.
+    pub class_groups_private_key: ClassGroupsDecryptionKey,
     /// The maximum number of active dWallet MPC sessions allowed to run simultaneously.
     #[serde(default = "default_max_mpc_protocol_sessions_in_progress")]
     pub max_active_dwallet_mpc_sessions: usize,

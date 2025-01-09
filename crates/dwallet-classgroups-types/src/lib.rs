@@ -2,8 +2,11 @@
 pub mod mock_class_groups;
 
 use class_groups::{
-    CompactIbqf, KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
+    construct_knowledge_of_decryption_key_public_parameters_per_crt_prime,
+    construct_setup_parameters_per_crt_prime, generate_keypairs_per_crt_prime,
+    generate_knowledge_of_decryption_key_proofs_per_crt_prime, CompactIbqf,
+    KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
 };
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
@@ -24,7 +27,9 @@ pub type ClassGroupsEncryptionKeyAndProof = [(
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClassGroupsKeyPairAndProof {
+    #[serde(with = "group::helpers::const_generic_array_serialization")]
     decryption_key: ClassGroupsDecryptionKey,
+    #[serde(with = "group::helpers::const_generic_array_serialization")]
     encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
 }
 
@@ -46,6 +51,10 @@ impl ClassGroupsKeyPairAndProof {
 
     pub fn public(&self) -> ClassGroupsEncryptionKeyAndProof {
         self.encryption_key_and_proof.clone()
+    }
+
+    pub fn decryption_key(&self) -> ClassGroupsDecryptionKey {
+        self.decryption_key.clone()
     }
 }
 

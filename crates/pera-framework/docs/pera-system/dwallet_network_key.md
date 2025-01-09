@@ -198,18 +198,18 @@ almost 250 KB, which is the maximum event size in Sui.
     validators_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;ValidatorDataForDWalletSecretShare&gt;,
     ctx: &<b>mut</b> TxContext
 ) {
-    <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
-
-    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_network_key.md#0x3_dwallet_network_key_StartNetworkDKGEvent">StartNetworkDKGEvent</a> {
-        session_id,
-        key_scheme,
-    });
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; validators_data.length()) {
         <b>let</b> validator_data = validators_data[i];
         emit_validator_data_for_secret_share(validator_data);
         i = i + 1;
-    }
+    };
+
+    <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_network_key.md#0x3_dwallet_network_key_StartNetworkDKGEvent">StartNetworkDKGEvent</a> {
+        session_id,
+        key_scheme,
+    });
 }
 </code></pre>
 

@@ -1,5 +1,7 @@
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput, MPCSessionStatus};
+use dwallet_mpc_types::dwallet_mpc::{
+    MPCMessage, MPCPrivateInput, MPCPublicInput, MPCSessionStatus,
+};
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
@@ -49,6 +51,7 @@ pub(super) struct DWalletMPCSession {
     party_id: PartyID,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    private_input: MPCPrivateInput,
 }
 
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
@@ -59,23 +62,25 @@ impl DWalletMPCSession {
         epoch_store: Weak<AuthorityPerEpochStore>,
         epoch: EpochId,
         status: MPCSessionStatus,
-        auxiliary_input: Vec<u8>,
+        public_input: MPCPublicInput,
         session_info: SessionInfo,
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+        private_input: MPCPrivateInput,
     ) -> Self {
         Self {
             status,
             pending_messages: vec![HashMap::new()],
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
-            public_input: auxiliary_input,
+            public_input,
             session_info,
             round_number: 0,
             party_id,
             weighted_threshold_access_structure,
             decryption_share,
+            private_input,
         }
     }
 
@@ -207,13 +212,19 @@ impl DWalletMPCSession {
                     self.decryption_share.clone(),
                 )
             }
-            MPCRound::NetworkDkg(key_type, _) => advance_network_dkg(
+            MPCRound::NetworkDkg(key_scheme, _) => advance_network_dkg(
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
                 &self.public_input,
-                key_type,
+                key_scheme,
                 self.pending_messages.clone(),
+                bcs::from_bytes(
+                    &self
+                        .private_input
+                        .clone()
+                        .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
+                )?,
             ),
             MPCRound::EncryptedShareVerification(verification_data) => {
                 match verify_encrypted_share(verification_data) {
