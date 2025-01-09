@@ -519,8 +519,13 @@ fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
 #[cfg(feature = "mock-class-groups")]
 fn encryption_keys_and_proofs_from_validator_data(
     _: &HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
-) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
-    dwallet_classgroups_types::mock_class_groups::mock_cg_encryption_keys_and_proofs()?
+) -> DwalletMPCResult<
+    HashMap<
+        PartyID,
+        dwallet_classgroups_types::mock_class_groups::CGEncryptionKeyAndProofForMockFromFile,
+    >,
+> {
+    dwallet_classgroups_types::mock_class_groups::mock_cg_encryption_keys_and_proofs()
 }
 
 #[cfg(not(feature = "mock-class-groups"))]
