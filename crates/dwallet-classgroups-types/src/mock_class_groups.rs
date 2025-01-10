@@ -19,6 +19,11 @@ pub struct CGKeyPairAndProofForMockFromFile {
     ); MAX_PRIMES],
 }
 
+pub type CGEncryptionKeyAndProofForMockFromFile = [(
+    CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
+    KnowledgeOfDiscreteLogUCProof,
+); MAX_PRIMES];
+
 /// Mocks the Class Group encryption keys and proofs of all validators.
 /// Reads the generated key from a file and return a map from `PartyID` to
 /// the encryption key and proof.
