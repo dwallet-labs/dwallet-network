@@ -15,13 +15,15 @@ import {
 	getOrCreateEncryptionKey,
 } from '../../src/dwallet-mpc/encrypt-user-share';
 import { Config } from '../../src/dwallet-mpc/globals';
-import { signWithEncryptedDWallet } from '../../src/dwallet-mpc/sign';
+import {
+	mockedProtocolPublicParameters,
+	signWithEncryptedDWallet,
+} from '../../src/dwallet-mpc/sign';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import {
 	DKGCentralizedPrivateOutput,
 	DKGDecentralizedOutput,
 	mockCreateDwallet,
-	mockedProtocolPublicParameters,
 } from './utils/dwallet_mocks';
 import { setup, TestToolbox } from './utils/setup';
 
