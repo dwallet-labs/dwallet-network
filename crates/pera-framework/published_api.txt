@@ -142,6 +142,12 @@ launch_presign_second_round
 create_batched_presign_output
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+is_supported_hash_scheme
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_message_approval
+	public(package) fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 approve_messages
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -168,6 +174,9 @@ publish_partially_signed_messages
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 future_sign
 	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+hash_message
+	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 pop_and_verify_message_approval
 	fun

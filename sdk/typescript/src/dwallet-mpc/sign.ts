@@ -44,6 +44,8 @@ export async function signMessageTransactionCall(
 	c: Config,
 	dwalletCapID: string,
 	hashedMessages: Uint8Array[],
+	messages: Uint8Array[],
+	hash: Hash,
 	dWalletID: string,
 	presignIDs: string[],
 	centralizedSignedMessages: Uint8Array[],
@@ -54,7 +56,8 @@ export async function signMessageTransactionCall(
 		target: approveMessagesMoveFunc,
 		arguments: [
 			tx.object(dwalletCapID),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
+			tx.pure(bcs.u8().serialize(hash.valueOf())),
+			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 		],
 	});
 
@@ -144,7 +147,8 @@ export async function partiallySignMessageTransactionCall(
 
 export async function futureSignTransactionCall(
 	c: Config,
-	hashedMessages: Uint8Array[],
+	messages: Uint8Array[],
+	hash: Hash,
 	dWalletCapID: string,
 	partialSignaturesObjectID: string,
 ): Promise<CompletedSignEvent> {
@@ -153,7 +157,8 @@ export async function futureSignTransactionCall(
 		target: approveMessagesMoveFunc,
 		arguments: [
 			tx.object(dWalletCapID),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
+			tx.pure(bcs.u8().serialize(hash.valueOf())),
+			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 		],
 	});
 	tx.moveCall({

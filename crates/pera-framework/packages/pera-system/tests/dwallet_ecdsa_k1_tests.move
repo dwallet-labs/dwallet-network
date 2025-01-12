@@ -384,6 +384,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             ), std::vector::singleton(0xBB)];
             let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut messages_to_approve
             );
             let partial_signature_mock = pera_system::dwallet_2pc_mpc_ecdsa_k1::partial_signatures_for_testing(
@@ -487,6 +488,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             ), std::vector::singleton(0xBB)];
             let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut messages_to_approve
             );
             let partial_signature_mock = pera_system::dwallet_2pc_mpc_ecdsa_k1::partial_signatures_for_testing(
@@ -563,6 +565,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut messages_to_approve
             );
 
@@ -666,6 +669,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             // Create the approvals using the invalid dwallet cap.
             let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
                 &invalid_dwallet_cap,
+                0,
                 &mut messages
             );
 
@@ -742,6 +746,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             // Create the message approvals (correct dwallet_cap is used).
             let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut messages
             );
             vector::push_back(&mut messages, std::vector::singleton(0xAA));
@@ -816,6 +821,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             // Here we create a mismatch since there is 1 message, but 2 approvals.
             let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut approvals_messages
             );
 
@@ -897,6 +903,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             // it will trigger the assertion.
             let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut approvals_messages
             );
 
@@ -970,6 +977,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             // Create message approvals (2 approvals, same as the number of messages)
             let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut messages
             );
 

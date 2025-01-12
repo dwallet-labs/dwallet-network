@@ -105,10 +105,8 @@ describe('Test dWallet MPC', () => {
 		expect(presignOutput1).toBeDefined();
 		expect(presignOutput2).toBeDefined();
 		console.log({ presignOutput1, presignOutput2 });
-		let serializedMsgs = bcs
-			.vector(bcs.vector(bcs.u8()))
-			.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
-			.toBytes();
+		let messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
+		let serializedMsgs = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
 		let serializedPresigns = bcs
 			.vector(bcs.vector(bcs.u8()))
 			.serialize([presignOutput1.presign, presignOutput2.presign])
@@ -135,6 +133,8 @@ describe('Test dWallet MPC', () => {
 			conf,
 			dWallet.dwalletCapID,
 			hashedMsg,
+			messages,
+			Hash.SHA256,
 			dWallet.id,
 			[presignOutput1.id.id, presignOutput2.id.id],
 			centralizedSignMsg,
@@ -182,10 +182,8 @@ describe('Test dWallet MPC', () => {
 		expect(presignOutput1).toBeDefined();
 		expect(presignOutput2).toBeDefined();
 		console.log({ presignOutput1, presignOutput2 });
-		let serializedMsgs = bcs
-			.vector(bcs.vector(bcs.u8()))
-			.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
-			.toBytes();
+		let messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
+		let serializedMsgs = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
 		let serializedPresigns = bcs
 			.vector(bcs.vector(bcs.u8()))
 			.serialize([presignOutput1.presign, presignOutput2.presign])
@@ -221,7 +219,8 @@ describe('Test dWallet MPC', () => {
 		await new Promise((r) => setTimeout(r, 5000));
 		let completedSignEvent = await futureSignTransactionCall(
 			conf,
-			hashedMsgs,
+			messages,
+			Hash.SHA256,
 			dWallet.dwalletCapID,
 			partiallySignedMessages.partial_signatures_object_id,
 		);
