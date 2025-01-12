@@ -10,7 +10,7 @@ To run the network DKG protocol,
 you must configure your address as the dWallet admin address and execute the start transaction.
 The dWallet "admin" is the address that can initiate the network DKG.
 
-#### Configuring the Admin Address
+#### Configuring the dWallet "admin" Address
 
 There are two ways to configure the admin address:
 
