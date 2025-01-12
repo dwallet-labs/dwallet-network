@@ -2,132 +2,15 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 // noinspection ES6PreferShortImport
 
-import { Buffer } from 'buffer';
 import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import { expect } from 'vitest';
 
 import { bcs } from '../../../src/bcs/index.js';
 import { createDWallet } from '../../../src/dwallet-mpc/dkg.js';
-import type { Config, CreatedDwallet, DWallet } from '../../../src/dwallet-mpc/globals.js';
-import {
-	dWallet2PCMPCECDSAK1ModuleName,
-	dWalletMoveType,
-	isDWallet,
-	MPCKeyScheme,
-	packageId,
-} from '../../../src/dwallet-mpc/globals.js';
-import type { Presign } from '../../../src/dwallet-mpc/presign.js';
-import { isPresign, presign, presignMoveType } from '../../../src/dwallet-mpc/presign.js';
+import type { Config } from '../../../src/dwallet-mpc/globals.js';
+import { MPCKeyScheme } from '../../../src/dwallet-mpc/globals.js';
+import { presign } from '../../../src/dwallet-mpc/presign.js';
 import { Hash, signMessageTransactionCall } from '../../../src/dwallet-mpc/sign.js';
-import { Transaction } from '../../../src/transactions/index.js';
-import {
-	DKGCentralizedPrivateOutput,
-	DKGCentralizedPublicOutput,
-	mockedDWallet,
-	mockedPresign,
-} from './dwallet_mocks.js';
-
-export async function mockCreateDwallet(c: Config): Promise<CreatedDwallet> {
-	console.log('Creating dWallet Mock');
-
-	// Initiate the transaction
-	const tx = new Transaction();
-	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_mock_dwallet`,
-		arguments: [
-			tx.pure(bcs.vector(bcs.u8()).serialize(mockedDWallet.decentralizedDKGOutput)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(mockedDWallet.centralizedDKGPublicOutput)),
-		],
-	});
-
-	// Execute the transaction
-	const res = await c.client.signAndExecuteTransaction({
-		signer: c.keypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-		},
-	});
-
-	// Validate the created objects
-	const createdObjects = res.effects?.created;
-	if (!createdObjects || createdObjects.length !== 2) {
-		throw new Error(
-			`mockCreateDwallet error: Unexpected number of objects created. Expected 2, got ${
-				createdObjects?.length || 0
-			}`,
-		);
-	}
-	await new Promise((resolve) => setTimeout(resolve, 2000));
-	for (const obj of createdObjects) {
-		const objectData = await c.client.getObject({
-			id: obj.reference.objectId,
-			options: { showContent: true },
-		});
-		const dwalletData =
-			objectData.data?.content?.dataType === 'moveObject' &&
-			objectData.data?.content.type === dWalletMoveType &&
-			isDWallet(objectData.data.content.fields)
-				? (objectData.data.content.fields as DWallet)
-				: null;
-
-		if (dwalletData) {
-			return {
-				id: dwalletData.id.id,
-				centralizedDKGPublicOutput: Array.from(Buffer.from(DKGCentralizedPublicOutput, 'base64')),
-				centralizedDKGPrivateOutput: Array.from(Buffer.from(DKGCentralizedPrivateOutput, 'base64')),
-				decentralizedDKGOutput: dwalletData.decentralized_output,
-				dwalletCapID: dwalletData.dwallet_cap_id,
-				dwalletMPCNetworkKeyVersion: dwalletData.dwallet_mpc_network_key_version,
-			};
-		}
-	}
-	throw new Error(`mockCreateDwallet error: failed to create an object of type ${dWalletMoveType}`);
-}
-
-export async function mockCreatePresign(c: Config, dwallet: CreatedDwallet): Promise<Presign> {
-	console.log('Creating Presign Mock');
-	const tx = new Transaction();
-	const [presign] = tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_mock_presign`,
-		arguments: [
-			tx.pure.id(dwallet.id),
-			tx.pure(bcs.vector(bcs.u8()).serialize(mockedPresign.presign)),
-			tx.pure.id(mockedPresign.firstRoundSessionID),
-		],
-	});
-	tx.transferObjects([presign], c.keypair.toPeraAddress());
-	let res = await c.client.signAndExecuteTransaction({
-		signer: c.keypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-		},
-	});
-	const presignID = res.effects?.created?.at(0)?.reference.objectId;
-	if (!presignID) {
-		throw new Error('create_mock_presign error: Failed to create presign');
-	}
-	await new Promise((resolve) => setTimeout(resolve, 2000));
-	const obj = await c.client.getObject({
-		id: presignID,
-		options: { showContent: true },
-	});
-	const preSignObj =
-		obj.data?.content?.dataType === 'moveObject' &&
-		obj.data?.content.type === presignMoveType &&
-		isPresign(obj.data.content.fields)
-			? (obj.data.content.fields as Presign)
-			: null;
-
-	if (!preSignObj) {
-		throw new Error(
-			`invalid object of type ${dWalletMoveType}, got: ${JSON.stringify(obj.data?.content)}`,
-		);
-	}
-
-	return preSignObj;
-}
 
 /**
  * Run the Full MPC User Sessions
