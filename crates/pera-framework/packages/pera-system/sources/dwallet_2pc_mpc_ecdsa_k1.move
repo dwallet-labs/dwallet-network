@@ -1106,6 +1106,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, dwallet_mpc_network_key_version, vector[], ctx)
     }
 
+    // TODO (#493): Remove mock functions before mainnet
     /// Created an immutable [`DWallet`] object with the given DKG output.
     public fun create_mock_dwallet(
         dkg_output: vector<u8>,
