@@ -5,6 +5,7 @@ import {
 } from '@dwallet-network/dwallet-mpc-wasm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
+import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import {
 	acceptUserShare,
 	createActiveEncryptionKeysTable,
@@ -14,12 +15,14 @@ import {
 	getOrCreateEncryptionKey,
 } from '../../src/dwallet-mpc/encrypt-user-share';
 import { Config } from '../../src/dwallet-mpc/globals';
+import { signWithEncryptedDWallet } from '../../src/dwallet-mpc/sign';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
+import { mockCreateDwallet } from './utils/dwallet';
 import {
 	DKGCentralizedPrivateOutput,
 	DKGDecentralizedOutput,
-	mockCreateDwallet,
-} from './utils/dwallet';
+	mockedProtocolPublicParameters,
+} from './utils/dwallet_mocks';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('encrypt user share', () => {
@@ -98,6 +101,28 @@ describe('encrypt user share', () => {
 		);
 
 		expect(`0x${activeEncryptionKeyAddress}`).toEqual(senderEncryptionKeyObj.objectID);
+	});
+
+	it('signs with an encrypted secret share', async () => {
+		let conf: Config = {
+			keypair: dwalletSenderToolbox.keypair,
+			client: dwalletSenderToolbox.client,
+			timeout: 5 * 60 * 1000,
+		};
+		let dwallet = await createDWallet(
+			conf,
+			mockedProtocolPublicParameters,
+			activeEncryptionKeysTableID,
+		);
+		console.log({ dwallet });
+		const completion = await signWithEncryptedDWallet(
+			conf,
+			dwallet.id,
+			activeEncryptionKeysTableID,
+			[Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])],
+			true,
+		);
+		console.log({ completion });
 	});
 });
 

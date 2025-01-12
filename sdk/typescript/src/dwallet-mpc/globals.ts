@@ -39,7 +39,8 @@ export interface DWallet {
 	id: { id: string };
 	session_id: string;
 	dwallet_cap_id: string;
-	output: number[];
+	decentralized_output: number[];
+	centralized_output: number[];
 	dwallet_mpc_network_key_version: number;
 }
 
@@ -178,5 +179,11 @@ export async function fetchObjectWithType<TObject>(
 }
 
 export function isDWallet(obj: any): obj is DWallet {
-	return obj && 'id' in obj && 'session_id' in obj && 'dwallet_cap_id' in obj && 'output' in obj;
+	return (
+		obj &&
+		'id' in obj &&
+		'session_id' in obj &&
+		'dwallet_cap_id' in obj &&
+		'decentralized_output' in obj
+	);
 }

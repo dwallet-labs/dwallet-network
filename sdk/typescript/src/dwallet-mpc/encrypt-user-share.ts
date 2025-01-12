@@ -1,7 +1,6 @@
 // noinspection ES6PreferShortImport
 
 import {
-	centralized_public_share_from_decentralized_output,
 	decrypt_user_share,
 	encrypt_secret_share,
 	generate_secp_cg_keypair_from_seed,
@@ -27,6 +26,7 @@ import {
 	isDWallet,
 	packageId,
 } from './globals.js';
+import type { EncryptedUserShare } from './sign.js';
 
 const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
 const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
@@ -284,11 +284,10 @@ export async function acceptUserShare(
 	let dwalletToSend: CreatedDwallet = {
 		id: dwalletID,
 		centralizedDKGPrivateOutput: [...decryptedKeyShare],
-		decentralizedDKGOutput: dwallet.output,
+		decentralizedDKGOutput: dwallet.decentralized_output,
 		dwalletCapID: dwallet.dwallet_cap_id,
 		dwalletMPCNetworkKeyVersion: dwallet.dwallet_mpc_network_key_version,
-		// TODO (#475): Store the DWallet's centralizedDKGPublicOutput on chain, and use here the real value.
-		centralizedDKGPublicOutput: [],
+		centralizedDKGPublicOutput: dwallet.centralized_output,
 	};
 
 	// Encrypt it to self, so that in the future we'd know that we already
@@ -311,10 +310,9 @@ const transferEncryptedUserShare = async (
 	const tx = new Transaction();
 	const encryptionKey = tx.object(encryptionKeyObjID);
 	const dwalletObj = tx.object(dwallet.id);
-	let centralized_public_share = centralized_public_share_from_decentralized_output(
-		new Uint8Array(dwallet.decentralizedDKGOutput),
+	let signedCentralizedOutput = await conf.keypair.sign(
+		new Uint8Array(dwallet.centralizedDKGPublicOutput),
 	);
-	let signedPublicShare = await conf.keypair.sign(new Uint8Array(centralized_public_share));
 	tx.moveCall({
 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::publish_encrypted_user_share`,
 		typeArguments: [],
@@ -322,7 +320,7 @@ const transferEncryptedUserShare = async (
 			dwalletObj,
 			encryptionKey,
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptedUserShareAndProof)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(signedPublicShare)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(signedCentralizedOutput)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes())),
 		],
 	});
@@ -462,10 +460,10 @@ function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
 	return arr1.length === arr2.length && arr1.every((value, index) => value === arr2[index]);
 }
 
-async function decryptAndVerifyUserShare(
+export async function decryptAndVerifyUserShare(
 	conf: Config,
 	activeEncryptionKeysTableID: string,
-	encryptedUserShare: CreatedEncryptedSecretShareEvent,
+	encryptedUserShare: EncryptedUserShare,
 	expectedSourceSuiAddress: string,
 	encryptedDWallet: DWallet,
 ): Promise<Uint8Array> {
@@ -474,12 +472,9 @@ async function decryptAndVerifyUserShare(
 	if (encryptor_address !== expectedSourceSuiAddress) {
 		throw new Error('The source public key does not match the expected Sui address');
 	}
-	let centralized_public_share = centralized_public_share_from_decentralized_output(
-		new Uint8Array(encryptedDWallet.output),
-	);
 	if (
 		!(await encryptorPubkey.verify(
-			new Uint8Array(centralized_public_share),
+			new Uint8Array(encryptedDWallet.centralized_output),
 			new Uint8Array(encryptedUserShare.signed_public_share),
 		))
 	) {
@@ -491,7 +486,10 @@ async function decryptAndVerifyUserShare(
 		destination_cg_keypair.decryptionKey,
 		encryptedUserShare.encrypted_secret_share_and_proof,
 	);
-	let is_valid = verify_user_share(decrypted_share, new Uint8Array(encryptedDWallet.output));
+	let is_valid = verify_user_share(
+		decrypted_share,
+		new Uint8Array(encryptedDWallet.centralized_output),
+	);
 	if (!is_valid) {
 		throw new Error("the decrypted key share doesn't match the dwallet's public key share");
 	}

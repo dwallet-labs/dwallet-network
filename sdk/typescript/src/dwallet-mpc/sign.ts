@@ -1,11 +1,25 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 // noinspection ES6PreferShortImport
+import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 
+import { mockedProtocolPublicParameters } from '../../test/e2e/utils/dwallet_mocks.js';
 import { bcs } from '../bcs/index.js';
 import { Transaction } from '../transactions/index.js';
-import type { Config } from './globals.js';
-import { dWallet2PCMPCECDSAK1ModuleName, fetchCompletedEvent, packageId } from './globals.js';
+import { decryptAndVerifyUserShare } from './encrypt-user-share.js';
+import type { Config, DWallet } from './globals.js';
+import {
+	dWallet2PCMPCECDSAK1ModuleName,
+	dWalletMoveType,
+	dWalletPackageID,
+	fetchCompletedEvent,
+	fetchObjectWithType,
+	isDWallet,
+	MPCKeyScheme,
+	packageId,
+} from './globals.js';
+import { fetchProtocolPublicParameters } from './network-dkg.js';
+import { presign } from './presign.js';
 
 const signMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`;
 const partiallySignMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::publish_partially_signed_messages`;
@@ -16,6 +30,15 @@ const completedSignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}:
 export enum Hash {
 	KECCAK256 = 0,
 	SHA256 = 1,
+}
+
+export interface EncryptedUserShare {
+	dwallet_id: string;
+	encrypted_secret_share_and_proof: Uint8Array;
+	encryption_key_id: string;
+	signed_public_share: Uint8Array;
+	encryptor_ed25519_pubkey: Uint8Array;
+	encryptor_address: string;
 }
 
 export interface StartBatchedSignEvent {
@@ -182,4 +205,124 @@ export async function futureSignTransactionCall(
 		completedSignMoveEvent,
 		isCompletedSignEvent,
 	);
+}
+
+/**
+ * Signs a message with a dWallet on-chain encrypted secret share
+ * Can be called with any dWallet, as the encrypted secret share is automatically created
+ * upon dWallet creation.
+ *
+ * @param conf The Pera config to run the TXs with
+ * @param dwalletID The ID of the dWallet to sign with
+ * @param activeEncryptionKeysTableID The ID of the active encryption keys table, that holds the config's client encryption key
+ * @param messages The messages to sign
+ * @param mockNetworkKey A boolean indicating whether to use a mocked chain MPC network key for testing purposes, or to use the real one.
+ * defaults to false, a.k.a. to use the real one.
+ */
+export async function signWithEncryptedDWallet(
+	conf: Config,
+	dwalletID: string,
+	activeEncryptionKeysTableID: string,
+	messages: Uint8Array[],
+	mockNetworkKey: boolean = false,
+): Promise<CompletedSignEvent> {
+	let dWallet = await fetchObjectWithType<DWallet>(conf, dWalletMoveType, isDWallet, dwalletID);
+	let encryptedShare = await fetchEncryptedShare(conf, dwalletID);
+	let decrypted_share = await decryptAndVerifyUserShare(
+		conf,
+		activeEncryptionKeysTableID,
+		encryptedShare,
+		conf.keypair.toPeraAddress(),
+		dWallet,
+	);
+	const presignCompletionEvent = await presign(conf, dWallet.id.id, messages.length);
+	let serializedMsgs = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
+	let serializedPresigns = bcs
+		.vector(bcs.vector(bcs.u8()))
+		.serialize(presignCompletionEvent.presigns)
+		.toBytes();
+	let serializedPresignFirstRoundSessionIds = bcs
+		.vector(bcs.string())
+		.serialize(
+			presignCompletionEvent.first_round_session_ids.map((session_id) => session_id.slice(2)),
+		)
+		.toBytes();
+	let protocolPublicParameters = mockNetworkKey
+		? mockedProtocolPublicParameters
+		: await fetchProtocolPublicParameters(
+				conf,
+				MPCKeyScheme.Secp256k1,
+				dWallet.dwallet_mpc_network_key_version,
+			);
+	const [centralizedSignedMsg, hashedMsgs] = create_sign_centralized_output(
+		protocolPublicParameters,
+		MPCKeyScheme.Secp256k1,
+		Uint8Array.from(dWallet.centralized_output),
+		decrypted_share,
+		serializedPresigns,
+		serializedMsgs,
+		Hash.SHA256,
+		serializedPresignFirstRoundSessionIds,
+	);
+
+	console.log('Signing messages');
+	return await signMessageTransactionCall(
+		conf,
+		dWallet.dwallet_cap_id,
+		hashedMsgs,
+		dWallet.id.id,
+		presignCompletionEvent.presign_ids,
+		centralizedSignedMsg,
+	);
+}
+
+const encryptedSecretShareMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::EncryptedUserShare`;
+
+function isEncryptedUserShare(obj: any): obj is EncryptedUserShare {
+	return (
+		obj &&
+		'id' in obj &&
+		'dwallet_id' in obj &&
+		'encrypted_secret_share_and_proof' in obj &&
+		'encryption_key_id' in obj &&
+		'signed_public_share' in obj &&
+		'encryptor_ed25519_pubkey' in obj &&
+		'encryptor_address' in obj
+	);
+}
+
+async function fetchEncryptedShare(conf: Config, dwalletID: string): Promise<EncryptedUserShare> {
+	let ownedEncryptedShares = await conf.client.getOwnedObjects({
+		owner: conf.keypair.toPeraAddress(),
+		options: {
+			showContent: true,
+			showType: true,
+		},
+		filter: {
+			StructType: encryptedSecretShareMoveType,
+		},
+	});
+	let encryptedShare = ownedEncryptedShares.data.find(
+		(share) =>
+			share &&
+			share.data &&
+			share.data.content &&
+			'fields' in share.data.content &&
+			isEncryptedUserShare(share.data?.content?.fields) &&
+			share.data.content.fields.dwallet_id === dwalletID,
+	);
+
+	if (
+		!(
+			encryptedShare &&
+			encryptedShare.data &&
+			encryptedShare.data.content &&
+			'fields' in encryptedShare.data.content &&
+			isEncryptedUserShare(encryptedShare.data?.content?.fields)
+		)
+	) {
+		throw new Error(`no encrypted share found for dwallet ${dwalletID}`);
+	}
+
+	return encryptedShare.data.content.fields;
 }

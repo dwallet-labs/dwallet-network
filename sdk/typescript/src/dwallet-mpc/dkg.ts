@@ -56,24 +56,20 @@ export async function createDWallet(
 	activeEncryptionKeyTableID: string,
 ): Promise<CreatedDwallet> {
 	const dkgFirstRoundOutput = await launchDKGFirstRound(conf);
-	let [
-		publicKeyShareAndProof,
-		centralizedPublicOutput,
-		centralizedPrivateOutput,
-		centralizedPublicShare,
-	] = create_dkg_centralized_output(
-		protocolPublicParameters,
-		MPCKeyScheme.Secp256k1,
-		Uint8Array.from(dkgFirstRoundOutput.output),
-		// Remove the 0x prefix.
-		dkgFirstRoundOutput.session_id.slice(2),
-	);
+	let [publicKeyShareAndProof, centralizedPublicOutput, centralizedPrivateOutput] =
+		create_dkg_centralized_output(
+			protocolPublicParameters,
+			MPCKeyScheme.Secp256k1,
+			Uint8Array.from(dkgFirstRoundOutput.output),
+			// Remove the 0x prefix.
+			dkgFirstRoundOutput.session_id.slice(2),
+		);
 	let encryptionKey = await getOrCreateEncryptionKey(conf, activeEncryptionKeyTableID);
 	let encryptedUserShareAndProof = encrypt_secret_share(
 		new Uint8Array(centralizedPrivateOutput),
 		new Uint8Array(encryptionKey.encryptionKey),
 	);
-	let signedPublicShare = await conf.keypair.sign(new Uint8Array(centralizedPublicShare));
+	let signedPublicShare = await conf.keypair.sign(new Uint8Array(centralizedPublicOutput));
 
 	let dwallet = await launchDKGSecondRound(
 		conf,
@@ -83,13 +79,14 @@ export async function createDWallet(
 		encryptionKey.objectID,
 		signedPublicShare,
 		conf.keypair.getPublicKey().toRawBytes(),
+		centralizedPublicOutput,
 	);
 
 	return {
 		id: dwallet.id.id,
 		centralizedDKGPublicOutput: centralizedPublicOutput,
 		centralizedDKGPrivateOutput: centralizedPrivateOutput,
-		decentralizedDKGOutput: dwallet.output,
+		decentralizedDKGOutput: dwallet.decentralized_output,
 		dwalletCapID: dwallet.dwallet_cap_id,
 		dwalletMPCNetworkKeyVersion: dwallet.dwallet_mpc_network_key_version,
 	};
@@ -137,6 +134,7 @@ async function launchDKGSecondRound(
 	encryption_key_id: string,
 	signed_public_share: Uint8Array,
 	encryptor_ed25519_pubkey: Uint8Array,
+	centralizedPublicOutput: Uint8Array,
 ) {
 	const tx = new Transaction();
 	tx.moveCall({
@@ -150,6 +148,7 @@ async function launchDKGSecondRound(
 			tx.object(encryption_key_id),
 			tx.pure(bcs.vector(bcs.u8()).serialize(signed_public_share)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptor_ed25519_pubkey)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput)),
 		],
 	});
 

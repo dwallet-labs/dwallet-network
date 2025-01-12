@@ -1151,12 +1151,10 @@ mod checked {
                 (
                     "create_encryption_key",
                     vec![
-                        CallArg::Pure(bcs::to_bytes(&verification_data.encryption_key).unwrap()),
-                        CallArg::Pure(
-                            bcs::to_bytes(&verification_data.encryption_key_signature).unwrap(),
-                        ),
-                        CallArg::Pure(bcs::to_bytes(&verification_data.sender_sui_pubkey).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&verification_data.scheme).unwrap()),
+                        CallArg::Pure(bcs_to_bytes(&verification_data.encryption_key)?),
+                        CallArg::Pure(bcs_to_bytes(&verification_data.encryption_key_signature)?),
+                        CallArg::Pure(bcs_to_bytes(&verification_data.sender_sui_pubkey)?),
+                        CallArg::Pure(bcs_to_bytes(&verification_data.scheme)?),
                         CallArg::Pure(verification_data.initiator.to_vec()),
                         CallArg::Pure(data.session_info.session_id.to_vec()),
                     ],
@@ -1178,12 +1176,11 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(event_data.dwallet_cap_id.bytes.to_vec()),
                     CallArg::Pure(bcs_to_bytes(&dwallet_network_key_version)?),
-                    CallArg::Pure(
-                        bcs::to_bytes(&event_data.encrypted_secret_share_and_proof).unwrap(),
-                    ),
+                    CallArg::Pure(bcs_to_bytes(&event_data.encrypted_secret_share_and_proof)?),
                     CallArg::Pure(event_data.encryption_key_id.bytes.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&event_data.signed_public_share).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&event_data.encryptor_ed25519_pubkey).unwrap()),
+                    CallArg::Pure(bcs_to_bytes(&event_data.signed_public_share)?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.encryptor_ed25519_pubkey)?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.dkg_centralized_public_output)?),
                 ],
             ),
             MPCRound::PresignFirst(

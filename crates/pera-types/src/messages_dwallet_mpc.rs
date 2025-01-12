@@ -108,7 +108,7 @@ pub struct SessionInfo {
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
     pub encrypted_secret_share_and_proof: Vec<u8>,
-    pub dwallet_output: Vec<u8>,
+    pub dwallet_centralized_public_output: Vec<u8>,
     pub dwallet_id: ID,
     pub encryption_key: Vec<u8>,
     pub encryption_key_id: ID,
@@ -173,6 +173,7 @@ pub struct StartDKGSecondRoundEvent {
     pub encryption_key_id: ID,
     pub signed_public_share: Vec<u8>,
     pub encryptor_ed25519_pubkey: Vec<u8>,
+    pub dkg_centralized_public_output: Vec<u8>,
 }
 
 impl StartDKGSecondRoundEvent {

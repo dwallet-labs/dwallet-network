@@ -45,8 +45,11 @@ module pera_system::dwallet {
         id: UID,
         session_id: ID,
         dwallet_cap_id: ID,
-        // The output of the second DKG round.
-        output: vector<u8>,
+        // The decentralized output of the second chain DKG round.
+        decentralized_output: vector<u8>,
+        // The public centralized output of the client's DKG round.
+        centralized_output: vector<u8>,
+
         dwallet_mpc_network_key_version: u8,
     }
 
@@ -114,14 +117,16 @@ module pera_system::dwallet {
         dwallet_cap_id: ID,
         output: vector<u8>,
         dwallet_mpc_network_key_version: u8,
+        dkg_centralized_public_output: vector<u8>,
         ctx: &mut TxContext
     ): DWallet<T> {
         DWallet<T> {
             id: object::new(ctx),
             session_id,
             dwallet_cap_id,
-            output,
+            decentralized_output: output,
             dwallet_mpc_network_key_version,
+            centralized_output: dkg_centralized_public_output,
         }
     }
 
@@ -225,6 +230,26 @@ module pera_system::dwallet {
         transfer::freeze_object(encryption_key);
     }
 
+    #[test_only]
+    public(package) fun create_encryption_key_for_testing(
+        key: vector<u8>,
+        signature: vector<u8>,
+        sender_sui_pubkey: vector<u8>,
+        scheme: u8,
+        initiator: address,
+        ctx: &mut TxContext
+    ): EncryptionKey {
+        return EncryptionKey {
+            id: object::new(ctx),
+            scheme,
+            encryption_key: key,
+            key_owner_address: initiator,
+            encryption_key_signature: signature,
+            key_owner_pubkey: sender_sui_pubkey,
+        }
+    }
+
+
     /// Create a new [`DWalletCap`] object.
     ///
     /// The holder of the `DWalletCap` has control and ownership over
@@ -259,8 +284,13 @@ module pera_system::dwallet {
     ///
     /// ### Returns
     /// A `vector<u8>` representing the output of the second DKG round for the specified dWallet.
-    public(package) fun get_dwallet_output<T: drop>(dwallet: &DWallet<T>): vector<u8> {
-        dwallet.output
+    public(package) fun get_dwallet_decentralized_output<T: drop>(dwallet: &DWallet<T>): vector<u8> {
+        dwallet.decentralized_output
+    }
+
+    /// Retrieve the centralized public DKG output for a given dWallet.
+    public(package) fun get_dwallet_centralized_output<T: drop>(dwallet: &DWallet<T>): vector<u8> {
+        dwallet.centralized_output
     }
 
     public(package) fun get_dwallet_mpc_network_key_version<T: drop>(dwallet: &DWallet<T>): u8 {

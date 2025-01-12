@@ -43,7 +43,10 @@ create_dwallet_cap
 get_dwallet_cap_id
 	public(package) fun
 	0x3::dwallet
-get_dwallet_output
+get_dwallet_decentralized_output
+	public(package) fun
+	0x3::dwallet
+get_dwallet_centralized_output
 	public(package) fun
 	0x3::dwallet
 get_dwallet_mpc_network_key_version
