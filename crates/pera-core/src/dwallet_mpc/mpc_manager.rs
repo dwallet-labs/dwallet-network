@@ -323,8 +323,7 @@ impl DWalletMPCManager {
                 };
 
                 let is_ready = match session.status {
-                    MPCSessionStatus::Active => received_weight as StakeUnit >= threshold,
-                    MPCSessionStatus::FirstExecution => true,
+                    MPCSessionStatus::Active => received_weight as StakeUnit >= threshold || session.round_number == 0,
                     _ => false,
                 };
 
@@ -504,7 +503,7 @@ impl DWalletMPCManager {
             );
             return Ok(());
         }
-        new_session.status = MPCSessionStatus::FirstExecution;
+        new_session.status = MPCSessionStatus::Active;
         self.mpc_sessions
             .insert(session_info.session_id, new_session);
         self.active_sessions_counter += 1;

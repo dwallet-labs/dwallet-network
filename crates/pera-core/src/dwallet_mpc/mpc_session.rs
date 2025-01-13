@@ -254,7 +254,7 @@ impl DWalletMPCSession {
     /// Those parties will be flagged as malicious and ignored,
     /// the session will be restarted.
     fn restart(&mut self) {
-        self.status = MPCSessionStatus::FirstExecution;
+        self.status = MPCSessionStatus::Active;
         self.pending_messages = vec![HashMap::new()];
     }
 
