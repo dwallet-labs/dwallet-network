@@ -205,7 +205,7 @@ impl DWalletMPCManager {
                         }
                     }
                 }
-                }
+            }
         }
     }
 
