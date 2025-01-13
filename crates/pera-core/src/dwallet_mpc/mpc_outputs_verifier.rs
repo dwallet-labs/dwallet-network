@@ -52,9 +52,9 @@ pub enum OutputResult {
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
-    /// The output has already been verified and committed to the chain
+    /// The output has already been verified and committed to the chain.
+    /// This happens every time since all honest parties send the same output.
     AlreadyCommitted,
-    Duplicate,
 }
 
 pub struct OutputVerificationResult {
@@ -115,7 +115,7 @@ impl DWalletMPCOutputsVerifier {
         };
         if session.current_result == OutputResult::AlreadyCommitted {
             return Ok(OutputVerificationResult {
-                result: OutputResult::Duplicate,
+                result: OutputResult::AlreadyCommitted,
                 malicious_actors: vec![],
             });
         }
@@ -150,6 +150,7 @@ impl DWalletMPCOutputsVerifier {
                         >= self.quorum_threshold
                 });
 
+        // todo(zeev): simplify.
         if let Some((agreed_output, _)) = agreed_output {
             let voted_for_other_outputs = session
                 .session_output_to_voting_authorities
@@ -175,7 +176,7 @@ impl DWalletMPCOutputsVerifier {
     /// and initializes the output data for it.
     /// Needed, so we'll know when we receive a malicious output
     /// that related to a non-existing session.
-    pub fn handle_new_event(&mut self, session_info: &SessionInfo) {
+    pub fn store_new_session(&mut self, session_info: &SessionInfo) {
         self.mpc_sessions_outputs.insert(
             session_info.session_id,
             SessionOutputsData {

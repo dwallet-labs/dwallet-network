@@ -170,6 +170,7 @@ use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::execution_config_utils::to_binary_config;
+use pera_types::messages_dwallet_mpc::MPCRound;
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1538,9 +1539,7 @@ impl AuthorityState {
         Ok(())
     }
 
-    /// Filters the MPC signature events emitted from the transaction, if any.
-    /// Filtering to handle only DWallet-MPC related events happen within
-    /// [`DWalletMPCManager::handle_event`] function.
+    /// Filters the dWallet MPC events emitted from the transaction, if any.
     async fn filter_dwallet_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,
@@ -1583,21 +1582,23 @@ impl AuthorityState {
             else {
                 continue;
             };
-            if session_info.mpc_round.is_part_of_batch() {
-                let mut dwallet_mpc_batches_manager =
-                    epoch_store.get_dwallet_mpc_batches_manager().await?;
-                dwallet_mpc_batches_manager.handle_new_event(&session_info);
-            }
             // This function is being executed for all events, some events are
             // being emitted before the MPC outputs manager is initialized.
-            dwallet_mpc_outputs_verifier.handle_new_event(&session_info);
-            let dwallet_mpc_sender = epoch_store
-                .dwallet_mpc_sender
-                .get()
-                .ok_or_else(|| DwalletMPCError::MissingDWalletMPCSender)?;
-            dwallet_mpc_sender
-                .send(DWalletMPCChannelMessage::Event(event.clone(), session_info))
-                .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
+            dwallet_mpc_outputs_verifier.store_new_session(&session_info);
+            if session_info.mpc_round.is_a_new_batch_session() {
+                let mut dwallet_mpc_batches_manager =
+                    epoch_store.get_dwallet_mpc_batches_manager().await?;
+                // Mark a new batch event as received.
+                dwallet_mpc_batches_manager.store_new_session(&session_info);
+            } else {
+                // Send the event to the dWallet MPC manager.
+                epoch_store
+                    .dwallet_mpc_sender
+                    .get()
+                    .ok_or_else(|| DwalletMPCError::MissingDWalletMPCSender)?
+                    .send(DWalletMPCChannelMessage::Event(event.clone(), session_info))
+                    .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
+            }
         }
         Ok(())
     }

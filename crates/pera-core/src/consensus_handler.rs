@@ -442,6 +442,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             });
                         match output_verification_result.result {
                             OutputResult::Valid => {
+                                // Output result of a single Protocol from the batch session.
                                 if session_info.mpc_round.is_part_of_batch() {
                                     let Ok(mut batches_manager) =
                                         self.epoch_store.get_dwallet_mpc_batches_manager().await
@@ -545,9 +546,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             }
                             OutputResult::NotEnoughVotes
                             | OutputResult::AlreadyCommitted
-                            | OutputResult::Malicious
-                            | OutputResult::Duplicate => {
+                            | OutputResult::Malicious => {
                                 // Ignore this output,
+                                // since there is no need for it to participate in the chain.
                                 continue;
                             }
                         }

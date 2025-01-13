@@ -62,11 +62,12 @@ impl DWalletMPCBatchesManager {
 
     /// Handle a new event by initializing a new batched session
     /// if the event is a start batch event.
-    pub(crate) fn handle_new_event(&mut self, session_info: &SessionInfo) {
+    /// Clears duplicate messages if the user/fullnode sends the same message twice.
+    pub(crate) fn store_new_session(&mut self, session_info: &SessionInfo) {
         match &session_info.mpc_round {
             MPCRound::BatchedSign(hashed_messages) => {
                 let mut seen = HashSet::new();
-                let messages_without_duplicates = hashed_messages
+                let unique_messages = hashed_messages
                     .clone()
                     .into_iter()
                     .filter(|x| seen.insert(x.clone()))
@@ -75,7 +76,7 @@ impl DWalletMPCBatchesManager {
                     session_info.session_id,
                     BatchedSignSession {
                         hashed_msg_to_signature: HashMap::new(),
-                        ordered_messages: messages_without_duplicates,
+                        ordered_messages: unique_messages,
                     },
                 );
             }

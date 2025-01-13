@@ -246,6 +246,8 @@ impl DWalletMPCSession {
                     .map_err(|err| err)
             }
             MPCRound::BatchedPresign(..) | MPCRound::BatchedSign(..) => {
+                // This case is unreachable because the batched session is handled separately.
+                // The bathed session is only an indicator to expect a batch of messages.
                 unreachable!("advance should never be called on a batched session")
             }
         }
@@ -321,6 +323,7 @@ impl DWalletMPCSession {
     /// Handles a message by either forwarding it to the session
     /// or ignoring it if the session is not active.
     pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+        // todo(itay): inline.
         self.store_message(message)?;
         Ok(())
     }

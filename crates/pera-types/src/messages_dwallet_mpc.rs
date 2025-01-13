@@ -21,30 +21,39 @@ pub enum MPCRound {
     DKGFirst,
     /// The second round of the DKG protocol.
     DKGSecond(StartDKGSecondRoundEvent, u8),
-    /// The first round of the Presign protocol.
+    /// This is not a real round, but an indicator the Batches Manager to
+    /// register a Presign Batch session.
+    BatchedPresign(u64),
+    /// The first round of the Presign protocol for each message in the Batch.
     /// Contains the `ObjectId` of the dWallet object,
-    /// the DKG decentralized output, the batch session ID,
+    /// the DKG decentralized output, the batch session ID (same for each message in the batch),
     /// and the dWallets' network key version.
     PresignFirst(ObjectID, MPCPublicOutput, ObjectID, u8),
     /// The second round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
     /// the Presign first round output, and the batch session ID.
     PresignSecond(ObjectID, MPCPublicOutput, ObjectID),
-    /// The first and only round of the Sign protocol.
-    Sign(SignMessageData),
-    /// A batched sign session, contains the list of messages that are being signed.
+    /// This is not a real round, but an indicator the Batches Manager to
+    /// register a Sign Batch session.
     BatchedSign(Vec<Vec<u8>>),
-    BatchedPresign(u64),
-    /// The round of the network DKG protocol.
+    /// The first and only round of the Sign protocol for each message in the Batch.
+    Sign(SignMessageData),
+    /// The only round of the network DKG protocol.
     NetworkDkg(
         DWalletMPCNetworkKeyScheme,
         Option<NetworkDecryptionKeyShares>,
     ),
     /// The round of verifying the encrypted share proof is valid and
     /// that the signature on it is valid.
+    /// This is not a real MPC round,
+    /// but we use it to start the verification process using the same events mechanism
+    /// because the system does not support native functions.
     EncryptedShareVerification(StartEncryptedShareVerificationEvent),
     /// The round of verifying the public key that signed on the encryption key is
     /// matching the initiator address.
+    /// This is not a real MPC round,
+    /// but we use it to start the verification process using the same events mechanism
+    /// because the system does not support native functions.
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
 }
 
@@ -58,15 +67,17 @@ pub struct SignMessageData {
 }
 
 impl MPCRound {
-    /// Returns `true` if the round output is part of a batch, `false` otherwise.
+    /// Returns `true` if the round is a single message, which is
+    /// part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
-        matches!(
-            self,
-            MPCRound::Sign(..)
-                | MPCRound::PresignSecond(..)
-                | MPCRound::BatchedSign(..)
-                | MPCRound::BatchedPresign(..)
-        )
+        matches!(self, MPCRound::Sign(..) | MPCRound::PresignSecond(..))
+    }
+
+    /// Is a special Round that indicates an initialization of a batch session.
+    pub fn is_a_new_batch_session(&self) -> bool {
+        matches!(self, |MPCRound::BatchedSign(..)| MPCRound::BatchedPresign(
+            ..
+        ))
     }
 }
 

@@ -218,7 +218,7 @@ impl DWalletMPCManager {
     }
 
     fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {
-        self.outputs_verifier.handle_new_event(&session_info);
+        self.outputs_verifier.store_new_session(&session_info);
         let (public_input, private_input) = session_input_from_event(&event, &self)?;
         self.push_new_mpc_session(public_input, private_input, session_info)?;
         Ok(())
@@ -349,6 +349,9 @@ impl DWalletMPCManager {
             // Convert back to an iterator for processing.
             .into_iter()
             .try_for_each(|(result, session_id)| match result {
+                // todo(itay):
+                // remove sessions from pending_sessions_queue
+                // in case of finalize or malicious.
                 Ok((message, malicious)) => {
                     messages.push((message, session_id));
                     malicious_parties.extend(malicious);
@@ -513,6 +516,9 @@ impl DWalletMPCManager {
         new_session.status = MPCSessionStatus::FirstExecution;
         self.mpc_sessions
             .insert(session_info.session_id, new_session);
+        // todo(itay):
+        // make sure we decrease the counter
+        // when the session is done and make sure we free the pending queue.
         self.active_sessions_counter += 1;
         info!(
             "Added MPCSession to MPC manager for session_id {:?}",

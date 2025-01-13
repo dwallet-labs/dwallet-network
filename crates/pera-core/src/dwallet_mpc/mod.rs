@@ -401,19 +401,19 @@ pub(crate) fn session_input_from_event(
     event: &Event,
     dwallet_mpc_manager: &DWalletMPCManager,
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
-    if &event.type_ == &StartNetworkDKGEvent::type_() {
-        let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
-        return Ok((
-            network_dkg::network_dkg_public_input(
-                deserialized_event,
-                &dwallet_mpc_manager.validators_data_for_network_dkg,
-            )?,
-            Some(bcs::to_bytes(
-                &dwallet_mpc_manager.node_config.class_groups_private_key,
-            )?),
-        ));
-    }
     match &event.type_ {
+        t if t == &StartNetworkDKGEvent::type_() => {
+            let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
+            Ok((
+                network_dkg::network_dkg_public_input(
+                    deserialized_event,
+                    &dwallet_mpc_manager.validators_data_for_network_dkg,
+                )?,
+                Some(bcs::to_bytes(
+                    &dwallet_mpc_manager.node_config.class_groups_private_key,
+                )?),
+            ))
+        }
         t if t == &StartDKGFirstRoundEvent::type_() => {
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
