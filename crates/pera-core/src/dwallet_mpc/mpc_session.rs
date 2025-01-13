@@ -112,10 +112,10 @@ impl DWalletMPCSession {
             )),
             Ok(AsynchronousRoundResult::Finalize {
                 malicious_parties,
-                private_output,
+                private_output: _,
                 public_output,
             }) => {
-                self.status = MPCSessionStatus::Finished(public_output.clone(), private_output);
+                self.status = MPCSessionStatus::Finished(public_output.clone());
                 Ok((
                     self.new_dwallet_mpc_output_message(public_output)?,
                     malicious_parties,
@@ -225,6 +225,7 @@ impl DWalletMPCSession {
                         .clone()
                         .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                 )?,
+                self.epoch_store()?,
             ),
             MPCRound::EncryptedShareVerification(verification_data) => {
                 match verify_encrypted_share(verification_data) {

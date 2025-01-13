@@ -372,21 +372,6 @@ impl DWalletMPCManager {
         // Need to send the messages' one by one, so the consensus adapter won't think they
         // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
         for (message, session_id) in messages {
-            // Update the manager with the new network decryption key share (if relevant).
-            let session = self
-                .mpc_sessions
-                .get(&session_id)
-                .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
-            if let MPCSessionStatus::Finished(public_output, private_output) =
-                session.status.clone()
-            {
-                self.update_dwallet_mpc_network_key(
-                    &session.session_info,
-                    public_output,
-                    private_output,
-                )?;
-            }
-
             self.consensus_adapter
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
                 .await?;

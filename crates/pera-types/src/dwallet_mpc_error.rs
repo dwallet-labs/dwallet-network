@@ -98,6 +98,9 @@ pub enum DwalletMPCError {
 
     #[error("failed to deserialize party public key: {0}")]
     InvalidPartyPublicKey(#[from] fastcrypto::error::FastCryptoError),
+
+    #[error("failed to read the network decryption key shares")]
+    DwalletMPCNetworkKeysNotFound,
 }
 
 /// A wrapper type for the result of a runtime operation.
