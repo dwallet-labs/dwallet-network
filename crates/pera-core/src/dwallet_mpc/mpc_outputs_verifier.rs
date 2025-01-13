@@ -171,6 +171,15 @@ impl DWalletMPCOutputsVerifier {
         })
     }
 
+    /// Returns true if quorum of validators voted for the same output.
+    pub fn is_output_verified(&self, session_id: &ObjectID) -> bool {
+        self.mpc_sessions_outputs
+            .get(session_id)
+            .map_or(false, |session| {
+                session.current_result == OutputResult::AlreadyCommitted
+            })
+    }
+
     /// Stores the session ID of the new MPC session,
     /// and initializes the output data for it.
     /// Needed, so we'll know when we receive a malicious output
