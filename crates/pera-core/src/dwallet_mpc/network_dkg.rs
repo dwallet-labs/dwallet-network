@@ -483,6 +483,7 @@ pub(crate) fn advance_network_dkg(
             public_output,
         } => {
             // Update the network dWallet MPC keys with the new one.
+            // Todo (#507): Save the output only after it has been verified first by quorum of validators.
             if let Some(network_key) = epoch_store.dwallet_mpc_network_keys.get() {
                 network_key.add_key_version(
                     epoch_store.clone(),
