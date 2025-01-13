@@ -621,7 +621,7 @@ pera-benchmark = { path = "crates/pera-benchmark" }
 pera-bridge = { path = "crates/pera-bridge" }
 pera-cluster-test = { path = "crates/pera-cluster-test" }
 pera-config = { path = "crates/pera-config" }
-pera-core = { path = "crates/pera-core" , features = ["mock-class-groups", "with-network-dkg"]}
+pera-core = { path = "crates/pera-core" , features = ["mock-class-groups"]}
 pera-cost = { path = "crates/pera-cost" }
 pera-data-ingestion = { path = "crates/pera-data-ingestion" }
 pera-data-ingestion-core = { path = "crates/pera-data-ingestion-core" }
