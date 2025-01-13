@@ -152,10 +152,13 @@ impl DWalletMPCManager {
                         error!("Failed to verify output with error: {:?}", err);
                     }
                 };
-                if self.outputs_verifier.is_output_verified(&session_info.session_id){
+                if self
+                    .outputs_verifier
+                    .is_output_verified(&session_info.session_id)
+                {
                     let session = self.mpc_sessions.get_mut(&session_info.session_id);
                     if let Some(session) = session {
-                        session.status = MPCSessionStatus::Finished(output.clone(), session.private_output.clone());
+                        session.status = MPCSessionStatus::Finished(output.clone());
                     }
                 }
             }

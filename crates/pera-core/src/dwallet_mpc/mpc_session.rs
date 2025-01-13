@@ -114,13 +114,10 @@ impl DWalletMPCSession {
                 malicious_parties,
                 private_output: _,
                 public_output,
-            }) => {
-                self.status = MPCSessionStatus::Finished(public_output.clone());
-                Ok((
-                    self.new_dwallet_mpc_output_message(public_output)?,
-                    malicious_parties,
-                ))
-            }
+            }) => Ok((
+                self.new_dwallet_mpc_output_message(public_output)?,
+                malicious_parties,
+            )),
             Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
                 self.restart();
                 Err(DwalletMPCError::MaliciousParties(malicious_parties))
