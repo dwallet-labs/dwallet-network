@@ -323,7 +323,9 @@ impl DWalletMPCManager {
                 };
 
                 let is_ready = match session.status {
-                    MPCSessionStatus::Active => received_weight as StakeUnit >= threshold || session.round_number == 0,
+                    MPCSessionStatus::Active => {
+                        received_weight as StakeUnit >= threshold || session.round_number == 0
+                    }
                     _ => false,
                 };
 
