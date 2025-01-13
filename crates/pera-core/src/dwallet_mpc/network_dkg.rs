@@ -482,8 +482,7 @@ pub(crate) fn advance_network_dkg(
             private_output,
             public_output,
         } => {
-            // Update the network decryption key shares.
-
+            // Update the network dWallet MPC keys with the new one.
             if let Some(network_key) = epoch_store.dwallet_mpc_network_keys.get() {
                 network_key.add_key_version(
                     epoch_store.clone(),
@@ -492,10 +491,9 @@ pub(crate) fn advance_network_dkg(
                     public_output.clone(),
                     weighted_threshold_access_structure,
                 )?;
-                Ok(res)
-            } else {
-                Err(DwalletMPCError::DwalletMPCNetworkKeysNotFound)
-            }
+                return Ok(res);
+            };
+            Err(DwalletMPCError::DwalletMPCNetworkKeysNotFound)
         }
         _ => Ok(res),
     }
