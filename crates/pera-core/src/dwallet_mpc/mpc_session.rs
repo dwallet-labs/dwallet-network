@@ -95,7 +95,6 @@ impl DWalletMPCSession {
     /// Uses the existing party if it exists,
     /// otherwise creates a new one, as this is the first advance.
     pub(super) fn advance(&mut self) -> DwalletMPCResult<(ConsensusTransaction, Vec<PartyID>)> {
-        self.status = MPCSessionStatus::Active;
         self.round_number = self.round_number + 1;
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
