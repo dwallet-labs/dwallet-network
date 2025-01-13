@@ -69,7 +69,7 @@ pub enum MPCSessionStatus {
     Pending,
     FirstExecution,
     Active,
-    Finished(MPCPublicOutput, MPCPrivateOutput),
+    Finished(MPCPublicOutput),
     Failed,
 }
 
@@ -79,8 +79,8 @@ impl fmt::Display for MPCSessionStatus {
             MPCSessionStatus::Pending => write!(f, "Pending"),
             MPCSessionStatus::FirstExecution => write!(f, "FirstExecution"),
             MPCSessionStatus::Active => write!(f, "Active"),
-            MPCSessionStatus::Finished(public_output, private_output) => {
-                write!(f, "Finished({:?} {:?})", public_output, private_output)
+            MPCSessionStatus::Finished(public_output) => {
+                write!(f, "Finished({:?})", public_output)
             }
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }
