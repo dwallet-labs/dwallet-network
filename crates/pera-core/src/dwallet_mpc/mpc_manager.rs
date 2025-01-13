@@ -91,6 +91,8 @@ pub enum DWalletMPCChannelMessage {
     /// The manager accumulates the data until it receives such an event for all validators,
     /// and then it starts the network DKG protocol.
     ValidatorDataForDKG(ValidatorDataForDWalletSecretShare),
+    /// A message indicating that an MPC session has failed.
+    /// The advance failed, and the session needs to be restarted or marked as failed.
     MPCSessionFailed(ObjectID, DwalletMPCError),
 }
 
