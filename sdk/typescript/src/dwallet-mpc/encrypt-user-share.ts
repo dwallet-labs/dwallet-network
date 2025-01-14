@@ -27,6 +27,7 @@ import {
 	packageId,
 } from './globals.js';
 import type { EncryptedUserShare } from './sign.js';
+import {PERA_SYSTEM_STATE_OBJECT_ID} from "../utils";
 
 const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
 const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
@@ -419,6 +420,11 @@ const storeEncryptionKey = async (
 			pureSignedPubKey,
 			pureSuiPubKey,
 			tx.pure(bcs.u8().serialize(encryptionKeyScheme)),
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: true,
+			})
 		],
 	});
 	let result = await c.client.signAndExecuteTransaction({
