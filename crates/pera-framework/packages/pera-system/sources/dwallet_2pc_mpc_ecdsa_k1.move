@@ -508,6 +508,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         encrypted_secret_share_and_proof: vector<u8>,
         signed_public_share: vector<u8>,
         encryptor_ed25519_pubkey: vector<u8>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext,
     ){
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
@@ -1154,6 +1155,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         messages: vector<vector<u8>>,
         mut presigns: vector<Presign>,
         dwallet: &DWallet<Secp256K1>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         let messages_len = vector::length(&messages);
@@ -1207,6 +1209,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun future_sign(
         partial_signature: PartiallySignedMessages,
         message_approvals: &mut vector<MessageApproval>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         let PartiallySignedMessages {
