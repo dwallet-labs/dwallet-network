@@ -71,11 +71,7 @@ impl DwalletMPCNetworkKeyVersions {
 
         #[cfg(not(feature = "with-network-dkg"))]
         {
-            return Self::mock_network_dkg(
-                epoch_store,
-                &weighted_threshold_access_structure,
-                party_id,
-            );
+            return Self::mock_network_dkg(epoch_store, party_id);
         }
 
         #[cfg(feature = "mock-class-groups")]
@@ -108,16 +104,12 @@ impl DwalletMPCNetworkKeyVersions {
         }
     }
 
-    fn mock_network_dkg(
-        epoch_store: &AuthorityPerEpochStore,
-        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-        party_id: PartyID,
-    ) -> Self {
+    fn mock_network_dkg(epoch_store: &AuthorityPerEpochStore, party_id: PartyID) -> Self {
         let public_output = class_groups_constants::network_dkg_final_output();
         let decryption_shares = class_groups_constants::decryption_key_share(party_id);
 
         let new_key_version = NetworkDecryptionKeyShares {
-            epoch,
+            epoch: epoch_store.epoch(),
             current_epoch_shares: bcs::to_bytes(&public_output.encryptions_of_shares_per_crt_prime)
                 .unwrap(),
             previous_epoch_shares: vec![],
