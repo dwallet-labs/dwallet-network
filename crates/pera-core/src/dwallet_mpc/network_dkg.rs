@@ -116,13 +116,25 @@ impl DwalletMPCNetworkKeyVersions {
         let public_output = class_groups_constants::network_dkg_final_output();
         let decryption_shares = class_groups_constants::decryption_key_share(party_id);
 
-        let new_key_version = Self::new_dwallet_mpc_network_key(
-            bcs::to_bytes(&public_output).unwrap(),
-            DWalletMPCNetworkKeyScheme::Secp256k1,
-            epoch_store.epoch(),
-            &weighted_threshold_access_structure,
-        )
-        .unwrap();
+        let new_key_version = NetworkDecryptionKeyShares {
+            epoch,
+            current_epoch_shares: bcs::to_bytes(&public_output.encryptions_of_shares_per_crt_prime)
+                .unwrap(),
+            previous_epoch_shares: vec![],
+            protocol_public_parameters: bcs::to_bytes(
+                &class_groups_constants::protocol_public_parameters(),
+            )
+            .unwrap(),
+            decryption_public_parameters: bcs::to_bytes(
+                &class_groups_constants::decryption_key_share_public_parameters(),
+            )
+            .unwrap(),
+            encryption_key: bcs::to_bytes(&public_output.encryption_key).unwrap(),
+            reconstructed_commitments_to_sharing: bcs::to_bytes(
+                &public_output.reconstructed_commitments_to_sharing,
+            )
+            .unwrap(),
+        };
 
         let self_decryption_key_share = decryption_shares
             .into_iter()
