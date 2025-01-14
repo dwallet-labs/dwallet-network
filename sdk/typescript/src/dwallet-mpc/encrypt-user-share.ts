@@ -15,6 +15,7 @@ import { decodePeraPrivateKey } from '../cryptography/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 import { Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
+import { PERA_SYSTEM_STATE_OBJECT_ID } from '../utils/index.js';
 import type { Config, CreatedDwallet, DWallet } from './globals.js';
 import {
 	checkpointCreationTime,
@@ -27,7 +28,6 @@ import {
 	packageId,
 } from './globals.js';
 import type { EncryptedUserShare } from './sign.js';
-import {PERA_SYSTEM_STATE_OBJECT_ID} from "../utils";
 
 const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
 const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
@@ -327,7 +327,7 @@ const transferEncryptedUserShare = async (
 				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
 				initialSharedVersion: 1,
 				mutable: true,
-			})
+			}),
 		],
 	});
 
@@ -429,7 +429,7 @@ const storeEncryptionKey = async (
 				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
 				initialSharedVersion: 1,
 				mutable: true,
-			})
+			}),
 		],
 	});
 	let result = await c.client.signAndExecuteTransaction({
