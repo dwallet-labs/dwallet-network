@@ -193,7 +193,11 @@ export async function futureSignTransactionCall(
 	});
 	tx.moveCall({
 		target: futureSignMoveFunc,
-		arguments: [tx.object(partialSignaturesObjectID), messageApprovals],
+		arguments: [tx.object(partialSignaturesObjectID), messageApprovals, tx.sharedObjectRef({
+			objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+			initialSharedVersion: 1,
+			mutable: true,
+		})],
 	});
 
 	let res = await c.client.signAndExecuteTransaction({

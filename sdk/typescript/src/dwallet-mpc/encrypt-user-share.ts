@@ -323,6 +323,11 @@ const transferEncryptedUserShare = async (
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptedUserShareAndProof)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(signedCentralizedOutput)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes())),
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: true,
+			})
 		],
 	});
 
