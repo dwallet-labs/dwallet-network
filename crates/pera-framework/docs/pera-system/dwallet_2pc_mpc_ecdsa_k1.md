@@ -2410,7 +2410,7 @@ useful for testing or initialization in non-production environments.
     <b>let</b> dwallet_cap_id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&dwallet_cap);
     <a href="../pera-framework/transfer.md#0x2_transfer_public_transfer">transfer::public_transfer</a>(dwallet_cap, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
     <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
-    <b>let</b> dwallet_mpc_network_key_version: u8 = 0;
+    <b>let</b> dwallet_mpc_network_key_version: u8 = 1;
     <a href="dwallet.md#0x3_dwallet_create_dwallet">dwallet::create_dwallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(session_id, dwallet_cap_id, dkg_output, dwallet_mpc_network_key_version, ctx)
 }
 </code></pre>
@@ -2443,7 +2443,7 @@ Created an immutable [<code>DWallet</code>] object with the given DKG output.
     <b>let</b> dwallet_cap_id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&dwallet_cap);
     <a href="../pera-framework/transfer.md#0x2_transfer_public_transfer">transfer::public_transfer</a>(dwallet_cap, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
     <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
-    <b>let</b> dwallet_mpc_network_key_version: u8 = 0;
+    <b>let</b> dwallet_mpc_network_key_version: u8 = 1;
     <b>let</b> <a href="dwallet.md#0x3_dwallet">dwallet</a> = <a href="dwallet.md#0x3_dwallet_create_dwallet">dwallet::create_dwallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(session_id, dwallet_cap_id, dkg_output, dwallet_mpc_network_key_version, ctx);
     <a href="../pera-framework/transfer.md#0x2_transfer_public_freeze_object">transfer::public_freeze_object</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>);
 }

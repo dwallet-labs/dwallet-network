@@ -1091,7 +1091,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let dwallet_cap_id = object::id(&dwallet_cap);
         transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-        let dwallet_mpc_network_key_version: u8 = 0;
+        let dwallet_mpc_network_key_version: u8 = 1;
         dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, dwallet_mpc_network_key_version, ctx)
     }
 
@@ -1104,7 +1104,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let dwallet_cap_id = object::id(&dwallet_cap);
         transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-        let dwallet_mpc_network_key_version: u8 = 0;
+        let dwallet_mpc_network_key_version: u8 = 1;
         let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, dwallet_mpc_network_key_version, ctx);
         transfer::public_freeze_object(dwallet);
     }

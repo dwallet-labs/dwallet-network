@@ -71,7 +71,11 @@ impl DwalletMPCNetworkKeyVersions {
 
         #[cfg(not(feature = "with-network-dkg"))]
         {
-            return Self::mock_network_dkg(epoch_store, party_id);
+            return Self::mock_network_dkg(
+                epoch_store,
+                &weighted_threshold_access_structure,
+                party_id,
+            );
         }
 
         #[cfg(feature = "mock-class-groups")]
@@ -104,29 +108,21 @@ impl DwalletMPCNetworkKeyVersions {
         }
     }
 
-    fn mock_network_dkg(epoch_store: &AuthorityPerEpochStore, party_id: PartyID) -> Self {
+    fn mock_network_dkg(
+        epoch_store: &AuthorityPerEpochStore,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+        party_id: PartyID,
+    ) -> Self {
         let public_output = class_groups_constants::network_dkg_final_output();
         let decryption_shares = class_groups_constants::decryption_key_share(party_id);
 
-        let new_key_version = NetworkDecryptionKeyShares {
-            epoch: epoch_store.epoch(),
-            current_epoch_shares: bcs::to_bytes(&public_output.encryptions_of_shares_per_crt_prime)
-                .unwrap(),
-            previous_epoch_shares: vec![],
-            protocol_public_parameters: bcs::to_bytes(
-                &class_groups_constants::protocol_public_parameters(),
-            )
-            .unwrap(),
-            decryption_public_parameters: bcs::to_bytes(
-                &class_groups_constants::decryption_key_share_public_parameters(),
-            )
-            .unwrap(),
-            encryption_key: bcs::to_bytes(&public_output.encryption_key).unwrap(),
-            reconstructed_commitments_to_sharing: bcs::to_bytes(
-                &public_output.reconstructed_commitments_to_sharing,
-            )
-            .unwrap(),
-        };
+        let new_key_version = Self::new_dwallet_mpc_network_key(
+            bcs::to_bytes(&public_output).unwrap(),
+            DWalletMPCNetworkKeyScheme::Secp256k1,
+            epoch_store.epoch(),
+            &weighted_threshold_access_structure,
+        )
+        .unwrap();
 
         let self_decryption_key_share = decryption_shares
             .into_iter()
@@ -396,7 +392,7 @@ impl DwalletMPCNetworkKeyVersions {
             .clone())
     }
 
-    pub fn get_protocol_public_parameters(
+    pub fn get_decryption_public_parameters(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
         key_version: u8,
@@ -408,11 +404,11 @@ impl DwalletMPCNetworkKeyVersions {
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .get(key_version as usize)
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .protocol_public_parameters
+            .decryption_public_parameters
             .clone())
     }
 
-    pub fn get_decryption_public_parameters(
+    pub fn get_protocol_public_parameters(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
         key_version: u8,
@@ -424,7 +420,7 @@ impl DwalletMPCNetworkKeyVersions {
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .get(key_version as usize)
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .decryption_public_parameters
+            .protocol_public_parameters
             .clone();
 
         match key_scheme {
