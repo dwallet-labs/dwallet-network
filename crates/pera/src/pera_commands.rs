@@ -819,48 +819,16 @@ async fn start(
     loop {
         loop_index += 1;
         for (node_index, node) in swarm.validator_nodes().enumerate() {
-            if loop_index == 3 && node_index == 3 {
-                let executed_rounds_1 = &node
-                    .get_node_handle()
-                    .unwrap()
-                    .state()
-                    .metrics
-                    .consensus_committed_subdags
-                    .with_label_values(&["0"])
-                    .get();
-                let executed_rounds_2 = &node
-                    .get_node_handle()
-                    .unwrap()
-                    .state()
-                    .metrics
-                    .consensus_committed_subdags
-                    .with_label_values(&["1"])
-                    .get();
-                let executed_rounds_3 = &node
-                    .get_node_handle()
-                    .unwrap()
-                    .state()
-                    .metrics
-                    .consensus_committed_subdags
-                    .with_label_values(&["2"])
-                    .get();
-                let executed_rounds_4 = &node
-                    .get_node_handle()
-                    .unwrap()
-                    .state()
-                    .metrics
-                    .consensus_committed_subdags
-                    .with_label_values(&["3"])
-                    .get();
-                let sum =
-                    executed_rounds_1 + executed_rounds_2 + executed_rounds_3 + executed_rounds_4;
-                error!(?sum);
-                error!("Stopping node 3");
-                node.stop();
-            } else if loop_index == 9 && node_index == 3 {
-                error!("Starting node 3");
-                node.start().await?;
-            }
+            // This code is here to turn off & on a validator & test the chain's state sync feature
+
+            // if loop_index == 3 && node_index == 3 {
+            //     error!("Stopping node 3");
+            //     node.stop();
+            // } else if loop_index == 9 && node_index == 3 {
+            //     error!("Starting node 3");
+            //     node.start().await?;
+            // }
+
             if let Some(handle) = node.get_node_handle() {
                 let sequence = handle
                     .inner()

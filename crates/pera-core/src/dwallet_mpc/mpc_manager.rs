@@ -74,7 +74,6 @@ pub struct DWalletMPCManager {
     outputs_verifier: DWalletMPCOutputsVerifier,
     pub(crate) validators_data_for_network_dkg:
         HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
-    received_messages: usize,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
@@ -131,7 +130,6 @@ impl DWalletMPCManager {
             weighted_threshold_access_structure,
             outputs_verifier: DWalletMPCOutputsVerifier::new(&epoch_store),
             validators_data_for_network_dkg: HashMap::new(),
-            received_messages: 0,
         };
 
         tokio::spawn(async move {
@@ -144,7 +142,6 @@ impl DWalletMPCManager {
     }
 
     async fn handle_incoming_channel_message(&mut self, message: DWalletMPCChannelMessage) {
-        self.received_messages += 1;
         match message {
             DWalletMPCChannelMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message) {
