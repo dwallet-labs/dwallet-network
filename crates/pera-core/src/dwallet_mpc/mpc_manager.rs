@@ -1,4 +1,4 @@
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::authority::authority_per_epoch_store::{AuthorityPerEpochStore, ConsensusCommitOutput};
 use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
@@ -9,11 +9,13 @@ use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::session_input_from_event;
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
+use crate::epoch::randomness::SINGLETON_KEY;
 use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
     MPCSessionStatus,
 };
+use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::ToFromBytes;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -21,17 +23,22 @@ use mpc::{Weight, WeightedThresholdAccessStructure};
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::crypto::AuthorityPublicKeyBytes;
+use pera_types::crypto::DefaultHash;
+use pera_types::digests::Digest;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
+use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::{debug, warn};
 use tracing::{error, info};
 use twopc_mpc::sign::Protocol;
+use typed_store::Map;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
@@ -67,9 +74,11 @@ pub struct DWalletMPCManager {
     outputs_verifier: DWalletMPCOutputsVerifier,
     pub(crate) validators_data_for_network_dkg:
         HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
+    received_messages: usize,
 }
 
-/// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
+/// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum DWalletMPCChannelMessage {
     /// An MPC message from another validator.
     Message(DWalletMPCMessage),
@@ -85,6 +94,9 @@ pub enum DWalletMPCChannelMessage {
     /// This starts when the current epoch time has ended, and it's time to start the
     /// reconfiguration process for the next epoch.
     StartLockNextEpochCommittee,
+    /// A vote received from another validator to lock the next committee.
+    /// After receiving a quorum of those messages, a system TX to lock the next epoch's committee will get created.
+    LockNextEpochCommitteeVote(AuthorityName),
     /// A validator's public key and proof for the network DKG protocol.
     /// Each validator's data is being emitted separately because the proof size is
     /// almost 250 KB, which is the maximum event size in Sui.
@@ -119,6 +131,7 @@ impl DWalletMPCManager {
             weighted_threshold_access_structure,
             outputs_verifier: DWalletMPCOutputsVerifier::new(&epoch_store),
             validators_data_for_network_dkg: HashMap::new(),
+            received_messages: 0,
         };
 
         tokio::spawn(async move {
@@ -131,6 +144,7 @@ impl DWalletMPCManager {
     }
 
     async fn handle_incoming_channel_message(&mut self, message: DWalletMPCChannelMessage) {
+        self.received_messages += 1;
         match message {
             DWalletMPCChannelMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message) {
@@ -179,6 +193,7 @@ impl DWalletMPCManager {
                     );
                 }
             }
+            _ => {}
         }
     }
 
@@ -293,7 +308,11 @@ impl DWalletMPCManager {
             .get()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .status()?;
-
+        let completed = self
+            .mpc_sessions
+            .iter()
+            .filter(|(_, session)| matches!(session.status, MPCSessionStatus::Finished(..)))
+            .count();
         let mut ready_to_advance = self
             .mpc_sessions
             .iter_mut()

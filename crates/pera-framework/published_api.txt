@@ -55,129 +55,6 @@ get_dwallet_mpc_network_key_version
 is_valid_encryption_key_scheme
 	fun
 	0x3::dwallet
-Secp256K1
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-MessageApproval
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-DKGFirstRoundOutputEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-DKGFirstRoundOutput
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-BatchedSignOutput
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-Presign
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartEncryptedShareVerificationEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-CreatedEncryptedSecretShareEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-PartiallySignedMessages
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-CreatedPartiallySignedMessagesEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartDKGFirstRoundEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-CompletedSignEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-EncryptedUserShare
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartDKGSecondRoundEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-CompletedDKGSecondRoundEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartPresignFirstRoundEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartPresignSecondRoundEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-CompletedBatchedPresignEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartSignEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartBatchedSignEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartBatchedPresignEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-launch_dkg_first_round
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_dkg_first_round_output
-	fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-launch_dkg_second_round
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-publish_encrypted_user_share
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_encrypted_user_share
-	public(package) fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_dkg_second_round_output
-	fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-launch_batched_presign
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-launch_presign_second_round
-	fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_batched_presign_output
-	fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-approve_messages
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-remove_message_approval
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-sign
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_sign_output
-	fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_mock_dwallet_for_testing
-	public(package) fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_mock_dwallet
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_mock_presign
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-publish_partially_signed_messages
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-future_sign
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-pop_and_verify_message_approval
-	fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-verify_partially_signed_signatures
-	fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
 	public struct
 	0x3::validator_cap
@@ -817,24 +694,6 @@ is_inactive_validator
 active_validator_addresses
 	public(package) fun
 	0x3::validator_set
-StartNetworkDKGEvent
-	public struct
-	0x3::dwallet_network_key
-NetworkDecryptionKeyShares
-	public struct
-	0x3::dwallet_network_key
-is_valid_key_scheme
-	public(package) fun
-	0x3::dwallet_network_key
-start_network_dkg
-	public(package) fun
-	0x3::dwallet_network_key
-new_encrypted_network_decryption_key_shares
-	public(package) fun
-	0x3::dwallet_network_key
-update_new_shares
-	public fun
-	0x3::dwallet_network_key
 StakeSubsidy
 	public struct
 	0x3::stake_subsidy
@@ -862,6 +721,24 @@ total_object_storage_rebates
 total_balance
 	public fun
 	0x3::storage_fund
+StartNetworkDKGEvent
+	public struct
+	0x3::dwallet_network_key
+NetworkDecryptionKeyShares
+	public struct
+	0x3::dwallet_network_key
+is_valid_key_scheme
+	public(package) fun
+	0x3::dwallet_network_key
+start_network_dkg
+	public(package) fun
+	0x3::dwallet_network_key
+new_encrypted_network_decryption_key_shares
+	public(package) fun
+	0x3::dwallet_network_key
+update_new_shares
+	public fun
+	0x3::dwallet_network_key
 SystemParameters
 	public struct
 	0x3::pera_system_state_inner
@@ -1195,6 +1072,129 @@ store_decryption_key_shares
 new_decryption_key_shares_version
 	fun
 	0x3::pera_system
+Secp256K1
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+MessageApproval
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+DKGFirstRoundOutputEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+DKGFirstRoundOutput
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+BatchedSignOutput
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+Presign
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartEncryptedShareVerificationEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CreatedEncryptedSecretShareEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+PartiallySignedMessages
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CreatedPartiallySignedMessagesEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartDKGFirstRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CompletedSignEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+EncryptedUserShare
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartDKGSecondRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CompletedDKGSecondRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartPresignFirstRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartPresignSecondRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CompletedBatchedPresignEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartSignEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartBatchedSignEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartBatchedPresignEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+launch_dkg_first_round
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_dkg_first_round_output
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+launch_dkg_second_round
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+publish_encrypted_user_share
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_encrypted_user_share
+	public(package) fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_dkg_second_round_output
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+launch_batched_presign
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+launch_presign_second_round
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_batched_presign_output
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+approve_messages
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+remove_message_approval
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+sign
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_sign_output
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_mock_dwallet_for_testing
+	public(package) fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_mock_dwallet
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_mock_presign
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+publish_partially_signed_messages
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+future_sign
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+pop_and_verify_message_approval
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+verify_partially_signed_signatures
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 GenesisValidatorMetadata
 	public struct
 	0x3::genesis

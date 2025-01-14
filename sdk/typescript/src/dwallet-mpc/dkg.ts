@@ -9,6 +9,7 @@ import {
 
 import { bcs } from '../bcs/index.js';
 import { Transaction } from '../transactions/index.js';
+import { PERA_SYSTEM_STATE_OBJECT_ID } from '../utils/index.js';
 import { getOrCreateEncryptionKey } from './encrypt-user-share.js';
 import type { Config, CreatedDwallet, DWallet } from './globals.js';
 import {
@@ -100,7 +101,13 @@ async function launchDKGFirstRound(c: Config) {
 	const tx = new Transaction();
 	tx.moveCall({
 		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_first_round`,
-		arguments: [],
+		arguments: [
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: true,
+			}),
+		],
 	});
 	const result = await c.client.signAndExecuteTransaction({
 		signer: c.keypair,
@@ -149,6 +156,11 @@ async function launchDKGSecondRound(
 			tx.pure(bcs.vector(bcs.u8()).serialize(signed_public_share)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptor_ed25519_pubkey)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput)),
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: true,
+			}),
 		],
 	});
 

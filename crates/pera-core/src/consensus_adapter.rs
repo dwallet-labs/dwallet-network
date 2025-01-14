@@ -973,21 +973,12 @@ impl ReconfigurationInitiator for Arc<ConsensusAdapter> {
     /// once the pending certificate queue is drained.
     /// This function is called multiple times, for each checkpoint after epoch end time.
     async fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
-        let Some(dwallet_mpc_sender) = epoch_store.dwallet_mpc_sender.get() else {
-            error!("dWallet MPC sender was not found when trying to switch epoch");
-            return;
-        };
-        if let Err(err) =
-            dwallet_mpc_sender.send(DWalletMPCChannelMessage::StartLockNextEpochCommittee)
-        {
-            error!("error when sending StartLockNextEpochCommittee message to DWallet MPC sender: {:?}", err);
-            return;
-        }
-        let Ok(dwallet_mpc_outputs_verifier) = epoch_store.get_dwallet_mpc_outputs_verifier().await
-        else {
-            error!("dWallet MPC outputs verifier was not found when trying to switch epoch");
-            return;
-        };
+        epoch_store
+            .send_message_to_dwallet_mpc_manager(
+                DWalletMPCChannelMessage::StartLockNextEpochCommittee,
+            )
+            .await;
+        let dwallet_mpc_outputs_verifier = epoch_store.get_dwallet_mpc_outputs_verifier().await;
         if !dwallet_mpc_outputs_verifier.completed_locking_next_committee {
             return;
         }
