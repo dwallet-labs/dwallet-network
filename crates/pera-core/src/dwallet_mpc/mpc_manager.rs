@@ -147,20 +147,20 @@ impl DWalletMPCManager {
                     Ok(verification_result) => {
                         self.malicious_actors
                             .extend(verification_result.malicious_actors);
+                        match verification_result.result {
+                            crate::dwallet_mpc::mpc_outputs_verifier::OutputResult::AlreadyCommitted => {
+                                let session = self.mpc_sessions.get_mut(&session_info.session_id);
+                                if let Some(session) = session {
+                                    session.status = MPCSessionStatus::Finished(output.clone());
+                                }
+                            }
+                            _ => {}
+                        }
                     }
                     Err(err) => {
                         error!("Failed to verify output with error: {:?}", err);
                     }
                 };
-                if self
-                    .outputs_verifier
-                    .is_output_verified(&session_info.session_id)
-                {
-                    let session = self.mpc_sessions.get_mut(&session_info.session_id);
-                    if let Some(session) = session {
-                        session.status = MPCSessionStatus::Finished(output.clone());
-                    }
-                }
             }
             DWalletMPCChannelMessage::Event(event, session_info) => {
                 if let Err(err) = self.handle_event(event, session_info) {
