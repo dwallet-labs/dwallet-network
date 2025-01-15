@@ -305,11 +305,6 @@ impl DWalletMPCManager {
             .get()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .status()?;
-        let completed = self
-            .mpc_sessions
-            .iter()
-            .filter(|(_, session)| matches!(session.status, MPCSessionStatus::Finished(..)))
-            .count();
         let mut ready_to_advance = self
             .mpc_sessions
             .iter_mut()
