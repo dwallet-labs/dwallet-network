@@ -60,7 +60,7 @@ type EncryptionOfSecretShareProof = EncryptionOfDiscreteLogProofWithoutCtx<
     secp256k1::GroupElement,
 >;
 
-type SpecificEncryptionKey = EncryptionKey<
+type Secp256k1EncryptionKey = EncryptionKey<
     SCALAR_LIMBS,
     SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
@@ -333,7 +333,7 @@ pub fn decrypt_user_share_inner(
     ) = bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let public_parameters: homomorphic_encryption::PublicParameters<
         SCALAR_LIMBS,
-        SpecificEncryptionKey,
+        Secp256k1EncryptionKey,
     > = bcs::from_bytes(&encryption_key)?;
     let ciphertext = CiphertextSpaceGroupElement::new(
         encryption_of_discrete_log,
@@ -347,7 +347,7 @@ pub fn decrypt_user_share_inner(
         SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
         secp256k1::GroupElement,
     > = DecryptionKey::new(decryption_key, &public_parameters)?;
-    let Some(plaintext): Option<<SpecificEncryptionKey as AdditivelyHomomorphicEncryptionKey<SCALAR_LIMBS>>::PlaintextSpaceGroupElement> = decryption_key
+    let Some(plaintext): Option<<Secp256k1EncryptionKey as AdditivelyHomomorphicEncryptionKey<SCALAR_LIMBS>>::PlaintextSpaceGroupElement> = decryption_key
         .decrypt(&ciphertext, &public_parameters).into() else {
         return Err(anyhow!("Decryption failed"));
     };
