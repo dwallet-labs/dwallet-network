@@ -125,6 +125,7 @@ use tokio::sync::mpsc::error::SendError;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
+use crate::dwallet_mpc::new_dwallet_mpc_service::NewDWalletMPCService;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -880,6 +881,7 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_batches_manager: OnceCell::new(),
             dwallet_mpc_round_messages: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_network_keys: OnceCell::new(),
+            new_dwallet_mpc_service: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
@@ -1044,6 +1046,25 @@ impl AuthorityPerEpochStore {
         if self
             .dwallet_mpc_outputs_verifier
             .set(tokio::sync::Mutex::new(verifier))
+            .is_err()
+        {
+            error!(
+                "AuthorityPerEpochStore: `set_dwallet_mpc_outputs_verifier` called more than once; this should never happen"
+            );
+        }
+        Ok(())
+    }
+
+    /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
+    /// This manager handles storing all the valid outputs of a batched dWallet MPC session,
+    /// and writes them to the chain once all the batch outputs are ready.
+    pub fn set_dwallet_mpc_service(
+        &self,
+        service: NewDWalletMPCService,
+    ) -> PeraResult<()> {
+        if self
+            .new_dwallet_mpc_service
+            .set(tokio::sync::Mutex::new(service))
             .is_err()
         {
             error!(

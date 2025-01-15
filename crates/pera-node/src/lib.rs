@@ -153,6 +153,7 @@ pub struct ValidatorComponents {
     // is copied into each checkpoint service task, and they are listening to any change to this
     // channel. When the sender is dropped, a change is triggered and those tasks will exit.
     checkpoint_service_exit: watch::Sender<()>,
+    dwallet_mpc_service_exit: watch::Sender<()>,
     checkpoint_metrics: Arc<CheckpointMetrics>,
     pera_tx_validator_metrics: Arc<PeraTxValidatorMetrics>,
 }
@@ -1277,6 +1278,13 @@ impl PeraNode {
             checkpoint_metrics.clone(),
         );
 
+        let (checkpoint_service, checkpoint_service_exit) = Self::start_dwallet_mpc_service(
+            config,
+            consensus_adapter.clone(),
+            epoch_store.clone(),
+            state.clone(),
+        );
+
         // create a new map that gets injected into both the consensus handler and the consensus adapter
         // the consensus handler will write values forwarded from consensus, and the consensus adapter
         // will read the values to make decisions about which validator submits a transaction to consensus
@@ -1372,6 +1380,7 @@ impl PeraNode {
             consensus_store_pruner,
             consensus_adapter,
             checkpoint_service_exit,
+            dwallet_mpc_service_exit,
             checkpoint_metrics,
             pera_tx_validator_metrics,
         })
@@ -1681,6 +1690,7 @@ impl PeraNode {
                 consensus_store_pruner,
                 consensus_adapter,
                 checkpoint_service_exit,
+                dwallet_mpc_service_exit,
                 checkpoint_metrics,
                 pera_tx_validator_metrics,
             }) = self.validator_components.lock().await.take()
@@ -1688,6 +1698,7 @@ impl PeraNode {
                 info!("Reconfiguring the validator.");
                 // Stop the old checkpoint service.
                 drop(checkpoint_service_exit);
+                drop(dwallet_mpc_service_exit);
 
                 consensus_manager.shutdown().await;
 
@@ -1873,6 +1884,10 @@ impl PeraNode {
 
     pub fn randomness_handle(&self) -> randomness::Handle {
         self.randomness_handle.clone()
+    }
+
+    fn start_dwallet_mpc_service(p0: &NodeConfig, p1: Arc<ConsensusAdapter>, p2: Arc<AuthorityPerEpochStore>, p3: Arc<AuthorityState>) -> _ {
+        todo!()
     }
 }
 

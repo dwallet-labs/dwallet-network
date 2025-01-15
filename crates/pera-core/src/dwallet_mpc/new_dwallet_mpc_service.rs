@@ -5,7 +5,7 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use std::sync::{Arc, Weak};
 use typed_store::Map;
 
-struct NewDWalletMPCService {
+pub struct NewDWalletMPCService {
     last_read_narwhal_round: Round,
     read_messages: usize,
     epoch_store: Weak<AuthorityPerEpochStore>,
@@ -24,11 +24,12 @@ impl NewDWalletMPCService {
 
     pub async fn spawn(&mut self) {
         loop {
-            let new_dwallet_messages_iter = self
-                .epoch_store()
-                .unwrap()
+            let epoch_store = self
+                .epoch_store().unwrap();
+            let arc = epoch_store
                 .tables()
-                .unwrap()
+                .unwrap();
+            let new_dwallet_messages_iter = arc
                 .dwallet_mpc_messages
                 .iter_with_bounds(Some(self.last_read_narwhal_round), None);
             let mut new_messages = vec![];
@@ -37,8 +38,7 @@ impl NewDWalletMPCService {
                 new_messages.extend(messages);
             }
             for message in new_messages.into_iter() {
-                self.epoch_store()
-                    .unwrap()
+                epoch_store
                     .send_message_to_dwallet_mpc_manager(message)
                     .await;
             }

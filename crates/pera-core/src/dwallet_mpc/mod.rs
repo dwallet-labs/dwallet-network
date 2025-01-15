@@ -40,7 +40,7 @@ pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
-mod new_dwallet_mpc_service;
+pub mod new_dwallet_mpc_service;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
