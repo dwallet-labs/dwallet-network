@@ -821,13 +821,13 @@ async fn start(
         for (node_index, node) in swarm.validator_nodes().enumerate() {
             // This code is here to turn off & on a validator & test the chain's state sync feature
 
-            if loop_index == 9 && node_index == 3 {
-                error!("Stopping node 3");
-                node.stop();
-            } else if loop_index == 10 && node_index == 3 {
-                error!("Starting node 3");
-                node.start().await?;
-            }
+            // if loop_index == 9 && node_index == 3 {
+            //     error!("Stopping node 3");
+            //     node.stop();
+            // } else if loop_index == 10 && node_index == 3 {
+            //     error!("Starting node 3");
+            //     node.start().await?;
+            // }
 
             if let Some(handle) = node.get_node_handle() {
                 let sequence = handle
