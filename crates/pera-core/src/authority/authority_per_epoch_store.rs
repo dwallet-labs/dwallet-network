@@ -3460,7 +3460,7 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
-        self.send_message_to_dwallet_mpc_manager(DWalletMPCChannelMessage::EndOfDelivery)
+        self.save_dwallet_mpc_message(DWalletMPCChannelMessage::EndOfDelivery)
             .await;
         let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
         output.set_dwallet_mpc_round_messages(dwallet_mpc_round_messages.clone());
@@ -3863,7 +3863,7 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                 ..
             }) => {
-                self.send_message_to_dwallet_mpc_manager(DWalletMPCChannelMessage::Message(
+                self.save_dwallet_mpc_message(DWalletMPCChannelMessage::Message(
                     DWalletMPCMessage {
                         message: message.message.clone(),
                         round_number: message.round_number,
