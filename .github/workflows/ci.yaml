@@ -64,3 +64,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Fmt Check
         run: cargo fmt -- --check
+      - name: Fmt Check - Wasm
+        run: cargo fmt -- --check
+        working-directory: sdk/dwallet-mpc-wasm
