@@ -99,7 +99,7 @@ impl EventEnvelope {
 
 /// Specific type of event
 #[serde_as]
-#[derive(PartialEq, Eq, Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
 pub struct Event {
     pub package_id: ObjectID,
     pub transaction_module: Identifier,
