@@ -104,7 +104,7 @@ pub enum DWalletMPCChannelMessage {
     ValidatorDataForDKG(ValidatorDataForDWalletSecretShare),
     /// A message indicating that an MPC session has failed.
     /// The advance failed, and the session needs to be restarted or marked as failed.
-    MPCSessionFailed(ObjectID, DwalletMPCError),
+    MPCSessionFailed(ObjectID),
 }
 
 impl DWalletMPCManager {
@@ -202,22 +202,8 @@ impl DWalletMPCManager {
                     );
                 }
             }
-            DWalletMPCChannelMessage::MPCSessionFailed(session_id, err) => {
-                if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
-                    match err {
-                        DwalletMPCError::MaliciousParties(malicious_parties) => {
-                            session.restart();
-                            error!(
-                                "MPC session failed with malicious parties: {:?}",
-                                malicious_parties
-                            );
-                        }
-                        e => {
-                            session.status = MPCSessionStatus::Failed;
-                            error!("MPC session failed with error: {:?}", e);
-                        }
-                    }
-                }
+            DWalletMPCChannelMessage::MPCSessionFailed(session_id) => {
+                todo!("handle malicious actors behaviour")
             }
             _ => {}
         }

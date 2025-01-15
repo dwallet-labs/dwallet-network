@@ -126,7 +126,6 @@ impl DWalletMPCSession {
                 dwallet_mpc_sender
                     .send(DWalletMPCChannelMessage::MPCSessionFailed(
                         self.session_info.session_id,
-                        e.clone(),
                     ))
                     .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
                 Err(e)
