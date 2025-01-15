@@ -5,7 +5,7 @@
 //! It provides inner mutability for the [`EpochStore`]
 //! to update the network decryption key shares synchronously.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::mpc_events::{StartNetworkDKGEvent, ValidatorDataForDWalletSecretShare};
+use crate::dwallet_mpc::mpc_events::{StartNetworkDKGEvent, ValidatorDataForNetworkDKG};
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::{advance, authority_name_to_party_id};
 use class_groups::dkg::{
@@ -477,7 +477,7 @@ pub(crate) fn advance_network_dkg(
 }
 pub(super) fn network_dkg_public_input(
     deserialized_event: StartNetworkDKGEvent,
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
+    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
 ) -> DwalletMPCResult<Vec<u8>> {
     match DWalletMPCNetworkKeyScheme::try_from(deserialized_event.key_scheme)? {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
@@ -518,7 +518,7 @@ fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
 
 #[cfg(feature = "mock-class-groups")]
 fn encryption_keys_and_proofs_from_validator_data(
-    _: &HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
+    _: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
 ) -> DwalletMPCResult<
     HashMap<
         PartyID,
@@ -530,7 +530,7 @@ fn encryption_keys_and_proofs_from_validator_data(
 
 #[cfg(not(feature = "mock-class-groups"))]
 fn encryption_keys_and_proofs_from_validator_data(
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
+    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
 ) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
     encryption_keys_and_proofs
         .iter()
@@ -544,7 +544,7 @@ fn encryption_keys_and_proofs_from_validator_data(
 }
 
 fn generate_secp256k1_dkg_party_public_input(
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
+    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
 ) -> DwalletMPCResult<Vec<u8>> {
     let encryption_keys_and_proofs =
         encryption_keys_and_proofs_from_validator_data(encryption_keys_and_proofs)?;
@@ -559,7 +559,7 @@ fn generate_secp256k1_dkg_party_public_input(
 }
 
 fn generate_ristretto_dkg_party_public_input(
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
+    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
 ) -> DwalletMPCResult<Vec<u8>> {
     let encryption_keys_and_proofs =
         encryption_keys_and_proofs_from_validator_data(encryption_keys_and_proofs)?;

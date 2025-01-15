@@ -3,7 +3,7 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
-use crate::dwallet_mpc::mpc_events::ValidatorDataForDWalletSecretShare;
+use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
@@ -66,7 +66,7 @@ pub struct DWalletMPCManager {
     /// this is not in sync with the blockchain.
     outputs_verifier: DWalletMPCOutputsVerifier,
     pub(crate) validators_data_for_network_dkg:
-        HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
+        HashMap<PartyID, ValidatorDataForNetworkDKG>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -90,7 +90,7 @@ pub enum DWalletMPCChannelMessage {
     /// almost 250 KB, which is the maximum event size in Sui.
     /// The manager accumulates the data until it receives such an event for all validators,
     /// and then it starts the network DKG protocol.
-    ValidatorDataForDKG(ValidatorDataForDWalletSecretShare),
+    ValidatorDataForDKG(ValidatorDataForNetworkDKG),
 }
 
 impl DWalletMPCManager {
@@ -184,7 +184,7 @@ impl DWalletMPCManager {
 
     fn handle_validator_data_for_dkg(
         &mut self,
-        data: ValidatorDataForDWalletSecretShare,
+        data: ValidatorDataForNetworkDKG,
     ) -> DwalletMPCResult<()> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(
