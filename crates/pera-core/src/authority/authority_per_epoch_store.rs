@@ -3858,12 +3858,6 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
                 ..
             }) => {
-                self.send_message_to_dwallet_mpc_manager(DWalletMPCChannelMessage::Output(
-                    output.clone(),
-                    *authority,
-                    session_info.clone(),
-                ))
-                .await;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {

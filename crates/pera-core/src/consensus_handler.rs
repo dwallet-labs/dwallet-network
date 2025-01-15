@@ -448,6 +448,14 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let mut dwallet_mpc_verifier =
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
 
+                        self.epoch_store
+                            .send_message_to_dwallet_mpc_manager(DWalletMPCChannelMessage::Output(
+                                output.clone(),
+                                *origin_authority,
+                                session_info.clone(),
+                            ))
+                            .await;
+
                         let output_verification_result = dwallet_mpc_verifier
                             .try_verify_output(output, &session_info, origin_authority)
                             .unwrap_or_else(|e| {
