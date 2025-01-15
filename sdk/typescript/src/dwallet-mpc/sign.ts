@@ -96,6 +96,11 @@ export async function signMessageTransactionCall(
 			tx.makeMoveVec({ elements: presignIDs.map((presignID) => tx.object(presignID)) }),
 			tx.object(dWalletID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: true,
+			}),
 		],
 	});
 
