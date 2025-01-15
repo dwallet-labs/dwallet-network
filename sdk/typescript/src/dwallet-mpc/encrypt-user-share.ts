@@ -326,7 +326,7 @@ const transferEncryptedUserShare = async (
 			tx.sharedObjectRef({
 				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
 				initialSharedVersion: 1,
-				mutable: true,
+				mutable: false,
 			}),
 		],
 	});
@@ -428,7 +428,7 @@ const storeEncryptionKey = async (
 			tx.sharedObjectRef({
 				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
 				initialSharedVersion: 1,
-				mutable: true,
+				mutable: false,
 			}),
 		],
 	});

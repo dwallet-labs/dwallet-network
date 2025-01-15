@@ -77,7 +77,7 @@ async function launchPresignFirstRound(
 			tx.sharedObjectRef({
 				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
 				initialSharedVersion: 1,
-				mutable: true,
+				mutable: false,
 			}),
 		],
 	});
