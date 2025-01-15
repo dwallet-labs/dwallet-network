@@ -36,6 +36,12 @@ impl NewDWalletMPCService {
                 self.last_read_narwhal_round = round;
                 new_messages.extend(messages);
             }
+            for message in new_messages.into_iter() {
+                self.epoch_store()
+                    .unwrap()
+                    .send_message_to_dwallet_mpc_manager(message)
+                    .await;
+            }
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         }
     }
