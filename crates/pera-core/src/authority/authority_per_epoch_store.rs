@@ -125,7 +125,7 @@ use tokio::sync::mpsc::error::SendError;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
-use crate::dwallet_mpc::new_dwallet_mpc_service::NewDWalletMPCService;
+use crate::dwallet_mpc::new_dwallet_mpc_service::DWalletMPCService;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -1060,7 +1060,7 @@ impl AuthorityPerEpochStore {
     /// and writes them to the chain once all the batch outputs are ready.
     pub fn set_dwallet_mpc_service(
         &self,
-        service: NewDWalletMPCService,
+        service: DWalletMPCService,
     ) -> PeraResult<()> {
         if self
             .new_dwallet_mpc_service

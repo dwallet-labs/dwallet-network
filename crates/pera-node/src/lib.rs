@@ -216,6 +216,7 @@ use pera_core::consensus_handler::ConsensusHandlerInitializer;
 use pera_core::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
 use pera_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use pera_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use pera_core::dwallet_mpc::new_dwallet_mpc_service::DWalletMPCService;
 use pera_core::safe_client::SafeClientMetricsBase;
 use pera_core::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::execution_config_utils::to_binary_config;
@@ -1278,7 +1279,7 @@ impl PeraNode {
             checkpoint_metrics.clone(),
         );
 
-        let (checkpoint_service, checkpoint_service_exit) = Self::start_dwallet_mpc_service(
+        let (dwallet_mpc_service, dwallet_mpc_service_exit) = Self::start_dwallet_mpc_service(
             config,
             consensus_adapter.clone(),
             epoch_store.clone(),
@@ -1886,8 +1887,15 @@ impl PeraNode {
         self.randomness_handle.clone()
     }
 
-    fn start_dwallet_mpc_service(p0: &NodeConfig, p1: Arc<ConsensusAdapter>, p2: Arc<AuthorityPerEpochStore>, p3: Arc<AuthorityState>) -> _ {
-        todo!()
+    fn start_dwallet_mpc_service(p0: &NodeConfig, p1: Arc<ConsensusAdapter>, p2: Arc<AuthorityPerEpochStore>, p3: Arc<AuthorityState>) -> (Arc<DWalletMPCService>, watch::Sender<()>) {
+        let mut service = DWalletMPCService::new(p2);
+        let service_arc = Arc::new(service);
+
+        let  (exit_sender, mut exit_receiver) = watch::channel(());
+
+        spawn_monitored_task!(service.spawn(exit_receiver));
+
+        (service_arc, exit_sender)
     }
 }
 
