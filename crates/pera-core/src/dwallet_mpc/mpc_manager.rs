@@ -260,7 +260,7 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    fn get_decryption_share(
+    fn get_decryption_key_shares(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
         key_version: Option<usize>,
@@ -493,7 +493,7 @@ impl DWalletMPCManager {
             self.weighted_threshold_access_structure.clone(),
             match session_info.mpc_round {
                 MPCRound::NetworkDkg(..) => HashMap::new(),
-                _ => self.get_decryption_share(
+                _ => self.get_decryption_key_shares(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
                 )?,
