@@ -65,8 +65,7 @@ pub struct DWalletMPCManager {
     /// Each Validator holds the Malicious state for itself,
     /// this is not in sync with the blockchain.
     outputs_verifier: DWalletMPCOutputsVerifier,
-    pub(crate) validators_data_for_network_dkg:
-        HashMap<PartyID, ValidatorDataForNetworkDKG>,
+    pub(crate) validators_data_for_network_dkg: HashMap<PartyID, ValidatorDataForNetworkDKG>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.

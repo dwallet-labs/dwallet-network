@@ -144,9 +144,7 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc::mpc_events::{
-    LockedNextEpochCommitteeEvent, ValidatorDataForNetworkDKG,
-};
+use crate::dwallet_mpc::mpc_events::{LockedNextEpochCommitteeEvent, ValidatorDataForNetworkDKG};
 use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use crate::epoch::committee_store::CommitteeStore;
@@ -1606,8 +1604,7 @@ impl AuthorityState {
         epoch_store: &Arc<AuthorityPerEpochStore>,
         event: &Event,
     ) -> DwalletMPCResult<()> {
-        let deserialized_event: ValidatorDataForNetworkDKG =
-            bcs::from_bytes(&event.contents)?;
+        let deserialized_event: ValidatorDataForNetworkDKG = bcs::from_bytes(&event.contents)?;
         let dwallet_mpc_sender = epoch_store
             .dwallet_mpc_sender
             .get()
