@@ -252,6 +252,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
 
         // Check if the dwallet mpc manager should perform a state sync, and if so block consensus outputs processing & perform the state sync
         if self.should_perform_dwallet_mpc_state_sync().await {
+            warn!("Performing dwallet mpc state sync");
             if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
                 error!(
                     "epoch switched while performing dwallet mpc state sync: {:?}",
@@ -451,7 +452,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         self.epoch_store
                             .send_message_to_dwallet_mpc_manager(DWalletMPCChannelMessage::Output(
                                 output.clone(),
-                                *origin_authority,
+                                origin_authority.clone(),
                                 session_info.clone(),
                             ))
                             .await;
@@ -729,7 +730,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .tables()?
             .dwallet_mpc_messages
             .unbounded_iter()
-            .map(|(_, message)| message)
+            .map(|(_, messages)| messages)
             .flatten()
             .collect())
     }
@@ -750,7 +751,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
         let mut dwallet_mpc_batches_manager =
             self.epoch_store.get_dwallet_mpc_batches_manager().await;
-        for message in self.load_dwallet_mpc_messages_from_epoch_start().await? {
+        let wat = self.load_dwallet_mpc_messages_from_epoch_start().await?;
+        for message in wat {
             self.epoch_store
                 .send_msg_to_dwallet_mpc_manager_without_save(&message)
                 .await;

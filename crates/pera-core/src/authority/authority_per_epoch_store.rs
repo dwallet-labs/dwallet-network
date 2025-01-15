@@ -3462,8 +3462,8 @@ impl AuthorityPerEpochStore {
         self.send_message_to_dwallet_mpc_manager(DWalletMPCChannelMessage::EndOfDelivery)
             .await;
         let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
-        dwallet_mpc_round_messages.clear();
         output.set_dwallet_mpc_round_messages(dwallet_mpc_round_messages.clone());
+        dwallet_mpc_round_messages.clear();
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
         for (key, txns) in deferred_txns.into_iter() {
@@ -3857,9 +3857,7 @@ impl AuthorityPerEpochStore {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(..),
                 ..
-            }) => {
-                Ok(ConsensusCertificateResult::ConsensusMessage)
-            }
+            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                 ..
@@ -4440,10 +4438,16 @@ impl ConsensusCommitOutput {
         )?;
 
         if let Some(consensus_commit_stats) = &self.consensus_commit_stats {
+            if self.dwallet_mpc_round_messages.len() > 0 {
+                debug!(
+                    "Writing DWallet MPC messages to local DB: {:?}",
+                    self.dwallet_mpc_round_messages
+                );
+            }
             batch.insert_batch(
                 &tables.dwallet_mpc_messages,
                 [(
-                    consensus_commit_stats.index.last_committed_round,
+                    consensus_commit_stats.index.sub_dag_index,
                     self.dwallet_mpc_round_messages,
                 )],
             )?;
