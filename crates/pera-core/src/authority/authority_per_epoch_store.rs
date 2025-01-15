@@ -357,6 +357,7 @@ pub struct AuthorityPerEpochStore {
     pub dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
     pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
     dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCChannelMessage>>,
+    pub new_dwallet_mpc_service: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
