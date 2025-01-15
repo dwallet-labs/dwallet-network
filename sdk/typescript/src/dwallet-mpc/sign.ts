@@ -85,11 +85,6 @@ export async function signMessageTransactionCall(
 		arguments: [
 			tx.object(dwalletCapID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
-			tx.sharedObjectRef({
-				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
-				initialSharedVersion: 1,
-				mutable: false,
-			}),
 		],
 	});
 
