@@ -1599,7 +1599,7 @@ impl AuthorityState {
             // being emitted before the MPC outputs manager is initialized.
             dwallet_mpc_outputs_verifier.handle_new_event(&session_info);
             epoch_store
-                .send_message_to_dwallet_mpc_manager(DWalletMPCChannelMessage::Event(
+                .save_dwallet_mpc_message(DWalletMPCChannelMessage::Event(
                     event.clone(),
                     session_info,
                 ))
@@ -1615,7 +1615,7 @@ impl AuthorityState {
         let deserialized_event: ValidatorDataForDWalletSecretShare =
             bcs::from_bytes(&event.contents)?;
         epoch_store
-            .send_message_to_dwallet_mpc_manager(DWalletMPCChannelMessage::ValidatorDataForDKG(
+            .save_dwallet_mpc_message(DWalletMPCChannelMessage::ValidatorDataForDKG(
                 deserialized_event,
             ))
             .await;

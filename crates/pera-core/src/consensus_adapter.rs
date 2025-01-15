@@ -974,7 +974,7 @@ impl ReconfigurationInitiator for Arc<ConsensusAdapter> {
     /// This function is called multiple times, for each checkpoint after epoch end time.
     async fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
         epoch_store
-            .send_message_to_dwallet_mpc_manager(
+            .save_dwallet_mpc_message(
                 DWalletMPCChannelMessage::StartLockNextEpochCommittee,
             )
             .await;

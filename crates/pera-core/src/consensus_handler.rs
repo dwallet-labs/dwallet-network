@@ -449,7 +449,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
 
                         self.epoch_store
-                            .send_message_to_dwallet_mpc_manager(DWalletMPCChannelMessage::Output(
+                            .save_dwallet_mpc_message(DWalletMPCChannelMessage::Output(
                                 output.clone(),
                                 origin_authority.clone(),
                                 session_info.clone(),

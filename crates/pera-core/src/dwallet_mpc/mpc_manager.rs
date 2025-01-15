@@ -105,8 +105,6 @@ pub enum DWalletMPCChannelMessage {
     /// A message indicating that an MPC session has failed.
     /// The advance failed, and the session needs to be restarted or marked as failed.
     MPCSessionFailed(ObjectID),
-
-    NewMPCConsensusMessages(Vec)
 }
 
 impl DWalletMPCManager {
