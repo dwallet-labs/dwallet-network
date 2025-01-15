@@ -53,7 +53,7 @@ enum Hash {
 
 type HashedMessages = Vec<u8>;
 type SignedMessages = Vec<u8>;
-type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
+type EncryptionOfSecretShareProof = EncryptionOfDiscreteLogProofWithoutCtx<
     SCALAR_LIMBS,
     SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
@@ -303,7 +303,7 @@ pub fn encrypt_secret_share_and_prove(
     let parsed_secret_key =
         secp256k1::Scalar::from(Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_share));
     let witness = (parsed_secret_key, randomness).into();
-    let (proof, statements) = SecretShareEncryptionProof::prove(
+    let (proof, statements) = EncryptionOfSecretShareProof::prove(
         &PhantomData,
         &language_public_parameters,
         vec![witness],
@@ -328,7 +328,7 @@ pub fn decrypt_user_share_inner(
     encrypted_user_share_and_proof: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
     let (_, encryption_of_discrete_log): (
-        SecretShareEncryptionProof,
+        EncryptionOfSecretShareProof,
         CiphertextSpaceValue<SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
     ) = bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let public_parameters: homomorphic_encryption::PublicParameters<
