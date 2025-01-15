@@ -3855,7 +3855,7 @@ impl AuthorityPerEpochStore {
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(..),
                 ..
             }) => {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
