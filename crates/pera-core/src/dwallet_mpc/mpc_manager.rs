@@ -237,7 +237,7 @@ impl DWalletMPCManager {
         ))
     }
 
-    pub(super) fn get_decryption_public_parameters(
+    pub(super) fn get_decryption_key_share_public_parameters(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
         key_version: u8,
