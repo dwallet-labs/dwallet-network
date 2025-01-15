@@ -2,6 +2,7 @@ use std::sync::{Arc, Weak};
 use narwhal_types::Round;
 use pera_types::base_types::EpochId;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use typed_store::Map;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 
 struct NewDWalletMPCService {
@@ -12,23 +13,29 @@ struct NewDWalletMPCService {
 }
 
 impl NewDWalletMPCService {
-    pub fn new(epoch_store: Arc<AuthorityPerEpochStore>) -> NewDWalletMPCService {
+    pub fn new(epoch_store: Arc<AuthorityPerEpochStore>) -> Self {
         Self {
             last_read_narwhal_round: 0,
             read_messages: 0,
             epoch_store: Arc::downgrade(&epoch_store),
+            epoch_id: epoch_store.epoch(),
         }
     }
 
     pub fn spawn(&self) {
         let new_messages = self
             .epoch_store().unwrap()
-            .tables()?
+            .tables().unwrap()
             .dwallet_mpc_messages
-            .unbounded_iter()
+            .iter_with_bounds(
+                Some(self.last_read_narwhal_round),
+                None,
+            )
             .map(|(_, messages)| messages)
             .flatten()
-            .collect()
+            .collect();
+
+        // Update the MPC manager with the new messages.
     }
 
     fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
