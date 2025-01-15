@@ -11,7 +11,8 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 
 #[wasm_bindgen]
-pub fn create_dkg_centralized_output(protocol_public_parameters: Vec<u8>,
+pub fn create_dkg_centralized_output(
+    protocol_public_parameters: Vec<u8>,
     key_scheme: u8,
     dkg_first_round_output: Vec<u8>,
     session_id: String,
