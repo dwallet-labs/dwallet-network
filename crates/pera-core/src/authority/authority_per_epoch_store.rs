@@ -4438,12 +4438,6 @@ impl ConsensusCommitOutput {
         )?;
 
         if let Some(consensus_commit_stats) = &self.consensus_commit_stats {
-            if self.dwallet_mpc_round_messages.len() > 0 {
-                debug!(
-                    "Writing DWallet MPC messages to local DB: {:?}",
-                    self.dwallet_mpc_round_messages
-                );
-            }
             batch.insert_batch(
                 &tables.dwallet_mpc_messages,
                 [(
