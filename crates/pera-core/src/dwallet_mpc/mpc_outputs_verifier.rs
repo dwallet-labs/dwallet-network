@@ -153,6 +153,7 @@ impl DWalletMPCOutputsVerifier {
             .insert(origin_authority);
 
         if let MPCRound::Sign(s) = &session_info.mpc_round {
+            // it could be a problem if the output is sent twice and then we mark party as malicious
             return match Self::verify_signature(s.clone(), epoch_store.clone(), output.clone()) {
                 Ok(res) => {
                     session.current_result = OutputResult::AlreadyCommitted;

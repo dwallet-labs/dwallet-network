@@ -202,6 +202,15 @@ impl DWalletMPCSession {
                 )
             }
             MPCRound::Sign(..) => {
+                let notify = false;
+                if notify {
+                    // todo take the output from the notify
+                return Ok(AsynchronousRoundResult::Finalize {
+                        malicious_parties: vec![],
+                        private_output: vec![],
+                        public_output: vec![],
+                    });
+                }
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<SignFirstParty>(
                     session_id,
