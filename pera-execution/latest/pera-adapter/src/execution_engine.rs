@@ -1226,9 +1226,13 @@ mod checked {
                     "new_decryption_key_shares_version",
                     vec![
                         CallArg::PERA_SYSTEM_MUT,
-                        CallArg::Pure(bcs_to_bytes(&new_key.current_epoch_shares)?),
-                        CallArg::Pure(bcs_to_bytes(&new_key.protocol_public_parameters)?),
-                        CallArg::Pure(bcs_to_bytes(&new_key.decryption_public_parameters)?),
+                        CallArg::Pure(bcs_to_bytes(
+                            &new_key.current_epoch_encryptions_of_shares_per_crt_prime,
+                        )?),
+                        CallArg::Pure(bcs_to_bytes(&new_key.encryption_scheme_public_parameters)?),
+                        CallArg::Pure(bcs_to_bytes(
+                            &new_key.decryption_key_share_public_parameters,
+                        )?),
                         CallArg::Pure(bcs_to_bytes(&new_key.encryption_key)?),
                         CallArg::Pure(bcs_to_bytes(&new_key.reconstructed_commitments_to_sharing)?),
                         CallArg::Pure(bcs_to_bytes(&(key_type as u8))?),
