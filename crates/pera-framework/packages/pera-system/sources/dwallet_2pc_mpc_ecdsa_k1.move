@@ -910,7 +910,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     /// Remove a `MessageApproval` and return the `dwallet_cap_id`,
-    /// `hash_sheme` and the `message`.
+    /// `hash_scheme` and the `message`.
     public fun remove_message_approval(message_approval: MessageApproval): (ID, u8, vector<u8>) {
         let MessageApproval {
             dwallet_cap_id,
@@ -1273,7 +1273,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         };
     }
 
-    #[allow(unused_function)]
     /// Hashes the given message using the specified hash scheme.
      fun hash_message(message: vector<u8>, hash_scheme: u8): vector<u8> {
         assert!(is_supported_hash_sheme(hash_scheme), EInvalidHashScheme);
