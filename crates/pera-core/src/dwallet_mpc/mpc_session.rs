@@ -1,5 +1,8 @@
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPrivateInput, MPCPublicInput, MPCSessionStatus, MPCUpdateOutputReceiver, MPCUpdateOutputSender};
+use dwallet_mpc_types::dwallet_mpc::{
+    MPCMessage, MPCPrivateInput, MPCPublicInput, MPCSessionStatus, MPCUpdateOutputReceiver,
+    MPCUpdateOutputSender,
+};
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
@@ -87,16 +90,20 @@ impl DWalletMPCSession {
             private_input,
             update_output_receiver: Some(receiver),
             update_output_sender: Some(sender),
-            timeout_to_start_advance: if timeout_to_start_advance.is_none() {0} else {timeout_to_start_advance.unwrap()},
+            timeout_to_start_advance: if timeout_to_start_advance.is_none() {
+                0
+            } else {
+                timeout_to_start_advance.unwrap()
+            },
         }
     }
 
     fn set_output_channel(
         session_info: &SessionInfo,
     ) -> (MPCUpdateOutputSender, MPCUpdateOutputReceiver) {
-        if matches!(session_info.mpc_round , MPCRound::Sign(..)) {
+        if matches!(session_info.mpc_round, MPCRound::Sign(..)) {
             let (sender, receiver) = oneshot::channel();
-            return (Some(sender), Some(receiver))
+            return (Some(sender), Some(receiver));
         }
         (None, None)
     }
@@ -220,8 +227,11 @@ impl DWalletMPCSession {
             }
             MPCRound::Sign(..) => {
                 // Todo: what about malicious parties from the aggregator
-                if let Ok((public_output)) = self.update_output_receiver.recv_timeout(self.timeout_to_start_advance * 300)  {
-                return Ok(AsynchronousRoundResult::Finalize {
+                if let Ok((public_output)) = self
+                    .update_output_receiver
+                    .recv_timeout(self.timeout_to_start_advance * 300)
+                {
+                    return Ok(AsynchronousRoundResult::Finalize {
                         malicious_parties: vec![],
                         private_output: vec![], // Sign finial round does not have private output
                         public_output,

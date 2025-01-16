@@ -21,6 +21,7 @@ use mpc::{Weight, WeightedThresholdAccessStructure};
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::crypto::AuthorityPublicKeyBytes;
+use pera_types::digests::TransactionDigest;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
@@ -32,7 +33,6 @@ use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::{debug, warn};
 use tracing::{error, info};
 use twopc_mpc::sign::Protocol;
-use pera_types::digests::TransactionDigest;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
@@ -93,7 +93,7 @@ pub enum DWalletMPCChannelMessage {
     /// and then it starts the network DKG protocol.
     ValidatorDataForDKG(ValidatorDataForDWalletSecretShare),
 
-    ValidSignMessageReceived(ObjectID, MPCPublicOutput)
+    ValidSignMessageReceived(ObjectID, MPCPublicOutput),
 }
 
 impl DWalletMPCManager {
@@ -194,12 +194,17 @@ impl DWalletMPCManager {
                     session.update_output_sender = match &session.update_output_sender {
                         Some(sender) => {
                             if let Err(err) = sender.send(public_output.clone()) {
-                                error!("failed to send valid sign message received with error: {:?}", err);
+                                error!(
+                                    "failed to send valid sign message received with error: {:?}",
+                                    err
+                                );
                             }
                             None
                         }
                         None => {
-                            error!("failed to send valid sign message received, output sender is None");
+                            error!(
+                                "failed to send valid sign message received, output sender is None"
+                            );
                             None
                         }
                     }
@@ -511,9 +516,15 @@ impl DWalletMPCManager {
         );
 
         let session_id_as_32_bytes: [u8; 32] = session_info.session_id.into();
-        let positions = &self.epoch_store()?.committee().shuffle_by_stake_from_tx_digest(&TransactionDigest::new(session_id_as_32_bytes));
+        let positions = &self
+            .epoch_store()?
+            .committee()
+            .shuffle_by_stake_from_tx_digest(&TransactionDigest::new(session_id_as_32_bytes));
         let authority_name = &self.epoch_store()?.name;
-        let authority_index = positions.iter().position(|&x| x == *authority_name).unwrap();
+        let authority_index = positions
+            .iter()
+            .position(|&x| x == *authority_name)
+            .unwrap();
 
         let mut new_session = DWalletMPCSession::new(
             self.epoch_store.clone(),

@@ -6,8 +6,11 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 use crate::dwallet_mpc::sign::SignFirstParty;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCUpdateOutputSender, MPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCPublicOutput, MPCUpdateOutputSender,
+};
 use group::GroupElement;
 use mpc::Party;
 use pera_types::base_types::{AuthorityName, ObjectID};
@@ -19,7 +22,6 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use twopc_mpc::sign::verify_signature;
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
-use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -153,10 +155,16 @@ impl DWalletMPCOutputsVerifier {
             return match Self::verify_signature(s.clone(), epoch_store.clone(), output.clone()) {
                 Ok(res) => {
                     if let Some(sender) = epoch_store.dwallet_mpc_sender.get() {
-                        sender.send(DWalletMPCChannelMessage::ValidSignMessageReceived(
-                            session_info.session_id,
-                            output.clone(),
-                        )).map_err(|_| DwalletMPCError::DWalletMPCSenderSendFailed("failed to send verified output to manager".to_string()))?;
+                        sender
+                            .send(DWalletMPCChannelMessage::ValidSignMessageReceived(
+                                session_info.session_id,
+                                output.clone(),
+                            ))
+                            .map_err(|_| {
+                                DwalletMPCError::DWalletMPCSenderSendFailed(
+                                    "failed to send verified output to manager".to_string(),
+                                )
+                            })?;
                     }
                     session.current_result = OutputResult::AlreadyCommitted;
                     Ok(res)

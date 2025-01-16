@@ -14,7 +14,9 @@ use crate::dwallet_mpc::presign::{
 };
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessage, MPCUpdateOutputSender, MPCPrivateInput, MPCPublicInput};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPublicInput, MPCUpdateOutputSender,
+};
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::AuthorityName;
@@ -411,7 +413,7 @@ pub(crate) fn session_input_from_event(
             Some(bcs::to_bytes(
                 &dwallet_mpc_manager.node_config.class_groups_private_key,
             )?),
-            None
+            None,
         ));
     }
     match &event.type_ {
@@ -422,7 +424,11 @@ pub(crate) fn session_input_from_event(
                 DWalletMPCNetworkKeyScheme::Secp256k1,
                 dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?,
             )?;
-            Ok((dkg_first_public_input(protocol_public_parameters)?, None, None))
+            Ok((
+                dkg_first_public_input(protocol_public_parameters)?,
+                None,
+                None,
+            ))
         }
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
