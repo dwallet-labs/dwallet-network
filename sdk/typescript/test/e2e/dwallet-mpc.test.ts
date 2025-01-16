@@ -8,13 +8,16 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import { createActiveEncryptionKeysTable } from '../../src/dwallet-mpc/encrypt-user-share';
-import { Config, MPCKeyScheme } from '../../src/dwallet-mpc/globals';
+import {
+	Config,
+	mockedProtocolPublicParameters,
+	MPCKeyScheme,
+} from '../../src/dwallet-mpc/globals';
 import { fetchProtocolPublicParameters } from '../../src/dwallet-mpc/network-dkg';
 import { presign } from '../../src/dwallet-mpc/presign';
 import {
 	futureSignTransactionCall,
 	Hash,
-	mockedProtocolPublicParameters,
 	partiallySignMessageTransactionCall,
 	signMessageTransactionCall,
 } from '../../src/dwallet-mpc/sign';
@@ -27,15 +30,17 @@ describe('Test dWallet MPC', () => {
 	let toolbox: TestToolbox;
 	let activeEncryptionKeysTableID: string;
 
+	const timeout = 5 * 60 * 1000;
 	beforeEach(async () => {
 		toolbox = await setup();
-		console.log('Address', toolbox.keypair.toPeraAddress());
-		const encryptionKeysRef = await createActiveEncryptionKeysTable(
-			toolbox.client,
-			toolbox.keypair,
-		);
-
-		activeEncryptionKeysTableID = encryptionKeysRef.objectId;
+		console.log('Current Address', toolbox.keypair.toPeraAddress());
+		activeEncryptionKeysTableID = (
+			await createActiveEncryptionKeysTable({
+				keypair: toolbox.keypair,
+				client: toolbox.client,
+				timeout: timeout,
+			})
+		).objectId;
 	});
 
 	it('should create a dWallet (DKG)', async () => {
@@ -43,7 +48,7 @@ describe('Test dWallet MPC', () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 5 * 60 * 1000,
+			timeout: timeout,
 		};
 		const dWallet = await createDWallet(
 			conf,
@@ -232,7 +237,7 @@ describe('Test dWallet MPC', () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 5 * 60 * 1000,
+			timeout: timeout,
 		};
 
 		const keyVersionNum = 0;

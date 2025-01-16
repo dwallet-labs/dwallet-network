@@ -45,6 +45,7 @@ pub enum MPCRound {
     EncryptedShareVerification(StartEncryptedShareVerificationEvent),
     /// The round of verifying the public key that signed on the encryption key is
     /// matching the initiator address.
+    /// todo(zeev): more docs, make it clearer.
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
 }
 
@@ -104,7 +105,8 @@ pub struct SessionInfo {
 }
 
 /// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
-/// Defined here so that we can use it in the [`MPCRound`] enum, as the inner data of the [`MPCRound::EncryptedShareVerification`].
+/// Defined here so that we can use it in the [`MPCRound`] enum,
+/// as the inner data of the [`MPCRound::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
     pub encrypted_secret_share_and_proof: Vec<u8>,
