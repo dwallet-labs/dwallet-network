@@ -55,6 +55,7 @@ pub struct SignMessageData {
     pub message: Vec<u8>,
     /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,
+    /// The DKG output of the dWallet, used to sign and verify the message.
     pub dkg_output: MPCPublicOutput,
     pub network_key_version: u8,
 }
