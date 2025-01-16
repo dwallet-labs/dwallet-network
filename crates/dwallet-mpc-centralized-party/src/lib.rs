@@ -359,10 +359,8 @@ pub fn decrypt_user_share_inner(
         SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
         secp256k1::GroupElement,
     > = DecryptionKey::new(decryption_key, &public_parameters)?;
-    let Some(plaintext): Option<_> = decryption_key
-        .decrypt(&ciphertext, &public_parameters)
-        .into()
-    else {
+    let Some(plaintext): Option<<Secp256k1EncryptionKey as AdditivelyHomomorphicEncryptionKey<SCALAR_LIMBS>>::PlaintextSpaceGroupElement> = decryption_key
+        .decrypt(&ciphertext, &public_parameters).into() else {
         return Err(anyhow!("Decryption failed"));
     };
     let secret_share_bytes = U256::from(&plaintext.value()).to_be_bytes().to_vec();
@@ -378,10 +376,5 @@ fn cg_secp256k1_public_key_share_from_secret_share(
         group::secp256k1::group_element::GroupElement::generator_from_public_parameters(
             &public_parameters,
         )?;
-    let parsed_secret_key_share = bcs::from_bytes(&secret_key_share)?;
-    Ok(
-        generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(
-            &parsed_secret_key_share,
-        )),
-    )
+    Ok(generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_key_share)))
 }
