@@ -5,12 +5,23 @@
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use dwallet_mpc_types::dwallet_mpc::MPCPublicOutput;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
-use pera_types::messages_dwallet_mpc::SessionInfo;
+use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+use class_groups::{SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS};
+use group::GroupElement;
+use mpc::Party;
+use twopc_mpc::{secp256k1, ProtocolPublicParameters};
+use twopc_mpc::secp256k1::class_groups::{FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS};
+use twopc_mpc::sign::verify_signature;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use crate::dwallet_mpc::authority_name_to_party_id;
+use crate::dwallet_mpc::dkg::DKGSecondParty;
+use crate::dwallet_mpc::sign::SignFirstParty;
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -105,7 +116,8 @@ impl DWalletMPCOutputsVerifier {
         output: &Vec<u8>,
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
-    ) -> anyhow::Result<OutputVerificationResult> {
+        epoch_store: Arc<AuthorityPerEpochStore>,
+    ) -> DwalletMPCResult<OutputVerificationResult> {
         let Some(ref mut session) = self.mpc_sessions_outputs.get_mut(&session_info.session_id)
         else {
             return Ok(OutputVerificationResult {
@@ -137,6 +149,29 @@ impl DWalletMPCOutputsVerifier {
             .entry((output.clone(), session_info.clone()))
             .or_default()
             .insert(origin_authority);
+
+        if let MPCRound::Sign(s) = &session_info.mpc_round {
+            let sign_output = bcs::from_bytes::<<SignFirstParty as Party>::PublicOutput>(output)?;
+            let dkg_output = bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(&s.dkg_output)?.public_key;
+            let ppp = epoch_store.dwallet_mpc_network_keys.get().ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?.get_protocol_public_parameters(DWalletMPCNetworkKeyScheme::Secp256k1, s.network_key_version);
+            let ppp: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters = bcs::from_bytes(&ppp?)?;
+            let public_key = secp256k1::GroupElement::new(
+                dkg_output,
+                &ppp.as_ref().group_public_parameters,
+            ).map_err(|_| DwalletMPCError::ClassGroupsError("Failed to create public key".to_string()))?;
+
+            if verify_signature(sign_output.0, sign_output.1, bcs::from_bytes(&s.message)?, public_key).is_err() {
+                return Ok(OutputVerificationResult {
+                    result: OutputResult::Malicious,
+                    malicious_actors: vec![origin_authority],
+                });
+            }
+            session.current_result = OutputResult::AlreadyCommitted;
+            return Ok(OutputVerificationResult {
+                result: OutputResult::Valid,
+                malicious_actors: vec![],
+            });
+        }
 
         let agreed_output =
             session

@@ -289,6 +289,8 @@ fn sign_party_session_info(
             batch_session_id: deserialized_event.batched_session_id.bytes,
             message: deserialized_event.hashed_message.clone(),
             dwallet_id: deserialized_event.dwallet_id.bytes,
+            dkg_output: deserialized_event.dkg_output.clone(),
+            network_key_version: deserialized_event.dwallet_mpc_network_key_version,
         }),
     }
 }

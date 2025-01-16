@@ -142,6 +142,7 @@ impl DWalletMPCManager {
                     &output,
                     &session_info,
                     authority.clone(),
+                    self.epoch_store().unwrap(),
                 );
                 match verification_result {
                     Ok(verification_result) => {

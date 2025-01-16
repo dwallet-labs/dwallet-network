@@ -432,7 +432,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         };
 
                         let output_verification_result = dwallet_mpc_outputs_verifier
-                            .try_verify_output(output, &session_info, origin_authority)
+                            .try_verify_output(output, &session_info, origin_authority, self.epoch_store.clone())
                             .unwrap_or_else(|e| {
                                 error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                                 OutputVerificationResult {
