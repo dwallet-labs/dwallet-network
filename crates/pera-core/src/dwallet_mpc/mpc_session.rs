@@ -53,6 +53,7 @@ pub(super) struct DWalletMPCSession {
     private_input: MPCPrivateInput,
     update_output_receiver: MPCUpdateOutputReceiver,
     pub update_output_sender: MPCUpdateOutputSender,
+    pub timeout_to_start_advance: usize,
 }
 
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
@@ -69,6 +70,7 @@ impl DWalletMPCSession {
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
         private_input: MPCPrivateInput,
+        timeout_to_start_advance: Option<usize>,
     ) -> Self {
         let (sender, receiver) = Self::set_output_channel(&session_info);
         Self {
@@ -85,6 +87,7 @@ impl DWalletMPCSession {
             private_input,
             update_output_receiver: Some(receiver),
             update_output_sender: Some(sender),
+            timeout_to_start_advance: if timeout_to_start_advance.is_none() {0} else {timeout_to_start_advance.unwrap()},
         }
     }
 
@@ -216,10 +219,10 @@ impl DWalletMPCSession {
                 )
             }
             MPCRound::Sign(..) => {
-                // todo: make sure it is safe to keep the malicious parties from the aggregator
-                if let Ok((public_output, malicious_parties)) = self.update_output_receiver.recv_timeout(300)  {
+                // Todo: what about malicious parties from the aggregator
+                if let Ok((public_output)) = self.update_output_receiver.recv_timeout(self.timeout_to_start_advance * 300)  {
                 return Ok(AsynchronousRoundResult::Finalize {
-                        malicious_parties,
+                        malicious_parties: vec![],
                         private_output: vec![], // Sign finial round does not have private output
                         public_output,
                     });

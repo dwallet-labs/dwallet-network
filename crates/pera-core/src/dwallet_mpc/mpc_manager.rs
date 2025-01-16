@@ -32,6 +32,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::{debug, warn};
 use tracing::{error, info};
 use twopc_mpc::sign::Protocol;
+use pera_types::digests::TransactionDigest;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
@@ -91,6 +92,8 @@ pub enum DWalletMPCChannelMessage {
     /// The manager accumulates the data until it receives such an event for all validators,
     /// and then it starts the network DKG protocol.
     ValidatorDataForDKG(ValidatorDataForDWalletSecretShare),
+
+    ValidSignMessageReceived(ObjectID, MPCPublicOutput)
 }
 
 impl DWalletMPCManager {
@@ -184,6 +187,22 @@ impl DWalletMPCManager {
                         "failed to handle validator data for DKG session with error: {:?}",
                         err
                     );
+                }
+            }
+            DWalletMPCChannelMessage::ValidSignMessageReceived(session_id, public_output) => {
+                if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
+                    session.update_output_sender = match &session.update_output_sender {
+                        Some(sender) => {
+                            if let Err(err) = sender.send(public_output.clone()) {
+                                error!("failed to send valid sign message received with error: {:?}", err);
+                            }
+                            None
+                        }
+                        None => {
+                            error!("failed to send valid sign message received, output sender is None");
+                            None
+                        }
+                    }
                 }
             }
         }
@@ -490,6 +509,12 @@ impl DWalletMPCManager {
             "Received start MPC flow event for session ID {:?}",
             session_info.session_id
         );
+
+        let session_id_as_32_bytes: [u8; 32] = session_info.session_id.into();
+        let positions = &self.epoch_store()?.committee().shuffle_by_stake_from_tx_digest(&TransactionDigest::new(session_id_as_32_bytes));
+        let authority_name = &self.epoch_store()?.name;
+        let authority_index = positions.iter().position(|&x| x == *authority_name).unwrap();
+
         let mut new_session = DWalletMPCSession::new(
             self.epoch_store.clone(),
             self.epoch_id,
@@ -506,6 +531,7 @@ impl DWalletMPCManager {
                 )?,
             },
             private_input,
+            Some(authority_index),
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing

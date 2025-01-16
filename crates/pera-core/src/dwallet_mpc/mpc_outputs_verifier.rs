@@ -19,6 +19,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use twopc_mpc::sign::verify_signature;
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
+use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -151,6 +152,12 @@ impl DWalletMPCOutputsVerifier {
             // it could be a problem if the output is sent twice and then we mark party as malicious
             return match Self::verify_signature(s.clone(), epoch_store.clone(), output.clone()) {
                 Ok(res) => {
+                    if let Some(sender) = epoch_store.dwallet_mpc_sender.get() {
+                        sender.send(DWalletMPCChannelMessage::ValidSignMessageReceived(
+                            session_info.session_id,
+                            output.clone(),
+                        )).map_err(|_| DwalletMPCError::DWalletMPCSenderSendFailed("failed to send verified output to manager".to_string()))?;
+                    }
                     session.current_result = OutputResult::AlreadyCommitted;
                     Ok(res)
                 }
