@@ -4,7 +4,7 @@
 use dwallet_mpc::{
     centralized_public_share_from_decentralized_output_inner, create_dkg_output,
     advance_centralized_sign_party, decrypt_user_share_inner, encrypt_secret_share_and_prove,
-    generate_secp_cg_keypair_from_seed_internal, verify_secret_share,
+    generate_secp256k1_cg_keypair_from_seed_internal, verify_secret_share,
 };
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
@@ -42,7 +42,7 @@ pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErro
         .try_into()
         .map_err(|_| JsError::new("seed must be 32 bytes long"))?;
     let (public_key, private_key) =
-        generate_secp_cg_keypair_from_seed_internal(seed).map_err(to_js_err)?;
+        generate_secp256k1_cg_keypair_from_seed_internal(seed).map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
 }
 
