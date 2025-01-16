@@ -1888,14 +1888,13 @@ impl PeraNode {
     }
 
     fn start_dwallet_mpc_service(p0: &NodeConfig, p1: Arc<ConsensusAdapter>, p2: Arc<AuthorityPerEpochStore>, p3: Arc<AuthorityState>) -> (Arc<DWalletMPCService>, watch::Sender<()>) {
-        let mut service = DWalletMPCService::new(p2);
-        let service_arc = Arc::new(service);
+        let mut service = DWalletMPCService::new(p2.clone());
 
         let  (exit_sender, mut exit_receiver) = watch::channel(());
 
         spawn_monitored_task!(service.spawn(exit_receiver));
 
-        (service_arc, exit_sender)
+        (Arc::new(DWalletMPCService::new(p2)), exit_sender)
     }
 }
 

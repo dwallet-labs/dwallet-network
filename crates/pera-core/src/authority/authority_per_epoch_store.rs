@@ -1055,24 +1055,6 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
-    /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
-    /// This manager handles storing all the valid outputs of a batched dWallet MPC session,
-    /// and writes them to the chain once all the batch outputs are ready.
-    pub fn set_dwallet_mpc_service(
-        &self,
-        service: DWalletMPCService,
-    ) -> PeraResult<()> {
-        if self
-            .new_dwallet_mpc_service
-            .set(tokio::sync::Mutex::new(service))
-            .is_err()
-        {
-            error!(
-                "AuthorityPerEpochStore: `set_dwallet_mpc_outputs_verifier` called more than once; this should never happen"
-            );
-        }
-        Ok(())
-    }
 
     pub fn get_weighted_threshold_access_structure(
         &self,
