@@ -8,6 +8,7 @@ use futures::FutureExt;
 use tokio::select;
 use tokio::sync::Notify;
 use tokio::sync::watch::Receiver;
+use pera_types::error::PeraResult;
 use typed_store::Map;
 
 pub struct DWalletMPCService {
@@ -65,5 +66,10 @@ impl DWalletMPCService {
         self.epoch_store
             .upgrade()
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
+    }
+
+    pub(crate) fn notify_dwallet_mpc_service(&self) -> DwalletMPCResult<()> {
+        self.notify.notify_one();
+        Ok(())
     }
 }

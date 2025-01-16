@@ -358,7 +358,7 @@ pub struct AuthorityPerEpochStore {
     pub dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
     pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
     dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCChannelMessage>>,
-    pub new_dwallet_mpc_service: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
+    pub new_dwallet_mpc_service: OnceCell<tokio::sync::Mutex<DWalletMPCService>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -3486,6 +3486,20 @@ impl AuthorityPerEpochStore {
         let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
         output.set_dwallet_mpc_round_messages(dwallet_mpc_round_messages.clone());
         dwallet_mpc_round_messages.clear();
+
+        // Ask Itay why we save the messages to DB here and not where the checkpoint does it
+        match self.new_dwallet_mpc_service.get() {
+            Some(a) => {
+                    if a.lock().await.notify_dwallet_mpc_service().is_err() {
+                        error!("Failed to notify dwallet mpc service");
+                    };
+                }
+            None => {
+                error!("Failed to get dwallet mpc service");
+            }
+        };
+
+
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
         for (key, txns) in deferred_txns.into_iter() {

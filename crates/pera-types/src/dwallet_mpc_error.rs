@@ -101,6 +101,9 @@ pub enum DwalletMPCError {
 
     #[error("failed to read the network decryption key shares")]
     DwalletMPCNetworkKeysNotFound,
+
+    #[error("failed to read the dwallet mpc service")]
+    MissingDwalletMPCService,
 }
 
 /// A wrapper type for the result of a runtime operation.

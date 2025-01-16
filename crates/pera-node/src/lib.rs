@@ -156,6 +156,7 @@ pub struct ValidatorComponents {
     dwallet_mpc_service_exit: watch::Sender<()>,
     checkpoint_metrics: Arc<CheckpointMetrics>,
     pera_tx_validator_metrics: Arc<PeraTxValidatorMetrics>,
+    dwallet_mpc_service: Arc<DWalletMPCService>,
 }
 
 #[cfg(msim)]
@@ -1384,6 +1385,7 @@ impl PeraNode {
             dwallet_mpc_service_exit,
             checkpoint_metrics,
             pera_tx_validator_metrics,
+            dwallet_mpc_service,
         })
     }
 
@@ -1694,6 +1696,7 @@ impl PeraNode {
                 dwallet_mpc_service_exit,
                 checkpoint_metrics,
                 pera_tx_validator_metrics,
+                dwallet_mpc_service,
             }) = self.validator_components.lock().await.take()
             {
                 info!("Reconfiguring the validator.");
@@ -1889,13 +1892,9 @@ impl PeraNode {
 
     fn start_dwallet_mpc_service(p0: &NodeConfig, p1: Arc<ConsensusAdapter>, p2: Arc<AuthorityPerEpochStore>, p3: Arc<AuthorityState>) -> (Arc<DWalletMPCService>, watch::Sender<()>) {
         let mut service = DWalletMPCService::new(p2);
-        let service_arc = Arc::new(service);
-
         let  (exit_sender, mut exit_receiver) = watch::channel(());
-
         spawn_monitored_task!(service.spawn(exit_receiver));
-
-        (service_arc, exit_sender)
+        (Arc::new(service), exit_sender)
     }
 }
 
