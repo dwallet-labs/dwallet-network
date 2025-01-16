@@ -139,14 +139,14 @@ pub fn create_dkg_output(
 
     // Centralized Public Key Share and Proof.
     let public_key_share_and_proof = bcs::to_bytes(&round_result.outgoing_message)?;
-    // Public Key.
-    let public_output = bcs::to_bytes(&round_result.public_output)?;
+    // todo(scaly): is this the Public Key.
+    let centralized_public_output = bcs::to_bytes(&round_result.public_output)?;
     // Centralized Secret Key Share.
     let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
 
     Ok((
         public_key_share_and_proof,
-        public_output,
+        centralized_public_output,
         centralized_secret_output,
     ))
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// This module defines the core data structures and functions for
-/// working with dWallets in the Pera system.
+/// working with dWallets in the Ika system.
 ///
 /// ## Overview
 ///
