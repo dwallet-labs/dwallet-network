@@ -138,11 +138,17 @@ impl DWalletMPCManager {
                 }
             }
             DWalletMPCChannelMessage::Output(output, authority, session_info) => {
+                let epoch_store = if let Some(epoch_store) = self.epoch_store().ok() {
+                    epoch_store
+                } else {
+                    error!("Failed to get the epoch store");
+                    return;
+                };
                 let verification_result = self.outputs_verifier.try_verify_output(
                     &output,
                     &session_info,
                     authority.clone(),
-                    self.epoch_store().unwrap(),
+                    epoch_store,
                 );
                 match verification_result {
                     Ok(verification_result) => {
