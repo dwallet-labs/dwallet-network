@@ -9,7 +9,7 @@ import {
 
 import { bcs } from '../bcs/index.js';
 import { Transaction } from '../transactions/index.js';
-import { getOrCreateEncryptionKey } from './encrypt-user-share.js';
+import { EncryptedUserShare } from './encrypt-user-share.js';
 import type { Config, CreatedDwallet, DWallet } from './globals.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
@@ -56,7 +56,8 @@ export async function createDWallet(
 	activeEncryptionKeyTableID: string,
 ): Promise<CreatedDwallet> {
 	const dkgFirstRoundOutput = await launchDKGFirstRound(conf);
-	let [publicKeyShareAndProof, centralizedPublicOutput, centralizedPrivateOutput] =
+	// todo(scaly): need to clarify here.
+	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedPrivateKeyShare] =
 		create_dkg_centralized_output(
 			protocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
@@ -64,20 +65,28 @@ export async function createDWallet(
 			// Remove the 0x prefix.
 			dkgFirstRoundOutput.session_id.slice(2),
 		);
-	let encryptionKey = await getOrCreateEncryptionKey(conf, activeEncryptionKeyTableID);
-	let encryptedUserShareAndProof = encrypt_secret_share(
-		new Uint8Array(centralizedPrivateOutput),
-		new Uint8Array(encryptionKey.encryptionKey),
-	);
-	let signedPublicShare = await conf.keypair.sign(new Uint8Array(centralizedPublicOutput));
 
-	let dwallet = await launchDKGSecondRound(
+	// Encrypt the dWallet secret share to use it later by only
+	// holding our Ika ed25519 keypair (the encryption key is derived from Ika keypair).
+	const encryptedUserShare = EncryptedUserShare.fromConfig(conf);
+	const derivedClassGroupsKeyPair = await encryptedUserShare.getOrCreateClassGroupsKeyPair(
+		conf.keypair,
+		activeEncryptionKeyTableID,
+	);
+	const encryptedUserKeyShareAndProofOfEncryption = encrypt_secret_share(
+		new Uint8Array(centralizedPrivateKeyShare),
+		new Uint8Array(derivedClassGroupsKeyPair.encryptionKey),
+	);
+	const signedCentralizedPublicOutput = await conf.keypair.sign(
+		new Uint8Array(centralizedPublicOutput),
+	);
+	const dwallet = await launchDKGSecondRound(
 		conf,
 		dkgFirstRoundOutput,
-		publicKeyShareAndProof,
-		encryptedUserShareAndProof,
-		encryptionKey.objectID,
-		signedPublicShare,
+		centralizedPublicKeyShareAndProof,
+		encryptedUserKeyShareAndProofOfEncryption,
+		derivedClassGroupsKeyPair.objectID,
+		signedCentralizedPublicOutput,
 		conf.keypair.getPublicKey().toRawBytes(),
 		centralizedPublicOutput,
 	);
@@ -85,7 +94,7 @@ export async function createDWallet(
 	return {
 		id: dwallet.id.id,
 		centralizedDKGPublicOutput: centralizedPublicOutput,
-		centralizedDKGPrivateOutput: centralizedPrivateOutput,
+		centralizedDKGPrivateOutput: centralizedPrivateKeyShare,
 		decentralizedDKGOutput: dwallet.decentralized_output,
 		dwalletCapID: dwallet.dwallet_cap_id,
 		dwalletMPCNetworkKeyVersion: dwallet.dwallet_mpc_network_key_version,
@@ -110,11 +119,11 @@ async function launchDKGFirstRound(c: Config) {
 			showEvents: true,
 		},
 	});
-	let sessionData = result.events?.find(
+	const sessionData = result.events?.find(
 		(event) =>
 			event.type === startDKGFirstRoundEventMoveType && isStartDKGFirstRoundEvent(event.parsedJson),
 	)?.parsedJson as StartDKGFirstRoundEvent;
-	let completionEvent = await fetchCompletedEvent<DKGFirstRoundOutputEvent>(
+	const completionEvent = await fetchCompletedEvent<DKGFirstRoundOutputEvent>(
 		c,
 		sessionData.session_id,
 		dkgFirstRoundOutputEvent,
@@ -128,26 +137,26 @@ async function launchDKGFirstRound(c: Config) {
 
 async function launchDKGSecondRound(
 	c: Config,
-	firstRound: DKGFirstRoundOutput,
-	publicKeyShareAndProof: Uint8Array,
-	encrypted_secret_share_and_proof: Uint8Array,
-	encryption_key_id: string,
-	signed_public_share: Uint8Array,
-	encryptor_ed25519_pubkey: Uint8Array,
+	firstRoundOutput: DKGFirstRoundOutput,
+	centralizedPublicKeyShareAndProof: Uint8Array,
+	encryptedSecretShareAndProof: Uint8Array,
+	encryptionKeyID: string,
+	signedCentralizedPublicOutput: Uint8Array,
+	srcIkaPubkey: Uint8Array,
 	centralizedPublicOutput: Uint8Array,
 ) {
 	const tx = new Transaction();
 	tx.moveCall({
 		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_second_round`,
 		arguments: [
-			tx.object(firstRound.dwallet_cap_id),
-			tx.pure(bcs.vector(bcs.u8()).serialize(publicKeyShareAndProof)),
-			tx.object(firstRound.output_object_id),
-			tx.pure.id(firstRound.session_id),
-			tx.pure(bcs.vector(bcs.u8()).serialize(encrypted_secret_share_and_proof)),
-			tx.object(encryption_key_id),
-			tx.pure(bcs.vector(bcs.u8()).serialize(signed_public_share)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(encryptor_ed25519_pubkey)),
+			tx.object(firstRoundOutput.dwallet_cap_id),
+			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicKeyShareAndProof)),
+			tx.object(firstRoundOutput.output_object_id),
+			tx.pure.id(firstRoundOutput.session_id),
+			tx.pure(bcs.vector(bcs.u8()).serialize(encryptedSecretShareAndProof)),
+			tx.object(encryptionKeyID),
+			tx.pure(bcs.vector(bcs.u8()).serialize(signedCentralizedPublicOutput)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(srcIkaPubkey)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput)),
 		],
 	});
@@ -159,7 +168,7 @@ async function launchDKGSecondRound(
 			showEffects: true,
 		},
 	});
-	return await dWalletFromEvent(c, firstRound);
+	return await dWalletFromEvent(c, firstRoundOutput);
 }
 
 async function dWalletFromEvent(conf: Config, firstRound: DKGFirstRoundOutput): Promise<DWallet> {

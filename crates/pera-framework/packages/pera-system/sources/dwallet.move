@@ -2,19 +2,18 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// This module defines the core data structures and functions for
-/// working with dWallets in the pera system.
+/// working with dWallets in the Ika system.
 ///
 /// ## Overview
 ///
-/// - A **dWallet** (`DWallet`) represents a wallet that is created after the Distributed Key Generation (DKG) process.
-///   It encapsulates the session ID, capability ID, and the output of the DKG's second round.
-/// - A **dWallet capability** (`DWalletCap`) represents a capability that grants
-///   ownership and control over a corresponding `DWallet`.
+/// - A **dWallet** (`DWallet`) represents a wallet created after the Distributed Key Generation (DKG) process.
+///   It encapsulates the session ID, capability ID, and the outputs from the DKG rounds.
+/// - A **dWallet capability** (`DWalletCap`) grants ownership and control over a corresponding `DWallet`.
 ///
 /// ## Key Concepts
 ///
 /// - **DWallet**: A generic wallet structure with a phantom type `T`.
-/// - **DWalletCap**: A capability object granting control over a specific dWallet.
+/// - **DWalletCap**: A capability object that grants control over a specific dWallet.
 /// - **Session ID**: A unique identifier for the DKG session.
 module pera_system::dwallet {
     use pera::event;
@@ -33,29 +32,41 @@ module pera_system::dwallet {
 
     // <<<<<<<<<<<<<<< Error Codes <<<<<<<<<<<<<<
 
-    #[allow(unused_field)]
+    // todo(zeev): rename network key everywhere.
     /// `DWallet` represents a wallet that is created after the DKG process.
     ///
     /// ### Fields
-    /// - `id`: The unique identifier for the dWallet object.
-    /// - `session_id`: The ID of the session that generated this dWallet.
-    /// - `dwallet_cap_id`: The ID of the dWallet capability associated with this wallet.
-    /// - `output`: The output of the second DKG round, represented as a `vector<u8>`.
+    /// - `id`: Unique identifier for the dWallet.
+    /// - `session_id`: The session ID that generated this dWallet.
+    /// - `dwallet_cap_id`: The ID of the capability associated with this dWallet.
+    /// - `decentralized_output`: Decentralized public output of the second DKG round.
+    /// - `centralized_output`: Centralized public output.
+    /// - `dwallet_mpc_network_key_version`: Version of the MPC network key.
     public struct DWallet<phantom T> has key, store {
         id: UID,
         session_id: ID,
         dwallet_cap_id: ID,
-        // The decentralized output of the second chain DKG round.
         decentralized_output: vector<u8>,
-        // The public centralized output of the client's DKG round.
         centralized_output: vector<u8>,
-
         dwallet_mpc_network_key_version: u8,
     }
 
-    /// An Additively Homomorphic Encryption (AHE) public key
-    /// that can be used to encrypt a user share in order to prove to the network that
-    /// the recipient can sign with a dWallet when it is transferred or access is granted to it.
+    /// todo(zeev): check why we transfer both public key and address.
+    /// An Encryption key that is used to encrypt a dWallet centralized (user) secret key share.
+    /// Encryption keys facilitate secure data transfer between accounts on the
+    /// dWallet Network by ensuring that sensitive information remains confidential during transmission.
+    /// Each address on the dWallet Network is associated with a unique encryption key.
+    /// When an external party intends to send encrypted data to a particular account, they use the recipient’s
+    /// encryption key to encrypt the data.
+    /// The recipient is then the sole entity capable of decrypting and accessing this information, ensuring secure,
+    /// end-to-end encryption.
+    /// ### Fields
+    /// - `id`: Unique identifier for the encryption key.
+    /// - `scheme`: Scheme identifier for the encryption key (e.g., Class Groups).
+    /// - `encryption_key`: Serialized encryption key.
+    /// - `key_owner_address`: Address of the encryption key owner.
+    /// - `encryption_key_signature`: Signature for the encryption key, signed by the owner.
+    /// - `key_owner_pubkey`: Public key of the encryption key owner.
     public struct EncryptionKey has key {
         id: UID,
         scheme: u8,
@@ -65,7 +76,7 @@ module pera_system::dwallet {
         key_owner_pubkey: vector<u8>,
     }
 
-    /// An event emitted when an encryption key is created.
+    /// Event emitted when an encryption key is created.
     public struct CreatedEncryptionKeyEvent has copy, drop {
         scheme: u8,
         encryption_key: vector<u8>,
@@ -76,46 +87,55 @@ module pera_system::dwallet {
         encryption_key_id: ID,
     }
 
-     /// An event emitted to start an encryption key verification process.
-     /// Since we cannot use native functions if we depend on Sui to hold our state,
-     /// we need to emit an event to start the verification process,
-     /// like we start the other MPC processes.
+    /// An event emitted to start an encryption key verification process.
+    /// Ika does not support native functions, so an event is emitted and
+    /// caught by the blockchain, which then starts the verification process,
+    /// similar to the MPC processes.
     public struct StartEncryptionKeyVerificationEvent has copy, drop {
         scheme: u8,
         encryption_key: vector<u8>,
         key_owner_address: address,
         encryption_key_signature: vector<u8>,
-        sender_sui_pubkey: vector<u8>,
+        sender_pubkey: vector<u8>,
         initiator: address,
         session_id: ID,
     }
 
-    /// `DWalletCap` holder controls a corresponding `DWallet`.
+    /// Represents a capability granting control over a specific dWallet.
     ///
     /// ### Fields
-    /// - `id`: The unique identifier for the dWallet capability object.
+    /// - `id`: Unique identifier for the dWallet capability.
     public struct DWalletCap has key, store {
         id: UID,
     }
 
+    /// Retrieves the encryption key from an `EncryptionKey` object.
+    ///
+    /// ### Parameters
+    /// - `key`: A read reference to the `EncryptionKey` object.
+    ///
+    /// ### Returns
+    /// A `vector<u8>` containing the encryption key.
     public(package) fun get_encryption_key(key: &EncryptionKey): vector<u8> {
         key.encryption_key
     }
 
-    /// A generic function to create a new [`DWallet`] object of type `T`.
+    /// Creates a new [`DWallet`] object of type `T`.
     ///
     /// ### Parameters
-    /// - `session_id`: The ID of the session that generates this dWallet.
-    /// - `dwallet_cap_id`: The ID of the dWallet capability associated with this dWallet.
-    /// - `output`: The output of the second DKG round, represented as a `vector<u8>`.
-    /// - `ctx`: A mutable transaction context used to create the dWallet object.
+    /// - `session_id`: Session ID that generated this dWallet.
+    /// - `dwallet_cap_id`: Capability ID associated with this dWallet.
+    /// - `decentralized_output`: Decentralized output of the second DKG round.
+    /// - `dwallet_mpc_network_key_version`: Version of the MPC network key.
+    /// - `dkg_centralized_public_output`: Centralized public output of the DKG round.
+    /// - `ctx`: Mutable transaction context.
     ///
     /// ### Returns
-    /// A new [`DWallet`] object of the specified type `T`.
+    /// A new [`DWallet`] object of type `T`.
     public(package) fun create_dwallet<T: drop>(
         session_id: ID,
         dwallet_cap_id: ID,
-        output: vector<u8>,
+        decentralized_output: vector<u8>,
         dwallet_mpc_network_key_version: u8,
         dkg_centralized_public_output: vector<u8>,
         ctx: &mut TxContext
@@ -124,15 +144,17 @@ module pera_system::dwallet {
             id: object::new(ctx),
             session_id,
             dwallet_cap_id,
-            decentralized_output: output,
+            decentralized_output,
             dwallet_mpc_network_key_version,
             centralized_output: dkg_centralized_public_output,
         }
     }
 
     /// Shared object that holds the active encryption keys per user.
-    /// 'encryption_keys' is a key-value table where the key is the user address
-    /// and the value is the encryption key object ID.
+    ///
+    /// ### Fields
+    /// - `id`: Unique identifier for the object.
+    /// - `encryption_keys`: Table mapping user addresses to encryption key object IDs.
     public struct ActiveEncryptionKeys has key {
         id: UID,
         encryption_keys: Table<address, ID>,
@@ -146,49 +168,63 @@ module pera_system::dwallet {
         });
     }
 
-    /// Get the active encryption key ID by user adderss.
+    /// Get the active encryption key ID by user adders.
     public fun get_active_encryption_key(
-        encryption_key_holder: &ActiveEncryptionKeys,
+        active_encryption_keys: &ActiveEncryptionKeys,
         key_owner: address,
     ): &ID {
-        table::borrow(&encryption_key_holder.encryption_keys, key_owner)
+        table::borrow(&active_encryption_keys.encryption_keys, key_owner)
     }
 
-    /// Set the active encryption key for a user (the sender).
+    /// Updates or inserts an encryption key as the active key for a user.
     public fun upsert_active_encryption_key(
-        encryption_key_holder: &mut ActiveEncryptionKeys,
+        active_encryption_keys: &mut ActiveEncryptionKeys,
         encryption_key: &EncryptionKey,
         ctx: &mut TxContext
     ) {
         assert!(encryption_key.key_owner_address == tx_context::sender(ctx), EInvalidEncryptionKeyOwner);
-        if (table::contains(&encryption_key_holder.encryption_keys, encryption_key.key_owner_address)) {
-            table::remove(&mut encryption_key_holder.encryption_keys, encryption_key.key_owner_address);
+        if (table::contains(&active_encryption_keys.encryption_keys, encryption_key.key_owner_address)) {
+            table::remove(&mut active_encryption_keys.encryption_keys, encryption_key.key_owner_address);
         };
         table::add(
-            &mut encryption_key_holder.encryption_keys,
+            &mut active_encryption_keys.encryption_keys,
             encryption_key.key_owner_address,
             object::id(encryption_key)
         );
     }
 
-    /// Register an encryption key to encrypt a user share.
+    /// Register an encryption key, to later use for encrypting a user share.
     /// The key is saved as an immutable object.
+    /// The event emitted by this function is caught by the chain.
+    /// The chain then calls "create_encryption_key" after verifications, in order to save it.
+    /// We need to run the flow this way as this verification can only be done in Rust,
+    /// and we can't use Native functions.
+    /// ### Parameters
+    /// - `encryption_key`: Serialized encryption key.
+    /// - `signed_encryption_key`: Signed encryption key.
+    /// - `sender_pubkey`: Public key of the sender.
+    /// - `encryption_key_scheme`: Scheme of the encryption key.
+    /// - `ctx`: Mutable transaction context.
     public fun register_encryption_key(
-        key: vector<u8>,
-        signature: vector<u8>,
-        sender_sui_pubkey: vector<u8>,
-        scheme: u8,
+        encryption_key: vector<u8>,
+        signed_encryption_key: vector<u8>,
+        sender_pubkey: vector<u8>,
+        encryption_key_scheme: u8,
         ctx: &mut TxContext
     ) {
-        assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
-        assert!(ed25519_verify(&signature, &sender_sui_pubkey, &key), EInvalidEncryptionKeySignature);
+        assert!(is_valid_encryption_key_scheme(encryption_key_scheme), EInvalidEncryptionKeyScheme);
+        assert!(
+            ed25519_verify(&signed_encryption_key, &sender_pubkey, &encryption_key),
+            EInvalidEncryptionKeySignature
+        );
         event::emit(
             StartEncryptionKeyVerificationEvent {
-                scheme,
-                encryption_key: key,
+                scheme: encryption_key_scheme,
+                encryption_key,
                 key_owner_address: tx_context::sender(ctx),
-                encryption_key_signature: signature,
-                sender_sui_pubkey,
+                encryption_key_signature: signed_encryption_key,
+                // todo(zeev): rename.
+                sender_pubkey,
                 initiator: tx_context::sender(ctx),
                 session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
             }
@@ -196,14 +232,24 @@ module pera_system::dwallet {
     }
 
     /// Creates an encryption key object.
-    /// Being called by the blockchain after it verifies 
-    /// the `sender_sui_pubkey` matches the initiator address.
+    /// Being called by the blockchain after it verifies
+    /// the `sender_pubkey` matches the initiator address.
+    /// // todo(zeev): validate this claim.
     /// We need to run the flow this way as this verification can only be done in rust.
+    ///
+    /// ### Parameters
+    /// - `key`: Serialized encryption key.
+    /// - `signature`: Encryption key signature.
+    /// - `sender_pubkey`: Sender's Ika public key.
+    /// - `scheme`: Encryption key scheme.
+    /// - `initiator`: Initiator's address.
+    /// - `session_id`: ID of the session.
+    /// - `ctx`: Mutable transaction context.
     #[allow(unused_function)]
     fun create_encryption_key(
         key: vector<u8>,
         signature: vector<u8>,
-        sender_sui_pubkey: vector<u8>,
+        sender_pubkey: vector<u8>,
         scheme: u8,
         initiator: address,
         session_id: ID,
@@ -216,14 +262,14 @@ module pera_system::dwallet {
             encryption_key: key,
             key_owner_address: initiator,
             encryption_key_signature: signature,
-            key_owner_pubkey: sender_sui_pubkey,
+            key_owner_pubkey: sender_pubkey,
         };
         event::emit(CreatedEncryptionKeyEvent {
             scheme,
             encryption_key: key,
             key_owner_address: initiator,
             encryption_key_signature: signature,
-            key_owner_pubkey: sender_sui_pubkey,
+            key_owner_pubkey: sender_pubkey,
             encryption_key_id: object::id(&encryption_key),
             session_id,
         });
@@ -234,7 +280,7 @@ module pera_system::dwallet {
     public(package) fun create_encryption_key_for_testing(
         key: vector<u8>,
         signature: vector<u8>,
-        sender_sui_pubkey: vector<u8>,
+        sender_pubkey: vector<u8>,
         scheme: u8,
         initiator: address,
         ctx: &mut TxContext
@@ -245,7 +291,7 @@ module pera_system::dwallet {
             encryption_key: key,
             key_owner_address: initiator,
             encryption_key_signature: signature,
-            key_owner_pubkey: sender_sui_pubkey,
+            key_owner_pubkey: sender_pubkey,
         }
     }
 
@@ -297,6 +343,7 @@ module pera_system::dwallet {
         dwallet.dwallet_mpc_network_key_version
     }
 
+    /// Validates encryption key schemes.
     fun is_valid_encryption_key_scheme(scheme: u8): bool {
         scheme == CLASS_GROUPS
     }

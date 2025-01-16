@@ -1,3 +1,5 @@
+// noinspection ES6PreferShortImport
+
 import { Buffer } from 'buffer';
 
 import { bcs } from '../../../src/bcs/index.js';
