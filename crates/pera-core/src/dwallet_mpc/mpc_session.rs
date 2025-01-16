@@ -160,9 +160,11 @@ impl DWalletMPCSession {
                     public_input,
                     (),
                 )?;
-                if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
+                if let AsynchronousRoundResult::Finalize { .. } = &result {
                     verify_encrypted_share(&StartEncryptedShareVerificationEvent {
-                        dwallet_output: public_output.clone(),
+                        dwallet_centralized_public_output: event_data
+                            .dkg_centralized_public_output
+                            .clone(),
                         encrypted_secret_share_and_proof: event_data
                             .encrypted_secret_share_and_proof
                             .clone(),

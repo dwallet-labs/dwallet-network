@@ -481,6 +481,7 @@ pub(crate) fn session_input_from_event(
             ))
         }
         t if t == &StartEncryptedShareVerificationEvent::type_() => Ok((vec![], None)),
+        t if t == &StartEncryptionKeyVerificationEvent::type_() => Ok((vec![], None)),
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),
     }
 }
