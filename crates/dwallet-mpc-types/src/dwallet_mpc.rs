@@ -39,6 +39,9 @@ pub type MPCPublicInput = Vec<u8>;
 /// Alias for MPC private input.
 pub type MPCPrivateInput = Option<Vec<u8>>;
 
+pub type MPCUpdateOutputSender = Option<tokio::sync::oneshot::UnboundedSender>;
+pub type MPCUpdateOutputReceiver = Option<tokio::sync::oneshot::UnboundedReceiver>;
+
 /// Possible statuses of an MPC Session:
 ///
 /// - `Pending`:

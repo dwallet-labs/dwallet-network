@@ -1,11 +1,10 @@
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateInput, MPCPublicInput, MPCSessionStatus,
-};
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPrivateInput, MPCPublicInput, MPCSessionStatus, MPCUpdateOutputReceiver, MPCUpdateOutputSender};
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
+use tokio::sync::oneshot;
 use twopc_mpc::sign::Protocol;
 
 use pera_types::base_types::{EpochId, ObjectID};
@@ -52,6 +51,8 @@ pub(super) struct DWalletMPCSession {
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     private_input: MPCPrivateInput,
+    update_output_receiver: MPCUpdateOutputReceiver,
+    pub update_output_sender: MPCUpdateOutputSender,
 }
 
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
@@ -69,6 +70,7 @@ impl DWalletMPCSession {
         decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
         private_input: MPCPrivateInput,
     ) -> Self {
+        let (sender, receiver) = Self::set_output_channel(&session_info);
         Self {
             status,
             pending_messages: vec![HashMap::new()],
@@ -81,7 +83,19 @@ impl DWalletMPCSession {
             weighted_threshold_access_structure,
             decryption_share,
             private_input,
+            update_output_receiver: Some(receiver),
+            update_output_sender: Some(sender),
         }
+    }
+
+    fn set_output_channel(
+        session_info: &SessionInfo,
+    ) -> (MPCUpdateOutputSender, MPCUpdateOutputReceiver) {
+        if matches!(session_info.mpc_round , MPCRound::Sign(..)) {
+            let (sender, receiver) = oneshot::channel();
+            return (Some(sender), Some(receiver))
+        }
+        (None, None)
     }
 
     fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
@@ -202,13 +216,12 @@ impl DWalletMPCSession {
                 )
             }
             MPCRound::Sign(..) => {
-                let notify = false;
-                if notify {
-                    // todo take the output from the notify
+                // todo: make sure it is safe to keep the malicious parties from the aggregator
+                if let Ok((public_output, malicious_parties)) = self.update_output_receiver.recv_timeout(300)  {
                 return Ok(AsynchronousRoundResult::Finalize {
-                        malicious_parties: vec![],
-                        private_output: vec![],
-                        public_output: vec![],
+                        malicious_parties,
+                        private_output: vec![], // Sign finial round does not have private output
+                        public_output,
                     });
                 }
                 let public_input = bcs::from_bytes(&self.public_input)?;

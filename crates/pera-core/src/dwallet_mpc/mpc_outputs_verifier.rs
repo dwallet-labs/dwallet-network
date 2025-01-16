@@ -5,11 +5,9 @@
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
 use crate::dwallet_mpc::sign::SignFirstParty;
-use class_groups::{SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS};
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCUpdateOutputSender, MPCPublicOutput};
 use group::GroupElement;
 use mpc::Party;
 use pera_types::base_types::{AuthorityName, ObjectID};
@@ -19,9 +17,6 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo, SignMessageData};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use twopc_mpc::secp256k1::class_groups::{
-    FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-};
 use twopc_mpc::sign::verify_signature;
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
