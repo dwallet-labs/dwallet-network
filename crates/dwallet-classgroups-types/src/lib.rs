@@ -28,7 +28,7 @@ pub type ClassGroupsEncryptionKeyAndProof = [(
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClassGroupsKeyPairAndProof {
     #[serde(with = "group::helpers::const_generic_array_serialization")]
-    decryption_key: ClassGroupsDecryptionKey,
+    decryption_key_per_crt_prime: ClassGroupsDecryptionKey,
     #[serde(with = "group::helpers::const_generic_array_serialization")]
     encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
 }
@@ -39,7 +39,7 @@ impl ClassGroupsKeyPairAndProof {
         encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
     ) -> Self {
         Self {
-            decryption_key,
+            decryption_key_per_crt_prime: decryption_key,
             encryption_key_and_proof,
         }
     }
@@ -54,7 +54,7 @@ impl ClassGroupsKeyPairAndProof {
     }
 
     pub fn decryption_key(&self) -> ClassGroupsDecryptionKey {
-        self.decryption_key.clone()
+        self.decryption_key_per_crt_prime.clone()
     }
 }
 

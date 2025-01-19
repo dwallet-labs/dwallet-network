@@ -36,7 +36,7 @@ pub(crate) fn verify_encrypted_share(
     verify_signatures(&verification_data)?;
     chain_verify_secret_share_proof(
         &verification_data.encrypted_secret_share_and_proof,
-        &verification_data.dwallet_output,
+        &verification_data.dwallet_centralized_public_output,
         &verification_data.encryption_key,
     )
     .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
@@ -61,8 +61,6 @@ pub(crate) fn verify_encryption_key(
 fn verify_signatures(
     verification_data: &StartEncryptedShareVerificationEvent,
 ) -> DwalletMPCResult<()> {
-    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
-        bcs::from_bytes(&verification_data.dwallet_output)?;
     let signature =
         <Ed25519Signature as ToFromBytes>::from_bytes(&verification_data.signed_public_share)
             .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
@@ -71,7 +69,7 @@ fn verify_signatures(
             .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     public_key
         .verify(
-            &bcs::to_bytes(&dkg_output.centralized_party_public_key_share)?,
+            &verification_data.dwallet_centralized_public_output,
             &signature,
         )
         .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
@@ -101,7 +99,7 @@ fn chain_verify_secret_share_proof(
         protocol_public_params.group_public_parameters.clone(),
         bcs::from_bytes(encryption_key)?,
     );
-    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
+    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
         bcs::from_bytes(dkg_output)?;
     let (proof, encrypted_secret_share): (
         SecretShareEncryptionProof,
@@ -114,7 +112,7 @@ fn chain_verify_secret_share_proof(
             .ciphertext_space_public_parameters(),
     )?;
     let public_key_share = secp256k1::GroupElement::new(
-        dkg_output.centralized_party_public_key_share,
+        dkg_output.public_key_share,
         &protocol_public_params.group_public_parameters,
     )?;
     let statement = (encrypted_secret_share, public_key_share).into();

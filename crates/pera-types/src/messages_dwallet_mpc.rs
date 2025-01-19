@@ -45,6 +45,7 @@ pub enum MPCRound {
     EncryptedShareVerification(StartEncryptedShareVerificationEvent),
     /// The round of verifying the public key that signed on the encryption key is
     /// matching the initiator address.
+    /// todo(zeev): more docs, make it clearer.
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
 }
 
@@ -107,11 +108,12 @@ pub struct SessionInfo {
 }
 
 /// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
-/// Defined here so that we can use it in the [`MPCRound`] enum, as the inner data of the [`MPCRound::EncryptedShareVerification`].
+/// Defined here so that we can use it in the [`MPCRound`] enum,
+/// as the inner data of the [`MPCRound::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
     pub encrypted_secret_share_and_proof: Vec<u8>,
-    pub dwallet_output: Vec<u8>,
+    pub dwallet_centralized_public_output: Vec<u8>,
     pub dwallet_id: ID,
     pub encryption_key: Vec<u8>,
     pub encryption_key_id: ID,
@@ -176,6 +178,7 @@ pub struct StartDKGSecondRoundEvent {
     pub encryption_key_id: ID,
     pub signed_public_share: Vec<u8>,
     pub encryptor_ed25519_pubkey: Vec<u8>,
+    pub dkg_centralized_public_output: Vec<u8>,
 }
 
 impl StartDKGSecondRoundEvent {
