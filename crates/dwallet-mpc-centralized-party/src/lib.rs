@@ -27,7 +27,6 @@ use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
 use group::KnownOrderGroupElement;
-use k256::elliptic_curve::subtle::CtOption;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -53,14 +52,14 @@ enum Hash {
 
 type HashedMessages = Vec<u8>;
 type SignedMessages = Vec<u8>;
-type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
+type EncryptionOfSecretShareProof = EncryptionOfDiscreteLogProofWithoutCtx<
     SCALAR_LIMBS,
     SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     secp256k1::GroupElement,
 >;
 
-type SpecificEncryptionKey = EncryptionKey<
+type Secp256k1EncryptionKey = EncryptionKey<
     SCALAR_LIMBS,
     SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
@@ -97,6 +96,9 @@ impl TryFrom<u8> for Hash {
 /// This function is invoked by the centralized party to produce:
 /// - A public key share and its proof.
 /// - Centralized DKG output required for further protocol steps.
+/// # Warning
+/// The secret (private) key returned from this function should never be sent,
+/// and should always be kept private.
 ///
 /// # Parameters
 /// — `decentralized_first_round_output`:
@@ -110,12 +112,13 @@ impl TryFrom<u8> for Hash {
 ///
 /// # Errors
 /// Returns an error if decoding or advancing the protocol fails.
+/// This is okay since a malicious blockchain can always block a client.
 pub fn create_dkg_output(
     protocol_public_parameters: Vec<u8>,
     key_scheme: u8,
     decentralized_first_round_output: Vec<u8>,
     session_id: String,
-) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
+) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
         bcs::from_bytes(&decentralized_first_round_output)
             .context("Failed to deserialize decentralized first round output")?;
@@ -134,16 +137,17 @@ pub fn create_dkg_output(
     )
     .context("advance() failed on the DKGCentralizedParty")?;
 
+    // Centralized Public Key Share and Proof.
     let public_key_share_and_proof = bcs::to_bytes(&round_result.outgoing_message)?;
+    // todo(scaly): is this the Public Key.
     let centralized_public_output = bcs::to_bytes(&round_result.public_output)?;
+    // Centralized Secret Key Share.
     let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
-    let centralized_public_share = bcs::to_bytes(&round_result.public_output.public_key_share)?;
 
     Ok((
         public_key_share_and_proof,
         centralized_public_output,
         centralized_secret_output,
-        centralized_public_share,
     ))
 }
 
@@ -165,21 +169,20 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
     Ok(U256::from(m).into())
 }
 
-/// Executes the centralized phase of the Sign protocol, first part of the protocol.
+/// Executes the centralized phase of the Sign protocol,
+/// first part of the protocol.
 ///
-/// The [`create_sign_output`] function is called by the client (aka the centralized party).
-///
-/// The `session_id` is a unique identifier for the session, represented as a hexadecimal string.
-/// The `hash` must fit the [`Hash`] enum.
-pub fn create_sign_output(
+/// The [`advance_centralized_sign_party`] function is
+/// called by the client (the centralized party).
+pub fn advance_centralized_sign_party(
     protocol_public_parameters: Vec<u8>,
     key_scheme: u8,
     centralized_party_dkg_output: Vec<u8>,
     centralized_party_secret_key_share: Vec<u8>,
     presigns: Vec<Vec<u8>>,
     messages: Vec<Vec<u8>>,
-    hash: u8,
-    session_ids: Vec<String>,
+    hash_type: u8,
+    presign_session_ids: Vec<String>,
 ) -> anyhow::Result<(Vec<HashedMessages>, Vec<SignedMessages>)> {
     let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
         bcs::from_bytes(&centralized_party_dkg_output)?;
@@ -187,11 +190,12 @@ pub fn create_sign_output(
         .into_iter()
         .enumerate()
         .map(|(index, message)| {
-            let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_ids[index]);
+            let session_id =
+                commitment::CommitmentSizedNumber::from_le_hex(&presign_session_ids[index]);
             let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
                 bcs::from_bytes(&presigns[index])?;
-            let hashed_message =
-                message_digest(&message, &hash.try_into()?).context("Message digest failed")?;
+            let hashed_message = message_digest(&message, &hash_type.try_into()?)
+                .context("Message digest failed")?;
             let centralized_party_public_input =
                 <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedPartyPublicInput::from(
                     (
@@ -214,9 +218,9 @@ pub fn create_sign_output(
             )
             .context("advance() failed on the SignCentralizedParty")?;
 
-            let signed_message = bcs::to_bytes(&round_result.outgoing_message)?;
+            let centralized_signed_messages = bcs::to_bytes(&round_result.outgoing_message)?;
             let hashed_message_bytes = bcs::to_bytes(&hashed_message)?;
-            Ok((signed_message, hashed_message_bytes))
+            Ok((centralized_signed_messages, hashed_message_bytes))
         })
         .collect::<anyhow::Result<Vec<_>>>()?
         .into_iter()
@@ -230,7 +234,7 @@ fn get_protocol_public_parameters(
     key_scheme: u8,
 ) -> anyhow::Result<Vec<u8>> {
     let key_scheme = DWalletMPCNetworkKeyScheme::try_from(key_scheme)?;
-
+    let encryption_scheme_public_parameters = bcs::from_bytes(&protocol_public_parameters)?;
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             Ok(bcs::to_bytes(&ProtocolPublicParameters::new::<
@@ -238,9 +242,9 @@ fn get_protocol_public_parameters(
                 { FUNDAMENTAL_DISCRIMINANT_LIMBS },
                 { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
                 secp256k1::GroupElement,
-            >(bcs::from_bytes(
-                &protocol_public_parameters,
-            )?))?)
+            >(
+                encryption_scheme_public_parameters
+            ))?)
         }
         DWalletMPCNetworkKeyScheme::Ristretto => {
             todo!()
@@ -250,10 +254,16 @@ fn get_protocol_public_parameters(
 
 /// Derives a Secp256k1 class groups keypair from a given seed.
 ///
-/// The class groups key being used to encrypt a Secp256k1 keypair should be different from
-/// the encryption key used to encrypt a Ristretto keypair, due to cryptographic reasons.
-/// This function derives a class groups keypair to encrypt a Secp256k1 secret from the given seed.
-pub fn generate_secp_cg_keypair_from_seed_internal(
+/// The class groups public encryption key being used to encrypt a Secp256k1 keypair will be
+/// different from the encryption key used to encrypt a Ristretto keypair.
+/// The plaintext space/fundamental group will correspond to the order
+/// of the respective elliptic curve.
+/// The secret decryption key may be the same in terms of correctness,
+/// but to simplify security analysis and implementation current version maintain distinct key-pairs.
+/// # Warning
+/// The secret (private) key returned from this function should never be sent,
+/// and should always be kept private.
+pub fn generate_secp256k1_cg_keypair_from_seed_internal(
     seed: [u8; 32],
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
@@ -274,9 +284,10 @@ pub fn centralized_public_share_from_decentralized_output_inner(
 }
 
 /// Encrypts the given secret share to the given encryption key.
-/// Returns a tuple of the encryption key and proof of encryption.
+/// Returns a serialized tuple containing the `proof of encryption`,
+/// and an encrypted `secret key share`.
 pub fn encrypt_secret_share_and_prove(
-    secret_share: Vec<u8>,
+    secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
     let protocol_public_params = protocol_public_parameters();
@@ -300,25 +311,26 @@ pub fn encrypt_secret_share_and_prove(
             .randomness_space_public_parameters(),
         &mut OsRng,
     )?;
-    let parsed_secret_key =
-        secp256k1::Scalar::from(Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_share));
-    let witness = (parsed_secret_key, randomness).into();
-    let (proof, statements) = SecretShareEncryptionProof::prove(
+    let parsed_secret_key_share = bcs::from_bytes(&secret_key_share)?;
+    let witness = (parsed_secret_key_share, randomness).into();
+    let (proof, statements) = EncryptionOfSecretShareProof::prove(
         &PhantomData,
         &language_public_parameters,
         vec![witness],
         &mut OsRng,
     )?;
+    // todo(scaly): why is it derived from statements?
     let (encryption_of_discrete_log, _) = statements.first().unwrap().clone().into();
     Ok(bcs::to_bytes(&(proof, encryption_of_discrete_log.value()))?)
 }
 
-/// Verifies the given secret share matches the given DWallet's DKG output centralized_party_public_key_share.
+/// Verifies the given secret share matches the given dWallets`
+/// DKG output centralized_party_public_key_share.
 pub fn verify_secret_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> anyhow::Result<bool> {
-    let expected_public_key = cg_public_share_from_secret_share(secret_share)?;
-    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
+    let expected_public_key = cg_secp256k1_public_key_share_from_secret_share(secret_share)?;
+    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
         bcs::from_bytes(&dkg_output)?;
-    Ok(dkg_output.centralized_party_public_key_share == expected_public_key.value())
+    Ok(dkg_output.public_key_share == expected_public_key.value())
 }
 
 /// Decrypts the given encrypted user share using the given decryption key.
@@ -328,12 +340,12 @@ pub fn decrypt_user_share_inner(
     encrypted_user_share_and_proof: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
     let (_, encryption_of_discrete_log): (
-        SecretShareEncryptionProof,
+        EncryptionOfSecretShareProof,
         CiphertextSpaceValue<SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
     ) = bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let public_parameters: homomorphic_encryption::PublicParameters<
         SCALAR_LIMBS,
-        SpecificEncryptionKey,
+        Secp256k1EncryptionKey,
     > = bcs::from_bytes(&encryption_key)?;
     let ciphertext = CiphertextSpaceGroupElement::new(
         encryption_of_discrete_log,
@@ -347,7 +359,7 @@ pub fn decrypt_user_share_inner(
         SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
         secp256k1::GroupElement,
     > = DecryptionKey::new(decryption_key, &public_parameters)?;
-    let Some(plaintext): Option<<SpecificEncryptionKey as AdditivelyHomomorphicEncryptionKey<SCALAR_LIMBS>>::PlaintextSpaceGroupElement> = decryption_key
+    let Some(plaintext): Option<<Secp256k1EncryptionKey as AdditivelyHomomorphicEncryptionKey<SCALAR_LIMBS>>::PlaintextSpaceGroupElement> = decryption_key
         .decrypt(&ciphertext, &public_parameters).into() else {
         return Err(anyhow!("Decryption failed"));
     };
@@ -355,14 +367,14 @@ pub fn decrypt_user_share_inner(
     Ok(secret_share_bytes)
 }
 
-/// Derives a DWallet's public share from a private share.
-fn cg_public_share_from_secret_share(
-    secret_share: Vec<u8>,
+/// Derives a dWallets` public key share from a private key share.
+fn cg_secp256k1_public_key_share_from_secret_share(
+    secret_key_share: Vec<u8>,
 ) -> anyhow::Result<group::secp256k1::GroupElement> {
     let public_parameters = group::secp256k1::group_element::PublicParameters::default();
     let generator_group_element =
         group::secp256k1::group_element::GroupElement::generator_from_public_parameters(
             &public_parameters,
         )?;
-    Ok(generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_share)))
+    Ok(generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_key_share)))
 }

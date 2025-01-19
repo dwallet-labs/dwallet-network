@@ -3,7 +3,7 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
-use crate::dwallet_mpc::mpc_events::ValidatorDataForDWalletSecretShare;
+use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
@@ -65,8 +65,7 @@ pub struct DWalletMPCManager {
     /// Each Validator holds the Malicious state for itself,
     /// this is not in sync with the blockchain.
     outputs_verifier: DWalletMPCOutputsVerifier,
-    pub(crate) validators_data_for_network_dkg:
-        HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
+    pub(crate) validators_data_for_network_dkg: HashMap<PartyID, ValidatorDataForNetworkDKG>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -90,7 +89,7 @@ pub enum DWalletMPCChannelMessage {
     /// almost 250 KB, which is the maximum event size in Sui.
     /// The manager accumulates the data until it receives such an event for all validators,
     /// and then it starts the network DKG protocol.
-    ValidatorDataForDKG(ValidatorDataForDWalletSecretShare),
+    ValidatorDataForDKG(ValidatorDataForNetworkDKG),
     /// A message indicating that an MPC session has failed.
     /// The advance failed, and the session needs to be restarted or marked as failed.
     MPCSessionFailed(ObjectID, DwalletMPCError),
@@ -213,7 +212,7 @@ impl DWalletMPCManager {
 
     fn handle_validator_data_for_dkg(
         &mut self,
-        data: ValidatorDataForDWalletSecretShare,
+        data: ValidatorDataForNetworkDKG,
     ) -> DwalletMPCResult<()> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(
@@ -266,7 +265,7 @@ impl DWalletMPCManager {
         ))
     }
 
-    pub(super) fn get_decryption_public_parameters(
+    pub(super) fn get_decryption_key_share_public_parameters(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
         key_version: u8,
@@ -289,7 +288,7 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    fn get_decryption_share(
+    fn get_decryption_key_shares(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
         key_version: Option<usize>,
@@ -511,7 +510,7 @@ impl DWalletMPCManager {
             self.weighted_threshold_access_structure.clone(),
             match session_info.mpc_round {
                 MPCRound::NetworkDkg(..) => HashMap::new(),
-                _ => self.get_decryption_share(
+                _ => self.get_decryption_key_shares(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
                 )?,

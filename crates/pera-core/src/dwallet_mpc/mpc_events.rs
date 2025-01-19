@@ -207,7 +207,7 @@ struct ValidatorDataForDWalletSecretReShare {
 
 /// The data we need to know about a validator to run a re-share/network-dkg flow with it.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct ValidatorDataForDWalletSecretShare {
+pub struct ValidatorDataForNetworkDKG {
     /// The class groups encryption key of the validator,
     /// used to encrypt the validator's secret share to it.
     pub(crate) cg_pubkey_and_proof: Vec<u8>,
@@ -215,7 +215,7 @@ pub struct ValidatorDataForDWalletSecretShare {
     pub(crate) protocol_pubkey_bytes: Vec<u8>,
 }
 
-impl ValidatorDataForDWalletSecretShare {
+impl ValidatorDataForNetworkDKG {
     pub fn type_() -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
