@@ -57,9 +57,6 @@ pub(super) struct DWalletMPCSession {
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     private_input: MPCPrivateInput,
-    update_output_receiver: MPCUpdateOutputReceiver,
-    pub update_output_sender: MPCUpdateOutputSender,
-    pub timeout_to_start_advance: usize,
 }
 
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
@@ -76,9 +73,7 @@ impl DWalletMPCSession {
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
         private_input: MPCPrivateInput,
-        timeout_to_start_advance: Option<usize>,
     ) -> Self {
-        let (sender, receiver) = Self::set_output_channel(&session_info);
         Self {
             status,
             pending_messages: vec![HashMap::new()],
@@ -91,24 +86,7 @@ impl DWalletMPCSession {
             weighted_threshold_access_structure,
             decryption_share,
             private_input,
-            update_output_receiver: receiver,
-            update_output_sender: sender,
-            timeout_to_start_advance: if timeout_to_start_advance.is_none() {
-                0
-            } else {
-                timeout_to_start_advance.unwrap()
-            },
         }
-    }
-
-    fn set_output_channel(
-        session_info: &SessionInfo,
-    ) -> (MPCUpdateOutputSender, MPCUpdateOutputReceiver) {
-        if matches!(session_info.mpc_round, MPCRound::Sign(..)) {
-            let (sender, receiver) = oneshot::channel();
-            return (Some(sender), Some(receiver));
-        }
-        (None, None)
     }
 
     fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
@@ -162,7 +140,6 @@ impl DWalletMPCSession {
 
     fn advance_specific_party(
         &self,
-        aggrgator_receiver: &mut MPCUpdateOutputReceiver,
     ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
         let session_id = CommitmentSizedNumber::from_le_slice(
             self.session_info.flow_session_id.to_vec().as_slice(),
@@ -329,7 +306,7 @@ impl DWalletMPCSession {
     /// Create a new consensus transaction with the flow result (output) to be
     /// sent to the other MPC parties.
     /// Errors if the epoch was switched in the middle and was not available.
-    fn new_dwallet_mpc_output_message(
+    pub(crate) fn new_dwallet_mpc_output_message(
         &self,
         output: Vec<u8>,
     ) -> DwalletMPCResult<ConsensusTransaction> {

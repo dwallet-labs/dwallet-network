@@ -423,10 +423,7 @@ pub(crate) fn session_input_from_event(
                 DWalletMPCNetworkKeyScheme::Secp256k1,
                 dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?,
             )?;
-            Ok((
-                dkg_first_public_input(protocol_public_parameters)?,
-                None,
-            ))
+            Ok((dkg_first_public_input(protocol_public_parameters)?, None))
         }
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;

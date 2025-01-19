@@ -47,6 +47,8 @@ pub struct DWalletMPCManager {
     /// Used to keep track of the order in which pending sessions are received,
     /// so they are activated in order of arrival.
     pending_sessions_queue: VecDeque<DWalletMPCSession>,
+
+    waiting_for_aggregator_advance: HashMap<ObjectID, usize>,
     // TODO (#257): Make sure the counter is always in sync with the number of active sessions.
     /// Keep track of the active sessions to avoid exceeding the limit.
     /// We can't use the length of `mpc_sessions` since it is never cleaned.
@@ -95,7 +97,18 @@ pub enum DWalletMPCChannelMessage {
     /// The advance failed, and the session needs to be restarted or marked as failed.
     MPCSessionFailed(ObjectID, DwalletMPCError),
 
-    ValidSignMessageReceived(ObjectID, MPCPublicOutput),
+    SessionWithAggregator(ObjectID, AggregatorMessageStatus),
+}
+
+pub enum AggregatorMessageStatus {
+    ValidMessageReceived {
+        public_output: MPCPublicOutput,
+        malicious_parties: Vec<AuthorityName>,
+    },
+    InvalidMessageReceived {
+        aggregator: AuthorityName,
+    },
+    TimeoutReached,
 }
 
 impl DWalletMPCManager {
@@ -217,28 +230,56 @@ impl DWalletMPCManager {
                     }
                 }
             }
-            DWalletMPCChannelMessage::ValidSignMessageReceived(session_id, public_output) => {
+            DWalletMPCChannelMessage::SessionWithAggregator(session_id, status) => {
                 if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
-                    session.update_output_sender = match session.update_output_sender.take() {
-                        Some(sender) => {
-                            if let Err(err) = sender.send(public_output.clone()) {
-                                error!(
-                                    "failed to send valid sign message received with error: {:?}",
-                                    err
-                                );
-                            }
-                            None
-                        }
-                        None => {
-                            error!(
-                                "failed to send valid sign message received, output sender is None"
-                            );
-                            None
-                        }
+                    if let Err(err) = self.handle_session_with_aggregator(session, status).await {
+                        error!("Failed to handle session with aggregator with error: {:?}", err);
                     }
                 }
             }
         }
+    }
+
+    pub async fn handle_session_with_aggregator(
+        &mut self,
+        session: &mut DWalletMPCSession,
+        status: AggregatorMessageStatus,
+    ) -> DwalletMPCResult<()> {
+        match status {
+            AggregatorMessageStatus::ValidMessageReceived {
+                public_output,
+                malicious_parties,
+            } => {
+                session.status = MPCSessionStatus::Finished(public_output.clone());
+                let transaction = session.new_dwallet_mpc_output_message(public_output)?;
+                self.consensus_adapter
+                    .submit_to_consensus(&vec![transaction], &self.epoch_store()?)
+                    .await
+                    .map_err(|e| DwalletMPCError::StbmitToConsensusError(e))?;
+                self.waiting_for_aggregator_advance
+                    .remove(&session.session_info.session_id);
+                self.malicious_actors.extend(malicious_parties); // is it safe?
+            }
+            AggregatorMessageStatus::InvalidMessageReceived { aggregator } => {
+                if let Some(position) = self
+                    .waiting_for_aggregator_advance
+                    .get_mut(&session.session_info.session_id)
+                {
+                    if position == &0 {
+                        self.waiting_for_aggregator_advance
+                            .remove(&session.session_info.session_id);
+                    } else {
+                        *position -= 1;
+                    }
+                }
+                self.malicious_actors.insert(aggregator);
+            }
+            AggregatorMessageStatus::TimeoutReached => {
+                self.waiting_for_aggregator_advance
+                    .remove(&session.session_info.session_id);
+            }
+        }
+        Ok(())
     }
 
     fn handle_validator_data_for_dkg(
@@ -468,6 +509,23 @@ impl DWalletMPCManager {
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
+    fn get_validator_position_to_aggregate(
+        &self,
+        session_info: &SessionInfo,
+    ) -> DwalletMPCResult<usize>{
+        let session_id_as_32_bytes: [u8; 32] = session_info.session_id.into_bytes();
+        let positions = &self
+            .epoch_store()?
+            .committee()
+            .shuffle_by_stake_from_tx_digest(&TransactionDigest::new(session_id_as_32_bytes));
+        let authority_name = &self.epoch_store()?.name;
+        let position = positions
+            .iter()
+            .position(|&x| x == *authority_name).ok_or(DwalletMPCError::InvalidMPCPartyType)?;
+
+        Ok(position)
+    }
+
     /// Handles a message by forwarding it to the relevant MPC session.
     /// If the session does not exist, punish the sender.
     pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) -> DwalletMPCResult<()> {
@@ -532,17 +590,6 @@ impl DWalletMPCManager {
             session_info.session_id
         );
 
-        let session_id_as_32_bytes: [u8; 32] = session_info.session_id.into_bytes();
-        let positions = &self
-            .epoch_store()?
-            .committee()
-            .shuffle_by_stake_from_tx_digest(&TransactionDigest::new(session_id_as_32_bytes));
-        let authority_name = &self.epoch_store()?.name;
-        let authority_index = positions
-            .iter()
-            .position(|&x| x == *authority_name)
-            .unwrap();
-
         let mut new_session = DWalletMPCSession::new(
             self.epoch_store.clone(),
             self.epoch_id,
@@ -559,7 +606,6 @@ impl DWalletMPCManager {
                 )?,
             },
             private_input,
-            Some(authority_index),
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing

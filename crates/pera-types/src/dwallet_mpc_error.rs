@@ -1,4 +1,5 @@
 use crate::base_types::{AuthorityName, EpochId, ObjectID};
+use crate::error::PeraError;
 use dwallet_mpc_types::dwallet_mpc::DwalletNetworkMPCError;
 use group::PartyID;
 
@@ -104,6 +105,9 @@ pub enum DwalletMPCError {
 
     #[error("failed to verify signature")]
     SignatureVerificationFailed,
+
+    #[error("failed to submit to consensus: {0}")]
+    StbmitToConsensusError(PeraError),
 }
 
 /// A wrapper type for the result of a runtime operation.

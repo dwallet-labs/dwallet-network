@@ -6,7 +6,7 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
-use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
+use crate::dwallet_mpc::mpc_manager::{AggregatorMessageStatus, DWalletMPCChannelMessage};
 use crate::dwallet_mpc::sign::SignFirstParty;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPublicOutput, MPCUpdateOutputSender,
@@ -151,29 +151,49 @@ impl DWalletMPCOutputsVerifier {
             .insert(origin_authority);
 
         if let MPCRound::Sign(s) = &session_info.mpc_round {
-            // it could be a problem if the output is sent twice and then we mark party as malicious
-            return match Self::verify_signature(s.clone(), epoch_store.clone(), output.clone()) {
-                Ok(res) => {
-                    if let Some(sender) = epoch_store.dwallet_mpc_sender.get() {
+            // it could be a problem if the output is sent twice, and then we mark party as malicious
+            if let Some(sender) = epoch_store.dwallet_mpc_sender.get() {
+                return match Self::verify_signature(s.clone(), epoch_store.clone(), output.clone())
+                {
+                    Ok(res) => {
                         sender
-                            .send(DWalletMPCChannelMessage::ValidSignMessageReceived(
+                            .send(DWalletMPCChannelMessage::SessionWithAggregator(
                                 session_info.session_id,
-                                output.clone(),
+                                AggregatorMessageStatus::ValidMessageReceived {
+                                    public_output: output.clone(),
+                                    malicious_parties: res.malicious_actors.clone(),
+                                },
                             ))
                             .map_err(|_| {
                                 DwalletMPCError::DWalletMPCSenderSendFailed(
                                     "failed to send verified output to manager".to_string(),
                                 )
                             })?;
+
+                        session.current_result = OutputResult::AlreadyCommitted;
+                        Ok(res)
                     }
-                    session.current_result = OutputResult::AlreadyCommitted;
-                    Ok(res)
-                }
-                Err(_) => Ok(OutputVerificationResult {
-                    result: OutputResult::Malicious,
-                    malicious_actors: vec![origin_authority],
-                }),
-            };
+                    Err(_) => {
+                        sender
+                            .send(DWalletMPCChannelMessage::SessionWithAggregator(
+                                session_info.session_id,
+                                AggregatorMessageStatus::InvalidMessageReceived {
+                                    aggregator: origin_authority,
+                                },
+                            ))
+                            .map_err(|_| {
+                                DwalletMPCError::DWalletMPCSenderSendFailed(
+                                    "failed to send verified output to manager".to_string(),
+                                )
+                            })?;
+
+                        Ok(OutputVerificationResult {
+                            result: OutputResult::Malicious,
+                            malicious_actors: vec![origin_authority],
+                        })
+                    }
+                };
+            }
         }
 
         let agreed_output =
