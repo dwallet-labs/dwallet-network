@@ -9,7 +9,6 @@ use std::{
 };
 
 use crate::dwallet_mpc::mpc_outputs_verifier::{OutputResult, OutputVerificationResult};
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -29,11 +28,8 @@ use crate::{
 };
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
-use class_groups::dkg::Secp256k1Party;
-use class_groups::{SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS};
 use consensus_core::CommitConsumerMonitor;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
-use group::PartyID;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme};
 use lru::LruCache;
 use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
@@ -57,7 +53,6 @@ use pera_types::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
-use twopc_mpc::secp256k1;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,

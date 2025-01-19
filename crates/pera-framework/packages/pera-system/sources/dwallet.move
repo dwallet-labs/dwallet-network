@@ -24,6 +24,10 @@ module pera_system::dwallet {
     const CLASS_GROUPS: u8 = 0;
     const SYSTEM_ADDRESS: address = @0x0;
 
+    /// Supported hash schemes for message signing.
+    const KECCAK256: u8 = 0;
+    const SHA256: u8 = 1;
+
     // >>>>>>>>>>>>>>> Error Codes >>>>>>>>>>>>>>
 
     const EInvalidEncryptionKeyScheme: u64 = 0;
@@ -358,7 +362,7 @@ module pera_system::dwallet {
     /// traceability and accountability within the system.
     ///
     /// ### Fields
-    /// - **`dwallet_cap_id`**: The identifier of the DWallet capability
+    /// - **`dwallet_cap_id`**: The identifier of the dWallet capability
     ///   associated with this approval.
     /// - **`hash_scheme`**: The message hash scheme.
     /// - **`message`**: The message that has been approved.
@@ -368,14 +372,13 @@ module pera_system::dwallet {
         message: vector<u8>,
     }
 
-    #[allow(unused_function)]
     /// Creates a `MessageApproval` object.
     public(package) fun create_message_approval(
         dwallet_cap_id: ID,
         hash_scheme: u8,
         message: vector<u8>,
     ): MessageApproval {
-        assert!(is_supported_hash_sheme(hash_scheme), EInvalidHashScheme);
+        assert!(is_supported_hash_scheme(hash_scheme), EInvalidHashScheme);
         let approval = MessageApproval {
             dwallet_cap_id,
             hash_scheme,
@@ -384,9 +387,31 @@ module pera_system::dwallet {
         approval
     }
 
-    /// Create a set of message approvals.
-    /// The messages must be approved in the same order as they were created.
-    /// The messages must be approved by the same `dwallet_cap_id`.
+    /// Approves a set of messages for a specific dWallet capability.
+    ///
+    /// This function creates a list of `MessageApproval` objects for a given set of messages.
+    /// Each message is associated with the same `dWalletCap` and `hash_scheme`. The messages
+    /// must be approved in the same order as they were created to maintain their sequence.
+    ///
+    /// ### Parameters
+    /// - `dwallet_cap`: A reference to the `DWalletCap` object representing the capability for which
+    ///   the messages are being approved.
+    /// - `hash_scheme`: The hash scheme to be used for hashing the messages. For example:
+    ///   - `KECCAK256`
+    ///   - `SHA256`
+    /// - `messages`: A mutable vector containing the messages to be approved. The messages are removed
+    ///   from this vector as they are processed and added to the approvals list.
+    ///
+    /// ### Returns
+    /// A vector of `MessageApproval` objects corresponding to the approved messages.
+    ///
+    /// ### Behavior
+    /// - The function iterates over the provided `messages` vector, processes each message by creating
+    ///   a `MessageApproval` object, and pushes it into the `message_approvals` vector.
+    /// - The messages are approved in reverse order and then reversed again to preserve their original order.
+    ///
+    /// ### Aborts
+    /// - Aborts if the provided `hash_scheme` is not supported by the system (checked during `create_message_approval`).
     public fun approve_messages(
         dwallet_cap: &DWalletCap,
         hash_scheme: u8,
@@ -422,7 +447,7 @@ module pera_system::dwallet {
         (dwallet_cap_id, hash_scheme, message)
     }
 
-    /// Pops the last message approval from the vector and verifies it against tje given message & dwallet_cap_id.
+    /// Pops the last message approval from the vector and verifies it against the given message & dwallet_cap_id.
     public(package) fun pop_and_verify_message_approval(
         dwallet_cap_id: ID,
         message_hash: vector<u8>,
@@ -434,13 +459,9 @@ module pera_system::dwallet {
         assert!(&message_hash == &hash_message(approved_message, hash_scheme), EMissingApprovalOrWrongApprovalOrder);
     }
 
-    /// Supported hash schemes for message signing.
-    const KECCAK256: u8 = 0;
-    const SHA256: u8 = 1;
-
     /// Hashes the given message using the specified hash scheme.
     public(package) fun hash_message(message: vector<u8>, hash_scheme: u8): vector<u8> {
-        assert!(is_supported_hash_sheme(hash_scheme), EInvalidHashScheme);
+        assert!(is_supported_hash_scheme(hash_scheme), EInvalidHashScheme);
         return match (hash_scheme) {
                 KECCAK256 => hash::keccak256(&message),
                 SHA256 => std::hash::sha2_256(message),
@@ -450,7 +471,7 @@ module pera_system::dwallet {
 
     #[allow(unused_function)]
     /// Checks if the given hash scheme is supported for message signing.
-    fun is_supported_hash_sheme(val: u8): bool {
+    fun is_supported_hash_scheme(val: u8): bool {
         return match (val) {
                 KECCAK256 | SHA256 => true,
         _ => false,

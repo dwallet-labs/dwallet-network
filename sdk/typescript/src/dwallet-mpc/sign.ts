@@ -205,7 +205,7 @@ export async function futureSignTransactionCall(
 }
 
 /**
- * Signs a message with the dWallets' on-chain encrypted secret share.
+ * Presigns and Signs a message with the dWallets' on-chain encrypted secret share.
  * Can be called with any dWallet, as the encrypted secret share is automatically created
  * upon dWallet creation.
  *
@@ -271,6 +271,8 @@ export async function signWithEncryptedDWallet(
 		conf,
 		dWallet.dwallet_cap_id,
 		hashedMsgs,
+		messages,
+		Hash.SHA256,
 		dWallet.id.id,
 		presignCompletionEvent.presign_ids,
 		centralizedSignedMsg,
