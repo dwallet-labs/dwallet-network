@@ -32,6 +32,7 @@ use std::collections::HashMap;
 
 pub mod batches_manager;
 mod dkg;
+pub mod dwallet_mpc_service;
 mod encrypt_user_share;
 pub(crate) mod mpc_events;
 pub mod mpc_manager;

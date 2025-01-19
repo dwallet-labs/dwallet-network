@@ -6,9 +6,12 @@ use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
+use tokio::runtime::Handle;
+use tracing::error;
 use twopc_mpc::sign::Protocol;
 
 use pera_types::base_types::{EpochId, ObjectID};
+use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::id::ID;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
@@ -17,6 +20,7 @@ use pera_types::messages_dwallet_mpc::{
 };
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
@@ -30,6 +34,7 @@ pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtoco
 /// A dWallet MPC session.
 /// It keeps track of the session, the channel to send messages to the session,
 /// and the messages that are pending to be sent to the session.
+#[derive(Clone)]
 pub(super) struct DWalletMPCSession {
     /// The status of the MPC session.
     pub(super) status: MPCSessionStatus,
@@ -38,6 +43,7 @@ pub(super) struct DWalletMPCSession {
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
     pub(super) pending_messages: Vec<HashMap<PartyID, MPCMessage>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
+    consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
     /// The total number of parties in the chain
     /// We can calculate the threshold and parties IDs (indexes) from it.
@@ -61,6 +67,7 @@ unsafe impl Send for DWalletMPCSession {}
 impl DWalletMPCSession {
     pub(crate) fn new(
         epoch_store: Weak<AuthorityPerEpochStore>,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch: EpochId,
         status: MPCSessionStatus,
         public_input: MPCPublicInput,
@@ -73,6 +80,7 @@ impl DWalletMPCSession {
         Self {
             status,
             pending_messages: vec![HashMap::new()],
+            consensus_adapter,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             public_input,
@@ -91,33 +99,51 @@ impl DWalletMPCSession {
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
-    /// Advances the MPC session and optionally return a message the validator wants
-    /// to send to the other MPC parties.
-    /// Uses the existing party if it exists,
-    /// otherwise creates a new one, as this is the first advance.
-    pub(super) fn advance(&self) -> DwalletMPCResult<(ConsensusTransaction, Vec<PartyID>)> {
+    /// Advances the MPC session and sends the advancement result to the other validators.
+    pub(super) fn advance(&self, tokio_runtime_handle: Handle) -> DwalletMPCResult<()> {
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
                 message,
-            }) => Ok((
-                self.new_dwallet_mpc_message(message).map_err(|e| {
+            }) => {
+                let message = self.new_dwallet_mpc_message(message).map_err(|e| {
                     DwalletMPCError::MPCSessionError {
                         session_id: self.session_info.session_id,
                         error: format!("failed to create a new MPC message on advance(): {:?}", e),
                     }
-                })?,
-                malicious_parties,
-            )),
+                })?;
+                let consensus_adapter = self.consensus_adapter.clone();
+                let epoch_store = self.epoch_store()?.clone();
+                tokio_runtime_handle.spawn(async move {
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![message], &epoch_store)
+                        .await
+                    {
+                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                    }
+                });
+                Ok(())
+            }
             Ok(AsynchronousRoundResult::Finalize {
                 malicious_parties,
                 private_output: _,
                 public_output,
-            }) => Ok((
-                self.new_dwallet_mpc_output_message(public_output)?,
-                malicious_parties,
-            )),
+            }) => {
+                let output = self.new_dwallet_mpc_output_message(public_output)?;
+                let consensus_adapter = self.consensus_adapter.clone();
+                let epoch_store = self.epoch_store()?.clone();
+                tokio_runtime_handle.spawn(async move {
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![output], &epoch_store)
+                        .await
+                    {
+                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                    }
+                });
+                Ok(())
+            }
             Err(e) => {
+                error!("Failed to advance the MPC session: {:?}", e);
                 let epoch_store = self.epoch_store()?;
                 let dwallet_mpc_sender = epoch_store
                     .dwallet_mpc_sender
@@ -126,7 +152,6 @@ impl DWalletMPCSession {
                 dwallet_mpc_sender
                     .send(DWalletMPCChannelMessage::MPCSessionFailed(
                         self.session_info.session_id,
-                        e.clone(),
                     ))
                     .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
                 Err(e)
@@ -162,7 +187,7 @@ impl DWalletMPCSession {
                     public_input,
                     (),
                 )?;
-                if let AsynchronousRoundResult::Finalize { .. } = &result {
+                if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
                     verify_encrypted_share(&StartEncryptedShareVerificationEvent {
                         dwallet_centralized_public_output: event_data
                             .dkg_centralized_public_output

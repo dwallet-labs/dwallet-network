@@ -8,7 +8,10 @@ use std::{
     sync::Arc,
 };
 
-use crate::dwallet_mpc::mpc_outputs_verifier::{OutputResult, OutputVerificationResult};
+use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
+use crate::dwallet_mpc::mpc_outputs_verifier::{
+    DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
+};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::{
     authority::{
@@ -32,7 +35,9 @@ use async_trait::async_trait;
 use class_groups::dkg::Secp256k1Party;
 use class_groups::{SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS};
 use consensus_core::CommitConsumerMonitor;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
+};
 use group::PartyID;
 use lru::LruCache;
 use mpc::WeightedThresholdAccessStructure;
@@ -43,6 +48,7 @@ use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
+use pera_types::error::PeraResult;
 use pera_types::executable_transaction::CertificateProof;
 use pera_types::message_envelope::VerifiedEnvelope;
 use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound, SessionInfo};
@@ -58,6 +64,7 @@ use pera_types::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
 use twopc_mpc::secp256k1;
+use typed_store::Map;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -378,12 +385,13 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             );
                             continue;
                         }
-                        let Ok(mut dwallet_mpc_verifier) =
-                            self.epoch_store.get_dwallet_mpc_outputs_verifier().await
-                        else {
-                            error!("failed to get dWallet MPC outputs manager when processing `LockNextCommittee` transaction");
-                            continue;
-                        };
+                        let mut dwallet_mpc_verifier =
+                            self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
+                        self.epoch_store
+                            .save_dwallet_mpc_message(
+                                DWalletMPCChannelMessage::LockNextEpochCommitteeVote(*authority),
+                            )
+                            .await;
                         if dwallet_mpc_verifier.should_lock_committee(*authority) {
                             let transaction =
                                 VerifiedTransaction::new_lock_next_committee_system_transaction(
@@ -423,15 +431,18 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             );
                             continue;
                         };
+                        let mut dwallet_mpc_verifier =
+                            self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
 
-                        let Ok(mut dwallet_mpc_outputs_verifier) =
-                            self.epoch_store.get_dwallet_mpc_outputs_verifier().await
-                        else {
-                            error!("failed to get dWallet MPC outputs verifier when processing DWalletMPCOutput transaction");
-                            continue;
-                        };
+                        self.epoch_store
+                            .save_dwallet_mpc_message(DWalletMPCChannelMessage::Output(
+                                output.clone(),
+                                origin_authority.clone(),
+                                session_info.clone(),
+                            ))
+                            .await;
 
-                        let output_verification_result = dwallet_mpc_outputs_verifier
+                        let output_verification_result = dwallet_mpc_verifier
                             .try_verify_output(output, &session_info, origin_authority)
                             .unwrap_or_else(|e| {
                                 error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
@@ -443,7 +454,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         match output_verification_result.result {
                             OutputResult::Valid => {
                                 if session_info.mpc_round.is_part_of_batch() {
-                                    let Ok(mut batches_manager) =
+                                    let mut batches_manager =
                                         self.epoch_store.get_dwallet_mpc_batches_manager().await
                                     else {
                                         error!("failed to get dWallet MPC batches manager when processing DWalletMPCOutput transaction");

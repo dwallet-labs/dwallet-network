@@ -19,6 +19,7 @@ module pera_system::dwallet {
     use pera::event;
     use pera::table::{Self, Table};
     use pera::ed25519::ed25519_verify;
+    use pera_system::pera_system::PeraSystemState;
 
     const CLASS_GROUPS: u8 = 0;
     const SYSTEM_ADDRESS: address = @0x0;
@@ -210,6 +211,7 @@ module pera_system::dwallet {
         signed_encryption_key: vector<u8>,
         sender_pubkey: vector<u8>,
         encryption_key_scheme: u8,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         assert!(is_valid_encryption_key_scheme(encryption_key_scheme), EInvalidEncryptionKeyScheme);

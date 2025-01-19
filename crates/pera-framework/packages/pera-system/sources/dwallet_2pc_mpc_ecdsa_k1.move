@@ -19,6 +19,7 @@
 /// - Transfer intermediate results and final outputs to the initiating user.
 /// - Ensure secure and decentralized key generation and management.
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
+    use pera_system::pera_system::PeraSystemState;
     use pera_system::dwallet;
     use pera_system::dwallet::{
         DWallet,
@@ -452,7 +453,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     ///   - `session_id`: The generated session ID.
     ///   - `initiator`: The address of the transaction sender.
     ///   - `dwallet_cap_id`: The ID of the created `DWalletCap`.
-    public fun launch_dkg_first_round(ctx: &mut TxContext) {
+    public fun launch_dkg_first_round(_pera_system_state: &PeraSystemState, ctx: &mut TxContext) {
         let dwallet_cap = create_dwallet_cap(ctx);
         let dwallet_cap_id = object::id(&dwallet_cap);
         transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
@@ -534,6 +535,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         encryptor_ed25519_pubkey: vector<u8>,
         // todo(scaly): is it the public eky?
         centralized_public_output: vector<u8>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ): address {
         // todo(zeev): rename the event fields.
@@ -583,6 +585,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         encrypted_secret_share_and_proof: vector<u8>,
         source_signed_centralized_public_output: vector<u8>,
         source_ed25519_pubkey: vector<u8>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext,
     ) {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
@@ -818,6 +821,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun launch_batched_presign(
         dwallet: &DWallet<Secp256K1>,
         batch_size: u64,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
@@ -1081,6 +1085,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         mut presigns: vector<Presign>,
         dwallet: &DWallet<Secp256K1>,
         mut centralized_signed_messages: vector<vector<u8>>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         let messages_len: u64 = vector::length(&hashed_messages);
@@ -1279,6 +1284,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         messages: vector<vector<u8>>,
         mut presigns: vector<Presign>,
         dwallet: &DWallet<Secp256K1>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         let messages_len = vector::length(&messages);
@@ -1332,6 +1338,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun future_sign(
         partial_signature: PartiallySignedMessages,
         message_approvals: &mut vector<MessageApproval>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         let PartiallySignedMessages {

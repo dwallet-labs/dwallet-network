@@ -50,6 +50,8 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: timeout,
 		};
+		// sleep for 2 seconds
+		await new Promise((r) => setTimeout(r, 2000));
 		const dWallet = await createDWallet(
 			conf,
 			mockedProtocolPublicParameters,
