@@ -402,7 +402,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 pub(crate) fn session_input_from_event(
     event: &Event,
     dwallet_mpc_manager: &DWalletMPCManager,
-) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput, MPCUpdateOutputSender)> {
+) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
     if &event.type_ == &StartNetworkDKGEvent::type_() {
         let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
         return Ok((
@@ -413,7 +413,6 @@ pub(crate) fn session_input_from_event(
             Some(bcs::to_bytes(
                 &dwallet_mpc_manager.node_config.class_groups_private_key,
             )?),
-            None,
         ));
     }
     match &event.type_ {
@@ -426,7 +425,6 @@ pub(crate) fn session_input_from_event(
             )?;
             Ok((
                 dkg_first_public_input(protocol_public_parameters)?,
-                None,
                 None,
             ))
         }
@@ -441,7 +439,6 @@ pub(crate) fn session_input_from_event(
             Ok((
                 dkg_second_public_input(deserialized_event, protocol_public_parameters)?,
                 None,
-                None,
             ))
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
@@ -454,7 +451,6 @@ pub(crate) fn session_input_from_event(
             )?;
             Ok((
                 presign_first_public_input(deserialized_event, protocol_public_parameters)?,
-                None,
                 None,
             ))
         }
@@ -469,7 +465,6 @@ pub(crate) fn session_input_from_event(
             )?;
             Ok((
                 presign_second_public_input(deserialized_event, protocol_public_parameters)?,
-                None,
                 None,
             ))
         }
@@ -488,10 +483,9 @@ pub(crate) fn session_input_from_event(
                     protocol_public_parameters,
                 )?,
                 None,
-                None,
             ))
         }
-        t if t == &StartEncryptedShareVerificationEvent::type_() => Ok((vec![], None, None)),
+        t if t == &StartEncryptedShareVerificationEvent::type_() => Ok((vec![], None)),
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),
     }
 }

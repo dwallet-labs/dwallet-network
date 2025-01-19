@@ -88,8 +88,8 @@ impl DWalletMPCSession {
             weighted_threshold_access_structure,
             decryption_share,
             private_input,
-            update_output_receiver: Some(receiver),
-            update_output_sender: Some(sender),
+            update_output_receiver: receiver,
+            update_output_sender: sender,
             timeout_to_start_advance: if timeout_to_start_advance.is_none() {
                 0
             } else {
@@ -158,6 +158,7 @@ impl DWalletMPCSession {
 
     fn advance_specific_party(
         &self,
+        // aggrgator_receiver: &mut MPCUpdateOutputReceiver,
     ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
         let session_id = CommitmentSizedNumber::from_le_slice(
             self.session_info.flow_session_id.to_vec().as_slice(),
@@ -227,16 +228,14 @@ impl DWalletMPCSession {
             }
             MPCRound::Sign(..) => {
                 // Todo: what about malicious parties from the aggregator
-                if let Ok((public_output)) = self
-                    .update_output_receiver
-                    .recv_timeout(self.timeout_to_start_advance * 300)
-                {
-                    return Ok(AsynchronousRoundResult::Finalize {
-                        malicious_parties: vec![],
-                        private_output: vec![], // Sign finial round does not have private output
-                        public_output,
-                    });
-                }
+                // match time::timeout(Duration::from_secs((self.timeout_to_start_advance * 300) as u64), aggrgator_receiver.take().unwrap()) {
+                // {
+                //     return Ok(AsynchronousRoundResult::Finalize {
+                //         malicious_parties: vec![],
+                //         private_output: vec![], // Sign finial round does not have private output
+                //         public_output,
+                //     });
+                // }
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<SignFirstParty>(
                     session_id,

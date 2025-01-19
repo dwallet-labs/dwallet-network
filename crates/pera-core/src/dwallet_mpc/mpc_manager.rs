@@ -191,7 +191,7 @@ impl DWalletMPCManager {
             }
             DWalletMPCChannelMessage::ValidSignMessageReceived(session_id, public_output) => {
                 if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
-                    session.update_output_sender = match &session.update_output_sender {
+                    session.update_output_sender = match session.update_output_sender.take() {
                         Some(sender) => {
                             if let Err(err) = sender.send(public_output.clone()) {
                                 error!(
@@ -515,7 +515,7 @@ impl DWalletMPCManager {
             session_info.session_id
         );
 
-        let session_id_as_32_bytes: [u8; 32] = session_info.session_id.into();
+        let session_id_as_32_bytes: [u8; 32] = session_info.session_id.into_bytes();
         let positions = &self
             .epoch_store()?
             .committee()
