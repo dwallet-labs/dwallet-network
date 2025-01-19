@@ -91,6 +91,9 @@ pub enum DWalletMPCChannelMessage {
     /// The manager accumulates the data until it receives such an event for all validators,
     /// and then it starts the network DKG protocol.
     ValidatorDataForDKG(ValidatorDataForNetworkDKG),
+    /// A message indicating that an MPC session has failed.
+    /// The advance failed, and the session needs to be restarted or marked as failed.
+    MPCSessionFailed(ObjectID, DwalletMPCError),
 
     ValidSignMessageReceived(ObjectID, MPCPublicOutput),
 }
@@ -156,11 +159,20 @@ impl DWalletMPCManager {
                     Ok(verification_result) => {
                         self.malicious_actors
                             .extend(verification_result.malicious_actors);
+                        match verification_result.result {
+                            crate::dwallet_mpc::mpc_outputs_verifier::OutputResult::AlreadyCommitted => {
+                                let session = self.mpc_sessions.get_mut(&session_info.session_id);
+                                if let Some(session) = session {
+                                    session.status = MPCSessionStatus::Finished(output.clone());
+                                }
+                            }
+                            _ => {}
+                        }
                     }
                     Err(err) => {
                         error!("Failed to verify output with error: {:?}", err);
                     }
-                }
+                };
             }
             DWalletMPCChannelMessage::Event(event, session_info) => {
                 if let Err(err) = self.handle_event(event, session_info) {
@@ -186,6 +198,23 @@ impl DWalletMPCManager {
                         "failed to handle validator data for DKG session with error: {:?}",
                         err
                     );
+                }
+            }
+            DWalletMPCChannelMessage::MPCSessionFailed(session_id, err) => {
+                if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
+                    match err {
+                        DwalletMPCError::MaliciousParties(malicious_parties) => {
+                            session.restart();
+                            error!(
+                                "MPC session failed with malicious parties: {:?}",
+                                malicious_parties
+                            );
+                        }
+                        e => {
+                            session.status = MPCSessionStatus::Failed;
+                            error!("MPC session failed with error: {:?}", e);
+                        }
+                    }
                 }
             }
             DWalletMPCChannelMessage::ValidSignMessageReceived(session_id, public_output) => {
@@ -344,8 +373,9 @@ impl DWalletMPCManager {
                 };
 
                 let is_ready = match session.status {
-                    MPCSessionStatus::Active => received_weight as StakeUnit >= threshold,
-                    MPCSessionStatus::FirstExecution => true,
+                    MPCSessionStatus::Active => {
+                        received_weight as StakeUnit >= threshold || session.round_number == 0
+                    }
                     _ => false,
                 };
 
@@ -374,7 +404,10 @@ impl DWalletMPCManager {
         let mut messages = vec![];
         ready_to_advance
             .par_iter_mut()
-            .map(|session| (session.advance(), session.session_info.session_id))
+            .map(|session| {
+                session.round_number += 1;
+                (session.advance(), session.session_info.session_id)
+            })
             .collect::<Vec<_>>()
             // Convert back to an iterator for processing.
             .into_iter()
@@ -396,21 +429,6 @@ impl DWalletMPCManager {
         // Need to send the messages' one by one, so the consensus adapter won't think they
         // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
         for (message, session_id) in messages {
-            // Update the manager with the new network decryption key share (if relevant).
-            let session = self
-                .mpc_sessions
-                .get(&session_id)
-                .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
-            if let MPCSessionStatus::Finished(public_output, private_output) =
-                session.status.clone()
-            {
-                self.update_dwallet_mpc_network_key(
-                    &session.session_info,
-                    public_output,
-                    private_output,
-                )?;
-            }
-
             self.consensus_adapter
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
                 .await?;
@@ -553,7 +571,7 @@ impl DWalletMPCManager {
             );
             return Ok(());
         }
-        new_session.status = MPCSessionStatus::FirstExecution;
+        new_session.status = MPCSessionStatus::Active;
         self.mpc_sessions
             .insert(session_info.session_id, new_session);
         self.active_sessions_counter += 1;

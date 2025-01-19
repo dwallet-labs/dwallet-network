@@ -49,13 +49,6 @@ pub type MPCUpdateOutputReceiver = Option<tokio::sync::oneshot::Receiver<MPCPubl
 ///   [`DWalletMPCManager::max_active_mpc_instances`] has been reached.
 ///   It is waiting for active instances to complete before activation.
 ///
-/// - `FirstExecution`:
-///   Indicates that the [`DWalletMPCInstance::party`] has not yet performed its
-///   first advance.
-///   This status ensures these instances can be filtered and
-///   advanced, even if they have not received the `threshold_number_of_parties`
-///   messages.
-///
 /// - `Active`:
 ///   The session is currently running, and new messages are forwarded to it
 ///   for processing.
@@ -70,9 +63,8 @@ pub type MPCUpdateOutputReceiver = Option<tokio::sync::oneshot::Receiver<MPCPubl
 #[derive(Clone, PartialEq, Debug)]
 pub enum MPCSessionStatus {
     Pending,
-    FirstExecution,
     Active,
-    Finished(MPCPublicOutput, MPCPrivateOutput),
+    Finished(MPCPublicOutput),
     Failed,
 }
 
@@ -80,10 +72,9 @@ impl fmt::Display for MPCSessionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MPCSessionStatus::Pending => write!(f, "Pending"),
-            MPCSessionStatus::FirstExecution => write!(f, "FirstExecution"),
             MPCSessionStatus::Active => write!(f, "Active"),
-            MPCSessionStatus::Finished(public_output, private_output) => {
-                write!(f, "Finished({:?} {:?})", public_output, private_output)
+            MPCSessionStatus::Finished(public_output) => {
+                write!(f, "Finished({:?})", public_output)
             }
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }
@@ -122,7 +113,7 @@ pub enum DWalletMPCNetworkKeyScheme {
 
 // We can't import pera-types here since we import this module in there.
 // Therefor we use `thiserror` `#from` to convert this error.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum DwalletNetworkMPCError {
     #[error("invalid DWalletMPCNetworkKey value: {0}")]
     InvalidDWalletMPCNetworkKey(u8),
