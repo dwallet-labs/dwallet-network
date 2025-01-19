@@ -170,7 +170,7 @@ impl DWalletMPCManager {
                 }
             }
             DWalletMPCChannelMessage::ValidatorDataForDKG(data) => {
-                if let Err(err) = self.handle_validator_data_for_dkg(data) {
+                if let Err(err) = self.handle_validator_data_for_network_dkg(data) {
                     error!(
                         "failed to handle validator data for DKG session with error: {:?}",
                         err
@@ -180,7 +180,7 @@ impl DWalletMPCManager {
         }
     }
 
-    fn handle_validator_data_for_dkg(
+    fn handle_validator_data_for_network_dkg(
         &mut self,
         data: ValidatorDataForNetworkDKG,
     ) -> DwalletMPCResult<()> {

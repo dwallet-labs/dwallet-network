@@ -229,7 +229,7 @@ pub struct SystemStateSummary {
     /// A map storing the records of validator reporting each other.
     pub validator_report_records: Vec<(Address, Vec<Address>)>,
     /// dWallet MPC network keys, KeyScheme -> NetworkDecryptionKeyShares
-    pub decryption_key_shares: Vec<(u8, NetworkDecryptionKeyShares)>,
+    pub network_mpc_keys: Vec<(u8, NetworkDecryptionKeyShares)>,
 }
 
 /// This is the REST type for the pera validator. It flattens all inner structures
@@ -473,7 +473,7 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraSystemSt
             validator_candidates_size,
             at_risk_validators,
             validator_report_records,
-            decryption_key_shares,
+            network_mpc_keys,
         } = value;
 
         Self {
@@ -525,7 +525,7 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraSystemSt
                     )
                 })
                 .collect(),
-            decryption_key_shares,
+            network_mpc_keys,
         }
     }
 }

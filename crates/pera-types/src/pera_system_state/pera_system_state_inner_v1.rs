@@ -740,7 +740,7 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV1 {
             validator_low_stake_grace_period,
             stake_subsidy_period_length,
             stake_subsidy_decrease_rate,
-            decryption_key_shares: Vec::new(),
+            network_mpc_keys: Vec::new(),
         }
     }
 }

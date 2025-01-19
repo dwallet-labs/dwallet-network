@@ -184,7 +184,7 @@ pub struct PeraSystemStateSummary {
     /// A map storing the records of validator reporting each other.
     pub validator_report_records: Vec<(PeraAddress, Vec<PeraAddress>)>,
     /// dWallet MPC network keys, KeyScheme -> NetworkDecryptionKeyShares
-    pub decryption_key_shares: Vec<(u8, NetworkDecryptionKeyShares)>,
+    pub network_mpc_keys: Vec<(u8, NetworkDecryptionKeyShares)>,
 }
 
 impl PeraSystemStateSummary {
@@ -362,7 +362,7 @@ impl Default for PeraSystemStateSummary {
             validator_candidates_size: 0,
             at_risk_validators: vec![],
             validator_report_records: vec![],
-            decryption_key_shares: vec![],
+            network_mpc_keys: vec![],
         }
     }
 }
