@@ -259,7 +259,7 @@ fn sign_public_input(
     dwallet_mpc_manager: &DWalletMPCManager,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    let decryption_pp = dwallet_mpc_manager.get_decryption_public_parameters(
+    let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
         // Todo (#473): Support generic network key scheme
         DWalletMPCNetworkKeyScheme::Secp256k1,
@@ -481,6 +481,7 @@ pub(crate) fn session_input_from_event(
             ))
         }
         t if t == &StartEncryptedShareVerificationEvent::type_() => Ok((vec![], None)),
+        t if t == &StartEncryptionKeyVerificationEvent::type_() => Ok((vec![], None)),
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),
     }
 }

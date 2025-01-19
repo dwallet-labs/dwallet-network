@@ -1129,39 +1129,6 @@ mod checked {
         let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 
         let (move_function_name, args) = match data.session_info.mpc_round {
-            MPCRound::EncryptedShareVerification(verification_data) => (
-                "create_encrypted_user_share",
-                vec![
-                    CallArg::Pure(verification_data.dwallet_id.bytes.to_vec()),
-                    CallArg::Pure(
-                        bcs::to_bytes(&verification_data.encrypted_secret_share_and_proof).unwrap(),
-                    ),
-                    CallArg::Pure(verification_data.encryption_key_id.bytes.to_vec()),
-                    CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&verification_data.signed_public_share).unwrap()),
-                    CallArg::Pure(
-                        bcs::to_bytes(&verification_data.encryptor_ed25519_pubkey).unwrap(),
-                    ),
-                    CallArg::Pure(verification_data.initiator.to_vec()),
-                ],
-            ),
-
-            MPCRound::EncryptionKeyVerification(verification_data) => {
-                module_name = DWALLET_MODULE_NAME;
-                (
-                    "create_encryption_key",
-                    vec![
-                        CallArg::Pure(bcs::to_bytes(&verification_data.encryption_key).unwrap()),
-                        CallArg::Pure(
-                            bcs::to_bytes(&verification_data.encryption_key_signature).unwrap(),
-                        ),
-                        CallArg::Pure(bcs::to_bytes(&verification_data.sender_sui_pubkey).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&verification_data.scheme).unwrap()),
-                        CallArg::Pure(verification_data.initiator.to_vec()),
-                        CallArg::Pure(data.session_info.session_id.to_vec()),
-                    ],
-                )
-            }
             MPCRound::DKGFirst => (
                 "create_dkg_first_round_output",
                 vec![
@@ -1178,12 +1145,11 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(event_data.dwallet_cap_id.bytes.to_vec()),
                     CallArg::Pure(bcs_to_bytes(&dwallet_network_key_version)?),
-                    CallArg::Pure(
-                        bcs::to_bytes(&event_data.encrypted_secret_share_and_proof).unwrap(),
-                    ),
+                    CallArg::Pure(bcs_to_bytes(&event_data.encrypted_secret_share_and_proof)?),
                     CallArg::Pure(event_data.encryption_key_id.bytes.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&event_data.signed_public_share).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&event_data.encryptor_ed25519_pubkey).unwrap()),
+                    CallArg::Pure(bcs_to_bytes(&event_data.signed_public_share)?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.encryptor_ed25519_pubkey)?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.dkg_centralized_public_output)?),
                 ],
             ),
             MPCRound::PresignFirst(
@@ -1260,12 +1226,46 @@ mod checked {
                     "new_decryption_key_shares_version",
                     vec![
                         CallArg::PERA_SYSTEM_MUT,
-                        CallArg::Pure(bcs_to_bytes(&new_key.current_epoch_shares)?),
-                        CallArg::Pure(bcs_to_bytes(&new_key.protocol_public_parameters)?),
-                        CallArg::Pure(bcs_to_bytes(&new_key.decryption_public_parameters)?),
+                        CallArg::Pure(bcs_to_bytes(
+                            &new_key.current_epoch_encryptions_of_shares_per_crt_prime,
+                        )?),
+                        CallArg::Pure(bcs_to_bytes(&new_key.encryption_scheme_public_parameters)?),
+                        CallArg::Pure(bcs_to_bytes(
+                            &new_key.decryption_key_share_public_parameters,
+                        )?),
                         CallArg::Pure(bcs_to_bytes(&new_key.encryption_key)?),
                         CallArg::Pure(bcs_to_bytes(&new_key.reconstructed_commitments_to_sharing)?),
                         CallArg::Pure(bcs_to_bytes(&(key_type as u8))?),
+                    ],
+                )
+            }
+            MPCRound::EncryptedShareVerification(verification_data) => (
+                "create_encrypted_user_share",
+                vec![
+                    CallArg::Pure(verification_data.dwallet_id.bytes.to_vec()),
+                    CallArg::Pure(
+                        bcs::to_bytes(&verification_data.encrypted_secret_share_and_proof).unwrap(),
+                    ),
+                    CallArg::Pure(verification_data.encryption_key_id.bytes.to_vec()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&verification_data.signed_public_share).unwrap()),
+                    CallArg::Pure(
+                        bcs::to_bytes(&verification_data.encryptor_ed25519_pubkey).unwrap(),
+                    ),
+                    CallArg::Pure(verification_data.initiator.to_vec()),
+                ],
+            ),
+            MPCRound::EncryptionKeyVerification(verification_data) => {
+                module_name = DWALLET_MODULE_NAME;
+                (
+                    "create_encryption_key",
+                    vec![
+                        CallArg::Pure(bcs_to_bytes(&verification_data.encryption_key)?),
+                        CallArg::Pure(bcs_to_bytes(&verification_data.encryption_key_signature)?),
+                        CallArg::Pure(bcs_to_bytes(&verification_data.sender_sui_pubkey)?),
+                        CallArg::Pure(bcs_to_bytes(&verification_data.scheme)?),
+                        CallArg::Pure(verification_data.initiator.to_vec()),
+                        CallArg::Pure(data.session_info.session_id.to_vec()),
                     ],
                 )
             }

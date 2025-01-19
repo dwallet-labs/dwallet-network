@@ -43,7 +43,10 @@ create_dwallet_cap
 get_dwallet_cap_id
 	public(package) fun
 	0x3::dwallet
-get_dwallet_output
+get_dwallet_decentralized_output
+	public(package) fun
+	0x3::dwallet
+get_dwallet_centralized_output
 	public(package) fun
 	0x3::dwallet
 get_dwallet_mpc_network_key_version
@@ -88,7 +91,7 @@ StartDKGFirstRoundEvent
 CompletedSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-EncryptedUserShare
+EncryptedUserSecretKeyShare
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartDKGSecondRoundEvent
@@ -124,7 +127,7 @@ create_dkg_first_round_output
 launch_dkg_second_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-publish_encrypted_user_share
+transfer_encrypted_user_share
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_encrypted_user_share

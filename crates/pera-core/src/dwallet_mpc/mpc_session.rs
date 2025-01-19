@@ -160,9 +160,11 @@ impl DWalletMPCSession {
                     public_input,
                     (),
                 )?;
-                if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
+                if let AsynchronousRoundResult::Finalize { .. } = &result {
                     verify_encrypted_share(&StartEncryptedShareVerificationEvent {
-                        dwallet_output: public_output.clone(),
+                        dwallet_centralized_public_output: event_data
+                            .dkg_centralized_public_output
+                            .clone(),
                         encrypted_secret_share_and_proof: event_data
                             .encrypted_secret_share_and_proof
                             .clone(),
@@ -296,7 +298,7 @@ impl DWalletMPCSession {
         let source_party_id =
             authority_name_to_party_id(&message.authority, &*self.epoch_store()?)?;
 
-        let msg_len = self.pending_messages.len();
+        let current_round = self.pending_messages.len();
         match self.pending_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
                 if party_to_msg.contains_key(&source_party_id) {
@@ -306,7 +308,7 @@ impl DWalletMPCSession {
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
             // If next round.
-            None if message.round_number == msg_len => {
+            None if message.round_number == current_round => {
                 let mut map = HashMap::new();
                 map.insert(source_party_id, message.message.clone());
                 self.pending_messages.push(map);
