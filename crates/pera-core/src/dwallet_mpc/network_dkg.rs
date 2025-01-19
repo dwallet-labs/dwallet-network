@@ -20,7 +20,7 @@ use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionK
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::WeightedThresholdAccessStructure;
+use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
@@ -464,8 +464,9 @@ pub(crate) fn advance_network_dkg(
     key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
+    epoch_store: Arc<AuthorityPerEpochStore>,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-    match key_scheme {
+    let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => advance::<Secp256k1Party>(
             session_id,
             party_id,
@@ -482,6 +483,29 @@ pub(crate) fn advance_network_dkg(
             bcs::from_bytes(public_input)?,
             class_groups_decryption_key,
         ),
+    }?;
+
+    match &res {
+        AsynchronousRoundResult::Finalize {
+            malicious_parties: _,
+            private_output,
+            public_output,
+        } => {
+            // Update the network dWallet MPC keys with the new one.
+            // Todo (#507): Save the output only after it has been verified first by quorum of validators.
+            if let Some(network_key) = epoch_store.dwallet_mpc_network_keys.get() {
+                network_key.add_key_version(
+                    epoch_store.clone(),
+                    key_scheme.clone(),
+                    bcs::from_bytes(&private_output)?,
+                    public_output.clone(),
+                    weighted_threshold_access_structure,
+                )?;
+                return Ok(res);
+            };
+            Err(DwalletMPCError::DwalletMPCNetworkKeysNotFound)
+        }
+        _ => Ok(res),
     }
 }
 pub(super) fn network_dkg_public_input(
