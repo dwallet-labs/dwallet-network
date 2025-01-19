@@ -85,15 +85,16 @@ pub struct NetworkDecryptionKeyShares {
     pub epoch: u64,
     /// Decryption key shares for the current epoch.
     /// Updated at the reconfiguration or when a new key version is created at network DKG.
-    pub current_epoch_shares: Vec<u8>,
+    pub current_epoch_encryptions_of_shares_per_crt_prime: Vec<u8>,
     /// Decryption key shares for the previous epoch.
     /// Updated at the reconfiguration.
-    pub previous_epoch_shares: Vec<u8>,
-    /// The public parameters of the network DKG, updated only after a successful network DKG.
-    pub protocol_public_parameters: Vec<u8>,
+    pub previous_epoch_encryptions_of_shares_per_crt_prime: Vec<u8>,
+    /// Public parameters from the network DKG, used to create the protocol public parameters.
+    /// Updated only after a successful network DKG.
+    pub encryption_scheme_public_parameters: Vec<u8>,
     /// The public parameters of the decryption key shares,
     /// updated only after a successful network DKG.
-    pub decryption_public_parameters: Vec<u8>,
+    pub decryption_key_share_public_parameters: Vec<u8>,
     ///  The network encryption, updated only after a successful network DKG.
     pub encryption_key: Vec<u8>,
     /// Validators' commitments to the secret sharing constructed in the network DKG.
