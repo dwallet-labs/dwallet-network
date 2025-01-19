@@ -20,6 +20,7 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
+use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
@@ -94,9 +95,7 @@ impl DWalletMPCSession {
     /// to send to the other MPC parties.
     /// Uses the existing party if it exists,
     /// otherwise creates a new one, as this is the first advance.
-    pub(super) fn advance(&mut self) -> DwalletMPCResult<(ConsensusTransaction, Vec<PartyID>)> {
-        self.status = MPCSessionStatus::Active;
-        self.round_number = self.round_number + 1;
+    pub(super) fn advance(&self) -> DwalletMPCResult<(ConsensusTransaction, Vec<PartyID>)> {
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
@@ -114,19 +113,22 @@ impl DWalletMPCSession {
                 malicious_parties,
                 private_output: _,
                 public_output,
-            }) => {
-                self.status = MPCSessionStatus::Finished(public_output.clone());
-                Ok((
-                    self.new_dwallet_mpc_output_message(public_output)?,
-                    malicious_parties,
-                ))
-            }
-            Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
-                self.restart();
-                Err(DwalletMPCError::MaliciousParties(malicious_parties))
-            }
+            }) => Ok((
+                self.new_dwallet_mpc_output_message(public_output)?,
+                malicious_parties,
+            )),
             Err(e) => {
-                self.status = MPCSessionStatus::Failed;
+                let epoch_store = self.epoch_store()?;
+                let dwallet_mpc_sender = epoch_store
+                    .dwallet_mpc_sender
+                    .get()
+                    .ok_or_else(|| DwalletMPCError::MissingDWalletMPCSender)?;
+                dwallet_mpc_sender
+                    .send(DWalletMPCChannelMessage::MPCSessionFailed(
+                        self.session_info.session_id,
+                        e.clone(),
+                    ))
+                    .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
                 Err(e)
             }
         }
@@ -258,8 +260,8 @@ impl DWalletMPCSession {
     /// Being called when session advancement has failed due to malicious parties.
     /// Those parties will be flagged as malicious and ignored,
     /// the session will be restarted.
-    fn restart(&mut self) {
-        self.status = MPCSessionStatus::FirstExecution;
+    pub(crate) fn restart(&mut self) {
+        self.status = MPCSessionStatus::Active;
         self.pending_messages = vec![HashMap::new()];
     }
 
