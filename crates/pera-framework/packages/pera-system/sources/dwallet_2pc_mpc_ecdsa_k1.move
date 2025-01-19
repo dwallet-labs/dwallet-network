@@ -1416,7 +1416,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     /// Hashes the given message using the specified hash scheme.
-     fun hash_message(message: vector<u8>, hash_scheme: u8): vector<u8> {
+     public fun hash_message(message: vector<u8>, hash_scheme: u8): vector<u8> {
         assert!(is_supported_hash_sheme(hash_scheme), EInvalidHashScheme);
         return match (hash_scheme) {
         KECCAK256 => hash::keccak256(&message),

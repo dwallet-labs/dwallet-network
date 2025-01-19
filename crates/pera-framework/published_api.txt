@@ -145,7 +145,7 @@ launch_presign_second_round
 create_batched_presign_output
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-is_supported_hash_scheme
+is_supported_hash_sheme
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_message_approval
@@ -179,7 +179,7 @@ future_sign
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 hash_message
-	fun
+	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 pop_and_verify_message_approval
 	fun
