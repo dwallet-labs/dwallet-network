@@ -7,7 +7,9 @@ use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
+use std::time::Duration;
 use tokio::sync::oneshot;
+use tokio::time;
 use twopc_mpc::sign::Protocol;
 
 use pera_types::base_types::{EpochId, ObjectID};
@@ -121,7 +123,7 @@ impl DWalletMPCSession {
     pub(super) fn advance(&mut self) -> DwalletMPCResult<(ConsensusTransaction, Vec<PartyID>)> {
         self.status = MPCSessionStatus::Active;
         self.round_number = self.round_number + 1;
-        match self.advance_specific_party() {
+        match self.advance_specific_party(&mut self.update_output_receiver) {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
                 message,
@@ -158,7 +160,7 @@ impl DWalletMPCSession {
 
     fn advance_specific_party(
         &self,
-        // aggrgator_receiver: &mut MPCUpdateOutputReceiver,
+        aggrgator_receiver: &mut MPCUpdateOutputReceiver,
     ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
         let session_id = CommitmentSizedNumber::from_le_slice(
             self.session_info.flow_session_id.to_vec().as_slice(),
@@ -230,13 +232,24 @@ impl DWalletMPCSession {
             }
             MPCRound::Sign(..) => {
                 // Todo: what about malicious parties from the aggregator
-                // match time::timeout(Duration::from_secs((self.timeout_to_start_advance * 300) as u64), aggrgator_receiver.take().unwrap()) {
-                // {
-                //     return Ok(AsynchronousRoundResult::Finalize {
-                //         malicious_parties: vec![],
-                //         private_output: vec![], // Sign finial round does not have private output
-                //         public_output,
-                //     });
+
+                // if self.round_number == 2 {
+                //     let timeout_duration = Duration::from_secs(30);
+                //     match time::timeout(timeout_duration, aggrgator_receiver.take().unwrap()).await {
+                //         Ok(Ok(public_output)) => {
+                //             return Ok(AsynchronousRoundResult::Finalize {
+                //                 malicious_parties: vec![],
+                //                 private_output: vec![], // Sign finial round does not have private output
+                //                 public_output,
+                //             });
+                //         }
+                //         Ok(Err(_)) => {
+                //             // Sender was dropped
+                //         }
+                //         Err(_) => {
+                //             println!("Timeout occurred, generating input");
+                //         }
+                //     };
                 // }
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<SignFirstParty>(
