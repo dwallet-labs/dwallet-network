@@ -90,6 +90,9 @@ pub enum DWalletMPCChannelMessage {
     /// The manager accumulates the data until it receives such an event for all validators,
     /// and then it starts the network DKG protocol.
     ValidatorDataForDKG(ValidatorDataForNetworkDKG),
+    /// A message indicating that an MPC session has failed.
+    /// The advance failed, and the session needs to be restarted or marked as failed.
+    MPCSessionFailed(ObjectID, DwalletMPCError),
 }
 
 impl DWalletMPCManager {
@@ -185,6 +188,23 @@ impl DWalletMPCManager {
                         "failed to handle validator data for DKG session with error: {:?}",
                         err
                     );
+                }
+            }
+            DWalletMPCChannelMessage::MPCSessionFailed(session_id, err) => {
+                if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
+                    match err {
+                        DwalletMPCError::MaliciousParties(malicious_parties) => {
+                            session.restart();
+                            error!(
+                                "MPC session failed with malicious parties: {:?}",
+                                malicious_parties
+                            );
+                        }
+                        e => {
+                            session.status = MPCSessionStatus::Failed;
+                            error!("MPC session failed with error: {:?}", e);
+                        }
+                    }
                 }
             }
         }
@@ -353,7 +373,10 @@ impl DWalletMPCManager {
         let mut messages = vec![];
         ready_to_advance
             .par_iter_mut()
-            .map(|session| (session.advance(), session.session_info.session_id))
+            .map(|session| {
+                session.round_number += 1;
+                (session.advance(), session.session_info.session_id)
+            })
             .collect::<Vec<_>>()
             // Convert back to an iterator for processing.
             .into_iter()

@@ -2,7 +2,7 @@ use crate::base_types::{AuthorityName, EpochId, ObjectID};
 use dwallet_mpc_types::dwallet_mpc::DwalletNetworkMPCError;
 use group::PartyID;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum DwalletMPCError {
     #[error("mpc session with ID `{session_id:?}` was not found")]
     MPCSessionNotFound { session_id: ObjectID },
