@@ -29,10 +29,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         get_dwallet_centralized_output,
         get_dwallet_mpc_network_key_version,
         EncryptionKey,
-        get_encryption_key
+        get_encryption_key,
+        pop_and_verify_message_approval,
+        MessageApproval,
     };
     use pera::event;
-    use pera::hash;
 
     /// Represents the `Secp256K1` dWallet type.
     ///
@@ -41,22 +42,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// (Elliptic Curve Digital Signature Algorithm)
     /// based on the `Secp256K1` curve.
     public struct Secp256K1 has drop {}
-
-    /// Represents a message that was approved as part of a dWallet process.
-    ///
-    /// This struct binds the message to a specific `DWalletCap` for
-    /// traceability and accountability within the system.
-    ///
-    /// ### Fields
-    /// - **`dwallet_cap_id`**: The identifier of the DWallet capability
-    ///   associated with this approval.
-    /// - **`hash_scheme`**: The message hash scheme.
-    /// - **`message`**: The message that has been approved.
-    public struct MessageApproval has store, drop {
-        dwallet_cap_id: ID,
-        hash_scheme: u8,
-        message: vector<u8>,
-    }
 
     /// An event emitted when the first round of the DKG process is completed.
     ///
@@ -422,25 +407,19 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     /// Error raised when the sender is not the system address.
-    const ENotSystemAddress: u64 = 0;
-    const EMessageApprovalDWalletMismatch: u64 = 1;
+    const ENotSystemAddress: u64 = 1;
     const EDwalletMismatch: u64 = 2;
     const EApprovalsAndMessagesLenMismatch: u64 = 3;
-    const EMissingApprovalOrWrongApprovalOrder: u64 = 4;
     const ECentralizedSignedMessagesAndMessagesLenMismatch: u64 = 5;
     const EPresignsAndMessagesLenMismatch: u64 = 6;
-    const EInvalidSignatures: u64 = 7;
-    const EApprovalsAndSignaturesLenMismatch: u64 = 8;
-    const EInvalidHashScheme: u64 = 9;
+    const EApprovalsAndSignaturesLenMismatch: u64 = 7;
+    const EInvalidSignatures: u64 = 8;
     // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
     /// System address for asserting system-level actions.
     const SYSTEM_ADDRESS: address = @0x0;
 
-    /// Supported hash schemes for message signing.
-    const KECCAK256: u8 = 0;
-    const SHA256: u8 = 1;
     // >>>>>>>>>>>>>>>>>>>>>>>> Constants >>>>>>>>>>>>>>>>>>>>>>>>
 
     /// Starts the first Distributed Key Generation (DKG) session.
@@ -983,69 +962,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         });
     }
 
-    #[allow(unused_function)]
-    /// Checks if the given hash scheme is supported for message signing.
-    fun is_supported_hash_sheme(val: u8): bool {
-        return match (val) {
-        KECCAK256 | SHA256 => true,
-        _ => false,
-        }
-    }
-
-    #[allow(unused_function)]
-    /// Creates a `MessageApproval` object.
-    public(package) fun create_message_approval(
-        dwallet_cap_id: ID,
-        hash_scheme: u8,
-        message: vector<u8>,
-        ): MessageApproval {
-            assert!(is_supported_hash_sheme(hash_scheme), EInvalidHashScheme);
-            let approval = MessageApproval {
-            dwallet_cap_id,
-            hash_scheme,
-            message,
-            };
-            approval
-        }
-
-    /// Create a set of message approvals.
-    /// The messages must be approved in the same order as they were created.
-    /// The messages must be approved by the same `dwallet_cap_id`.
-    public fun approve_messages(
-        dwallet_cap: &DWalletCap,
-        hash_scheme: u8,
-        messages: &mut vector<vector<u8>>
-    ): vector<MessageApproval> {
-        let dwallet_cap_id = object::id(dwallet_cap);
-        let mut message_approvals = vector::empty<MessageApproval>();
-
-        // Approve all messages and maintain their order.
-        let messages_length = vector::length(messages);
-        let mut i: u64 = 0;
-        while (i < messages_length) {
-            let message = vector::pop_back(messages);
-            vector::push_back(&mut message_approvals, create_message_approval (
-                dwallet_cap_id,
-                hash_scheme,
-                message,
-                ));
-            i = i + 1;
-        };
-        vector::reverse(&mut message_approvals);
-        message_approvals
-    }
-
-    /// Remove a `MessageApproval` and return the `dwallet_cap_id`,
-    /// `hash_scheme` and the `message`.
-    public fun remove_message_approval(message_approval: MessageApproval): (ID, u8, vector<u8>) {
-        let MessageApproval {
-            dwallet_cap_id,
-            hash_scheme,
-            message
-        } = message_approval;
-        (dwallet_cap_id, hash_scheme, message)
-    }
-
     #[test_only]
     /// Call the underlying `create_batched_presign_output`.
     /// This function is intended for testing purposes only and should not be used in production.
@@ -1413,28 +1329,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             });
             i = i + 1;
         };
-    }
-
-    /// Hashes the given message using the specified hash scheme.
-     public fun hash_message(message: vector<u8>, hash_scheme: u8): vector<u8> {
-        assert!(is_supported_hash_sheme(hash_scheme), EInvalidHashScheme);
-        return match (hash_scheme) {
-        KECCAK256 => hash::keccak256(&message),
-        SHA256 => std::hash::sha2_256(message),
-        _ => vector::empty(),
-        }
-}
-
-    /// Pops the last message approval from the vector and verifies it against tje given message & dwallet_cap_id.
-    fun pop_and_verify_message_approval(
-        dwallet_cap_id: ID,
-        message_hash: vector<u8>,
-        message_approvals: &mut vector<MessageApproval>
-    ) {
-        let message_approval = vector::pop_back(message_approvals);
-        let (message_approval_dwallet_cap_id, hash_scheme, approved_message) = remove_message_approval(message_approval);
-        assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMessageApprovalDWalletMismatch);
-        assert!(&message_hash == &hash_message(approved_message, hash_scheme), EMissingApprovalOrWrongApprovalOrder);
     }
 
     /// Verifies that the user's centralized party signatures are valid.

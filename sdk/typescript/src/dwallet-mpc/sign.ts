@@ -10,6 +10,7 @@ import { EncryptedUserShare, fetchEncryptedUserSecretShare } from './encrypt-use
 import type { Config, DWallet } from './globals.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
+	dWalletModuleName,
 	dWalletMoveType,
 	fetchCompletedEvent,
 	fetchObjectWithType,
@@ -24,7 +25,7 @@ import { presign } from './presign.js';
 const signMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`;
 const partiallySignMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::publish_partially_signed_messages`;
 const futureSignMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::future_sign`;
-const approveMessagesMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::approve_messages`;
+const approveMessagesMoveFunc = `${packageId}::${dWalletModuleName}::approve_messages`;
 const completedSignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`;
 
 export enum Hash {
