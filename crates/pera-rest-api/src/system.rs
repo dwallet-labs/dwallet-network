@@ -16,6 +16,7 @@ use pera_sdk2::types::{Address, ObjectId};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 
 pub struct GetSystemStateSummary;
 
@@ -227,6 +228,8 @@ pub struct SystemStateSummary {
     pub at_risk_validators: Vec<(Address, u64)>,
     /// A map storing the records of validator reporting each other.
     pub validator_report_records: Vec<(Address, Vec<Address>)>,
+    /// dWallet MPC network keys, KeyScheme -> NetworkDecryptionKeyShares
+    pub decryption_key_shares: Vec<(u8, NetworkDecryptionKeyShares)>,
 }
 
 /// This is the REST type for the pera validator. It flattens all inner structures
@@ -522,6 +525,7 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraSystemSt
                     )
                 })
                 .collect(),
+            decryption_key_shares,
         }
     }
 }
