@@ -602,7 +602,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - **`initiator`**: The address of the entity that performed the encryption.
     /// ### Effects
     /// - Creates an `EncryptedUserSecretKeyShare` object and stores it on-chain.
-    /// - Transfers the newly created share to the initiator // todo(itay): mistake?
+    // TODO (#527): Transfer the encrypted user share move object to the destination address instead of the initiating user
+    /// - Transfers the newly created share to the initiator
     /// - Emits a `CreatedEncryptedSecretShareEvent` which includes details about the encrypted share,
     ///   cryptographic proofs, and related metadata.
     #[allow(unused_function)]
