@@ -383,6 +383,7 @@ impl DWalletMPCManager {
                 // todo(itay):
                 // remove sessions from pending_sessions_queue
                 // in case of finalize or malicious.
+                // Itay: fixed in PR #525
                 Ok((message, malicious)) => {
                     messages.push((message, session_id));
                     malicious_parties.extend(malicious);
