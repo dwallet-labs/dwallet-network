@@ -380,7 +380,7 @@ impl DWalletMPCManager {
             // Convert back to an iterator for processing.
             .into_iter()
             .try_for_each(|(result, session_id)| match result {
-                // todo(itay):
+                // todo(itay) - Fixed:
                 // remove sessions from pending_sessions_queue
                 // in case of finalize or malicious.
                 // Itay: fixed in PR #525
