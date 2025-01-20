@@ -5,115 +5,149 @@ import {
 } from '@dwallet-network/dwallet-mpc-wasm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
+import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import {
-	acceptUserShare,
 	createActiveEncryptionKeysTable,
-	encryptUserShareWithSuiPubKey,
+	EncryptedUserShare,
 	generateCGKeyPairFromSuiKeyPair,
-	getActiveEncryptionKeyObjID,
-	getOrCreateEncryptionKey,
 } from '../../src/dwallet-mpc/encrypt-user-share';
-import { Config } from '../../src/dwallet-mpc/globals';
+import { Config, delay, mockedProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
+import { signWithEncryptedDWallet } from '../../src/dwallet-mpc/sign';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import {
 	DKGCentralizedPrivateOutput,
 	DKGDecentralizedOutput,
 	mockCreateDwallet,
-} from './utils/dwallet';
+} from './utils/dwallet_mocks';
 import { setup, TestToolbox } from './utils/setup';
 
+const checkpointCreationTime = 2000;
+
 describe('encrypt user share', () => {
-	let dwalletSenderToolbox: TestToolbox;
-	let dwalletReceiverToolbox: TestToolbox;
+	let sourceClient: TestToolbox;
+	let destClient: TestToolbox;
 	let activeEncryptionKeysTableID: string;
+	const fiveMinutes = 5 * 60 * 1000;
 
 	beforeAll(async () => {
-		dwalletSenderToolbox = await setup();
-		dwalletReceiverToolbox = await setup();
-		const { objectId } = await createActiveEncryptionKeysTable(
-			dwalletSenderToolbox.client,
-			dwalletSenderToolbox.keypair,
-		);
-		activeEncryptionKeysTableID = objectId;
+		sourceClient = await setup();
+		destClient = await setup();
+		activeEncryptionKeysTableID = (
+			await createActiveEncryptionKeysTable({
+				keypair: sourceClient.keypair,
+				client: sourceClient.client,
+				timeout: fiveMinutes,
+			})
+		).objectId;
+		await delay(checkpointCreationTime);
 	});
 
-	it('encrypts a secret share to a given Sui public key', async () => {
-		const checkpointCreationTime = 2000;
-		let senderConf: Config = {
-			keypair: dwalletSenderToolbox.keypair,
-			client: dwalletSenderToolbox.client,
-			timeout: 5 * 60 * 1000,
-		};
+	it('encrypts a secret share for a given public key and transfers it', async () => {
+		const encryptedUserShare = new EncryptedUserShare(sourceClient.client, fiveMinutes);
 
-		let receiverConf: Config = {
-			keypair: dwalletReceiverToolbox.keypair,
-			client: dwalletReceiverToolbox.client,
-			timeout: 5 * 60 * 1000,
-		};
-		await new Promise((r) => setTimeout(r, checkpointCreationTime));
-
-		// ======================= Create Source DWallet =======================
-		const createdDwallet = await mockCreateDwallet(senderConf);
-
-		// ======================= Create Destination Class Groups Keypair & Store it on chain =======================
-		await getOrCreateEncryptionKey(receiverConf, activeEncryptionKeysTableID);
-		await new Promise((r) => setTimeout(r, checkpointCreationTime));
-
-		// ======================= Send DWallet Secret Share To Destination Keypair  =======================
-		let encryptedSecretShare = await encryptUserShareWithSuiPubKey(
-			senderConf,
-			createdDwallet,
-			dwalletReceiverToolbox.keypair.getPublicKey(),
-			activeEncryptionKeysTableID,
+		const sourceDwallet = await mockCreateDwallet(
+			encryptedUserShare.toConfig(sourceClient.keypair),
 		);
 
-		// ======================= Verify Received DWallet is Valid & Encrypt it to Myself =======================
-		await acceptUserShare(
+		// Create Destination Class Groups Keypair & Store it on the chain.
+		await encryptedUserShare.getOrCreateClassGroupsKeyPair(
+			destClient.keypair,
+			activeEncryptionKeysTableID,
+		);
+		await delay(checkpointCreationTime);
+
+		const { destActiveEncryptionKeyObjID, encryptedUserKeyShareAndProofOfEncryption } =
+			await encryptedUserShare.encryptUserShareForPublicKey(
+				sourceClient.keypair,
+				destClient.keypair.getPublicKey(),
+				sourceDwallet,
+				activeEncryptionKeysTableID,
+			);
+
+		const encryptedSecretShare = await encryptedUserShare.transferEncryptedUserSecretShare(
+			sourceClient.keypair,
+			encryptedUserKeyShareAndProofOfEncryption,
+			destActiveEncryptionKeyObjID,
+			sourceDwallet,
+		);
+		expect(encryptedSecretShare).toBeDefined();
+		console.log({ encryptedSecretShare });
+
+		// Verifies that the received dWallet is valid and encrypt it to myself.
+		const createdEncryptedSecretShareEvent = await encryptedUserShare.acceptUserShare(
+			activeEncryptionKeysTableID,
 			encryptedSecretShare,
-			senderConf.keypair.toPeraAddress(),
-			activeEncryptionKeysTableID,
-			receiverConf,
+			sourceClient.keypair.toPeraAddress(),
+			destClient.keypair,
 		);
+		expect(createdEncryptedSecretShareEvent).toBeDefined();
+		console.log({ createdEncryptedSecretShareEvent });
 	});
 
-	it('creates an encryption key & stores it in the active encryption keys table', async () => {
-		let conf: Config = {
-			keypair: dwalletSenderToolbox.keypair,
-			client: dwalletSenderToolbox.client,
-			timeout: 5 * 60 * 1000,
-		};
-		const senderEncryptionKeyObj = await getOrCreateEncryptionKey(
-			conf,
+	it('creates an encryption key and stores it in the active encryption keys table', async () => {
+		const encryptedUserShare = new EncryptedUserShare(sourceClient.client, fiveMinutes);
+
+		const senderEncryptionKeyObj = await encryptedUserShare.getOrCreateClassGroupsKeyPair(
+			sourceClient.keypair,
 			activeEncryptionKeysTableID,
 		);
 
 		// Sleep for 5 seconds, so the getOrCreateEncryptionKey inner transactions effects have time to
 		// get written to the chain.
-		await new Promise((r) => setTimeout(r, 5000));
+		await delay(5000);
 
-		const activeEncryptionKeyAddress = await getActiveEncryptionKeyObjID(
-			conf,
-			conf.keypair.toPeraAddress(),
+		const activeEncryptionKeyAddress = await encryptedUserShare.getActiveEncryptionKeyObjID(
+			sourceClient.keypair.getPublicKey(),
 			activeEncryptionKeysTableID,
 		);
 
 		expect(`0x${activeEncryptionKeyAddress}`).toEqual(senderEncryptionKeyObj.objectID);
+	});
+
+	it('signs with an encrypted secret share', async () => {
+		const conf: Config = {
+			keypair: sourceClient.keypair,
+			client: sourceClient.client,
+			timeout: fiveMinutes,
+		};
+		const dwallet = await createDWallet(
+			conf,
+			mockedProtocolPublicParameters,
+			activeEncryptionKeysTableID,
+		);
+		expect(dwallet).toBeDefined();
+		console.log({ dwallet });
+		const messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
+		const mockNetworkKey = true;
+		const completion = await signWithEncryptedDWallet(
+			conf,
+			dwallet.id,
+			activeEncryptionKeysTableID,
+			messages,
+			mockNetworkKey,
+		);
+		expect(completion).toBeDefined();
+		console.log({ completion });
 	});
 });
 
 // tests that can run without the blockchain running.
 describe('encrypt user share — offline', () => {
 	it("successfully encrypts a secret share, decrypt it, and verify the decrypted share is matching the dWallets' public share", () => {
-		let keypair = Ed25519Keypair.generate();
-		let [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(keypair);
-		let dwallet_secret_key_share = Array.from(Buffer.from(DKGCentralizedPrivateOutput, 'base64'));
-		let encryptedUserShareAndProof = encrypt_secret_share(
-			new Uint8Array(dwallet_secret_key_share),
+		const keypair = Ed25519Keypair.generate();
+		const [encryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(keypair);
+		const dwalletSecretKeyShare = Array.from(Buffer.from(DKGCentralizedPrivateOutput, 'base64'));
+		const encryptedUserKeyShareAndProofOfEncryption = encrypt_secret_share(
+			new Uint8Array(dwalletSecretKeyShare),
 			encryptionKey,
 		);
-		let decrypted = decrypt_user_share(encryptionKey, decryptionKey, encryptedUserShareAndProof);
-		expect(decrypted).toEqual(dwallet_secret_key_share);
-		let is_valid = verify_user_share(
+		const decrypted = decrypt_user_share(
+			encryptionKey,
+			decryptionKey,
+			encryptedUserKeyShareAndProofOfEncryption,
+		);
+		expect(decrypted).toEqual(dwalletSecretKeyShare);
+		const is_valid = verify_user_share(
 			decrypted,
 			new Uint8Array(Array.from(Buffer.from(DKGDecentralizedOutput, 'base64'))),
 		);

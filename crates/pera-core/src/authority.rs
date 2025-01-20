@@ -144,9 +144,7 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc::mpc_events::{
-    LockedNextEpochCommitteeEvent, ValidatorDataForDWalletSecretShare,
-};
+use crate::dwallet_mpc::mpc_events::{LockedNextEpochCommitteeEvent, ValidatorDataForNetworkDKG};
 use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use crate::epoch::committee_store::CommitteeStore;
@@ -1567,7 +1565,7 @@ impl AuthorityState {
                 dwallet_mpc_outputs_verifier.completed_locking_next_committee = true;
                 continue;
             }
-            if ValidatorDataForDWalletSecretShare::type_() == event.type_ {
+            if ValidatorDataForNetworkDKG::type_() == event.type_ {
                 Self::handle_validator_data_for_network_dkg_event(epoch_store, event)?;
                 continue;
             }
@@ -1607,8 +1605,7 @@ impl AuthorityState {
         epoch_store: &Arc<AuthorityPerEpochStore>,
         event: &Event,
     ) -> DwalletMPCResult<()> {
-        let deserialized_event: ValidatorDataForDWalletSecretShare =
-            bcs::from_bytes(&event.contents)?;
+        let deserialized_event: ValidatorDataForNetworkDKG = bcs::from_bytes(&event.contents)?;
         let dwallet_mpc_sender = epoch_store
             .dwallet_mpc_sender
             .get()

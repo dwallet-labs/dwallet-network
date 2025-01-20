@@ -16,6 +16,9 @@ DWalletCap
 ActiveEncryptionKeys
 	public struct
 	0x3::dwallet
+MessageApproval
+	public struct
+	0x3::dwallet
 get_encryption_key
 	public(package) fun
 	0x3::dwallet
@@ -43,7 +46,10 @@ create_dwallet_cap
 get_dwallet_cap_id
 	public(package) fun
 	0x3::dwallet
-get_dwallet_output
+get_dwallet_decentralized_output
+	public(package) fun
+	0x3::dwallet
+get_dwallet_centralized_output
 	public(package) fun
 	0x3::dwallet
 get_dwallet_mpc_network_key_version
@@ -52,10 +58,25 @@ get_dwallet_mpc_network_key_version
 is_valid_encryption_key_scheme
 	fun
 	0x3::dwallet
+create_message_approval
+	public(package) fun
+	0x3::dwallet
+approve_messages
+	public fun
+	0x3::dwallet
+remove_message_approval
+	fun
+	0x3::dwallet
+pop_and_verify_message_approval
+	public(package) fun
+	0x3::dwallet
+hash_message
+	public(package) fun
+	0x3::dwallet
+is_supported_hash_sheme
+	fun
+	0x3::dwallet
 Secp256K1
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-MessageApproval
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 DKGFirstRoundOutputEvent
@@ -88,7 +109,7 @@ StartDKGFirstRoundEvent
 CompletedSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-EncryptedUserShare
+EncryptedUserSecretKeyShare
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartDKGSecondRoundEvent
@@ -124,7 +145,7 @@ create_dkg_first_round_output
 launch_dkg_second_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-publish_encrypted_user_share
+transfer_encrypted_user_share
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_encrypted_user_share
@@ -141,12 +162,6 @@ launch_presign_second_round
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_batched_presign_output
 	fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-approve_messages
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-remove_message_approval
-	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 sign
 	public fun
@@ -168,9 +183,6 @@ publish_partially_signed_messages
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 future_sign
 	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-pop_and_verify_message_approval
-	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 verify_partially_signed_signatures
 	fun

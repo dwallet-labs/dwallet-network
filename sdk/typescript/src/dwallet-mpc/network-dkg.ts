@@ -1,6 +1,7 @@
 // noinspection ES6PreferShortImport
 import type { NetworkDecryptionKeyShares } from '../client/index.js';
 import type { Config, MPCKeyScheme } from './globals.js';
+import { delay } from './globals.js';
 
 /**
  * Fetch the protocol public parameters from the network.
@@ -17,11 +18,10 @@ export async function fetchProtocolPublicParameters(
 
 	while (Date.now() - startTime <= conf.timeout) {
 		const systemStateSummary = await conf.client.getLatestPeraSystemState();
-		const decryptionKeyShares = convertToMap(systemStateSummary.decryptionKeyShares);
+		const decryptionKeyShares = convertToMap(systemStateSummary.networkMpcKeys);
 
 		if (!decryptionKeyShares.has(keyScheme)) {
-			// Wait for 5 seconds before the next attempt.
-			await new Promise((resolve) => setTimeout(resolve, 5000));
+			await delay(5000);
 			continue;
 		}
 		const keyVersionsByScheme = decryptionKeyShares.get(keyScheme);

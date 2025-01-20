@@ -11,6 +11,7 @@ use axum::{
     extract::{Path, State},
     Json,
 };
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 use pera_protocol_config::{ProtocolConfig, ProtocolConfigValue, ProtocolVersion};
 use pera_sdk2::types::{Address, ObjectId};
 use schemars::JsonSchema;
@@ -227,6 +228,8 @@ pub struct SystemStateSummary {
     pub at_risk_validators: Vec<(Address, u64)>,
     /// A map storing the records of validator reporting each other.
     pub validator_report_records: Vec<(Address, Vec<Address>)>,
+    /// dWallet MPC network keys, KeyScheme -> NetworkDecryptionKeyShares
+    pub network_mpc_keys: Vec<(u8, NetworkDecryptionKeyShares)>,
 }
 
 /// This is the REST type for the pera validator. It flattens all inner structures
@@ -470,7 +473,7 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraSystemSt
             validator_candidates_size,
             at_risk_validators,
             validator_report_records,
-            decryption_key_shares,
+            network_mpc_keys,
         } = value;
 
         Self {
@@ -522,6 +525,7 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraSystemSt
                     )
                 })
                 .collect(),
+            network_mpc_keys,
         }
     }
 }

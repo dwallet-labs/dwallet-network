@@ -8,7 +8,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import { createActiveEncryptionKeysTable } from '../../src/dwallet-mpc/encrypt-user-share';
-import { Config, MPCKeyScheme } from '../../src/dwallet-mpc/globals';
+import {
+	Config,
+	mockedProtocolPublicParameters,
+	MPCKeyScheme,
+} from '../../src/dwallet-mpc/globals';
 import { fetchProtocolPublicParameters } from '../../src/dwallet-mpc/network-dkg';
 import { presign } from '../../src/dwallet-mpc/presign';
 import {
@@ -18,27 +22,25 @@ import {
 	signMessageTransactionCall,
 } from '../../src/dwallet-mpc/sign';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
-import {
-	fullMPCUserSessions,
-	mockCreateDwallet,
-	mockCreatePresign,
-	mockedProtocolPublicParameters,
-} from './utils/dwallet';
+import { fullMPCUserSessions } from './utils/dwallet';
+import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet_mocks';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test dWallet MPC', () => {
 	let toolbox: TestToolbox;
 	let activeEncryptionKeysTableID: string;
 
+	const timeout = 5 * 60 * 1000;
 	beforeEach(async () => {
 		toolbox = await setup();
-		console.log('Address', toolbox.keypair.toPeraAddress());
-		const encryptionKeysRef = await createActiveEncryptionKeysTable(
-			toolbox.client,
-			toolbox.keypair,
-		);
-
-		activeEncryptionKeysTableID = encryptionKeysRef.objectId;
+		console.log('Current Address', toolbox.keypair.toPeraAddress());
+		activeEncryptionKeysTableID = (
+			await createActiveEncryptionKeysTable({
+				keypair: toolbox.keypair,
+				client: toolbox.client,
+				timeout: timeout,
+			})
+		).objectId;
 	});
 
 	it('should create a dWallet (DKG)', async () => {
@@ -46,7 +48,7 @@ describe('Test dWallet MPC', () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 5 * 60 * 1000,
+			timeout: timeout,
 		};
 		const dWallet = await createDWallet(
 			conf,
@@ -105,10 +107,8 @@ describe('Test dWallet MPC', () => {
 		expect(presignOutput1).toBeDefined();
 		expect(presignOutput2).toBeDefined();
 		console.log({ presignOutput1, presignOutput2 });
-		let serializedMsgs = bcs
-			.vector(bcs.vector(bcs.u8()))
-			.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
-			.toBytes();
+		let messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
+		let serializedMsgs = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
 		let serializedPresigns = bcs
 			.vector(bcs.vector(bcs.u8()))
 			.serialize([presignOutput1.presign, presignOutput2.presign])
@@ -135,6 +135,8 @@ describe('Test dWallet MPC', () => {
 			conf,
 			dWallet.dwalletCapID,
 			hashedMsg,
+			messages,
+			Hash.SHA256,
 			dWallet.id,
 			[presignOutput1.id.id, presignOutput2.id.id],
 			centralizedSignMsg,
@@ -182,10 +184,8 @@ describe('Test dWallet MPC', () => {
 		expect(presignOutput1).toBeDefined();
 		expect(presignOutput2).toBeDefined();
 		console.log({ presignOutput1, presignOutput2 });
-		let serializedMsgs = bcs
-			.vector(bcs.vector(bcs.u8()))
-			.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
-			.toBytes();
+		let messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
+		let serializedMsgs = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
 		let serializedPresigns = bcs
 			.vector(bcs.vector(bcs.u8()))
 			.serialize([presignOutput1.presign, presignOutput2.presign])
@@ -221,7 +221,8 @@ describe('Test dWallet MPC', () => {
 		await new Promise((r) => setTimeout(r, 5000));
 		let completedSignEvent = await futureSignTransactionCall(
 			conf,
-			hashedMsgs,
+			messages,
+			Hash.SHA256,
 			dWallet.dwalletCapID,
 			partiallySignedMessages.partial_signatures_object_id,
 		);
@@ -235,7 +236,7 @@ describe('Test dWallet MPC', () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 5 * 60 * 1000,
+			timeout: timeout,
 		};
 
 		const keyVersionNum = 0;

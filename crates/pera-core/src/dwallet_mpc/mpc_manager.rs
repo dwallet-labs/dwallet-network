@@ -3,13 +3,12 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
-use crate::dwallet_mpc::mpc_events::ValidatorDataForDWalletSecretShare;
+use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::session_input_from_event;
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
-use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
     MPCSessionStatus,
@@ -17,7 +16,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use fastcrypto::traits::ToFromBytes;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::{Weight, WeightedThresholdAccessStructure};
+use mpc::WeightedThresholdAccessStructure;
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::crypto::AuthorityPublicKeyBytes;
@@ -65,8 +64,7 @@ pub struct DWalletMPCManager {
     /// Each Validator holds the Malicious state for itself,
     /// this is not in sync with the blockchain.
     outputs_verifier: DWalletMPCOutputsVerifier,
-    pub(crate) validators_data_for_network_dkg:
-        HashMap<PartyID, ValidatorDataForDWalletSecretShare>,
+    pub(crate) validators_data_for_network_dkg: HashMap<PartyID, ValidatorDataForNetworkDKG>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -90,7 +88,10 @@ pub enum DWalletMPCChannelMessage {
     /// almost 250 KB, which is the maximum event size in Sui.
     /// The manager accumulates the data until it receives such an event for all validators,
     /// and then it starts the network DKG protocol.
-    ValidatorDataForDKG(ValidatorDataForDWalletSecretShare),
+    ValidatorDataForDKG(ValidatorDataForNetworkDKG),
+    /// A message indicating that an MPC session has failed.
+    /// The advance failed, and the session needs to be restarted or marked as failed.
+    MPCSessionFailed(ObjectID, DwalletMPCError),
 }
 
 impl DWalletMPCManager {
@@ -147,11 +148,20 @@ impl DWalletMPCManager {
                     Ok(verification_result) => {
                         self.malicious_actors
                             .extend(verification_result.malicious_actors);
+                        match verification_result.result {
+                            crate::dwallet_mpc::mpc_outputs_verifier::OutputResult::AlreadyCommitted => {
+                                let session = self.mpc_sessions.get_mut(&session_info.session_id);
+                                if let Some(session) = session {
+                                    session.status = MPCSessionStatus::Finished(output.clone());
+                                }
+                            }
+                            _ => {}
+                        }
                     }
                     Err(err) => {
                         error!("Failed to verify output with error: {:?}", err);
                     }
-                }
+                };
             }
             DWalletMPCChannelMessage::Event(event, session_info) => {
                 if let Err(err) = self.handle_event(event, session_info) {
@@ -172,19 +182,36 @@ impl DWalletMPCManager {
                 }
             }
             DWalletMPCChannelMessage::ValidatorDataForDKG(data) => {
-                if let Err(err) = self.handle_validator_data_for_dkg(data) {
+                if let Err(err) = self.handle_validator_data_for_network_dkg(data) {
                     error!(
                         "failed to handle validator data for DKG session with error: {:?}",
                         err
                     );
                 }
             }
+            DWalletMPCChannelMessage::MPCSessionFailed(session_id, err) => {
+                if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
+                    match err {
+                        DwalletMPCError::MaliciousParties(malicious_parties) => {
+                            session.restart();
+                            error!(
+                                "MPC session failed with malicious parties: {:?}",
+                                malicious_parties
+                            );
+                        }
+                        e => {
+                            session.status = MPCSessionStatus::Failed;
+                            error!("MPC session failed with error: {:?}", e);
+                        }
+                    }
+                }
+            }
         }
     }
 
-    fn handle_validator_data_for_dkg(
+    fn handle_validator_data_for_network_dkg(
         &mut self,
-        data: ValidatorDataForDWalletSecretShare,
+        data: ValidatorDataForNetworkDKG,
     ) -> DwalletMPCResult<()> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(
@@ -237,7 +264,7 @@ impl DWalletMPCManager {
         ))
     }
 
-    pub(super) fn get_decryption_public_parameters(
+    pub(super) fn get_decryption_key_share_public_parameters(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
         key_version: u8,
@@ -260,7 +287,7 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    fn get_decryption_share(
+    fn get_decryption_key_shares(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
         key_version: Option<usize>,
@@ -314,8 +341,9 @@ impl DWalletMPCManager {
                 };
 
                 let is_ready = match session.status {
-                    MPCSessionStatus::Active => received_weight as StakeUnit >= threshold,
-                    MPCSessionStatus::FirstExecution => true,
+                    MPCSessionStatus::Active => {
+                        received_weight as StakeUnit >= threshold || session.round_number == 0
+                    }
                     _ => false,
                 };
 
@@ -344,7 +372,10 @@ impl DWalletMPCManager {
         let mut messages = vec![];
         ready_to_advance
             .par_iter_mut()
-            .map(|session| (session.advance(), session.session_info.session_id))
+            .map(|session| {
+                session.round_number += 1;
+                (session.advance(), session.session_info.session_id)
+            })
             .collect::<Vec<_>>()
             // Convert back to an iterator for processing.
             .into_iter()
@@ -369,21 +400,6 @@ impl DWalletMPCManager {
         // Need to send the messages' one by one, so the consensus adapter won't think they
         // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
         for (message, session_id) in messages {
-            // Update the manager with the new network decryption key share (if relevant).
-            let session = self
-                .mpc_sessions
-                .get(&session_id)
-                .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
-            if let MPCSessionStatus::Finished(public_output, private_output) =
-                session.status.clone()
-            {
-                self.update_dwallet_mpc_network_key(
-                    &session.session_info,
-                    public_output,
-                    private_output,
-                )?;
-            }
-
             self.consensus_adapter
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
                 .await?;
@@ -496,7 +512,7 @@ impl DWalletMPCManager {
             self.weighted_threshold_access_structure.clone(),
             match session_info.mpc_round {
                 MPCRound::NetworkDkg(..) => HashMap::new(),
-                _ => self.get_decryption_share(
+                _ => self.get_decryption_key_shares(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
                 )?,
@@ -513,7 +529,7 @@ impl DWalletMPCManager {
             );
             return Ok(());
         }
-        new_session.status = MPCSessionStatus::FirstExecution;
+        new_session.status = MPCSessionStatus::Active;
         self.mpc_sessions
             .insert(session_info.session_id, new_session);
         // todo(itay):

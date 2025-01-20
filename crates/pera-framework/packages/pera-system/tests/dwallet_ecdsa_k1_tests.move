@@ -5,15 +5,20 @@ module pera_system::dwallet_ecdsa_k1_tests {
     use pera::test_utils;
     use pera::vec_map::VecMap;
     use pera_system::dwallet;
-    use pera_system::dwallet::{DWalletCap, get_dwallet_mpc_network_key_version};
+    use pera_system::dwallet::{
+        EMissingApprovalOrWrongApprovalOrder,
+        EMessageApprovalDWalletMismatch,
+        DWalletCap,
+        get_dwallet_mpc_network_key_version,
+        create_encryption_key_for_testing,
+        hash_message
+    };
     use pera_system::dwallet_2pc_mpc_ecdsa_k1;
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{Presign, create_dkg_first_round_output_for_testing};
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{
         ENotSystemAddress,
-        EMessageApprovalDWalletMismatch,
         EApprovalsAndMessagesLenMismatch,
         EDwalletMismatch,
-        EMissingApprovalOrWrongApprovalOrder,
         ECentralizedSignedMessagesAndMessagesLenMismatch
     };
 
@@ -52,9 +57,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
         let created_objects = test_scenario::created(&effects);
         assert!(std::vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
-
-        let frozen_objects = test_scenario::frozen(&effects);
-        assert!(std::vector::length(&frozen_objects) == 1, EWrongFrozenObjectsNum);
     }
 
     #[test]
@@ -125,12 +127,17 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let dwallet_cap = dwallet::create_dwallet_cap(ctx);
             let public_key_share_and_proof: vector<u8> = std::vector::empty();
             let first_round_session_id = object::id_from_address(@0x10);
-
+            let encryption_key = create_encryption_key_for_testing(vector[], vector[], vector[], 1, @0x0, ctx);
             let session_id = dwallet_2pc_mpc_ecdsa_k1::launch_dkg_second_round(
                 &dwallet_cap,
                 public_key_share_and_proof,
                 &dkg_first_round_output,
                 first_round_session_id,
+                vector[],
+                &encryption_key,
+                vector[],
+                vector[],
+                vector[],
                 test_scenario::ctx(&mut scenario),
             );
 
@@ -138,6 +145,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             test_utils::destroy(first_round_session_id);
             test_utils::destroy(dkg_first_round_output);
             test_utils::destroy(dwallet_cap);
+            test_utils::destroy(encryption_key);
         };
 
         let effects: TransactionEffects = test_scenario::end(scenario);
@@ -175,10 +183,10 @@ module pera_system::dwallet_ecdsa_k1_tests {
         let effects: TransactionEffects = test_scenario::end(scenario);
 
         let events_num = test_scenario::num_user_events(&effects);
-        assert!(events_num == 1, EWrongEventNumber);
+        assert!(events_num == 2, EWrongEventNumber);
 
         let created_objects = test_scenario::created(&effects);
-        assert!(std::vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+        assert!(std::vector::length(&created_objects) == 2, EWrongCreatedObjectsNum);
 
         let frozen_objects = test_scenario::frozen(&effects);
         assert!(std::vector::length(&frozen_objects) == 1, EWrongFrozenObjectsNum);
@@ -382,14 +390,15 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let mut messages_to_approve: vector<vector<u8>> = vector[std::vector::singleton(
                 0xAA
             ), std::vector::singleton(0xBB)];
-            let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
+            let mut message_approvals = pera_system::dwallet::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut messages_to_approve
             );
             let partial_signature_mock = pera_system::dwallet_2pc_mpc_ecdsa_k1::partial_signatures_for_testing(
                 vector[vector[1], vector[2]],
                 vector[object::id_from_address(@0x01), object::id_from_address(@0x02)],
-                vector[std::vector::singleton(0xAA), std::vector::singleton(0xBB)],
+                vector[hash_message(std::vector::singleton(0xAA), 0), hash_message(std::vector::singleton(0xBB), 0)],
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
@@ -485,8 +494,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let mut messages_to_approve: vector<vector<u8>> = vector[std::vector::singleton(
                 0xBB
             ), std::vector::singleton(0xBB)];
-            let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
+            let mut message_approvals = pera_system::dwallet::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut messages_to_approve
             );
             let partial_signature_mock = pera_system::dwallet_2pc_mpc_ecdsa_k1::partial_signatures_for_testing(
@@ -561,13 +571,14 @@ module pera_system::dwallet_ecdsa_k1_tests {
             vector::push_back(&mut messages_to_approve, std::vector::singleton(0xAA));
             vector::push_back(&mut messages_to_approve, std::vector::singleton(0xBB));
 
-            let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
+            let mut message_approvals = pera_system::dwallet::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut messages_to_approve
             );
 
-            vector::push_back(&mut messages_to_approve, std::vector::singleton(0xAA));
-            vector::push_back(&mut messages_to_approve, std::vector::singleton(0xBB));
+            vector::push_back(&mut messages_to_approve, hash_message(std::vector::singleton(0xAA), 0));
+            vector::push_back(&mut messages_to_approve, hash_message(std::vector::singleton(0xBB), 0));
 
             let mut centralized_signed_messages: vector<vector<u8>> = vector::empty();
             vector::push_back(&mut centralized_signed_messages, std::vector::singleton(0xDD));
@@ -664,8 +675,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
             vector::push_back(&mut messages, std::vector::singleton(0xAA));
 
             // Create the approvals using the invalid dwallet cap.
-            let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
+            let mut message_approvals = pera_system::dwallet::approve_messages(
                 &invalid_dwallet_cap,
+                0,
                 &mut messages
             );
 
@@ -740,8 +752,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
             vector::push_back(&mut messages, std::vector::singleton(0xAA));
 
             // Create the message approvals (correct dwallet_cap is used).
-            let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
+            let mut message_approvals = pera_system::dwallet::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut messages
             );
             vector::push_back(&mut messages, std::vector::singleton(0xAA));
@@ -814,8 +827,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
             vector::push_back(&mut approvals_messages, std::vector::singleton(0xBB));
 
             // Here we create a mismatch since there is 1 message, but 2 approvals.
-            let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
+            let mut message_approvals = pera_system::dwallet::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut approvals_messages
             );
 
@@ -895,8 +909,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             // Here we create approvals for the messages, but since the approvals are **out of order**,
             // it will trigger the assertion.
-            let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
+            let mut message_approvals = pera_system::dwallet::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut approvals_messages
             );
 
@@ -968,8 +983,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
             vector::push_back(&mut messages, std::vector::singleton(0xBB));
 
             // Create message approvals (2 approvals, same as the number of messages)
-            let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
+            let mut message_approvals = pera_system::dwallet::approve_messages(
                 &dwallet_cap,
+                0,
                 &mut messages
             );
 

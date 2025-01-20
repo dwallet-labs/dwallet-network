@@ -46,13 +46,6 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 ///   [`DWalletMPCManager::max_active_mpc_instances`] has been reached.
 ///   It is waiting for active instances to complete before activation.
 ///
-/// - `FirstExecution`:
-///   Indicates that the [`DWalletMPCInstance::party`] has not yet performed its
-///   first advance.
-///   This status ensures these instances can be filtered and
-///   advanced, even if they have not received the `threshold_number_of_parties`
-///   messages.
-///
 /// - `Active`:
 ///   The session is currently running, and new messages are forwarded to it
 ///   for processing.
@@ -67,9 +60,8 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 #[derive(Clone, PartialEq, Debug)]
 pub enum MPCSessionStatus {
     Pending,
-    FirstExecution,
     Active,
-    Finished(MPCPublicOutput, MPCPrivateOutput),
+    Finished(MPCPublicOutput),
     Failed,
 }
 
@@ -77,10 +69,9 @@ impl fmt::Display for MPCSessionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MPCSessionStatus::Pending => write!(f, "Pending"),
-            MPCSessionStatus::FirstExecution => write!(f, "FirstExecution"),
             MPCSessionStatus::Active => write!(f, "Active"),
-            MPCSessionStatus::Finished(public_output, private_output) => {
-                write!(f, "Finished({:?} {:?})", public_output, private_output)
+            MPCSessionStatus::Finished(public_output) => {
+                write!(f, "Finished({:?})", public_output)
             }
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }
@@ -94,15 +85,16 @@ pub struct NetworkDecryptionKeyShares {
     pub epoch: u64,
     /// Decryption key shares for the current epoch.
     /// Updated at the reconfiguration or when a new key version is created at network DKG.
-    pub current_epoch_shares: Vec<u8>,
+    pub current_epoch_encryptions_of_shares_per_crt_prime: Vec<u8>,
     /// Decryption key shares for the previous epoch.
     /// Updated at the reconfiguration.
-    pub previous_epoch_shares: Vec<u8>,
-    /// The public parameters of the network DKG, updated only after a successful network DKG.
-    pub protocol_public_parameters: Vec<u8>,
+    pub previous_epoch_encryptions_of_shares_per_crt_prime: Vec<u8>,
+    /// Public parameters from the network DKG, used to create the protocol public parameters.
+    /// Updated only after a successful network DKG.
+    pub encryption_scheme_public_parameters: Vec<u8>,
     /// The public parameters of the decryption key shares,
     /// updated only after a successful network DKG.
-    pub decryption_public_parameters: Vec<u8>,
+    pub decryption_key_share_public_parameters: Vec<u8>,
     ///  The network encryption, updated only after a successful network DKG.
     pub encryption_key: Vec<u8>,
     /// Validators' commitments to the secret sharing constructed in the network DKG.
@@ -118,7 +110,7 @@ pub enum DWalletMPCNetworkKeyScheme {
 
 // We can't import pera-types here since we import this module in there.
 // Therefor we use `thiserror` `#from` to convert this error.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum DwalletNetworkMPCError {
     #[error("invalid DWalletMPCNetworkKey value: {0}")]
     InvalidDWalletMPCNetworkKey(u8),
