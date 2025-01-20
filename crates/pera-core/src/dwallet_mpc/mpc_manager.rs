@@ -180,7 +180,13 @@ impl DWalletMPCManager {
                                 if let Some(session) = session {
                                     session.status = MPCSessionStatus::Finished(output.clone());
                                 }
-                                self.active_sessions_counter -= 1;
+                                if let Some(mut session) = self.pending_sessions_queue.pop_front() {
+                                    session.status = MPCSessionStatus::Active;
+                                    self.mpc_sessions
+                                        .insert(session.session_info.session_id, session);
+                                } else {
+                                    self.active_sessions_counter -= 1;
+                                }
                             }
                             _ => {}
                         }
