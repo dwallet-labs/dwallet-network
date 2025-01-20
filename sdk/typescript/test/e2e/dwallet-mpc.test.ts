@@ -10,6 +10,7 @@ import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import { createActiveEncryptionKeysTable } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
 	Config,
+	delay,
 	mockedProtocolPublicParameters,
 	MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';
@@ -41,6 +42,7 @@ describe('Test dWallet MPC', () => {
 				timeout: timeout,
 			})
 		).objectId;
+		await delay(2000);
 	});
 
 	it('should create a dWallet (DKG)', async () => {

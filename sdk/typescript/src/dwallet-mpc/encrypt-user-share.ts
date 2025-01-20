@@ -435,7 +435,8 @@ export class EncryptedUserShare {
 	 * matches the expected public key share.
 	 */
 	// todo(zeev): check this doc.
-	// This function also verifies that the dkg output has been signed by the source public key.
+	// This function also verifies that the dkg output
+	// has been signed by the source public key.
 	async decryptAndVerifyUserShare(
 		activeEncryptionKeysTableID: string,
 		encryptedUserSecretKeyShare: EncryptedUserSecretKeyShare,
