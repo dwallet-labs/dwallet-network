@@ -9,7 +9,6 @@ use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::session_input_from_event;
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
-use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
     MPCSessionStatus,
@@ -17,7 +16,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use fastcrypto::traits::ToFromBytes;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::{Weight, WeightedThresholdAccessStructure};
+use mpc::WeightedThresholdAccessStructure;
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::crypto::AuthorityPublicKeyBytes;
@@ -183,7 +182,7 @@ impl DWalletMPCManager {
                 }
             }
             DWalletMPCChannelMessage::ValidatorDataForDKG(data) => {
-                if let Err(err) = self.handle_validator_data_for_dkg(data) {
+                if let Err(err) = self.handle_validator_data_for_network_dkg(data) {
                     error!(
                         "failed to handle validator data for DKG session with error: {:?}",
                         err
@@ -210,7 +209,7 @@ impl DWalletMPCManager {
         }
     }
 
-    fn handle_validator_data_for_dkg(
+    fn handle_validator_data_for_network_dkg(
         &mut self,
         data: ValidatorDataForNetworkDKG,
     ) -> DwalletMPCResult<()> {

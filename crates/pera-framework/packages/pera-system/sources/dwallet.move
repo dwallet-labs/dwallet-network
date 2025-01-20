@@ -19,9 +19,14 @@ module pera_system::dwallet {
     use pera::event;
     use pera::table::{Self, Table};
     use pera::ed25519::ed25519_verify;
+    use pera::hash;
 
     const CLASS_GROUPS: u8 = 0;
     const SYSTEM_ADDRESS: address = @0x0;
+
+    /// Supported hash schemes for message signing.
+    const KECCAK256: u8 = 0;
+    const SHA256: u8 = 1;
 
     // >>>>>>>>>>>>>>> Error Codes >>>>>>>>>>>>>>
 
@@ -29,6 +34,9 @@ module pera_system::dwallet {
     const EInvalidEncryptionKeySignature: u64 = 1;
     const EInvalidEncryptionKeyOwner: u64 = 2;
     const ENotSystemAddress: u64 = 3;
+    const EMessageApprovalDWalletMismatch: u64 = 4;
+    const EMissingApprovalOrWrongApprovalOrder: u64 = 5;
+    const EInvalidHashScheme: u64 = 6;
 
     // <<<<<<<<<<<<<<< Error Codes <<<<<<<<<<<<<<
 
@@ -347,4 +355,126 @@ module pera_system::dwallet {
     fun is_valid_encryption_key_scheme(scheme: u8): bool {
         scheme == CLASS_GROUPS
     }
+
+    /// Represents a message that was approved as part of a dWallet process.
+    ///
+    /// This struct binds the message to a specific `DWalletCap` for
+    /// traceability and accountability within the system.
+    ///
+    /// ### Fields
+    /// - **`dwallet_cap_id`**: The identifier of the dWallet capability
+    ///   associated with this approval.
+    /// - **`hash_scheme`**: The message hash scheme.
+    /// - **`message`**: The message that has been approved.
+    public struct MessageApproval has store, drop {
+        dwallet_cap_id: ID,
+        hash_scheme: u8,
+        message: vector<u8>,
+    }
+
+    /// Creates a `MessageApproval` object.
+    public(package) fun create_message_approval(
+        dwallet_cap_id: ID,
+        hash_scheme: u8,
+        message: vector<u8>,
+    ): MessageApproval {
+        assert!(is_supported_hash_scheme(hash_scheme), EInvalidHashScheme);
+        let approval = MessageApproval {
+            dwallet_cap_id,
+            hash_scheme,
+            message,
+        };
+        approval
+    }
+
+    /// Approves a set of messages for a specific dWallet capability.
+    ///
+    /// This function creates a list of `MessageApproval` objects for a given set of messages.
+    /// Each message is associated with the same `dWalletCap` and `hash_scheme`. The messages
+    /// must be approved in the same order as they were created to maintain their sequence.
+    ///
+    /// ### Parameters
+    /// - `dwallet_cap`: A reference to the `DWalletCap` object representing the capability for which
+    ///   the messages are being approved.
+    /// - `hash_scheme`: The hash scheme to be used for hashing the messages. For example:
+    ///   - `KECCAK256`
+    ///   - `SHA256`
+    /// - `messages`: A mutable vector containing the messages to be approved. The messages are removed
+    ///   from this vector as they are processed and added to the approvals list.
+    ///
+    /// ### Returns
+    /// A vector of `MessageApproval` objects corresponding to the approved messages.
+    ///
+    /// ### Behavior
+    /// - The function iterates over the provided `messages` vector, processes each message by creating
+    ///   a `MessageApproval` object, and pushes it into the `message_approvals` vector.
+    /// - The messages are approved in reverse order and then reversed again to preserve their original order.
+    ///
+    /// ### Aborts
+    /// - Aborts if the provided `hash_scheme` is not supported by the system (checked during `create_message_approval`).
+    public fun approve_messages(
+        dwallet_cap: &DWalletCap,
+        hash_scheme: u8,
+        messages: &mut vector<vector<u8>>
+    ): vector<MessageApproval> {
+        let dwallet_cap_id = object::id(dwallet_cap);
+        let mut message_approvals = vector::empty<MessageApproval>();
+
+        // Approve all messages and maintain their order.
+        let messages_length = vector::length(messages);
+        let mut i: u64 = 0;
+        while (i < messages_length) {
+            let message = vector::pop_back(messages);
+            vector::push_back(&mut message_approvals, create_message_approval (
+                dwallet_cap_id,
+                hash_scheme,
+                message,
+            ));
+            i = i + 1;
+        };
+        vector::reverse(&mut message_approvals);
+        message_approvals
+    }
+
+    /// Remove a `MessageApproval` and return the `dwallet_cap_id`,
+    /// `hash_scheme` and the `message`.
+    fun remove_message_approval(message_approval: MessageApproval): (ID, u8, vector<u8>) {
+        let MessageApproval {
+            dwallet_cap_id,
+            hash_scheme,
+            message
+        } = message_approval;
+        (dwallet_cap_id, hash_scheme, message)
+    }
+
+    /// Pops the last message approval from the vector and verifies it against the given message & dwallet_cap_id.
+    public(package) fun pop_and_verify_message_approval(
+        dwallet_cap_id: ID,
+        message_hash: vector<u8>,
+        message_approvals: &mut vector<MessageApproval>
+    ) {
+        let message_approval = vector::pop_back(message_approvals);
+        let (message_approval_dwallet_cap_id, hash_scheme, approved_message) = remove_message_approval(message_approval);
+        assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMessageApprovalDWalletMismatch);
+        assert!(&message_hash == &hash_message(approved_message, hash_scheme), EMissingApprovalOrWrongApprovalOrder);
+    }
+
+    /// Hashes the given message using the specified hash scheme.
+    public(package) fun hash_message(message: vector<u8>, hash_scheme: u8): vector<u8> {
+        assert!(is_supported_hash_scheme(hash_scheme), EInvalidHashScheme);
+        return match (hash_scheme) {
+                KECCAK256 => hash::keccak256(&message),
+                SHA256 => std::hash::sha2_256(message),
+                _ => vector::empty(),
+        }
+    }
+
+    #[allow(unused_function)]
+    /// Checks if the given hash scheme is supported for message signing.
+    fun is_supported_hash_scheme(val: u8): bool {
+        return match (val) {
+                KECCAK256 | SHA256 => true,
+        _ => false,
+    }
+}
 }

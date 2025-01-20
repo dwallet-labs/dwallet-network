@@ -234,7 +234,6 @@ strip = 'none'
 # Note: This flag causes issues with the debugger (#441)
 #[profile.dev]
 #opt-level = 2
-#opt-level = 2
 
 [profile.test.package.move-compiler]
 # opt-level 2 for move-compiler reduces the size of some of its
