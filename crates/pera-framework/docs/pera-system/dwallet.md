@@ -34,7 +34,8 @@ It encapsulates the session ID, capability ID, and the outputs from the DKG roun
 -  [Struct `StartEncryptionKeyVerificationEvent`](#0x3_dwallet_StartEncryptionKeyVerificationEvent)
 -  [Resource `DWalletCap`](#0x3_dwallet_DWalletCap)
 -  [Resource `ActiveEncryptionKeys`](#0x3_dwallet_ActiveEncryptionKeys)
--  [Constants](#@Constants_6)
+-  [Struct `MessageApproval`](#0x3_dwallet_MessageApproval)
+-  [Constants](#@Constants_7)
 -  [Function `get_encryption_key`](#0x3_dwallet_get_encryption_key)
 -  [Function `create_dwallet`](#0x3_dwallet_create_dwallet)
 -  [Function `create_active_encryption_keys`](#0x3_dwallet_create_active_encryption_keys)
@@ -48,10 +49,19 @@ It encapsulates the session ID, capability ID, and the outputs from the DKG roun
 -  [Function `get_dwallet_centralized_output`](#0x3_dwallet_get_dwallet_centralized_output)
 -  [Function `get_dwallet_mpc_network_key_version`](#0x3_dwallet_get_dwallet_mpc_network_key_version)
 -  [Function `is_valid_encryption_key_scheme`](#0x3_dwallet_is_valid_encryption_key_scheme)
+-  [Function `create_message_approval`](#0x3_dwallet_create_message_approval)
+-  [Function `approve_messages`](#0x3_dwallet_approve_messages)
+-  [Function `remove_message_approval`](#0x3_dwallet_remove_message_approval)
+-  [Function `pop_and_verify_message_approval`](#0x3_dwallet_pop_and_verify_message_approval)
+-  [Function `hash_message`](#0x3_dwallet_hash_message)
+-  [Function `is_supported_hash_sheme`](#0x3_dwallet_is_supported_hash_sheme)
 
 
-<pre><code><b>use</b> <a href="../pera-framework/ed25519.md#0x2_ed25519">0x2::ed25519</a>;
+<pre><code><b>use</b> <a href="../move-stdlib/hash.md#0x1_hash">0x1::hash</a>;
+<b>use</b> <a href="../move-stdlib/vector.md#0x1_vector">0x1::vector</a>;
+<b>use</b> <a href="../pera-framework/ed25519.md#0x2_ed25519">0x2::ed25519</a>;
 <b>use</b> <a href="../pera-framework/event.md#0x2_event">0x2::event</a>;
+<b>use</b> <a href="../pera-framework/hash.md#0x2_hash">0x2::hash</a>;
 <b>use</b> <a href="../pera-framework/object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="../pera-framework/table.md#0x2_table">0x2::table</a>;
 <b>use</b> <a href="../pera-framework/transfer.md#0x2_transfer">0x2::transfer</a>;
@@ -416,7 +426,60 @@ Shared object that holds the active encryption keys per user.
 
 </details>
 
-<a name="@Constants_6"></a>
+<a name="0x3_dwallet_MessageApproval"></a>
+
+## Struct `MessageApproval`
+
+Represents a message that was approved as part of a dWallet process.
+
+This struct binds the message to a specific <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> for
+traceability and accountability within the system.
+
+
+<a name="@Fields_6"></a>
+
+##### Fields
+
+- **<code>dwallet_cap_id</code>**: The identifier of the DWallet capability
+associated with this approval.
+- **<code>hash_scheme</code>**: The message hash scheme.
+- **<code>message</code>**: The message that has been approved.
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a> <b>has</b> drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>hash_scheme: u8</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="@Constants_7"></a>
 
 ## Constants
 
@@ -466,6 +529,52 @@ Shared object that holds the active encryption keys per user.
 
 
 
+<a name="0x3_dwallet_EInvalidHashScheme"></a>
+
+
+
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EInvalidHashScheme">EInvalidHashScheme</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 6;
+</code></pre>
+
+
+
+<a name="0x3_dwallet_EMessageApprovalDWalletMismatch"></a>
+
+
+
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EMessageApprovalDWalletMismatch">EMessageApprovalDWalletMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 4;
+</code></pre>
+
+
+
+<a name="0x3_dwallet_EMissingApprovalOrWrongApprovalOrder"></a>
+
+
+
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 5;
+</code></pre>
+
+
+
+<a name="0x3_dwallet_KECCAK256"></a>
+
+Supported hash schemes for message signing.
+
+
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_KECCAK256">KECCAK256</a>: u8 = 0;
+</code></pre>
+
+
+
+<a name="0x3_dwallet_SHA256"></a>
+
+
+
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_SHA256">SHA256</a>: u8 = 1;
+</code></pre>
+
+
+
 <a name="0x3_dwallet_SYSTEM_ADDRESS"></a>
 
 
@@ -482,14 +591,14 @@ Shared object that holds the active encryption keys per user.
 Retrieves the encryption key from an <code><a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a></code> object.
 
 
-<a name="@Parameters_7"></a>
+<a name="@Parameters_8"></a>
 
 ##### Parameters
 
 - <code>key</code>: A read reference to the <code><a href="dwallet.md#0x3_dwallet_EncryptionKey">EncryptionKey</a></code> object.
 
 
-<a name="@Returns_8"></a>
+<a name="@Returns_9"></a>
 
 ##### Returns
 
@@ -521,7 +630,7 @@ A <code><a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code
 Creates a new [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>] object of type <code>T</code>.
 
 
-<a name="@Parameters_9"></a>
+<a name="@Parameters_10"></a>
 
 ##### Parameters
 
@@ -533,7 +642,7 @@ Creates a new [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>
 - <code>ctx</code>: Mutable transaction context.
 
 
-<a name="@Returns_10"></a>
+<a name="@Returns_11"></a>
 
 ##### Returns
 
@@ -676,7 +785,7 @@ The chain then calls "create_encryption_key" after verifications, in order to sa
 We need to run the flow this way as this verification can only be done in Rust,
 and we can't use Native functions.
 
-<a name="@Parameters_11"></a>
+<a name="@Parameters_12"></a>
 
 ##### Parameters
 
@@ -739,7 +848,7 @@ the <code>sender_pubkey</code> matches the initiator address.
 We need to run the flow this way as this verification can only be done in rust.
 
 
-<a name="@Parameters_12"></a>
+<a name="@Parameters_13"></a>
 
 ##### Parameters
 
@@ -806,14 +915,14 @@ The holder of the <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</
 the associated <code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>.
 
 
-<a name="@Parameters_13"></a>
+<a name="@Parameters_14"></a>
 
 ##### Parameters
 
 - <code>ctx</code>: A mutable transaction context used to create the <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> object.
 
 
-<a name="@Returns_14"></a>
+<a name="@Returns_15"></a>
 
 ##### Returns
 
@@ -847,14 +956,14 @@ The newly created <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</
 Retrieve the ID of the <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> associated with a given dWallet.
 
 
-<a name="@Parameters_15"></a>
+<a name="@Parameters_16"></a>
 
 ##### Parameters
 
 - <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code>: A reference to the [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>] object whose capability ID is to be retrieved.
 
 
-<a name="@Returns_16"></a>
+<a name="@Returns_17"></a>
 
 ##### Returns
 
@@ -886,14 +995,14 @@ The ID of the <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></
 Retrieve the output of the second DKG round for a given dWallet.
 
 
-<a name="@Parameters_17"></a>
+<a name="@Parameters_18"></a>
 
 ##### Parameters
 
 - <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code>: A reference to the [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>] object whose DKG output is to be retrieved.
 
 
-<a name="@Returns_18"></a>
+<a name="@Returns_19"></a>
 
 ##### Returns
 
@@ -985,6 +1094,209 @@ Validates encryption key schemes.
 
 <pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_valid_encryption_key_scheme">is_valid_encryption_key_scheme</a>(scheme: u8): bool {
     scheme == <a href="dwallet.md#0x3_dwallet_CLASS_GROUPS">CLASS_GROUPS</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_create_message_approval"></a>
+
+## Function `create_message_approval`
+
+Creates a <code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a></code> object.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_message_approval">create_message_approval</a>(dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, hash_scheme: u8, message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_message_approval">create_message_approval</a>(
+    dwallet_cap_id: ID,
+    hash_scheme: u8,
+    message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+): <a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a> {
+    <b>assert</b>!(<a href="dwallet.md#0x3_dwallet_is_supported_hash_sheme">is_supported_hash_sheme</a>(hash_scheme), <a href="dwallet.md#0x3_dwallet_EInvalidHashScheme">EInvalidHashScheme</a>);
+    <b>let</b> approval = <a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a> {
+        dwallet_cap_id,
+        hash_scheme,
+        message,
+    };
+    approval
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_approve_messages"></a>
+
+## Function `approve_messages`
+
+Create a set of message approvals.
+The messages must be approved in the same order as they were created.
+The messages must be approved by the same <code>dwallet_cap_id</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_approve_messages">approve_messages</a>(dwallet_cap: &<a href="dwallet.md#0x3_dwallet_DWalletCap">dwallet::DWalletCap</a>, hash_scheme: u8, messages: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_approve_messages">approve_messages</a>(
+    dwallet_cap: &<a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a>,
+    hash_scheme: u8,
+    messages: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt; {
+    <b>let</b> dwallet_cap_id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(dwallet_cap);
+    <b>let</b> <b>mut</b> message_approvals = <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;();
+
+    // Approve all messages and maintain their order.
+    <b>let</b> messages_length = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(messages);
+    <b>let</b> <b>mut</b> i: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 0;
+    <b>while</b> (i &lt; messages_length) {
+        <b>let</b> message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(messages);
+        <a href="../move-stdlib/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> message_approvals, <a href="dwallet.md#0x3_dwallet_create_message_approval">create_message_approval</a> (
+            dwallet_cap_id,
+            hash_scheme,
+            message,
+        ));
+        i = i + 1;
+    };
+    <a href="../move-stdlib/vector.md#0x1_vector_reverse">vector::reverse</a>(&<b>mut</b> message_approvals);
+    message_approvals
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_remove_message_approval"></a>
+
+## Function `remove_message_approval`
+
+Remove a <code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a></code> and return the <code>dwallet_cap_id</code>,
+<code>hash_scheme</code> and the <code>message</code>.
+
+
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_remove_message_approval">remove_message_approval</a>(message_approval: <a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>): (<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, u8, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_remove_message_approval">remove_message_approval</a>(message_approval: <a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>): (ID, u8, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;) {
+    <b>let</b> <a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a> {
+        dwallet_cap_id,
+        hash_scheme,
+        message
+    } = message_approval;
+    (dwallet_cap_id, hash_scheme, message)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_pop_and_verify_message_approval"></a>
+
+## Function `pop_and_verify_message_approval`
+
+Pops the last message approval from the vector and verifies it against tje given message & dwallet_cap_id.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, message_hash: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(
+    dwallet_cap_id: ID,
+    message_hash: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;
+) {
+    <b>let</b> message_approval = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(message_approvals);
+    <b>let</b> (message_approval_dwallet_cap_id, hash_scheme, approved_message) = <a href="dwallet.md#0x3_dwallet_remove_message_approval">remove_message_approval</a>(message_approval);
+    <b>assert</b>!(dwallet_cap_id == message_approval_dwallet_cap_id, <a href="dwallet.md#0x3_dwallet_EMessageApprovalDWalletMismatch">EMessageApprovalDWalletMismatch</a>);
+    <b>assert</b>!(&message_hash == &<a href="dwallet.md#0x3_dwallet_hash_message">hash_message</a>(approved_message, hash_scheme), <a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a>);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_hash_message"></a>
+
+## Function `hash_message`
+
+Hashes the given message using the specified hash scheme.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_hash_message">hash_message</a>(message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, hash_scheme: u8): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_hash_message">hash_message</a>(message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, hash_scheme: u8): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    <b>assert</b>!(<a href="dwallet.md#0x3_dwallet_is_supported_hash_sheme">is_supported_hash_sheme</a>(hash_scheme), <a href="dwallet.md#0x3_dwallet_EInvalidHashScheme">EInvalidHashScheme</a>);
+    <b>return</b> match (hash_scheme) {
+            <a href="dwallet.md#0x3_dwallet_KECCAK256">KECCAK256</a> =&gt; <a href="../pera-framework/hash.md#0x2_hash_keccak256">hash::keccak256</a>(&message),
+            <a href="dwallet.md#0x3_dwallet_SHA256">SHA256</a> =&gt; std::hash::sha2_256(message),
+            _ =&gt; <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>(),
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_is_supported_hash_sheme"></a>
+
+## Function `is_supported_hash_sheme`
+
+Checks if the given hash scheme is supported for message signing.
+
+
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_supported_hash_sheme">is_supported_hash_sheme</a>(val: u8): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_supported_hash_sheme">is_supported_hash_sheme</a>(val: u8): bool {
+    <b>return</b> match (val) {
+            <a href="dwallet.md#0x3_dwallet_KECCAK256">KECCAK256</a> | <a href="dwallet.md#0x3_dwallet_SHA256">SHA256</a> =&gt; <b>true</b>,
+    _ =&gt; <b>false</b>,
+}
 }
 </code></pre>
 

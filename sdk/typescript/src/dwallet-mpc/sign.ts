@@ -11,6 +11,7 @@ import { EncryptedUserShare, fetchEncryptedUserSecretShare } from './encrypt-use
 import type { Config, DWallet } from './globals.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
+	dWalletModuleName,
 	dWalletMoveType,
 	fetchCompletedEvent,
 	fetchObjectWithType,
@@ -25,7 +26,7 @@ import { presign } from './presign.js';
 const signMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`;
 const partiallySignMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::publish_partially_signed_messages`;
 const futureSignMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::future_sign`;
-const approveMessagesMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::approve_messages`;
+const approveMessagesMoveFunc = `${packageId}::${dWalletModuleName}::approve_messages`;
 const completedSignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`;
 
 export enum Hash {
@@ -59,6 +60,8 @@ export async function signMessageTransactionCall(
 	c: Config,
 	dwalletCapID: string,
 	hashedMessages: Uint8Array[],
+	messages: Uint8Array[],
+	hash: Hash,
 	dWalletID: string,
 	presignIDs: string[],
 	centralizedSignedMessages: Uint8Array[],
@@ -69,7 +72,8 @@ export async function signMessageTransactionCall(
 		target: approveMessagesMoveFunc,
 		arguments: [
 			tx.object(dwalletCapID),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
+			tx.pure(bcs.u8().serialize(hash.valueOf())),
+			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 		],
 	});
 
@@ -164,7 +168,8 @@ export async function partiallySignMessageTransactionCall(
 
 export async function futureSignTransactionCall(
 	c: Config,
-	hashedMessages: Uint8Array[],
+	messages: Uint8Array[],
+	hash: Hash,
 	dWalletCapID: string,
 	partialSignaturesObjectID: string,
 ): Promise<CompletedSignEvent> {
@@ -173,7 +178,8 @@ export async function futureSignTransactionCall(
 		target: approveMessagesMoveFunc,
 		arguments: [
 			tx.object(dWalletCapID),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
+			tx.pure(bcs.u8().serialize(hash.valueOf())),
+			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 		],
 	});
 	tx.moveCall({
@@ -213,7 +219,7 @@ export async function futureSignTransactionCall(
 }
 
 /**
- * Signs a message with the dWallets' on-chain encrypted secret share.
+ * Presigns and Signs a message with the dWallets' on-chain encrypted secret share.
  * Can be called with any dWallet, as the encrypted secret share is automatically created
  * upon dWallet creation.
  *
@@ -279,6 +285,8 @@ export async function signWithEncryptedDWallet(
 		conf,
 		dWallet.dwallet_cap_id,
 		hashedMsgs,
+		messages,
+		Hash.SHA256,
 		dWallet.id.id,
 		presignCompletionEvent.presign_ids,
 		centralizedSignedMsg,

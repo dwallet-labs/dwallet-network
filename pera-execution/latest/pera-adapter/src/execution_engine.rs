@@ -1210,7 +1210,7 @@ mod checked {
                     // The Batch Session ID.
                     CallArg::Pure(bcs_to_bytes(&batch_session_id)?),
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
-                    CallArg::Pure(bcs_to_bytes(&dwallet_id).unwrap()),
+                    CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
                 ],
             ),
             MPCRound::NetworkDkg(key_type, new_key) => {

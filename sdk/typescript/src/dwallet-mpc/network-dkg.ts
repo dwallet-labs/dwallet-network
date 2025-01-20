@@ -18,7 +18,7 @@ export async function fetchProtocolPublicParameters(
 
 	while (Date.now() - startTime <= conf.timeout) {
 		const systemStateSummary = await conf.client.getLatestPeraSystemState();
-		const decryptionKeyShares = convertToMap(systemStateSummary.decryptionKeyShares);
+		const decryptionKeyShares = convertToMap(systemStateSummary.networkMpcKeys);
 
 		if (!decryptionKeyShares.has(keyScheme)) {
 			await delay(5000);

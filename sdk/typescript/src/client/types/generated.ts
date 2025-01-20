@@ -1002,7 +1002,7 @@ export interface PeraSystemStateSummary {
 	/** Map storing the number of epochs for which each validator has been below the low stake threshold. */
 	atRiskValidators: [string, string][];
 	/** dWallet MPC network keys */
-	decryptionKeyShares: [number, NetworkDecryptionKeyShares][];
+	networkMpcKeys: [number, NetworkDecryptionKeyShares][];
 	/** The current epoch ID, starting from 0. */
 	epoch: string;
 	/** The duration of an epoch, in milliseconds. */

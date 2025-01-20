@@ -12,7 +12,6 @@ use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
 };
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -32,8 +31,6 @@ use crate::{
 };
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
-use class_groups::dkg::Secp256k1Party;
-use class_groups::{SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_SCALAR_LIMBS};
 use consensus_core::CommitConsumerMonitor;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
