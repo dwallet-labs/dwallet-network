@@ -107,7 +107,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         /// The public key of the encryptor.
         /// Used to verify the signature on the public share (centralized public output).
         encryptor_ed25519_pubkey: vector<u8>,
-        // todo(itay): do we even need this? it should be dest?
+        // TODO (#527): Transfer the encrypted user share move object to the destination address instead of the initiating user
         initiator: address,
     }
 
@@ -615,7 +615,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         // todo(zeev): rename
         signed_public_share: vector<u8>,
         encryptor_ed25519_pubkey: vector<u8>,
-        // todo(itay): this name is not correct? should be dest?
+        // TODO (#527): Transfer the encrypted user share move object to the destination address instead of the initiating user
         initiator: address,
         ctx: &mut TxContext
     ) {
