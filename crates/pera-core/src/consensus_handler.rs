@@ -8,7 +8,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
 };
@@ -401,7 +401,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
                         self.epoch_store
                             .save_dwallet_mpc_message(
-                                DWalletMPCChannelMessage::LockNextEpochCommitteeVote(*authority),
+                                DWalletMPCDBMessage::LockNextEpochCommitteeVote(*authority),
                             )
                             .await;
                         if dwallet_mpc_verifier.should_lock_committee(*authority) {
@@ -447,7 +447,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
 
                         self.epoch_store
-                            .save_dwallet_mpc_message(DWalletMPCChannelMessage::Output(
+                            .save_dwallet_mpc_message(DWalletMPCDBMessage::Output(
                                 output.clone(),
                                 origin_authority.clone(),
                                 session_info.clone(),
@@ -721,7 +721,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// hence async code involving it can cause compilation errors.
     async fn load_dwallet_mpc_messages_from_epoch_start(
         &self,
-    ) -> PeraResult<Vec<DWalletMPCChannelMessage>> {
+    ) -> PeraResult<Vec<DWalletMPCDBMessage>> {
         Ok(self
             .epoch_store
             .tables()?
@@ -752,7 +752,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             self.epoch_store.get_dwallet_mpc_batches_manager().await;
         for message in self.load_dwallet_mpc_messages_from_epoch_start().await? {
             match message {
-                DWalletMPCChannelMessage::Output(output, origin_authority, session_info) => {
+                DWalletMPCDBMessage::Output(output, origin_authority, session_info) => {
                     match dwallet_mpc_verifier.try_verify_output(
                         &output,
                         &session_info,
@@ -780,11 +780,11 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         }
                     }
                 }
-                DWalletMPCChannelMessage::Event(_, session_info) => {
+                DWalletMPCDBMessage::Event(_, session_info) => {
                     dwallet_mpc_batches_manager.handle_new_event(&session_info);
                     dwallet_mpc_verifier.handle_new_event(&session_info);
                 }
-                DWalletMPCChannelMessage::LockNextEpochCommitteeVote(authority) => {
+                DWalletMPCDBMessage::LockNextEpochCommitteeVote(authority) => {
                     dwallet_mpc_verifier.should_lock_committee(authority);
                 }
                 _ => {}

@@ -40,8 +40,6 @@ use tracing::{error, info};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
 
-pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
-
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
 /// — Executing all active sessions, and
@@ -73,7 +71,7 @@ pub struct DWalletMPCManager {
     /// this is not in sync with the blockchain.
     outputs_verifier: DWalletMPCOutputsVerifier,
     pub(crate) validators_data_for_network_dkg: HashMap<PartyID, ValidatorDataForNetworkDKG>,
-    /// Sessions that are ready to advance when the next [`DWalletMPCChannelMessage::PerformCryptographicComputations`]
+    /// Sessions that are ready to advance when the next [`DWalletMPCDBMessage::PerformCryptographicComputations`]
     /// message will be received.
     /// We need this field to skip already completed rounds, & to use the same messages,
     /// i.e. those that have been received until the first consensus round in which a quorum have reached.
@@ -83,7 +81,7 @@ pub struct DWalletMPCManager {
 
 /// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum DWalletMPCChannelMessage {
+pub enum DWalletMPCDBMessage {
     /// An MPC message from another validator.
     Message(DWalletMPCMessage),
     /// An output for a completed MPC message.
@@ -117,18 +115,15 @@ pub enum DWalletMPCChannelMessage {
 }
 
 impl DWalletMPCManager {
-    pub async fn try_new(
+    pub fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         epoch_id: EpochId,
         node_config: NodeConfig,
-    ) -> DwalletMPCResult<DWalletMPCSender> {
+    ) -> DwalletMPCResult<Self> {
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
-
-        let (sender, mut receiver) =
-            tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
-        let mut manager = Self {
+        Ok(Self {
             mpc_sessions: HashMap::new(),
             pending_sessions_queue: VecDeque::new(),
             active_sessions_counter: 0,
@@ -143,28 +138,20 @@ impl DWalletMPCManager {
             outputs_verifier: DWalletMPCOutputsVerifier::new(&epoch_store),
             validators_data_for_network_dkg: HashMap::new(),
             ready_to_advance: HashMap::new(),
-        };
-
-        tokio::spawn(async move {
-            while let Some(message) = receiver.recv().await {
-                manager.handle_incoming_channel_message(message).await;
-            }
-        });
-
-        Ok(sender)
+        })
     }
 
-    async fn handle_incoming_channel_message(&mut self, message: DWalletMPCChannelMessage) {
+    pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
         match message {
-            DWalletMPCChannelMessage::PerformCryptographicComputations => {
+            DWalletMPCDBMessage::PerformCryptographicComputations => {
                 self.perform_cryptographic_computation();
             }
-            DWalletMPCChannelMessage::Message(message) => {
+            DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message) {
                     error!("failed to handle an MPC message with error: {:?}", err);
                 }
             }
-            DWalletMPCChannelMessage::Output(output, authority, session_info) => {
+            DWalletMPCDBMessage::Output(output, authority, session_info) => {
                 let verification_result = self.outputs_verifier.try_verify_output(
                     &output,
                     &session_info,
@@ -196,17 +183,17 @@ impl DWalletMPCManager {
                     }
                 };
             }
-            DWalletMPCChannelMessage::Event(event, session_info) => {
+            DWalletMPCDBMessage::Event(event, session_info) => {
                 if let Err(err) = self.handle_event(event, session_info) {
                     error!("Failed to handle event with error: {:?}", err);
                 }
             }
-            DWalletMPCChannelMessage::EndOfDelivery => {
+            DWalletMPCDBMessage::EndOfDelivery => {
                 if let Err(err) = self.handle_end_of_delivery().await {
                     error!("failed to handle the end of delivery with error: {:?}", err);
                 }
             }
-            DWalletMPCChannelMessage::StartLockNextEpochCommittee => {
+            DWalletMPCDBMessage::StartLockNextEpochCommittee => {
                 if let Err(err) = self.start_lock_next_epoch().await {
                     error!(
                         "Failed to start lock next epoch committee with error: {:?}",
@@ -214,7 +201,7 @@ impl DWalletMPCManager {
                     );
                 }
             }
-            DWalletMPCChannelMessage::ValidatorDataForDKG(data) => {
+            DWalletMPCDBMessage::ValidatorDataForDKG(data) => {
                 if let Err(err) = self.handle_validator_data_for_network_dkg(data) {
                     error!(
                         "failed to handle validator data for DKG session with error: {:?}",
@@ -222,7 +209,7 @@ impl DWalletMPCManager {
                     );
                 }
             }
-            DWalletMPCChannelMessage::MPCSessionFailed(session_id) => {
+            DWalletMPCDBMessage::MPCSessionFailed(session_id) => {
                 // TODO (#524): Handle failed MPC sessions
             }
             _ => {}

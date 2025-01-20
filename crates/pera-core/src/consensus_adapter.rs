@@ -42,7 +42,7 @@ use tokio::time::{self};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_handler::{classify, SequencedConsensusTransactionKey};
 use crate::consensus_throughput_calculator::{ConsensusThroughputProfiler, Level};
-use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::epoch::reconfiguration::{ReconfigState, ReconfigurationInitiator};
 use crate::metrics::LatencyObserver;
 use mysten_metrics::{spawn_monitored_task, GaugeGuard, GaugeGuardFutureExt};
@@ -974,7 +974,7 @@ impl ReconfigurationInitiator for Arc<ConsensusAdapter> {
     /// This function is called multiple times, for each checkpoint after epoch end time.
     async fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
         epoch_store
-            .save_dwallet_mpc_message(DWalletMPCChannelMessage::StartLockNextEpochCommittee)
+            .save_dwallet_mpc_message(DWalletMPCDBMessage::StartLockNextEpochCommittee)
             .await;
         let dwallet_mpc_outputs_verifier = epoch_store.get_dwallet_mpc_outputs_verifier().await;
         if !dwallet_mpc_outputs_verifier.completed_locking_next_committee {

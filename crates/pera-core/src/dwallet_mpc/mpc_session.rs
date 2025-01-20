@@ -24,7 +24,7 @@ use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
-use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
@@ -144,16 +144,7 @@ impl DWalletMPCSession {
             }
             Err(e) => {
                 error!("Failed to advance the MPC session: {:?}", e);
-                let epoch_store = self.epoch_store()?;
-                let dwallet_mpc_sender = epoch_store
-                    .dwallet_mpc_sender
-                    .get()
-                    .ok_or_else(|| DwalletMPCError::MissingDWalletMPCSender)?;
-                dwallet_mpc_sender
-                    .send(DWalletMPCChannelMessage::MPCSessionFailed(
-                        self.session_info.session_id,
-                    ))
-                    .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
+                // TODO (#524): Handle failed MPC sessions
                 Err(e)
             }
         }

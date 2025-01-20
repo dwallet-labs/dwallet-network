@@ -1,7 +1,7 @@
 ///! This module contains the DWalletMPCService struct, which is responsible to read
 /// DWallet MPC messages from the local DB every five seconds and forward them to the [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use narwhal_types::Round;
 use pera_types::base_types::EpochId;
 use std::sync::Arc;
@@ -56,15 +56,12 @@ impl DWalletMPCService {
                 self.last_read_narwhal_round = round;
                 new_messages.extend(messages);
             }
+            let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
             for message in new_messages.into_iter() {
-                self.epoch_store
-                    .send_msg_to_dwallet_mpc_manager(&message)
-                    .await;
+                manager.handle_dwallet_db_message(message).await;
             }
-            self.epoch_store
-                .send_msg_to_dwallet_mpc_manager(
-                    &DWalletMPCChannelMessage::PerformCryptographicComputations,
-                )
+            manager
+                .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;
         }
     }

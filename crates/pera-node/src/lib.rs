@@ -1311,15 +1311,12 @@ impl PeraNode {
             .set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(&epoch_store))?;
         epoch_store.set_dwallet_mpc_batches_manager(DWalletMPCBatchesManager::new())?;
 
-        epoch_store.set_dwallet_mpc_sender(
-            DWalletMPCManager::try_new(
-                Arc::new(consensus_adapter.clone()),
-                Arc::clone(&epoch_store),
-                epoch_store.epoch(),
-                config.clone(),
-            )
-            .await?,
-        )?;
+        epoch_store.set_dwallet_mpc_manager(DWalletMPCManager::try_new(
+            Arc::new(consensus_adapter.clone()),
+            Arc::clone(&epoch_store),
+            epoch_store.epoch(),
+            config.clone(),
+        )?)?;
 
         let throughput_calculator = Arc::new(ConsensusThroughputCalculator::new(
             None,

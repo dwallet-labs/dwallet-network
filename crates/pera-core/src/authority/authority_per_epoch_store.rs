@@ -70,7 +70,7 @@ use crate::consensus_manager::ConsensusManager;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
 use crate::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
-use crate::dwallet_mpc::mpc_manager::{DWalletMPCChannelMessage, DWalletMPCSender};
+use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::epoch::epoch_metrics::EpochMetrics;
@@ -346,15 +346,15 @@ pub struct AuthorityPerEpochStore {
     /// State machine managing randomness DKG and generation.
     randomness_manager: OnceCell<tokio::sync::Mutex<RandomnessManager>>,
     randomness_reporter: OnceCell<RandomnessReporter>,
-    /// A tokio channel to send messages to the async [`DWalletMPCManager`]
-    pub dwallet_mpc_sender: OnceCell<DWalletMPCSender>,
     /// State machine managing dWallet MPC outputs.
     /// This state machine is used to store outputs and emit ones
     /// where the quorum of votes is valid.
     pub dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
     pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
-    dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCChannelMessage>>,
+    dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
+
+    dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -581,7 +581,7 @@ pub struct AuthorityEpochTables {
     /// Holds all the DWallet MPC related messages that have been received since the beginning of the epoch
     /// The key is the mysticeti round number, the value is the DWallet-mpc messages that have been received in that
     /// round.
-    pub(crate) dwallet_mpc_messages: DBMap<u64, Vec<DWalletMPCChannelMessage>>,
+    pub(crate) dwallet_mpc_messages: DBMap<u64, Vec<DWalletMPCDBMessage>>,
 }
 
 fn signed_transactions_table_default_config() -> DBOptions {
@@ -875,50 +875,20 @@ impl AuthorityPerEpochStore {
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
             dwallet_mpc_outputs_verifier: OnceCell::new(),
-            dwallet_mpc_sender: OnceCell::new(),
             dwallet_mpc_batches_manager: OnceCell::new(),
             dwallet_mpc_round_messages: tokio::sync::Mutex::new(Vec::new()),
+            dwallet_mpc_manager: OnceCell::new(),
             dwallet_mpc_network_keys: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
     }
 
-    async fn get_dwallet_mpc_sender(&self) -> DWalletMPCSender {
-        loop {
-            match self.dwallet_mpc_sender.get() {
-                Some(sender) => return sender.clone(),
-                None => {
-                    error!("failed to get DWalletMPC sender, retrying...");
-                }
-            }
-            tokio::time::sleep(Duration::from_secs(1)).await;
-        }
-    }
-
     /// Saves a DWallet MPC message in the round messages
     /// The round messages are later being stored to the on-disk DB to allow state sync.
-    pub(crate) async fn save_dwallet_mpc_message(&self, message: DWalletMPCChannelMessage) {
+    pub(crate) async fn save_dwallet_mpc_message(&self, message: DWalletMPCDBMessage) {
         let mut dwallet_mpc_epoch_messages = self.dwallet_mpc_round_messages.lock().await;
         dwallet_mpc_epoch_messages.push(message.clone());
-    }
-
-    /// Sends a message to the DWalletMPCManager.
-    /// In case of a failure to send, this function retries until the message is sent.
-    pub(crate) async fn send_msg_to_dwallet_mpc_manager(&self, message: &DWalletMPCChannelMessage) {
-        let sender = self.get_dwallet_mpc_sender().await;
-        loop {
-            match sender.send(message.clone()) {
-                Ok(_) => break,
-                Err(err) => {
-                    error!(
-                        "failed to send message to DWalletMPC sender, retrying... {:?}",
-                        err
-                    );
-                }
-            }
-            tokio::time::sleep(Duration::from_secs(1)).await;
-        }
     }
 
     pub fn tables(&self) -> PeraResult<Arc<AuthorityEpochTables>> {
@@ -984,10 +954,14 @@ impl AuthorityPerEpochStore {
         result
     }
 
-    /// A function to initiate the [`DWalletMPCSender`] when a new epoch starts.
-    pub fn set_dwallet_mpc_sender(&self, sender: DWalletMPCSender) -> PeraResult<()> {
-        if self.dwallet_mpc_sender.set(sender).is_err() {
-            error!("AuthorityPerEpochStore: `set_dwallet_mpc_sender` called more than once; this should never happen");
+    /// A function to initiate the [`DWalletMPCManager`] when a new epoch starts.
+    pub fn set_dwallet_mpc_manager(&self, sender: DWalletMPCManager) -> PeraResult<()> {
+        if self
+            .dwallet_mpc_manager
+            .set(tokio::sync::Mutex::new(sender))
+            .is_err()
+        {
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_batches_manager` called more than once; this should never happen");
         }
         Ok(())
     }
@@ -2779,6 +2753,19 @@ impl AuthorityPerEpochStore {
         }
     }
 
+    /// Return the current epoch's [`DWalletMPCManager`].
+    pub async fn get_dwallet_mpc_manager(&self) -> tokio::sync::MutexGuard<DWalletMPCManager> {
+        loop {
+            match self.dwallet_mpc_manager.get() {
+                Some(dwallet_mpc_manager) => return dwallet_mpc_manager.lock().await,
+                None => {
+                    error!("failed to get the DWallet MPC Manager, retrying...");
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+            }
+        }
+    }
+
     fn db_batch(&self) -> PeraResult<DBBatch> {
         Ok(self.tables()?.last_consensus_index.batch())
     }
@@ -3433,7 +3420,7 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
-        self.save_dwallet_mpc_message(DWalletMPCChannelMessage::EndOfDelivery)
+        self.save_dwallet_mpc_message(DWalletMPCDBMessage::EndOfDelivery)
             .await;
         let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
         output.set_dwallet_mpc_round_messages(dwallet_mpc_round_messages.clone());
@@ -3837,7 +3824,7 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                 ..
             }) => {
-                self.save_dwallet_mpc_message(DWalletMPCChannelMessage::Message(message.clone()))
+                self.save_dwallet_mpc_message(DWalletMPCDBMessage::Message(message.clone()))
                     .await;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
@@ -4287,7 +4274,7 @@ pub(crate) struct ConsensusCommitOutput {
     active_jwks: BTreeSet<(u64, (JwkId, JWK))>,
 
     /// All the DWallet-MPC related TXs that have been received in this round.
-    dwallet_mpc_round_messages: Vec<DWalletMPCChannelMessage>,
+    dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
 }
 
 impl ConsensusCommitOutput {
@@ -4353,10 +4340,7 @@ impl ConsensusCommitOutput {
         self.pending_checkpoints.push(checkpoint);
     }
 
-    pub(crate) fn set_dwallet_mpc_round_messages(
-        &mut self,
-        new_value: Vec<DWalletMPCChannelMessage>,
-    ) {
+    pub(crate) fn set_dwallet_mpc_round_messages(&mut self, new_value: Vec<DWalletMPCDBMessage>) {
         self.dwallet_mpc_round_messages = new_value;
     }
 
