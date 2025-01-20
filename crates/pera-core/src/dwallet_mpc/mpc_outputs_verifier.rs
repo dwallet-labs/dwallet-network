@@ -6,6 +6,7 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use dwallet_mpc_types::dwallet_mpc::MPCPublicOutput;
+use narwhal_types::Round;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::messages_dwallet_mpc::SessionInfo;
@@ -28,6 +29,11 @@ pub struct DWalletMPCOutputsVerifier {
     // todo(zeev): why is it here?
     pub completed_locking_next_committee: bool,
     voted_to_lock_committee: HashSet<AuthorityName>,
+    /// The latest narwhal round that was processed.
+    /// Used to check if there's a need to perform a state sync -
+    /// if the latest_processed_dwallet_round is behind the currently processed round by more than one,
+    /// a state sync should be performed.
+    pub(crate) latest_seen_dwallet_round: Round,
 }
 
 /// The data needed to manage the outputs of an MPC session.
@@ -75,6 +81,7 @@ impl DWalletMPCOutputsVerifier {
                 .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
+            latest_seen_dwallet_round: 0,
         }
     }
 
