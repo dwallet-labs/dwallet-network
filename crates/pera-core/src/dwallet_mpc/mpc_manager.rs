@@ -19,7 +19,7 @@ use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::ToFromBytes;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::{Weight, WeightedThresholdAccessStructure};
+use mpc::WeightedThresholdAccessStructure;
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::crypto::AuthorityPublicKeyBytes;
@@ -215,7 +215,7 @@ impl DWalletMPCManager {
                 }
             }
             DWalletMPCChannelMessage::ValidatorDataForDKG(data) => {
-                if let Err(err) = self.handle_validator_data_for_dkg(data) {
+                if let Err(err) = self.handle_validator_data_for_network_dkg(data) {
                     error!(
                         "failed to handle validator data for DKG session with error: {:?}",
                         err
@@ -229,7 +229,7 @@ impl DWalletMPCManager {
         }
     }
 
-    fn handle_validator_data_for_dkg(
+    fn handle_validator_data_for_network_dkg(
         &mut self,
         data: ValidatorDataForNetworkDKG,
     ) -> DwalletMPCResult<()> {

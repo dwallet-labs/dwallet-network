@@ -27,7 +27,7 @@ describe('encrypt user share', () => {
 	let sourceClient: TestToolbox;
 	let destClient: TestToolbox;
 	let activeEncryptionKeysTableID: string;
-	const timeout = 5 * 60 * 1000;
+	const fiveMinutes = 5 * 60 * 1000;
 
 	beforeAll(async () => {
 		sourceClient = await setup();
@@ -36,14 +36,14 @@ describe('encrypt user share', () => {
 			await createActiveEncryptionKeysTable({
 				keypair: sourceClient.keypair,
 				client: sourceClient.client,
-				timeout: timeout,
+				timeout: fiveMinutes,
 			})
 		).objectId;
 		await delay(checkpointCreationTime);
 	});
 
 	it('encrypts a secret share for a given public key and transfers it', async () => {
-		const encryptedUserShare = new EncryptedUserShare(sourceClient.client, timeout);
+		const encryptedUserShare = new EncryptedUserShare(sourceClient.client, fiveMinutes);
 
 		const sourceDwallet = await mockCreateDwallet(
 			encryptedUserShare.toConfig(sourceClient.keypair),
@@ -70,20 +70,22 @@ describe('encrypt user share', () => {
 			destActiveEncryptionKeyObjID,
 			sourceDwallet,
 		);
+		expect(encryptedSecretShare).toBeDefined();
+		console.log({ encryptedSecretShare });
 
 		// Verifies that the received dWallet is valid and encrypt it to myself.
-		await encryptedUserShare.acceptUserShare(
+		const createdEncryptedSecretShareEvent = await encryptedUserShare.acceptUserShare(
 			activeEncryptionKeysTableID,
 			encryptedSecretShare,
 			sourceClient.keypair.toPeraAddress(),
 			destClient.keypair,
 		);
+		expect(createdEncryptedSecretShareEvent).toBeDefined();
+		console.log({ createdEncryptedSecretShareEvent });
 	});
 
 	it('creates an encryption key and stores it in the active encryption keys table', async () => {
-		const timeout = 5 * 60 * 1000;
-
-		const encryptedUserShare = new EncryptedUserShare(sourceClient.client, timeout);
+		const encryptedUserShare = new EncryptedUserShare(sourceClient.client, fiveMinutes);
 
 		const senderEncryptionKeyObj = await encryptedUserShare.getOrCreateClassGroupsKeyPair(
 			sourceClient.keypair,
@@ -106,7 +108,7 @@ describe('encrypt user share', () => {
 		const conf: Config = {
 			keypair: sourceClient.keypair,
 			client: sourceClient.client,
-			timeout: timeout,
+			timeout: fiveMinutes,
 		};
 		const dwallet = await createDWallet(
 			conf,

@@ -11863,6 +11863,7 @@ dependencies = [
  "axum 0.7.9",
  "bcs",
  "diffy 0.3.0",
+ "dwallet-mpc-types",
  "fastcrypto",
  "itertools 0.10.5",
  "mime",
