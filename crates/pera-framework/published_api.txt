@@ -1033,6 +1033,9 @@ DWalletCap
 ActiveEncryptionKeys
 	public struct
 	0x3::dwallet
+MessageApproval
+	public struct
+	0x3::dwallet
 get_encryption_key
 	public(package) fun
 	0x3::dwallet
@@ -1072,10 +1075,25 @@ get_dwallet_mpc_network_key_version
 is_valid_encryption_key_scheme
 	fun
 	0x3::dwallet
+create_message_approval
+	public(package) fun
+	0x3::dwallet
+approve_messages
+	public fun
+	0x3::dwallet
+remove_message_approval
+	fun
+	0x3::dwallet
+pop_and_verify_message_approval
+	public(package) fun
+	0x3::dwallet
+hash_message
+	public(package) fun
+	0x3::dwallet
+is_supported_hash_scheme
+	fun
+	0x3::dwallet
 Secp256K1
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-MessageApproval
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 DKGFirstRoundOutputEvent
@@ -1162,12 +1180,6 @@ launch_presign_second_round
 create_batched_presign_output
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-approve_messages
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-remove_message_approval
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
 sign
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -1188,9 +1200,6 @@ publish_partially_signed_messages
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 future_sign
 	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-pop_and_verify_message_approval
-	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 verify_partially_signed_signatures
 	fun
