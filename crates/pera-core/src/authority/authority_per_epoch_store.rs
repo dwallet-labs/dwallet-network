@@ -85,7 +85,7 @@ use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::ClassGroupsDecryptionKey;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
-use group::{PartyID};
+use group::PartyID;
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mpc::{Weight, WeightedThresholdAccessStructure};
 use mysten_common::sync::notify_once::NotifyOnce;

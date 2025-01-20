@@ -29,7 +29,7 @@ use crate::{
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
 use consensus_core::CommitConsumerMonitor;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme};
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use lru::LruCache;
 use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};

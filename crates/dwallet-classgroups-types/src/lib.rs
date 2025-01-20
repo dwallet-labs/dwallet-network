@@ -1,7 +1,6 @@
 #[cfg(feature = "mock-class-groups")]
 pub mod mock_class_groups;
 
-
 #[cfg(not(feature = "mock-class-groups"))]
 use class_groups::{
     construct_knowledge_of_decryption_key_public_parameters_per_crt_prime,
@@ -12,9 +11,7 @@ use class_groups::{
 };
 
 use class_groups::{
-    CompactIbqf,
-    CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    CompactIbqf, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     MAX_PRIMES,
 };
 use crypto_bigint::Uint;

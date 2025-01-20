@@ -16,7 +16,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use fastcrypto::traits::ToFromBytes;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::{WeightedThresholdAccessStructure};
+use mpc::WeightedThresholdAccessStructure;
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::crypto::AuthorityPublicKeyBytes;
