@@ -759,6 +759,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         origin_authority,
                     ) {
                         Ok(result) => {
+                            // TODO (#524): Handle malicious behavior.
                             if result.result == OutputResult::Valid {
                                 if session_info.mpc_round.is_part_of_batch() {
                                     if let Err(err) = dwallet_mpc_batches_manager
