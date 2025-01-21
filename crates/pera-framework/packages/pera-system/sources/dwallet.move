@@ -213,6 +213,8 @@ module pera_system::dwallet {
     /// - `signed_encryption_key`: Signed encryption key.
     /// - `sender_pubkey`: Public key of the sender.
     /// - `encryption_key_scheme`: Scheme of the encryption key.
+    /// - `_pera_system_state`: The Pera system state object. Its ID is always 0x5.
+    /// Needed so the TX will get ordered in consensus before getting executed.
     /// - `ctx`: Mutable transaction context.
     public fun register_encryption_key(
         encryption_key: vector<u8>,
