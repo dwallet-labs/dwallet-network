@@ -34,7 +34,7 @@ impl DWalletMPCService {
     }
 
     /// Spawns the DWallet MPC service, that
-    /// read DWallet MPC messages from the local DB every five seconds and forward them to the
+    /// read DWallet MPC messages from the local DB every [`READ_INTERVAL_SECS`] seconds and forward them to the
     /// [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
     ///
     /// The service exists upon an epoch switch.
