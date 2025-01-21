@@ -789,12 +789,12 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     dwallet_mpc_verifier.should_lock_committee(authority);
                 }
 
-                DWalletMPCChannelMessage::Message(_)
-                | DWalletMPCChannelMessage::EndOfDelivery
-                | DWalletMPCChannelMessage::StartLockNextEpochCommittee
-                | DWalletMPCChannelMessage::ValidatorDataForDKG(_)
-                | DWalletMPCChannelMessage::MPCSessionFailed(_)
-                | DWalletMPCChannelMessage::PerformCryptographicComputations => {}
+                DWalletMPCDBMessage::Message(_)
+                | DWalletMPCDBMessage::EndOfDelivery
+                | DWalletMPCDBMessage::StartLockNextEpochCommittee
+                | DWalletMPCDBMessage::ValidatorDataForDKG(_)
+                | DWalletMPCDBMessage::MPCSessionFailed(_)
+                | DWalletMPCDBMessage::PerformCryptographicComputations => {}
             }
         }
         Ok(())
