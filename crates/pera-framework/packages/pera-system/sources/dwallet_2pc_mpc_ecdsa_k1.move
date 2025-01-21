@@ -430,6 +430,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// and emits a `StartDKGFirstRoundEvent` to signal
     /// the beginning of the DKG process.
     ///
+    /// ### Parameters
+    /// - `_pera_system_state`: The Pera system state object.
+    ///
     /// ### Effects
     /// - Generates a new `DWalletCap` object.
     /// - Transfers the `DWalletCap` to the session initiator (`ctx.sender`).
@@ -510,6 +513,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - `signed_centralized_public_output`: The centralized public output signed by the caller.
     /// - `encryptor_ed25519_pubkey`: The Ed25519 public key of the encryptor.
     /// - `centralized_public_output`: The centralized public output of the DKG process.
+    /// - `_pera_system_state`: The Pera system state object. Its ID is always 0x5.
     public fun launch_dkg_second_round(
         dwallet_cap: &DWalletCap,
         centralized_public_key_share_and_proof: vector<u8>,
@@ -556,7 +560,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - **`destination_encryption_key`**: A reference to the encryption key used for encrypting the secret key share.
     /// - **`encrypted_secret_share_and_proof`**: The encrypted secret key share, accompanied by a cryptographic proof.
     /// - **`source_signed_centralized_public_output`**: The signed centralized public output corresponding to the secret share.
-    /// - `_pera_system_state`: The Pera system state object. Its ID is always 0x5.
+    /// - **`_pera_system_state`**: The Pera system state object. Its ID is always 0x5.
     /// - **`source_ed25519_pubkey`**: The Ed25519 public key of the source (encryptor) used for verifying the signature.
     ///
     /// ### Effects

@@ -46,7 +46,7 @@ impl DWalletMPCService {
                 }
                 Ok(false) => (),
             };
-            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(READ_INTERVAL_SECS)).await;
 
             let Ok(tables) = self.epoch_store.tables() else {
                 continue 'main;
