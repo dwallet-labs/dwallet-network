@@ -556,6 +556,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - **`destination_encryption_key`**: A reference to the encryption key used for encrypting the secret key share.
     /// - **`encrypted_secret_share_and_proof`**: The encrypted secret key share, accompanied by a cryptographic proof.
     /// - **`source_signed_centralized_public_output`**: The signed centralized public output corresponding to the secret share.
+    /// - `_pera_system_state`: The Pera system state object. Its ID is always 0x5.
     /// - **`source_ed25519_pubkey`**: The Ed25519 public key of the source (encryptor) used for verifying the signature.
     ///
     /// ### Effects
@@ -804,6 +805,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// ### Parameters
     /// - `dwallet`: A reference to the target dWallet. This is used to retrieve the dWallet's ID and output.
     /// - `batch_size`: The number of presign sessions to be created in this batch.
+    /// - `_pera_system_state`: The Pera system state object. Its ID is always 0x5.
     /// - `ctx`: The mutable transaction context, used to generate unique object IDs and retrieve the initiator.
     public fun launch_batched_presign(
         dwallet: &DWallet<Secp256K1>,
@@ -1030,6 +1032,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - `dwallet`: The dWallet object.
     /// - `centralized_signed_messages`: The list of centralized signatures.
     /// - `presign_session_id`: The session ID of the presign process.
+    /// - `_pera_system_state`: The Pera system state object. Its ID is always 0x5.
     /// - `ctx`: The mutable transaction context.
     public fun sign(
         message_approvals: &mut vector<MessageApproval>,
