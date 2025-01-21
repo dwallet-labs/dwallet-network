@@ -350,10 +350,15 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
         &mut rand_core::OsRng,
     ) {
         Ok(res) => res,
-        // Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
-        //     return Err(DwalletMPCError::MaliciousParties(malicious_parties).into())
-        // }
-        Err(e) => return Err(DwalletMPCError::TwoPCMPCError(format!("{:?}", e)).into()),
+        Err(e) => {
+            let general_error =DwalletMPCError::TwoPCMPCError(format!("{:?}", e));
+            return match e.into() {
+                mpc::Error::ThresholdNotReached { honest_subset } => {
+                    Err(DwalletMPCError::MaliciousParties(honest_subset))
+                },
+               _  => Err(general_error),
+            }
+        }
     };
 
     Ok(match res {
