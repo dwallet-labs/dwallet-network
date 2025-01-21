@@ -1,5 +1,6 @@
-///! This module contains the DWalletMPCService struct, which is responsible to read
-/// DWallet MPC messages from the local DB every five seconds and forward them to the [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
+///! This module contains the DWalletMPCService struct.
+///! It is responsible to read DWallet MPC messages from the local DB every [`READ_INTERVAL_SECS`] seconds
+///! and forward them to the [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 use narwhal_types::Round;
