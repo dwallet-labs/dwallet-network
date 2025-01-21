@@ -738,6 +738,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun partial_signatures_for_testing(
         presigns: vector<vector<u8>>,
         presign_session_ids: vector<ID>,
+        messages: vector<vector<u8>>,
         signatures: vector<vector<u8>>,
         dwallet_id: ID,
         dwallet_cap_id: ID,
@@ -748,6 +749,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             id: object::new(ctx),
             presigns,
             presign_session_ids,
+            messages,
             signatures,
             dwallet_id,
             dwallet_output: vector::empty(),
@@ -1015,10 +1017,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - **`EMessageApprovalDWalletMismatch`**: If the DWalletCap ID does not match
     ///   the expected DWalletCap ID for any of the message approvals.
     /// - **`EMissingApprovalOrWrongApprovalOrder`**: If the approved messages are not
-    ///   in the same order as the `hashed_messages`.
+    ///   in the same order as the `messages`.
     ///
     /// ### Parameters
     /// - `dwallet_cap`: The capability associated with the dWallet.
+    /// - `messages`: The list of messages to be signed.
     /// - `message_approvals`: The approvals for the messages.
     /// - `presign`: The presign object containing intermediate outputs.
     /// - `dwallet`: The dWallet object.
@@ -1027,33 +1030,36 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - `ctx`: The mutable transaction context.
     public fun sign(
         message_approvals: &mut vector<MessageApproval>,
+        mut messages: vector<vector<u8>>,
         mut presigns: vector<Presign>,
         dwallet: &DWallet<Secp256K1>,
         mut centralized_signed_messages: vector<vector<u8>>,
         ctx: &mut TxContext
     ) {
+        let messages_len: u64 = vector::length(&messages);
         let presigns_len: u64 = vector::length(&presigns);
-        let messages_len: u64 = vector::length(message_approvals);
+        let approvals_len: u64 = vector::length(message_approvals);
         let centralized_signed_len: u64 = vector::length(&centralized_signed_messages);
+        assert!(messages_len == approvals_len, EApprovalsAndMessagesLenMismatch);
         assert!(messages_len == centralized_signed_len, ECentralizedSignedMessagesAndMessagesLenMismatch);
         assert!(messages_len == presigns_len, EPresignsAndMessagesLenMismatch);
         let expected_dwallet_cap_id = get_dwallet_cap_id(dwallet);
         let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-        let hashed_messages = hash_messages(message_approvals);
+        let mut hashed_messages = hash_messages(message_approvals);
         event::emit(StartBatchedSignEvent {
             session_id: batch_session_id,
             hashed_messages,
             initiator: tx_context::sender(ctx)
         });
         let mut i = 0;
-        let messages_len = vector::length(message_approvals);
-        while (i < messages_len) {
-            let hashed_message = hashed_messages[i];
+        while (i < approvals_len) {
             let presign = vector::pop_back(&mut presigns);
             assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
-            pop_and_verify_message_approval(expected_dwallet_cap_id, message_approvals);
+            let message = vector::pop_back(&mut messages);
+            pop_and_verify_message_approval(expected_dwallet_cap_id, message, message_approvals);
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
             let centralized_signed_message = vector::pop_back(&mut centralized_signed_messages);
+            let hashed_message = vector::pop_back(&mut hashed_messages);
             event::emit(StartSignEvent {
                 session_id: id,
                 presign_session_id: presign.first_round_session_id,
@@ -1286,7 +1292,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             id,
             mut presigns,
             mut presign_session_ids,
-            messages,
+            mut messages,
             mut signatures,
             dwallet_id,
             dwallet_cap_id,
@@ -1306,12 +1312,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         });
         let mut i = 0;
         while (i < message_approvals_len) {
-            let message = vector::pop_back(&mut hashed_messages);
-            pop_and_verify_message_approval(dwallet_cap_id, message_approvals);
+            let message = vector::pop_back(&mut messages);
+            pop_and_verify_message_approval(dwallet_cap_id, message, message_approvals);
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
             let centralized_signed_message = vector::pop_back(&mut signatures);
             let presign = vector::pop_back(&mut presigns);
             let presign_session_id = vector::pop_back(&mut presign_session_ids);
+            let hashed_message = vector::pop_back(&mut hashed_messages);
             event::emit(StartSignEvent {
                 session_id: id,
                 presign_session_id,
@@ -1321,7 +1328,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 presign,
                 centralized_signed_message,
                 dkg_output: dwallet_output,
-                hashed_message: message,
+                hashed_message,
                 dwallet_mpc_network_key_version,
             });
             i = i + 1;

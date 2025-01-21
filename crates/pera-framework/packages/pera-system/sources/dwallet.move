@@ -35,7 +35,8 @@ module pera_system::dwallet {
     const EInvalidEncryptionKeyOwner: u64 = 2;
     const ENotSystemAddress: u64 = 3;
     const EMessageApprovalDWalletMismatch: u64 = 4;
-    const EInvalidHashScheme: u64 = 5;
+    const EMissingApprovalOrWrongApprovalOrder: u64 = 5;
+    const EInvalidHashScheme: u64 = 6;
 
     // <<<<<<<<<<<<<<< Error Codes <<<<<<<<<<<<<<
 
@@ -446,17 +447,16 @@ module pera_system::dwallet {
         (dwallet_cap_id, hash_scheme, message)
     }
 
-    /// Pops the last message approval from the vector and verifies it against the given dwallet_cap_id.
-    /// Returns the approved message and the hash scheme.
+    /// Pops the last message approval from the vector and verifies it against the given message & dwallet_cap_id.
     public(package) fun pop_and_verify_message_approval(
         dwallet_cap_id: ID,
+        message_hash: vector<u8>,
         message_approvals: &mut vector<MessageApproval>
     ) {
         let message_approval = vector::pop_back(message_approvals);
-        let (message_approval_dwallet_cap_id, _hash_scheme, _approved_message) = remove_message_approval(
-            message_approval
-        );
+        let (message_approval_dwallet_cap_id, _hash_scheme, approved_message) = remove_message_approval(message_approval);
         assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMessageApprovalDWalletMismatch);
+        assert!(&message_hash == &approved_message, EMissingApprovalOrWrongApprovalOrder);
     }
 
     public(package) fun hash_messages(message_approvals: &vector<MessageApproval>): vector<vector<u8>>{

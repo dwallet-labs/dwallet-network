@@ -387,9 +387,10 @@ module pera_system::dwallet_ecdsa_k1_tests {
         test_scenario::next_tx(&mut scenario, sender);
         {
             let ctx = test_scenario::ctx(&mut scenario);
-            let mut messages_to_approve: vector<vector<u8>> = vector[std::vector::singleton(
-                0xAA
-            ), std::vector::singleton(0xBB)];
+            let mut messages_to_approve: vector<vector<u8>> = vector[
+                std::vector::singleton(0xAA),
+                std::vector::singleton(0xBB)
+            ];
             let mut message_approvals = pera_system::dwallet::approve_messages(
                 &dwallet_cap,
                 0,
@@ -398,7 +399,10 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let partial_signature_mock = pera_system::dwallet_2pc_mpc_ecdsa_k1::partial_signatures_for_testing(
                 vector[vector[1], vector[2]],
                 vector[object::id_from_address(@0x01), object::id_from_address(@0x02)],
-                vector[hash_message(std::vector::singleton(0xAA), 0), hash_message(std::vector::singleton(0xBB), 0)],
+                vector[
+                    std::vector::singleton(0xAA),
+                    std::vector::singleton(0xBB)
+                ],
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
@@ -577,8 +581,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 &mut messages_to_approve
             );
 
-            vector::push_back(&mut messages_to_approve, hash_message(std::vector::singleton(0xAA), 0));
-            vector::push_back(&mut messages_to_approve, hash_message(std::vector::singleton(0xBB), 0));
+            vector::push_back(&mut messages_to_approve, std::vector::singleton(0xAA));
+            vector::push_back(&mut messages_to_approve, std::vector::singleton(0xBB));
 
             let mut centralized_signed_messages: vector<vector<u8>> = vector::empty();
             vector::push_back(&mut centralized_signed_messages, std::vector::singleton(0xDD));
