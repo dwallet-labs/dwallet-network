@@ -33,7 +33,7 @@ pub struct DWalletMPCOutputsVerifier {
     /// Used to check if there's a need to perform a state sync -
     /// if the latest_processed_dwallet_round is behind the currently processed round by more than one,
     /// a state sync should be performed.
-    pub(crate) latest_seen_dwallet_round: Round,
+    pub(crate) last_processed_round: Round,
 }
 
 /// The data needed to manage the outputs of an MPC session.
@@ -81,7 +81,7 @@ impl DWalletMPCOutputsVerifier {
                 .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
-            latest_seen_dwallet_round: 0,
+            last_processed_round: 0,
         }
     }
 
