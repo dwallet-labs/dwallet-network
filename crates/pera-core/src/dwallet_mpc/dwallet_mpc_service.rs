@@ -10,6 +10,8 @@ use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
 use typed_store::Map;
 
+const READ_INTERVAL_SECS: u64 = 5;
+
 pub struct DWalletMPCService {
     last_read_narwhal_round: Round,
     read_messages: usize,
