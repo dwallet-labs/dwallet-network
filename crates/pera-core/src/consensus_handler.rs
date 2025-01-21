@@ -258,7 +258,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             }
         }
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
-        dwallet_mpc_verifier.latest_seen_dwallet_round = last_committed_round;
+        dwallet_mpc_verifier.last_processed_round = last_committed_round;
         // Need to drop the verifier, as `self` is being used mutably later in this function
         drop(dwallet_mpc_verifier);
 
@@ -738,7 +738,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         // This condition is only true if we process a round before we processed the previous round,
         // which can only happen if we restart the node.
         self.last_consensus_stats.index.sub_dag_index
-            > dwallet_mpc_verifier.latest_seen_dwallet_round + 1
+            > dwallet_mpc_verifier.last_processed_round + 1
     }
 
     /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
@@ -759,6 +759,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         origin_authority,
                     ) {
                         Ok(result) => {
+                            // TODO (#524): Handle malicious behavior.
                             if result.result == OutputResult::Valid {
                                 if session_info.mpc_round.is_part_of_batch() {
                                     if let Err(err) = dwallet_mpc_batches_manager
@@ -787,7 +788,13 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 DWalletMPCChannelMessage::LockNextEpochCommitteeVote(authority) => {
                     dwallet_mpc_verifier.should_lock_committee(authority);
                 }
-                _ => {}
+
+                DWalletMPCChannelMessage::Message(_)
+                | DWalletMPCChannelMessage::EndOfDelivery
+                | DWalletMPCChannelMessage::StartLockNextEpochCommittee
+                | DWalletMPCChannelMessage::ValidatorDataForDKG(_)
+                | DWalletMPCChannelMessage::MPCSessionFailed(_)
+                | DWalletMPCChannelMessage::PerformCryptographicComputations => {}
             }
         }
         Ok(())
