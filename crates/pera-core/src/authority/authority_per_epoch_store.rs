@@ -99,6 +99,7 @@ use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_storage::mutex_table::{MutexGuard, MutexTable};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::effects::TransactionEffects;
+use pera_types::event::Event;
 use pera_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
 };
@@ -111,6 +112,9 @@ use pera_types::messages_consensus::{
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
 use pera_types::messages_consensus::{DWalletMPCMessage, VersionedDkgConfirmation};
+use pera_types::messages_dwallet_mpc::{
+    DWalletMPCEvent, DWalletMPCOutput, DWalletMPCOutputMessage, SessionInfo,
+};
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
@@ -353,6 +357,9 @@ pub struct AuthorityPerEpochStore {
     pub dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
     pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
     dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
+    dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
+    dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
+    dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
 
     dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
 }
@@ -582,6 +589,9 @@ pub struct AuthorityEpochTables {
     /// The key is the mysticeti round number, the value is the DWallet-mpc messages that have been received in that
     /// round.
     pub(crate) dwallet_mpc_messages: DBMap<u64, Vec<DWalletMPCDBMessage>>,
+    pub(crate) dwallet_mpc_outputs: DBMap<u64, Vec<DWalletMPCOutputMessage>>,
+    pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<ObjectID>>,
+    pub(crate) dwallet_mpc_events: DBMap<u64, Vec<DWalletMPCEvent>>,
 }
 
 fn signed_transactions_table_default_config() -> DBOptions {
@@ -877,6 +887,9 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_outputs_verifier: OnceCell::new(),
             dwallet_mpc_batches_manager: OnceCell::new(),
             dwallet_mpc_round_messages: tokio::sync::Mutex::new(Vec::new()),
+            dwallet_mpc_round_outputs: tokio::sync::Mutex::new(Vec::new()),
+            dwallet_mpc_round_events: tokio::sync::Mutex::new(Vec::new()),
+            dwallet_mpc_round_completed_sessions: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_manager: OnceCell::new(),
             dwallet_mpc_network_keys: OnceCell::new(),
         });
@@ -887,8 +900,58 @@ impl AuthorityPerEpochStore {
     /// Saves a DWallet MPC message in the round messages
     /// The round messages are later being stored to the on-disk DB to allow state sync.
     pub(crate) async fn save_dwallet_mpc_message(&self, message: DWalletMPCDBMessage) {
-        let mut dwallet_mpc_epoch_messages = self.dwallet_mpc_round_messages.lock().await;
-        dwallet_mpc_epoch_messages.push(message.clone());
+        let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
+        dwallet_mpc_round_messages.push(message.clone());
+    }
+
+    /// Saves a DWallet MPC output in the round messages
+    /// The round outputs are later being stored to the on-disk DB to allow state sync.
+    pub(crate) async fn save_dwallet_mpc_output(&self, output: DWalletMPCOutputMessage) {
+        let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_outputs.lock().await;
+        dwallet_mpc_round_outputs.push(output.clone());
+    }
+
+    /// Loads the DWallet MPC events from the given mystecity round.
+    pub(crate) async fn load_dwallet_mpc_events_from_round(
+        &self,
+        round: Round,
+    ) -> PeraResult<Vec<DWalletMPCEvent>> {
+        Ok(self
+            .tables()?
+            .dwallet_mpc_events
+            .iter_with_bounds(Some(round), None)
+            .map(|(_, events)| events)
+            .flatten()
+            .collect())
+    }
+
+    /// Loads the DWallet MPC completed sessions from the given mystecity round.
+    pub(crate) async fn load_dwallet_mpc_completed_sessions_from_round(
+        &self,
+        round: Round,
+    ) -> PeraResult<Vec<ObjectID>> {
+        Ok(self
+            .tables()?
+            .dwallet_mpc_completed_sessions
+            .iter_with_bounds(Some(round), None)
+            .map(|(_, events)| events)
+            .flatten()
+            .collect())
+    }
+
+    /// Saves a DWallet MPC event in the round events
+    /// The round events are later being stored to the on-disk DB to allow state sync.
+    pub(crate) async fn save_dwallet_mpc_event(&self, event: DWalletMPCEvent) {
+        let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_events.lock().await;
+        dwallet_mpc_round_outputs.push(event);
+    }
+
+    /// Saves a DWallet MPC completed session in the round completed sessions
+    /// The round completed sessions are later being stored to the on-disk DB to allow state sync.
+    pub(crate) async fn save_dwallet_mpc_completed_session(&self, session_id: ObjectID) {
+        let mut dwallet_mpc_round_completed_sessions =
+            self.dwallet_mpc_round_completed_sessions.lock().await;
+        dwallet_mpc_round_completed_sessions.push(session_id);
     }
 
     pub fn tables(&self) -> PeraResult<Arc<AuthorityEpochTables>> {
@@ -3422,9 +3485,21 @@ impl AuthorityPerEpochStore {
         }
         self.save_dwallet_mpc_message(DWalletMPCDBMessage::EndOfDelivery)
             .await;
+
         let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
         output.set_dwallet_mpc_round_messages(dwallet_mpc_round_messages.clone());
         dwallet_mpc_round_messages.clear();
+        let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_outputs.lock().await;
+        output.set_dwallet_mpc_round_outputs(dwallet_mpc_round_outputs.clone());
+        dwallet_mpc_round_outputs.clear();
+        let mut dwallet_mpc_round_completed_sessions =
+            self.dwallet_mpc_round_completed_sessions.lock().await;
+        output
+            .set_dwallet_mpc_round_completed_sessions(dwallet_mpc_round_completed_sessions.clone());
+        dwallet_mpc_round_completed_sessions.clear();
+        let mut dwallet_mpc_round_events = self.dwallet_mpc_round_events.lock().await;
+        output.set_dwallet_mpc_round_events(dwallet_mpc_round_events.clone());
+        dwallet_mpc_round_events.clear();
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
@@ -4275,6 +4350,9 @@ pub(crate) struct ConsensusCommitOutput {
 
     /// All the DWallet-MPC related TXs that have been received in this round.
     dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
+    dwallet_mpc_round_outputs: Vec<DWalletMPCOutputMessage>,
+    dwallet_mpc_round_events: Vec<DWalletMPCEvent>,
+    dwallet_mpc_completed_sessions: Vec<ObjectID>,
 }
 
 impl ConsensusCommitOutput {
@@ -4344,6 +4422,21 @@ impl ConsensusCommitOutput {
         self.dwallet_mpc_round_messages = new_value;
     }
 
+    pub(crate) fn set_dwallet_mpc_round_outputs(
+        &mut self,
+        new_value: Vec<DWalletMPCOutputMessage>,
+    ) {
+        self.dwallet_mpc_round_outputs = new_value;
+    }
+
+    pub(crate) fn set_dwallet_mpc_round_completed_sessions(&mut self, new_value: Vec<ObjectID>) {
+        self.dwallet_mpc_completed_sessions = new_value;
+    }
+
+    pub(crate) fn set_dwallet_mpc_round_events(&mut self, new_value: Vec<DWalletMPCEvent>) {
+        self.dwallet_mpc_round_events = new_value;
+    }
+
     pub fn reserve_next_randomness_round(
         &mut self,
         next_randomness_round: RandomnessRound,
@@ -4398,6 +4491,27 @@ impl ConsensusCommitOutput {
                 [(
                     consensus_commit_stats.index.sub_dag_index,
                     self.dwallet_mpc_round_messages,
+                )],
+            )?;
+            batch.insert_batch(
+                &tables.dwallet_mpc_completed_sessions,
+                [(
+                    consensus_commit_stats.index.sub_dag_index,
+                    self.dwallet_mpc_completed_sessions,
+                )],
+            )?;
+            batch.insert_batch(
+                &tables.dwallet_mpc_outputs,
+                [(
+                    consensus_commit_stats.index.sub_dag_index,
+                    self.dwallet_mpc_round_outputs,
+                )],
+            )?;
+            batch.insert_batch(
+                &tables.dwallet_mpc_events,
+                [(
+                    consensus_commit_stats.index.sub_dag_index,
+                    self.dwallet_mpc_round_events,
                 )],
             )?;
         } else {

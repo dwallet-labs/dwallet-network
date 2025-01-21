@@ -1,6 +1,7 @@
-use crate::base_types::{ObjectID, PeraAddress};
+use crate::base_types::{AuthorityName, ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
+use crate::event::Event;
 use crate::id::ID;
 use crate::message_envelope::Message;
 use crate::PERA_SYSTEM_ADDRESS;
@@ -69,6 +70,19 @@ impl MPCRound {
                 | MPCRound::BatchedPresign(..)
         )
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DWalletMPCEvent {
+    pub event: Event,
+    pub session_info: SessionInfo,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DWalletMPCOutputMessage {
+    pub output: Vec<u8>,
+    pub authority: AuthorityName,
+    pub session_info: SessionInfo,
 }
 
 /// The content of the system transaction that stores the MPC session output on the chain.

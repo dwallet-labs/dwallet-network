@@ -28,7 +28,7 @@ use pera_types::digests::Digest;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
-use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
+use pera_types::messages_dwallet_mpc::{DWalletMPCEvent, MPCRound, SessionInfo};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
@@ -47,7 +47,7 @@ use typed_store::Map;
 pub struct DWalletMPCManager {
     party_id: PartyID,
     /// Holds the active MPC sessions, cleaned every epoch switch.
-    mpc_sessions: HashMap<ObjectID, DWalletMPCSession>,
+    pub(crate) mpc_sessions: HashMap<ObjectID, DWalletMPCSession>,
     /// Used to keep track of the order in which pending sessions are received,
     /// so they are activated in order of arrival.
     pending_sessions_queue: VecDeque<DWalletMPCSession>,
@@ -64,12 +64,6 @@ pub struct DWalletMPCManager {
     /// Any message/output from these authorities will be ignored.
     malicious_actors: HashSet<AuthorityName>,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-    /// An internal instance of the outputs verifier,
-    /// used only to determinate if an actor is malicious.
-    /// This verifier is out of sync from the consensus.
-    /// Each Validator holds the Malicious state for itself,
-    /// this is not in sync with the blockchain.
-    outputs_verifier: DWalletMPCOutputsVerifier,
     pub(crate) validators_data_for_network_dkg: HashMap<PartyID, ValidatorDataForNetworkDKG>,
     /// Sessions that are ready to advance when the next [`DWalletMPCDBMessage::PerformCryptographicComputations`]
     /// message will be received.
@@ -84,10 +78,6 @@ pub struct DWalletMPCManager {
 pub enum DWalletMPCDBMessage {
     /// An MPC message from another validator.
     Message(DWalletMPCMessage),
-    /// An output for a completed MPC message.
-    Output(MPCPublicOutput, AuthorityName, SessionInfo),
-    /// A new session event.
-    Event(Event, SessionInfo),
     /// Signal delivery of messages has ended,
     /// now the sessions that received a quorum of messages can advance.
     EndOfDelivery,
@@ -135,10 +125,15 @@ impl DWalletMPCManager {
             node_config,
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
-            outputs_verifier: DWalletMPCOutputsVerifier::new(&epoch_store),
             validators_data_for_network_dkg: HashMap::new(),
             ready_to_advance: HashMap::new(),
         })
+    }
+
+    pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
+        if let Err(err) = self.handle_event(event.event, event.session_info) {
+            error!("Failed to handle event with error: {:?}", err);
+        }
     }
 
     pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
@@ -149,43 +144,6 @@ impl DWalletMPCManager {
             DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message) {
                     error!("failed to handle an MPC message with error: {:?}", err);
-                }
-            }
-            DWalletMPCDBMessage::Output(output, authority, session_info) => {
-                let verification_result = self.outputs_verifier.try_verify_output(
-                    &output,
-                    &session_info,
-                    authority.clone(),
-                );
-                match verification_result {
-                    Ok(verification_result) => {
-                        self.malicious_actors
-                            .extend(verification_result.malicious_actors);
-                        match verification_result.result {
-                            crate::dwallet_mpc::mpc_outputs_verifier::OutputResult::Valid => {
-                                let session = self.mpc_sessions.get_mut(&session_info.session_id);
-                                if let Some(session) = session {
-                                    session.status = MPCSessionStatus::Finished(output.clone());
-                                }
-                                if let Some(mut session) = self.pending_sessions_queue.pop_front() {
-                                    session.status = MPCSessionStatus::Active;
-                                    self.mpc_sessions
-                                        .insert(session.session_info.session_id, session);
-                                } else {
-                                    self.active_sessions_counter -= 1;
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    Err(err) => {
-                        error!("Failed to verify output with error: {:?}", err);
-                    }
-                };
-            }
-            DWalletMPCDBMessage::Event(event, session_info) => {
-                if let Err(err) = self.handle_event(event, session_info) {
-                    error!("Failed to handle event with error: {:?}", err);
                 }
             }
             DWalletMPCDBMessage::EndOfDelivery => {
@@ -252,7 +210,6 @@ impl DWalletMPCManager {
     }
 
     fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {
-        self.outputs_verifier.handle_new_event(&session_info);
         let (public_input, private_input) = session_input_from_event(&event, &self)?;
         self.push_new_mpc_session(public_input, private_input, session_info)?;
         Ok(())

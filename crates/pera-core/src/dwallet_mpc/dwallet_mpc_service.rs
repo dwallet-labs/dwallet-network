@@ -3,11 +3,13 @@
 ///! and forward them to the [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
+use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use narwhal_types::Round;
 use pera_types::base_types::EpochId;
 use std::sync::Arc;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
+use tracing::error;
 use typed_store::Map;
 
 const READ_INTERVAL_SECS: u64 = 5;
@@ -47,10 +49,35 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(tokio::time::Duration::from_secs(READ_INTERVAL_SECS)).await;
-
+            let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
             let Ok(tables) = self.epoch_store.tables() else {
+                error!("Failed to load DB tables from epoch store");
                 continue 'main;
             };
+            let Ok(completed_sessions) = self
+                .epoch_store
+                .load_dwallet_mpc_completed_sessions_from_round(self.last_read_narwhal_round + 1)
+                .await
+            else {
+                error!("Failed to load DWallet MPC events from the local DB");
+                continue 'main;
+            };
+            for session_id in completed_sessions {
+                manager.mpc_sessions.get_mut(&session_id).map(|session| {
+                    session.status = MPCSessionStatus::Finished;
+                });
+            }
+            let Ok(events) = self
+                .epoch_store
+                .load_dwallet_mpc_events_from_round(self.last_read_narwhal_round + 1)
+                .await
+            else {
+                error!("Failed to load DWallet MPC events from the local DB");
+                continue 'main;
+            };
+            for event in events {
+                manager.handle_dwallet_db_event(event).await;
+            }
             let new_dwallet_messages_iter = tables
                 .dwallet_mpc_messages
                 .iter_with_bounds(Some(self.last_read_narwhal_round + 1), None);
@@ -59,8 +86,7 @@ impl DWalletMPCService {
                 self.last_read_narwhal_round = round;
                 new_messages.extend(messages);
             }
-            let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
-            for message in new_messages.into_iter() {
+            for message in new_messages {
                 manager.handle_dwallet_db_message(message).await;
             }
             manager
