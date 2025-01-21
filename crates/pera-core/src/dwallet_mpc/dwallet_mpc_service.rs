@@ -1,5 +1,6 @@
-///! This module contains the DWalletMPCService struct, which is responsible to read
-/// DWallet MPC messages from the local DB every five seconds and forward them to the [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
+///! This module contains the DWalletMPCService struct.
+///! It is responsible to read DWallet MPC messages from the local DB every [`READ_INTERVAL_SECS`] seconds
+///! and forward them to the [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use narwhal_types::Round;
@@ -8,6 +9,8 @@ use std::sync::Arc;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
 use typed_store::Map;
+
+const READ_INTERVAL_SECS: u64 = 5;
 
 pub struct DWalletMPCService {
     last_read_narwhal_round: Round,
@@ -31,7 +34,7 @@ impl DWalletMPCService {
     }
 
     /// Spawns the DWallet MPC service, that
-    /// read DWallet MPC messages from the local DB every five seconds and forward them to the
+    /// read DWallet MPC messages from the local DB every [`READ_INTERVAL_SECS`] seconds and forward them to the
     /// [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
     ///
     /// The service exists upon an epoch switch.
@@ -43,7 +46,7 @@ impl DWalletMPCService {
                 }
                 Ok(false) => (),
             };
-            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(READ_INTERVAL_SECS)).await;
 
             let Ok(tables) = self.epoch_store.tables() else {
                 continue 'main;

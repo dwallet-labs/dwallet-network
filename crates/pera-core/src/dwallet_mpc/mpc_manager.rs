@@ -212,7 +212,7 @@ impl DWalletMPCManager {
             DWalletMPCDBMessage::MPCSessionFailed(session_id) => {
                 // TODO (#524): Handle failed MPC sessions
             }
-            _ => {}
+            DWalletMPCChannelMessage::LockNextEpochCommitteeVote(_) => {}
         }
     }
 
