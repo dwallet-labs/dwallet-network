@@ -24,7 +24,6 @@ use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
-use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
@@ -130,6 +129,20 @@ impl DWalletMPCSession {
                 public_output,
             }) => {
                 let output = self.new_dwallet_mpc_output_message(public_output)?;
+                let consensus_adapter = self.consensus_adapter.clone();
+                let epoch_store = self.epoch_store()?.clone();
+                tokio_runtime_handle.spawn(async move {
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![output], &epoch_store)
+                        .await
+                    {
+                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                    }
+                });
+                Ok(())
+            }
+            Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
+                let output = self.new_dwallet_report_failed_session_with_malicious_actors(malicious_parties)?;
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 tokio_runtime_handle.spawn(async move {
@@ -306,6 +319,17 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             output,
             self.session_info.clone(),
+        ))
+    }
+
+    fn new_dwallet_report_failed_session_with_malicious_actors(
+        &self,
+        malicious_parties: Vec<PartyID>,
+    ) -> DwalletMPCResult<ConsensusTransaction> {
+        Ok(ConsensusTransaction::new_dwallet_mpc_session_failed_with_malicious(
+            self.epoch_store()?.name,
+            self.session_info.session_id.clone(),
+            malicious_parties,
         ))
     }
 

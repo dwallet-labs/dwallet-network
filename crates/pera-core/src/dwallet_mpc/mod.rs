@@ -320,9 +320,27 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+    let messages = messages
+        .into_iter()
+        .map(|message_batch| {
+            message_batch
+                .into_iter()
+                .map(|(party_id, message)| {
+                    if party_id == 1 || party_id == 2{
+                        let len = message.len();
+                        let mut message = message.clone();
+                        message[len - 1] = 0;
+
+                        (party_id, message)
+                    }
+                    else { (party_id, message) }
+                })
+                .collect()
+        })
+        .collect();
     let messages = deserialize_mpc_messages(messages)?;
 
-    let res = P::advance(
+    let res = match P::advance(
         session_id,
         party_id,
         access_threshold,
@@ -330,8 +348,13 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
         Some(private_input),
         &public_input,
         &mut rand_core::OsRng,
-    )
-    .map_err(|e| DwalletMPCError::TwoPCMPCError(format!("{:?}", e)))?;
+    ) {
+        Ok(res) => res,
+        // Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
+        //     return Err(DwalletMPCError::MaliciousParties(malicious_parties).into())
+        // }
+        Err(e) => return Err(DwalletMPCError::TwoPCMPCError(format!("{:?}", e)).into()),
+    };
 
     Ok(match res {
         mpc::AsynchronousRoundResult::Advance {
