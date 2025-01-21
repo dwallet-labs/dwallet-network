@@ -221,6 +221,7 @@ module pera_system::dwallet {
         signed_encryption_key: vector<u8>,
         sender_pubkey: vector<u8>,
         encryption_key_scheme: u8,
+        // TODO (#529): Create a dedicated, small shared object instead of using the system state.
         _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
