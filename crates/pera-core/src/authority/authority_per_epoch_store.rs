@@ -2660,7 +2660,7 @@ impl AuthorityPerEpochStore {
                     );
                     return None;
                 }
-            },
+            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
                 ..
@@ -3912,16 +3912,22 @@ impl AuthorityPerEpochStore {
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority_name, report),
+                kind:
+                    ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(
+                        authority_name,
+                        report,
+                    ),
                 ..
             }) => {
-                self.save_dwallet_mpc_message(DWalletMPCDBMessage::SessionFailedWithMaliciousParties(
-                    authority_name.clone(),
-                    report,
-                ))
-                    .await;
+                self.save_dwallet_mpc_message(
+                    DWalletMPCDBMessage::SessionFailedWithMaliciousParties(
+                        authority_name.clone(),
+                        report.clone(),
+                    ),
+                )
+                .await;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
-            },
+            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                 ..

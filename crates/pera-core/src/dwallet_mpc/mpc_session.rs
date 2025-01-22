@@ -16,17 +16,17 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::id::ID;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
-    MPCRound, SessionInfo, StartEncryptedShareVerificationEvent,
+    MPCRound, MaliciousReport, SessionInfo, StartEncryptedShareVerificationEvent,
 };
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
+use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -99,7 +99,11 @@ impl DWalletMPCSession {
     }
 
     /// Advances the MPC session and sends the advancement result to the other validators.
-    pub(super) fn advance(&self, tokio_runtime_handle: Handle) -> DwalletMPCResult<()> {
+    pub(super) fn advance(
+        &self,
+        consensus_round_number: u64,
+        tokio_runtime_handle: Handle,
+    ) -> DwalletMPCResult<()> {
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
@@ -142,7 +146,19 @@ impl DWalletMPCSession {
                 Ok(())
             }
             Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
-                let output = self.new_dwallet_report_failed_session_with_malicious_actors(malicious_parties)?;
+                let malicious_parties = malicious_parties
+                    .into_iter()
+                    .map(|party_id| {
+                        party_id_to_authority_name(party_id, &*self.epoch_store().unwrap()).unwrap()
+                    })
+                    .collect::<Vec<_>>();
+                let report = MaliciousReport::new(
+                    malicious_parties,
+                    self.session_info.session_id.clone(),
+                    consensus_round_number,
+                );
+                let output =
+                    self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 tokio_runtime_handle.spawn(async move {
@@ -324,13 +340,14 @@ impl DWalletMPCSession {
 
     fn new_dwallet_report_failed_session_with_malicious_actors(
         &self,
-        malicious_parties: Vec<PartyID>,
+        report: MaliciousReport,
     ) -> DwalletMPCResult<ConsensusTransaction> {
-        Ok(ConsensusTransaction::new_dwallet_mpc_session_failed_with_malicious(
-            self.epoch_store()?.name,
-            self.session_info.session_id.clone(),
-            malicious_parties,
-        ))
+        Ok(
+            ConsensusTransaction::new_dwallet_mpc_session_failed_with_malicious(
+                self.epoch_store()?.name,
+                report,
+            ),
+        )
     }
 
     /// Stores a message in the pending messages map.

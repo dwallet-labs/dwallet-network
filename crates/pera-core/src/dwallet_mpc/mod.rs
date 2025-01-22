@@ -34,6 +34,7 @@ pub mod batches_manager;
 mod dkg;
 pub mod dwallet_mpc_service;
 mod encrypt_user_share;
+pub mod malicious_handler;
 pub(crate) mod mpc_events;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
@@ -41,7 +42,6 @@ pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
-pub mod malicious_handler;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
@@ -327,14 +327,15 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
             message_batch
                 .into_iter()
                 .map(|(party_id, message)| {
-                    if party_id == 1 || party_id == 2{
+                    if party_id == 1 || party_id == 2 {
                         let len = message.len();
                         let mut message = message.clone();
                         message[len - 1] = 0;
 
                         (party_id, message)
+                    } else {
+                        (party_id, message)
                     }
-                    else { (party_id, message) }
                 })
                 .collect()
         })
@@ -355,15 +356,19 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
             let general_error = DwalletMPCError::TwoPCMPCError(format!("{:?}", e));
             return match e.into() {
                 mpc::Error::ThresholdNotReached { honest_subset } => {
-                    let malicious_actors = messages.last().ok_or(general_error)?
+                    let malicious_actors = messages
+                        .last()
+                        .ok_or(general_error)?
                         .keys()
                         .filter(|party_id| !honest_subset.contains(*party_id))
                         .cloned()
                         .collect();
-                    Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_actors))
-                },
-                _  => Err(general_error),
-            }
+                    Err(DwalletMPCError::SessionFailedWithMaliciousParties(
+                        malicious_actors,
+                    ))
+                }
+                _ => Err(general_error),
+            };
         }
     };
 

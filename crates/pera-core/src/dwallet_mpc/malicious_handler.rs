@@ -2,14 +2,14 @@
 //! Every MPC session can report malicious parties that are trying to disrupt the protocol.
 //! This module is responsible for storing the malicious actors if they are reported by quorum validators.
 
-use std::collections::{HashMap, HashSet};
 use group::PartyID;
 use mpc::Weight;
-use tracing::error;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use pera_types::messages_dwallet_mpc::MaliciousReport;
+use std::collections::{HashMap, HashSet};
+use tracing::error;
 
 pub(crate) struct MaliciousHandler {
     /// The quorum threshold for the MPC process.
@@ -35,17 +35,23 @@ impl MaliciousHandler {
         }
     }
 
-    pub(crate) fn report_malicious_actor(&mut self, report: MaliciousReport, authority: AuthorityName) -> ReportStatus {
+    pub(crate) fn report_malicious_actor(
+        &mut self,
+        report: MaliciousReport,
+        authority: AuthorityName,
+    ) -> ReportStatus {
         if self.reports.contains_key(&report) {
             // Safe to unwrap because the key exists.
             let malicious_actors = self.reports.get_mut(&report).unwrap();
             if !malicious_actors.contains(&authority) {
-                malicious_actors.push(authority);
+                malicious_actors.insert(authority);
             } else {
                 error!("Authority {} is already reported as malicious in session {} on consensus round {}", authority, report.session_id, report.consensus_round);
             }
         } else {
-            self.reports.insert(report.clone(), vec![authority]);
+            let mut reporters = HashSet::new();
+            reporters.insert(authority);
+            self.reports.insert(report.clone(), reporters);
         }
 
         // Safe to unwrap because the key exists by now.
@@ -72,4 +78,3 @@ impl MaliciousHandler {
         self.malicious_actors.insert(authority);
     }
 }
-

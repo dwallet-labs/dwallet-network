@@ -3,6 +3,7 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
+use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
@@ -39,7 +40,6 @@ use tracing::log::{debug, warn};
 use tracing::{error, info};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
-use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -102,7 +102,7 @@ pub enum DWalletMPCDBMessage {
     /// A message to start process the cryptographic computations.
     /// This message is being sent every five seconds by the DWallet MPC Service,
     /// in order to skip redundant advancements that have already been completed by other validators.
-    PerformCryptographicComputations,
+    PerformCryptographicComputations(u64),
 
     SessionFailedWithMaliciousParties(AuthorityName, MaliciousReport),
 }
@@ -129,9 +129,7 @@ impl DWalletMPCManager {
             weighted_threshold_access_structure: weighted_threshold_access_structure.clone(),
             validators_data_for_network_dkg: HashMap::new(),
             ready_to_advance: HashMap::new(),
-            malicious_handler: MaliciousHandler::new(
-                epoch_store.committee().quorum_threshold(),
-            ),
+            malicious_handler: MaliciousHandler::new(epoch_store.committee().quorum_threshold()),
         })
     }
 
@@ -143,8 +141,8 @@ impl DWalletMPCManager {
 
     pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
         match message {
-            DWalletMPCDBMessage::PerformCryptographicComputations => {
-                self.perform_cryptographic_computation();
+            DWalletMPCDBMessage::PerformCryptographicComputations(consensus_round_number) => {
+                self.perform_cryptographic_computation(consensus_round_number);
             }
             DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message) {
@@ -177,8 +175,13 @@ impl DWalletMPCManager {
             }
             DWalletMPCDBMessage::LockNextEpochCommitteeVote(_) => {}
             DWalletMPCDBMessage::SessionFailedWithMaliciousParties(authority_name, report) => {
-                if let Err(err) = self.handle_session_failed_with_malicious_parties(authority_name, report) {
-                    error!("Failed to handle session failed with malicious parties with error: {:?}", err);
+                if let Err(err) =
+                    self.handle_session_failed_with_malicious_parties(authority_name, report)
+                {
+                    error!(
+                        "Failed to handle session failed with malicious parties with error: {:?}",
+                        err
+                    );
                 }
             }
         }
@@ -189,11 +192,13 @@ impl DWalletMPCManager {
         authority_name: AuthorityName,
         report: MaliciousReport,
     ) -> DwalletMPCResult<()> {
-        let status = self.malicious_handler.report_malicious_actor(report, authority_name);
+        let status = self
+            .malicious_handler
+            .report_malicious_actor(report.clone(), authority_name);
 
         match status {
             ReportStatus::QuorumReached => {
-                if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
+                if let Some(session) = self.mpc_sessions.get_mut(&report.session_id) {
                     session.round_number += 1;
                 }
             }
@@ -369,12 +374,14 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn perform_cryptographic_computation(&mut self) {
+    fn perform_cryptographic_computation(&mut self, consensus_round_number: u64) {
         for session in self.ready_to_advance.values().into_iter() {
             let handle = tokio::runtime::Handle::current();
             let owned_session_for_different_thread = session.clone();
             rayon::spawn_fifo(move || {
-                if let Err(err) = owned_session_for_different_thread.advance(handle) {
+                if let Err(err) =
+                    owned_session_for_different_thread.advance(consensus_round_number, handle)
+                {
                     error!("Failed to advance session with error: {:?}", err);
                 }
             });
@@ -417,7 +424,11 @@ impl DWalletMPCManager {
     /// Handles a message by forwarding it to the relevant MPC session.
     /// If the session does not exist, punish the sender.
     pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) -> DwalletMPCResult<()> {
-        if self.malicious_handler.get_malicious_actors().contains(&message.authority) {
+        if self
+            .malicious_handler
+            .get_malicious_actors()
+            .contains(&message.authority)
+        {
             return Ok(());
         }
         let session = match self.mpc_sessions.get_mut(&message.session_id) {
@@ -427,7 +438,8 @@ impl DWalletMPCManager {
                     "received a message for an MPC session ID: `{:?}` which does not exist",
                     message.session_id
                 );
-                self.malicious_handler.report_malicious_internal(message.authority);
+                self.malicious_handler
+                    .report_malicious_internal(message.authority);
                 return Ok(());
             }
         };
@@ -454,7 +466,9 @@ impl DWalletMPCManager {
             malicious_parties_names
         );
 
-        let _ = malicious_parties_names.into_iter().map(|party| self.malicious_handler.report_malicious_internal(party));
+        let _ = malicious_parties_names
+            .into_iter()
+            .map(|party| self.malicious_handler.report_malicious_internal(party));
         Ok(())
     }
 

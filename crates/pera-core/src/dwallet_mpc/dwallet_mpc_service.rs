@@ -90,7 +90,9 @@ impl DWalletMPCService {
                 manager.handle_dwallet_db_message(message).await;
             }
             manager
-                .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
+                .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations(
+                    self.last_read_narwhal_round,
+                ))
                 .await;
         }
     }

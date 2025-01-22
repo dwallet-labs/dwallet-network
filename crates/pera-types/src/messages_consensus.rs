@@ -18,6 +18,7 @@ use fastcrypto::error::FastCryptoResult;
 use fastcrypto::groups::bls12381;
 use fastcrypto_tbls::{dkg, dkg_v1};
 use fastcrypto_zkp::bn254::zk_login::{JwkId, JWK};
+use group::PartyID;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
@@ -25,7 +26,6 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use group::PartyID;
 
 /// Only commit_timestamp_ms is passed to the move call currently.
 /// However we include epoch and round to make sure each ConsensusCommitPrologue has a unique tx digest.
@@ -117,7 +117,7 @@ pub enum ConsensusTransactionKey {
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
     DWalletMPCOutput(Vec<u8>, ObjectID, PeraAddress, AuthorityName),
-    DWalletMPCSessionFailedWithMalicious(AuthorityName, ObjectID, Vec<PartyID>),
+    DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
     LockNextCommittee(AuthorityName, EpochId),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
@@ -181,13 +181,12 @@ impl Debug for ConsensusTransactionKey {
                     epoch_id
                 )
             }
-            ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(authority, session_id, malicious_parties) => {
+            ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(authority, report) => {
                 write!(
                     f,
-                    "DWalletMPCSessionFailedWithMalicious({:?}, {:?}, {:?})",
+                    "DWalletMPCSessionFailedWithMalicious({:?}, {:?})",
                     authority.concise(),
-                    session_id,
-                    malicious_parties
+                    report,
                 )
             }
         }
@@ -567,15 +566,14 @@ impl ConsensusTransaction {
 
     pub fn new_dwallet_mpc_session_failed_with_malicious(
         authority: AuthorityName,
-        session_id: ObjectID,
-        malicious_parties: Vec<PartyID>,
+        report: MaliciousReport,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        session_id.hash(&mut hasher);
+        report.session_id.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, session_id, malicious_parties),
+            kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, report),
         }
     }
 
@@ -664,8 +662,11 @@ impl ConsensusTransaction {
             ConsensusTransactionKind::LockNextCommittee(authority, epoch_id) => {
                 ConsensusTransactionKey::LockNextCommittee(*authority, *epoch_id)
             }
-            ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, session_id, malicious_parties) => {
-                ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(*authority, *session_id, malicious_parties.clone())
+            ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, report) => {
+                ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(
+                    *authority,
+                    report.clone(),
+                )
             }
         }
     }

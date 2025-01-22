@@ -206,18 +206,22 @@ impl StartDKGSecondRoundEvent {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct MaliciousReport {
     /// The malicious actor that was reported.
     malicious_actors: Vec<AuthorityName>,
     /// The session ID of the MPC session that the malicious actors are disrupting.
-    session_id: ObjectID,
+    pub session_id: ObjectID,
     /// The round of the MPC session that the malicious actors are reported in.
-    consensus_round: u64,
+    pub consensus_round: u64,
 }
 
 impl MaliciousReport {
-    pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID, consensus_round: u64) -> Self {
+    pub fn new(
+        malicious_actors: Vec<AuthorityName>,
+        session_id: ObjectID,
+        consensus_round: u64,
+    ) -> Self {
         Self {
             malicious_actors,
             session_id,
