@@ -41,6 +41,7 @@ pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
+pub mod malicious_handler;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
@@ -344,19 +345,24 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
         session_id,
         party_id,
         access_threshold,
-        messages,
+        messages.clone(),
         Some(private_input),
         &public_input,
         &mut rand_core::OsRng,
     ) {
         Ok(res) => res,
         Err(e) => {
-            let general_error =DwalletMPCError::TwoPCMPCError(format!("{:?}", e));
+            let general_error = DwalletMPCError::TwoPCMPCError(format!("{:?}", e));
             return match e.into() {
                 mpc::Error::ThresholdNotReached { honest_subset } => {
-                    Err(DwalletMPCError::MaliciousParties(honest_subset))
+                    let malicious_actors = messages.last().ok_or(general_error)?
+                        .keys()
+                        .filter(|party_id| !honest_subset.contains(*party_id))
+                        .cloned()
+                        .collect();
+                    Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_actors))
                 },
-               _  => Err(general_error),
+                _  => Err(general_error),
             }
         }
     };

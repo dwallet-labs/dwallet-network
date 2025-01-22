@@ -7,7 +7,7 @@ use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
     CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointTimestamp,
 };
-use crate::messages_dwallet_mpc::SessionInfo;
+use crate::messages_dwallet_mpc::{MaliciousReport, SessionInfo};
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
@@ -322,7 +322,7 @@ pub enum ConsensusTransactionKind {
     NewJWKFetched(AuthorityName, JwkId, JWK),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
-    DWalletMPCSessionFailedWithMalicious(AuthorityName, ObjectID, Vec<PartyID>),
+    DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
     LockNextCommittee(AuthorityName, EpochId),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.

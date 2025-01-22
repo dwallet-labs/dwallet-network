@@ -827,6 +827,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 | DWalletMPCDBMessage::StartLockNextEpochCommittee
                 | DWalletMPCDBMessage::ValidatorDataForDKG(_)
                 | DWalletMPCDBMessage::MPCSessionFailed(_)
+                | DWalletMPCDBMessage::SessionFailedWithMaliciousParties(..)
                 | DWalletMPCDBMessage::PerformCryptographicComputations => {}
             }
         }

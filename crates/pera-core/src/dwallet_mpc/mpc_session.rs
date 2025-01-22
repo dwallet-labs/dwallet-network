@@ -141,7 +141,7 @@ impl DWalletMPCSession {
                 });
                 Ok(())
             }
-            Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
+            Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
                 let output = self.new_dwallet_report_failed_session_with_malicious_actors(malicious_parties)?;
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();

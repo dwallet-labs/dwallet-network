@@ -3912,9 +3912,16 @@ impl AuthorityPerEpochStore {
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..),
+                kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority_name, report),
                 ..
-            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+            }) => {
+                self.save_dwallet_mpc_message(DWalletMPCDBMessage::SessionFailedWithMaliciousParties(
+                    authority_name.clone(),
+                    report,
+                ))
+                    .await;
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            },
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                 ..
