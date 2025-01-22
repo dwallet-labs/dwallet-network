@@ -195,6 +195,7 @@ impl DWalletMPCManager {
         authority_name: AuthorityName,
         report: MaliciousReport,
     ) -> DwalletMPCResult<()> {
+        let epoch_store = self.epoch_store()?;
         let status = self
             .malicious_handler
             .report_malicious_actor(report.clone(), authority_name);
@@ -205,6 +206,20 @@ impl DWalletMPCManager {
                     // For every advance we increase the round number by 1,
                     // so to re-run the same round we decrease it by 1.
                     session.round_number -= 1;
+                    // Remove malicious parties from the session messages.
+                    let round_messages = session
+                        .pending_messages
+                        .get_mut(session.round_number)
+                        .ok_or(DwalletMPCError::MPCSessionNotFound {
+                            session_id: report.session_id,
+                        })?;
+
+                    self.malicious_handler
+                        .get_malicious_actors_ids(epoch_store)?
+                        .iter()
+                        .for_each(|malicious_actor| {
+                            round_messages.remove(malicious_actor);
+                        });
                 }
             }
             ReportStatus::OverQuorum | ReportStatus::WaitingForQuorum => {}
@@ -431,7 +446,7 @@ impl DWalletMPCManager {
     pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) -> DwalletMPCResult<()> {
         if self
             .malicious_handler
-            .get_malicious_actors()
+            .get_malicious_actors_names()
             .contains(&message.authority)
         {
             return Ok(());

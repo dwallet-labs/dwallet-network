@@ -2,6 +2,8 @@
 //! Every MPC session can report malicious parties that are trying to disrupt the protocol.
 //! This module is responsible for storing the malicious actors if they are reported by quorum validators.
 
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::authority_name_to_party_id;
 use group::PartyID;
 use mpc::Weight;
 use pera_types::base_types::{AuthorityName, ObjectID};
@@ -9,6 +11,7 @@ use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use pera_types::messages_dwallet_mpc::MaliciousReport;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 use tracing::error;
 
 /// A struct to handle the malicious actors in the MPC protocols.
@@ -78,8 +81,19 @@ impl MaliciousHandler {
         self.malicious_actors.contains(authority)
     }
 
-    pub(crate) fn get_malicious_actors(&self) -> &HashSet<AuthorityName> {
+    pub(crate) fn get_malicious_actors_names(&self) -> &HashSet<AuthorityName> {
         &self.malicious_actors
+    }
+
+    pub(crate) fn get_malicious_actors_ids(
+        &self,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+    ) -> DwalletMPCResult<HashSet<PartyID>> {
+        Ok(self
+            .malicious_actors
+            .iter()
+            .map(|name| Ok(authority_name_to_party_id(name, &epoch_store)?))
+            .collect::<DwalletMPCResult<HashSet<_>>>()?)
     }
 
     /// Reports a malicious actor that is disrupting the MPC process.
