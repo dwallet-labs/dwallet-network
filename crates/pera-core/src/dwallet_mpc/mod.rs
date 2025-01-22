@@ -321,25 +321,6 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-    let messages = messages
-        .into_iter()
-        .map(|message_batch| {
-            message_batch
-                .into_iter()
-                .map(|(party_id, message)| {
-                    if party_id == 1 || party_id == 2 {
-                        let len = message.len();
-                        let mut message = message.clone();
-                        message[len - 1] = 0;
-
-                        (party_id, message)
-                    } else {
-                        (party_id, message)
-                    }
-                })
-                .collect()
-        })
-        .collect();
     let messages = deserialize_mpc_messages(messages)?;
 
     let res = match P::advance(

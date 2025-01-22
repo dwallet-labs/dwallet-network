@@ -146,6 +146,10 @@ impl DWalletMPCSession {
                 Ok(())
             }
             Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
+                error!(
+                    "Session failed with malicious parties: {:?}",
+                    malicious_parties
+                );
                 let malicious_parties = malicious_parties
                     .into_iter()
                     .map(|party_id| {

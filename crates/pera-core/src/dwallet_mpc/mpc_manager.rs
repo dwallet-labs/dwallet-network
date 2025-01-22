@@ -199,7 +199,7 @@ impl DWalletMPCManager {
         match status {
             ReportStatus::QuorumReached => {
                 if let Some(session) = self.mpc_sessions.get_mut(&report.session_id) {
-                    session.round_number += 1;
+                    session.round_number -= 1;
                 }
             }
             ReportStatus::OverQuorum | ReportStatus::WaitingForQuorum => {}
