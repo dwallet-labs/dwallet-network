@@ -153,9 +153,9 @@ impl DWalletMPCSession {
                 let malicious_parties = malicious_parties
                     .into_iter()
                     .map(|party_id| {
-                        party_id_to_authority_name(party_id, &*self.epoch_store().unwrap()).unwrap()
+                        Ok(party_id_to_authority_name(party_id, &*self.epoch_store()?)?)
                     })
-                    .collect::<Vec<_>>();
+                    .collect::<DwalletMPCResult<Vec<_>>>()?;
                 let report = MaliciousReport::new(
                     malicious_parties,
                     self.session_info.session_id.clone(),

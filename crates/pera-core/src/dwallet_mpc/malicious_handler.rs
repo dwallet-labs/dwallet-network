@@ -11,15 +11,20 @@ use pera_types::messages_dwallet_mpc::MaliciousReport;
 use std::collections::{HashMap, HashSet};
 use tracing::error;
 
+/// A struct to handle the malicious actors in the MPC protocols.
+/// It stores the malicious actors that are reported by the validators.
+/// If a quorum of validators report the same actor, it is considered malicious.
 pub(crate) struct MaliciousHandler {
     /// The quorum threshold for the MPC process.
     quorum_threshold: StakeUnit,
     /// The set of malicious actors that are reported by the validators.
     malicious_actors: HashSet<AuthorityName>,
     /// The reports of the malicious actors that are disrupting the MPC process.
+    /// Maps the [`MaliciousReport`] to the set of authorities that reported the malicious actor.
     reports: HashMap<MaliciousReport, HashSet<AuthorityName>>,
 }
 
+/// The status of the report after it is reported by the validators.
 pub(crate) enum ReportStatus {
     WaitingForQuorum,
     QuorumReached,
@@ -35,6 +40,9 @@ impl MaliciousHandler {
         }
     }
 
+    /// Reports malicious actors in the MPC process.
+    /// If a quorum of validators report the same actor, it is considered malicious.
+    /// Returns [`ReportStatus`]  the status of the report after it is reported by the validators.
     pub(crate) fn report_malicious_actor(
         &mut self,
         report: MaliciousReport,
@@ -74,6 +82,8 @@ impl MaliciousHandler {
         &self.malicious_actors
     }
 
+    /// Reports a malicious actor that is disrupting the MPC process.
+    /// Reported by the validator itself.
     pub(crate) fn report_malicious_internal(&mut self, authority: AuthorityName) {
         self.malicious_actors.insert(authority);
     }

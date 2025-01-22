@@ -102,8 +102,11 @@ pub enum DWalletMPCDBMessage {
     /// A message to start process the cryptographic computations.
     /// This message is being sent every five seconds by the DWallet MPC Service,
     /// in order to skip redundant advancements that have already been completed by other validators.
+    /// `u64` represent the current consensus round number.
     PerformCryptographicComputations(u64),
-
+    /// A message indicating that a session failed due to malicious parties.
+    /// We can receive new messages for this session with other validators,
+    /// and re-run the round again to make it succeed.
     SessionFailedWithMaliciousParties(AuthorityName, MaliciousReport),
 }
 
@@ -126,7 +129,7 @@ impl DWalletMPCManager {
             epoch_id,
             max_active_mpc_sessions: node_config.max_active_dwallet_mpc_sessions,
             node_config,
-            weighted_threshold_access_structure: weighted_threshold_access_structure.clone(),
+            weighted_threshold_access_structure,
             validators_data_for_network_dkg: HashMap::new(),
             ready_to_advance: HashMap::new(),
             malicious_handler: MaliciousHandler::new(epoch_store.committee().quorum_threshold()),
@@ -199,6 +202,8 @@ impl DWalletMPCManager {
         match status {
             ReportStatus::QuorumReached => {
                 if let Some(session) = self.mpc_sessions.get_mut(&report.session_id) {
+                    // For every advance we increase the round number by 1,
+                    // so to re-run the same round we decrease it by 1.
                     session.round_number -= 1;
                 }
             }
@@ -466,9 +471,9 @@ impl DWalletMPCManager {
             malicious_parties_names
         );
 
-        let _ = malicious_parties_names
+        malicious_parties_names
             .into_iter()
-            .map(|party| self.malicious_handler.report_malicious_internal(party));
+            .for_each(|party| self.malicious_handler.report_malicious_internal(party));
         Ok(())
     }
 

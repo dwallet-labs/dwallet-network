@@ -34,7 +34,7 @@ pub mod batches_manager;
 mod dkg;
 pub mod dwallet_mpc_service;
 mod encrypt_user_share;
-pub mod malicious_handler;
+mod malicious_handler;
 pub(crate) mod mpc_events;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
