@@ -291,7 +291,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             message,
             self.session_info.session_id.clone(),
-            self.round_number,
+            self.round_number + 1,
         ))
     }
 
