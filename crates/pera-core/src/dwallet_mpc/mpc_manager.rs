@@ -368,11 +368,13 @@ impl DWalletMPCManager {
             .collect();
 
         for session in ready_to_advance.into_iter() {
-            self.pending_computation_map
-                .remove(&DWalletMPCLocalComputationMetadata {
-                    session_id: session.session_info.session_id,
-                    crypto_round_number: session.round_number - 1,
-                });
+            if session.round_number > 0 {
+                self.pending_computation_map
+                    .remove(&DWalletMPCLocalComputationMetadata {
+                        session_id: session.session_info.session_id,
+                        crypto_round_number: session.round_number - 1,
+                    });
+            }
             let session_next_round_metadata = DWalletMPCLocalComputationMetadata {
                 session_id: session.session_info.session_id,
                 crypto_round_number: session.round_number,
