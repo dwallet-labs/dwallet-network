@@ -85,6 +85,12 @@ pub struct DWalletMPCOutputMessage {
     pub session_info: SessionInfo,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
+pub struct DWalletMPCLocalComputationMetadata {
+    pub session_id: ObjectID,
+    pub crypto_round_number: usize,
+}
+
 /// The content of the system transaction that stores the MPC session output on the chain.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct DWalletMPCOutput {

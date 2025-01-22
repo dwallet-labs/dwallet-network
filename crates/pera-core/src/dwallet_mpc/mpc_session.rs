@@ -100,7 +100,7 @@ impl DWalletMPCSession {
     }
 
     /// Advances the MPC session and sends the advancement result to the other validators.
-    pub(super) fn advance(&self, tokio_runtime_handle: Handle) -> DwalletMPCResult<()> {
+    pub(super) fn advance(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
