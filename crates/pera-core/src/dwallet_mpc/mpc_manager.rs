@@ -37,8 +37,8 @@ use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::log::{debug, warn};
-use tracing::{error, info};
+use tracing::log::{debug};
+use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
 
@@ -138,6 +138,10 @@ impl DWalletMPCManager {
         }
         let available_cores_for_cryptographic_computations =
             available_cores_for_computations - MACHINE_CORS_FOR_NON_COMPUTATION;
+        error!(
+            "Available cores for cryptographic computations: {}",
+            available_cores_for_cryptographic_computations
+        );
         Ok(Self {
             mpc_sessions: HashMap::new(),
             pending_sessions_queue: VecDeque::new(),
@@ -374,9 +378,9 @@ impl DWalletMPCManager {
                 crypto_round_number: session.round_number,
             };
             self.pending_computation_map
-                .insert(session_next_round_metadata, session.clone());
+                .insert(session_next_round_metadata.clone(), session.clone());
             self.pending_for_computation_order
-                .push_back(session_next_round_metadata.clone());
+                .push_back(session_next_round_metadata);
         }
         Ok(())
     }
