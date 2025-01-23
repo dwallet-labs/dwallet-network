@@ -30,7 +30,8 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCInitProtocolInfo, MaliciousReport, SessionInfo,
+    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCInitProtocolInfo, MaliciousReport,
+    SessionInfo,
 };
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -241,11 +242,11 @@ impl DWalletMPCManager {
                 if let Some(session) = self.mpc_sessions.get_mut(&report.session_id) {
                     // For every advance we increase the round number by 1,
                     // so to re-run the same round we decrease it by 1.
-                    session.round_number -= 1;
+                    session.pending_quorum_for_highest_round_number -= 1;
                     // Remove malicious parties from the session messages.
                     let round_messages = session
                         .pending_messages
-                        .get_mut(session.round_number)
+                        .get_mut(session.pending_quorum_for_highest_round_number)
                         .ok_or(DwalletMPCError::MPCSessionNotFound {
                             session_id: report.session_id,
                         })?;
