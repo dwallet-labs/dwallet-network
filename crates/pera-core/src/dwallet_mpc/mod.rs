@@ -18,7 +18,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPublicInput,
 };
 use group::PartyID;
-use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
+use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use pera_types::base_types::AuthorityName;
 use pera_types::base_types::{EpochId, ObjectID};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -313,6 +313,19 @@ fn batched_presign_session_info(deserialized_event: &StartBatchedPresignEvent) -
     }
 }
 
+fn calculate_total_voting_weight(
+    weighted_parties: &HashMap<PartyID, Weight>,
+    parties: &Vec<PartyID>,
+) -> usize {
+    let mut total_voting_weight = 0;
+    for party in parties {
+        if let Some(weight) = weighted_parties.get(&party) {
+            total_voting_weight += *weight as usize;
+        }
+    }
+    total_voting_weight
+}
+
 pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
@@ -321,7 +334,16 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-    let messages = deserialize_mpc_messages(messages)?;
+    let (messages, deserialization_malicious_parties) = deserialize_mpc_messages(messages);
+    if calculate_total_voting_weight(
+        &access_threshold.party_to_weight,
+        &deserialization_malicious_parties,
+    ) >= access_threshold.threshold as usize
+    {
+        return Err(DwalletMPCError::SessionFailedWithMaliciousParties(
+            deserialization_malicious_parties,
+        ));
+    }
 
     let res = match P::advance(
         session_id,
@@ -357,10 +379,14 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
         mpc::AsynchronousRoundResult::Advance {
             malicious_parties,
             message,
-        } => mpc::AsynchronousRoundResult::Advance {
-            malicious_parties,
-            message: bcs::to_bytes(&message)?,
-        },
+        } => {
+            let mut malicious_parties = malicious_parties;
+            malicious_parties.extend(deserialization_malicious_parties);
+            mpc::AsynchronousRoundResult::Advance {
+                malicious_parties,
+                message: bcs::to_bytes(&message)?,
+            }
+        }
         mpc::AsynchronousRoundResult::Finalize {
             malicious_parties,
             private_output,
@@ -383,34 +409,23 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
 /// Returns the deserialized messages or an error including the IDs of the malicious parties.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
-) -> DwalletMPCResult<Vec<HashMap<PartyID, M>>> {
-    let mut deserialized_results = Vec::new();
+) -> (Vec<HashMap<PartyID, M>>, Vec<PartyID>) {
     let mut malicious_parties = Vec::new();
 
-    for message_batch in &messages {
-        let mut valid_messages = HashMap::new();
-
-        for (party_id, message) in message_batch {
-            match bcs::from_bytes::<M>(&message) {
-                Ok(value) => {
-                    valid_messages.insert(*party_id, value);
-                }
+    let deserialized_results  = messages.iter().map(|message_batch| {
+        message_batch
+            .into_iter()
+            .filter_map(|(party_id, message)| match bcs::from_bytes::<M>(&message) {
+                Ok(value) => Some((*party_id, value)),
                 Err(_) => {
                     malicious_parties.push(*party_id);
+                    None
                 }
-            }
-        }
+            })
+            .collect()
+    }).collect();
 
-        if !valid_messages.is_empty() {
-            deserialized_results.push(valid_messages);
-        }
-    }
-
-    if !malicious_parties.is_empty() {
-        Err(DwalletMPCError::MaliciousParties(malicious_parties))
-    } else {
-        Ok(deserialized_results)
-    }
+    (deserialized_results, malicious_parties)
 }
 
 /// Parses an [`Event`] to extract the corresponding [`MPCParty`],
