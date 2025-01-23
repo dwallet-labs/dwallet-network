@@ -8,7 +8,7 @@ use group::PartyID;
 use mpc::Weight;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
-use pera_types::dwallet_mpc_error::DwalletMPCResult;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::MaliciousReport;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -20,6 +20,8 @@ use tracing::error;
 pub(crate) struct MaliciousHandler {
     /// The quorum threshold for the MPC process.
     quorum_threshold: StakeUnit,
+    /// A mapping between an authority name to its stake.
+    pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
     /// The set of malicious actors that are reported by the validators.
     malicious_actors: HashSet<AuthorityName>,
     /// The reports of the malicious actors that are disrupting the MPC process.
@@ -35,9 +37,13 @@ pub(crate) enum ReportStatus {
 }
 
 impl MaliciousHandler {
-    pub(crate) fn new(quorum_threshold: StakeUnit) -> Self {
+    pub(crate) fn new(
+        quorum_threshold: StakeUnit,
+        weighted_parties: HashMap<AuthorityName, StakeUnit>,
+    ) -> Self {
         Self {
             quorum_threshold,
+            weighted_parties,
             malicious_actors: HashSet::new(),
             reports: HashMap::new(),
         }
@@ -50,34 +56,47 @@ impl MaliciousHandler {
         &mut self,
         report: MaliciousReport,
         authority: AuthorityName,
-    ) -> ReportStatus {
-        if self.reports.contains_key(&report) {
-            // Safe to unwrap because the key exists.
-            let malicious_actors = self.reports.get_mut(&report).unwrap();
-            if !malicious_actors.contains(&authority) {
-                malicious_actors.insert(authority);
-            } else {
-                error!(
-                    "Authority {} is already reported as malicious in session {}",
-                    authority, report.session_id
-                );
+    ) -> DwalletMPCResult<ReportStatus> {
+        let authority_voting_weight = self
+            .weighted_parties
+            .get(&authority)
+            .ok_or(DwalletMPCError::AuthorityNameNotFound(authority))?
+            .clone() as usize;
+
+        if let Some(reporters) = self.reports.get_mut(&report) {
+            if reporters.contains(&authority) {
+                error!("Authority {} already reported {:?}", authority, report);
             }
+            reporters.insert(authority);
         } else {
             let mut reporters = HashSet::new();
             reporters.insert(authority);
             self.reports.insert(report.clone(), reporters);
         }
 
-        // Safe to unwrap because the key exists by now.
-        let number_of_reports = self.reports.get(&report).unwrap().len();
-        if number_of_reports == self.quorum_threshold as usize {
+        let total_voting_weight = self.calculate_total_voting_weight(report);
+        if total_voting_weight >= self.quorum_threshold as usize
+            && total_voting_weight - authority_voting_weight < self.quorum_threshold as usize
+        {
             self.malicious_actors.insert(authority);
-            ReportStatus::QuorumReached
-        } else if number_of_reports > self.quorum_threshold as usize {
-            ReportStatus::OverQuorum
+            Ok(ReportStatus::QuorumReached)
+        } else if total_voting_weight > self.quorum_threshold as usize {
+            Ok(ReportStatus::OverQuorum)
         } else {
-            ReportStatus::WaitingForQuorum
+            Ok(ReportStatus::WaitingForQuorum)
         }
+    }
+
+    fn calculate_total_voting_weight(&self, report: MaliciousReport) -> usize {
+        let mut total_voting_weight = 0;
+        if let Some(reporters) = self.reports.get(&report) {
+            for authority in reporters {
+                if let Some(weight) = self.weighted_parties.get(authority) {
+                    total_voting_weight += *weight as usize;
+                }
+            }
+        }
+        total_voting_weight
     }
 
     pub(crate) fn is_malicious_actor(&self, authority: &AuthorityName) -> bool {

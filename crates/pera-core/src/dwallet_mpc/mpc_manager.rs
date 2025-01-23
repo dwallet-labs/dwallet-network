@@ -131,7 +131,15 @@ impl DWalletMPCManager {
             weighted_threshold_access_structure,
             validators_data_for_network_dkg: HashMap::new(),
             ready_to_advance: HashMap::new(),
-            malicious_handler: MaliciousHandler::new(epoch_store.committee().quorum_threshold()),
+            malicious_handler: MaliciousHandler::new(
+                epoch_store.committee().quorum_threshold(),
+                epoch_store
+                    .committee()
+                    .voting_rights
+                    .iter()
+                    .cloned()
+                    .collect(),
+            ),
         })
     }
 
@@ -197,7 +205,7 @@ impl DWalletMPCManager {
         let epoch_store = self.epoch_store()?;
         let status = self
             .malicious_handler
-            .report_malicious_actor(report.clone(), authority_name);
+            .report_malicious_actor(report.clone(), authority_name)?;
 
         match status {
             ReportStatus::QuorumReached => {
