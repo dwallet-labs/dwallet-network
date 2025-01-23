@@ -255,7 +255,7 @@ export async function signWithEncryptedDWallet(
 				MPCKeyScheme.Secp256k1,
 				dWallet.dwallet_mpc_network_key_version,
 			);
-	const [centralizedSignedMsg, _] = create_sign_centralized_output(
+	const [centralizedSignedMsg] = create_sign_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
 		Uint8Array.from(dWallet.centralized_output),
