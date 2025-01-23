@@ -49,7 +49,7 @@ use pera_types::error::PeraResult;
 use pera_types::executable_transaction::CertificateProof;
 use pera_types::message_envelope::VerifiedEnvelope;
 use pera_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCOutput, DWalletMPCOutputMessage, MPCRound, SessionInfo,
+    DWalletMPCEvent, DWalletMPCOutput, DWalletMPCOutputMessage, MPCInitProtocolInfo, SessionInfo,
 };
 use pera_types::{
     authenticator_state::ActiveJwk,
@@ -521,7 +521,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     // the verified output.
                                     // We can't preform this within the execution engine,
                                     // as it requires the class-groups crate from crypto-private lib.
-                                    if let MPCRound::NetworkDkg(key_scheme, _) =
+                                    if let MPCInitProtocolInfo::NetworkDkg(key_scheme, _) =
                                         session_info.mpc_round
                                     {
                                         let weighted_threshold_access_structure = match self
@@ -701,7 +701,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         )?;
 
         let mut new_session_info = session_info.clone();
-        new_session_info.mpc_round = MPCRound::NetworkDkg(key_scheme, Some(key));
+        new_session_info.mpc_round = MPCInitProtocolInfo::NetworkDkg(key_scheme, Some(key));
 
         Ok(self.create_dwallet_mpc_output_system_tx(&new_session_info, verified_output))
     }

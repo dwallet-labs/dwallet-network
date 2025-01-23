@@ -16,7 +16,7 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::id::ID;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
-    MPCRound, SessionInfo, StartEncryptedShareVerificationEvent,
+    MPCInitProtocolInfo, SessionInfo, StartEncryptedShareVerificationEvent,
 };
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
@@ -34,6 +34,7 @@ pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtoco
 /// A dWallet MPC session.
 /// It keeps track of the session, the channel to send messages to the session,
 /// and the messages that are pending to be sent to the session.
+// TODO (#539): Simplify struct to only contain session related data.
 #[derive(Clone)]
 pub(super) struct DWalletMPCSession {
     /// The status of the MPC session.
@@ -54,13 +55,17 @@ pub(super) struct DWalletMPCSession {
     pub(super) public_input: MPCPublicInput,
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
-    pub(super) round_number: usize,
+    pub(super) pending_quorum_for_highest_round_number: usize,
     party_id: PartyID,
+    // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+    // TODO (#539): Simplify struct to only contain session related data - remove this field.
     decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    // TODO (#539): Simplify struct to only contain session related data - remove this field.
     private_input: MPCPrivateInput,
 }
 
+// todo remove
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
 unsafe impl Send for DWalletMPCSession {}
 
@@ -85,7 +90,7 @@ impl DWalletMPCSession {
             epoch_id: epoch,
             public_input,
             session_info,
-            round_number: 0,
+            pending_quorum_for_highest_round_number: 0,
             party_id,
             weighted_threshold_access_structure,
             decryption_share,
@@ -157,7 +162,7 @@ impl DWalletMPCSession {
             self.session_info.flow_session_id.to_vec().as_slice(),
         );
         match &self.session_info.mpc_round {
-            MPCRound::DKGFirst => {
+            MPCInitProtocolInfo::DKGFirst => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<DKGFirstParty>(
                     session_id,
@@ -168,7 +173,7 @@ impl DWalletMPCSession {
                     (),
                 )
             }
-            MPCRound::DKGSecond(event_data, _) => {
+            MPCInitProtocolInfo::DKGSecond(event_data, _) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 let result = crate::dwallet_mpc::advance::<DKGSecondParty>(
                     session_id,
@@ -199,7 +204,7 @@ impl DWalletMPCSession {
                 }
                 Ok(result)
             }
-            MPCRound::PresignFirst(..) => {
+            MPCInitProtocolInfo::PresignFirst(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<PresignFirstParty>(
                     session_id,
@@ -210,7 +215,7 @@ impl DWalletMPCSession {
                     (),
                 )
             }
-            MPCRound::PresignSecond(..) => {
+            MPCInitProtocolInfo::PresignSecond(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<PresignSecondParty>(
                     session_id,
@@ -221,7 +226,7 @@ impl DWalletMPCSession {
                     (),
                 )
             }
-            MPCRound::Sign(..) => {
+            MPCInitProtocolInfo::Sign(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<SignFirstParty>(
                     session_id,
@@ -232,7 +237,7 @@ impl DWalletMPCSession {
                     self.decryption_share.clone(),
                 )
             }
-            MPCRound::NetworkDkg(key_scheme, _) => advance_network_dkg(
+            MPCInitProtocolInfo::NetworkDkg(key_scheme, _) => advance_network_dkg(
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
@@ -247,7 +252,7 @@ impl DWalletMPCSession {
                 )?,
                 self.epoch_store()?,
             ),
-            MPCRound::EncryptedShareVerification(verification_data) => {
+            MPCInitProtocolInfo::EncryptedShareVerification(verification_data) => {
                 match verify_encrypted_share(verification_data) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
                         public_output: vec![],
@@ -257,7 +262,7 @@ impl DWalletMPCSession {
                     Err(err) => Err(err),
                 }
             }
-            MPCRound::EncryptionKeyVerification(verification_data) => {
+            MPCInitProtocolInfo::EncryptionKeyVerification(verification_data) => {
                 verify_encryption_key(verification_data)
                     .map(|_| AsynchronousRoundResult::Finalize {
                         public_output: vec![],
@@ -266,7 +271,7 @@ impl DWalletMPCSession {
                     })
                     .map_err(|err| err)
             }
-            MPCRound::BatchedPresign(..) | MPCRound::BatchedSign(..) => {
+            MPCInitProtocolInfo::BatchedPresign(..) | MPCInitProtocolInfo::BatchedSign(..) => {
                 unreachable!("advance should never be called on a batched session")
             }
         }
@@ -291,7 +296,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             message,
             self.session_info.session_id.clone(),
-            self.round_number + 1,
+            self.pending_quorum_for_highest_round_number + 1,
         ))
     }
 

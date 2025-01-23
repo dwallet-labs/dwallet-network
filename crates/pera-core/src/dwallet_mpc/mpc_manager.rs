@@ -29,7 +29,7 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCRound, SessionInfo,
+    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCInitProtocolInfo, SessionInfo,
 };
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -320,7 +320,7 @@ impl DWalletMPCManager {
                 let received_weight: PartyID = match session.status {
                     MPCSessionStatus::Active => session
                         .pending_messages
-                        .get(session.round_number)
+                        .get(session.pending_quorum_for_highest_round_number)
                         .unwrap_or(&HashMap::new())
                         .keys()
                         .filter_map(|authority_index| {
@@ -334,18 +334,21 @@ impl DWalletMPCManager {
 
                 let is_ready = match session.status {
                     MPCSessionStatus::Active => {
-                        received_weight as StakeUnit >= threshold || session.round_number == 0
+                        received_weight as StakeUnit >= threshold
+                            || session.pending_quorum_for_highest_round_number == 0
                     }
                     _ => false,
                 };
 
                 let is_valid_network_dkg_transaction =
-                    matches!(session.session_info.mpc_round, MPCRound::NetworkDkg(..))
-                        && self.validators_data_for_network_dkg.len()
-                            == self
-                                .weighted_threshold_access_structure
-                                .party_to_weight
-                                .len();
+                    matches!(
+                        session.session_info.mpc_round,
+                        MPCInitProtocolInfo::NetworkDkg(..)
+                    ) && self.validators_data_for_network_dkg.len()
+                        == self
+                            .weighted_threshold_access_structure
+                            .party_to_weight
+                            .len();
 
                 let is_manager_ready = !cfg!(feature = "with-network-dkg")
                     || (is_valid_network_dkg_transaction
@@ -355,7 +358,8 @@ impl DWalletMPCManager {
                         ));
                 if is_ready && is_manager_ready {
                     let session_clone = session.clone();
-                    session.round_number = session.round_number + 1;
+                    session.pending_quorum_for_highest_round_number =
+                        session.pending_quorum_for_highest_round_number + 1;
                     Some(session_clone)
                 } else {
                     None
@@ -364,16 +368,16 @@ impl DWalletMPCManager {
             .collect();
 
         for session in ready_to_advance.into_iter() {
-            if session.round_number > 0 {
+            if session.pending_quorum_for_highest_round_number > 0 {
                 self.pending_computation_map
                     .remove(&DWalletMPCLocalComputationMetadata {
                         session_id: session.session_info.session_id,
-                        crypto_round_number: session.round_number - 1,
+                        crypto_round_number: session.pending_quorum_for_highest_round_number - 1,
                     });
             }
             let session_next_round_metadata = DWalletMPCLocalComputationMetadata {
                 session_id: session.session_info.session_id,
-                crypto_round_number: session.round_number,
+                crypto_round_number: session.pending_quorum_for_highest_round_number,
             };
             self.pending_computation_map
                 .insert(session_next_round_metadata.clone(), session.clone());
@@ -441,7 +445,7 @@ impl DWalletMPCManager {
         public_output: MPCPublicOutput,
         private_output: MPCPrivateOutput,
     ) -> DwalletMPCResult<()> {
-        if let MPCRound::NetworkDkg(key_type, _) = session_info.mpc_round {
+        if let MPCInitProtocolInfo::NetworkDkg(key_type, _) = session_info.mpc_round {
             let epoch_store = self.epoch_store()?;
             let network_keys = epoch_store
                 .dwallet_mpc_network_keys
@@ -538,7 +542,7 @@ impl DWalletMPCManager {
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             match session_info.mpc_round {
-                MPCRound::NetworkDkg(..) => HashMap::new(),
+                MPCInitProtocolInfo::NetworkDkg(..) => HashMap::new(),
                 _ => self.get_decryption_key_shares(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),

@@ -113,7 +113,8 @@ use pera_types::messages_consensus::{
 };
 use pera_types::messages_consensus::{DWalletMPCMessage, VersionedDkgConfirmation};
 use pera_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCOutput, DWalletMPCOutputMessage, SessionInfo,
+    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, DWalletMPCOutput, DWalletMPCOutputMessage,
+    SessionInfo,
 };
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
@@ -360,7 +361,6 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
     dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
     dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
-
     dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
 }
 
@@ -590,6 +590,8 @@ pub struct AuthorityEpochTables {
     /// round.
     pub(crate) dwallet_mpc_messages: DBMap<u64, Vec<DWalletMPCDBMessage>>,
     pub(crate) dwallet_mpc_outputs: DBMap<u64, Vec<DWalletMPCOutputMessage>>,
+    // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
+    // pub struct SessionID([u8; AccountAddress::LENGTH]);
     pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<ObjectID>>,
     pub(crate) dwallet_mpc_events: DBMap<u64, Vec<DWalletMPCEvent>>,
 }
