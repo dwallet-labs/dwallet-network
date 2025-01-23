@@ -37,7 +37,7 @@ use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::log::{debug};
+use tracing::log::debug;
 use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
