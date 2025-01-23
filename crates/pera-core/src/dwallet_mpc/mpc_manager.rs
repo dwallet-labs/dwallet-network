@@ -496,7 +496,7 @@ impl DWalletMPCManager {
         ) && session.pending_quorum_for_highest_round_number == LAST_SIGN_ROUND_INDEX
         {
             let position_in_order =
-                self.get_validator_position_to_aggregate(&session.session_info)?;
+                self.calculate_last_sign_step_validator_delay(&session.session_info)?;
             let epoch_store = self.epoch_store()?;
             tokio::spawn(async move {
                 tokio::time::sleep(tokio::time::Duration::from_secs(
@@ -575,7 +575,11 @@ impl DWalletMPCManager {
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
-    fn get_validator_position_to_aggregate(
+    /// Deterministically decides by the session ID how long this validator should wait before
+    /// running the last step of the sign protocol.
+    /// If while waiting the validator receives a valid signature for this session,
+    /// it will not run the last step in the sign protocol, and save computation resources.
+    fn calculate_last_sign_step_validator_delay(
         &self,
         session_info: &SessionInfo,
     ) -> DwalletMPCResult<usize> {
@@ -589,8 +593,7 @@ impl DWalletMPCManager {
             .iter()
             .position(|&x| x == *authority_name)
             .ok_or(DwalletMPCError::InvalidMPCPartyType)?;
-
-        Ok(position)
+        Ok(SIGN_LAST_ROUND_COMPUTATION_AVERAGE_TIME_SECS * position)
     }
 
     /// Handles a message by forwarding it to the relevant MPC session.
