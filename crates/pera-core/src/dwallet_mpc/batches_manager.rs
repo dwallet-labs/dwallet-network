@@ -8,7 +8,7 @@ use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicOutput};
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::messages_dwallet_mpc::{MPCInitProtocolInfo, SessionInfo, SignMessageData};
+use pera_types::messages_dwallet_mpc::{MPCInitProtocolInfo, SessionInfo, SignSessionData};
 use std::collections::{HashMap, HashSet};
 
 /// Structs to hold the batches sign session data.
@@ -99,7 +99,7 @@ impl DWalletMPCBatchesManager {
         output: MPCPublicOutput,
     ) -> DwalletMPCResult<()> {
         match session_info.mpc_round {
-            MPCInitProtocolInfo::Sign(SignMessageData {
+            MPCInitProtocolInfo::Sign(SignSessionData {
                 batch_session_id,
                 message,
                 ..
@@ -127,7 +127,7 @@ impl DWalletMPCBatchesManager {
         session_info: &SessionInfo,
     ) -> DwalletMPCResult<Option<Vec<u8>>> {
         match session_info.mpc_round {
-            MPCInitProtocolInfo::Sign(SignMessageData {
+            MPCInitProtocolInfo::Sign(SignSessionData {
                 batch_session_id, ..
             }) => self.is_sign_batch_completed(batch_session_id),
             MPCInitProtocolInfo::PresignSecond(_, _, batch_session_id) => {

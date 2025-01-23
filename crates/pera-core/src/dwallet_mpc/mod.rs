@@ -24,7 +24,7 @@ use pera_types::base_types::{EpochId, ObjectID};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{
-    MPCInitProtocolInfo, SessionInfo, SignMessageData, StartDKGSecondRoundEvent,
+    MPCInitProtocolInfo, SessionInfo, SignSessionData, StartDKGSecondRoundEvent,
     StartEncryptedShareVerificationEvent, StartEncryptionKeyVerificationEvent,
 };
 use serde::de::DeserializeOwned;
@@ -290,10 +290,12 @@ fn sign_party_session_info(
         flow_session_id: deserialized_event.presign_session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCInitProtocolInfo::Sign(SignMessageData {
+        mpc_round: MPCInitProtocolInfo::Sign(SignSessionData {
             batch_session_id: deserialized_event.batched_session_id.bytes,
             message: deserialized_event.hashed_message.clone(),
             dwallet_id: deserialized_event.dwallet_id.bytes,
+            dkg_output: deserialized_event.dkg_output.clone(),
+            network_key_version: deserialized_event.dwallet_mpc_network_key_version,
         }),
     }
 }

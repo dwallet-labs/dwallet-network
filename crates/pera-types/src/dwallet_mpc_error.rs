@@ -105,6 +105,9 @@ pub enum DwalletMPCError {
     #[error("failed to read the network decryption key shares")]
     DwalletMPCNetworkKeysNotFound,
 
+    #[error("failed to verify signature")]
+    SignatureVerificationFailed,
+
     #[error("failed to get available parallelism")]
     FailedToGetAvailableParallelism,
 

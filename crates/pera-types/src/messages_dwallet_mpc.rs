@@ -33,7 +33,7 @@ pub enum MPCInitProtocolInfo {
     /// the Presign first round output, and the batch session ID.
     PresignSecond(ObjectID, MPCPublicOutput, ObjectID),
     /// The first and only round of the Sign protocol.
-    Sign(SignMessageData),
+    Sign(SignSessionData),
     /// A batched sign session, contains the list of messages that are being signed.
     // TODO (#536): Store batch state and logic on Sui & remove this field.
     BatchedSign(Vec<Vec<u8>>),
@@ -55,11 +55,14 @@ pub enum MPCInitProtocolInfo {
 
 /// The message and data for the Sign round.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct SignMessageData {
+pub struct SignSessionData {
     pub batch_session_id: ObjectID,
     pub message: Vec<u8>,
     /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,
+    /// The DKG output of the dWallet, used to sign and verify the message.
+    pub dkg_output: MPCPublicOutput,
+    pub network_key_version: u8,
 }
 
 impl MPCInitProtocolInfo {

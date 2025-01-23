@@ -62,7 +62,7 @@ mod checked {
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
     use pera_types::messages_dwallet_mpc::{
-        DWalletMPCOutput, MPCInitProtocolInfo, SignMessageData,
+        DWalletMPCOutput, MPCInitProtocolInfo, SignSessionData,
     };
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
@@ -1204,7 +1204,7 @@ mod checked {
                     ],
                 )
             }
-            MPCInitProtocolInfo::Sign(SignMessageData {
+            MPCInitProtocolInfo::Sign(SignSessionData {
                 batch_session_id,
                 dwallet_id,
                 ..
