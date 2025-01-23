@@ -509,7 +509,7 @@ impl DWalletMPCManager {
                     return;
                 };
                 if session.status == MPCSessionStatus::Active {
-                    warn!(
+                    info!(
                         "running last sign cryptographic step for session_id: {:?}",
                         session_id
                     );
