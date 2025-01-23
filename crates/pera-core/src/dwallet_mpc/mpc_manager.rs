@@ -138,10 +138,6 @@ impl DWalletMPCManager {
         }
         let available_cores_for_cryptographic_computations =
             available_cores_for_computations - MACHINE_CORS_FOR_NON_COMPUTATION;
-        error!(
-            "Available cores for cryptographic computations: {}",
-            available_cores_for_cryptographic_computations
-        );
         Ok(Self {
             mpc_sessions: HashMap::new(),
             pending_sessions_queue: VecDeque::new(),
