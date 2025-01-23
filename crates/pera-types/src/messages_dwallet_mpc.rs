@@ -119,14 +119,16 @@ pub struct SessionInfo {
 /// as the inner data of the [`MPCRound::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
-    pub encrypted_secret_share_and_proof: Vec<u8>,
-    pub dwallet_centralized_public_output: Vec<u8>,
+    /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
+    pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
+    /// The DKG public output of the dwallet that its secret is being encrypted.
+    pub dkg_public_output: Vec<u8>,
     pub dwallet_id: ID,
     pub encryption_key: Vec<u8>,
     pub encryption_key_id: ID,
     pub session_id: ID,
-    pub signed_public_share: Vec<u8>,
-    pub encryptor_ed25519_pubkey: Vec<u8>,
+    pub dkg_public_output_signature: Vec<u8>,
+    pub initiator_public_key: Vec<u8>,
     pub initiator: PeraAddress,
 }
 
@@ -173,19 +175,26 @@ pub struct StartDKGSecondRoundEvent {
     pub session_id: PeraAddress,
     /// The address of the user that initiated this session.
     pub initiator: PeraAddress,
-    /// The DKG first decentralized round output.
+    /// The DKG first round output.
     pub first_round_output: Vec<u8>,
-    /// The DKG centralized round output.
-    pub public_key_share_and_proof: Vec<u8>,
+    /// The user (centralized) public key share and proof.
+    pub centralized_public_key_share_and_proof: Vec<u8>,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ID,
+    /// The session ID associated with the first DKG round.
     pub first_round_session_id: ID,
-    pub encrypted_secret_share_and_proof: Vec<u8>,
+    /// Encrypted centralized secret key share and its proof.
+    pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
+    /// The `EncryptionKey` object used for encrypting the secret key share.
     pub encryption_key: Vec<u8>,
+    /// The unique identifier of the `EncryptionKey` object.
     pub encryption_key_id: ID,
-    pub signed_public_share: Vec<u8>,
-    pub encryptor_ed25519_pubkey: Vec<u8>,
-    pub dkg_centralized_public_output: Vec<u8>,
+    /// The public output of the DKG process.
+    pub public_output: Vec<u8>,
+    /// The signature for the public output of the DKG process.
+    pub public_output_signature: Vec<u8>,
+    /// The Ed25519 public key of the initiator, used to verify the signature on the public output.
+    pub initiator_public_key: Vec<u8>,
 }
 
 impl StartDKGSecondRoundEvent {

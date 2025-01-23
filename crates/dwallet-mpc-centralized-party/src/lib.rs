@@ -30,9 +30,6 @@ use group::KnownOrderGroupElement;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
-use twopc_mpc::secp256k1::class_groups::{
-    FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-};
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
 type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
@@ -122,7 +119,7 @@ pub fn create_dkg_output(
     let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
         bcs::from_bytes(&decentralized_first_round_output)
             .context("Failed to deserialize decentralized first round output")?;
-    let public_parameters = bcs::from_bytes(&get_protocol_public_parameters(
+    let public_parameters = bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
         protocol_public_parameters,
         key_scheme,
     )?)?;
@@ -139,14 +136,18 @@ pub fn create_dkg_output(
 
     // Centralized Public Key Share and Proof.
     let public_key_share_and_proof = bcs::to_bytes(&round_result.outgoing_message)?;
-    // todo(scaly): is this the Public Key.
-    let centralized_public_output = bcs::to_bytes(&round_result.public_output)?;
+    // Public Output:
+    // centralized_public_key_share + public_key + decentralized_party_public_key_share
+    let public_output = bcs::to_bytes(&round_result.public_output)?;
     // Centralized Secret Key Share.
+    // Warning:
+    // The secret (private) key share returned from this function should never be sent,
+    // and should always be kept private.
     let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
 
     Ok((
         public_key_share_and_proof,
-        centralized_public_output,
+        public_output,
         centralized_secret_output,
     ))
 }
@@ -202,7 +203,7 @@ pub fn advance_centralized_sign_party(
                         hashed_message,
                         centralized_party_dkg_output.clone(),
                         presign,
-                        bcs::from_bytes(&get_protocol_public_parameters(
+                        bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
                             protocol_public_parameters.clone(),
                             key_scheme,
                         )?)?,
@@ -229,7 +230,7 @@ pub fn advance_centralized_sign_party(
     Ok((signed_messages, hashed_messages))
 }
 
-fn get_protocol_public_parameters(
+fn protocol_public_parameters_by_key_scheme(
     protocol_public_parameters: Vec<u8>,
     key_scheme: u8,
 ) -> anyhow::Result<Vec<u8>> {
@@ -239,8 +240,8 @@ fn get_protocol_public_parameters(
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             Ok(bcs::to_bytes(&ProtocolPublicParameters::new::<
                 { secp256k1::SCALAR_LIMBS },
-                { FUNDAMENTAL_DISCRIMINANT_LIMBS },
-                { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                { SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
                 secp256k1::GroupElement,
             >(
                 encryption_scheme_public_parameters

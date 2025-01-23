@@ -509,7 +509,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         };
 
                                         let transaction = match self
-                                            .create_dwallet_network_output_system_tx(
+                                            .create_dwallet_network_dkg_output_system_tx(
                                                 &session_info,
                                                 output,
                                                 &weighted_threshold_access_structure,
@@ -543,7 +543,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             | OutputResult::AlreadyCommitted
                             | OutputResult::Malicious => {
                                 // Ignore this output,
-                                // since there is no need for it to participate in the chain.
+                                // since there is nothing to do with it,
+                                // at this stage.
                                 continue;
                             }
                         }
@@ -656,7 +657,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .await;
     }
 
-    fn create_dwallet_network_output_system_tx(
+    fn create_dwallet_network_dkg_output_system_tx(
         &self,
         session_info: &SessionInfo,
         verified_output: &[u8],

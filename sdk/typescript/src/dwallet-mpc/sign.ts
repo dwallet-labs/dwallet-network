@@ -254,12 +254,12 @@ export async function signWithEncryptedDWallet(
 		: await fetchProtocolPublicParameters(
 				conf,
 				MPCKeyScheme.Secp256k1,
-				dWallet.dwallet_mpc_network_key_version,
+				dWallet.dwallet_mpc_network_decryption_key_version,
 			);
 	const [centralizedSignedMsg, hashedMsgs] = create_sign_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
-		Uint8Array.from(dWallet.centralized_output),
+		Uint8Array.from(dWallet.centralized_public_output),
 		decryptedShare,
 		serializedPresigns,
 		serializedMsgs,

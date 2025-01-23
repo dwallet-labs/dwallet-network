@@ -8,9 +8,10 @@ import {
 } from '@dwallet-network/dwallet-mpc-wasm';
 
 import { bcs } from '../bcs/index.js';
+import type { PublicKey } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
 import { EncryptedUserShare } from './encrypt-user-share.js';
-import type { Config, CreatedDwallet, DWallet } from './globals.js';
+import type { Config, DWallet, dWalletWithSecretKeyShare } from './globals.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
 	dWalletMoveType,
@@ -26,6 +27,8 @@ const completedDKGSecondRoundEventMoveType = `${dWalletPackageID}::${dWallet2PCM
 const startDKGFirstRoundEventMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartDKGFirstRoundEvent`;
 const dkgFirstRoundOutputEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutputEvent`;
 
+// todo(zeev): doc.
+
 interface CompletedDKGSecondRoundEvent {
 	session_id: string;
 	initiator: string;
@@ -40,6 +43,13 @@ interface StartDKGFirstRoundEvent {
 	dwallet_cap_id: string;
 }
 
+/**
+ * An event emitted when the first round of the DKG process is completed.
+ * This event is emitted by the blockchain to notify the user about
+ * the completion of the first round.
+ * The user should catch this event to generate inputs for
+ * the second round and call the `launch_dkg_second_round()` function.
+ */
 interface DKGFirstRoundOutputEvent {
 	output: number[];
 	session_id: string;
@@ -51,13 +61,13 @@ interface DKGFirstRoundOutput extends DKGFirstRoundOutputEvent {
 }
 
 export async function createDWallet(
-	conf: Config,
+	c: Config,
 	protocolPublicParameters: Uint8Array,
 	activeEncryptionKeyTableID: string,
-): Promise<CreatedDwallet> {
-	const dkgFirstRoundOutput = await launchDKGFirstRound(conf);
-	// todo(scaly): need to clarify here.
-	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedPrivateKeyShare] =
+): Promise<dWalletWithSecretKeyShare> {
+	const dkgFirstRoundOutput = await launchDKGFirstRound(c);
+	// centralizedPublicOutput: centralized_public_key_share + public_key + decentralized_party_public_key_share.
+	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			protocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
@@ -68,42 +78,42 @@ export async function createDWallet(
 
 	// Encrypt the dWallet secret share to use it later by only
 	// holding our Ika ed25519 keypair (the encryption key is derived from Ika keypair).
-	const encryptedUserShare = EncryptedUserShare.fromConfig(conf);
+	const encryptedUserShare = EncryptedUserShare.fromConfig(c);
 	const derivedClassGroupsKeyPair = await encryptedUserShare.getOrCreateClassGroupsKeyPair(
-		conf.keypair,
+		c.keypair,
 		activeEncryptionKeyTableID,
 	);
-	const encryptedUserKeyShareAndProofOfEncryption = encrypt_secret_share(
-		new Uint8Array(centralizedPrivateKeyShare),
+	const encryptedCentralizedSecretKeyShareAndProofOfEncryption = encrypt_secret_share(
+		new Uint8Array(centralizedSecretKeyShare),
 		new Uint8Array(derivedClassGroupsKeyPair.encryptionKey),
 	);
-	const signedCentralizedPublicOutput = await conf.keypair.sign(
-		new Uint8Array(centralizedPublicOutput),
-	);
 	const dwallet = await launchDKGSecondRound(
-		conf,
+		c,
 		dkgFirstRoundOutput,
 		centralizedPublicKeyShareAndProof,
-		encryptedUserKeyShareAndProofOfEncryption,
+		encryptedCentralizedSecretKeyShareAndProofOfEncryption,
 		derivedClassGroupsKeyPair.objectID,
-		signedCentralizedPublicOutput,
-		conf.keypair.getPublicKey().toRawBytes(),
 		centralizedPublicOutput,
+		c.keypair.getPublicKey(),
 	);
 
 	return {
-		id: dwallet.id.id,
-		centralizedDKGPublicOutput: centralizedPublicOutput,
-		centralizedDKGPrivateOutput: centralizedPrivateKeyShare,
-		decentralizedDKGOutput: dwallet.decentralized_output,
-		dwalletCapID: dwallet.dwallet_cap_id,
-		dwalletMPCNetworkKeyVersion: dwallet.dwallet_mpc_network_key_version,
+		centralizedSecretKeyShare: centralizedSecretKeyShare,
+		...dwallet,
+		// todo(zeev): remove the following lines
+		// id: dwallet.id.id,
+		// centralizedDKGPublicOutput: centralizedPublicOutput,
+		// centralizedDKGPrivateOutput: centralizedSecretKeyShare,
+		// decentralizedDKGOutput: dwallet.decentralized_output,
+		// dWalletCapID: dwallet.dwallet_cap_id,
+		// dWalletMPCNetworkDecryptionKeyVersion: dwallet.dwallet_mpc_network_decryption_key_version,
 	};
 }
 
 /**
  * Starts the first round of the DKG protocol to create a new dWallet.
- * The output of this function is being used to generate the input for the second round.
+ * The output of this function is being used to generate the input for the second round,
+ * and as input for the centralized party round.
  */
 async function launchDKGFirstRound(c: Config) {
 	const tx = new Transaction();
@@ -139,12 +149,14 @@ async function launchDKGSecondRound(
 	c: Config,
 	firstRoundOutput: DKGFirstRoundOutput,
 	centralizedPublicKeyShareAndProof: Uint8Array,
-	encryptedSecretShareAndProof: Uint8Array,
+	encryptedCentralizedSecretShareAndProof: Uint8Array,
 	encryptionKeyID: string,
-	signedCentralizedPublicOutput: Uint8Array,
-	srcIkaPubkey: Uint8Array,
 	centralizedPublicOutput: Uint8Array,
+	initiatorPubKey: PublicKey,
 ) {
+	const centralizedPublicOutputSignature = await c.keypair.sign(
+		new Uint8Array(centralizedPublicOutput),
+	);
 	const tx = new Transaction();
 	tx.moveCall({
 		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_second_round`,
@@ -153,11 +165,11 @@ async function launchDKGSecondRound(
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicKeyShareAndProof)),
 			tx.object(firstRoundOutput.output_object_id),
 			tx.pure.id(firstRoundOutput.session_id),
-			tx.pure(bcs.vector(bcs.u8()).serialize(encryptedSecretShareAndProof)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(encryptedCentralizedSecretShareAndProof)),
 			tx.object(encryptionKeyID),
-			tx.pure(bcs.vector(bcs.u8()).serialize(signedCentralizedPublicOutput)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(srcIkaPubkey)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutputSignature)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(initiatorPubKey.toRawBytes())),
 		],
 	});
 

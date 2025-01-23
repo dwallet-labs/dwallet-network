@@ -45,8 +45,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     /// An event emitted when the first round of the DKG process is completed.
     ///
-    /// This event is emitted by the blockchain to notify the user about the completion of the first round.
-    /// The user should catch this event to generate inputs for the second round and call the `launch_dkg_second_round` function.
+    /// This event is emitted by the blockchain to notify the user about
+    /// the completion of the first round.
+    /// The user should catch this event to generate inputs for
+    /// the second round and call the `launch_dkg_second_round()` function.
     public struct DKGFirstRoundOutputEvent has copy, drop {
         session_id: ID,
         output_object_id: ID,
@@ -90,9 +92,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// caught by the blockchain, which then starts the verification process,
     /// similar to the MPC processes.
     public struct StartEncryptedShareVerificationEvent has copy, drop {
-        encrypted_secret_share_and_proof: vector<u8>,
-        /// The DKG centralized output of the dwallet that its secret is being encrypted.
-        dwallet_centralized_public_output: vector<u8>,
+        /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
+        encrypted_centralized_secret_share_and_proof: vector<u8>,
+        /// The DKG public output of the dwallet that its secret is being encrypted.
+        dkg_public_output: vector<u8>,
         /// The dWallet that this encrypted secret key share belongs to.
         dwallet_id: ID,
         /// The encryption key used to encrypt the secret key share with.
@@ -168,14 +171,14 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     ///
     /// This event is caught by the blockchain, which is then using it to
     /// initiate the first round of the DKG.
-    ///
-    /// ### Fields
-    /// - **`session_id`**: The unique session identifier for the DKG process.
-    /// - **`initiator`**: The address of the user who initiated the DKG process.
-    /// - **`dwallet_cap_id`**: The identifier for the DWallet capability.
     public struct StartDKGFirstRoundEvent has copy, drop {
+        /// The unique session identifier for the DKG process.
         session_id: address,
+
+        /// The address of the user who initiated the DKG process.
         initiator: address,
+
+        /// The identifier for the dWallet capability.
         dwallet_cap_id: ID,
     }
 
@@ -229,34 +232,42 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     ///
     /// This event is emitted to notify Validators to begin the second round of the DKG.
     /// It contains all necessary data to ensure proper continuation of the process.
-    ///
-    /// ### Fields
-    /// - **`session_id`**: The unique identifier for the DKG session.
-    /// - **`initiator`**: The address of the user who initiated the second round.
-    /// - **`first_round_output`**: The output from the first round of the DKG process.
-    /// - **`public_key_share_and_proof`**: A serialized vector containing the public key share and
-    ///     its proof from the first round.
-    /// - **`dwallet_cap_id`**: The unique identifier of the dWallet capability associated with this session.
-    /// - **`first_round_session_id`**: The session ID of the first round of the DKG process.
-    /// - **`encrypted_secret_share_and_proof`**: Encrypted secret share and the associated cryptographic proof.
-    /// - **`encryption_key`**: The encryption key used in the process.
-    /// - **`encryption_key_id`**: The unique identifier of the EncryptionKey object.
-    /// - **`signed_public_share`**: The signed public share corresponding to the encrypted secret key share.
-    /// - **`encryptor_ed25519_pubkey`**: The Ed25519 public key of the entity that performed the encryption.
-    /// - **`dkg_centralized_public_output`**: The centralized public output of the DKG process.
     public struct StartDKGSecondRoundEvent has copy, drop {
+        /// The unique identifier for the DKG session.
         session_id: address,
+
+        /// The address of the user who initiated the dWallet creation.
         initiator: address,
+
+        /// The output from the first round of the DKG process.
         first_round_output: vector<u8>,
-        public_key_share_and_proof: vector<u8>,
+
+        /// A serialized vector containing the centralized public key share and its proof.
+        centralized_public_key_share_and_proof: vector<u8>,
+
+        /// The unique identifier of the dWallet capability associated with this session.
         dwallet_cap_id: ID,
+
+        /// The session ID of the first round of the DKG process.
         first_round_session_id: ID,
-        encrypted_secret_share_and_proof: vector<u8>,
+
+        /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
+        encrypted_centralized_secret_share_and_proof: vector<u8>,
+
+        /// The `EncryptionKey` object used for encrypting the secret key share.
         encryption_key: vector<u8>,
+
+        /// The unique identifier of the `EncryptionKey` object.
         encryption_key_id: ID,
-        signed_public_share: vector<u8>,
-        encryptor_ed25519_pubkey: vector<u8>,
-        dkg_centralized_public_output: vector<u8>,
+
+        /// The public output of the DKG process.
+        centralized_public_output: vector<u8>,
+
+        /// The signature for the public output of the DKG process.
+        centralized_public_output_signature: vector<u8>,
+
+        /// The Ed25519 public key of the initiator, used to verify the signature on the output.
+        initiator_public_key: vector<u8>,
     }
 
     /// Event emitted upon the completion of the second round of the
@@ -504,40 +515,38 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - `centralized_public_key_share_and_proof`: The user (centralized) public key share and proof from the first round.
     /// - `first_round_output`: A reference to the `DKGFirstRoundOutput` structure containing the output of the first DKG round.
     /// - `first_round_session_id`: The session ID associated with the first DKG round.
-    /// - `encrypted_secret_share_and_proof`: Encrypted user secret key share and its proof.
-    /// - `encryption_key`: A reference to the `EncryptionKey` object used for encrypting the secret key share.
-    /// - `signed_centralized_public_output`: The centralized public output signed by the caller.
-    /// - `encryptor_ed25519_pubkey`: The Ed25519 public key of the encryptor.
-    /// - `centralized_public_output`: The centralized public output of the DKG process.
+    /// - `encrypted_centralized_secret_share_and_proof`: Encrypted centralized secret key share and its proof.
+    /// - `encryption_key`: The `EncryptionKey` object used for encrypting the secret key share.
+    /// - `centralized_public_output`: The public output of the centralized party in the DKG process.
+    /// - `centralized_public_output_signature`: The signature for the public output of the centralized party in the DKG process.
+    /// - `initiator_public_key`: The Ed25519 public key of the initiator,
+    ///    used to verify the signature on the public output.
     public fun launch_dkg_second_round(
         dwallet_cap: &DWalletCap,
         centralized_public_key_share_and_proof: vector<u8>,
         first_round_output: &DKGFirstRoundOutput,
         first_round_session_id: ID,
-        encrypted_secret_share_and_proof: vector<u8>,
+        encrypted_centralized_secret_share_and_proof: vector<u8>,
         encryption_key: &EncryptionKey,
-        // todo(scaly): is it the public key?
-        signed_centralized_public_output: vector<u8>,
-        encryptor_ed25519_pubkey: vector<u8>,
-        // todo(scaly): is it the public eky?
         centralized_public_output: vector<u8>,
+        centralized_public_output_signature: vector<u8>,
+        initiator_public_key: vector<u8>,
         ctx: &mut TxContext
     ): address {
-        // todo(zeev): rename the event fields.
         let session_id = tx_context::fresh_object_address(ctx);
         event::emit(StartDKGSecondRoundEvent {
             session_id,
             initiator: tx_context::sender(ctx),
             first_round_output: first_round_output.output,
-            public_key_share_and_proof: centralized_public_key_share_and_proof,
+            centralized_public_key_share_and_proof,
             dwallet_cap_id: object::id(dwallet_cap),
             first_round_session_id,
-            encrypted_secret_share_and_proof,
+            encrypted_centralized_secret_share_and_proof,
             encryption_key: get_encryption_key(encryption_key),
             encryption_key_id: object::id(encryption_key),
-            signed_public_share: signed_centralized_public_output,
-            encryptor_ed25519_pubkey,
-            dkg_centralized_public_output: centralized_public_output
+            centralized_public_output,
+            centralized_public_output_signature,
+            initiator_public_key,
         });
         session_id
     }
@@ -574,8 +583,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     ) {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         event::emit(StartEncryptedShareVerificationEvent {
-            encrypted_secret_share_and_proof,
-            dwallet_centralized_public_output: get_dwallet_centralized_output<Secp256K1>(dwallet),
+            encrypted_centralized_secret_share_and_proof: encrypted_secret_share_and_proof,
+            dkg_public_output: get_dwallet_centralized_output<Secp256K1>(dwallet),
             dwallet_id: object::id(dwallet),
             encryption_key: get_encryption_key(destination_encryption_key),
             encryption_key_id: object::id(destination_encryption_key),
@@ -594,7 +603,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     ///
     /// ### Parameters
     /// - **`dwallet_id`**: The unique identifier of the dWallet associated with the encrypted user share.
-    /// - **`encrypted_secret_share_and_proof`**: The encrypted secret share along with its cryptographic proof.
+    /// - **`encrypted_centralized_secret_share_and_proof`**: The encrypted centralized secret key share along with its cryptographic proof.
     /// - **`encryption_key_id`**: The unique identifier of the encryption key used for the share.
     /// - **`session_id`**: A unique identifier for the session related to this operation.
     /// - **`signed_public_share`**: The signed public share corresponding to the encrypted secret share.
@@ -609,13 +618,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     #[allow(unused_function)]
     public(package) fun create_encrypted_user_share(
         dwallet_id: ID,
-        encrypted_secret_share_and_proof: vector<u8>,
+        encrypted_centralized_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
         session_id: ID,
-        // todo(zeev): rename
-        signed_public_share: vector<u8>,
+        dkg_public_output_signature: vector<u8>,
         encryptor_ed25519_pubkey: vector<u8>,
-        // TODO (#527): Transfer the encrypted user share move object to the destination address instead of the initiating user
+        // TODO (#527): Transfer the encrypted user share move object to
+        // TODO (#527): the destination address instead of the initiating user.
         initiator: address,
         ctx: &mut TxContext
     ) {
@@ -623,9 +632,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let encrypted_user_share = EncryptedUserSecretKeyShare {
             id: object::new(ctx),
             dwallet_id,
-            encrypted_secret_share_and_proof,
+            encrypted_secret_share_and_proof: encrypted_centralized_secret_share_and_proof,
             encryption_key_id,
-            signed_public_share,
+            signed_public_share: dkg_public_output_signature,
             encryptor_ed25519_pubkey,
             encryptor_address: initiator,
         };
@@ -633,9 +642,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             session_id,
             encrypted_share_obj_id: object::id(&encrypted_user_share),
             dwallet_id,
-            encrypted_secret_share_and_proof,
+            encrypted_secret_share_and_proof: encrypted_centralized_secret_share_and_proof,
             encryption_key_id,
-            signed_public_share,
+            signed_public_share: dkg_public_output_signature,
             encryptor_ed25519_pubkey,
             encryptor_address: initiator,
         });

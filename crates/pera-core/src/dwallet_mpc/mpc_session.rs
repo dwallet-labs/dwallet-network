@@ -164,17 +164,17 @@ impl DWalletMPCSession {
                 )?;
                 if let AsynchronousRoundResult::Finalize { .. } = &result {
                     verify_encrypted_share(&StartEncryptedShareVerificationEvent {
-                        dwallet_centralized_public_output: event_data
-                            .dkg_centralized_public_output
+                        dkg_public_output: event_data
+                            .public_output
                             .clone(),
-                        encrypted_secret_share_and_proof: event_data
-                            .encrypted_secret_share_and_proof
+                        encrypted_centralized_secret_share_and_proof: event_data
+                            .encrypted_centralized_secret_share_and_proof
                             .clone(),
                         encryption_key: event_data.encryption_key.clone(),
                         encryption_key_id: event_data.encryption_key_id.clone(),
                         initiator: event_data.initiator.clone(),
-                        signed_public_share: event_data.signed_public_share.clone(),
-                        encryptor_ed25519_pubkey: event_data.encryptor_ed25519_pubkey.clone(),
+                        dkg_public_output_signature: event_data.public_output_signature.clone(),
+                        initiator_public_key: event_data.initiator_public_key.clone(),
 
                         // Fields not relevant for verification; passing empty values.
                         dwallet_id: ID::new(ObjectID::new([0; 32])),

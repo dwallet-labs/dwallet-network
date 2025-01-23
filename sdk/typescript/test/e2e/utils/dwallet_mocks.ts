@@ -80,9 +80,10 @@ export async function mockCreateDwallet(c: Config): Promise<CreatedDwallet> {
 				id: dwalletData.id.id,
 				centralizedDKGPublicOutput: Array.from(Buffer.from(DKGCentralizedPublicOutput, 'base64')),
 				centralizedDKGPrivateOutput: Array.from(Buffer.from(DKGCentralizedPrivateOutput, 'base64')),
-				decentralizedDKGOutput: dwalletData.decentralized_output,
-				dwalletCapID: dwalletData.dwallet_cap_id,
-				dwalletMPCNetworkKeyVersion: dwalletData.dwallet_mpc_network_key_version,
+				decentralizedDKGOutput: dwalletData.decentralized_public_output,
+				dWalletCapID: dwalletData.dwallet_cap_id,
+				dWalletMPCNetworkDecryptionKeyVersion:
+					dwalletData.dwallet_mpc_network_decryption_key_version,
 			};
 		}
 	}

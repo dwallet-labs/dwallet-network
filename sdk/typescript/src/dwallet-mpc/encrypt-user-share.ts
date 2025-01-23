@@ -16,7 +16,7 @@ import type { Keypair, PublicKey } from '../cryptography/index.js';
 import { decodePeraPrivateKey } from '../cryptography/index.js';
 import { Ed25519Keypair, Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
-import type { Config, CreatedDwallet, DWallet } from './globals.js';
+import type { Config, DWallet, dWalletWithSecretKeyShare } from './globals.js';
 import {
 	checkpointCreationTime,
 	delay,
@@ -300,7 +300,7 @@ export class EncryptedUserShare {
 	async encryptUserShareForPublicKey(
 		sourceKeyPair: Keypair,
 		destSuiPublicKey: PublicKey,
-		sourceDwallet: CreatedDwallet,
+		sourceDwallet: dWalletWithSecretKeyShare,
 		activeEncryptionKeysTableID: string,
 	) {
 		const destActiveEncryptionKeyObjID = await this.getActiveEncryptionKeyObjID(
@@ -332,7 +332,7 @@ export class EncryptedUserShare {
 		// Encrypt the centralized secret key share with the destination active encryption key.
 		const encryptedUserKeyShareAndProofOfEncryption = encrypt_secret_share(
 			// Centralized Secret Key Share.
-			new Uint8Array(sourceDwallet.centralizedDKGPrivateOutput),
+			new Uint8Array(sourceDwallet.centralizedSecretKeyShare),
 			// Encryption Key.
 			new Uint8Array(destActiveEncryptionKeyObj.encryption_key),
 		);
@@ -400,13 +400,9 @@ export class EncryptedUserShare {
 		);
 
 		// todo(zeev): rename.
-		const dwalletToSend: CreatedDwallet = {
-			id: dwalletID,
-			centralizedDKGPrivateOutput: [...decryptedKeyShare],
-			decentralizedDKGOutput: sourceDWallet.decentralized_output,
-			dwalletCapID: sourceDWallet.dwallet_cap_id,
-			dwalletMPCNetworkKeyVersion: sourceDWallet.dwallet_mpc_network_key_version,
-			centralizedDKGPublicOutput: sourceDWallet.centralized_output,
+		const dWalletToAccept: dWalletWithSecretKeyShare = {
+			...sourceDWallet,
+			centralizedSecretKeyShare: [...decryptedKeyShare],
 		};
 
 		// Encrypt it to self, so that in the future we'd know that we already
@@ -417,7 +413,7 @@ export class EncryptedUserShare {
 			await this.encryptUserShareForPublicKey(
 				destKeyPair,
 				destKeyPair.getPublicKey(),
-				dwalletToSend,
+				dWalletToAccept,
 				activeEncryptionKeysTableID,
 			);
 
@@ -425,7 +421,7 @@ export class EncryptedUserShare {
 			destKeyPair,
 			encryptedUserKeyShareAndProofOfEncryption,
 			destActiveEncryptionKeyObjID,
-			dwalletToSend,
+			dWalletToAccept,
 		);
 	}
 
@@ -458,8 +454,8 @@ export class EncryptedUserShare {
 		// We do it to make sure this is the key that was stored by us on the chain.
 		if (
 			!(await srcIkaPublicKey.verify(
-				new Uint8Array(dwallet.centralized_output),
-				// todo(zeev): rename to centralized_output
+				new Uint8Array(dwallet.centralized_public_output),
+				// todo(zeev): rename to public_output
 				new Uint8Array(encryptedUserSecretKeyShare.signed_public_share),
 			))
 		) {
@@ -478,7 +474,7 @@ export class EncryptedUserShare {
 		// we are making sure it was signed by us.
 		const isValid = verify_user_share(
 			decryptedSecretShare,
-			new Uint8Array(dwallet.centralized_output),
+			new Uint8Array(dwallet.centralized_public_output),
 		);
 		if (!isValid) {
 			throw new Error('the decrypted key share does not match the dWallet public key share');
@@ -497,19 +493,20 @@ export class EncryptedUserShare {
 		sourceKeyPair: Keypair,
 		encryptedUserKeyShareAndProofOfEncryption: Uint8Array,
 		destEncryptionKeyObjID: string,
-		sourceDwallet: CreatedDwallet,
+		sourceDwallet: dWalletWithSecretKeyShare,
 	): Promise<CreatedEncryptedSecretShareEvent> {
 		const tx = new Transaction();
-		// Sign the DKG Public output to self, in order for the destination party to verify it later.
+		// Sign the DKG Centralized Public output,
+		// in order for the destination party to verify it later.
 		const sourceSignedCentralizedPublicOutput = await sourceKeyPair.sign(
-			new Uint8Array(sourceDwallet.centralizedDKGPublicOutput),
+			new Uint8Array(sourceDwallet.centralized_public_output),
 		);
 		// todo(zeev): this should transfer the encrypted share to the destination.
 		tx.moveCall({
 			target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::transfer_encrypted_user_share`,
 			typeArguments: [],
 			arguments: [
-				tx.object(sourceDwallet.id),
+				tx.object(sourceDwallet.id.id),
 				tx.object(destEncryptionKeyObjID),
 				tx.pure(bcs.vector(bcs.u8()).serialize(encryptedUserKeyShareAndProofOfEncryption)),
 				tx.pure(bcs.vector(bcs.u8()).serialize(sourceSignedCentralizedPublicOutput)),

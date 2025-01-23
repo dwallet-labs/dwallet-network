@@ -90,7 +90,7 @@ describe('Test dWallet MPC', () => {
 		);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
-		const presignOutput = await presign(conf, dWallet.id, 1);
+		const presignOutput = await presign(conf, dWallet.id.id, 1);
 		expect(presignOutput).toBeDefined();
 		console.log({ presignOutput });
 	});
@@ -135,7 +135,7 @@ describe('Test dWallet MPC', () => {
 		console.log('Signing message');
 		let signOutput = await signMessageTransactionCall(
 			conf,
-			dWallet.dwalletCapID,
+			dWallet.dWalletCapID,
 			hashedMsg,
 			messages,
 			Hash.SHA256,
@@ -225,7 +225,7 @@ describe('Test dWallet MPC', () => {
 			conf,
 			messages,
 			Hash.SHA256,
-			dWallet.dwalletCapID,
+			dWallet.dWalletCapID,
 			partiallySignedMessages.partial_signatures_object_id,
 		);
 		expect(completedSignEvent).toBeDefined();

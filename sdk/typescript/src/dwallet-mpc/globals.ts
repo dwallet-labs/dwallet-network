@@ -48,24 +48,34 @@ export interface DWallet {
 	id: { id: string };
 	session_id: string;
 	dwallet_cap_id: string;
-	// The decentralized output of the second chain DKG round.
-	decentralized_output: number[];
-	// The public centralized output of the client's DKG round.
-	centralized_output: number[];
-	dwallet_mpc_network_key_version: number;
+	// The Decentralized Public output of the second DKG round.
+	decentralized_public_output: number[];
+	// The Centralized Public output of the centralized (user) DKG round.
+	centralized_public_output: number[];
+	// The MPC network decryption key version that is used to decrypt this dWallet.
+	dwallet_mpc_network_decryption_key_version: number;
 }
 
-export interface CreatedDwallet {
-	id: string;
-	// todo(scaly): is this the public key or only Xa ?
-	centralizedDKGPublicOutput: number[];
-	// The Centralized Secret Key Share.
-	centralizedDKGPrivateOutput: number[];
-	// todo(zeev): check if we even need this one.
-	decentralizedDKGOutput: number[];
-	dwalletCapID: string;
-	dwalletMPCNetworkKeyVersion: number;
+// dWallet with the private key share.
+export interface dWalletWithSecretKeyShare extends DWallet {
+	// The Centralized (user) Secret Key Share.
+	// Warning:
+	// The secret (private) key share returned from this function should never be sent,
+	// and should always be kept private.
+	centralizedSecretKeyShare: number[];
 }
+
+// export interface CreatedDwallet {
+// 	id: string;
+// 	// todo(scaly): is this the public key or only Xa ?
+// 	centralizedDKGPublicOutput: number[];
+// 	// The Centralized Secret Key Share.
+// 	centralizedDKGPrivateOutput: number[];
+// 	// todo(zeev): check if we even need this one.
+// 	decentralizedDKGOutput: number[];
+// 	dWalletCapID: string;
+// 	dWalletMPCNetworkDecryptionKeyVersion: number;
+// }
 
 export async function fetchObjectFromEvent<TEvent, TObject>({
 	conf,

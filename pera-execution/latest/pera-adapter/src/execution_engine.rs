@@ -1112,11 +1112,12 @@ mod checked {
         builder
     }
 
-    /// Executes the transaction to store the final MPC output on-chain,
+    /// Executes the system transaction to store the final MPC output on-chain,
     /// making it accessible to the initiating user.
     /// Each validator executes this transaction locally,
-    /// and if validators represent more than two-thirds of the voting power
-    /// "vote" to include it by executing it, the transaction is added to the block.
+    /// and if validators represent more than two-thirds of the voting power,
+    /// "vote" to include this transaction by executing it,
+    /// the transaction is added to the checkpoint.
     fn setup_and_execute_dwallet_mpc_output(
         data: DWalletMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
@@ -1145,11 +1146,11 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(event_data.dwallet_cap_id.bytes.to_vec()),
                     CallArg::Pure(bcs_to_bytes(&dwallet_network_key_version)?),
-                    CallArg::Pure(bcs_to_bytes(&event_data.encrypted_secret_share_and_proof)?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.encrypted_centralized_secret_share_and_proof)?),
                     CallArg::Pure(event_data.encryption_key_id.bytes.to_vec()),
-                    CallArg::Pure(bcs_to_bytes(&event_data.signed_public_share)?),
-                    CallArg::Pure(bcs_to_bytes(&event_data.encryptor_ed25519_pubkey)?),
-                    CallArg::Pure(bcs_to_bytes(&event_data.dkg_centralized_public_output)?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.public_output_signature)?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.initiator_public_key)?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.public_output)?),
                 ],
             ),
             MPCRound::PresignFirst(
@@ -1244,13 +1245,13 @@ mod checked {
                 vec![
                     CallArg::Pure(verification_data.dwallet_id.bytes.to_vec()),
                     CallArg::Pure(
-                        bcs::to_bytes(&verification_data.encrypted_secret_share_and_proof).unwrap(),
+                        bcs::to_bytes(&verification_data.encrypted_centralized_secret_share_and_proof).unwrap(),
                     ),
                     CallArg::Pure(verification_data.encryption_key_id.bytes.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&verification_data.signed_public_share).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&verification_data.dkg_public_output_signature).unwrap()),
                     CallArg::Pure(
-                        bcs::to_bytes(&verification_data.encryptor_ed25519_pubkey).unwrap(),
+                        bcs::to_bytes(&verification_data.initiator_public_key).unwrap(),
                     ),
                     CallArg::Pure(verification_data.initiator.to_vec()),
                 ],
