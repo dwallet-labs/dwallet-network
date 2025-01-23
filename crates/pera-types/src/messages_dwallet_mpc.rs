@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum MPCRound {
+pub enum MPCInitProtocolInfo {
     /// The first round of the DKG protocol.
     DKGFirst,
     /// The second round of the DKG protocol.
@@ -26,6 +26,7 @@ pub enum MPCRound {
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID,
     /// and the dWallets' network key version.
+    // TODO (#543): Connect the two presign rounds to one.
     PresignFirst(ObjectID, MPCPublicOutput, ObjectID, u8),
     /// The second round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
@@ -34,6 +35,7 @@ pub enum MPCRound {
     /// The first and only round of the Sign protocol.
     Sign(SignMessageData),
     /// A batched sign session, contains the list of messages that are being signed.
+    // TODO (#536): Store batch state and logic on Sui & remove this field.
     BatchedSign(Vec<Vec<u8>>),
     BatchedPresign(u64),
     /// The round of the network DKG protocol.
@@ -47,6 +49,7 @@ pub enum MPCRound {
     /// The round of verifying the public key that signed on the encryption key is
     /// matching the initiator address.
     /// todo(zeev): more docs, make it clearer.
+    /// TODO (#544): Check if there's a way to convert the public key to an address in Move.
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
 }
 
@@ -59,21 +62,22 @@ pub struct SignMessageData {
     pub dwallet_id: ObjectID,
 }
 
-impl MPCRound {
+impl MPCInitProtocolInfo {
     /// Returns `true` if the round output is part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
         matches!(
             self,
-            MPCRound::Sign(..)
-                | MPCRound::PresignSecond(..)
-                | MPCRound::BatchedSign(..)
-                | MPCRound::BatchedPresign(..)
+            MPCInitProtocolInfo::Sign(..)
+                | MPCInitProtocolInfo::PresignSecond(..)
+                | MPCInitProtocolInfo::BatchedSign(..)
+                | MPCInitProtocolInfo::BatchedPresign(..)
         )
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DWalletMPCEvent {
+    // TODO: remove event - do all parsing beforehand.
     pub event: Event,
     pub session_info: SessionInfo,
 }
@@ -83,6 +87,12 @@ pub struct DWalletMPCOutputMessage {
     pub output: Vec<u8>,
     pub authority: AuthorityName,
     pub session_info: SessionInfo,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
+pub struct DWalletMPCLocalComputationMetadata {
+    pub session_id: ObjectID,
+    pub crypto_round_number: usize,
 }
 
 /// The content of the system transaction that stores the MPC session output on the chain.
@@ -115,12 +125,12 @@ pub struct SessionInfo {
     pub initiating_user_address: PeraAddress,
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
-    pub mpc_round: MPCRound,
+    pub mpc_round: MPCInitProtocolInfo,
 }
 
 /// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
-/// Defined here so that we can use it in the [`MPCRound`] enum,
-/// as the inner data of the [`MPCRound::EncryptedShareVerification`].
+/// Defined here so that we can use it in the [`MPCInitProtocolInfo`] enum,
+/// as the inner data of the [`MPCInitProtocolInfo::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
     pub encrypted_secret_share_and_proof: Vec<u8>,

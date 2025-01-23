@@ -793,6 +793,8 @@ and we can't use Native functions.
 - <code>signed_encryption_key</code>: Signed encryption key.
 - <code>sender_pubkey</code>: Public key of the sender.
 - <code>encryption_key_scheme</code>: Scheme of the encryption key.
+- <code>_pera_system_state</code>: The Pera system state object. Its ID is always 0x5.
+Needed so the TX will get ordered in consensus before getting executed.
 - <code>ctx</code>: Mutable transaction context.
 
 
@@ -810,6 +812,7 @@ and we can't use Native functions.
     signed_encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     sender_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     encryption_key_scheme: u8,
+    // TODO (#529): Create a dedicated, small shared <a href="../pera-framework/object.md#0x2_object">object</a> instead of using the system state.
     _pera_system_state: &PeraSystemState,
     ctx: &<b>mut</b> TxContext
 ) {

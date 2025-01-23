@@ -29,17 +29,24 @@ use pera_types::digests::Digest;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
-use pera_types::messages_dwallet_mpc::{DWalletMPCEvent, MPCRound, MaliciousReport, SessionInfo};
+use pera_types::messages_dwallet_mpc::{
+    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCInitProtocolInfo, MaliciousReport,
+    SessionInfo,
+};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::log::{debug, warn};
-use tracing::{error, info};
+use tracing::log::debug;
+use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
+
+/// The number of logical cores validator's need to allocate for ongoing, non-cryptographic computations.
+/// Needed to understand how many sessions computations this validator can run in parallel.
+const MACHINE_CORS_FOR_NON_COMPUTATION: usize = 3;
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -63,12 +70,21 @@ pub struct DWalletMPCManager {
     epoch_id: EpochId,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) validators_data_for_network_dkg: HashMap<PartyID, ValidatorDataForNetworkDKG>,
-    /// Sessions that are ready to advance when the next [`DWalletMPCDBMessage::PerformCryptographicComputations`]
-    /// message will be received.
-    /// We need this field to skip already completed rounds, & to use the same messages,
-    /// i.e. those that have been received until the first consensus round in which a quorum have reached.
-    /// We use this first consensus round to know that all validators advance with the exact same messages.
-    ready_to_advance: HashMap<ObjectID, DWalletMPCSession>,
+    /// A map of the pending cryptographic computation sessions.
+    /// This map is needed in order to remove a session that we received a quorum of messages for
+    /// its next round, so running the current, completed round is redundant.
+    pub(crate) pending_computation_map:
+        HashMap<DWalletMPCLocalComputationMetadata, DWalletMPCSession>,
+    /// The order of the [`pending_computation_map`]. Needed to process the computations in the order they were received.
+    pending_for_computation_order: VecDeque<DWalletMPCLocalComputationMetadata>,
+    /// The number of currently running cryptographic computations - i.e. computations we called [`rayon::spawn_fifo`] for,
+    /// but we didn't receive a completion message for.
+    pub(crate) currently_running_sessions_count: usize,
+    /// The number of logical CPUs available for cryptographic computations on the validator's machine.
+    available_cores_for_cryptographic_computations: usize,
+    /// A channel sender to notify the manager that a computation has been completed.
+    /// This is needed to decrease the [`currently_running_sessions_count`] when a computation is done.
+    completed_computation_channel_sender: UnboundedSender<()>,
     /// A set of all the authorities that behaved maliciously at least once during the epoch.
     /// Any message/output from these authorities will be ignored.
     malicious_handler: MaliciousHandler,
@@ -118,6 +134,16 @@ impl DWalletMPCManager {
     ) -> DwalletMPCResult<Self> {
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
+        let completed_computation_channel_sender =
+            Self::listen_for_completed_computations(&epoch_store);
+        let available_cores_for_computations: usize = std::thread::available_parallelism()
+            .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism)?
+            .into();
+        if !(available_cores_for_computations > MACHINE_CORS_FOR_NON_COMPUTATION) {
+            return Err(DwalletMPCError::InsufficientCPUCores);
+        }
+        let available_cores_for_cryptographic_computations =
+            available_cores_for_computations - MACHINE_CORS_FOR_NON_COMPUTATION;
         Ok(Self {
             mpc_sessions: HashMap::new(),
             pending_sessions_queue: VecDeque::new(),
@@ -130,7 +156,11 @@ impl DWalletMPCManager {
             node_config,
             weighted_threshold_access_structure,
             validators_data_for_network_dkg: HashMap::new(),
-            ready_to_advance: HashMap::new(),
+            pending_computation_map: HashMap::new(),
+            pending_for_computation_order: VecDeque::new(),
+            currently_running_sessions_count: 0,
+            available_cores_for_cryptographic_computations,
+            completed_computation_channel_sender,
             malicious_handler: MaliciousHandler::new(
                 epoch_store.committee().quorum_threshold(),
                 epoch_store
@@ -212,11 +242,11 @@ impl DWalletMPCManager {
                 if let Some(session) = self.mpc_sessions.get_mut(&report.session_id) {
                     // For every advance we increase the round number by 1,
                     // so to re-run the same round we decrease it by 1.
-                    session.round_number -= 1;
+                    session.pending_quorum_for_highest_round_number -= 1;
                     // Remove malicious parties from the session messages.
                     let round_messages = session
                         .pending_messages
-                        .get_mut(session.round_number)
+                        .get_mut(session.pending_quorum_for_highest_round_number)
                         .ok_or(DwalletMPCError::MPCSessionNotFound {
                             session_id: report.session_id,
                         })?;
@@ -352,7 +382,7 @@ impl DWalletMPCManager {
                 let received_weight: PartyID = match session.status {
                     MPCSessionStatus::Active => session
                         .pending_messages
-                        .get(session.round_number)
+                        .get(session.pending_quorum_for_highest_round_number)
                         .unwrap_or(&HashMap::new())
                         .keys()
                         .filter_map(|authority_index| {
@@ -366,18 +396,21 @@ impl DWalletMPCManager {
 
                 let is_ready = match session.status {
                     MPCSessionStatus::Active => {
-                        received_weight as StakeUnit >= threshold || session.round_number == 0
+                        received_weight as StakeUnit >= threshold
+                            || session.pending_quorum_for_highest_round_number == 0
                     }
                     _ => false,
                 };
 
                 let is_valid_network_dkg_transaction =
-                    matches!(session.session_info.mpc_round, MPCRound::NetworkDkg(..))
-                        && self.validators_data_for_network_dkg.len()
-                            == self
-                                .weighted_threshold_access_structure
-                                .party_to_weight
-                                .len();
+                    matches!(
+                        session.session_info.mpc_round,
+                        MPCInitProtocolInfo::NetworkDkg(..)
+                    ) && self.validators_data_for_network_dkg.len()
+                        == self
+                            .weighted_threshold_access_structure
+                            .party_to_weight
+                            .len();
 
                 let is_manager_ready = !cfg!(feature = "with-network-dkg")
                     || (is_valid_network_dkg_transaction
@@ -386,32 +419,84 @@ impl DWalletMPCManager {
                             DwalletMPCNetworkKeysStatus::Ready(_)
                         ));
                 if is_ready && is_manager_ready {
-                    session.round_number = session.round_number + 1;
-                    Some(session.clone())
+                    let session_clone = session.clone();
+                    session.pending_quorum_for_highest_round_number =
+                        session.pending_quorum_for_highest_round_number + 1;
+                    Some(session_clone)
                 } else {
                     None
                 }
             })
             .collect();
 
-        for mut session in ready_to_advance.into_iter() {
-            self.ready_to_advance
-                .insert(session.session_info.session_id, session);
+        for session in ready_to_advance.into_iter() {
+            if session.pending_quorum_for_highest_round_number > 0 {
+                self.pending_computation_map
+                    .remove(&DWalletMPCLocalComputationMetadata {
+                        session_id: session.session_info.session_id,
+                        crypto_round_number: session.pending_quorum_for_highest_round_number - 1,
+                    });
+            }
+            let session_next_round_metadata = DWalletMPCLocalComputationMetadata {
+                session_id: session.session_info.session_id,
+                crypto_round_number: session.pending_quorum_for_highest_round_number,
+            };
+            self.pending_computation_map
+                .insert(session_next_round_metadata.clone(), session.clone());
+            self.pending_for_computation_order
+                .push_back(session_next_round_metadata);
         }
         Ok(())
     }
 
     fn perform_cryptographic_computation(&mut self) {
-        for session in self.ready_to_advance.values().into_iter() {
-            let handle = tokio::runtime::Handle::current();
-            let owned_session_for_different_thread = session.clone();
-            rayon::spawn_fifo(move || {
-                if let Err(err) = owned_session_for_different_thread.advance(handle) {
-                    error!("Failed to advance session with error: {:?}", err);
-                }
-            });
+        while self.currently_running_sessions_count
+            < self.available_cores_for_cryptographic_computations
+        {
+            let Some(oldest_computation_metadata) = self.pending_for_computation_order.pop_front()
+            else {
+                break;
+            };
+            let Some(session) = self
+                .pending_computation_map
+                .remove(&oldest_computation_metadata)
+            else {
+                return;
+            };
+            self.currently_running_sessions_count += 1;
+            if let Err(err) = self.spawn_session(&session) {
+                error!("Failed to spawn session with err: {:?}", err);
+                return;
+            }
         }
-        self.ready_to_advance.clear();
+    }
+
+    fn spawn_session(&self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
+        let session_id = session.session_info.session_id;
+        if self
+            .mpc_sessions
+            .get(&session_id)
+            .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?
+            .status
+            != MPCSessionStatus::Active
+        {
+            return Ok(());
+        }
+        let handle = tokio::runtime::Handle::current();
+        let session = session.clone();
+        let finished_computation_sender = self.completed_computation_channel_sender.clone();
+        rayon::spawn_fifo(move || {
+            if let Err(err) = session.advance(&handle) {
+                error!("Failed to advance session with error: {:?}", err);
+            }
+            if let Err(err) = finished_computation_sender.send(()) {
+                error!(
+                    "Failed to send finished computation message with error: {:?}",
+                    err
+                );
+            }
+        });
+        Ok(())
     }
 
     /// Update the encryption of decryption key share with the new shares.
@@ -422,7 +507,7 @@ impl DWalletMPCManager {
         public_output: MPCPublicOutput,
         private_output: MPCPrivateOutput,
     ) -> DwalletMPCResult<()> {
-        if let MPCRound::NetworkDkg(key_type, _) = session_info.mpc_round {
+        if let MPCInitProtocolInfo::NetworkDkg(key_type, _) = session_info.mpc_round {
             let epoch_store = self.epoch_store()?;
             let network_keys = epoch_store
                 .dwallet_mpc_network_keys
@@ -527,7 +612,7 @@ impl DWalletMPCManager {
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             match session_info.mpc_round {
-                MPCRound::NetworkDkg(..) => HashMap::new(),
+                MPCInitProtocolInfo::NetworkDkg(..) => HashMap::new(),
                 _ => self.get_decryption_key_shares(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
@@ -565,5 +650,29 @@ impl DWalletMPCManager {
             .get()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .key_version(key_type)
+    }
+
+    fn listen_for_completed_computations(
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+    ) -> UnboundedSender<()> {
+        let (completed_computation_channel_sender, mut completed_computation_channel_receiver) =
+            tokio::sync::mpsc::unbounded_channel();
+        let epoch_store_for_channel = epoch_store.clone();
+        tokio::spawn(async move {
+            loop {
+                match completed_computation_channel_receiver.recv().await {
+                    None => {
+                        break;
+                    }
+                    Some(_) => {
+                        epoch_store_for_channel
+                            .get_dwallet_mpc_manager()
+                            .await
+                            .currently_running_sessions_count -= 1;
+                    }
+                }
+            }
+        });
+        completed_computation_channel_sender
     }
 }

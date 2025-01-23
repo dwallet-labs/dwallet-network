@@ -1,5 +1,5 @@
 ///! This module contains the DWalletMPCService struct.
-///! It is responsible to read DWallet MPC messages from the local DB every [`READ_INTERVAL_SECS`] seconds
+///! It is responsible to read DWallet MPC messages from the local DB every [`READ_INTERVAL_MILLIS`] seconds
 ///! and forward them to the [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
@@ -12,7 +12,7 @@ use tokio::sync::{watch, Notify};
 use tracing::error;
 use typed_store::Map;
 
-const READ_INTERVAL_SECS: u64 = 5;
+const READ_INTERVAL_MILLIS: u64 = 100;
 
 pub struct DWalletMPCService {
     last_read_narwhal_round: Round,
@@ -36,7 +36,7 @@ impl DWalletMPCService {
     }
 
     /// Spawns the DWallet MPC service, that
-    /// read DWallet MPC messages from the local DB every [`READ_INTERVAL_SECS`] seconds and forward them to the
+    /// read DWallet MPC messages from the local DB every [`READ_INTERVAL_MILLIS`] seconds and forward them to the
     /// [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
     ///
     /// The service exists upon an epoch switch.
@@ -48,7 +48,7 @@ impl DWalletMPCService {
                 }
                 Ok(false) => (),
             };
-            tokio::time::sleep(tokio::time::Duration::from_secs(READ_INTERVAL_SECS)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MILLIS)).await;
             let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
             let Ok(tables) = self.epoch_store.tables() else {
                 error!("Failed to load DB tables from epoch store");
