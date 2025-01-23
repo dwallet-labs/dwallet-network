@@ -6,6 +6,9 @@ use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use twopc_mpc::dkg::Protocol;
 
+pub(crate) const LAST_SIGN_ROUND_INDEX: usize = 1;
+pub(crate) const SIGN_LAST_ROUND_COMPUTATION_AVERAGE_TIME_SECS: usize = 30;
+
 pub(super) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
 pub(super) type SignPublicInput =

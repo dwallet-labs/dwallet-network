@@ -1,4 +1,5 @@
 use crate::base_types::{AuthorityName, EpochId, ObjectID};
+use crate::error::PeraError;
 use dwallet_mpc_types::dwallet_mpc::DwalletNetworkMPCError;
 use group::PartyID;
 

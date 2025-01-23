@@ -9,6 +9,9 @@ use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::session_input_from_event;
+use crate::dwallet_mpc::sign::{
+    LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_AVERAGE_TIME_SECS,
+};
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
 use crate::epoch::randomness::SINGLETON_KEY;
 use class_groups::DecryptionKeyShare;
@@ -18,6 +21,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::ToFromBytes;
+use futures::future::err;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::WeightedThresholdAccessStructure;
@@ -26,6 +30,7 @@ use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::crypto::AuthorityPublicKeyBytes;
 use pera_types::crypto::DefaultHash;
 use pera_types::digests::Digest;
+use pera_types::digests::TransactionDigest;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
@@ -485,17 +490,56 @@ impl DWalletMPCManager {
         let handle = tokio::runtime::Handle::current();
         let session = session.clone();
         let finished_computation_sender = self.completed_computation_channel_sender.clone();
-        rayon::spawn_fifo(move || {
-            if let Err(err) = session.advance(&handle) {
-                error!("Failed to advance session with error: {:?}", err);
-            }
-            if let Err(err) = finished_computation_sender.send(()) {
-                error!(
-                    "Failed to send finished computation message with error: {:?}",
-                    err
-                );
-            }
-        });
+        if matches!(
+            session.session_info.mpc_round,
+            MPCInitProtocolInfo::Sign(..)
+        ) && session.pending_quorum_for_highest_round_number == LAST_SIGN_ROUND_INDEX
+        {
+            let position_in_order =
+                self.get_validator_position_to_aggregate(&session.session_info)?;
+            let epoch_store = self.epoch_store()?;
+            tokio::spawn(async move {
+                tokio::time::sleep(tokio::time::Duration::from_secs(
+                    (SIGN_LAST_ROUND_COMPUTATION_AVERAGE_TIME_SECS * position_in_order) as u64,
+                ))
+                .await;
+                let manager = epoch_store.get_dwallet_mpc_manager().await;
+                let Some(session) = manager.mpc_sessions.get(&session_id) else {
+                    error!("failed to get session when checking if sign last round should get executed");
+                    return;
+                };
+                if session.status == MPCSessionStatus::Active {
+                    warn!(
+                        "running last sign cryptographic step for session_id: {:?}",
+                        session_id
+                    );
+                    let session = session.clone();
+                    rayon::spawn_fifo(move || {
+                        if let Err(err) = session.advance(&handle) {
+                            error!("Failed to advance session with error: {:?}", err);
+                        }
+                        if let Err(err) = finished_computation_sender.send(()) {
+                            error!(
+                                "Failed to send finished computation message with error: {:?}",
+                                err
+                            );
+                        }
+                    });
+                }
+            });
+        } else {
+            rayon::spawn_fifo(move || {
+                if let Err(err) = session.advance(&handle) {
+                    error!("Failed to advance session with error: {:?}", err);
+                }
+                if let Err(err) = finished_computation_sender.send(()) {
+                    error!(
+                        "Failed to send finished computation message with error: {:?}",
+                        err
+                    );
+                }
+            });
+        }
         Ok(())
     }
 
@@ -529,6 +573,24 @@ impl DWalletMPCManager {
         self.epoch_store
             .upgrade()
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
+    }
+
+    fn get_validator_position_to_aggregate(
+        &self,
+        session_info: &SessionInfo,
+    ) -> DwalletMPCResult<usize> {
+        let session_id_as_32_bytes: [u8; 32] = session_info.session_id.into_bytes();
+        let positions = &self
+            .epoch_store()?
+            .committee()
+            .shuffle_by_stake_from_tx_digest(&TransactionDigest::new(session_id_as_32_bytes));
+        let authority_name = &self.epoch_store()?.name;
+        let position = positions
+            .iter()
+            .position(|&x| x == *authority_name)
+            .ok_or(DwalletMPCError::InvalidMPCPartyType)?;
+
+        Ok(position)
     }
 
     /// Handles a message by forwarding it to the relevant MPC session.
@@ -602,6 +664,7 @@ impl DWalletMPCManager {
             "Received start MPC flow event for session ID {:?}",
             session_info.session_id
         );
+
         let mut new_session = DWalletMPCSession::new(
             self.epoch_store.clone(),
             self.consensus_adapter.clone(),
