@@ -495,12 +495,12 @@ impl DWalletMPCManager {
             MPCInitProtocolInfo::Sign(..)
         ) && session.pending_quorum_for_highest_round_number == LAST_SIGN_ROUND_INDEX
         {
-            let position_in_order =
+            let sign_last_step_delay =
                 self.calculate_last_sign_step_validator_delay(&session.session_info)?;
             let epoch_store = self.epoch_store()?;
             tokio::spawn(async move {
                 tokio::time::sleep(tokio::time::Duration::from_secs(
-                    (SIGN_LAST_ROUND_COMPUTATION_AVERAGE_TIME_SECS * position_in_order) as u64,
+                    sign_last_step_delay as u64,
                 ))
                 .await;
                 let manager = epoch_store.get_dwallet_mpc_manager().await;
