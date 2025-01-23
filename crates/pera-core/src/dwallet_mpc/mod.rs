@@ -406,24 +406,27 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
 
 /// Deserializes the messages received from other parties for the next advancement.
 /// Any value that fails to deserialize is considered to be sent by a malicious party.
-/// Returns the deserialized messages or an error including the IDs of the malicious parties.
+/// Returns a tuple containing the deserialized messages and the IDs of the malicious parties.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
 ) -> (Vec<HashMap<PartyID, M>>, Vec<PartyID>) {
     let mut malicious_parties = Vec::new();
-
-    let deserialized_results  = messages.iter().map(|message_batch| {
-        message_batch
-            .into_iter()
-            .filter_map(|(party_id, message)| match bcs::from_bytes::<M>(&message) {
-                Ok(value) => Some((*party_id, value)),
-                Err(_) => {
-                    malicious_parties.push(*party_id);
-                    None
-                }
-            })
-            .collect()
-    }).collect();
+    let deserialized_results: Vec<HashMap<PartyID, M>> = messages
+        .iter()
+        .map(|message_batch| {
+            message_batch
+                .iter()
+                .filter_map(|(party_id, message)| match bcs::from_bytes::<M>(message) {
+                    Ok(value) => Some((*party_id, value)),
+                    Err(_) => {
+                        malicious_parties.push(*party_id);
+                        None
+                    }
+                })
+                .collect::<HashMap<PartyID, M>>()
+        })
+        .filter(|valid_messages| !valid_messages.is_empty())
+        .collect();
 
     (deserialized_results, malicious_parties)
 }
