@@ -184,11 +184,11 @@ pub fn advance_centralized_sign_party(
     messages: Vec<Vec<u8>>,
     hash_type: u8,
     presign_session_ids: Vec<String>,
-) -> anyhow::Result<(Vec<HashedMessages>, Vec<SignedMessages>)> {
+) -> anyhow::Result<Vec<SignedMessages>> {
     let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
         bcs::from_bytes(&centralized_party_dkg_output)?;
-    let (signed_messages, hashed_messages): (Vec<_>, Vec<_>) = messages
-        .into_iter()
+    let signed_messages: Vec<_> = messages
+        .iter()
         .enumerate()
         .map(|(index, message)| {
             let session_id =
@@ -219,15 +219,10 @@ pub fn advance_centralized_sign_party(
             )
             .context("advance() failed on the SignCentralizedParty")?;
 
-            let centralized_signed_messages = bcs::to_bytes(&round_result.outgoing_message)?;
-            let hashed_message_bytes = bcs::to_bytes(&hashed_message)?;
-            Ok((centralized_signed_messages, hashed_message_bytes))
+            Ok(bcs::to_bytes(&round_result.outgoing_message)?)
         })
-        .collect::<anyhow::Result<Vec<_>>>()?
-        .into_iter()
-        .unzip();
-
-    Ok((signed_messages, hashed_messages))
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    Ok(signed_messages)
 }
 
 fn protocol_public_parameters_by_key_scheme(

@@ -26,10 +26,8 @@ export async function fullMPCUserSessions(
 	const presignCompletionEvent = await presign(conf, dWallet.id.id, 2);
 	console.log({ presignCompletionEvent });
 	expect(presignCompletionEvent).toBeDefined();
-	let serializedMsgs = bcs
-		.vector(bcs.vector(bcs.u8()))
-		.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
-		.toBytes();
+	const messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
+	let serializedMsgs = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
 	let serializedPresigns = bcs
 		.vector(bcs.vector(bcs.u8()))
 		.serialize(presignCompletionEvent.presigns)
@@ -40,7 +38,7 @@ export async function fullMPCUserSessions(
 			presignCompletionEvent.first_round_session_ids.map((session_id) => session_id.slice(2)),
 		)
 		.toBytes();
-	const [centralizedSignedMsg, hashedMsgs] = create_sign_centralized_output(
+	const [centralizedSignedMsg, _] = create_sign_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
 		Uint8Array.from(dWallet.centralized_public_output),
@@ -55,7 +53,7 @@ export async function fullMPCUserSessions(
 	let signOutput = await signMessageTransactionCall(
 		conf,
 		dWallet.dwallet_cap_id,
-		hashedMsgs,
+		messages,
 		dWallet.id,
 		presignCompletionEvent.presign_ids,
 		centralizedSignedMsg,

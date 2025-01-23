@@ -122,7 +122,7 @@ describe('Test dWallet MPC', () => {
 				presignOutput2.first_round_session_id.slice(2),
 			])
 			.toBytes();
-		const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
+		const [centralizedSignMsg] = create_sign_centralized_output(
 			mockedProtocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
 			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
@@ -136,7 +136,6 @@ describe('Test dWallet MPC', () => {
 		let signOutput = await signMessageTransactionCall(
 			conf,
 			dWallet.dWalletCapID,
-			hashedMsg,
 			messages,
 			Hash.SHA256,
 			dWallet.id,
@@ -199,7 +198,7 @@ describe('Test dWallet MPC', () => {
 				presignOutput2.first_round_session_id.slice(2),
 			])
 			.toBytes();
-		const [centralizedSignMsg, hashedMsgs] = create_sign_centralized_output(
+		const [centralizedSignMsg] = create_sign_centralized_output(
 			// Todo (#382): Change to real value.
 			mockedProtocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
@@ -212,7 +211,7 @@ describe('Test dWallet MPC', () => {
 		);
 		let partiallySignedMessages = await partiallySignMessageTransactionCall(
 			conf,
-			hashedMsgs,
+			messages,
 			dWallet.id,
 			[presignOutput1.id.id, presignOutput2.id.id],
 			centralizedSignMsg,
