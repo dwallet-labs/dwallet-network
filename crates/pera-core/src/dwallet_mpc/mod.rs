@@ -407,7 +407,9 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     }
 
     if !malicious_parties.is_empty() {
-        Err(DwalletMPCError::MaliciousParties(malicious_parties))
+        Err(DwalletMPCError::SessionFailedWithMaliciousParties(
+            malicious_parties,
+        ))
     } else {
         Ok(deserialized_results)
     }
