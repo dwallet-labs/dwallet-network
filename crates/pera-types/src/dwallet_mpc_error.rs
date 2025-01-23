@@ -31,6 +31,9 @@ pub enum DwalletMPCError {
     #[error("malicious parties have been detected: {0:?}")]
     MaliciousParties(Vec<PartyID>),
 
+    #[error("session failed with malicious parties: {0:?}")]
+    SessionFailedWithMaliciousParties(Vec<PartyID>),
+
     #[error("dWallet MPC Manager error: {0}")]
     MPCManagerError(String),
 

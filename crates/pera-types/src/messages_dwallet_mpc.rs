@@ -211,3 +211,20 @@ impl StartDKGSecondRoundEvent {
         }
     }
 }
+
+#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct MaliciousReport {
+    /// The malicious actor that was reported.
+    malicious_actors: Vec<AuthorityName>,
+    /// The session ID of the MPC session that the malicious actors are disrupting.
+    pub session_id: ObjectID,
+}
+
+impl MaliciousReport {
+    pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID) -> Self {
+        Self {
+            malicious_actors,
+            session_id,
+        }
+    }
+}

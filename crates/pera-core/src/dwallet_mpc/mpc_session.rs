@@ -16,18 +16,17 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::id::ID;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
-    MPCRound, SessionInfo, StartEncryptedShareVerificationEvent,
+    MPCRound, MaliciousReport, SessionInfo, StartEncryptedShareVerificationEvent,
 };
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
-use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
+use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -130,6 +129,33 @@ impl DWalletMPCSession {
                 public_output,
             }) => {
                 let output = self.new_dwallet_mpc_output_message(public_output)?;
+                let consensus_adapter = self.consensus_adapter.clone();
+                let epoch_store = self.epoch_store()?.clone();
+                tokio_runtime_handle.spawn(async move {
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![output], &epoch_store)
+                        .await
+                    {
+                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                    }
+                });
+                Ok(())
+            }
+            Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
+                error!(
+                    "Session failed with malicious parties: {:?}",
+                    malicious_parties
+                );
+                let malicious_parties = malicious_parties
+                    .into_iter()
+                    .map(|party_id| {
+                        Ok(party_id_to_authority_name(party_id, &*self.epoch_store()?)?)
+                    })
+                    .collect::<DwalletMPCResult<Vec<_>>>()?;
+                let report =
+                    MaliciousReport::new(malicious_parties, self.session_info.session_id.clone());
+                let output =
+                    self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 tokio_runtime_handle.spawn(async move {
@@ -307,6 +333,18 @@ impl DWalletMPCSession {
             output,
             self.session_info.clone(),
         ))
+    }
+
+    fn new_dwallet_report_failed_session_with_malicious_actors(
+        &self,
+        report: MaliciousReport,
+    ) -> DwalletMPCResult<ConsensusTransaction> {
+        Ok(
+            ConsensusTransaction::new_dwallet_mpc_session_failed_with_malicious(
+                self.epoch_store()?.name,
+                report,
+            ),
+        )
     }
 
     /// Stores a message in the pending messages map.

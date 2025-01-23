@@ -34,6 +34,7 @@ pub mod batches_manager;
 mod dkg;
 pub mod dwallet_mpc_service;
 mod encrypt_user_share;
+mod malicious_handler;
 pub(crate) mod mpc_events;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
@@ -322,16 +323,35 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
     let messages = deserialize_mpc_messages(messages)?;
 
-    let res = P::advance(
+    let res = match P::advance(
         session_id,
         party_id,
         access_threshold,
-        messages,
+        messages.clone(),
         Some(private_input),
         &public_input,
         &mut rand_core::OsRng,
-    )
-    .map_err(|e| DwalletMPCError::TwoPCMPCError(format!("{:?}", e)))?;
+    ) {
+        Ok(res) => res,
+        Err(e) => {
+            let general_error = DwalletMPCError::TwoPCMPCError(format!("{:?}", e));
+            return match e.into() {
+                mpc::Error::ThresholdNotReached { honest_subset } => {
+                    let malicious_actors = messages
+                        .last()
+                        .ok_or(general_error)?
+                        .keys()
+                        .filter(|party_id| !honest_subset.contains(*party_id))
+                        .cloned()
+                        .collect();
+                    Err(DwalletMPCError::SessionFailedWithMaliciousParties(
+                        malicious_actors,
+                    ))
+                }
+                _ => Err(general_error),
+            };
+        }
+    };
 
     Ok(match res {
         mpc::AsynchronousRoundResult::Advance {
