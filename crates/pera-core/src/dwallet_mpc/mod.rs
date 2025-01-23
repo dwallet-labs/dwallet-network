@@ -392,6 +392,8 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
             private_output,
             public_output,
         } => {
+            let mut malicious_parties = malicious_parties;
+            malicious_parties.extend(deserialization_malicious_parties);
             let public_output: P::PublicOutputValue = public_output.into();
             let public_output = bcs::to_bytes(&public_output)?;
             let private_output = bcs::to_bytes(&private_output)?;
