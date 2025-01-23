@@ -70,10 +70,13 @@ remove_message_approval
 pop_and_verify_message_approval
 	public(package) fun
 	0x3::dwallet
+hash_messages
+	public(package) fun
+	0x3::dwallet
 hash_message
 	public(package) fun
 	0x3::dwallet
-is_supported_hash_sheme
+is_supported_hash_scheme
 	fun
 	0x3::dwallet
 Secp256K1

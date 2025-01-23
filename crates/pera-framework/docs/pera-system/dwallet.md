@@ -53,8 +53,9 @@ It encapsulates the session ID, capability ID, and the outputs from the DKG roun
 -  [Function `approve_messages`](#0x3_dwallet_approve_messages)
 -  [Function `remove_message_approval`](#0x3_dwallet_remove_message_approval)
 -  [Function `pop_and_verify_message_approval`](#0x3_dwallet_pop_and_verify_message_approval)
+-  [Function `hash_messages`](#0x3_dwallet_hash_messages)
 -  [Function `hash_message`](#0x3_dwallet_hash_message)
--  [Function `is_supported_hash_sheme`](#0x3_dwallet_is_supported_hash_sheme)
+-  [Function `is_supported_hash_scheme`](#0x3_dwallet_is_supported_hash_scheme)
 
 
 <pre><code><b>use</b> <a href="../move-stdlib/hash.md#0x1_hash">0x1::hash</a>;
@@ -439,7 +440,7 @@ traceability and accountability within the system.
 
 ##### Fields
 
-- **<code>dwallet_cap_id</code>**: The identifier of the DWallet capability
+- **<code>dwallet_cap_id</code>**: The identifier of the dWallet capability
 associated with this approval.
 - **<code>hash_scheme</code>**: The message hash scheme.
 - **<code>message</code>**: The message that has been approved.
@@ -1120,7 +1121,7 @@ Creates a <code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval
     hash_scheme: u8,
     message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
 ): <a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a> {
-    <b>assert</b>!(<a href="dwallet.md#0x3_dwallet_is_supported_hash_sheme">is_supported_hash_sheme</a>(hash_scheme), <a href="dwallet.md#0x3_dwallet_EInvalidHashScheme">EInvalidHashScheme</a>);
+    <b>assert</b>!(<a href="dwallet.md#0x3_dwallet_is_supported_hash_scheme">is_supported_hash_scheme</a>(hash_scheme), <a href="dwallet.md#0x3_dwallet_EInvalidHashScheme">EInvalidHashScheme</a>);
     <b>let</b> approval = <a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a> {
         dwallet_cap_id,
         hash_scheme,
@@ -1138,9 +1139,47 @@ Creates a <code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval
 
 ## Function `approve_messages`
 
-Create a set of message approvals.
-The messages must be approved in the same order as they were created.
-The messages must be approved by the same <code>dwallet_cap_id</code>.
+Approves a set of messages for a specific dWallet capability.
+
+This function creates a list of <code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a></code> objects for a given set of messages.
+Each message is associated with the same <code>dWalletCap</code> and <code>hash_scheme</code>. The messages
+must be approved in the same order as they were created to maintain their sequence.
+
+
+<a name="@Parameters_20"></a>
+
+##### Parameters
+
+- <code>dwallet_cap</code>: A reference to the <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> object representing the capability for which
+the messages are being approved.
+- <code>hash_scheme</code>: The hash scheme to be used for hashing the messages. For example:
+- <code><a href="dwallet.md#0x3_dwallet_KECCAK256">KECCAK256</a></code>
+- <code><a href="dwallet.md#0x3_dwallet_SHA256">SHA256</a></code>
+- <code>messages</code>: A mutable vector containing the messages to be approved. The messages are removed
+from this vector as they are processed and added to the approvals list.
+
+
+<a name="@Returns_21"></a>
+
+##### Returns
+
+A vector of <code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a></code> objects corresponding to the approved messages.
+
+
+<a name="@Behavior_22"></a>
+
+##### Behavior
+
+- The function iterates over the provided <code>messages</code> vector, processes each message by creating
+a <code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a></code> object, and pushes it into the <code>message_approvals</code> vector.
+- The messages are approved in reverse order and then reversed again to preserve their original order.
+
+
+<a name="@Aborts_23"></a>
+
+##### Aborts
+
+- Aborts if the provided <code>hash_scheme</code> is not supported by the system (checked during <code>create_message_approval</code>).
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_approve_messages">approve_messages</a>(dwallet_cap: &<a href="dwallet.md#0x3_dwallet_DWalletCap">dwallet::DWalletCap</a>, hash_scheme: u8, messages: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;
@@ -1216,7 +1255,7 @@ Remove a <code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval<
 
 ## Function `pop_and_verify_message_approval`
 
-Pops the last message approval from the vector and verifies it against tje given message & dwallet_cap_id.
+Pops the last message approval from the vector and verifies it against the given message & dwallet_cap_id.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, message_hash: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;)
@@ -1234,9 +1273,43 @@ Pops the last message approval from the vector and verifies it against tje given
     message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;
 ) {
     <b>let</b> message_approval = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(message_approvals);
-    <b>let</b> (message_approval_dwallet_cap_id, hash_scheme, approved_message) = <a href="dwallet.md#0x3_dwallet_remove_message_approval">remove_message_approval</a>(message_approval);
+    <b>let</b> (message_approval_dwallet_cap_id, _hash_scheme, approved_message) = <a href="dwallet.md#0x3_dwallet_remove_message_approval">remove_message_approval</a>(message_approval);
     <b>assert</b>!(dwallet_cap_id == message_approval_dwallet_cap_id, <a href="dwallet.md#0x3_dwallet_EMessageApprovalDWalletMismatch">EMessageApprovalDWalletMismatch</a>);
-    <b>assert</b>!(&message_hash == &<a href="dwallet.md#0x3_dwallet_hash_message">hash_message</a>(approved_message, hash_scheme), <a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a>);
+    <b>assert</b>!(&message_hash == &approved_message, <a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a>);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_hash_messages"></a>
+
+## Function `hash_messages`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_hash_messages">hash_messages</a>(message_approvals: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_hash_messages">hash_messages</a>(message_approvals: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;{
+    <b>let</b> <b>mut</b> hashed_messages = <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>();
+    <b>let</b> messages_length = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(message_approvals);
+    <b>let</b> <b>mut</b> i: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 0;
+    <b>while</b> (i &lt; messages_length) {
+        <b>let</b> message = &message_approvals[i].message;
+        <b>let</b> hash_scheme = message_approvals[i].hash_scheme;
+        <b>let</b> hashed_message = <a href="dwallet.md#0x3_dwallet_hash_message">hash_message</a>(*message, hash_scheme);
+        <a href="../move-stdlib/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> hashed_messages, hashed_message);
+        i = i + 1;
+    };
+    hashed_messages
 }
 </code></pre>
 
@@ -1261,7 +1334,7 @@ Hashes the given message using the specified hash scheme.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_hash_message">hash_message</a>(message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, hash_scheme: u8): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
-    <b>assert</b>!(<a href="dwallet.md#0x3_dwallet_is_supported_hash_sheme">is_supported_hash_sheme</a>(hash_scheme), <a href="dwallet.md#0x3_dwallet_EInvalidHashScheme">EInvalidHashScheme</a>);
+    <b>assert</b>!(<a href="dwallet.md#0x3_dwallet_is_supported_hash_scheme">is_supported_hash_scheme</a>(hash_scheme), <a href="dwallet.md#0x3_dwallet_EInvalidHashScheme">EInvalidHashScheme</a>);
     <b>return</b> match (hash_scheme) {
             <a href="dwallet.md#0x3_dwallet_KECCAK256">KECCAK256</a> =&gt; <a href="../pera-framework/hash.md#0x2_hash_keccak256">hash::keccak256</a>(&message),
             <a href="dwallet.md#0x3_dwallet_SHA256">SHA256</a> =&gt; std::hash::sha2_256(message),
@@ -1274,14 +1347,14 @@ Hashes the given message using the specified hash scheme.
 
 </details>
 
-<a name="0x3_dwallet_is_supported_hash_sheme"></a>
+<a name="0x3_dwallet_is_supported_hash_scheme"></a>
 
-## Function `is_supported_hash_sheme`
+## Function `is_supported_hash_scheme`
 
 Checks if the given hash scheme is supported for message signing.
 
 
-<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_supported_hash_sheme">is_supported_hash_sheme</a>(val: u8): bool
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_supported_hash_scheme">is_supported_hash_scheme</a>(val: u8): bool
 </code></pre>
 
 
@@ -1290,7 +1363,7 @@ Checks if the given hash scheme is supported for message signing.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_supported_hash_sheme">is_supported_hash_sheme</a>(val: u8): bool {
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_is_supported_hash_scheme">is_supported_hash_scheme</a>(val: u8): bool {
     <b>return</b> match (val) {
             <a href="dwallet.md#0x3_dwallet_KECCAK256">KECCAK256</a> | <a href="dwallet.md#0x3_dwallet_SHA256">SHA256</a> =&gt; <b>true</b>,
     _ =&gt; <b>false</b>,
