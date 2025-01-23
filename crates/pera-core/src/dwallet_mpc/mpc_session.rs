@@ -99,11 +99,7 @@ impl DWalletMPCSession {
     }
 
     /// Advances the MPC session and sends the advancement result to the other validators.
-    pub(super) fn advance(
-        &self,
-        consensus_round_number: u64,
-        tokio_runtime_handle: Handle,
-    ) -> DwalletMPCResult<()> {
+    pub(super) fn advance(&self, tokio_runtime_handle: Handle) -> DwalletMPCResult<()> {
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
@@ -156,11 +152,8 @@ impl DWalletMPCSession {
                         Ok(party_id_to_authority_name(party_id, &*self.epoch_store()?)?)
                     })
                     .collect::<DwalletMPCResult<Vec<_>>>()?;
-                let report = MaliciousReport::new(
-                    malicious_parties,
-                    self.session_info.session_id.clone(),
-                    consensus_round_number,
-                );
+                let report =
+                    MaliciousReport::new(malicious_parties, self.session_info.session_id.clone());
                 let output =
                     self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
                 let consensus_adapter = self.consensus_adapter.clone();

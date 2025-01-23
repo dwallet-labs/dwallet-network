@@ -102,8 +102,7 @@ pub enum DWalletMPCDBMessage {
     /// A message to start process the cryptographic computations.
     /// This message is being sent every five seconds by the DWallet MPC Service,
     /// in order to skip redundant advancements that have already been completed by other validators.
-    /// `u64` represent the current consensus round number.
-    PerformCryptographicComputations(u64),
+    PerformCryptographicComputations,
     /// A message indicating that a session failed due to malicious parties.
     /// We can receive new messages for this session with other validators,
     /// and re-run the round again to make it succeed.
@@ -144,8 +143,8 @@ impl DWalletMPCManager {
 
     pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
         match message {
-            DWalletMPCDBMessage::PerformCryptographicComputations(consensus_round_number) => {
-                self.perform_cryptographic_computation(consensus_round_number);
+            DWalletMPCDBMessage::PerformCryptographicComputations => {
+                self.perform_cryptographic_computation();
             }
             DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message) {
@@ -394,14 +393,12 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn perform_cryptographic_computation(&mut self, consensus_round_number: u64) {
+    fn perform_cryptographic_computation(&mut self) {
         for session in self.ready_to_advance.values().into_iter() {
             let handle = tokio::runtime::Handle::current();
             let owned_session_for_different_thread = session.clone();
             rayon::spawn_fifo(move || {
-                if let Err(err) =
-                    owned_session_for_different_thread.advance(consensus_round_number, handle)
-                {
+                if let Err(err) = owned_session_for_different_thread.advance(handle) {
                     error!("Failed to advance session with error: {:?}", err);
                 }
             });

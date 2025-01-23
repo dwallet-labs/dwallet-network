@@ -57,7 +57,10 @@ impl MaliciousHandler {
             if !malicious_actors.contains(&authority) {
                 malicious_actors.insert(authority);
             } else {
-                error!("Authority {} is already reported as malicious in session {} on consensus round {}", authority, report.session_id, report.consensus_round);
+                error!(
+                    "Authority {} is already reported as malicious in session {}",
+                    authority, report.session_id
+                );
             }
         } else {
             let mut reporters = HashSet::new();
