@@ -614,7 +614,7 @@ impl DWalletMPCManager {
                     message.session_id
                 );
                 self.malicious_handler
-                    .report_malicious_internal(message.authority);
+                    .report_malicious_actors(&vec![message.authority]);
                 return Ok(());
             }
         };
@@ -641,10 +641,16 @@ impl DWalletMPCManager {
             malicious_parties_names
         );
 
-        malicious_parties_names
-            .into_iter()
-            .for_each(|party| self.malicious_handler.report_malicious_internal(party));
+        self.malicious_handler
+            .report_malicious_actors(&malicious_parties_names);
         Ok(())
+    }
+
+    /// Flags the given authorities as malicious.
+    /// Future messages from these authorities will be ignored.
+    pub(crate) fn flag_authorities_as_malicious(&mut self, malicious_parties: &[AuthorityName]) {
+        self.malicious_handler
+            .report_malicious_actors(&malicious_parties);
     }
 
     /// Spawns a new MPC session if the number of active sessions is below the limit.

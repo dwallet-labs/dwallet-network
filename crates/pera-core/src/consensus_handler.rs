@@ -463,6 +463,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     malicious_actors: vec![origin_authority],
                                 }
                             });
+                        let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
+                        manager.flag_authorities_as_malicious(
+                            &output_verification_result.malicious_actors,
+                        );
                         match output_verification_result.result {
                             OutputResult::Valid => {
                                 self.epoch_store
@@ -780,6 +784,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// Fails only if the epoch switched in the middle of the state sync.
     async fn perform_dwallet_mpc_state_sync(&self) -> PeraResult {
         info!("performs a state sync for the DWallet MPC node");
+        let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
+
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
         let mut dwallet_mpc_batches_manager =
             self.epoch_store.get_dwallet_mpc_batches_manager().await;
@@ -794,6 +800,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 output.authority,
             ) {
                 Ok(result) => {
+                    manager.flag_authorities_as_malicious(&result.malicious_actors);
                     // TODO (#524): Handle malicious behavior.
                     if result.result == OutputResult::Valid {
                         if output.session_info.mpc_round.is_part_of_batch() {
