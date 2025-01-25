@@ -7,51 +7,27 @@ and the DKG process. It leverages validators to execute MPC (Multi-Party Computa
 protocols to ensure trustless and decentralized wallet creation and key management.
 
 
-<a name="@Overview_0"></a>
-
-### Overview
-
-
-- **Secp256K1**: The cryptographic curve used for this implementation.
-- dWallets are created through two phases of DKG:
-1. The first phase outputs partial results for the user.
-2. The second phase generates the dWallet.
-- **Capabilities**: Access to dWallets is controlled via capabilities (<code>DWalletCap</code>).
-
-
-<a name="@Features_1"></a>
-
-### Features
-
-
-- Emit events for validators to coordinate DKG rounds.
-- Transfer intermediate results and final outputs to the initiating user.
-- Ensure secure and decentralized key generation and management.
-
-
-    -  [Overview](#@Overview_0)
-    -  [Features](#@Features_1)
 -  [Struct `Secp256K1`](#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1)
+-  [Struct `StartDKGFirstRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent)
 -  [Struct `DKGFirstRoundOutputEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent)
 -  [Resource `DKGFirstRoundOutput`](#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput)
--  [Resource `BatchedSignOutput`](#0x3_dwallet_2pc_mpc_ecdsa_k1_BatchedSignOutput)
--  [Resource `Presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign)
--  [Struct `StartEncryptedShareVerificationEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartEncryptedShareVerificationEvent)
--  [Struct `CreatedEncryptedSecretShareEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedEncryptedSecretShareEvent)
--  [Resource `PartiallySignedMessages`](#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages)
--  [Struct `CreatedPartiallySignedMessagesEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedPartiallySignedMessagesEvent)
--  [Struct `StartDKGFirstRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent)
--  [Struct `CompletedSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedSignEvent)
--  [Resource `EncryptedUserSecretKeyShare`](#0x3_dwallet_2pc_mpc_ecdsa_k1_EncryptedUserSecretKeyShare)
 -  [Struct `StartDKGSecondRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGSecondRoundEvent)
 -  [Struct `CompletedDKGSecondRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGSecondRoundEvent)
+-  [Resource `EncryptedUserSecretKeyShare`](#0x3_dwallet_2pc_mpc_ecdsa_k1_EncryptedUserSecretKeyShare)
+-  [Struct `StartEncryptedShareVerificationEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartEncryptedShareVerificationEvent)
+-  [Struct `CreatedEncryptedSecretShareEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedEncryptedSecretShareEvent)
+-  [Resource `Presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign)
+-  [Struct `StartBatchedPresignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedPresignEvent)
 -  [Struct `StartPresignFirstRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignFirstRoundEvent)
 -  [Struct `StartPresignSecondRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignSecondRoundEvent)
 -  [Struct `CompletedBatchedPresignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedBatchedPresignEvent)
--  [Struct `StartSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent)
+-  [Resource `PartiallySignedMessages`](#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages)
+-  [Struct `CreatedPartiallySignedMessagesEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedPartiallySignedMessagesEvent)
 -  [Struct `StartBatchedSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedSignEvent)
--  [Struct `StartBatchedPresignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedPresignEvent)
--  [Constants](#@Constants_12)
+-  [Struct `CompletedSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedSignEvent)
+-  [Resource `BatchedSignOutput`](#0x3_dwallet_2pc_mpc_ecdsa_k1_BatchedSignOutput)
+-  [Struct `StartSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent)
+-  [Constants](#@Constants_1)
 -  [Function `launch_dkg_first_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round)
 -  [Function `create_dkg_first_round_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output)
 -  [Function `launch_dkg_second_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_second_round)
@@ -63,12 +39,12 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `create_batched_presign_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_batched_presign_output)
 -  [Function `sign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_sign)
 -  [Function `create_sign_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_sign_output)
--  [Function `create_mock_dwallet_for_testing`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing)
--  [Function `create_mock_dwallet`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet)
--  [Function `create_mock_presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign)
 -  [Function `publish_partially_signed_messages`](#0x3_dwallet_2pc_mpc_ecdsa_k1_publish_partially_signed_messages)
 -  [Function `future_sign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_future_sign)
 -  [Function `verify_partially_signed_signatures`](#0x3_dwallet_2pc_mpc_ecdsa_k1_verify_partially_signed_signatures)
+-  [Function `create_mock_dwallet_for_testing`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing)
+-  [Function `create_mock_dwallet`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet)
+-  [Function `create_mock_presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign)
 
 
 <pre><code><b>use</b> <a href="../move-stdlib/vector.md#0x1_vector">0x1::vector</a>;
@@ -114,14 +90,59 @@ based on the <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecds
 
 </details>
 
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent"></a>
+
+## Struct `StartDKGFirstRoundEvent`
+
+Event emitted to start the first round of the DKG process.
+
+This event is caught by the blockchain, which is then using it to
+initiate the first round of the DKG.
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent">StartDKGFirstRoundEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <b>address</b></code>
+</dt>
+<dd>
+ The unique session identifier for the DKG process.
+</dd>
+<dt>
+<code>initiator: <b>address</b></code>
+</dt>
+<dd>
+ The address of the user who initiated the DKG process.
+</dd>
+<dt>
+<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The identifier for the dWallet capability.
+</dd>
+</dl>
+
+
+</details>
+
 <a name="0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent"></a>
 
 ## Struct `DKGFirstRoundOutputEvent`
 
 An event emitted when the first round of the DKG process is completed.
 
-This event is emitted by the blockchain to notify the user about the completion of the first round.
-The user should catch this event to generate inputs for the second round and call the <code>launch_dkg_second_round</code> function.
+This event is emitted by the blockchain to notify the user about
+the completion of the first round.
+The user should catch this event to generate inputs for
+the second round and call the <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_second_round">launch_dkg_second_round</a>()</code> function.
 
 
 <pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent">DKGFirstRoundOutputEvent</a> <b>has</b> <b>copy</b>, drop
@@ -138,19 +159,19 @@ The user should catch this event to generate inputs for the second round and cal
 <code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
+ The unique session identifier for the DKG process.
 </dd>
 <dt>
 <code>output_object_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
+ The unique identifier of the output object created in the first round.
 </dd>
 <dt>
-<code>output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
-
+ The decentralized public output data produced by the first round of the DKG process.
 </dd>
 </dl>
 
@@ -161,7 +182,7 @@ The user should catch this event to generate inputs for the second round and cal
 
 ## Resource `DKGFirstRoundOutput`
 
-The output of the first round of the dWallet creation DKG process.
+The output of the first round of the dWallet creation from the DKG process.
 
 
 <pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">DKGFirstRoundOutput</a> <b>has</b> store, key
@@ -178,33 +199,36 @@ The output of the first round of the dWallet creation DKG process.
 <code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
 </dt>
 <dd>
-
+ A unique identifier for the DKG first round output.
 </dd>
 <dt>
 <code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
+ The unique session identifier for the DKG process.
 </dd>
 <dt>
-<code>output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
-
+ The decentralized public output data produced by the first round of the DKG process.
 </dd>
 </dl>
 
 
 </details>
 
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_BatchedSignOutput"></a>
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGSecondRoundEvent"></a>
 
-## Resource `BatchedSignOutput`
+## Struct `StartDKGSecondRoundEvent`
 
-The output of a batched Sign session.
+Event emitted to initiate the second round of the DKG process.
+
+This event is emitted to notify Validators to begin the second round of the DKG.
+It contains all necessary data to ensure proper continuation of the process.
 
 
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_BatchedSignOutput">BatchedSignOutput</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGSecondRoundEvent">StartDKGSecondRoundEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -215,86 +239,208 @@ The output of a batched Sign session.
 
 <dl>
 <dt>
-<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
+<code>session_id: <b>address</b></code>
 </dt>
 <dd>
-
+ The unique identifier for the DKG session.
 </dd>
 <dt>
-<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+<code>initiator: <b>address</b></code>
 </dt>
 <dd>
-
+ The address of the user who initiated the dWallet creation.
 </dd>
 <dt>
-<code>signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+<code>first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
-
+ The output from the first round of the DKG process.
 </dd>
 <dt>
-<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+<code>centralized_public_key_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_Presign"></a>
-
-## Resource `Presign`
-
-Represents the result of the second and final presign round.
-
-This struct links the results of both presign rounds to a specific dWallet ID.
-
-
-<a name="@Fields_2"></a>
-
-##### Fields
-
-- <code>id</code>: Unique identifier for the presign object.
-- <code>dwallet_id</code>: ID of the associated dWallet.
-- <code>first_round_session_id</code>: Session ID for the first presign round.
-- <code>presign</code>: Serialized output of the presign process.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a> <b>has</b> store, key
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
-</dt>
-<dd>
-
+ A serialized vector containing the centralized public key share and its proof.
 </dd>
 <dt>
-<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
+ The unique identifier of the dWallet capability associated with this session.
 </dd>
 <dt>
 <code>first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
+ The session ID of the first round of the DKG process.
 </dd>
 <dt>
-<code>presign: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
+ Encrypted centralized secret key share and the associated cryptographic proof of encryption.
+</dd>
+<dt>
+<code>encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The <code>EncryptionKey</code> object used for encrypting the secret key share.
+</dd>
+<dt>
+<code>encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The unique identifier of the <code>EncryptionKey</code> object.
+</dd>
+<dt>
+<code>centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The public output of the centralized party in the DKG process.
+</dd>
+<dt>
+<code>centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The signature for the public output of the centralized party in the DKG process.
+</dd>
+<dt>
+<code>initiator_public_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The Ed25519 public key of the initiator,
+ used to verify the signature on the centralized public output.
+</dd>
+</dl>
 
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGSecondRoundEvent"></a>
+
+## Struct `CompletedDKGSecondRoundEvent`
+
+Event emitted upon the completion of the second (and final) round of the
+Distributed Key Generation (DKG).
+
+This event provides all necessary data generated from the second
+round of the DKG process.
+Emitted to notify the centralized party.
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGSecondRoundEvent">CompletedDKGSecondRoundEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ A unique identifier for the DKG session.
+</dd>
+<dt>
+<code>initiator: <b>address</b></code>
+</dt>
+<dd>
+ The address of the user who initiated the DKG process.
+</dd>
+<dt>
+<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The unique identifier of the dWallet capability associated with the session.
+</dd>
+<dt>
+<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The identifier of the dWallet created as a result of the DKG process.
+</dd>
+<dt>
+<code>decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The public decentralized output for the second round of the DKG process.
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_EncryptedUserSecretKeyShare"></a>
+
+## Resource `EncryptedUserSecretKeyShare`
+
+A verified Encrypted dWallet centralized secret key share.
+
+This struct represents an encrypted centralized secret key share tied to
+a specific dWallet (<code>DWallet</code>).
+It includes cryptographic proof that the encryption is valid and securely linked
+to the associated <code>dWallet</code>.
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a> <b>has</b> key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
+</dt>
+<dd>
+ A unique identifier for this encrypted user share object.
+</dd>
+<dt>
+<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The ID of the dWallet associated with this encrypted secret share.
+</dd>
+<dt>
+<code>encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The encrypted centralized secret key share along with a cryptographic proof
+ that the encryption corresponds to the dWallet's secret key share.
+</dd>
+<dt>
+<code>encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The ID of the <code>EncryptionKey</code> object used to encrypt the secret share.
+</dd>
+<dt>
+<code>centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The signed public share corresponding to the encrypted secret key share,
+ used to verify its authenticity.
+</dd>
+<dt>
+<code>encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The Ed25519 public key of the encryptor, used to verify the signature
+ on the encrypted secret share.
+</dd>
+<dt>
+<code>encryptor_address: <b>address</b></code>
+</dt>
+<dd>
+ The address of the encryptor, identifying who performed the encryption.
+ If the key is transferred to someone else, this is the source entity.
+ If the key is re-encrypted by an entity, then this is the Ika address of this entity.
 </dd>
 </dl>
 
@@ -323,22 +469,32 @@ similar to the MPC processes.
 
 <dl>
 <dt>
-<code>encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
-
+ Encrypted centralized secret key share and the associated cryptographic proof of encryption.
 </dd>
 <dt>
-<code>dwallet_centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
- The DKG centralized output of the dwallet that its secret is being encrypted.
+ The public output of the centralized party,
+ belongs to the dWallet that its centralized
+ secret share is being encrypted.
+ todo(zeev): we should not trust this, don't pass it.
+</dd>
+<dt>
+<code>centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The signature of the dWallet <code>centralized_public_output</code>,
+ signed by the secret key that corresponds to <code>encryptor_ed25519_pubkey</code>.
 </dd>
 <dt>
 <code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
- The dWallet that this encrypted secret key share belongs to.
+ The ID of the dWallet that this encrypted secret key share belongs to.
 </dd>
 <dt>
 <code>encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
@@ -356,27 +512,24 @@ similar to the MPC processes.
 <code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
-</dd>
-<dt>
-<code>signed_public_share: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
- The signed dWallet public_centralized_output,
- signed by the secret key that corresponds to <code>encryptor_ed25519_pubkey</code>.
+ A unique identifier for the session related to this operation.
 </dd>
 <dt>
 <code>encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
- The public key of the encryptor.
- Used to verify the signature on the public share (centralized public output).
+ Public key of the entity that performed the encryption operation
+ Used to verify the signature on the dWallet <code>centralized_public_output</code>.
+ Note that the "encryptor" is the entity that performed the encryption,
+ and the encryption can be done with another public key, this may not be
+ the public key that was used for encryption.
 </dd>
 <dt>
 <code>initiator: <b>address</b></code>
 </dt>
 <dd>
-
+ The address of the entity that performed the encryption
+ operation of this secret key share.
 </dd>
 </dl>
 
@@ -387,7 +540,7 @@ similar to the MPC processes.
 
 ## Struct `CreatedEncryptedSecretShareEvent`
 
-Event emitted when an encrypted share is created by the system transaction.
+Emitted when an encrypted share is created by the system transaction.
 
 
 <pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedEncryptedSecretShareEvent">CreatedEncryptedSecretShareEvent</a> <b>has</b> <b>copy</b>, drop
@@ -404,50 +557,351 @@ Event emitted when an encrypted share is created by the system transaction.
 <code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
+ A unique identifier for the session related to this operation.
 </dd>
 <dt>
 <code>encrypted_share_obj_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
- The ID of the encrypted secret key share.
+ The ID of the <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a></code> Move object.
 </dd>
 <dt>
 <code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
+ The ID of the dWallet associated with this encrypted secret share.
 </dd>
 <dt>
-<code>encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
- The encrypted secret key share and proof of encryption.
+ The encrypted centralized secret key share along with a cryptographic proof
+ that the encryption corresponds to the dWallet's secret key share.
 </dd>
 <dt>
 <code>encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
- The Encryption (Public) Key that was used to encrypt the secret key share.
+ The <code>EncryptionKey</code> Move object ID that was used to encrypt the secret key share.
 </dd>
 <dt>
 <code>encryptor_address: <b>address</b></code>
 </dt>
 <dd>
- Source address of the entity that encrypted this secret key share.
+ The address of the entity that performed the encryption operation of this secret key share.
 </dd>
 <dt>
 <code>encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
- Source Public Key of the entity that encrypted this secret key share (used for verifications).
+ Public key of the entity that performed the encryption operation
+ (with some encryption key — depends on the context)
+ and signed the <code>centralized_public_output</code>.
+ Used for verifications.
 </dd>
 <dt>
-<code>signed_public_share: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
- Signed dWallet public centralized (user) output (singed by the encryptor entity).
- todo(zeev): rename.
+ Signed dWallet public centralized output (signed by the <code>encryptor</code> entity).
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_Presign"></a>
+
+## Resource `Presign`
+
+Represents the result of the second and final presign round.
+This struct links the results of both presign rounds to a specific dWallet ID.
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a> <b>has</b> store, key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
+</dt>
+<dd>
+ Unique identifier for the presign object.
+</dd>
+<dt>
+<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ ID of the associated dWallet.
+</dd>
+<dt>
+<code>first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ Session ID for the first presign round.
+</dd>
+<dt>
+<code>presign: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ Serialized output of the presign process.
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedPresignEvent"></a>
+
+## Struct `StartBatchedPresignEvent`
+
+Event emitted to start a batched presign flow,
+creating multiple presigns at once.
+
+This event signals the initiation of a batch presign process,
+where multiple presign
+sessions are started simultaneously.
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedPresignEvent">StartBatchedPresignEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The session identifier for the batched presign process.
+</dd>
+<dt>
+<code>batch_size: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
+</dt>
+<dd>
+ The number of presign sessions to be started in this batch.
+</dd>
+<dt>
+<code>initiator: <b>address</b></code>
+</dt>
+<dd>
+ The address of the user who initiated the protocol.
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignFirstRoundEvent"></a>
+
+## Struct `StartPresignFirstRoundEvent`
+
+Event emitted to initiate the first round of a Presign session.
+
+This event is used to signal Validators to start the
+first round of the Presign process.
+The event includes all necessary details to link
+the session to the corresponding dWallet
+and DKG process.
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignFirstRoundEvent">StartPresignFirstRoundEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ A unique identifier for the Presign session.
+</dd>
+<dt>
+<code>initiator: <b>address</b></code>
+</dt>
+<dd>
+ The address of the user who initiated the Presign session.
+</dd>
+<dt>
+<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The ID of the associated dWallet.
+</dd>
+<dt>
+<code>dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The output produced by the DKG process,
+ used as input for the Presign session.
+</dd>
+<dt>
+<code>batch_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ A unique identifier for the Presign batch session.
+</dd>
+<dt>
+<code>dwallet_mpc_network_decryption_key_version: u8</code>
+</dt>
+<dd>
+ The MPC network decryption key version that is used to decrypt the associated dWallet.
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignSecondRoundEvent"></a>
+
+## Struct `StartPresignSecondRoundEvent`
+
+Event emitted to initiate the second round of a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> session.
+
+This event signals Validators to begin the second round of the Presign process.
+The second round is a critical step in the multi-party computation (MPC) protocol,
+enabling the generation of pre-signatures required for ECDSA signing.
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignSecondRoundEvent">StartPresignSecondRoundEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ A unique identifier for the current Presign session.
+</dd>
+<dt>
+<code>initiator: <b>address</b></code>
+</dt>
+<dd>
+ The address of the user who initiated the Presign session.
+</dd>
+<dt>
+<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The ID of the DWallet associated with this Presign session.
+</dd>
+<dt>
+<code>dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The output from the Distributed Key Generation (DKG) process,
+ used as input for the Presign session.
+</dd>
+<dt>
+<code>first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The output generated from the first
+ round of the Presign session.
+</dd>
+<dt>
+<code>first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The session identifier for the first round of the Presign process.
+</dd>
+<dt>
+<code>batch_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ A unique identifier linking this session to a batched Presign process.
+</dd>
+<dt>
+<code>dwallet_mpc_network_decryption_key_version: u8</code>
+</dt>
+<dd>
+ The MPC network decryption key version that is used to decrypt the associated dWallet.
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedBatchedPresignEvent"></a>
+
+## Struct `CompletedBatchedPresignEvent`
+
+Event emitted when the presign batch is completed.
+
+This event indicates the successful completion of a batched presign process.
+It provides details about the presign objects created and their associated metadata.
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedBatchedPresignEvent">CompletedBatchedPresignEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>initiator: <b>address</b></code>
+</dt>
+<dd>
+ The address of the user who initiated the batch.
+</dd>
+<dt>
+<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The ID of the dWallet associated with this batch.
+</dd>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The batch session ID.
+</dd>
+<dt>
+<code>presign_ids: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>&gt;</code>
+</dt>
+<dd>
+ The IDs of all the presign objects created in this batch.
+ Each presign can be used to sign only one message.
+</dd>
+<dt>
+<code>first_round_session_ids: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>&gt;</code>
+</dt>
+<dd>
+ The first-round session IDs for each presign.
+ The order of the session IDs corresponds to the order of the presigns.
+ These IDs are needed for the centralized sign process.
+</dd>
+<dt>
+<code>presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+ The serialized presign objects created in this batch.
+ The order of the presigns corresponds to the order of the presign IDs.
 </dd>
 </dl>
 
@@ -464,9 +918,10 @@ Used for scenarios where the user needs to first agree to sign some transaction,
 and the blockchain signs this transaction only later,
 when some other conditions are met.
 
-Can be used to implement an order-book based exchange, for example.
+Can be used to implement an order-book-based exchange, for example.
 User A first agrees to buy BTC with ETH at price X, and signs a transaction with this information.
-When a matching user B, that agrees to sell BTC for ETH at price X, signs a transaction with this information,
+When a matching user B, that agrees to sell BTC for ETH at price X,
+signs a transaction with this information,
 the blockchain can sign both transactions, and the exchange is completed.
 
 
@@ -484,7 +939,7 @@ the blockchain can sign both transactions, and the exchange is completed.
 <code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
 </dt>
 <dd>
-
+ A unique identifier for this <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a></code> object.
 </dd>
 <dt>
 <code>presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
@@ -515,25 +970,25 @@ the blockchain can sign both transactions, and the exchange is completed.
 <code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
+ The unique identifier of the associated dWallet.
 </dd>
 <dt>
 <code>dwallet_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
- The DKG output of the DWallet.
+ The DKG output of the dWallet.
 </dd>
 <dt>
 <code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
+ The unique identifier of the dWallet capability.
 </dd>
 <dt>
-<code>dwallet_mpc_network_key_version: u8</code>
+<code>dwallet_mpc_network_decryption_key_version: u8</code>
 </dt>
 <dd>
-
+ The MPC network decryption key version that is used to decrypt the associated dWallet.
 </dd>
 </dl>
 
@@ -561,689 +1016,7 @@ Event emitted when a [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc
 <code>partial_signatures_object_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent"></a>
-
-## Struct `StartDKGFirstRoundEvent`
-
-Event emitted to start the first round of the DKG process.
-
-This event is caught by the blockchain, which is then using it to
-initiate the first round of the DKG.
-
-
-<a name="@Fields_3"></a>
-
-##### Fields
-
-- **<code>session_id</code>**: The unique session identifier for the DKG process.
-- **<code>initiator</code>**: The address of the user who initiated the DKG process.
-- **<code>dwallet_cap_id</code>**: The identifier for the DWallet capability.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent">StartDKGFirstRoundEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>session_id: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>initiator: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedSignEvent"></a>
-
-## Struct `CompletedSignEvent`
-
-Event emitted to signal the completion of a Sign process.
-
-This event contains signatures for all signed messages in the batch.
-
-
-<a name="@Fields_4"></a>
-
-##### Fields
-
-- **<code>session_id</code>**: The session identifier for the signing process.
-- **<code>signed_messages</code>**: A collection of signed messages.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedSignEvent">CompletedSignEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>signed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_EncryptedUserSecretKeyShare"></a>
-
-## Resource `EncryptedUserSecretKeyShare`
-
-A verified encrypted dWallet secret user key share.
-
-This struct represents an encrypted user secret key share tied to a specific dWallet.
-It includes cryptographic proof that the encryption is valid and securely linked
-to the associated <code>dWallet</code>.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a> <b>has</b> key
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
-</dt>
-<dd>
- A unique identifier for this encrypted user share object.
-</dd>
-<dt>
-<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
- The ID of the dWallet associated with this encrypted secret share.
-</dd>
-<dt>
-<code>encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
- The encrypted secret key share along with a cryptographic proof
- that the encryption corresponds to the dWallet's secret key share.
-</dd>
-<dt>
-<code>encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
- The ID of the <code>EncryptionKey</code> object used to encrypt the secret share.
-</dd>
-<dt>
-<code>signed_public_share: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
- The signed public share corresponding to the encrypted secret key share,
- used to verify its authenticity.
-</dd>
-<dt>
-<code>encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
- The Ed25519 public key of the encryptor, used to verify the signature
- on the encrypted secret share.
- todo(zeev): I think it's used to verify the signed_public_share?
-</dd>
-<dt>
-<code>encryptor_address: <b>address</b></code>
-</dt>
-<dd>
- The address of the encryptor, identifying who performed the encryption.
- If the key is transferred to someone else, this is the source entity.
- If the key is re-encrypted by an entity, then this is the Ika address of this entity.
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGSecondRoundEvent"></a>
-
-## Struct `StartDKGSecondRoundEvent`
-
-Event emitted to initiate the second round of the DKG process.
-
-This event is emitted to notify Validators to begin the second round of the DKG.
-It contains all necessary data to ensure proper continuation of the process.
-
-
-<a name="@Fields_5"></a>
-
-##### Fields
-
-- **<code>session_id</code>**: The unique identifier for the DKG session.
-- **<code>initiator</code>**: The address of the user who initiated the second round.
-- **<code>first_round_output</code>**: The output from the first round of the DKG process.
-- **<code>public_key_share_and_proof</code>**: A serialized vector containing the public key share and
-its proof from the first round.
-- **<code>dwallet_cap_id</code>**: The unique identifier of the dWallet capability associated with this session.
-- **<code>first_round_session_id</code>**: The session ID of the first round of the DKG process.
-- **<code>encrypted_secret_share_and_proof</code>**: Encrypted secret share and the associated cryptographic proof.
-- **<code>encryption_key</code>**: The encryption key used in the process.
-- **<code>encryption_key_id</code>**: The unique identifier of the EncryptionKey object.
-- **<code>signed_public_share</code>**: The signed public share corresponding to the encrypted secret key share.
-- **<code>encryptor_ed25519_pubkey</code>**: The Ed25519 public key of the entity that performed the encryption.
-- **<code>dkg_centralized_public_output</code>**: The centralized public output of the DKG process.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGSecondRoundEvent">StartDKGSecondRoundEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>session_id: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>initiator: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>public_key_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>encryption_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>signed_public_share: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dkg_centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGSecondRoundEvent"></a>
-
-## Struct `CompletedDKGSecondRoundEvent`
-
-Event emitted upon the completion of the second round of the
-Distributed Key Generation (DKG).
-
-This event provides all necessary data generated from the second
-round of the DKG process.
-This event is emitted to notify Validators to finalize the DKG
-process and store its results.
-
-
-<a name="@Fields_6"></a>
-
-##### Fields
-
-- **<code>session_id</code>**: A unique identifier for the DKG session, linking all related events and actions.
-- **<code>initiator</code>**: The address of the user who initiated the DKG process.
-- **<code>dwallet_cap_id</code>**: The unique identifier of the dWallet capability associated with the session.
-- **<code>dwallet_id</code>**: The identifier of the dWallet created as a result of the DKG process.
-- **<code>value</code>**: The output value from the second round of the DKG process,
-representing the validated and combined result from all participants.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGSecondRoundEvent">CompletedDKGSecondRoundEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>initiator: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>value: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignFirstRoundEvent"></a>
-
-## Struct `StartPresignFirstRoundEvent`
-
-Event emitted to initiate the first round of a Presign session.
-
-This event is used to signal Validators to start the first round of the Presign process.
-The event includes all necessary details to link the session to the corresponding dWallet
-and DKG process.
-
-
-<a name="@Fields_7"></a>
-
-##### Fields
-
-- **<code>session_id</code>**: A unique identifier for the Presign session.
-- **<code>initiator</code>**: The address of the user who initiated the Presign session.
-- **<code>dwallet_id</code>**: The unique identifier of the associated dWallet.
-- **<code>dkg_output</code>**: The output produced by the DKG process, used as input for the Presign session.
-- **<code>batch_session_id</code>**: A unique identifier for the Presign batch session.
-- **<code>dwallet_mpc_network_key_version</code>**: The version of the dWallet's MPC network key.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignFirstRoundEvent">StartPresignFirstRoundEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>initiator: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>batch_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_mpc_network_key_version: u8</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignSecondRoundEvent"></a>
-
-## Struct `StartPresignSecondRoundEvent`
-
-Event emitted to initiate the second round of a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> session.
-
-This event signals Validators to begin the second round of the Presign process.
-The second round is a critical step in the multi-party computation (MPC) protocol,
-enabling the generation of pre-signatures required for ECDSA signing.
-
-
-<a name="@Fields_8"></a>
-
-##### Fields
-
-- **<code>session_id</code>**: A unique identifier for the current Presign session.
-- **<code>initiator</code>**: The address of the user who initiated the Presign session.
-- **<code>dwallet_id</code>**: The unique identifier of the DWallet associated with this Presign session.
-- **<code>dkg_output</code>**: The output from the Distributed Key Generation (DKG) process, used as input for the Presign session.
-- **<code>first_round_output</code>**: The output generated from the first round of the Presign session.
-- **<code>first_round_session_id</code>**: The session identifier for the first round of the Presign process.
-- **<code>batch_session_id</code>**: A unique identifier linking this session to a batched Presign process.
-- **<code>dwallet_mpc_network_key_version</code>**: The version of the dWallet's MPC network key.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignSecondRoundEvent">StartPresignSecondRoundEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>initiator: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>batch_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_mpc_network_key_version: u8</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedBatchedPresignEvent"></a>
-
-## Struct `CompletedBatchedPresignEvent`
-
-Event emitted when the presign batch is completed.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedBatchedPresignEvent">CompletedBatchedPresignEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>initiator: <b>address</b></code>
-</dt>
-<dd>
- The address of the user who initiated the batch.
-</dd>
-<dt>
-<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
- Tha batch session ID.
-</dd>
-<dt>
-<code>presign_ids: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>&gt;</code>
-</dt>
-<dd>
- The ID of all the presign objects created in this batch.
- Each presign can be used to sign only one message.
-</dd>
-<dt>
-<code>first_round_session_ids: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>&gt;</code>
-</dt>
-<dd>
- The first round session IDs for each presign.
- The order of the session IDs corresponds to the order of the presigns.
- The first round session ID is needed for the centralized sign process.
-</dd>
-<dt>
-<code>presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
-</dt>
-<dd>
- The serialized presign objects created in this batch.
- The order of the presigns corresponds to the order of the presign IDs.
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent"></a>
-
-## Struct `StartSignEvent`
-
-Event emitted to initiate the signing process.
-
-This event is captured by Validators to start the signing protocol.
-It includes all the necessary information to link the signing process to a specific dWallet,
-Presign session, and batched process.
-
-
-<a name="@Fields_9"></a>
-
-##### Fields
-
-- **<code>session_id</code>**: A unique identifier for this signing session.
-- **<code>presign_session_id</code>**: A unique identifier for the associated Presign session.
-- **<code>initiator</code>**: The address of the user who initiated the signing event.
-- **<code>batched_session_id</code>**: A unique identifier for the batched signing process this session belongs to.
-- **<code>dwallet_id</code>**: The unique identifier for the dWallet used in the session.
-- **<code>dkg_output</code>**: The output from the Distributed Key Generation (DKG) process used in this session.
-- **<code>hashed_message</code>**: The hashed message to be signed in this session.
-- **<code>presign</code>**: The Presign output used to assist in the signing process.
-- **<code>centralized_signed_message</code>**: The final signed message generated by the centralized signing process.
-- **<code>dwallet_mpc_network_key_version</code>**: The version of the dWallet's MPC network key.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent">StartSignEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>presign_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>initiator: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>batched_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>hashed_message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>presign: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>centralized_signed_message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_mpc_network_key_version: u8</code>
-</dt>
-<dd>
-
+ The unique identifier of the created <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a></code> object.
 </dd>
 </dl>
 
@@ -1257,7 +1030,7 @@ Presign session, and batched process.
 Event emitted to start a batched sign process.
 
 
-<a name="@Fields_10"></a>
+<a name="@Fields_0"></a>
 
 ##### Fields
 
@@ -1299,23 +1072,16 @@ Event emitted to start a batched sign process.
 
 </details>
 
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedPresignEvent"></a>
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedSignEvent"></a>
 
-## Struct `StartBatchedPresignEvent`
+## Struct `CompletedSignEvent`
 
-Event emitted to start a batched presign flow, i.e. a flow that creates multiple presigns at once.
+Event emitted to signal the completion of a Sign process.
 
-
-<a name="@Fields_11"></a>
-
-##### Fields
-
-- **<code>session_id</code>**: The session identifier for the batched sign process.
-- **<code>batch_size</code>**: The number of presign sessions to be started.
-- **<code>initiator</code>**: The address of the user who initiated the protocol.
+This event contains signatures for all signed messages in the batch.
 
 
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedPresignEvent">StartBatchedPresignEvent</a> <b>has</b> <b>copy</b>, drop
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedSignEvent">CompletedSignEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -1329,26 +1095,152 @@ Event emitted to start a batched presign flow, i.e. a flow that creates multiple
 <code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
-
+ The session identifier for the signing process.
 </dd>
 <dt>
-<code>batch_size: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
+<code>signed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
 </dt>
 <dd>
-
-</dd>
-<dt>
-<code>initiator: <b>address</b></code>
-</dt>
-<dd>
-
+ A collection of signed messages.
 </dd>
 </dl>
 
 
 </details>
 
-<a name="@Constants_12"></a>
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_BatchedSignOutput"></a>
+
+## Resource `BatchedSignOutput`
+
+The output of a batched Sign session.
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_BatchedSignOutput">BatchedSignOutput</a> <b>has</b> store, key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
+</dt>
+<dd>
+ A unique identifier for the batched sign output.
+</dd>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The session identifier for the batched sign process.
+</dd>
+<dt>
+<code>signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+ A collection of signatures (signed messages) generated in the batched sign session.
+</dd>
+<dt>
+<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The unique identifier of the associated dWallet.
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent"></a>
+
+## Struct `StartSignEvent`
+
+Event emitted to initiate the signing process.
+
+This event is captured by Validators to start the signing protocol.
+It includes all the necessary information to link the signing process
+to a specific dWallet, Presign session, and batched process.
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent">StartSignEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ A unique identifier for this signing session.
+</dd>
+<dt>
+<code>presign_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ A unique identifier for the associated Presign session.
+</dd>
+<dt>
+<code>initiator: <b>address</b></code>
+</dt>
+<dd>
+ The address of the user who initiated the signing event.
+</dd>
+<dt>
+<code>batched_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ A unique identifier for the batched signing process this session belongs to.
+</dd>
+<dt>
+<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The unique identifier for the dWallet used in the session.
+</dd>
+<dt>
+<code>dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The output from the Distributed Key Generation (DKG) process used in this session.
+</dd>
+<dt>
+<code>hashed_message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The hashed message to be signed in this session.
+</dd>
+<dt>
+<code>presign: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The Presign output used to assist in the signing process.
+</dd>
+<dt>
+<code>centralized_signed_message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The final signed message generated by the centralized signing process.
+</dd>
+<dt>
+<code>dwallet_mpc_network_decryption_key_version: u8</code>
+</dt>
+<dd>
+ The MPC network decryption key version that is used to decrypt the associated dWallet.
+</dd>
+</dl>
+
+
+</details>
+
+<a name="@Constants_1"></a>
 
 ## Constants
 
@@ -1439,23 +1331,13 @@ and emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa
 the beginning of the DKG process.
 
 
-<a name="@Effects_13"></a>
+<a name="@Effects_2"></a>
 
 ##### Effects
 
 - Generates a new <code>DWalletCap</code> object.
 - Transfers the <code>DWalletCap</code> to the session initiator (<code>ctx.sender</code>).
 - Emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent">StartDKGFirstRoundEvent</a></code>.
-
-
-<a name="@Emits_14"></a>
-
-##### Emits
-
-- <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent">StartDKGFirstRoundEvent</a></code>:
-- <code>session_id</code>: The generated session ID.
-- <code>initiator</code>: The address of the transaction sender.
-- <code>dwallet_cap_id</code>: The ID of the created <code>DWalletCap</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round">launch_dkg_first_round</a>(ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
@@ -1498,7 +1380,7 @@ This function is called by blockchain itself.
 Validators call it, it's part of the blockchain logic.
 
 
-<a name="@Effects_15"></a>
+<a name="@Effects_3"></a>
 
 ##### Effects
 
@@ -1506,25 +1388,25 @@ Validators call it, it's part of the blockchain logic.
 - Emits necessary metadata and links it to the associated session.
 
 
-<a name="@Parameters_16"></a>
+<a name="@Parameters_4"></a>
 
 ##### Parameters
 
 - <code>initiator</code>: The address of the user who initiated the DKG session.
 - <code>session_id</code>: The ID of the DKG session.
-- <code>output</code>: The output data from the first round.
+- <code>decentralized_public_output</code>: The public output data from the first round.
 - <code>dwallet_cap_id</code>: The ID of the associated <code>DWalletCap</code>.
 - <code>ctx</code>: The transaction context.
 
 
-<a name="@Panics_17"></a>
+<a name="@Panics_5"></a>
 
 ##### Panics
 
 - Panics with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code> if the sender is not the system address.
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, initiator: <b>address</b>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, initiator: <b>address</b>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1535,7 +1417,7 @@ Validators call it, it's part of the blockchain logic.
 
 <pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(
     session_id: ID,
-    output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     initiator: <b>address</b>,
     ctx: &<b>mut</b> TxContext
 ) {
@@ -1543,12 +1425,12 @@ Validators call it, it's part of the blockchain logic.
     <b>let</b> dkg_output = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">DKGFirstRoundOutput</a> {
         session_id,
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
-        output,
+        decentralized_public_output,
     };
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent">DKGFirstRoundOutputEvent</a> {
         session_id,
         output_object_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&dkg_output),
-        output,
+        decentralized_public_output,
     });
     <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(dkg_output, initiator);
 }
@@ -1568,22 +1450,23 @@ and emits an event for validators to begin their participation in this round.
 This function handles the creation of a new DKG session ID and emits an event containing
 all the necessary parameters to continue the DKG process.
 
-<a name="@Parameters_18"></a>
+<a name="@Parameters_6"></a>
 
 ##### Parameters
 
 - <code>dwallet_cap</code>: A reference to the <code>DWalletCap</code>, representing the capability associated with the dWallet.
-- <code>centralized_public_key_share_and_proof</code>: The user (centralized) public key share and proof from the first round.
+- <code>centralized_public_key_share_and_proof</code>: The user (centralized) public key share and proof.
 - <code>first_round_output</code>: A reference to the <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">DKGFirstRoundOutput</a></code> structure containing the output of the first DKG round.
 - <code>first_round_session_id</code>: The session ID associated with the first DKG round.
-- <code>encrypted_secret_share_and_proof</code>: Encrypted user secret key share and its proof.
-- <code>encryption_key</code>: A reference to the <code>EncryptionKey</code> object used for encrypting the secret key share.
-- <code>signed_centralized_public_output</code>: The centralized public output signed by the caller.
-- <code>encryptor_ed25519_pubkey</code>: The Ed25519 public key of the encryptor.
-- <code>centralized_public_output</code>: The centralized public output of the DKG process.
+- <code>encrypted_centralized_secret_share_and_proof</code>: Encrypted centralized secret key share and its proof.
+- <code>encryption_key</code>: The <code>EncryptionKey</code> object used for encrypting the secret key share.
+- <code>centralized_public_output</code>: The public output of the centralized party in the DKG process.
+- <code>centralized_public_output_signature</code>: The signature for the public output of the centralized party in the DKG process.
+- <code>initiator_public_key</code>: The Ed25519 public key of the initiator,
+used to verify the signature on the public output.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_second_round">launch_dkg_second_round</a>(dwallet_cap: &<a href="dwallet.md#0x3_dwallet_DWalletCap">dwallet::DWalletCap</a>, centralized_public_key_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_output: &<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">dwallet_2pc_mpc_ecdsa_k1::DKGFirstRoundOutput</a>, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryption_key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">dwallet::EncryptionKey</a>, signed_centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_second_round">launch_dkg_second_round</a>(dwallet_cap: &<a href="dwallet.md#0x3_dwallet_DWalletCap">dwallet::DWalletCap</a>, centralized_public_key_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_output: &<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">dwallet_2pc_mpc_ecdsa_k1::DKGFirstRoundOutput</a>, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryption_key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">dwallet::EncryptionKey</a>, centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, initiator_public_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <b>address</b>
 </code></pre>
 
 
@@ -1597,30 +1480,27 @@ all the necessary parameters to continue the DKG process.
     centralized_public_key_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     first_round_output: &<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">DKGFirstRoundOutput</a>,
     first_round_session_id: ID,
-    encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     encryption_key: &EncryptionKey,
-    // todo(scaly): is it the <b>public</b> key?
-    signed_centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    // todo(scaly): is it the <b>public</b> eky?
     centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    initiator_public_key: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext
 ): <b>address</b> {
-    // todo(zeev): rename the <a href="../pera-framework/event.md#0x2_event">event</a> fields.
     <b>let</b> session_id = <a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx);
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGSecondRoundEvent">StartDKGSecondRoundEvent</a> {
         session_id,
         initiator: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
-        first_round_output: first_round_output.output,
-        public_key_share_and_proof: centralized_public_key_share_and_proof,
+        first_round_output: first_round_output.decentralized_public_output,
+        centralized_public_key_share_and_proof,
         dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(dwallet_cap),
         first_round_session_id,
-        encrypted_secret_share_and_proof,
+        encrypted_centralized_secret_share_and_proof,
         encryption_key: get_encryption_key(encryption_key),
         encryption_key_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(encryption_key),
-        signed_public_share: signed_centralized_public_output,
-        encryptor_ed25519_pubkey,
-        dkg_centralized_public_output: centralized_public_output
+        centralized_public_output,
+        centralized_public_output_signature,
+        initiator_public_key,
     });
     session_id
 }
@@ -1641,7 +1521,7 @@ to the blockchain. The chain verifies that the encrypted data matches the expect
 associated with the dWallet before creating an [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a></code>] object.
 
 
-<a name="@Parameters_19"></a>
+<a name="@Parameters_7"></a>
 
 ##### Parameters
 
@@ -1652,7 +1532,7 @@ associated with the dWallet before creating an [<code><a href="dwallet_2pc_mpc_e
 - **<code>source_ed25519_pubkey</code>**: The Ed25519 public key of the source (encryptor) used for verifying the signature.
 
 
-<a name="@Effects_20"></a>
+<a name="@Effects_8"></a>
 
 ##### Effects
 
@@ -1660,16 +1540,7 @@ associated with the dWallet before creating an [<code><a href="dwallet_2pc_mpc_e
 which is captured by the blockchain to initiate the verification process.
 
 
-<a name="@Emits_21"></a>
-
-##### Emits
-
-- **<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartEncryptedShareVerificationEvent">StartEncryptedShareVerificationEvent</a></code>**:
-- Includes the encrypted secret share, cryptographic proof,
-encryption key, and additional metadata required for verification.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_transfer_encrypted_user_share">transfer_encrypted_user_share</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;, destination_encryption_key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">dwallet::EncryptionKey</a>, encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, source_signed_centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, source_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_transfer_encrypted_user_share">transfer_encrypted_user_share</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;, destination_encryption_key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">dwallet::EncryptionKey</a>, encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, source_centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, source_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1681,20 +1552,20 @@ encryption key, and additional metadata required for verification.
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_transfer_encrypted_user_share">transfer_encrypted_user_share</a>(
     <a href="dwallet.md#0x3_dwallet">dwallet</a>: &DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;,
     destination_encryption_key: &EncryptionKey,
-    encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    source_signed_centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    source_centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     source_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext,
 ) {
     <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartEncryptedShareVerificationEvent">StartEncryptedShareVerificationEvent</a> {
-        encrypted_secret_share_and_proof,
-        dwallet_centralized_public_output: get_dwallet_centralized_output&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
+        encrypted_centralized_secret_share_and_proof,
+        centralized_public_output: get_dwallet_centralized_public_output&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
         dwallet_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
         encryption_key: get_encryption_key(destination_encryption_key),
         encryption_key_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(destination_encryption_key),
         session_id,
-        signed_public_share: source_signed_centralized_public_output,
+        centralized_public_output_signature: source_centralized_public_output_signature,
         encryptor_ed25519_pubkey: source_ed25519_pubkey,
         initiator: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
     });
@@ -1716,29 +1587,20 @@ once the associated encryption and cryptographic proofs have been verified.
 It finalizes the process by storing the encrypted user share on-chain and emitting the relevant event.
 
 
-<a name="@Parameters_22"></a>
+<a name="@Parameters_9"></a>
 
 ##### Parameters
 
-- **<code>dwallet_id</code>**: The unique identifier of the dWallet associated with the encrypted user share.
-- **<code>encrypted_secret_share_and_proof</code>**: The encrypted secret share along with its cryptographic proof.
-- **<code>encryption_key_id</code>**: The unique identifier of the encryption key used for the share.
-- **<code>session_id</code>**: A unique identifier for the session related to this operation.
-- **<code>signed_public_share</code>**: The signed public share corresponding to the encrypted secret share.
-- **<code>encryptor_ed25519_pubkey</code>**: The Ed25519 public key of the encryptor used for signing.
-- **<code>initiator</code>**: The address of the entity that performed the encryption.
-
-<a name="@Effects_23"></a>
-
-##### Effects
-
-- Creates an <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a></code> object and stores it on-chain.
-- Transfers the newly created share to the initiator // todo(itay): mistake?
-- Emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedEncryptedSecretShareEvent">CreatedEncryptedSecretShareEvent</a></code> which includes details about the encrypted share,
-cryptographic proofs, and related metadata.
+- <code>dwallet_id</code>: The unique identifier of the dWallet associated with the encrypted user share.
+- <code>encrypted_centralized_secret_share_and_proof</code>: The encrypted centralized secret key share along with its cryptographic proof.
+- <code>encryption_key_id</code>: The <code>EncryptionKey</code> Move object ID used to encrypt the secret key share.
+- <code>session_id</code>: A unique identifier for the session related to this operation.
+- <code>centralized_public_output_signature</code>: The signed public share corresponding to the encrypted secret share.
+- <code>encryptor_ed25519_pubkey</code>: The Ed25519 public key of the encryptor used for signing.
+- <code>initiator</code>: The address of the entity that performed the encryption operation of this secret key share.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_encrypted_user_share">create_encrypted_user_share</a>(dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, signed_public_share: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, initiator: <b>address</b>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_encrypted_user_share">create_encrypted_user_share</a>(dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, initiator: <b>address</b>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1749,23 +1611,22 @@ cryptographic proofs, and related metadata.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_encrypted_user_share">create_encrypted_user_share</a>(
     dwallet_id: ID,
-    encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     encryption_key_id: ID,
     session_id: ID,
-    // todo(zeev): rename
-    signed_public_share: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    // todo(itay): this name is not correct? should be dest?
     initiator: <b>address</b>,
     ctx: &<b>mut</b> TxContext
 ) {
     <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a>);
+
     <b>let</b> encrypted_user_share = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         dwallet_id,
-        encrypted_secret_share_and_proof,
+        encrypted_centralized_secret_share_and_proof,
         encryption_key_id,
-        signed_public_share,
+        centralized_public_output_signature,
         encryptor_ed25519_pubkey,
         encryptor_address: initiator,
     };
@@ -1773,12 +1634,14 @@ cryptographic proofs, and related metadata.
         session_id,
         encrypted_share_obj_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&encrypted_user_share),
         dwallet_id,
-        encrypted_secret_share_and_proof,
+        encrypted_centralized_secret_share_and_proof,
         encryption_key_id,
-        signed_public_share,
+        centralized_public_output_signature,
         encryptor_ed25519_pubkey,
         encryptor_address: initiator,
     });
+    // TODO (#527): Transfer the encrypted user share <b>move</b> <a href="../pera-framework/object.md#0x2_object">object</a> <b>to</b> the destination
+    // TODO (#527): <b>address</b> instead of the initiating user.
     <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(encrypted_user_share, initiator);
 }
 </code></pre>
@@ -1800,16 +1663,16 @@ events to record the results of the process.
 This function is called by the blockchain.
 
 
-<a name="@Parameters_24"></a>
+<a name="@Parameters_10"></a>
 
 ##### Parameters
 
 - **<code>initiator</code>**: The address of the user who initiated the DKG session.
 - **<code>session_id</code>**: A unique identifier for the current DKG session.
-- **<code>decentralized_output</code>**: The output of the second round of the DKG process,
+- **<code>decentralized_public_output</code>**: The public output of the second round of the DKG process,
 representing the decentralized computation result.
 - **<code>dwallet_cap_id</code>**: The unique identifier of the <code>DWalletCap</code> associated with this session.
-- **<code>dwallet_mpc_network_key_version</code>**: The version of the MPC network key for the <code>DWallet</code>.
+- **<code>dwallet_mpc_network_decryption_key_version</code>**: The version of the MPC network key for the <code>DWallet</code>.
 - **<code>encrypted_secret_share_and_proof</code>**: The encrypted user secret key share and associated cryptographic proof.
 - **<code>encryption_key_id</code>**: The ID of the <code>EncryptionKey</code> used for encrypting the secret key share.
 - **<code>signed_public_share</code>**: The signed public share corresponding to the secret key share.
@@ -1817,7 +1680,7 @@ representing the decentralized computation result.
 - **<code>centralized_public_output</code>**: The centralized public output from the DKG process.
 
 
-<a name="@Effects_25"></a>
+<a name="@Effects_11"></a>
 
 ##### Effects
 
@@ -1827,14 +1690,14 @@ representing the decentralized computation result.
 - Freezes the created <code>DWallet</code> object to make it immutable.
 
 
-<a name="@Panics_26"></a>
+<a name="@Panics_12"></a>
 
 ##### Panics
 
 - **<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code>**: If the function is not called by the system address.
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_second_round_output">create_dkg_second_round_output</a>(initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, decentralized_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_mpc_network_key_version: u8, encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, signed_public_share: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_second_round_output">create_dkg_second_round_output</a>(initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_mpc_network_decryption_key_version: u8, encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, signed_public_share: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1846,9 +1709,9 @@ representing the decentralized computation result.
 <pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_second_round_output">create_dkg_second_round_output</a>(
     initiator: <b>address</b>,
     session_id: ID,
-    decentralized_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     dwallet_cap_id: ID,
-    dwallet_mpc_network_key_version: u8,
+    dwallet_mpc_network_decryption_key_version: u8,
     encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     encryption_key_id: ID,
     signed_public_share: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
@@ -1861,8 +1724,8 @@ representing the decentralized computation result.
     <b>let</b> <a href="dwallet.md#0x3_dwallet">dwallet</a> = <a href="dwallet.md#0x3_dwallet_create_dwallet">dwallet::create_dwallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(
         session_id,
         dwallet_cap_id,
-        decentralized_output,
-        dwallet_mpc_network_key_version,
+        decentralized_public_output,
+        dwallet_mpc_network_decryption_key_version,
         centralized_public_output,
         ctx
     );
@@ -1882,7 +1745,7 @@ representing the decentralized computation result.
         initiator,
         dwallet_cap_id,
         dwallet_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-        value: decentralized_output,
+        decentralized_public_output,
     });
     <a href="../pera-framework/transfer.md#0x2_transfer_public_freeze_object">transfer::public_freeze_object</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>);
 }
@@ -1906,7 +1769,7 @@ validators to begin processing the first round of the presign process for each s
 - Each session is linked to the parent batch via <code>batch_session_id</code>.
 
 
-<a name="@Effects_27"></a>
+<a name="@Effects_13"></a>
 
 ##### Effects
 
@@ -1915,7 +1778,7 @@ validators to begin processing the first round of the presign process for each s
 - Emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignFirstRoundEvent">StartPresignFirstRoundEvent</a></code> for each presign in the batch, with relevant details.
 
 
-<a name="@Parameters_28"></a>
+<a name="@Parameters_14"></a>
 
 ##### Parameters
 
@@ -1952,9 +1815,9 @@ validators to begin processing the first round of the presign process for each s
             session_id: <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(session_id),
             initiator: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
             dwallet_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-            dkg_output: get_dwallet_decentralized_output&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
+            dkg_output: get_dwallet_decentralized_public_output&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
             batch_session_id,
-            dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
+            dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
         });
     };
 }
@@ -1974,7 +1837,7 @@ This function emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc
 to begin the second round of the presign process.
 
 
-<a name="@Parameters_29"></a>
+<a name="@Parameters_15"></a>
 
 ##### Parameters
 
@@ -1987,14 +1850,14 @@ to begin the second round of the presign process.
 - <code>ctx</code>: The transaction context used to emit the event.
 
 
-<a name="@Panics_30"></a>
+<a name="@Panics_16"></a>
 
 ##### Panics
 
 - Panics with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code> if the sender of the transaction is not the system address.
 
 
-<a name="@Emits_31"></a>
+<a name="@Emits_17"></a>
 
 ##### Emits
 
@@ -2002,7 +1865,7 @@ to begin the second round of the presign process.
 DKG output, first round output, and first round session ID.
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_presign_second_round">launch_presign_second_round</a>(initiator: <b>address</b>, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, batch_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_mpc_network_key_version: u8, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_presign_second_round">launch_presign_second_round</a>(initiator: <b>address</b>, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, batch_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_mpc_network_decryption_key_version: u8, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -2018,7 +1881,7 @@ DKG output, first round output, and first round session ID.
     first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     first_round_session_id: ID,
     batch_session_id: ID,
-    dwallet_mpc_network_key_version: u8,
+    dwallet_mpc_network_decryption_key_version: u8,
     ctx: &<b>mut</b> TxContext
 ) {
     <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a>);
@@ -2033,7 +1896,7 @@ DKG output, first round output, and first round session ID.
         first_round_output,
         first_round_session_id,
         batch_session_id,
-        dwallet_mpc_network_key_version,
+        dwallet_mpc_network_decryption_key_version,
     });
 }
 </code></pre>
@@ -2054,7 +1917,7 @@ It creates a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecds
 emits a <code>CompletedPresignEvent</code>, and transfers the result to the initiating user.
 
 
-<a name="@Parameters_32"></a>
+<a name="@Parameters_18"></a>
 
 ##### Parameters
 
@@ -2066,21 +1929,21 @@ emits a <code>CompletedPresignEvent</code>, and transfers the result to the init
 - <code>ctx</code>: The transaction context.
 
 
-<a name="@Emits_33"></a>
+<a name="@Emits_19"></a>
 
 ##### Emits
 
 - <code>CompletedPresignEvent</code>: Includes the initiator, dWallet ID, and presign ID.
 
 
-<a name="@Panics_34"></a>
+<a name="@Panics_20"></a>
 
 ##### Panics
 
 - Panics with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code> if the sender of the transaction is not the system address.
 
 
-<a name="@Effects_35"></a>
+<a name="@Effects_21"></a>
 
 ##### Effects
 
@@ -2151,7 +2014,7 @@ It also "burns" the [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_
 as every presign can only be used to sign only one message.
 
 
-<a name="@Effects_36"></a>
+<a name="@Effects_22"></a>
 
 ##### Effects
 
@@ -2162,7 +2025,7 @@ as every presign can only be used to sign only one message.
 and additional metadata.
 
 
-<a name="@Emits_37"></a>
+<a name="@Emits_23"></a>
 
 ##### Emits
 
@@ -2173,7 +2036,7 @@ and additional metadata.
 and DKG output.
 
 
-<a name="@Aborts_38"></a>
+<a name="@Aborts_24"></a>
 
 ##### Aborts
 
@@ -2189,7 +2052,7 @@ the expected DWalletCap ID for any of the message approvals.
 in the same order as the <code>messages</code>.
 
 
-<a name="@Parameters_39"></a>
+<a name="@Parameters_25"></a>
 
 ##### Parameters
 
@@ -2252,9 +2115,9 @@ in the same order as the <code>messages</code>.
             dwallet_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
             presign: presign.presign,
             centralized_signed_message,
-            dkg_output: get_dwallet_decentralized_output&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
+            dkg_output: get_dwallet_centralized_public_output&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
             hashed_message,
-            dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
+            dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
         });
         <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(presign, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>);
         i = i + 1;
@@ -2278,7 +2141,7 @@ blockchain logic executed by validators. The emitted event contains the
 completed sign output that should be consumed by the initiating user.
 
 
-<a name="@Parameters_40"></a>
+<a name="@Parameters_26"></a>
 
 ##### Parameters
 
@@ -2287,7 +2150,7 @@ completed sign output that should be consumed by the initiating user.
 - **<code>ctx</code>**: The transaction context used for event emission.
 
 
-<a name="@Requirements_41"></a>
+<a name="@Requirements_27"></a>
 
 ##### Requirements
 
@@ -2295,7 +2158,7 @@ completed sign output that should be consumed by the initiating user.
 the function will abort with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code>.
 
 
-<a name="@Events_42"></a>
+<a name="@Events_28"></a>
 
 ##### Events
 
@@ -2303,7 +2166,7 @@ the function will abort with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwal
 signaling the completion of the sign process for the batch session.
 
 
-<a name="@Errors_43"></a>
+<a name="@Errors_29"></a>
 
 ##### Errors
 
@@ -2343,154 +2206,6 @@ the function will abort with this error.
         session_id: batch_session_id,
         signed_messages,
     });
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing"></a>
-
-## Function `create_mock_dwallet_for_testing`
-
-Generates a mock <code>DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;</code> object for testing purposes.
-
-This function creates a dWallet object with random data,
-useful for testing or initialization in non-production environments.
-
-
-<a name="@Parameters_44"></a>
-
-##### Parameters
-
-- <code>ctx</code>: The transaction context for generating IDs and objects.
-- <code>dwallet_cap_id</code>: The ID of the capability associated with the mock dWallet.
-- <code>dkg_output</code>: The decentralized DKG output.
-
-
-<a name="@Effects_45"></a>
-
-##### Effects
-
-- Creates and initializes a <code>DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;</code> object.
-- Links the dWallet to the provided capability.
-
-
-<a name="@Returns_46"></a>
-
-##### Returns
-
-- <code>DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;</code>: A mock dWallet object.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing">create_mock_dwallet_for_testing</a>(dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing">create_mock_dwallet_for_testing</a>(
-    dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    ctx: &<b>mut</b> TxContext
-): DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt; {
-    <b>let</b> dwallet_cap = create_dwallet_cap(ctx);
-    <b>let</b> dwallet_cap_id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&dwallet_cap);
-    <a href="../pera-framework/transfer.md#0x2_transfer_public_transfer">transfer::public_transfer</a>(dwallet_cap, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
-    <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
-    <b>let</b> dwallet_mpc_network_key_version: u8 = 0;
-    <a href="dwallet.md#0x3_dwallet_create_dwallet">dwallet::create_dwallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(
-        session_id,
-        dwallet_cap_id,
-        dkg_output,
-        dwallet_mpc_network_key_version,
-        <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[],
-        ctx
-    )
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet"></a>
-
-## Function `create_mock_dwallet`
-
-Created an immutable [<code>DWallet</code>] object with the given DKG output.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet">create_mock_dwallet</a>(dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dkg_centralized_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet">create_mock_dwallet</a>(
-    dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    dkg_centralized_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    ctx: &<b>mut</b> TxContext
-) {
-    <b>let</b> dwallet_cap = create_dwallet_cap(ctx);
-    <b>let</b> dwallet_cap_id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&dwallet_cap);
-    <a href="../pera-framework/transfer.md#0x2_transfer_public_transfer">transfer::public_transfer</a>(dwallet_cap, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
-    <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
-    <b>let</b> dwallet_mpc_network_key_version: u8 = 0;
-    <b>let</b> <a href="dwallet.md#0x3_dwallet">dwallet</a> = <a href="dwallet.md#0x3_dwallet_create_dwallet">dwallet::create_dwallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(
-        session_id,
-        dwallet_cap_id,
-        dkg_output,
-        dwallet_mpc_network_key_version,
-        dkg_centralized_output,
-        ctx
-    );
-    <a href="../pera-framework/transfer.md#0x2_transfer_public_freeze_object">transfer::public_freeze_object</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign"></a>
-
-## Function `create_mock_presign`
-
-Generates a new mock <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> object with random IDs and data.
-This function is useful for testing or initializing Presign objects.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign">create_mock_presign</a>(dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, presign: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign">create_mock_presign</a>(
-    dwallet_id: ID,
-    presign: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    first_round_session_id: ID,
-    ctx: &<b>mut</b> TxContext,
-): <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a> {
-    <b>let</b> id = <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx);
-
-    // Create and <b>return</b> the <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a> <a href="../pera-framework/object.md#0x2_object">object</a>.
-    <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a> {
-        id,
-        dwallet_id,
-        presign,
-        first_round_session_id,
-    }
 }
 </code></pre>
 
@@ -2548,7 +2263,7 @@ See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_
             signatures,
             messages,
             presigns_bytes,
-            get_dwallet_decentralized_output(<a href="dwallet.md#0x3_dwallet">dwallet</a>)
+            get_dwallet_decentralized_public_output(<a href="dwallet.md#0x3_dwallet">dwallet</a>)
         ),
         <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EInvalidSignatures">EInvalidSignatures</a>
     );
@@ -2558,10 +2273,10 @@ See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_
         presign_session_ids,
         messages,
         signatures,
-        dwallet_output: get_dwallet_decentralized_output(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
+        dwallet_output: get_dwallet_decentralized_public_output(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
         dwallet_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
         dwallet_cap_id: get_dwallet_cap_id(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-        dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
+        dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
     };
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedPartiallySignedMessagesEvent">CreatedPartiallySignedMessagesEvent</a> {
         partial_signatures_object_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&partial_signatures),
@@ -2606,7 +2321,7 @@ See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_
         dwallet_id,
         dwallet_cap_id,
         dwallet_output,
-        dwallet_mpc_network_key_version,
+        dwallet_mpc_network_decryption_key_version,
     } = partial_signature;
     <a href="../pera-framework/object.md#0x2_object_delete">object::delete</a>(id);
     <b>let</b> message_approvals_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(message_approvals);
@@ -2638,7 +2353,7 @@ See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_
             centralized_signed_message,
             dkg_output: dwallet_output,
             hashed_message,
-            dwallet_mpc_network_key_version,
+            dwallet_mpc_network_decryption_key_version,
         });
         i = i + 1;
     };
@@ -2654,6 +2369,7 @@ See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_
 ## Function `verify_partially_signed_signatures`
 
 Verifies that the user's centralized party signatures are valid.
+todo(itay): why is it here?
 
 
 <pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_verify_partially_signed_signatures">verify_partially_signed_signatures</a>(partial_signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool
@@ -2671,6 +2387,154 @@ Verifies that the user's centralized party signatures are valid.
     presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
 ): bool;
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing"></a>
+
+## Function `create_mock_dwallet_for_testing`
+
+Generates a mock <code>DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;</code> object for testing purposes.
+
+This function creates a dWallet object with random data,
+useful for testing or initialization in non-production environments.
+
+
+<a name="@Parameters_30"></a>
+
+##### Parameters
+
+- <code>ctx</code>: The transaction context for generating IDs and objects.
+- <code>dwallet_cap_id</code>: The ID of the capability associated with the mock dWallet.
+- <code>dkg_output</code>: The decentralized DKG output.
+
+
+<a name="@Effects_31"></a>
+
+##### Effects
+
+- Creates and initializes a <code>DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;</code> object.
+- Links the dWallet to the provided capability.
+
+
+<a name="@Returns_32"></a>
+
+##### Returns
+
+- <code>DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;</code>: A mock dWallet object.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing">create_mock_dwallet_for_testing</a>(dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing">create_mock_dwallet_for_testing</a>(
+    dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    ctx: &<b>mut</b> TxContext
+): DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt; {
+    <b>let</b> dwallet_cap = create_dwallet_cap(ctx);
+    <b>let</b> dwallet_cap_id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&dwallet_cap);
+    <a href="../pera-framework/transfer.md#0x2_transfer_public_transfer">transfer::public_transfer</a>(dwallet_cap, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
+    <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
+    <b>let</b> dwallet_mpc_network_decryption_key_version: u8 = 0;
+    <a href="dwallet.md#0x3_dwallet_create_dwallet">dwallet::create_dwallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(
+        session_id,
+        dwallet_cap_id,
+        dkg_output,
+        dwallet_mpc_network_decryption_key_version,
+        <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[],
+        ctx
+    )
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet"></a>
+
+## Function `create_mock_dwallet`
+
+Created an immutable [<code>DWallet</code>] object with the given DKG output.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet">create_mock_dwallet</a>(dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dkg_centralized_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet">create_mock_dwallet</a>(
+    dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    dkg_centralized_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    ctx: &<b>mut</b> TxContext
+) {
+    <b>let</b> dwallet_cap = create_dwallet_cap(ctx);
+    <b>let</b> dwallet_cap_id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&dwallet_cap);
+    <a href="../pera-framework/transfer.md#0x2_transfer_public_transfer">transfer::public_transfer</a>(dwallet_cap, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
+    <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
+    <b>let</b> dwallet_mpc_network_decryption_key_version: u8 = 0;
+    <b>let</b> <a href="dwallet.md#0x3_dwallet">dwallet</a> = <a href="dwallet.md#0x3_dwallet_create_dwallet">dwallet::create_dwallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(
+        session_id,
+        dwallet_cap_id,
+        dkg_output,
+        dwallet_mpc_network_decryption_key_version,
+        dkg_centralized_output,
+        ctx
+    );
+    <a href="../pera-framework/transfer.md#0x2_transfer_public_freeze_object">transfer::public_freeze_object</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign"></a>
+
+## Function `create_mock_presign`
+
+Generates a new mock <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> object with random IDs and data.
+This function is useful for testing or initializing Presign objects.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign">create_mock_presign</a>(dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, presign: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign">create_mock_presign</a>(
+    dwallet_id: ID,
+    presign: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    first_round_session_id: ID,
+    ctx: &<b>mut</b> TxContext,
+): <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a> {
+    <b>let</b> id = <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx);
+
+    // Create and <b>return</b> the <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a> <a href="../pera-framework/object.md#0x2_object">object</a>.
+    <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a> {
+        id,
+        dwallet_id,
+        presign,
+        first_round_session_id,
+    }
+}
 </code></pre>
 
 

@@ -51,7 +51,6 @@ mod checked {
     use pera_types::digests::{
         get_mainnet_chain_identifier, get_testnet_chain_identifier, ChainIdentifier,
     };
-    use pera_types::dwallet_mpc_error::DwalletMPCResult;
     use pera_types::effects::TransactionEffects;
     use pera_types::error::{ExecutionError, ExecutionErrorKind};
     use pera_types::execution::is_certificate_denied;

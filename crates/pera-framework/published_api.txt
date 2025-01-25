@@ -1,6 +1,9 @@
 DWallet
 	public struct
 	0x3::dwallet
+DWalletCap
+	public struct
+	0x3::dwallet
 EncryptionKey
 	public struct
 	0x3::dwallet
@@ -10,19 +13,31 @@ CreatedEncryptionKeyEvent
 StartEncryptionKeyVerificationEvent
 	public struct
 	0x3::dwallet
-DWalletCap
-	public struct
-	0x3::dwallet
 ActiveEncryptionKeys
 	public struct
 	0x3::dwallet
 MessageApproval
 	public struct
 	0x3::dwallet
-get_encryption_key
+create_dwallet
 	public(package) fun
 	0x3::dwallet
-create_dwallet
+get_dwallet_cap_id
+	public(package) fun
+	0x3::dwallet
+get_dwallet_decentralized_public_output
+	public(package) fun
+	0x3::dwallet
+get_dwallet_centralized_public_output
+	public(package) fun
+	0x3::dwallet
+get_dwallet_mpc_network_decryption_key_version
+	public(package) fun
+	0x3::dwallet
+create_dwallet_cap
+	public(package) fun
+	0x3::dwallet
+get_encryption_key
 	public(package) fun
 	0x3::dwallet
 create_active_encryption_keys
@@ -39,21 +54,6 @@ register_encryption_key
 	0x3::dwallet
 create_encryption_key
 	fun
-	0x3::dwallet
-create_dwallet_cap
-	public(package) fun
-	0x3::dwallet
-get_dwallet_cap_id
-	public(package) fun
-	0x3::dwallet
-get_dwallet_decentralized_output
-	public(package) fun
-	0x3::dwallet
-get_dwallet_centralized_output
-	public(package) fun
-	0x3::dwallet
-get_dwallet_mpc_network_key_version
-	public(package) fun
 	0x3::dwallet
 is_valid_encryption_key_scheme
 	fun
@@ -82,16 +82,22 @@ is_supported_hash_scheme
 Secp256K1
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartDKGFirstRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 DKGFirstRoundOutputEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 DKGFirstRoundOutput
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-BatchedSignOutput
+StartDKGSecondRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-Presign
+CompletedDKGSecondRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+EncryptedUserSecretKeyShare
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartEncryptedShareVerificationEvent
@@ -100,25 +106,10 @@ StartEncryptedShareVerificationEvent
 CreatedEncryptedSecretShareEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-PartiallySignedMessages
+Presign
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-CreatedPartiallySignedMessagesEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartDKGFirstRoundEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-CompletedSignEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-EncryptedUserSecretKeyShare
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartDKGSecondRoundEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-CompletedDKGSecondRoundEvent
+StartBatchedPresignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartPresignFirstRoundEvent
@@ -130,13 +121,22 @@ StartPresignSecondRoundEvent
 CompletedBatchedPresignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartSignEvent
+PartiallySignedMessages
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CreatedPartiallySignedMessagesEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartBatchedSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartBatchedPresignEvent
+CompletedSignEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+BatchedSignOutput
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
@@ -172,15 +172,6 @@ sign
 create_sign_output
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_mock_dwallet_for_testing
-	public(package) fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_mock_dwallet
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_mock_presign
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
 publish_partially_signed_messages
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -189,6 +180,15 @@ future_sign
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 verify_partially_signed_signatures
 	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_mock_dwallet_for_testing
+	public(package) fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_mock_dwallet
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_mock_presign
+	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
 	public struct

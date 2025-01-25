@@ -9,7 +9,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         EMissingApprovalOrWrongApprovalOrder,
         EMessageApprovalDWalletMismatch,
         DWalletCap,
-        get_dwallet_mpc_network_key_version,
+        get_dwallet_mpc_network_decryption_key_version,
         create_encryption_key_for_testing,
         hash_message
     };
@@ -406,7 +406,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
-                get_dwallet_mpc_network_key_version(&dwallet),
+                get_dwallet_mpc_network_decryption_key_version(&dwallet),
                 ctx
             );
             pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(
@@ -454,7 +454,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
-                get_dwallet_mpc_network_key_version(&dwallet),
+                get_dwallet_mpc_network_decryption_key_version(&dwallet),
                 ctx
             );
             pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(
@@ -510,7 +510,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
-                get_dwallet_mpc_network_key_version(&dwallet),
+                get_dwallet_mpc_network_decryption_key_version(&dwallet),
                 ctx
             );
             pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(

@@ -1155,7 +1155,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 dwallet_id: object::id(dwallet),
                 presign: presign.presign,
                 centralized_signed_message,
-                dkg_output: get_dwallet_decentralized_output<Secp256K1>(dwallet),
+                dkg_output: get_dwallet_centralized_public_output<Secp256K1>(dwallet),
                 hashed_message,
                 dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version<Secp256K1>(dwallet),
             });
@@ -1248,7 +1248,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 signatures,
                 messages,
                 presigns_bytes,
-                get_dwallet_decentralized_output(dwallet)
+                get_dwallet_decentralized_public_output(dwallet)
             ),
             EInvalidSignatures
         );
@@ -1258,7 +1258,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             presign_session_ids,
             messages,
             signatures,
-            dwallet_output: get_dwallet_decentralized_output(dwallet),
+            dwallet_output: get_dwallet_decentralized_public_output(dwallet),
             dwallet_id: object::id(dwallet),
             dwallet_cap_id: get_dwallet_cap_id(dwallet),
             dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version(dwallet),

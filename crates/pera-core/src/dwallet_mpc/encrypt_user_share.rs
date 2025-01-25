@@ -27,6 +27,8 @@ type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
     secp256k1::GroupElement,
 >;
 
+// todo(itay): add error data for the mpc errors.
+
 /// Verifies that the given encrypted secret key share matches the encryption of the dWallet's
 /// secret share, validates the signature on the dWallet's public share,
 /// and ensures the signing public key matches the address that initiated this transaction.
@@ -50,7 +52,7 @@ pub(crate) fn verify_encryption_key(
 ) -> DwalletMPCResult<()> {
     let public_key =
         <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.key_singer_public_key)
-            .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
+            .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     let derived_ika_addr = PeraAddress::from(&public_key);
     if derived_ika_addr != verification_data.initiator {
         return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
@@ -66,7 +68,7 @@ fn verify_dwallet_public_output_signature(
 ) -> DwalletMPCResult<()> {
     let public_key =
         <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.encryptor_ed25519_pubkey)
-            .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
+            .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     let derived_ika_addr = PeraAddress::from(&public_key);
     if derived_ika_addr != verification_data.initiator {
         return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
@@ -74,10 +76,10 @@ fn verify_dwallet_public_output_signature(
     let signature = <Ed25519Signature as ToFromBytes>::from_bytes(
         &verification_data.centralized_public_output_signature,
     )
-    .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
+    .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     public_key
         .verify(&verification_data.centralized_public_output, &signature)
-        .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
+        .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     Ok(())
 }
 
