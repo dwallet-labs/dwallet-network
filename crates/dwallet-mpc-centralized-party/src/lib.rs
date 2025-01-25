@@ -1,5 +1,8 @@
 //! This crate contains the cryptographic logic for the centralized 2PC-MPC party.
 
+// Allowed to improve code readability.
+#![allow(unused_qualifications)]
+
 use anyhow::{anyhow, Context};
 use class_groups::setup::get_setup_parameters_secp256k1;
 use class_groups::{
@@ -113,11 +116,11 @@ impl TryFrom<u8> for Hash {
 pub fn create_dkg_output(
     protocol_public_parameters: Vec<u8>,
     key_scheme: u8,
-    decentralized_first_round_output: Vec<u8>,
+    decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-    let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
-        bcs::from_bytes(&decentralized_first_round_output)
+    let decentralized_first_round_public_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
+        bcs::from_bytes(&decentralized_first_round_public_output)
             .context("Failed to deserialize decentralized first round output")?;
     let public_parameters = bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
         protocol_public_parameters,
@@ -127,7 +130,7 @@ pub fn create_dkg_output(
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
 
     let round_result = DKGCentralizedParty::advance(
-        decentralized_first_round_output.clone(),
+        decentralized_first_round_public_output.clone(),
         &(),
         &(public_parameters, session_id).into(),
         &mut OsRng,
@@ -279,10 +282,10 @@ pub fn centralized_public_share_from_decentralized_output_inner(
     bcs::to_bytes(&dkg_output.centralized_party_public_key_share).map_err(Into::into)
 }
 
-/// Encrypts the given secret share to the given encryption key.
+/// Encrypts the given secret key share with the given encryption key.
 /// Returns a serialized tuple containing the `proof of encryption`,
 /// and an encrypted `secret key share`.
-pub fn encrypt_secret_share_and_prove(
+pub fn encrypt_secret_key_share_and_prove(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {

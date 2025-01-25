@@ -1,5 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+// noinspection ES6PreferShortImport
 
 import { execSync } from 'child_process';
 import { mkdtemp } from 'fs/promises';

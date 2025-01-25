@@ -16,14 +16,14 @@ import { Hash, signMessageTransactionCall } from '../../../src/dwallet-mpc/sign.
  * Run the Full MPC User Sessions
  */
 export async function fullMPCUserSessions(
-	conf: Config,
+	c: Config,
 	protocolPublicParameters: Uint8Array,
 	activeEncryptionKeysTableID: string,
 ) {
-	const dWallet = await createDWallet(conf, protocolPublicParameters, activeEncryptionKeysTableID);
+	const dWallet = await createDWallet(c, protocolPublicParameters, activeEncryptionKeysTableID);
 	console.log({ dWallet });
 	expect(dWallet).toBeDefined();
-	const presignCompletionEvent = await presign(conf, dWallet.id.id, 2);
+	const presignCompletionEvent = await presign(c, dWallet.id.id, 2);
 	console.log({ presignCompletionEvent });
 	expect(presignCompletionEvent).toBeDefined();
 	const messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
@@ -51,10 +51,10 @@ export async function fullMPCUserSessions(
 
 	console.log('Signing messages');
 	let signOutput = await signMessageTransactionCall(
-		conf,
-		dWallet.dwallet_cap_id,
+		c,
+		dWallet,
 		messages,
-		dWallet.id,
+		Hash.SHA256,
 		presignCompletionEvent.presign_ids,
 		centralizedSignedMsg,
 	);

@@ -4,20 +4,6 @@
 /// This module handles the logic for creating and managing dWallets using the Secp256K1 signature scheme
 /// and the DKG process. It leverages validators to execute MPC (Multi-Party Computation)
 /// protocols to ensure trustless and decentralized wallet creation and key management.
-///
-/// ## Overview
-///
-/// - **Secp256K1**: The cryptographic curve used for this implementation.
-/// - dWallets are created through two phases of DKG:
-///   1. The first phase outputs partial results for the user.
-///   2. The second phase generates the dWallet.
-/// - **Capabilities**: Access to dWallets is controlled via capabilities (`DWalletCap`).
-///
-/// ## Features
-///
-/// - Emit events for validators to coordinate DKG rounds.
-/// - Transfer intermediate results and final outputs to the initiating user.
-/// - Ensure secure and decentralized key generation and management.
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet;
     use pera_system::dwallet::{
@@ -25,9 +11,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         create_dwallet_cap,
         DWalletCap,
         get_dwallet_cap_id,
-        get_dwallet_decentralized_output,
-        get_dwallet_centralized_output,
-        get_dwallet_mpc_network_key_version,
+        get_dwallet_decentralized_public_output,
+        get_dwallet_centralized_public_output,
+        get_dwallet_mpc_network_decryption_key_version,
         EncryptionKey,
         get_encryption_key,
         pop_and_verify_message_approval,
@@ -44,129 +30,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// based on the `Secp256K1` curve.
     public struct Secp256K1 has drop {}
 
-    /// An event emitted when the first round of the DKG process is completed.
-    ///
-    /// This event is emitted by the blockchain to notify the user about
-    /// the completion of the first round.
-    /// The user should catch this event to generate inputs for
-    /// the second round and call the `launch_dkg_second_round()` function.
-    public struct DKGFirstRoundOutputEvent has copy, drop {
-        session_id: ID,
-        output_object_id: ID,
-        output: vector<u8>,
-    }
-
-    /// The output of the first round of the dWallet creation DKG process.
-    public struct DKGFirstRoundOutput has key, store {
-        id: UID,
-        session_id: ID,
-        output: vector<u8>,
-    }
-
-    /// The output of a batched Sign session.
-    public struct BatchedSignOutput has key, store {
-        id: UID,
-        session_id: ID,
-        signatures: vector<vector<u8>>,
-        dwallet_id: ID,
-    }
-
-    /// Represents the result of the second and final presign round.
-    ///
-    /// This struct links the results of both presign rounds to a specific dWallet ID.
-    ///
-    /// ### Fields
-    /// - `id`: Unique identifier for the presign object.
-    /// - `dwallet_id`: ID of the associated dWallet.
-    /// - `first_round_session_id`: Session ID for the first presign round.
-    /// - `presign`: Serialized output of the presign process.
-    public struct Presign has key, store {
-        id: UID,
-        dwallet_id: ID,
-        first_round_session_id: ID,
-        presign: vector<u8>,
-    }
-
-    /// Event emitted to start an encrypted dWallet centralized (user) key share
-    /// verification process.
-    /// Ika does not support native functions, so an event is emitted and
-    /// caught by the blockchain, which then starts the verification process,
-    /// similar to the MPC processes.
-    public struct StartEncryptedShareVerificationEvent has copy, drop {
-        /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
-        encrypted_centralized_secret_share_and_proof: vector<u8>,
-        /// The DKG public output of the dwallet that its secret is being encrypted.
-        dkg_public_output: vector<u8>,
-        /// The dWallet that this encrypted secret key share belongs to.
-        dwallet_id: ID,
-        /// The encryption key used to encrypt the secret key share with.
-        encryption_key: vector<u8>,
-        /// The `EncryptionKey` Move object ID.
-        encryption_key_id: ID,
-        session_id: ID,
-        /// The signed dWallet public_centralized_output,
-        /// signed by the secret key that corresponds to `encryptor_ed25519_pubkey`.
-        // todo(zeev): rename.
-        signed_public_share: vector<u8>,
-        /// The public key of the encryptor.
-        /// Used to verify the signature on the public share (centralized public output).
-        encryptor_ed25519_pubkey: vector<u8>,
-        // TODO (#527): Transfer the encrypted user share move object to the destination address instead of the initiating user
-        initiator: address,
-    }
-
-    /// Event emitted when an encrypted share is created by the system transaction.
-    public struct CreatedEncryptedSecretShareEvent has copy, drop {
-        session_id: ID,
-        /// The ID of the encrypted secret key share.
-        encrypted_share_obj_id: ID,
-        dwallet_id: ID,
-        /// The encrypted secret key share and proof of encryption.
-        encrypted_secret_share_and_proof: vector<u8>,
-        /// The Encryption (Public) Key that was used to encrypt the secret key share.
-        encryption_key_id: ID,
-        /// Source address of the entity that encrypted this secret key share.
-        encryptor_address: address,
-        /// Source Public Key of the entity that encrypted this secret key share (used for verifications).
-        encryptor_ed25519_pubkey: vector<u8>,
-        /// Signed dWallet public centralized (user) output (singed by the encryptor entity).
-        /// todo(zeev): rename.
-        signed_public_share: vector<u8>,
-    }
-
-
-    /// Messages that have been signed by a user, a.k.a the centralized party,
-    /// but not yet by the blockchain.
-    /// Used for scenarios where the user needs to first agree to sign some transaction,
-    /// and the blockchain signs this transaction only later,
-    /// when some other conditions are met.
-    ///
-    /// Can be used to implement an order-book based exchange, for example.
-    /// User A first agrees to buy BTC with ETH at price X, and signs a transaction with this information.
-    /// When a matching user B, that agrees to sell BTC for ETH at price X, signs a transaction with this information,
-    /// the blockchain can sign both transactions, and the exchange is completed.
-    public struct PartiallySignedMessages has key {
-        id: UID,
-        /// The presigns bytes for each message.
-        /// The matching presign objects are being "burned" before this object is created.
-        presigns: vector<vector<u8>>,
-        /// The presigns session IDs.
-        presign_session_ids: vector<ID>,
-        /// The messages that are being signed.
-        messages: vector<vector<u8>>,
-        /// The user centralized signatures for each message.
-        signatures: vector<vector<u8>>,
-        dwallet_id: ID,
-        /// The DKG output of the DWallet.
-        dwallet_output: vector<u8>,
-        dwallet_cap_id: ID,
-        dwallet_mpc_network_key_version: u8,
-    }
-
-    /// Event emitted when a [`PartiallySignedMessages`] object is created.
-    public struct CreatedPartiallySignedMessagesEvent has copy, drop {
-        partial_signatures_object_id: ID,
-    }
+    // DKG TYPES
 
     /// Event emitted to start the first round of the DKG process.
     ///
@@ -183,50 +47,33 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_cap_id: ID,
     }
 
-    /// Event emitted to signal the completion of a Sign process.
+    /// An event emitted when the first round of the DKG process is completed.
     ///
-    /// This event contains signatures for all signed messages in the batch.
-    ///
-    /// ### Fields
-    /// - **`session_id`**: The session identifier for the signing process.
-    /// - **`signed_messages`**: A collection of signed messages.
-    public struct CompletedSignEvent has copy, drop {
+    /// This event is emitted by the blockchain to notify the user about
+    /// the completion of the first round.
+    /// The user should catch this event to generate inputs for
+    /// the second round and call the `launch_dkg_second_round()` function.
+    public struct DKGFirstRoundOutputEvent has copy, drop {
+        /// The unique session identifier for the DKG process.
         session_id: ID,
-        signed_messages: vector<vector<u8>>,
+
+        /// The unique identifier of the output object created in the first round.
+        output_object_id: ID,
+
+        /// The decentralized public output data produced by the first round of the DKG process.
+        decentralized_public_output: vector<u8>,
     }
 
-    /// A verified encrypted dWallet secret user key share.
-    ///
-    /// This struct represents an encrypted user secret key share tied to a specific dWallet.
-    /// It includes cryptographic proof that the encryption is valid and securely linked
-    /// to the associated `dWallet`.
-    public struct EncryptedUserSecretKeyShare has key {
-        /// A unique identifier for this encrypted user share object.
+    /// The output of the first round of the dWallet creation from the DKG process.
+    public struct DKGFirstRoundOutput has key, store {
+        /// A unique identifier for the DKG first round output.
         id: UID,
 
-        /// The ID of the dWallet associated with this encrypted secret share.
-        dwallet_id: ID,
+        /// The unique session identifier for the DKG process.
+        session_id: ID,
 
-        /// The encrypted secret key share along with a cryptographic proof
-        /// that the encryption corresponds to the dWallet's secret key share.
-        encrypted_secret_share_and_proof: vector<u8>,
-
-        /// The ID of the `EncryptionKey` object used to encrypt the secret share.
-        encryption_key_id: ID,
-
-        /// The signed public share corresponding to the encrypted secret key share,
-        /// used to verify its authenticity.
-        signed_public_share: vector<u8>,
-
-        /// The Ed25519 public key of the encryptor, used to verify the signature
-        /// on the encrypted secret share.
-        /// todo(zeev): I think it's used to verify the signed_public_share?
-        encryptor_ed25519_pubkey: vector<u8>,
-
-        /// The address of the encryptor, identifying who performed the encryption.
-        /// If the key is transferred to someone else, this is the source entity.
-        /// If the key is re-encrypted by an entity, then this is the Ika address of this entity.
-        encryptor_address: address,
+        /// The decentralized public output data produced by the first round of the DKG process.
+        decentralized_public_output: vector<u8>,
     }
 
     /// Event emitted to initiate the second round of the DKG process.
@@ -261,59 +108,217 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         /// The unique identifier of the `EncryptionKey` object.
         encryption_key_id: ID,
 
-        /// The public output of the DKG process.
+        /// The public output of the centralized party in the DKG process.
         centralized_public_output: vector<u8>,
 
-        /// The signature for the public output of the DKG process.
+        /// The signature for the public output of the centralized party in the DKG process.
         centralized_public_output_signature: vector<u8>,
 
-        /// The Ed25519 public key of the initiator, used to verify the signature on the output.
+        /// The Ed25519 public key of the initiator,
+        /// used to verify the signature on the centralized public output.
         initiator_public_key: vector<u8>,
     }
 
-    /// Event emitted upon the completion of the second round of the
+    /// Event emitted upon the completion of the second (and final) round of the
     /// Distributed Key Generation (DKG).
     ///
     /// This event provides all necessary data generated from the second
     /// round of the DKG process.
-    /// This event is emitted to notify Validators to finalize the DKG
-    /// process and store its results.
-    ///
-    /// ### Fields
-    /// - **`session_id`**: A unique identifier for the DKG session, linking all related events and actions.
-    /// - **`initiator`**: The address of the user who initiated the DKG process.
-    /// - **`dwallet_cap_id`**: The unique identifier of the dWallet capability associated with the session.
-    /// - **`dwallet_id`**: The identifier of the dWallet created as a result of the DKG process.
-    /// - **`value`**: The output value from the second round of the DKG process,
-    ///   representing the validated and combined result from all participants.
+    /// Emitted to notify the centralized party.
     public struct CompletedDKGSecondRoundEvent has copy, drop {
+        /// A unique identifier for the DKG session.
         session_id: ID,
+
+        /// The address of the user who initiated the DKG process.
         initiator: address,
+
+        /// The unique identifier of the dWallet capability associated with the session.
         dwallet_cap_id: ID,
+
+        /// The identifier of the dWallet created as a result of the DKG process.
         dwallet_id: ID,
-        value: vector<u8>,
+
+        /// The public decentralized output for the second round of the DKG process.
+        decentralized_public_output: vector<u8>,
+    }
+
+    // END OF DKG TYPES
+
+    // ENCRYPTED USER SHARE TYPES
+
+    /// A verified Encrypted dWallet centralized secret key share.
+    ///
+    /// This struct represents an encrypted centralized secret key share tied to
+    /// a specific dWallet (`DWallet`).
+    /// It includes cryptographic proof that the encryption is valid and securely linked
+    /// to the associated `dWallet`.
+    public struct EncryptedUserSecretKeyShare has key {
+        /// A unique identifier for this encrypted user share object.
+        id: UID,
+
+        /// The ID of the dWallet associated with this encrypted secret share.
+        dwallet_id: ID,
+
+        /// The encrypted centralized secret key share along with a cryptographic proof
+        /// that the encryption corresponds to the dWallet's secret key share.
+        encrypted_centralized_secret_share_and_proof: vector<u8>,
+
+        /// The ID of the `EncryptionKey` object used to encrypt the secret share.
+        encryption_key_id: ID,
+
+        /// The signed public share corresponding to the encrypted secret key share,
+        /// used to verify its authenticity.
+        centralized_public_output_signature: vector<u8>,
+
+        /// The Ed25519 public key of the encryptor, used to verify the signature
+        /// on the encrypted secret share.
+        encryptor_ed25519_pubkey: vector<u8>,
+
+        /// The address of the encryptor, identifying who performed the encryption.
+        /// If the key is transferred to someone else, this is the source entity.
+        /// If the key is re-encrypted by an entity, then this is the Ika address of this entity.
+        encryptor_address: address,
+    }
+
+    /// Event emitted to start an encrypted dWallet centralized (user) key share
+    /// verification process.
+    /// Ika does not support native functions, so an event is emitted and
+    /// caught by the blockchain, which then starts the verification process,
+    /// similar to the MPC processes.
+    public struct StartEncryptedShareVerificationEvent has copy, drop {
+        /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
+        encrypted_centralized_secret_share_and_proof: vector<u8>,
+
+        /// The public output of the centralized party,
+        /// belongs to the dWallet that its centralized
+        /// secret share is being encrypted.
+        /// todo(zeev): we should not trust this, don't pass it.
+        centralized_public_output: vector<u8>,
+
+        /// The signature of the dWallet `centralized_public_output`,
+        /// signed by the secret key that corresponds to `encryptor_ed25519_pubkey`.
+        centralized_public_output_signature: vector<u8>,
+
+        /// The ID of the dWallet that this encrypted secret key share belongs to.
+        dwallet_id: ID,
+
+        /// The encryption key used to encrypt the secret key share with.
+        encryption_key: vector<u8>,
+
+        /// The `EncryptionKey` Move object ID.
+        encryption_key_id: ID,
+
+        /// A unique identifier for the session related to this operation.
+        session_id: ID,
+
+        /// Public key of the entity that performed the encryption operation
+        /// Used to verify the signature on the dWallet `centralized_public_output`.
+        /// Note that the "encryptor" is the entity that performed the encryption,
+        /// and the encryption can be done with another public key, this may not be
+        /// the public key that was used for encryption.
+        encryptor_ed25519_pubkey: vector<u8>,
+
+        // TODO (#527): Transfer the encrypted user share move object
+        // TODO (#527): to the destination address instead of the initiating user.
+        /// The address of the entity that performed the encryption
+        /// operation of this secret key share.
+        initiator: address,
+    }
+
+    /// Emitted when an encrypted share is created by the system transaction.
+    public struct CreatedEncryptedSecretShareEvent has copy, drop {
+        /// A unique identifier for the session related to this operation.
+        session_id: ID,
+
+        /// The ID of the `EncryptedUserSecretKeyShare` Move object.
+        encrypted_share_obj_id: ID,
+
+        /// The ID of the dWallet associated with this encrypted secret share.
+        dwallet_id: ID,
+
+        /// The encrypted centralized secret key share along with a cryptographic proof
+        /// that the encryption corresponds to the dWallet's secret key share.
+        encrypted_centralized_secret_share_and_proof: vector<u8>,
+
+        /// The `EncryptionKey` Move object ID that was used to encrypt the secret key share.
+        encryption_key_id: ID,
+
+        /// The address of the entity that performed the encryption operation of this secret key share.
+        encryptor_address: address,
+
+        /// Public key of the entity that performed the encryption operation
+        /// (with some encryption key — depends on the context)
+        /// and signed the `centralized_public_output`.
+        /// Used for verifications.
+        encryptor_ed25519_pubkey: vector<u8>,
+
+        /// Signed dWallet public centralized output (signed by the `encryptor` entity).
+        centralized_public_output_signature: vector<u8>,
+    }
+
+    // END OF ENCRYPTED USER SHARE TYPES
+
+    // PRESIGN TYPES
+
+    /// Represents the result of the second and final presign round.
+    /// This struct links the results of both presign rounds to a specific dWallet ID.
+    public struct Presign has key, store {
+        /// Unique identifier for the presign object.
+        id: UID,
+
+        /// ID of the associated dWallet.
+        dwallet_id: ID,
+
+        /// Session ID for the first presign round.
+        first_round_session_id: ID,
+
+        /// Serialized output of the presign process.
+        presign: vector<u8>,
+    }
+
+    /// Event emitted to start a batched presign flow,
+    /// creating multiple presigns at once.
+    ///
+    /// This event signals the initiation of a batch presign process,
+    /// where multiple presign
+    /// sessions are started simultaneously.
+    public struct StartBatchedPresignEvent has copy, drop {
+        /// The session identifier for the batched presign process.
+        session_id: ID,
+
+        /// The number of presign sessions to be started in this batch.
+        batch_size: u64,
+
+        /// The address of the user who initiated the protocol.
+        initiator: address,
     }
 
     /// Event emitted to initiate the first round of a Presign session.
     ///
-    /// This event is used to signal Validators to start the first round of the Presign process.
-    /// The event includes all necessary details to link the session to the corresponding dWallet
+    /// This event is used to signal Validators to start the
+    /// first round of the Presign process.
+    /// The event includes all necessary details to link
+    /// the session to the corresponding dWallet
     /// and DKG process.
-    ///
-    /// ### Fields
-    /// - **`session_id`**: A unique identifier for the Presign session.
-    /// - **`initiator`**: The address of the user who initiated the Presign session.
-    /// - **`dwallet_id`**: The unique identifier of the associated dWallet.
-    /// - **`dkg_output`**: The output produced by the DKG process, used as input for the Presign session.
-    /// - **`batch_session_id`**: A unique identifier for the Presign batch session.
-    /// - **`dwallet_mpc_network_key_version`**: The version of the dWallet's MPC network key.
     public struct StartPresignFirstRoundEvent has copy, drop {
+        /// A unique identifier for the Presign session.
         session_id: ID,
+
+        /// The address of the user who initiated the Presign session.
         initiator: address,
+
+        /// The ID of the associated dWallet.
         dwallet_id: ID,
+
+        /// The output produced by the DKG process,
+        /// used as input for the Presign session.
         dkg_output: vector<u8>,
+
+        /// A unique identifier for the Presign batch session.
         batch_session_id: ID,
-        dwallet_mpc_network_key_version: u8,
+
+        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
+        dwallet_mpc_network_decryption_key_version: u8,
     }
 
     /// Event emitted to initiate the second round of a `Presign` session.
@@ -321,77 +326,112 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// This event signals Validators to begin the second round of the Presign process.
     /// The second round is a critical step in the multi-party computation (MPC) protocol,
     /// enabling the generation of pre-signatures required for ECDSA signing.
-    ///
-    /// ### Fields
-    /// - **`session_id`**: A unique identifier for the current Presign session.
-    /// - **`initiator`**: The address of the user who initiated the Presign session.
-    /// - **`dwallet_id`**: The unique identifier of the DWallet associated with this Presign session.
-    /// - **`dkg_output`**: The output from the Distributed Key Generation (DKG) process, used as input for the Presign session.
-    /// - **`first_round_output`**: The output generated from the first round of the Presign session.
-    /// - **`first_round_session_id`**: The session identifier for the first round of the Presign process.
-    /// - **`batch_session_id`**: A unique identifier linking this session to a batched Presign process.
-    /// - **`dwallet_mpc_network_key_version`**: The version of the dWallet's MPC network key.
     public struct StartPresignSecondRoundEvent has copy, drop {
+        /// A unique identifier for the current Presign session.
         session_id: ID,
+
+        /// The address of the user who initiated the Presign session.
         initiator: address,
+
+        /// The ID of the DWallet associated with this Presign session.
         dwallet_id: ID,
+
+        /// The output from the Distributed Key Generation (DKG) process,
+        /// used as input for the Presign session.
         dkg_output: vector<u8>,
+
+        /// The output generated from the first
+        /// round of the Presign session.
         first_round_output: vector<u8>,
+
+        /// The session identifier for the first round of the Presign process.
         first_round_session_id: ID,
+
+        /// A unique identifier linking this session to a batched Presign process.
         batch_session_id: ID,
-        dwallet_mpc_network_key_version: u8,
+
+        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
+        dwallet_mpc_network_decryption_key_version: u8,
     }
 
-
     /// Event emitted when the presign batch is completed.
+    ///
+    /// This event indicates the successful completion of a batched presign process.
+    /// It provides details about the presign objects created and their associated metadata.
     public struct CompletedBatchedPresignEvent has copy, drop {
         /// The address of the user who initiated the batch.
         initiator: address,
+
+        /// The ID of the dWallet associated with this batch.
         dwallet_id: ID,
-        /// Tha batch session ID.
+
+        /// The batch session ID.
         session_id: ID,
-        /// The ID of all the presign objects created in this batch.
+
+        /// The IDs of all the presign objects created in this batch.
         /// Each presign can be used to sign only one message.
         presign_ids: vector<ID>,
-        /// The first round session IDs for each presign.
+
+        /// The first-round session IDs for each presign.
         /// The order of the session IDs corresponds to the order of the presigns.
-        /// The first round session ID is needed for the centralized sign process.
+        /// These IDs are needed for the centralized sign process.
         first_round_session_ids: vector<ID>,
+
         /// The serialized presign objects created in this batch.
         /// The order of the presigns corresponds to the order of the presign IDs.
         presigns: vector<vector<u8>>,
     }
 
-    /// Event emitted to initiate the signing process.
+    // END OF PRESIGN TYPES
+
+    // SIGN TYPES
+
+    /// Messages that have been signed by a user, a.k.a the centralized party,
+    /// but not yet by the blockchain.
+    /// Used for scenarios where the user needs to first agree to sign some transaction,
+    /// and the blockchain signs this transaction only later,
+    /// when some other conditions are met.
     ///
-    /// This event is captured by Validators to start the signing protocol.
-    /// It includes all the necessary information to link the signing process to a specific dWallet,
-    /// Presign session, and batched process.
-    ///
-    /// ### Fields
-    /// - **`session_id`**: A unique identifier for this signing session.
-    /// - **`presign_session_id`**: A unique identifier for the associated Presign session.
-    /// - **`initiator`**: The address of the user who initiated the signing event.
-    /// - **`batched_session_id`**: A unique identifier for the batched signing process this session belongs to.
-    /// - **`dwallet_id`**: The unique identifier for the dWallet used in the session.
-    /// - **`dkg_output`**: The output from the Distributed Key Generation (DKG) process used in this session.
-    /// - **`hashed_message`**: The hashed message to be signed in this session.
-    /// - **`presign`**: The Presign output used to assist in the signing process.
-    /// - **`centralized_signed_message`**: The final signed message generated by the centralized signing process.
-    /// - **`dwallet_mpc_network_key_version`**: The version of the dWallet's MPC network key.
-    public struct StartSignEvent has copy, drop {
-        session_id: ID,
-        presign_session_id: ID,
-        initiator: address,
-        batched_session_id: ID,
+    /// Can be used to implement an order-book-based exchange, for example.
+    /// User A first agrees to buy BTC with ETH at price X, and signs a transaction with this information.
+    /// When a matching user B, that agrees to sell BTC for ETH at price X,
+    /// signs a transaction with this information,
+    /// the blockchain can sign both transactions, and the exchange is completed.
+    public struct PartiallySignedMessages has key {
+        /// A unique identifier for this `PartiallySignedMessages` object.
+        id: UID,
+
+        /// The presigns bytes for each message.
+        /// The matching presign objects are being "burned" before this object is created.
+        presigns: vector<vector<u8>>,
+
+        /// The presigns session IDs.
+        presign_session_ids: vector<ID>,
+
+        /// The messages that are being signed.
+        messages: vector<vector<u8>>,
+
+        /// The user centralized signatures for each message.
+        signatures: vector<vector<u8>>,
+
+        /// The unique identifier of the associated dWallet.
         dwallet_id: ID,
-        dkg_output: vector<u8>,
-        hashed_message: vector<u8>,
-        presign: vector<u8>,
-        centralized_signed_message: vector<u8>,
-        dwallet_mpc_network_key_version: u8,
+
+        /// The DKG output of the dWallet.
+        dwallet_output: vector<u8>,
+
+        /// The unique identifier of the dWallet capability.
+        dwallet_cap_id: ID,
+
+        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
+        dwallet_mpc_network_decryption_key_version: u8,
     }
 
+    /// Event emitted when a [`PartiallySignedMessages`] object is created.
+    public struct CreatedPartiallySignedMessagesEvent has copy, drop {
+        /// The unique identifier of the created `PartiallySignedMessages` object.
+        partial_signatures_object_id: ID,
+    }
 
     /// Event emitted to start a batched sign process.
     ///
@@ -405,17 +445,70 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         initiator: address
     }
 
-    /// Event emitted to start a batched presign flow, i.e. a flow that creates multiple presigns at once.
+    /// Event emitted to signal the completion of a Sign process.
     ///
-    /// ### Fields
-    /// - **`session_id`**: The session identifier for the batched sign process.
-    /// - **`batch_size`**: The number of presign sessions to be started.
-    /// - **`initiator`**: The address of the user who initiated the protocol.
-    public struct StartBatchedPresignEvent has copy, drop {
+    /// This event contains signatures for all signed messages in the batch.
+    public struct CompletedSignEvent has copy, drop {
+        /// The session identifier for the signing process.
         session_id: ID,
-        batch_size: u64,
-        initiator: address
+
+        /// A collection of signed messages.
+        signed_messages: vector<vector<u8>>,
     }
+
+    /// The output of a batched Sign session.
+    public struct BatchedSignOutput has key, store {
+        /// A unique identifier for the batched sign output.
+        id: UID,
+
+        /// The session identifier for the batched sign process.
+        session_id: ID,
+
+        /// A collection of signatures (signed messages) generated in the batched sign session.
+        signatures: vector<vector<u8>>,
+
+        /// The unique identifier of the associated dWallet.
+        dwallet_id: ID,
+    }
+
+    /// Event emitted to initiate the signing process.
+    ///
+    /// This event is captured by Validators to start the signing protocol.
+    /// It includes all the necessary information to link the signing process
+    /// to a specific dWallet, Presign session, and batched process.
+    public struct StartSignEvent has copy, drop {
+        /// A unique identifier for this signing session.
+        session_id: ID,
+
+        /// A unique identifier for the associated Presign session.
+        presign_session_id: ID,
+
+        /// The address of the user who initiated the signing event.
+        initiator: address,
+
+        /// A unique identifier for the batched signing process this session belongs to.
+        batched_session_id: ID,
+
+        /// The unique identifier for the dWallet used in the session.
+        dwallet_id: ID,
+
+        /// The output from the Distributed Key Generation (DKG) process used in this session.
+        dkg_output: vector<u8>,
+
+        /// The hashed message to be signed in this session.
+        hashed_message: vector<u8>,
+
+        /// The Presign output used to assist in the signing process.
+        presign: vector<u8>,
+
+        /// The final signed message generated by the centralized signing process.
+        centralized_signed_message: vector<u8>,
+
+        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
+        dwallet_mpc_network_decryption_key_version: u8,
+    }
+
+    // END OF SIGN TYPES
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     /// Error raised when the sender is not the system address.
@@ -445,12 +538,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - Generates a new `DWalletCap` object.
     /// - Transfers the `DWalletCap` to the session initiator (`ctx.sender`).
     /// - Emits a `StartDKGFirstRoundEvent`.
-    ///
-    /// ### Emits
-    /// - `StartDKGFirstRoundEvent`:
-    ///   - `session_id`: The generated session ID.
-    ///   - `initiator`: The address of the transaction sender.
-    ///   - `dwallet_cap_id`: The ID of the created `DWalletCap`.
     public fun launch_dkg_first_round(ctx: &mut TxContext) {
         let dwallet_cap = create_dwallet_cap(ctx);
         let dwallet_cap_id = object::id(&dwallet_cap);
@@ -479,7 +566,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// ### Parameters
     /// - `initiator`: The address of the user who initiated the DKG session.
     /// - `session_id`: The ID of the DKG session.
-    /// - `output`: The output data from the first round.
+    /// - `decentralized_public_output`: The public output data from the first round.
     /// - `dwallet_cap_id`: The ID of the associated `DWalletCap`.
     /// - `ctx`: The transaction context.
     ///
@@ -488,7 +575,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     #[allow(unused_function)]
     fun create_dkg_first_round_output(
         session_id: ID,
-        output: vector<u8>,
+        decentralized_public_output: vector<u8>,
         initiator: address,
         ctx: &mut TxContext
     ) {
@@ -496,12 +583,12 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let dkg_output = DKGFirstRoundOutput {
             session_id,
             id: object::new(ctx),
-            output,
+            decentralized_public_output,
         };
         event::emit(DKGFirstRoundOutputEvent {
             session_id,
             output_object_id: object::id(&dkg_output),
-            output,
+            decentralized_public_output,
         });
         transfer::transfer(dkg_output, initiator);
     }
@@ -513,7 +600,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// all the necessary parameters to continue the DKG process.
     /// ### Parameters
     /// - `dwallet_cap`: A reference to the `DWalletCap`, representing the capability associated with the dWallet.
-    /// - `centralized_public_key_share_and_proof`: The user (centralized) public key share and proof from the first round.
+    /// - `centralized_public_key_share_and_proof`: The user (centralized) public key share and proof.
     /// - `first_round_output`: A reference to the `DKGFirstRoundOutput` structure containing the output of the first DKG round.
     /// - `first_round_session_id`: The session ID associated with the first DKG round.
     /// - `encrypted_centralized_secret_share_and_proof`: Encrypted centralized secret key share and its proof.
@@ -538,7 +625,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         event::emit(StartDKGSecondRoundEvent {
             session_id,
             initiator: tx_context::sender(ctx),
-            first_round_output: first_round_output.output,
+            first_round_output: first_round_output.decentralized_public_output,
             centralized_public_key_share_and_proof,
             dwallet_cap_id: object::id(dwallet_cap),
             first_round_session_id,
@@ -551,7 +638,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         });
         session_id
     }
-
 
     /// Transfers an encrypted dWallet user secret key share from a source entity to destination entity.
     ///
@@ -569,28 +655,23 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// ### Effects
     /// - Emits a `StartEncryptedShareVerificationEvent`,
     /// which is captured by the blockchain to initiate the verification process.
-    ///
-    /// ### Emits
-    /// - **`StartEncryptedShareVerificationEvent`**:
-    ///   - Includes the encrypted secret share, cryptographic proof,
-    ///     encryption key, and additional metadata required for verification.
     public fun transfer_encrypted_user_share(
         dwallet: &DWallet<Secp256K1>,
         destination_encryption_key: &EncryptionKey,
-        encrypted_secret_share_and_proof: vector<u8>,
-        source_signed_centralized_public_output: vector<u8>,
+        encrypted_centralized_secret_share_and_proof: vector<u8>,
+        source_centralized_public_output_signature: vector<u8>,
         source_ed25519_pubkey: vector<u8>,
         ctx: &mut TxContext,
     ) {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         event::emit(StartEncryptedShareVerificationEvent {
-            encrypted_centralized_secret_share_and_proof: encrypted_secret_share_and_proof,
-            dkg_public_output: get_dwallet_centralized_output<Secp256K1>(dwallet),
+            encrypted_centralized_secret_share_and_proof,
+            centralized_public_output: get_dwallet_centralized_public_output<Secp256K1>(dwallet),
             dwallet_id: object::id(dwallet),
             encryption_key: get_encryption_key(destination_encryption_key),
             encryption_key_id: object::id(destination_encryption_key),
             session_id,
-            signed_public_share: source_signed_centralized_public_output,
+            centralized_public_output_signature: source_centralized_public_output_signature,
             encryptor_ed25519_pubkey: source_ed25519_pubkey,
             initiator: tx_context::sender(ctx),
         });
@@ -603,39 +684,32 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// It finalizes the process by storing the encrypted user share on-chain and emitting the relevant event.
     ///
     /// ### Parameters
-    /// - **`dwallet_id`**: The unique identifier of the dWallet associated with the encrypted user share.
-    /// - **`encrypted_centralized_secret_share_and_proof`**: The encrypted centralized secret key share along with its cryptographic proof.
-    /// - **`encryption_key_id`**: The unique identifier of the encryption key used for the share.
-    /// - **`session_id`**: A unique identifier for the session related to this operation.
-    /// - **`signed_public_share`**: The signed public share corresponding to the encrypted secret share.
-    /// - **`encryptor_ed25519_pubkey`**: The Ed25519 public key of the encryptor used for signing.
-    /// - **`initiator`**: The address of the entity that performed the encryption.
-    /// ### Effects
-    /// - Creates an `EncryptedUserSecretKeyShare` object and stores it on-chain.
-    // TODO (#527): Transfer the encrypted user share move object to the destination address instead of the initiating user
-    /// - Transfers the newly created share to the initiator
-    /// - Emits a `CreatedEncryptedSecretShareEvent` which includes details about the encrypted share,
-    ///   cryptographic proofs, and related metadata.
+    /// - `dwallet_id`: The unique identifier of the dWallet associated with the encrypted user share.
+    /// - `encrypted_centralized_secret_share_and_proof`: The encrypted centralized secret key share along with its cryptographic proof.
+    /// - `encryption_key_id`: The `EncryptionKey` Move object ID used to encrypt the secret key share.
+    /// - `session_id`: A unique identifier for the session related to this operation.
+    /// - `centralized_public_output_signature`: The signed public share corresponding to the encrypted secret share.
+    /// - `encryptor_ed25519_pubkey`: The Ed25519 public key of the encryptor used for signing.
+    /// - `initiator`: The address of the entity that performed the encryption operation of this secret key share.
     #[allow(unused_function)]
     public(package) fun create_encrypted_user_share(
         dwallet_id: ID,
         encrypted_centralized_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
         session_id: ID,
-        dkg_public_output_signature: vector<u8>,
+        centralized_public_output_signature: vector<u8>,
         encryptor_ed25519_pubkey: vector<u8>,
-        // TODO (#527): Transfer the encrypted user share move object to
-        // TODO (#527): the destination address instead of the initiating user.
         initiator: address,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
+
         let encrypted_user_share = EncryptedUserSecretKeyShare {
             id: object::new(ctx),
             dwallet_id,
-            encrypted_secret_share_and_proof: encrypted_centralized_secret_share_and_proof,
+            encrypted_centralized_secret_share_and_proof,
             encryption_key_id,
-            signed_public_share: dkg_public_output_signature,
+            centralized_public_output_signature,
             encryptor_ed25519_pubkey,
             encryptor_address: initiator,
         };
@@ -643,12 +717,14 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             session_id,
             encrypted_share_obj_id: object::id(&encrypted_user_share),
             dwallet_id,
-            encrypted_secret_share_and_proof: encrypted_centralized_secret_share_and_proof,
+            encrypted_centralized_secret_share_and_proof,
             encryption_key_id,
-            signed_public_share: dkg_public_output_signature,
+            centralized_public_output_signature,
             encryptor_ed25519_pubkey,
             encryptor_address: initiator,
         });
+        // TODO (#527): Transfer the encrypted user share move object to the destination
+        // TODO (#527): address instead of the initiating user.
         transfer::transfer(encrypted_user_share, initiator);
     }
 
@@ -663,10 +739,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// ### Parameters
     /// - **`initiator`**: The address of the user who initiated the DKG session.
     /// - **`session_id`**: A unique identifier for the current DKG session.
-    /// - **`decentralized_output`**: The output of the second round of the DKG process,
+    /// - **`decentralized_public_output`**: The public output of the second round of the DKG process,
     ///      representing the decentralized computation result.
     /// - **`dwallet_cap_id`**: The unique identifier of the `DWalletCap` associated with this session.
-    /// - **`dwallet_mpc_network_key_version`**: The version of the MPC network key for the `DWallet`.
+    /// - **`dwallet_mpc_network_decryption_key_version`**: The version of the MPC network key for the `DWallet`.
     /// - **`encrypted_secret_share_and_proof`**: The encrypted user secret key share and associated cryptographic proof.
     /// - **`encryption_key_id`**: The ID of the `EncryptionKey` used for encrypting the secret key share.
     /// - **`signed_public_share`**: The signed public share corresponding to the secret key share.
@@ -685,9 +761,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     fun create_dkg_second_round_output(
         initiator: address,
         session_id: ID,
-        decentralized_output: vector<u8>,
+        decentralized_public_output: vector<u8>,
         dwallet_cap_id: ID,
-        dwallet_mpc_network_key_version: u8,
+        dwallet_mpc_network_decryption_key_version: u8,
         encrypted_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
         signed_public_share: vector<u8>,
@@ -700,8 +776,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let dwallet = dwallet::create_dwallet<Secp256K1>(
             session_id,
             dwallet_cap_id,
-            decentralized_output,
-            dwallet_mpc_network_key_version,
+            decentralized_public_output,
+            dwallet_mpc_network_decryption_key_version,
             centralized_public_output,
             ctx
         );
@@ -721,7 +797,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             initiator,
             dwallet_cap_id,
             dwallet_id: object::id(&dwallet),
-            value: decentralized_output,
+            decentralized_public_output,
         });
         transfer::public_freeze_object(dwallet);
     }
@@ -740,10 +816,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         DKGFirstRoundOutput {
             session_id,
             id: object::new(ctx),
-            output,
+            decentralized_public_output: output,
         }
     }
 
+    // todo(zeev): remove this.
     #[test_only]
     public fun partial_signatures_for_testing(
         presigns: vector<vector<u8>>,
@@ -752,7 +829,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         signatures: vector<vector<u8>>,
         dwallet_id: ID,
         dwallet_cap_id: ID,
-        dwallet_mpc_network_key_version: u8,
+        dwallet_mpc_network_decryption_key_version: u8,
         ctx: &mut TxContext
     ): PartiallySignedMessages {
         PartiallySignedMessages {
@@ -764,7 +841,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_output: vector::empty(),
             dwallet_cap_id,
-            dwallet_mpc_network_key_version,
+            dwallet_mpc_network_decryption_key_version,
         }
     }
 
@@ -776,14 +853,14 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun create_dkg_second_round_output_for_testing(
         initiator: address,
         session_id: ID,
-        output: vector<u8>,
+        decentralized_public_output: vector<u8>,
         dwallet_cap_id: ID,
         ctx: &mut TxContext
     ) {
         create_dkg_second_round_output(
             initiator,
             session_id,
-            output,
+            decentralized_public_output,
             dwallet_cap_id,
             0,
             vector::empty(),
@@ -832,9 +909,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 session_id: object::id_from_address(session_id),
                 initiator: tx_context::sender(ctx),
                 dwallet_id: object::id(dwallet),
-                dkg_output: get_dwallet_decentralized_output<Secp256K1>(dwallet),
+                dkg_output: get_dwallet_decentralized_public_output<Secp256K1>(dwallet),
                 batch_session_id,
-                dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version(dwallet),
+                dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version(dwallet),
             });
         };
     }
@@ -867,7 +944,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         first_round_output: vector<u8>,
         first_round_session_id: ID,
         batch_session_id: ID,
-        dwallet_mpc_network_key_version: u8,
+        dwallet_mpc_network_decryption_key_version: u8,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
@@ -882,7 +959,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             first_round_output,
             first_round_session_id,
             batch_session_id,
-            dwallet_mpc_network_key_version,
+            dwallet_mpc_network_decryption_key_version,
         });
     }
 
@@ -1080,7 +1157,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 centralized_signed_message,
                 dkg_output: get_dwallet_decentralized_output<Secp256K1>(dwallet),
                 hashed_message,
-                dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version<Secp256K1>(dwallet),
+                dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version<Secp256K1>(dwallet),
             });
             transfer::transfer(presign, SYSTEM_ADDRESS);
             i = i + 1;
@@ -1136,104 +1213,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         });
     }
 
-    #[test_only]
-    /// Call the underlying `create_sign_output`.
-    /// This function is intended for testing purposes only and should not be used in production.
-    /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_only
-    public fun create_sign_output_for_testing(
-        signed_messages: vector<vector<u8>>,
-        batch_session_id: ID,
-        initiator: address,
-        dwallet_id: ID,
-        ctx: &mut TxContext
-    ) {
-        // Call the main create_sign_output function with the provided parameters
-        create_sign_output(
-            signed_messages,
-            batch_session_id,
-            initiator,
-            dwallet_id,
-            ctx
-        );
-    }
-
-    /// Generates a mock `DWallet<Secp256K1>` object for testing purposes.
-    ///
-    /// This function creates a dWallet object with random data,
-    /// useful for testing or initialization in non-production environments.
-    ///
-    /// ### Parameters
-    /// - `ctx`: The transaction context for generating IDs and objects.
-    /// - `dwallet_cap_id`: The ID of the capability associated with the mock dWallet.
-    /// - `dkg_output`: The decentralized DKG output.
-    ///
-    /// ### Effects
-    /// - Creates and initializes a `DWallet<Secp256K1>` object.
-    /// - Links the dWallet to the provided capability.
-    ///
-    /// ### Returns
-    /// - `DWallet<Secp256K1>`: A mock dWallet object.
-    public(package) fun create_mock_dwallet_for_testing(
-        dkg_output: vector<u8>,
-        ctx: &mut TxContext
-    ): DWallet<Secp256K1> {
-        let dwallet_cap = create_dwallet_cap(ctx);
-        let dwallet_cap_id = object::id(&dwallet_cap);
-        transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
-        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-        let dwallet_mpc_network_key_version: u8 = 0;
-        dwallet::create_dwallet<Secp256K1>(
-            session_id,
-            dwallet_cap_id,
-            dkg_output,
-            dwallet_mpc_network_key_version,
-            vector[],
-            ctx
-        )
-    }
-
-    // TODO (#493): Remove mock functions before mainnet
-    /// Created an immutable [`DWallet`] object with the given DKG output.
-    public fun create_mock_dwallet(
-        dkg_output: vector<u8>,
-        dkg_centralized_output: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        let dwallet_cap = create_dwallet_cap(ctx);
-        let dwallet_cap_id = object::id(&dwallet_cap);
-        transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
-        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-        let dwallet_mpc_network_key_version: u8 = 0;
-        let dwallet = dwallet::create_dwallet<Secp256K1>(
-            session_id,
-            dwallet_cap_id,
-            dkg_output,
-            dwallet_mpc_network_key_version,
-            dkg_centralized_output,
-            ctx
-        );
-        transfer::public_freeze_object(dwallet);
-    }
-
-    /// Generates a new mock `Presign` object with random IDs and data.
-    /// This function is useful for testing or initializing Presign objects.
-    public fun create_mock_presign(
-        dwallet_id: ID,
-        presign: vector<u8>,
-        first_round_session_id: ID,
-        ctx: &mut TxContext,
-    ): Presign {
-        let id = object::new(ctx);
-
-        // Create and return the Presign object.
-        Presign {
-            id,
-            dwallet_id,
-            presign,
-            first_round_session_id,
-        }
-    }
-
     /// A function to publish messages signed by the user on chain with on-chain verification,
     /// without launching the chain's sign flow immediately.
     ///
@@ -1282,7 +1261,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_output: get_dwallet_decentralized_output(dwallet),
             dwallet_id: object::id(dwallet),
             dwallet_cap_id: get_dwallet_cap_id(dwallet),
-            dwallet_mpc_network_key_version: get_dwallet_mpc_network_key_version(dwallet),
+            dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version(dwallet),
         };
         event::emit(CreatedPartiallySignedMessagesEvent {
             partial_signatures_object_id: object::id(&partial_signatures),
@@ -1307,7 +1286,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_cap_id,
             dwallet_output,
-            dwallet_mpc_network_key_version,
+            dwallet_mpc_network_decryption_key_version,
         } = partial_signature;
         object::delete(id);
         let message_approvals_len = vector::length(message_approvals);
@@ -1339,17 +1318,117 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 centralized_signed_message,
                 dkg_output: dwallet_output,
                 hashed_message,
-                dwallet_mpc_network_key_version,
+                dwallet_mpc_network_decryption_key_version,
             });
             i = i + 1;
         };
     }
 
     /// Verifies that the user's centralized party signatures are valid.
+    /// todo(itay): why is it here?
     native fun verify_partially_signed_signatures(
         partial_signatures: vector<vector<u8>>,
         messages: vector<vector<u8>>,
         presigns: vector<vector<u8>>,
         dkg_output: vector<u8>
     ): bool;
+
+
+    #[test_only]
+    /// Call the underlying `create_sign_output`.
+    /// This function is intended for testing purposes only and should not be used in production.
+    /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_only
+    public fun create_sign_output_for_testing(
+        signed_messages: vector<vector<u8>>,
+        batch_session_id: ID,
+        initiator: address,
+        dwallet_id: ID,
+        ctx: &mut TxContext
+    ) {
+        // Call the main create_sign_output function with the provided parameters
+        create_sign_output(
+            signed_messages,
+            batch_session_id,
+            initiator,
+            dwallet_id,
+            ctx
+        );
+    }
+
+    /// Generates a mock `DWallet<Secp256K1>` object for testing purposes.
+    ///
+    /// This function creates a dWallet object with random data,
+    /// useful for testing or initialization in non-production environments.
+    ///
+    /// ### Parameters
+    /// - `ctx`: The transaction context for generating IDs and objects.
+    /// - `dwallet_cap_id`: The ID of the capability associated with the mock dWallet.
+    /// - `dkg_output`: The decentralized DKG output.
+    ///
+    /// ### Effects
+    /// - Creates and initializes a `DWallet<Secp256K1>` object.
+    /// - Links the dWallet to the provided capability.
+    ///
+    /// ### Returns
+    /// - `DWallet<Secp256K1>`: A mock dWallet object.
+    public(package) fun create_mock_dwallet_for_testing(
+        dkg_output: vector<u8>,
+        ctx: &mut TxContext
+    ): DWallet<Secp256K1> {
+        let dwallet_cap = create_dwallet_cap(ctx);
+        let dwallet_cap_id = object::id(&dwallet_cap);
+        transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
+        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        let dwallet_mpc_network_decryption_key_version: u8 = 0;
+        dwallet::create_dwallet<Secp256K1>(
+            session_id,
+            dwallet_cap_id,
+            dkg_output,
+            dwallet_mpc_network_decryption_key_version,
+            vector[],
+            ctx
+        )
+    }
+
+    // TODO (#493): Remove mock functions before mainnet
+    /// Created an immutable [`DWallet`] object with the given DKG output.
+    public fun create_mock_dwallet(
+        dkg_output: vector<u8>,
+        dkg_centralized_output: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        let dwallet_cap = create_dwallet_cap(ctx);
+        let dwallet_cap_id = object::id(&dwallet_cap);
+        transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
+        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        let dwallet_mpc_network_decryption_key_version: u8 = 0;
+        let dwallet = dwallet::create_dwallet<Secp256K1>(
+            session_id,
+            dwallet_cap_id,
+            dkg_output,
+            dwallet_mpc_network_decryption_key_version,
+            dkg_centralized_output,
+            ctx
+        );
+        transfer::public_freeze_object(dwallet);
+    }
+
+    /// Generates a new mock `Presign` object with random IDs and data.
+    /// This function is useful for testing or initializing Presign objects.
+    public fun create_mock_presign(
+        dwallet_id: ID,
+        presign: vector<u8>,
+        first_round_session_id: ID,
+        ctx: &mut TxContext,
+    ): Presign {
+        let id = object::new(ctx);
+
+        // Create and return the Presign object.
+        Presign {
+            id,
+            dwallet_id,
+            presign,
+            first_round_session_id,
+        }
+    }
 }

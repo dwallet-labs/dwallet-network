@@ -1143,14 +1143,15 @@ mod checked {
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
+                    // decentralized_public_output
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(event_data.dwallet_cap_id.bytes.to_vec()),
                     CallArg::Pure(bcs_to_bytes(&dwallet_network_key_version)?),
                     CallArg::Pure(bcs_to_bytes(&event_data.encrypted_centralized_secret_share_and_proof)?),
                     CallArg::Pure(event_data.encryption_key_id.bytes.to_vec()),
-                    CallArg::Pure(bcs_to_bytes(&event_data.public_output_signature)?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.centralized_public_output_signature)?),
                     CallArg::Pure(bcs_to_bytes(&event_data.initiator_public_key)?),
-                    CallArg::Pure(bcs_to_bytes(&event_data.public_output)?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.centralized_public_output)?),
                 ],
             ),
             MPCRound::PresignFirst(
@@ -1249,9 +1250,9 @@ mod checked {
                     ),
                     CallArg::Pure(verification_data.encryption_key_id.bytes.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&verification_data.dkg_public_output_signature).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&verification_data.centralized_public_output_signature).unwrap()),
                     CallArg::Pure(
-                        bcs::to_bytes(&verification_data.initiator_public_key).unwrap(),
+                        bcs::to_bytes(&verification_data.encryptor_ed25519_pubkey).unwrap(),
                     ),
                     CallArg::Pure(verification_data.initiator.to_vec()),
                 ],
@@ -1263,8 +1264,8 @@ mod checked {
                     vec![
                         CallArg::Pure(bcs_to_bytes(&verification_data.encryption_key)?),
                         CallArg::Pure(bcs_to_bytes(&verification_data.encryption_key_signature)?),
-                        CallArg::Pure(bcs_to_bytes(&verification_data.sender_sui_pubkey)?),
-                        CallArg::Pure(bcs_to_bytes(&verification_data.scheme)?),
+                        CallArg::Pure(bcs_to_bytes(&verification_data.key_singer_public_key)?),
+                        CallArg::Pure(bcs_to_bytes(&verification_data.encryption_key_scheme)?),
                         CallArg::Pure(verification_data.initiator.to_vec()),
                         CallArg::Pure(data.session_info.session_id.to_vec()),
                     ],

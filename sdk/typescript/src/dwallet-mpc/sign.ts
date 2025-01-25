@@ -7,7 +7,7 @@ import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-was
 import { bcs } from '../bcs/index.js';
 import { Transaction } from '../transactions/index.js';
 import { EncryptedUserShare, fetchEncryptedUserSecretShare } from './encrypt-user-share.js';
-import type { Config, DWallet } from './globals.js';
+import type { Config, DWallet, DWalletWithSecretKeyShare } from './globals.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
 	dWalletModuleName,
@@ -57,10 +57,9 @@ export function isCompletedSignEvent(obj: any): obj is CompletedSignEvent {
 
 export async function signMessageTransactionCall(
 	c: Config,
-	dwalletCapID: string,
+	dWallet: DWallet | DWalletWithSecretKeyShare,
 	messages: Uint8Array[],
 	hash: Hash,
-	dWalletID: string,
 	presignIDs: string[],
 	centralizedSignedMessages: Uint8Array[],
 ): Promise<CompletedSignEvent> {
@@ -69,7 +68,7 @@ export async function signMessageTransactionCall(
 	const [messageApprovals] = tx.moveCall({
 		target: approveMessagesMoveFunc,
 		arguments: [
-			tx.object(dwalletCapID),
+			tx.object(dWallet.dwallet_cap_id),
 			tx.pure(bcs.u8().serialize(hash.valueOf())),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 		],
@@ -81,7 +80,7 @@ export async function signMessageTransactionCall(
 			messageApprovals,
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 			tx.makeMoveVec({ elements: presignIDs.map((presignID) => tx.object(presignID)) }),
-			tx.object(dWalletID),
+			tx.object(dWallet.id.id),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
 		],
 	});
@@ -226,7 +225,6 @@ export async function signWithEncryptedDWallet(
 	const dWallet = await fetchObjectWithType<DWallet>(conf, dWalletMoveType, isDWallet, dwalletID);
 	const encryptedSecretShare = await fetchEncryptedUserSecretShare(conf, dwalletID);
 	const userShare = EncryptedUserShare.fromConfig(conf);
-
 	// The share is encrypted to myself, this is why the source and dest are the same.
 	const decryptedShare = await userShare.decryptAndVerifyUserShare(
 		activeEncryptionKeysTableID,
@@ -268,10 +266,9 @@ export async function signWithEncryptedDWallet(
 
 	return await signMessageTransactionCall(
 		conf,
-		dWallet.dwallet_cap_id,
+		dWallet,
 		messages,
 		Hash.SHA256,
-		dWallet.id.id,
 		presignCompletionEvent.presign_ids,
 		centralizedSignedMsg,
 	);

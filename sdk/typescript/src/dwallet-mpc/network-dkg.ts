@@ -5,19 +5,19 @@ import { delay } from './globals.js';
 
 /**
  * Fetch the protocol public parameters from the network.
- * @param conf
+ * @param c
  * @param keyScheme
  * @param keyVersionNum
  */
 export async function fetchProtocolPublicParameters(
-	conf: Config,
+	c: Config,
 	keyScheme: MPCKeyScheme,
 	keyVersionNum?: number | null,
 ): Promise<any> {
 	const startTime = Date.now();
 
-	while (Date.now() - startTime <= conf.timeout) {
-		const systemStateSummary = await conf.client.getLatestPeraSystemState();
+	while (Date.now() - startTime <= c.timeout) {
+		const systemStateSummary = await c.client.getLatestPeraSystemState();
 		const decryptionKeyShares = convertToMap(systemStateSummary.networkMpcKeys);
 
 		if (!decryptionKeyShares.has(keyScheme)) {
@@ -41,7 +41,7 @@ export async function fetchProtocolPublicParameters(
 	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
 	throw new Error(
 		`timeout: unable to fetch network DKG output within ${
-			conf.timeout / (60 * 1000)
+			c.timeout / (60 * 1000)
 		} minutes (${seconds} seconds passed).`,
 	);
 }

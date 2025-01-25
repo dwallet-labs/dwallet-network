@@ -287,7 +287,7 @@ fn sign_party_session_info(
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCRound::Sign(SignMessageData {
             batch_session_id: deserialized_event.batched_session_id.bytes,
-            message: deserialized_event.hashed_message.clone(),
+            hashed_message: deserialized_event.hashed_message.clone(),
             dwallet_id: deserialized_event.dwallet_id.bytes,
         }),
     }

@@ -16,7 +16,7 @@ import { signWithEncryptedDWallet } from '../../src/dwallet-mpc/sign';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import {
 	DKGCentralizedPrivateOutput,
-	DKGDecentralizedOutput,
+	DKGDecentralizedPublicOutput,
 	mockCreateDwallet,
 } from './utils/dwallet_mocks';
 import { setup, TestToolbox } from './utils/setup';
@@ -121,7 +121,7 @@ describe('encrypt user share', () => {
 		const mockNetworkKey = true;
 		const completion = await signWithEncryptedDWallet(
 			conf,
-			dwallet.id,
+			dwallet.id.id,
 			activeEncryptionKeysTableID,
 			messages,
 			mockNetworkKey,
@@ -149,7 +149,7 @@ describe('encrypt user share — offline', () => {
 		expect(decrypted).toEqual(dwalletSecretKeyShare);
 		const is_valid = verify_user_share(
 			decrypted,
-			new Uint8Array(Array.from(Buffer.from(DKGDecentralizedOutput, 'base64'))),
+			new Uint8Array(Array.from(Buffer.from(DKGDecentralizedPublicOutput, 'base64'))),
 		);
 		expect(is_valid).toBeTruthy();
 	});

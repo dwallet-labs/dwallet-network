@@ -27,7 +27,7 @@ type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
     secp256k1::GroupElement,
 >;
 
-/// Verifies that the given encrypted secret share matches the encryption of the dWallet's
+/// Verifies that the given encrypted secret key share matches the encryption of the dWallet's
 /// secret share, validates the signature on the dWallet's public share,
 /// and ensures the signing public key matches the address that initiated this transaction.
 pub(crate) fn verify_encrypted_share(
@@ -36,21 +36,23 @@ pub(crate) fn verify_encrypted_share(
     verify_dwallet_public_output_signature(&verification_data)?;
     verify_centralized_secret_key_share_proof(
         &verification_data.encrypted_centralized_secret_share_and_proof,
-        &verification_data.dkg_public_output,
+        &verification_data.centralized_public_output,
         &verification_data.encryption_key,
     )
     .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
 }
 
-/// Verifies that the `verification_data`'s public key is matching the initiator Sui address.
+/// Verifies that the `verification_data`'s public key is matching the initiator Ika address.
+/// Note that the signature is not verified here,
+/// as it is verified in the `register_encryption_key` function before this.
 pub(crate) fn verify_encryption_key(
     verification_data: &StartEncryptionKeyVerificationEvent,
 ) -> DwalletMPCResult<()> {
     let public_key =
-        <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.sender_sui_pubkey)
+        <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.key_singer_public_key)
             .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
-    let derived_sui_addr = PeraAddress::from(&public_key);
-    if derived_sui_addr != verification_data.initiator {
+    let derived_ika_addr = PeraAddress::from(&public_key);
+    if derived_ika_addr != verification_data.initiator {
         return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
     }
     Ok(())
@@ -63,18 +65,18 @@ fn verify_dwallet_public_output_signature(
     verification_data: &StartEncryptedShareVerificationEvent,
 ) -> DwalletMPCResult<()> {
     let public_key =
-        <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.initiator_public_key)
+        <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.encryptor_ed25519_pubkey)
             .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     let derived_ika_addr = PeraAddress::from(&public_key);
     if derived_ika_addr != verification_data.initiator {
         return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
     }
     let signature = <Ed25519Signature as ToFromBytes>::from_bytes(
-        &verification_data.dkg_public_output_signature,
+        &verification_data.centralized_public_output_signature,
     )
     .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     public_key
-        .verify(&verification_data.dkg_public_output, &signature)
+        .verify(&verification_data.centralized_public_output, &signature)
         .map_err(|e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     Ok(())
 }
@@ -97,7 +99,7 @@ fn verify_centralized_secret_key_share_proof(
         protocol_public_params.group_public_parameters.clone(),
         bcs::from_bytes(encryption_key)?,
     );
-    let dkg_public_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
+    let centralized_public_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
         bcs::from_bytes(serialized_dkg_public_output)?;
     let (proof, encrypted_centralized_secret_key_share): (
         SecretShareEncryptionProof,
@@ -110,7 +112,7 @@ fn verify_centralized_secret_key_share_proof(
             .ciphertext_space_public_parameters(),
     )?;
     let centralized_public_key_share = secp256k1::GroupElement::new(
-        dkg_public_output.public_key_share,
+        centralized_public_output.public_key_share,
         &protocol_public_params.group_public_parameters,
     )?;
     let statement = (

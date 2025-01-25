@@ -15,6 +15,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
+// todo(zeev): move this to the dwallet_mpc_types.
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCRound {
     /// The first round of the DKG protocol.
@@ -61,7 +63,7 @@ pub enum MPCRound {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SignMessageData {
     pub batch_session_id: ObjectID,
-    pub message: Vec<u8>,
+    pub hashed_message: Vec<u8>,
     /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,
 }
@@ -119,16 +121,28 @@ pub struct SessionInfo {
 /// as the inner data of the [`MPCRound::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
-    /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
+    /// Encrypted centralized secret key share and the associated
+    /// cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
-    /// The DKG public output of the dwallet that its secret is being encrypted.
-    pub dkg_public_output: Vec<u8>,
+    /// The public output of the centralized party,
+    /// belongs to the dWallet that its centralized secret share is being encrypted.
+    pub centralized_public_output: Vec<u8>,
+    /// The signature of the dWallet `centralized_public_output`,
+    /// signed by the secret key that corresponds to `encryptor_ed25519_pubkey`.
+    pub centralized_public_output_signature: Vec<u8>,
+    /// The ID of the dWallet that this encrypted secret key share belongs to.
     pub dwallet_id: ID,
+    /// The encryption key used to encrypt the secret key share with.
     pub encryption_key: Vec<u8>,
+    /// The `EncryptionKey` Move object ID.
     pub encryption_key_id: ID,
     pub session_id: ID,
-    pub dkg_public_output_signature: Vec<u8>,
-    pub initiator_public_key: Vec<u8>,
+    /// The public key of the encryptor.
+    /// Used to verify the signature on the `centralized_public_output`.
+    /// Note that the "encryptor" is the entity that preformed the encryption,
+    /// and the encryption can be done with another public key, so this is NOT
+    /// the public key that was used for encryption.
+    pub encryptor_ed25519_pubkey: Vec<u8>,
     pub initiator: PeraAddress,
 }
 
@@ -144,15 +158,15 @@ impl StartEncryptedShareVerificationEvent {
 }
 
 /// An event emitted to start an encryption key verification process.
-/// Since we cannot use native functions if we depend on Sui to hold our state,
-/// we need to emit an event to start the verification process, like we start the other MPC processes.
+/// Ika does not support native functions, so an event is emitted and
+/// caught by the blockchain, which then starts the verification process,
+/// similar to the MPC processes.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptionKeyVerificationEvent {
-    pub scheme: u8,
+    pub encryption_key_scheme: u8,
     pub encryption_key: Vec<u8>,
-    pub key_owner_address: PeraAddress,
     pub encryption_key_signature: Vec<u8>,
-    pub sender_sui_pubkey: Vec<u8>,
+    pub key_singer_public_key: Vec<u8>,
     pub initiator: PeraAddress,
     pub session_id: ID,
 }
@@ -171,31 +185,33 @@ impl StartEncryptionKeyVerificationEvent {
 /// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGSecondRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartDKGSecondRoundEvent {
-    /// Unique identifier for the MPC session.
+    /// The unique identifier for the DKG session.
     pub session_id: PeraAddress,
-    /// The address of the user that initiated this session.
+    /// The address of the user who initiated the dWallet creation.
     pub initiator: PeraAddress,
-    /// The DKG first round output.
+    /// The output from the first round of the DKG process.
     pub first_round_output: Vec<u8>,
-    /// The user (centralized) public key share and proof.
+    /// A serialized vector containing the centralized public key share and its proof.
     pub centralized_public_key_share_and_proof: Vec<u8>,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ID,
     /// The session ID associated with the first DKG round.
     pub first_round_session_id: ID,
-    /// Encrypted centralized secret key share and its proof.
+    /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     /// The `EncryptionKey` object used for encrypting the secret key share.
     pub encryption_key: Vec<u8>,
     /// The unique identifier of the `EncryptionKey` object.
     pub encryption_key_id: ID,
-    /// The public output of the DKG process.
-    pub public_output: Vec<u8>,
-    /// The signature for the public output of the DKG process.
-    pub public_output_signature: Vec<u8>,
-    /// The Ed25519 public key of the initiator, used to verify the signature on the public output.
+    /// The public output of the centralized party in the DKG process.
+    pub centralized_public_output: Vec<u8>,
+    /// The signature for the public output of the centralized party in the DKG process.
+    pub centralized_public_output_signature: Vec<u8>,
+    /// The Ed25519 public key of the initiator,
+    /// used to verify the signature on the centralized public output.
     pub initiator_public_key: Vec<u8>,
 }
+
 
 impl StartDKGSecondRoundEvent {
     /// This function allows comparing this event with the Move event.

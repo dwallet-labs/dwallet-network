@@ -166,12 +166,12 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             let session_id = object::id_from_address(@0x20);
             let dwallet_cap_id = object::id_from_address(@0x30);
-            let output: vector<u8> = std::vector::empty();
+            let decentralized_public_output: vector<u8> = std::vector::empty();
 
             dwallet_2pc_mpc_ecdsa_k1::create_dkg_second_round_output_for_testing(
                 SENDER_ADDRESS,
                 session_id,
-                output,
+                decentralized_public_output,
                 dwallet_cap_id,
                 ctx,
             );
@@ -225,12 +225,12 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let ctx = test_scenario::ctx(&mut scenario);
             let session_id = object::id_from_address(@0x20);
             let dwallet_cap_id = object::id_from_address(@0x30);
-            let output: vector<u8> = std::vector::empty();
+            let decentralized_public_output: vector<u8> = std::vector::empty();
 
             dwallet_2pc_mpc_ecdsa_k1::create_dkg_second_round_output_for_testing(
                 sender,
                 session_id,
-                output,
+                decentralized_public_output,
                 dwallet_cap_id,
                 ctx,
             );
