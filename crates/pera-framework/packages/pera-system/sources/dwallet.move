@@ -497,7 +497,6 @@ module pera_system::dwallet {
         }
     }
 
-    #[allow(unused_function)]
     /// Checks if the given hash scheme is supported for message signing.
     fun is_supported_hash_scheme(val: u8): bool {
         return match (val) {

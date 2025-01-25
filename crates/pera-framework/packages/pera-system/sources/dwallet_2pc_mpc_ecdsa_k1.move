@@ -1072,49 +1072,49 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         );
     }
 
+
     /// Initiates the signing process for a given dWallet.
     ///
-    /// This function emits a `StartSignEvent`, providing all necessary
-    /// metadata and ensuring the integrity of the signing process.
-    /// It validates the linkage between the `DWallet`, `DWalletCap`, and `Presign`.
-    /// It also "burns" the [`Presign`] object, by sending it to the system address,
-    /// as every presign can only be used to sign only one message.
+    /// This function emits a `StartSignEvent` and a `StartBatchedSignEvent`,
+    /// providing all necessary metadata to ensure the integrity of the signing process.
+    /// It validates the linkage between the `DWallet`, `DWalletCap`, and `Presign` objects.
+    /// Additionally, it "burns" the `Presign` object by transferring it to the system address,
+    /// as each presign can only be used to sign one message.
     ///
-    /// ### Effects
+    /// # Effects
     /// - Validates the linkage between dWallet components.
-    /// - Verifies that the number of `hashed_messages`, `message_approvals`, and
-    ///   `centralized_signed_messages` are equal.
-    /// - Emits a `StartSignEvent` with the hashed message, presign outputs,
-    ///   and additional metadata.
+    /// - Ensures that the number of `hashed_messages`, `message_approvals`,
+    ///   `centralized_signed_messages`, and `presigns` are equal.
+    /// - Emits the following events:
+    ///   - `StartBatchedSignEvent`: Contains the session details and the list of hashed messages.
+    ///   - `StartSignEvent`: Includes session details, hashed message, presign outputs,
+    ///     DKG output, and metadata.
     ///
-    /// ### Emits
-    /// - `StartBatchedSignEvent`:
-    ///   - Contains the session details and the list of hashed messages.
-    /// - `StartSignEvent`:
-    ///   - Includes session details, hashed message, presign outputs,
-    ///     and DKG output.
+    /// # Aborts
+    /// - **`EDwalletMismatch`**: If the `dwallet` object does not match the `Presign` object.
+    /// - **`EApprovalsAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
+    ///   match the number of `message_approvals`.
+    /// - **`ECentralizedSignedMessagesAndMessagesLenMismatch`**: If the number of `hashed_messages`
+    ///   does not match the number of `centralized_signed_messages`.
+    /// - **`EPresignsAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
+    ///   match the number of `presigns`.
+    /// - **`EMessageApprovalDWalletMismatch`**: If the `DWalletCap` ID does not match the
+    ///   expected `DWalletCap` ID for any of the message approvals.
+    /// - **`EMissingApprovalOrWrongApprovalOrder`**: If the approvals are not in the correct order.
     ///
-    /// ### Aborts
-    /// - **`EDwalletMismatch`**: If the `dwallet` object does not match the ID
-    ///   in the `Presign` object.
-    /// - **`EApprovalsAndMessagesLenMismatch`**: If the length of the `hashed_messages`
-    ///   does not match the length of the `message_approvals`.
-    /// - **`ECentralizedSignedMessagesAndMessagesLenMismatch`**: If the length of
-    ///   `hashed_messages` does not match the length of `centralized_signed_messages`.
-    /// - **`EMessageApprovalDWalletMismatch`**: If the DWalletCap ID does not match
-    ///   the expected DWalletCap ID for any of the message approvals.
-    /// - **`EMissingApprovalOrWrongApprovalOrder`**: If the approved messages are not
-    ///   in the same order as the `messages`.
-    ///
-    /// ### Parameters
-    /// - `dwallet_cap`: The capability associated with the dWallet.
-    /// - `messages`: The list of messages to be signed.
-    /// - `message_approvals`: The approvals for the messages.
-    /// - `presign`: The presign object containing intermediate outputs.
-    /// - `dwallet`: The dWallet object.
-    /// - `centralized_signed_messages`: The list of centralized signatures.
-    /// - `presign_session_id`: The session ID of the presign process.
-    /// - `ctx`: The mutable transaction context.
+    /// # Parameters
+    /// - `message_approvals`: A mutable vector of `MessageApproval` objects representing
+    ///    approvals for the messages.
+    /// - `messages`: A vector of messages (in `vector<u8>` format) to be signed.
+    /// - `presigns`: A mutable vector of `Presign` objects containing intermediate signing outputs.
+    /// - `dwallet`: A reference to the `DWallet` object being used for signing.
+    /// - `centralized_signed_messages`: A mutable vector of centralized party signatures.
+    ///   for the messages being signed.
+    // todo(yael):
+    // consult with Omer on what types should this get, probalby the sign<T: drop> and then
+    // pass it the `dwallet`, dwallet: &DWallet<T>,
+    // Ask Omer if this needs to be in the dwallet.move file.
+    // Make sure the Move and TS tests are working.
     public fun sign(
         message_approvals: &mut vector<MessageApproval>,
         mut messages: vector<vector<u8>>,
@@ -1269,6 +1269,12 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         transfer::transfer(partial_signatures, tx_context::sender(ctx));
     }
 
+    // todo(yael):
+    // this function should be changed to recieve something like this:
+    // future_sign<D: store, E: store + copy + drop>
+    // PartiallySignedMessages<D,E> should be changed to this and reanmed to `PartialCentralizedSignedMessages`
+    // Then consult with Omer on how to store the event and data (see `PartialUserSignedMessages` in sign-ia-wasm).
+    // After this is done and tested move it to the dwallet.move file and fix the tests.
     /// A function to launch a sign flow with a previously published [`PartiallySignedMessages`].
     ///
     /// See the docs of [`PartiallySignedMessages`] for more details on when this may be used.
