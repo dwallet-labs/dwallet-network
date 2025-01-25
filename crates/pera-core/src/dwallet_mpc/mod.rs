@@ -167,7 +167,9 @@ fn dkg_second_public_input(
     Ok(DKGSecondParty::generate_public_input(
         protocol_public_parameters,
         deserialized_event.first_round_output.clone(),
-        deserialized_event.centralized_public_key_share_and_proof.clone(),
+        deserialized_event
+            .centralized_public_key_share_and_proof
+            .clone(),
     )?)
 }
 

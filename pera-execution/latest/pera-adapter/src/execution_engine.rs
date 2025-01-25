@@ -1146,9 +1146,13 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(event_data.dwallet_cap_id.bytes.to_vec()),
                     CallArg::Pure(bcs_to_bytes(&dwallet_network_key_version)?),
-                    CallArg::Pure(bcs_to_bytes(&event_data.encrypted_centralized_secret_share_and_proof)?),
+                    CallArg::Pure(bcs_to_bytes(
+                        &event_data.encrypted_centralized_secret_share_and_proof,
+                    )?),
                     CallArg::Pure(event_data.encryption_key_id.bytes.to_vec()),
-                    CallArg::Pure(bcs_to_bytes(&event_data.centralized_public_output_signature)?),
+                    CallArg::Pure(bcs_to_bytes(
+                        &event_data.centralized_public_output_signature,
+                    )?),
                     CallArg::Pure(bcs_to_bytes(&event_data.initiator_public_key)?),
                     CallArg::Pure(bcs_to_bytes(&event_data.centralized_public_output)?),
                 ],
@@ -1245,11 +1249,17 @@ mod checked {
                 vec![
                     CallArg::Pure(verification_data.dwallet_id.bytes.to_vec()),
                     CallArg::Pure(
-                        bcs::to_bytes(&verification_data.encrypted_centralized_secret_share_and_proof).unwrap(),
+                        bcs::to_bytes(
+                            &verification_data.encrypted_centralized_secret_share_and_proof,
+                        )
+                        .unwrap(),
                     ),
                     CallArg::Pure(verification_data.encryption_key_id.bytes.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&verification_data.centralized_public_output_signature).unwrap()),
+                    CallArg::Pure(
+                        bcs::to_bytes(&verification_data.centralized_public_output_signature)
+                            .unwrap(),
+                    ),
                     CallArg::Pure(
                         bcs::to_bytes(&verification_data.encryptor_ed25519_pubkey).unwrap(),
                     ),

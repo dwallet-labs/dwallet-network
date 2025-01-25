@@ -212,7 +212,6 @@ pub struct StartDKGSecondRoundEvent {
     pub initiator_public_key: Vec<u8>,
 }
 
-
 impl StartDKGSecondRoundEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`StartDKGSecondRoundEvent`] events from the chain
