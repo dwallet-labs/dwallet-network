@@ -62,6 +62,47 @@ module pera_system::dwallet {
         dwallet_mpc_network_decryption_key_version: u8,
     }
 
+    /// Messages that have been signed by a user, a.k.a the centralized party,
+    /// but not yet by the blockchain.
+    /// Used for scenarios where the user needs to first agree to sign some transaction,
+    /// and the blockchain signs this transaction only later,
+    /// when some other conditions are met.
+    ///
+    /// Can be used to implement an order-book-based exchange, for example.
+    /// User A first agrees to buy BTC with ETH at price X, and signs a transaction with this information.
+    /// When a matching user B, that agrees to sell BTC for ETH at price X,
+    /// signs a transaction with this information,
+    /// the blockchain can sign both transactions, and the exchange is completed.
+    public struct PartialCentralizedSignedMessages has key {
+        /// A unique identifier for this `PartialCentralizedSignedMessages` object.
+        id: UID,
+
+        /// The presigns bytes for each message.
+        /// The matching presign objects are being "burned" before this object is created.
+        presigns: vector<vector<u8>>,
+
+        /// The presigns session IDs.
+        presign_session_ids: vector<ID>,
+
+        /// The messages that are being signed.
+        messages: vector<vector<u8>>,
+
+        /// The user centralized signatures for each message.
+        signatures: vector<vector<u8>>,
+
+        /// The unique identifier of the associated dWallet.
+        dwallet_id: ID,
+
+        /// The DKG output of the dWallet.
+        dwallet_output: vector<u8>,
+
+        /// The unique identifier of the dWallet capability.
+        dwallet_cap_id: ID,
+
+        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
+        dwallet_mpc_network_decryption_key_version: u8,
+    }
+
     /// Creates a new [`DWallet`] object of type `T`.
     ///
     /// This function initializes a decentralized wallet (`DWallet`) after the second DKG round,
@@ -94,6 +135,63 @@ module pera_system::dwallet {
             dwallet_mpc_network_decryption_key_version,
             centralized_public_output,
         }
+    }
+
+    public(package) fun create_partial_centralized_signed_messages<T: drop>(
+        presigns_bytes: vector<vector<u8>>,
+        presign_session_ids: vector<ID>,
+        messages: vector<vector<u8>>,
+        signatures: vector<vector<u8>>,
+        dwallet: &DWallet<T>,
+        ctx: &mut TxContext
+    ): PartialCentralizedSignedMessages {
+        PartialCentralizedSignedMessages {
+            id: object::new(ctx),
+            presigns: presigns_bytes,
+            presign_session_ids,
+            messages,
+            signatures,
+            dwallet_id: object::id(dwallet),
+            dwallet_output: dwallet.decentralized_public_output,
+            dwallet_cap_id: dwallet.dwallet_cap_id,
+            dwallet_mpc_network_decryption_key_version: dwallet.dwallet_mpc_network_decryption_key_version,
+        }
+    }
+
+    public(package) fun transfer_partial_centralized_signed_messages(
+        partial_signatures: PartialCentralizedSignedMessages,
+        target: address,
+    ) {
+        transfer::transfer(partial_signatures, target);
+    }
+
+    public(package) fun unpack_partial_centralized_signed_messages(
+        partial_centralized_signed_messages: PartialCentralizedSignedMessages
+    ): ( vector<vector<u8>>, vector<ID>, vector<vector<u8>>, vector<vector<u8>>, ID, vector<u8>, ID, u8) {
+
+        let PartialCentralizedSignedMessages {
+            id,
+            presigns,
+            presign_session_ids,
+            messages,
+            signatures,
+            dwallet_id,
+            dwallet_output,
+            dwallet_cap_id,
+            dwallet_mpc_network_decryption_key_version,
+        } = partial_centralized_signed_messages;
+
+        object::delete(id);
+        (
+            presigns,
+            presign_session_ids,
+            messages,
+            signatures,
+            dwallet_id,
+            dwallet_output,
+            dwallet_cap_id,
+            dwallet_mpc_network_decryption_key_version,
+        )
     }
 
     /// Retrieve the ID of the `DWalletCap` associated with a given dWallet.
@@ -502,6 +600,31 @@ module pera_system::dwallet {
         return match (val) {
                 KECCAK256 | SHA256 => true,
         _ => false,
+        }
+    }
+
+     // todo(zeev): remove this.
+    #[test_only]
+    public fun partial_signatures_for_testing(
+        presigns: vector<vector<u8>>,
+        presign_session_ids: vector<ID>,
+        messages: vector<vector<u8>>,
+        signatures: vector<vector<u8>>,
+        dwallet_id: ID,
+        dwallet_cap_id: ID,
+        dwallet_mpc_network_decryption_key_version: u8,
+        ctx: &mut TxContext
+    ): PartialCentralizedSignedMessages {
+        PartialCentralizedSignedMessages {
+            id: object::new(ctx),
+            presigns,
+            presign_session_ids,
+            messages,
+            signatures,
+            dwallet_id,
+            dwallet_output: vector::empty(),
+            dwallet_cap_id,
+            dwallet_mpc_network_decryption_key_version,
         }
     }
 }

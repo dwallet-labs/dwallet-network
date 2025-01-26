@@ -19,6 +19,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         pop_and_verify_message_approval,
         MessageApproval,
         hash_messages,
+        PartialCentralizedSignedMessages,
+        create_partial_centralized_signed_messages,
+        unpack_partial_centralized_signed_messages,
+        transfer_partial_centralized_signed_messages,
     };
     use pera::event;
 
@@ -385,53 +389,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     // END OF PRESIGN TYPES
 
     // SIGN TYPES
-
-    /// Messages that have been signed by a user, a.k.a the centralized party,
-    /// but not yet by the blockchain.
-    /// Used for scenarios where the user needs to first agree to sign some transaction,
-    /// and the blockchain signs this transaction only later,
-    /// when some other conditions are met.
-    ///
-    /// Can be used to implement an order-book-based exchange, for example.
-    /// User A first agrees to buy BTC with ETH at price X, and signs a transaction with this information.
-    /// When a matching user B, that agrees to sell BTC for ETH at price X,
-    /// signs a transaction with this information,
-    /// the blockchain can sign both transactions, and the exchange is completed.
-    public struct PartiallySignedMessages has key {
-        /// A unique identifier for this `PartiallySignedMessages` object.
-        id: UID,
-
-        /// The presigns bytes for each message.
-        /// The matching presign objects are being "burned" before this object is created.
-        presigns: vector<vector<u8>>,
-
-        /// The presigns session IDs.
-        presign_session_ids: vector<ID>,
-
-        /// The messages that are being signed.
-        messages: vector<vector<u8>>,
-
-        /// The user centralized signatures for each message.
-        signatures: vector<vector<u8>>,
-
-        /// The unique identifier of the associated dWallet.
-        dwallet_id: ID,
-
-        /// The DKG output of the dWallet.
-        dwallet_output: vector<u8>,
-
-        /// The unique identifier of the dWallet capability.
-        dwallet_cap_id: ID,
-
-        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
-        dwallet_mpc_network_decryption_key_version: u8,
-    }
-
-    /// Event emitted when a [`PartiallySignedMessages`] object is created.
-    public struct CreatedPartiallySignedMessagesEvent has copy, drop {
-        /// The unique identifier of the created `PartiallySignedMessages` object.
-        partial_signatures_object_id: ID,
-    }
 
     /// Event emitted to start a batched sign process.
     ///
@@ -820,31 +777,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         }
     }
 
-    // todo(zeev): remove this.
-    #[test_only]
-    public fun partial_signatures_for_testing(
-        presigns: vector<vector<u8>>,
-        presign_session_ids: vector<ID>,
-        messages: vector<vector<u8>>,
-        signatures: vector<vector<u8>>,
-        dwallet_id: ID,
-        dwallet_cap_id: ID,
-        dwallet_mpc_network_decryption_key_version: u8,
-        ctx: &mut TxContext
-    ): PartiallySignedMessages {
-        PartiallySignedMessages {
-            id: object::new(ctx),
-            presigns,
-            presign_session_ids,
-            messages,
-            signatures,
-            dwallet_id,
-            dwallet_output: vector::empty(),
-            dwallet_cap_id,
-            dwallet_mpc_network_decryption_key_version,
-        }
-    }
-
     #[allow(unused_function)]
     #[test_only]
     /// Call the underline `create_dkg_second_round_output`.
@@ -1213,10 +1145,16 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         });
     }
 
+    /// Event emitted when a [`PartialCentralizedSignedMessages`] object is created.
+    public struct CreatedPartialCentralizedSignedMessagesEvent has copy, drop {
+        /// The unique identifier of the created `PartialCentralizedSignedMessages` object.
+        partial_signatures_object_id: ID,
+    }
+
     /// A function to publish messages signed by the user on chain with on-chain verification,
     /// without launching the chain's sign flow immediately.
     ///
-    /// See the docs of [`PartiallySignedMessages`] for more details on when this may be used.
+    /// See the docs of [`PartialCentralizedSignedMessages`] for more details on when this may be used.
     public fun publish_partially_signed_messages(
         signatures: vector<vector<u8>>,
         messages: vector<vector<u8>>,
@@ -1252,49 +1190,45 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             ),
             EInvalidSignatures
         );
-        let partial_signatures = PartiallySignedMessages {
-            id: object::new(ctx),
-            presigns: presigns_bytes,
+        let partial_signatures = create_partial_centralized_signed_messages<Secp256K1>(
+            presigns_bytes,
             presign_session_ids,
             messages,
             signatures,
-            dwallet_output: get_dwallet_decentralized_public_output(dwallet),
-            dwallet_id: object::id(dwallet),
-            dwallet_cap_id: get_dwallet_cap_id(dwallet),
-            dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version(dwallet),
-        };
-        event::emit(CreatedPartiallySignedMessagesEvent {
+            dwallet,
+            ctx,
+        );
+        event::emit(CreatedPartialCentralizedSignedMessagesEvent {
             partial_signatures_object_id: object::id(&partial_signatures),
         });
-        transfer::transfer(partial_signatures, tx_context::sender(ctx));
+
+        transfer_partial_centralized_signed_messages(partial_signatures, tx_context::sender(ctx));
     }
 
     // todo(yael):
     // this function should be changed to recieve something like this:
     // future_sign<D: store, E: store + copy + drop>
-    // PartiallySignedMessages<D,E> should be changed to this and reanmed to `PartialCentralizedSignedMessages`
+    // PartialCentralizedSignedMessages<D,E> should be changed to this and reanmed to `PartialCentralizedSignedMessages`
     // Then consult with Omer on how to store the event and data (see `PartialUserSignedMessages` in sign-ia-wasm).
     // After this is done and tested move it to the dwallet.move file and fix the tests.
-    /// A function to launch a sign flow with a previously published [`PartiallySignedMessages`].
+    /// A function to launch a sign flow with a previously published [`PartialCentralizedSignedMessages`].
     ///
-    /// See the docs of [`PartiallySignedMessages`] for more details on when this may be used.
+    /// See the docs of [`PartialCentralizedSignedMessages`] for more details on when this may be used.
     public fun future_sign(
-        partial_signature: PartiallySignedMessages,
+        partial_signature: PartialCentralizedSignedMessages,
         message_approvals: &mut vector<MessageApproval>,
         ctx: &mut TxContext
     ) {
-        let PartiallySignedMessages {
-            id,
+        let (
             mut presigns,
             mut presign_session_ids,
             mut messages,
             mut signatures,
             dwallet_id,
-            dwallet_cap_id,
             dwallet_output,
+            dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
-        } = partial_signature;
-        object::delete(id);
+        ) = unpack_partial_centralized_signed_messages(partial_signature);
         let message_approvals_len = vector::length(message_approvals);
         let messages_len = vector::length(&messages);
         assert!(message_approvals_len == messages_len, EApprovalsAndMessagesLenMismatch);

@@ -21,12 +21,11 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Struct `StartPresignFirstRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignFirstRoundEvent)
 -  [Struct `StartPresignSecondRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignSecondRoundEvent)
 -  [Struct `CompletedBatchedPresignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedBatchedPresignEvent)
--  [Resource `PartiallySignedMessages`](#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages)
--  [Struct `CreatedPartiallySignedMessagesEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedPartiallySignedMessagesEvent)
 -  [Struct `StartBatchedSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedSignEvent)
 -  [Struct `CompletedSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedSignEvent)
 -  [Resource `BatchedSignOutput`](#0x3_dwallet_2pc_mpc_ecdsa_k1_BatchedSignOutput)
 -  [Struct `StartSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent)
+-  [Struct `CreatedPartialCentralizedSignedMessagesEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedPartialCentralizedSignedMessagesEvent)
 -  [Constants](#@Constants_1)
 -  [Function `launch_dkg_first_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round)
 -  [Function `create_dkg_first_round_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output)
@@ -38,6 +37,9 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `launch_presign_second_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_presign_second_round)
 -  [Function `create_batched_presign_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_batched_presign_output)
 -  [Function `sign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_sign)
+    -  [Effects](#@Effects_22)
+    -  [Aborts](#@Aborts_23)
+    -  [Parameters](#@Parameters_24)
 -  [Function `create_sign_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_sign_output)
 -  [Function `publish_partially_signed_messages`](#0x3_dwallet_2pc_mpc_ecdsa_k1_publish_partially_signed_messages)
 -  [Function `future_sign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_future_sign)
@@ -908,121 +910,6 @@ It provides details about the presign objects created and their associated metad
 
 </details>
 
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages"></a>
-
-## Resource `PartiallySignedMessages`
-
-Messages that have been signed by a user, a.k.a the centralized party,
-but not yet by the blockchain.
-Used for scenarios where the user needs to first agree to sign some transaction,
-and the blockchain signs this transaction only later,
-when some other conditions are met.
-
-Can be used to implement an order-book-based exchange, for example.
-User A first agrees to buy BTC with ETH at price X, and signs a transaction with this information.
-When a matching user B, that agrees to sell BTC for ETH at price X,
-signs a transaction with this information,
-the blockchain can sign both transactions, and the exchange is completed.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a> <b>has</b> key
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
-</dt>
-<dd>
- A unique identifier for this <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a></code> object.
-</dd>
-<dt>
-<code>presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
-</dt>
-<dd>
- The presigns bytes for each message.
- The matching presign objects are being "burned" before this object is created.
-</dd>
-<dt>
-<code>presign_session_ids: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>&gt;</code>
-</dt>
-<dd>
- The presigns session IDs.
-</dd>
-<dt>
-<code>messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
-</dt>
-<dd>
- The messages that are being signed.
-</dd>
-<dt>
-<code>signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
-</dt>
-<dd>
- The user centralized signatures for each message.
-</dd>
-<dt>
-<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
- The unique identifier of the associated dWallet.
-</dd>
-<dt>
-<code>dwallet_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
- The DKG output of the dWallet.
-</dd>
-<dt>
-<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
- The unique identifier of the dWallet capability.
-</dd>
-<dt>
-<code>dwallet_mpc_network_decryption_key_version: u8</code>
-</dt>
-<dd>
- The MPC network decryption key version that is used to decrypt the associated dWallet.
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedPartiallySignedMessagesEvent"></a>
-
-## Struct `CreatedPartiallySignedMessagesEvent`
-
-Event emitted when a [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a></code>] object is created.
-
-
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedPartiallySignedMessagesEvent">CreatedPartiallySignedMessagesEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>partial_signatures_object_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
- The unique identifier of the created <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a></code> object.
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedSignEvent"></a>
 
 ## Struct `StartBatchedSignEvent`
@@ -1234,6 +1121,34 @@ to a specific dWallet, Presign session, and batched process.
 </dt>
 <dd>
  The MPC network decryption key version that is used to decrypt the associated dWallet.
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedPartialCentralizedSignedMessagesEvent"></a>
+
+## Struct `CreatedPartialCentralizedSignedMessagesEvent`
+
+Event emitted when a [<code>PartialCentralizedSignedMessages</code>] object is created.
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedPartialCentralizedSignedMessagesEvent">CreatedPartialCentralizedSignedMessagesEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>partial_signatures_object_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+ The unique identifier of the created <code>PartialCentralizedSignedMessages</code> object.
 </dd>
 </dl>
 
@@ -2007,63 +1922,53 @@ emits a <code>CompletedPresignEvent</code>, and transfers the result to the init
 
 Initiates the signing process for a given dWallet.
 
-This function emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent">StartSignEvent</a></code>, providing all necessary
-metadata and ensuring the integrity of the signing process.
-It validates the linkage between the <code>DWallet</code>, <code>DWalletCap</code>, and <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code>.
-It also "burns" the [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code>] object, by sending it to the system address,
-as every presign can only be used to sign only one message.
+This function emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent">StartSignEvent</a></code> and a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedSignEvent">StartBatchedSignEvent</a></code>,
+providing all necessary metadata to ensure the integrity of the signing process.
+It validates the linkage between the <code>DWallet</code>, <code>DWalletCap</code>, and <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> objects.
+Additionally, it "burns" the <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> object by transferring it to the system address,
+as each presign can only be used to sign one message.
 
 
 <a name="@Effects_22"></a>
 
-##### Effects
+### Effects
 
 - Validates the linkage between dWallet components.
-- Verifies that the number of <code>hashed_messages</code>, <code>message_approvals</code>, and
-<code>centralized_signed_messages</code> are equal.
-- Emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent">StartSignEvent</a></code> with the hashed message, presign outputs,
-and additional metadata.
+- Ensures that the number of <code>hashed_messages</code>, <code>message_approvals</code>,
+<code>centralized_signed_messages</code>, and <code>presigns</code> are equal.
+- Emits the following events:
+- <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedSignEvent">StartBatchedSignEvent</a></code>: Contains the session details and the list of hashed messages.
+- <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent">StartSignEvent</a></code>: Includes session details, hashed message, presign outputs,
+DKG output, and metadata.
 
 
-<a name="@Emits_23"></a>
+<a name="@Aborts_23"></a>
 
-##### Emits
+### Aborts
 
-- <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedSignEvent">StartBatchedSignEvent</a></code>:
-- Contains the session details and the list of hashed messages.
-- <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent">StartSignEvent</a></code>:
-- Includes session details, hashed message, presign outputs,
-and DKG output.
-
-
-<a name="@Aborts_24"></a>
-
-##### Aborts
-
-- **<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EDwalletMismatch">EDwalletMismatch</a></code>**: If the <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code> object does not match the ID
-in the <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> object.
-- **<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EApprovalsAndMessagesLenMismatch">EApprovalsAndMessagesLenMismatch</a></code>**: If the length of the <code>hashed_messages</code>
-does not match the length of the <code>message_approvals</code>.
-- **<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ECentralizedSignedMessagesAndMessagesLenMismatch">ECentralizedSignedMessagesAndMessagesLenMismatch</a></code>**: If the length of
-<code>hashed_messages</code> does not match the length of <code>centralized_signed_messages</code>.
-- **<code>EMessageApprovalDWalletMismatch</code>**: If the DWalletCap ID does not match
-the expected DWalletCap ID for any of the message approvals.
-- **<code>EMissingApprovalOrWrongApprovalOrder</code>**: If the approved messages are not
-in the same order as the <code>messages</code>.
+- **<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EDwalletMismatch">EDwalletMismatch</a></code>**: If the <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code> object does not match the <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> object.
+- **<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EApprovalsAndMessagesLenMismatch">EApprovalsAndMessagesLenMismatch</a></code>**: If the number of <code>hashed_messages</code> does not
+match the number of <code>message_approvals</code>.
+- **<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ECentralizedSignedMessagesAndMessagesLenMismatch">ECentralizedSignedMessagesAndMessagesLenMismatch</a></code>**: If the number of <code>hashed_messages</code>
+does not match the number of <code>centralized_signed_messages</code>.
+- **<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EPresignsAndMessagesLenMismatch">EPresignsAndMessagesLenMismatch</a></code>**: If the number of <code>hashed_messages</code> does not
+match the number of <code>presigns</code>.
+- **<code>EMessageApprovalDWalletMismatch</code>**: If the <code>DWalletCap</code> ID does not match the
+expected <code>DWalletCap</code> ID for any of the message approvals.
+- **<code>EMissingApprovalOrWrongApprovalOrder</code>**: If the approvals are not in the correct order.
 
 
-<a name="@Parameters_25"></a>
+<a name="@Parameters_24"></a>
 
-##### Parameters
+### Parameters
 
-- <code>dwallet_cap</code>: The capability associated with the dWallet.
-- <code>messages</code>: The list of messages to be signed.
-- <code>message_approvals</code>: The approvals for the messages.
-- <code>presign</code>: The presign object containing intermediate outputs.
-- <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code>: The dWallet object.
-- <code>centralized_signed_messages</code>: The list of centralized signatures.
-- <code>presign_session_id</code>: The session ID of the presign process.
-- <code>ctx</code>: The mutable transaction context.
+- <code>message_approvals</code>: A mutable vector of <code>MessageApproval</code> objects representing
+approvals for the messages.
+- <code>messages</code>: A vector of messages (in <code><a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code> format) to be signed.
+- <code>presigns</code>: A mutable vector of <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> objects containing intermediate signing outputs.
+- <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code>: A reference to the <code>DWallet</code> object being used for signing.
+- <code>centralized_signed_messages</code>: A mutable vector of centralized party signatures.
+for the messages being signed.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_sign">sign</a>(message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;, centralized_signed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
@@ -2141,7 +2046,7 @@ blockchain logic executed by validators. The emitted event contains the
 completed sign output that should be consumed by the initiating user.
 
 
-<a name="@Parameters_26"></a>
+<a name="@Parameters_25"></a>
 
 ##### Parameters
 
@@ -2150,7 +2055,7 @@ completed sign output that should be consumed by the initiating user.
 - **<code>ctx</code>**: The transaction context used for event emission.
 
 
-<a name="@Requirements_27"></a>
+<a name="@Requirements_26"></a>
 
 ##### Requirements
 
@@ -2158,7 +2063,7 @@ completed sign output that should be consumed by the initiating user.
 the function will abort with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code>.
 
 
-<a name="@Events_28"></a>
+<a name="@Events_27"></a>
 
 ##### Events
 
@@ -2166,7 +2071,7 @@ the function will abort with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwal
 signaling the completion of the sign process for the batch session.
 
 
-<a name="@Errors_29"></a>
+<a name="@Errors_28"></a>
 
 ##### Errors
 
@@ -2220,7 +2125,7 @@ the function will abort with this error.
 A function to publish messages signed by the user on chain with on-chain verification,
 without launching the chain's sign flow immediately.
 
-See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a></code>] for more details on when this may be used.
+See the docs of [<code>PartialCentralizedSignedMessages</code>] for more details on when this may be used.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_publish_partially_signed_messages">publish_partially_signed_messages</a>(signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
@@ -2267,21 +2172,19 @@ See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_
         ),
         <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EInvalidSignatures">EInvalidSignatures</a>
     );
-    <b>let</b> partial_signatures = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a> {
-        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
-        presigns: presigns_bytes,
+    <b>let</b> partial_signatures = create_partial_centralized_signed_messages&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(
+        presigns_bytes,
         presign_session_ids,
         messages,
         signatures,
-        dwallet_output: get_dwallet_decentralized_public_output(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-        dwallet_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-        dwallet_cap_id: get_dwallet_cap_id(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-        dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-    };
-    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedPartiallySignedMessagesEvent">CreatedPartiallySignedMessagesEvent</a> {
+        <a href="dwallet.md#0x3_dwallet">dwallet</a>,
+        ctx,
+    );
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedPartialCentralizedSignedMessagesEvent">CreatedPartialCentralizedSignedMessagesEvent</a> {
         partial_signatures_object_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&partial_signatures),
     });
-    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(partial_signatures, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
+
+    transfer_partial_centralized_signed_messages(partial_signatures, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
 }
 </code></pre>
 
@@ -2293,12 +2196,12 @@ See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_
 
 ## Function `future_sign`
 
-A function to launch a sign flow with a previously published [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a></code>].
+A function to launch a sign flow with a previously published [<code>PartialCentralizedSignedMessages</code>].
 
-See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a></code>] for more details on when this may be used.
+See the docs of [<code>PartialCentralizedSignedMessages</code>] for more details on when this may be used.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_future_sign">future_sign</a>(partial_signature: <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">dwallet_2pc_mpc_ecdsa_k1::PartiallySignedMessages</a>, message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_future_sign">future_sign</a>(partial_signature: <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">dwallet::PartialCentralizedSignedMessages</a>, message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -2308,22 +2211,20 @@ See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_future_sign">future_sign</a>(
-    partial_signature: <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a>,
+    partial_signature: PartialCentralizedSignedMessages,
     message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;MessageApproval&gt;,
     ctx: &<b>mut</b> TxContext
 ) {
-    <b>let</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_PartiallySignedMessages">PartiallySignedMessages</a> {
-        id,
+    <b>let</b> (
         <b>mut</b> presigns,
         <b>mut</b> presign_session_ids,
         <b>mut</b> messages,
         <b>mut</b> signatures,
         dwallet_id,
-        dwallet_cap_id,
         dwallet_output,
+        dwallet_cap_id,
         dwallet_mpc_network_decryption_key_version,
-    } = partial_signature;
-    <a href="../pera-framework/object.md#0x2_object_delete">object::delete</a>(id);
+    ) = unpack_partial_centralized_signed_messages(partial_signature);
     <b>let</b> message_approvals_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(message_approvals);
     <b>let</b> messages_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&messages);
     <b>assert</b>!(message_approvals_len == messages_len, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EApprovalsAndMessagesLenMismatch">EApprovalsAndMessagesLenMismatch</a>);
@@ -2403,7 +2304,7 @@ This function creates a dWallet object with random data,
 useful for testing or initialization in non-production environments.
 
 
-<a name="@Parameters_30"></a>
+<a name="@Parameters_29"></a>
 
 ##### Parameters
 
@@ -2412,7 +2313,7 @@ useful for testing or initialization in non-production environments.
 - <code>dkg_output</code>: The decentralized DKG output.
 
 
-<a name="@Effects_31"></a>
+<a name="@Effects_30"></a>
 
 ##### Effects
 
@@ -2420,7 +2321,7 @@ useful for testing or initialization in non-production environments.
 - Links the dWallet to the provided capability.
 
 
-<a name="@Returns_32"></a>
+<a name="@Returns_31"></a>
 
 ##### Returns
 
