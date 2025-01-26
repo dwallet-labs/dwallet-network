@@ -1547,10 +1547,10 @@ impl AuthorityState {
         epoch_store: &Arc<AuthorityPerEpochStore>,
         certificate: &VerifiedExecutableTransaction,
     ) -> PeraResult {
-        // The DWallet MPC components are not yet initialized in genesis TXs, and
-        // none of them should start DWallet-MPC flows
-        // Transactions that doesn't contain shared objects cannot trigger dwallet MPC flows,
-        // as they are not being ordered through the consensus engine
+        // The DWallet MPC components are not yet initialized in the genesis TXs.
+        // None of them should start DWallet-MPC flows.
+        // Transactions that don't contain shared objects cannot trigger dwallet MPC flows,
+        // as they are not being ordered through the consensus engine.
         if certificate.transaction_data().is_genesis_tx()
             || !self.is_validator(epoch_store)
             || !certificate.transaction_data().contains_shared_object()
@@ -1613,7 +1613,9 @@ impl AuthorityState {
     ) -> DwalletMPCResult<()> {
         let deserialized_event: ValidatorDataForNetworkDKG = bcs::from_bytes(&event.contents)?;
         epoch_store
-            .save_dwallet_mpc_message(DWalletMPCDBMessage::ValidatorDataForDKG(deserialized_event))
+            .save_dwallet_mpc_round_message(DWalletMPCDBMessage::ValidatorDataForDKG(
+                deserialized_event,
+            ))
             .await;
         Ok(())
     }

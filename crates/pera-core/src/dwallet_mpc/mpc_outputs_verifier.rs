@@ -39,11 +39,12 @@ pub struct DWalletMPCOutputsVerifier {
     // todo(zeev): why is it here?
     pub completed_locking_next_committee: bool,
     voted_to_lock_committee: HashSet<AuthorityName>,
-    /// The latest narwhal round that was processed.
-    /// Used to check if there's a need to perform a state sync -
-    /// if the latest_processed_dwallet_round is behind the currently processed round by more than one,
+    /// The latest consensus round that was processed.
+    /// Used to check if there's a need to perform a state sync —
+    /// if the `latest_processed_dwallet_round` is behind
+    /// the currently processed round by more than one,
     /// a state sync should be performed.
-    pub(crate) last_processed_round: Round,
+    pub(crate) last_processed_consensus_round: Round,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
 }
@@ -94,7 +95,7 @@ impl DWalletMPCOutputsVerifier {
                 .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
-            last_processed_round: 0,
+            last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
         }
     }
