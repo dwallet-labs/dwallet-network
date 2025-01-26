@@ -73,22 +73,15 @@ module pera_system::dwallet {
     /// When a matching user B, that agrees to sell BTC for ETH at price X,
     /// signs a transaction with this information,
     /// the blockchain can sign both transactions, and the exchange is completed.
-    public struct PartialCentralizedSignedMessages has key {
+    public struct PartialCentralizedSignedMessages<D: store> has key {
         /// A unique identifier for this `PartialCentralizedSignedMessages` object.
         id: UID,
-
-        /// The presigns bytes for each message.
-        /// The matching presign objects are being "burned" before this object is created.
-        presigns: vector<vector<u8>>,
-
-        /// The presigns session IDs.
-        presign_session_ids: vector<ID>,
 
         /// The messages that are being signed.
         messages: vector<vector<u8>>,
 
         /// The user centralized signatures for each message.
-        signatures: vector<vector<u8>>,
+        centralized_signatures: vector<vector<u8>>,
 
         /// The unique identifier of the associated dWallet.
         dwallet_id: ID,
@@ -101,6 +94,9 @@ module pera_system::dwallet {
 
         /// The MPC network decryption key version that is used to decrypt the associated dWallet.
         dwallet_mpc_network_decryption_key_version: u8,
+
+        /// Extra data that can be stored with the object, specific to every implementation.
+        extra_data: D,
     }
 
     /// Creates a new [`DWallet`] object of type `T`.
@@ -137,60 +133,56 @@ module pera_system::dwallet {
         }
     }
 
-    public(package) fun create_partial_centralized_signed_messages<T: drop>(
-        presigns_bytes: vector<vector<u8>>,
-        presign_session_ids: vector<ID>,
+    public(package) fun create_partial_centralized_signed_messages<T: drop, D: store>(
         messages: vector<vector<u8>>,
         signatures: vector<vector<u8>>,
         dwallet: &DWallet<T>,
+        extra_data: D,
         ctx: &mut TxContext
-    ): PartialCentralizedSignedMessages {
-        PartialCentralizedSignedMessages {
+    ): PartialCentralizedSignedMessages<D> {
+        PartialCentralizedSignedMessages<D> {
             id: object::new(ctx),
-            presigns: presigns_bytes,
-            presign_session_ids,
             messages,
-            signatures,
+            centralized_signatures: signatures,
             dwallet_id: object::id(dwallet),
             dwallet_output: dwallet.decentralized_public_output,
             dwallet_cap_id: dwallet.dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version: dwallet.dwallet_mpc_network_decryption_key_version,
+            extra_data,
         }
     }
 
-    public(package) fun transfer_partial_centralized_signed_messages(
-        partial_signatures: PartialCentralizedSignedMessages,
+    public(package) fun transfer_partial_centralized_signed_messages<D: store>(
+        partial_signatures: PartialCentralizedSignedMessages<D>,
         target: address,
     ) {
         transfer::transfer(partial_signatures, target);
     }
 
-    public(package) fun unpack_partial_centralized_signed_messages(
-        partial_centralized_signed_messages: PartialCentralizedSignedMessages
-    ): ( vector<vector<u8>>, vector<ID>, vector<vector<u8>>, vector<vector<u8>>, ID, vector<u8>, ID, u8) {
+    public(package) fun unpack_partial_centralized_signed_messages<D: store>(
+        partial_centralized_signed_messages: PartialCentralizedSignedMessages<D>
+    ): ( vector<vector<u8>>, vector<vector<u8>>, ID, vector<u8>, ID, u8, D ) {
 
         let PartialCentralizedSignedMessages {
             id,
-            presigns,
-            presign_session_ids,
             messages,
-            signatures,
+            centralized_signatures,
             dwallet_id,
             dwallet_output,
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
+            extra_data,
         } = partial_centralized_signed_messages;
 
         object::delete(id);
         (
-            presigns,
-            presign_session_ids,
             messages,
-            signatures,
+            centralized_signatures,
             dwallet_id,
             dwallet_output,
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
+            extra_data,
         )
     }
 
@@ -605,26 +597,24 @@ module pera_system::dwallet {
 
      // todo(zeev): remove this.
     #[test_only]
-    public fun partial_signatures_for_testing(
-        presigns: vector<vector<u8>>,
-        presign_session_ids: vector<ID>,
+    public fun partial_signatures_for_testing<D: store>(
         messages: vector<vector<u8>>,
-        signatures: vector<vector<u8>>,
+        centralized_signatures: vector<vector<u8>>,
         dwallet_id: ID,
         dwallet_cap_id: ID,
         dwallet_mpc_network_decryption_key_version: u8,
+        extra_data: D,
         ctx: &mut TxContext
-    ): PartialCentralizedSignedMessages {
-        PartialCentralizedSignedMessages {
+    ): PartialCentralizedSignedMessages<D> {
+        PartialCentralizedSignedMessages<D> {
             id: object::new(ctx),
-            presigns,
-            presign_session_ids,
             messages,
-            signatures,
+            centralized_signatures,
             dwallet_id,
             dwallet_output: vector::empty(),
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
+            extra_data,
         }
     }
 }

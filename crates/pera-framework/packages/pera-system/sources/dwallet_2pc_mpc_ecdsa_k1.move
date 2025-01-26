@@ -390,6 +390,15 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     // SIGN TYPES
 
+    public struct SignData has store {
+        /// The presigns bytes for each message.
+        /// The matching presign objects are being "burned" before this object is created.
+        presigns: vector<vector<u8>>,
+
+        /// The presigns session IDs.
+        presign_session_ids: vector<ID>,
+    }
+
     /// Event emitted to start a batched sign process.
     ///
     /// ### Fields
@@ -1190,12 +1199,17 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             ),
             EInvalidSignatures
         );
-        let partial_signatures = create_partial_centralized_signed_messages<Secp256K1>(
-            presigns_bytes,
+
+        let sign_data = SignData {
+            presigns: presigns_bytes,
             presign_session_ids,
+        };
+
+        let partial_signatures = create_partial_centralized_signed_messages<Secp256K1, SignData>(
             messages,
             signatures,
             dwallet,
+            sign_data,
             ctx,
         );
         event::emit(CreatedPartialCentralizedSignedMessagesEvent {
@@ -1215,19 +1229,18 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     ///
     /// See the docs of [`PartialCentralizedSignedMessages`] for more details on when this may be used.
     public fun future_sign(
-        partial_signature: PartialCentralizedSignedMessages,
+        partial_signature: PartialCentralizedSignedMessages<SignData>,
         message_approvals: &mut vector<MessageApproval>,
         ctx: &mut TxContext
     ) {
         let (
-            mut presigns,
-            mut presign_session_ids,
             mut messages,
             mut signatures,
             dwallet_id,
             dwallet_output,
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
+            presign_data,
         ) = unpack_partial_centralized_signed_messages(partial_signature);
         let message_approvals_len = vector::length(message_approvals);
         let messages_len = vector::length(&messages);
@@ -1239,6 +1252,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             hashed_messages,
             initiator: tx_context::sender(ctx)
         });
+
+        let SignData {
+            mut presigns,
+            mut presign_session_ids,
+        } = presign_data;
         let mut i = 0;
         while (i < message_approvals_len) {
             let message = vector::pop_back(&mut messages);
