@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+use group::PartyID;
 use crate::base_types::{AuthorityName, ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
@@ -51,6 +53,7 @@ pub enum MPCInitProtocolInfo {
     /// todo(zeev): more docs, make it clearer.
     /// TODO (#544): Check if there's a way to convert the public key to an address in Move.
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
+    SignIdentifiableAbort(SignIASessionData)
 }
 
 /// The message and data for the Sign round.
@@ -63,6 +66,13 @@ pub struct SignSessionData {
     /// The DKG output of the dWallet, used to sign and verify the message.
     pub dkg_output: MPCPublicOutput,
     pub network_key_version: u8,
+}
+
+/// The message and data for the Sign round.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct SignIASessionData {
+    pub sign_session_data: SignSessionData,
+    pub parties_used_for_last_step: Vec<PartyID>
 }
 
 impl MPCInitProtocolInfo {
