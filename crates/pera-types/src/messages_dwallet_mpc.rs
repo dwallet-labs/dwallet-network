@@ -71,7 +71,9 @@ pub struct SignSessionData {
 /// The message and data for the Sign round.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SignIASessionData {
-    pub sign_session_data: SignSessionData,
+    pub initiating_authority: AuthorityName,
+    pub claimed_malicious_actors: Vec<AuthorityName>,
+    pub sign_session_id: ObjectID,
     pub parties_used_for_last_step: Vec<PartyID>
 }
 

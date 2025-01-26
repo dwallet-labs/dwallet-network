@@ -264,7 +264,10 @@ impl DWalletMPCManager {
                         });
                 }
             }
-            ReportStatus::OverQuorum | ReportStatus::WaitingForQuorum => {}
+            ReportStatus::OverQuorum => {}
+            ReportStatus::WaitingForQuorum => {
+                let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id)
+            }
         }
 
         Ok(())
