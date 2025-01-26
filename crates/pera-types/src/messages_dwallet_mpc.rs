@@ -237,13 +237,15 @@ pub struct MaliciousReport {
     pub malicious_actors: Vec<AuthorityName>,
     /// The session ID of the MPC session that the malicious actors are disrupting.
     pub session_id: ObjectID,
+    pub involved_parties: Vec<PartyID>,
 }
 
 impl MaliciousReport {
-    pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID) -> Self {
+    pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID, involved_parties: Vec<PartyID>) -> Self {
         Self {
             malicious_actors,
             session_id,
+            involved_parties,
         }
     }
 }
