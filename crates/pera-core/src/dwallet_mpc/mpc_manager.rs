@@ -281,6 +281,9 @@ impl DWalletMPCManager {
                         "failed to get session with session_id: {:?}",
                         report.session_id
                     );
+                    return Err(DwalletMPCError::MPCSessionNotFound {
+                        session_id: report.session_id,
+                    });
                 };
                 if matches!(
                     &session.session_info.mpc_round,
@@ -289,7 +292,7 @@ impl DWalletMPCManager {
                     if session.status == MPCSessionStatus::Active {
                         session.status = MPCSessionStatus::Failed;
                         let sign_ia_session_id = ObjectID::derive_id(
-                            TransactionDigest::from(session.session_info.session_id),
+                            TransactionDigest::from(session.session_info.session_id.to_vec()),
                             0,
                         );
                         let pending_messages = session
