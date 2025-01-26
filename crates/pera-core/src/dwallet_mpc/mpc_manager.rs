@@ -16,8 +16,8 @@ use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name}
 use crate::epoch::randomness::SINGLETON_KEY;
 use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
-    MPCSessionStatus,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
+    MPCPublicOutput, MPCSessionStatus,
 };
 use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::ToFromBytes;
@@ -292,6 +292,22 @@ impl DWalletMPCManager {
                             TransactionDigest::from(session.session_info.session_id),
                             0,
                         );
+                        let pending_messages = session
+                            .pending_messages
+                            .iter()
+                            .map(|(round, messages)| {
+                                (
+                                    *round,
+                                    messages
+                                        .iter()
+                                        .filter(|(party_id, _)| {
+                                            report.involved_parties.contains(party_id)
+                                        })
+                                        .cloned()
+                                        .collect(),
+                                )
+                            })
+                            .collect();
                         self.push_new_mpc_session(
                             vec![],
                             None,
@@ -310,6 +326,7 @@ impl DWalletMPCManager {
                                     },
                                 ),
                             },
+                            pending_messages
                         )?;
                     }
                 }
@@ -711,6 +728,7 @@ impl DWalletMPCManager {
         public_input: MPCPublicInput,
         private_input: MPCPrivateInput,
         session_info: SessionInfo,
+        pending_messages: Vec<HashMap<PartyID, MPCMessage>>,
     ) -> DwalletMPCResult<()> {
         if self.mpc_sessions.contains_key(&session_info.session_id) {
             // This should never happen, as the session ID is a Move UniqueID.
@@ -742,6 +760,7 @@ impl DWalletMPCManager {
                 )?,
             },
             private_input,
+            pending_messages,
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing

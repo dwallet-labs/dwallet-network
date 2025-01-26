@@ -80,10 +80,11 @@ impl DWalletMPCSession {
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
         private_input: MPCPrivateInput,
+        pending_messages: Vec<HashMap<PartyID, MPCMessage>>,
     ) -> Self {
         Self {
             status,
-            pending_messages: vec![HashMap::new()],
+            pending_messages,
             consensus_adapter,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
