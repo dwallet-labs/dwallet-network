@@ -118,7 +118,7 @@ impl DWalletMPCSession {
                         .submit_to_consensus(&vec![message], &epoch_store)
                         .await
                     {
-                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())
@@ -143,7 +143,7 @@ impl DWalletMPCSession {
             }
             Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
                 error!(
-                    "Session failed with malicious parties: {:?}",
+                    "session failed with malicious parties: {:?}",
                     malicious_parties
                 );
                 let malicious_parties = malicious_parties
@@ -163,7 +163,7 @@ impl DWalletMPCSession {
                         .submit_to_consensus(&vec![output], &epoch_store)
                         .await
                     {
-                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())
@@ -335,6 +335,9 @@ impl DWalletMPCSession {
         ))
     }
 
+    /// Report that the session failed because of malicious actors.
+    /// Once a quorum of validators reports the same actor, it is considered malicious.
+    /// The session will be continued, and the malicious actors will be ignored.
     fn new_dwallet_report_failed_session_with_malicious_actors(
         &self,
         report: MaliciousReport,

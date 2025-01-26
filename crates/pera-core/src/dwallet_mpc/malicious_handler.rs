@@ -1,7 +1,10 @@
-//! This module is responsible for managing the malicious actors in the MPC protocols.
-//! Every MPC session can report malicious parties that are trying to disrupt the protocol.
-//! This module is responsible for storing the malicious actors if they are reported by quorum validators.
-
+//! This module handles the management of malicious actors in the MPC protocols.
+//!
+//! During an MPC session, parties attempting to disrupt the protocol
+//! can be reported as malicious.
+//! This module handles:
+//! - Storing reported malicious actors.
+//! - Ensuring these reports are only considered valid if submitted by a quorum of validators.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use group::PartyID;
@@ -10,13 +13,17 @@ use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::MaliciousReport;
-use std::collections::{HashMap, HashSet};
+use std::collections::{hash_map, HashMap, HashSet};
 use std::sync::Arc;
 use tracing::error;
 
-/// A struct to handle the malicious actors in the MPC protocols.
-/// It stores the malicious actors that are reported by the validators.
-/// If a quorum of validators report the same actor, it is considered malicious.
+/// A struct for managing malicious actors in MPC protocols.
+///
+/// This struct maintains a record of malicious actors reported by validators.
+/// An actor is deemed malicious if it is reported by a quorum of validators.
+/// Any message/output from these authorities will be ignored.
+/// This list is maintained during the Epoch.
+/// This happens automatically because the `MaliciousHandler` is part of the `
 pub(crate) struct MaliciousHandler {
     /// The quorum threshold for the MPC process.
     quorum_threshold: StakeUnit,
@@ -25,14 +32,20 @@ pub(crate) struct MaliciousHandler {
     /// The set of malicious actors that are reported by the validators.
     malicious_actors: HashSet<AuthorityName>,
     /// The reports of the malicious actors that are disrupting the MPC process.
-    /// Maps the [`MaliciousReport`] to the set of authorities that reported the malicious actor.
+    /// Maps the [`MaliciousReport`] to the set of authorities
+    /// that reported the malicious actor.
     reports: HashMap<MaliciousReport, HashSet<AuthorityName>>,
 }
 
 /// The status of the report after it is reported by the validators.
 pub(crate) enum ReportStatus {
+    /// The report is waiting for a quorum of validators to report the same actors.
     WaitingForQuorum,
+    /// Quorum has been reached, the actor is considered malicious,
+    /// handles the report.
     QuorumReached,
+    /// The case where a Quorum has been reached before,
+    /// prevent duplicate reports.
     OverQuorum,
 }
 
@@ -50,8 +63,9 @@ impl MaliciousHandler {
     }
 
     /// Reports malicious actors in the MPC process.
-    /// If a quorum of validators report the same actor, it is considered malicious.
-    /// Returns [`ReportStatus`]  the status of the report after it is reported by the validators.
+    /// If a quorum of validators reports the same actor, it is considered malicious.
+    /// Returns [`ReportStatus`] the status of the report after
+    /// it is reported by the validators.
     pub(crate) fn report_malicious_actor(
         &mut self,
         report: MaliciousReport,
@@ -63,24 +77,28 @@ impl MaliciousHandler {
             .ok_or(DwalletMPCError::AuthorityNameNotFound(authority))?
             .clone() as usize;
 
-        if let Some(reporters) = self.reports.get_mut(&report) {
-            if reporters.contains(&authority) {
-                error!("Authority {} already reported {:?}", authority, report);
+        match self.reports.entry(report.clone()) {
+            hash_map::Entry::Occupied(mut entry) => {
+                if !entry.get().insert(authority) {
+                    error!("authority {} already reported {:?}", authority, report);
+                }
             }
-            reporters.insert(authority);
-        } else {
-            let mut reporters = HashSet::new();
-            reporters.insert(authority);
-            self.reports.insert(report.clone(), reporters);
+            hash_map::Entry::Vacant(entry) => {
+                let mut reporters = HashSet::new();
+                reporters.insert(authority);
+                entry.insert(reporters);
+            }
         }
 
         let total_voting_weight = self.calculate_total_voting_weight(report);
-        if total_voting_weight >= self.quorum_threshold as usize
-            && total_voting_weight - authority_voting_weight < self.quorum_threshold as usize
-        {
+        let has_reached_quorum = total_voting_weight >= self.quorum_threshold as usize;
+        let above_quorum = total_voting_weight > self.quorum_threshold as usize;
+        let first_quorum_reached =
+            total_voting_weight - authority_voting_weight < self.quorum_threshold as usize;
+        if has_reached_quorum && first_quorum_reached {
             self.malicious_actors.insert(authority);
             Ok(ReportStatus::QuorumReached)
-        } else if total_voting_weight > self.quorum_threshold as usize {
+        } else if above_quorum {
             Ok(ReportStatus::OverQuorum)
         } else {
             Ok(ReportStatus::WaitingForQuorum)
@@ -118,7 +136,7 @@ impl MaliciousHandler {
             .collect::<DwalletMPCResult<HashSet<_>>>()?)
     }
 
-    /// Reports a malicious actor that is disrupting the MPC process.
+    /// Reports a malicious actor disrupting the MPC process.
     /// Reported by the validator itself.
     pub(crate) fn report_malicious_actor_by_validator(&mut self, authority: AuthorityName) {
         self.malicious_actors.insert(authority);

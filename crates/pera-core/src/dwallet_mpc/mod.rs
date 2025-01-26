@@ -336,6 +336,7 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
         Err(e) => {
             let general_error = DwalletMPCError::TwoPCMPCError(format!("{:?}", e));
             return match e.into() {
+                // No threshold was reached, so we can't proceed.
                 mpc::Error::ThresholdNotReached { honest_subset } => {
                     let malicious_actors = messages
                         .last()
