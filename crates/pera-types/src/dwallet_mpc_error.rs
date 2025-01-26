@@ -109,7 +109,7 @@ pub enum DwalletMPCError {
     SignatureVerificationFailed,
 
     #[error("failed to get available parallelism")]
-    FailedToGetAvailableParallelism,
+    FailedToGetAvailableParallelism(String),
 
     #[error("local machine has insufficient CPU cores to run a node")]
     InsufficientCPUCores,

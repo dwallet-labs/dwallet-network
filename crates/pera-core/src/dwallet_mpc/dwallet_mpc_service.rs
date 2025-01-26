@@ -13,7 +13,7 @@ use tokio::sync::{watch, Notify};
 use tracing::error;
 use typed_store::Map;
 
-const READ_INTERVAL_MILLIS: u64 = 100;
+const READ_INTERVAL_MS: u64 = 100;
 
 pub struct DWalletMPCService {
     last_read_consensus_round: Round,
@@ -52,7 +52,7 @@ impl DWalletMPCService {
                 }
                 Ok(false) => (),
             };
-            tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MILLIS)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MS)).await;
             let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
             let Ok(tables) = self.epoch_store.tables() else {
                 error!("Failed to load DB tables from epoch store");
