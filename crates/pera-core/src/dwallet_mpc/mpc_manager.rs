@@ -36,7 +36,7 @@ use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCInitProtocolInfo, MaliciousReport,
-    SessionInfo,
+    SessionInfo, SignIASessionData,
 };
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -267,7 +267,43 @@ impl DWalletMPCManager {
             }
             ReportStatus::OverQuorum => {}
             ReportStatus::WaitingForQuorum => {
-                let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id)
+                let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) else {
+                    error!(
+                        "failed to get session with session_id: {:?}",
+                        report.session_id
+                    );
+                };
+                if matches!(
+                    &session.session_info.mpc_round,
+                    MPCInitProtocolInfo::Sign(..)
+                ) {
+                    if session.status == MPCSessionStatus::Active {
+                        session.status = MPCSessionStatus::Failed;
+                        let sign_ia_session_id = ObjectID::derive_id(
+                            TransactionDigest::from(session.session_info.session_id),
+                            0,
+                        );
+                        self.push_new_mpc_session(
+                            vec![],
+                            None,
+                            SessionInfo {
+                                flow_session_id: sign_ia_session_id,
+                                session_id: sign_ia_session_id,
+                                initiating_user_address: session
+                                    .session_info
+                                    .initiating_user_address,
+                                mpc_round: MPCInitProtocolInfo::SignIdentifiableAbort(
+                                    SignIASessionData {
+                                        initiating_authority: authority_name,
+                                        claimed_malicious_actors: report.malicious_actors,
+                                        sign_session_id: session.session_info.session_id,
+                                        parties_used_for_last_step: vec![],
+                                    },
+                                ),
+                            },
+                        )?;
+                    }
+                }
             }
         }
 

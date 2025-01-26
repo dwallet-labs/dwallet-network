@@ -234,7 +234,7 @@ impl StartDKGSecondRoundEvent {
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct MaliciousReport {
     /// The malicious actor that was reported.
-    malicious_actors: Vec<AuthorityName>,
+    pub malicious_actors: Vec<AuthorityName>,
     /// The session ID of the MPC session that the malicious actors are disrupting.
     pub session_id: ObjectID,
 }
