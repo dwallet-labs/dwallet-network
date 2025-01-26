@@ -156,7 +156,6 @@ impl DWalletMPCManager {
         }
     }
 
-
     pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
         match message {
             DWalletMPCDBMessage::PerformCryptographicComputations => {
@@ -419,8 +418,8 @@ impl DWalletMPCManager {
             .cryptographic_computations_orchestrator
             .currently_running_sessions_count
             < self
-            .cryptographic_computations_orchestrator
-            .available_cores_for_cryptographic_computations
+                .cryptographic_computations_orchestrator
+                .available_cores_for_cryptographic_computations
         {
             let Some(oldest_computation_metadata) = self
                 .cryptographic_computations_orchestrator
@@ -475,7 +474,7 @@ impl DWalletMPCManager {
                 tokio::time::sleep(tokio::time::Duration::from_secs(
                     sign_last_step_delay as u64,
                 ))
-                    .await;
+                .await;
                 let manager = epoch_store.get_dwallet_mpc_manager().await;
                 let Some(session) = manager.mpc_sessions.get(&session_id) else {
                     error!("failed to get session when checking if sign last round should get executed");
