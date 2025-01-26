@@ -10,9 +10,9 @@ import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import { createActiveEncryptionKeysTable } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
 	Config,
+	delay,
 	mockedProtocolPublicParameters,
 	MPCKeyScheme,
-	delay
 } from '../../src/dwallet-mpc/globals';
 import { fetchProtocolPublicParameters } from '../../src/dwallet-mpc/network-dkg';
 import { presign } from '../../src/dwallet-mpc/presign';
