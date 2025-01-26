@@ -99,7 +99,7 @@ impl DWalletMPCBatchesManager {
     }
 
     /// Store a verified output in its corresponding batch.
-    pub(crate) async fn store_verified_output(
+    pub(crate) fn store_verified_output(
         &mut self,
         session_info: SessionInfo,
         output: MPCPublicOutput,
