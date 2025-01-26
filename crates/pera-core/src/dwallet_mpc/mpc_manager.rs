@@ -292,23 +292,17 @@ impl DWalletMPCManager {
                     if session.status == MPCSessionStatus::Active {
                         session.status = MPCSessionStatus::Failed;
                         let sign_ia_session_id = ObjectID::derive_id(
-                            TransactionDigest::from(session.session_info.session_id.to_vec()),
+                            TransactionDigest::from(session.session_info.session_id.to_vec().into()),
                             0,
                         );
-                        let pending_messages = session
+                        let pending_messages: Vec<HashMap<PartyID, MPCMessage>> = session
                             .pending_messages
                             .iter()
-                            .map(|(round, messages)| {
-                                (
-                                    *round,
-                                    messages
-                                        .iter()
-                                        .filter(|(party_id, _)| {
-                                            report.involved_parties.contains(party_id)
-                                        })
-                                        .cloned()
-                                        .collect(),
-                                )
+                            .map(|round_messages| {
+                                let filtered_round_messages = round_messages.iter().filter(|(party_id, _)| {
+                                    report.involved_parties.contains(party_id)
+                                }).collect();
+                                filtered_round_messages.clone()
                             })
                             .collect();
                         self.push_new_mpc_session(
