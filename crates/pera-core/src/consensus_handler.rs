@@ -479,7 +479,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         continue;
                                     };
                                     if let Err(err) = batches_manager
-                                        .store_verified_output(session_info.clone(), output.clone())
+                                        .store_verified_output(session_info.clone(), output.clone()).await
                                     {
                                         error!(
                                             "error storing verified output for session {:?}: {:?}",
@@ -812,7 +812,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             if let Err(err) = dwallet_mpc_batches_manager.store_verified_output(
                                 output.session_info.clone(),
                                 output.output.clone(),
-                            ) {
+                            ).await {
                                 error!(
                                     "error storing verified output in batch for session {:?}: {:?}",
                                     output.session_info.session_id, err

@@ -4,6 +4,7 @@
 //! completed by checking if it received all the expected VERIFIED batch outputs.
 //! When a batch is completed, it returns the output of the entire batch,
 //! which can be written to the chain through a system transaction.
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicOutput};
 use pera_types::base_types::{EpochId, ObjectID};
@@ -11,7 +12,6 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCInitProtocolInfo, SessionInfo, SignSessionData};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 
 /// Structs to hold the batches sign session data.
 ///
@@ -99,7 +99,7 @@ impl DWalletMPCBatchesManager {
     }
 
     /// Store a verified output in its corresponding batch.
-    pub(crate) fn store_verified_output(
+    pub(crate) async fn store_verified_output(
         &mut self,
         session_info: SessionInfo,
         output: MPCPublicOutput,
@@ -120,10 +120,6 @@ impl DWalletMPCBatchesManager {
                     session_info.flow_session_id,
                     bcs::to_bytes(&presign)?,
                 )?;
-            }
-            MPCInitProtocolInfo::SignIdentifiableAbort(sign_ia_session_info) => {
-                let session = self
-                self.store_verified_sign_output(sign_ia_session_info. batch_session_id, message.clone(), output)?;
             }
             _ => {}
         }
@@ -152,7 +148,6 @@ impl DWalletMPCBatchesManager {
             .upgrade()
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
-
 
     fn store_verified_sign_output(
         &mut self,
