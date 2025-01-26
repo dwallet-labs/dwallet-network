@@ -899,9 +899,9 @@ impl AuthorityPerEpochStore {
         s
     }
 
-    /// Saves a DWallet MPC message in the round messages
-    /// The round messages are later being stored to the on-disk DB to allow state sync.
-    pub(crate) async fn save_dwallet_mpc_message(&self, message: DWalletMPCDBMessage) {
+    /// Saves a DWallet MPC message in the `round messages`.
+    /// The `round messages` are later being stored to the on-disk DB to allow state sync.
+    pub(crate) async fn save_dwallet_mpc_round_message(&self, message: DWalletMPCDBMessage) {
         let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
         dwallet_mpc_round_messages.push(message.clone());
     }
@@ -3501,9 +3501,11 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
-        self.save_dwallet_mpc_message(DWalletMPCDBMessage::EndOfDelivery)
+        self.save_dwallet_mpc_round_message(DWalletMPCDBMessage::EndOfDelivery)
             .await;
 
+        // Save all the DWallet-MPC related DB data to the consensus commit output in order to
+        // write it to the local DB. After saving the data, clear the data from the epoch store.
         let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
         output.set_dwallet_mpc_round_messages(dwallet_mpc_round_messages.clone());
         dwallet_mpc_round_messages.clear();
@@ -3921,7 +3923,7 @@ impl AuthorityPerEpochStore {
                     ),
                 ..
             }) => {
-                self.save_dwallet_mpc_message(
+                self.save_dwallet_mpc_round_message(
                     DWalletMPCDBMessage::SessionFailedWithMaliciousParties(
                         authority_name.clone(),
                         report.clone(),
@@ -3934,7 +3936,10 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                 ..
             }) => {
-                self.save_dwallet_mpc_message(DWalletMPCDBMessage::Message(message.clone()))
+                // Filter DWalletMPCMessages from the consensus output and save them in the local
+                // DB. Those messages will get processed when the DWallet MPC service will read
+                // them from the DB.
+                self.save_dwallet_mpc_round_message(DWalletMPCDBMessage::Message(message.clone()))
                     .await;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
@@ -4383,7 +4388,7 @@ pub(crate) struct ConsensusCommitOutput {
     pending_jwks: BTreeSet<(AuthorityName, JwkId, JWK)>,
     active_jwks: BTreeSet<(u64, (JwkId, JWK))>,
 
-    /// All the DWallet-MPC related TXs that have been received in this round.
+    /// All the dWallet-MPC related TXs that have been received in this round.
     dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
     dwallet_mpc_round_outputs: Vec<DWalletMPCOutputMessage>,
     dwallet_mpc_round_events: Vec<DWalletMPCEvent>,
@@ -4520,6 +4525,8 @@ impl ConsensusCommitOutput {
                 .map(|key| (key, true)),
         )?;
 
+        // Write all the dWallet MPC related messages from this narwhal round to the local DB.
+        // The [`DWalletMPCService`] constantly read & process those messages.
         if let Some(consensus_commit_stats) = &self.consensus_commit_stats {
             batch.insert_batch(
                 &tables.dwallet_mpc_messages,

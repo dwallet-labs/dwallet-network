@@ -12,6 +12,7 @@ import {
 	Config,
 	mockedProtocolPublicParameters,
 	MPCKeyScheme,
+	delay
 } from '../../src/dwallet-mpc/globals';
 import { fetchProtocolPublicParameters } from '../../src/dwallet-mpc/network-dkg';
 import { presign } from '../../src/dwallet-mpc/presign';
@@ -50,8 +51,7 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: timeout,
 		};
-		// sleep for 2 seconds
-		await new Promise((r) => setTimeout(r, 2000));
+		await delay(2000);
 		const dWallet = await createDWallet(
 			conf,
 			mockedProtocolPublicParameters,

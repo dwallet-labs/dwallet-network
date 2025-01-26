@@ -104,10 +104,14 @@ impl DWalletMPCSession {
     }
 
     /// Advances the MPC session and sends the advancement result to the other validators.
+    /// The consensus submission logic is being spawned as a separate tokio task, as it's an IO
+    /// heavy task. Rayon, which is good for CPU heavy tasks, is used to perform the cryptographic
+    /// computation, and Tokio, which is good for IO heavy tasks, is used to submit the result to
+    /// the consensus.
     pub(super) fn advance(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
-                malicious_parties,
+                malicious_parties: _malicious_parties,
                 message,
             }) => {
                 let message = self.new_dwallet_mpc_message(message).map_err(|e| {
@@ -123,7 +127,7 @@ impl DWalletMPCSession {
                         .submit_to_consensus(&vec![message], &epoch_store)
                         .await
                     {
-                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                        error!("failed to submit MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())
@@ -141,7 +145,7 @@ impl DWalletMPCSession {
                         .submit_to_consensus(&vec![output], &epoch_store)
                         .await
                     {
-                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                        error!("failed to submit MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())
@@ -168,7 +172,7 @@ impl DWalletMPCSession {
                         .submit_to_consensus(&vec![output], &epoch_store)
                         .await
                     {
-                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                        error!("failed to submit MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())

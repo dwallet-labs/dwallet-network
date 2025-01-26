@@ -109,7 +109,8 @@ pub enum DWalletMPCDBMessage {
     /// reconfiguration process for the next epoch.
     StartLockNextEpochCommittee,
     /// A vote received from another validator to lock the next committee.
-    /// After receiving a quorum of those messages, a system TX to lock the next epoch's committee will get created.
+    /// After receiving a quorum of those messages, a system TX
+    /// to lock the next epoch's committee will get created.
     LockNextEpochCommitteeVote(AuthorityName),
     /// A validator's public key and proof for the network DKG protocol.
     /// Each validator's data is being emitted separately because the proof size is
@@ -120,9 +121,9 @@ pub enum DWalletMPCDBMessage {
     /// A message indicating that an MPC session has failed.
     /// The advance failed, and the session needs to be restarted or marked as failed.
     MPCSessionFailed(ObjectID),
-    /// A message to start process the cryptographic computations.
-    /// This message is being sent every five seconds by the DWallet MPC Service,
-    /// in order to skip redundant advancements that have already been completed by other validators.
+    /// A message to start processing the cryptographic computations.
+    /// This message is being sent every five seconds by the dWallet MPC Service,
+    /// to skip redundant advancements that have already been completed by other validators.
     PerformCryptographicComputations,
     /// A message indicating that a session failed due to malicious parties.
     /// We can receive new messages for this session with other validators,
@@ -454,6 +455,8 @@ impl DWalletMPCManager {
         Ok(())
     }
 
+    /// Spawns all ready MPC cryptographic computations using Rayon.
+    /// If no local CPUs are available, computations will execute as CPUs are freed.
     fn perform_cryptographic_computation(&mut self) {
         while self.currently_running_sessions_count
             < self.available_cores_for_cryptographic_computations
@@ -516,7 +519,7 @@ impl DWalletMPCManager {
                     let session = session.clone();
                     rayon::spawn_fifo(move || {
                         if let Err(err) = session.advance(&handle) {
-                            error!("Failed to advance session with error: {:?}", err);
+                            error!("failed to advance session with error: {:?}", err);
                         }
                         if let Err(err) = finished_computation_sender.send(()) {
                             error!(
@@ -530,7 +533,7 @@ impl DWalletMPCManager {
         } else {
             rayon::spawn_fifo(move || {
                 if let Err(err) = session.advance(&handle) {
-                    error!("Failed to advance session with error: {:?}", err);
+                    error!("failed to advance session with error: {:?}", err);
                 }
                 if let Err(err) = finished_computation_sender.send(()) {
                     error!(
