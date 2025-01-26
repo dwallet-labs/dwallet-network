@@ -409,35 +409,48 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     })
 }
 
-/// Deserializes the messages received from other parties for the next advancement.
-/// Any value that fails to deserialize is considered to be sent by a malicious party.
-/// Returns a tuple containing the deserialized messages and the IDs of the malicious parties.
+/// Deserializes MPC messages from other parties.
+/// Messages that fail to deserialize are flagged as malicious,
+/// while successful deserialization
+/// identifies the party as honest.
+///
+/// # Returns
+/// A tuple containing:
+/// - A vector of deserialized honest messages
+///   (each one maps PartyID to the deserialized message).
+/// - A set of PartyIDs that sent invalid (malicious) messages.
+/// - A set of PartyIDs that sent valid (honest) messages.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
-    messages: Vec<HashMap<PartyID, MPCMessage>>,
+    session_messages: Vec<HashMap<PartyID, MPCMessage>>,
 ) -> (Vec<HashMap<PartyID, M>>, HashSet<PartyID>, HashSet<PartyID>) {
     let mut malicious_parties = HashSet::new();
     let mut honest_parties = HashSet::new();
-    let deserialized_results: Vec<HashMap<PartyID, M>> = messages
-        .iter()
-        .map(|message_batch| {
-            message_batch
-                .iter()
-                .filter_map(|(party_id, message)| match bcs::from_bytes::<M>(message) {
+
+    let deserialized_honest_session_messages: Vec<HashMap<PartyID, M>> = session_messages
+        .into_iter()
+        .map(|round_messages| {
+            round_messages
+                .into_iter()
+                .filter_map(|(party_id, message)| match bcs::from_bytes::<M>(&message) {
                     Ok(value) => {
-                        honest_parties.insert(*party_id);
-                        Some((*party_id, value))
+                        honest_parties.insert(party_id);
+                        Some((party_id, value))
                     }
                     Err(_) => {
-                        malicious_parties.insert(*party_id);
+                        malicious_parties.insert(party_id);
                         None
                     }
                 })
-                .collect::<HashMap<PartyID, M>>()
+                .collect()
         })
-        .filter(|valid_messages| !valid_messages.is_empty())
+        .filter(|valid_round_messages| !valid_round_messages.is_empty())
         .collect();
 
-    (deserialized_results, malicious_parties, honest_parties)
+    (
+        deserialized_honest_session_messages,
+        malicious_parties,
+        honest_parties,
+    )
 }
 
 // TODO (#542): move this logic to run before writing the event to the DB, maybe include within the session info
