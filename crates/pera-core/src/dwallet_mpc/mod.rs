@@ -28,7 +28,7 @@ use pera_types::messages_dwallet_mpc::{
     StartEncryptedShareVerificationEvent, StartEncryptionKeyVerificationEvent,
 };
 use serde::de::DeserializeOwned;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub mod batches_manager;
 mod dkg;
@@ -318,7 +318,7 @@ fn batched_presign_session_info(deserialized_event: &StartBatchedPresignEvent) -
 
 fn calculate_total_voting_weight(
     weighted_parties: &HashMap<PartyID, Weight>,
-    parties: &Vec<PartyID>,
+    parties: &HashSet<PartyID>,
 ) -> usize {
     let mut total_voting_weight = 0;
     for party in parties {
@@ -337,14 +337,13 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-    let (messages, deserialization_malicious_parties) = deserialize_mpc_messages(messages);
-    if calculate_total_voting_weight(
-        &access_threshold.party_to_weight,
-        &deserialization_malicious_parties,
-    ) >= access_threshold.threshold as usize
+    let (messages, deserialization_malicious_parties, honest_parties) =
+        deserialize_mpc_messages(messages);
+    if calculate_total_voting_weight(&access_threshold.party_to_weight, &honest_parties)
+        < access_threshold.threshold as usize
     {
         return Err(DwalletMPCError::SessionFailedWithMaliciousParties(
-            deserialization_malicious_parties,
+            deserialization_malicious_parties.iter().collect(),
         ));
     }
 
@@ -414,17 +413,21 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
 /// Returns a tuple containing the deserialized messages and the IDs of the malicious parties.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
-) -> (Vec<HashMap<PartyID, M>>, Vec<PartyID>) {
-    let mut malicious_parties = Vec::new();
+) -> (Vec<HashMap<PartyID, M>>, HashSet<PartyID>, HashSet<PartyID>) {
+    let mut malicious_parties = HashSet::new();
+    let mut honest_parties = HashSet::new();
     let deserialized_results: Vec<HashMap<PartyID, M>> = messages
         .iter()
         .map(|message_batch| {
             message_batch
                 .iter()
                 .filter_map(|(party_id, message)| match bcs::from_bytes::<M>(message) {
-                    Ok(value) => Some((*party_id, value)),
+                    Ok(value) => {
+                        honest_parties.insert(*party_id);
+                        Some((*party_id, value))
+                    }
                     Err(_) => {
-                        malicious_parties.push(*party_id);
+                        malicious_parties.insert(*party_id);
                         None
                     }
                 })
@@ -433,7 +436,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
         .filter(|valid_messages| !valid_messages.is_empty())
         .collect();
 
-    (deserialized_results, malicious_parties)
+    (deserialized_results, malicious_parties, honest_parties)
 }
 
 // TODO (#542): move this logic to run before writing the event to the DB, maybe include within the session info
