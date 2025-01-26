@@ -1309,7 +1309,7 @@ impl PeraNode {
         // used to verify outputs before sending a system TX to store them.
         epoch_store
             .set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(&epoch_store))?;
-        epoch_store.set_dwallet_mpc_batches_manager(DWalletMPCBatchesManager::new(&epoch_store))?;
+        epoch_store.set_dwallet_mpc_batches_manager(DWalletMPCBatchesManager::new())?;
 
         epoch_store.set_dwallet_mpc_manager(DWalletMPCManager::try_new(
             Arc::new(consensus_adapter.clone()),
