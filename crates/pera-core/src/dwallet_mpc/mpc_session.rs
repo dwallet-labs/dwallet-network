@@ -167,6 +167,7 @@ impl DWalletMPCSession {
                     self.session_info.session_id.clone(),
                     self.pending_messages[self.pending_quorum_for_highest_round_number]
                         .keys()
+                        .map(|party_id| *party_id)
                         .collect(),
                 );
                 let output =

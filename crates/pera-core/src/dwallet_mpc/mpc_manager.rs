@@ -291,17 +291,29 @@ impl DWalletMPCManager {
                 ) {
                     if session.status == MPCSessionStatus::Active {
                         session.status = MPCSessionStatus::Failed;
-                        let sign_ia_session_id = ObjectID::derive_id(
-                            TransactionDigest::from(session.session_info.session_id.to_vec().into()),
-                            0,
-                        );
+                        let session_id_bytes: [u8; 32] = session
+                            .session_info
+                            .session_id
+                            .to_vec()
+                            .try_into()
+                            .expect("Vec<u8> must have exactly 32 elements");
+                        let sign_ia_session_id =
+                            ObjectID::derive_id(TransactionDigest::from(session_id_bytes), 0);
                         let pending_messages: Vec<HashMap<PartyID, MPCMessage>> = session
                             .pending_messages
                             .iter()
                             .map(|round_messages| {
-                                let filtered_round_messages = round_messages.iter().filter(|(party_id, _)| {
-                                    report.involved_parties.contains(party_id)
-                                }).collect();
+                                let filtered_round_messages: HashMap<PartyID, MPCMessage> =
+                                    round_messages
+                                        .iter()
+                                        .filter_map(|(party_id, messages)| {
+                                            if report.involved_parties.contains(party_id) {
+                                                Some((*party_id, messages.clone()))
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                        .collect();
                                 filtered_round_messages.clone()
                             })
                             .collect();
@@ -323,7 +335,7 @@ impl DWalletMPCManager {
                                     },
                                 ),
                             },
-                            pending_messages
+                            pending_messages,
                         )?;
                     }
                 }
@@ -370,7 +382,7 @@ impl DWalletMPCManager {
 
     fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {
         let (public_input, private_input) = session_input_from_event(&event, &self)?;
-        self.push_new_mpc_session(public_input, private_input, session_info)?;
+        self.push_new_mpc_session(public_input, private_input, session_info, vec![])?;
         Ok(())
     }
 
