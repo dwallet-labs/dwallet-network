@@ -197,6 +197,17 @@ impl DWalletMPCSession {
             self.session_info.flow_session_id.to_vec().as_slice(),
         );
         match &self.session_info.mpc_round {
+            MPCInitProtocolInfo::SignIdentifiableAbort(sign_ia_session_data) => {
+                let public_input = bcs::from_bytes(&self.public_input)?;
+                crate::dwallet_mpc::advance::<SignFirstParty>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.pending_messages.clone(),
+                    public_input,
+                    self.decryption_share.clone(),
+                )
+            },
             MPCInitProtocolInfo::DKGFirst => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<DKGFirstParty>(

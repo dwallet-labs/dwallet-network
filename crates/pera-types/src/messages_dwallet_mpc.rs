@@ -86,6 +86,7 @@ impl MPCInitProtocolInfo {
                 | MPCInitProtocolInfo::PresignSecond(..)
                 | MPCInitProtocolInfo::BatchedSign(..)
                 | MPCInitProtocolInfo::BatchedPresign(..)
+                | MPCInitProtocolInfo::SignIdentifiableAbort(..)
         )
     }
 }

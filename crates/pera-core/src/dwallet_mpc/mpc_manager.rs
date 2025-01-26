@@ -233,6 +233,15 @@ impl DWalletMPCManager {
         }
     }
 
+    pub(crate) fn get_session_by_id(
+        &self,
+        session_id: ObjectID,
+    ) -> DwalletMPCResult<&DWalletMPCSession> {
+        self.mpc_sessions
+            .get(&session_id)
+            .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })
+    }
+
     fn handle_session_failed_with_malicious_parties(
         &mut self,
         authority_name: AuthorityName,

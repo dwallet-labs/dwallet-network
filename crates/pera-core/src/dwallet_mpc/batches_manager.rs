@@ -6,10 +6,12 @@
 //! which can be written to the chain through a system transaction.
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicOutput};
-use pera_types::base_types::ObjectID;
+use pera_types::base_types::{EpochId, ObjectID};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCInitProtocolInfo, SessionInfo, SignSessionData};
 use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, Weak};
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 
 /// Structs to hold the batches sign session data.
 ///
@@ -47,16 +49,20 @@ pub struct DWalletMPCBatchesManager {
     /// The batched sign sessions that are currently being processed.
     batched_sign_sessions: HashMap<ObjectID, BatchedSignSession>,
     batched_presign_sessions: HashMap<ObjectID, BatchedPresignSession>,
+    epoch_store: Weak<AuthorityPerEpochStore>,
+    epoch_id: EpochId,
 }
 
 type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
 <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart;
 
 impl DWalletMPCBatchesManager {
-    pub fn new() -> Self {
+    pub fn new(epoch_store: &Arc<AuthorityPerEpochStore>) -> Self {
         DWalletMPCBatchesManager {
             batched_sign_sessions: HashMap::new(),
             batched_presign_sessions: HashMap::new(),
+            epoch_store: Arc::downgrade(epoch_store),
+            epoch_id: epoch_store.epoch(),
         }
     }
 
@@ -115,6 +121,10 @@ impl DWalletMPCBatchesManager {
                     bcs::to_bytes(&presign)?,
                 )?;
             }
+            MPCInitProtocolInfo::SignIdentifiableAbort(sign_ia_session_info) => {
+                let session = self
+                self.store_verified_sign_output(sign_ia_session_info. batch_session_id, message.clone(), output)?;
+            }
             _ => {}
         }
         Ok(())
@@ -136,6 +146,13 @@ impl DWalletMPCBatchesManager {
             _ => Ok(None),
         }
     }
+
+    fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
+        self.epoch_store
+            .upgrade()
+            .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
+    }
+
 
     fn store_verified_sign_output(
         &mut self,
