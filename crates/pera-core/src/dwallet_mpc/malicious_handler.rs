@@ -120,7 +120,7 @@ impl MaliciousHandler {
 
     /// Reports a malicious actor that is disrupting the MPC process.
     /// Reported by the validator itself.
-    pub(crate) fn report_malicious_internal(&mut self, authority: AuthorityName) {
+    pub(crate) fn report_malicious_actor_by_validator(&mut self, authority: AuthorityName) {
         self.malicious_actors.insert(authority);
     }
 }

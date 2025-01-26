@@ -464,7 +464,7 @@ impl DWalletMPCManager {
                     message.session_id
                 );
                 self.malicious_handler
-                    .report_malicious_internal(message.authority);
+                    .report_malicious_actor_by_validator(message.authority);
                 return Ok(());
             }
         };
@@ -491,9 +491,10 @@ impl DWalletMPCManager {
             malicious_parties_names
         );
 
-        malicious_parties_names
-            .into_iter()
-            .for_each(|party| self.malicious_handler.report_malicious_internal(party));
+        malicious_parties_names.into_iter().for_each(|party| {
+            self.malicious_handler
+                .report_malicious_actor_by_validator(party)
+        });
         Ok(())
     }
 
