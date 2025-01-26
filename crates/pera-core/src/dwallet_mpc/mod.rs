@@ -316,6 +316,7 @@ fn batched_presign_session_info(deserialized_event: &StartBatchedPresignEvent) -
     }
 }
 
+// todo(zeev): make sure this is not a duplicate.
 fn calculate_total_voting_weight(
     weighted_parties: &HashMap<PartyID, Weight>,
     parties: &HashSet<PartyID>,
@@ -337,13 +338,13 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-    let (messages, deserialization_malicious_parties, honest_parties) =
+    let (messages, deserialized_malicious_parties, honest_parties) =
         deserialize_mpc_messages(messages);
     if calculate_total_voting_weight(&access_threshold.party_to_weight, &honest_parties)
         < access_threshold.threshold as usize
     {
         return Err(DwalletMPCError::SessionFailedWithMaliciousParties(
-            deserialization_malicious_parties.iter().collect(),
+            deserialized_malicious_parties.iter().collect(),
         ));
     }
 
@@ -383,7 +384,7 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
             message,
         } => {
             let mut malicious_parties = malicious_parties;
-            malicious_parties.extend(deserialization_malicious_parties);
+            malicious_parties.extend(deserialized_malicious_parties);
             mpc::AsynchronousRoundResult::Advance {
                 malicious_parties,
                 message: bcs::to_bytes(&message)?,
@@ -395,7 +396,7 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
             public_output,
         } => {
             let mut malicious_parties = malicious_parties;
-            malicious_parties.extend(deserialization_malicious_parties);
+            malicious_parties.extend(deserialized_malicious_parties);
             let public_output: P::PublicOutputValue = public_output.into();
             let public_output = bcs::to_bytes(&public_output)?;
             let private_output = bcs::to_bytes(&private_output)?;
