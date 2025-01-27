@@ -935,6 +935,20 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         presign_output: vector<u8>,
     }
 
+    #[test_only]
+    /// Call the underlying create UniqPresignPerMessage.
+    /// This function is intended for testing purposes only and should not be used in production.
+    /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_onl
+    public fun create_uniq_presign_per_message(
+        presign_id: ID,
+        presign_output: vector<u8>,
+    ): UniqPresignPerMessage {
+        UniqPresignPerMessage {
+            presign_id,
+            presign_output,
+        }
+    }
+
     /// Initiates the signing process for a given dWallet.
     ///
     /// This function emits a `StartSignEvent` and a `StartBatchedSignEvent`,

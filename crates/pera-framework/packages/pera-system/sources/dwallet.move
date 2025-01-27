@@ -685,7 +685,7 @@ module pera_system::dwallet {
         dwallet_id: ID,
         dwallet_cap_id: ID,
         dwallet_mpc_network_decryption_key_version: u8,
-        extra_data: D,
+        extra_data: vector<D>,
         ctx: &mut TxContext
     ): PartialCentralizedSignedMessages<D> {
         PartialCentralizedSignedMessages<D> {
