@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum MPCInitProtocolInfo {
+pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
     DKGFirst,
     /// The second round of the DKG protocol.
@@ -65,15 +65,15 @@ pub struct SignSessionData {
     pub network_key_version: u8,
 }
 
-impl MPCInitProtocolInfo {
+impl MPCProtocolInitData {
     /// Returns `true` if the round output is part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
         matches!(
             self,
-            MPCInitProtocolInfo::Sign(..)
-                | MPCInitProtocolInfo::PresignSecond(..)
-                | MPCInitProtocolInfo::BatchedSign(..)
-                | MPCInitProtocolInfo::BatchedPresign(..)
+            MPCProtocolInitData::Sign(..)
+                | MPCProtocolInitData::PresignSecond(..)
+                | MPCProtocolInitData::BatchedSign(..)
+                | MPCProtocolInitData::BatchedPresign(..)
         )
     }
 }
@@ -134,12 +134,12 @@ pub struct SessionInfo {
     pub initiating_user_address: PeraAddress,
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
-    pub mpc_round: MPCInitProtocolInfo,
+    pub mpc_round: MPCProtocolInitData,
 }
 
 /// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
-/// Defined here so that we can use it in the [`MPCInitProtocolInfo`] enum,
-/// as the inner data of the [`MPCInitProtocolInfo::EncryptedShareVerification`].
+/// Defined here so that we can use it in the [`MPCProtocolInitData`] enum,
+/// as the inner data of the [`MPCProtocolInitData::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
     pub encrypted_secret_share_and_proof: Vec<u8>,

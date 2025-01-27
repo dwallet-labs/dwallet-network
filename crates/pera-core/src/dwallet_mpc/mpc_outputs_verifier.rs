@@ -14,7 +14,7 @@ use narwhal_types::Round;
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::messages_dwallet_mpc::{MPCInitProtocolInfo, SessionInfo, SignSessionData};
+use pera_types::messages_dwallet_mpc::{MPCProtocolInitData, SessionInfo, SignSessionData};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
@@ -142,7 +142,7 @@ impl DWalletMPCOutputsVerifier {
                 malicious_actors: vec![],
             });
         }
-        if let MPCInitProtocolInfo::Sign(sign_session_data) = &session_info.mpc_round {
+        if let MPCProtocolInitData::Sign(sign_session_data) = &session_info.mpc_round {
             return match Self::verify_signature(&epoch_store, sign_session_data, output) {
                 Ok(res) => {
                     session.current_result = OutputResult::AlreadyCommitted;

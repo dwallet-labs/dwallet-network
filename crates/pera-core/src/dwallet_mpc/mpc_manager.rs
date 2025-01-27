@@ -36,7 +36,7 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCInitProtocolInfo, MaliciousReport,
+    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCProtocolInitData, MaliciousReport,
     SessionInfo,
 };
 use rayon::prelude::*;
@@ -382,7 +382,7 @@ impl DWalletMPCManager {
                 let is_valid_network_dkg_transaction =
                     matches!(
                         session.session_info.mpc_round,
-                        MPCInitProtocolInfo::NetworkDkg(..)
+                        MPCProtocolInitData::NetworkDkg(..)
                     ) && self.validators_data_for_network_dkg.len()
                         == self
                             .weighted_threshold_access_structure
@@ -464,7 +464,7 @@ impl DWalletMPCManager {
             .clone();
         if matches!(
             session.session_info.mpc_round,
-            MPCInitProtocolInfo::Sign(..)
+            MPCProtocolInitData::Sign(..)
         ) && session.pending_quorum_for_highest_round_number == LAST_SIGN_ROUND_INDEX
         {
             let sign_last_step_delay =
@@ -523,7 +523,7 @@ impl DWalletMPCManager {
         public_output: MPCPublicOutput,
         private_output: MPCPrivateOutput,
     ) -> DwalletMPCResult<()> {
-        if let MPCInitProtocolInfo::NetworkDkg(key_type, _) = session_info.mpc_round {
+        if let MPCProtocolInitData::NetworkDkg(key_type, _) = session_info.mpc_round {
             let epoch_store = self.epoch_store()?;
             let network_keys = epoch_store
                 .dwallet_mpc_network_keys
@@ -656,7 +656,7 @@ impl DWalletMPCManager {
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             match session_info.mpc_round {
-                MPCInitProtocolInfo::NetworkDkg(..) => HashMap::new(),
+                MPCProtocolInitData::NetworkDkg(..) => HashMap::new(),
                 _ => self.get_decryption_key_shares(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
