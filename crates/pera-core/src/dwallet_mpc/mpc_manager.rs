@@ -473,7 +473,7 @@ impl DWalletMPCManager {
                 &handle,
                 &session,
                 &finished_computation_sender,
-            );
+            )?;
         } else {
             rayon::spawn_fifo(move || {
                 if let Err(err) = session.advance(&handle) {
@@ -496,7 +496,7 @@ impl DWalletMPCManager {
         handle: &Handle,
         session: &DWalletMPCSession,
         finished_computation_sender: &UnboundedSender<()>,
-    ) {
+    ) -> DwalletMPCResult<()> {
         let sign_last_step_delay =
             self.calculate_last_sign_step_validator_delay(&session.session_info)?;
         let epoch_store = self.epoch_store()?;
@@ -531,6 +531,7 @@ impl DWalletMPCManager {
                 });
             }
         });
+        Ok(())
     }
 
     /// Update the encryption of decryption key share with the new shares.
