@@ -126,7 +126,7 @@ impl DWalletMPCSession {
                 })?;
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
-                let party_id = *self.party_id;
+                let party_id = self.party_id;
                 let round = self.session_info.mpc_round.clone();
                 tokio_runtime_handle.spawn(async move {
                     if party_id == 2 && matches!(round, MPCProtocolInitData::Sign(..)) {
