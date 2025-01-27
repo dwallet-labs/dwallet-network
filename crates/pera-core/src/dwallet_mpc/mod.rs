@@ -18,22 +18,24 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPublicInput,
 };
 use group::PartyID;
-use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
+use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use pera_types::base_types::AuthorityName;
 use pera_types::base_types::{EpochId, ObjectID};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{
-    MPCRound, SessionInfo, SignMessageData, StartDKGSecondRoundEvent,
+    MPCProtocolInitData, SessionInfo, SingleSignSessionData, StartDKGSecondRoundEvent,
     StartEncryptedShareVerificationEvent, StartEncryptionKeyVerificationEvent,
 };
 use serde::de::DeserializeOwned;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub mod batches_manager;
+mod cryptographic_computations_orchestrator;
 mod dkg;
 pub mod dwallet_mpc_service;
 mod encrypt_user_share;
+mod malicious_handler;
 pub(crate) mod mpc_events;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
@@ -146,7 +148,7 @@ fn start_encrypted_share_verification_session_info(
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
-        mpc_round: MPCRound::EncryptedShareVerification(deserialized_event),
+        mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
     }
 }
 
@@ -157,7 +159,7 @@ fn start_encryption_key_verification_session_info(
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
-        mpc_round: MPCRound::EncryptionKeyVerification(deserialized_event),
+        mpc_round: MPCProtocolInitData::EncryptionKeyVerification(deserialized_event),
     }
 }
 
@@ -180,7 +182,10 @@ fn dkg_second_party_session_info(
         flow_session_id: deserialized_event.first_round_session_id.bytes,
         session_id: ObjectID::from(deserialized_event.session_id),
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCRound::DKGSecond(deserialized_event.clone(), dwallet_network_key_version),
+        mpc_round: MPCProtocolInitData::DKGSecond(
+            deserialized_event.clone(),
+            dwallet_network_key_version,
+        ),
     }
 }
 
@@ -195,7 +200,7 @@ fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> 
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCRound::DKGFirst,
+        mpc_round: MPCProtocolInitData::DKGFirst,
     }
 }
 
@@ -218,7 +223,7 @@ fn presign_first_party_session_info(
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCRound::PresignFirst(
+        mpc_round: MPCProtocolInitData::PresignFirst(
             deserialized_event.dwallet_id.bytes,
             deserialized_event.dkg_output,
             deserialized_event.batch_session_id.bytes,
@@ -247,7 +252,7 @@ fn presign_second_party_session_info(
         flow_session_id: deserialized_event.first_round_session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCRound::PresignSecond(
+        mpc_round: MPCProtocolInitData::PresignSecond(
             deserialized_event.dwallet_id.bytes,
             deserialized_event.first_round_output.clone(),
             deserialized_event.batch_session_id.bytes,
@@ -286,10 +291,12 @@ fn sign_party_session_info(
         flow_session_id: deserialized_event.presign_session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCRound::Sign(SignMessageData {
+        mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
             batch_session_id: deserialized_event.batched_session_id.bytes,
             message: deserialized_event.hashed_message.clone(),
             dwallet_id: deserialized_event.dwallet_id.bytes,
+            dkg_output: deserialized_event.dkg_output.clone(),
+            network_key_version: deserialized_event.dwallet_mpc_network_key_version,
         }),
     }
 }
@@ -299,7 +306,7 @@ fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> Sess
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCRound::BatchedSign(deserialized_event.hashed_messages.clone()),
+        mpc_round: MPCProtocolInitData::BatchedSign(deserialized_event.hashed_messages.clone()),
     }
 }
 
@@ -308,8 +315,22 @@ fn batched_presign_session_info(deserialized_event: &StartBatchedPresignEvent) -
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCRound::BatchedPresign(deserialized_event.batch_size),
+        mpc_round: MPCProtocolInitData::BatchedPresign(deserialized_event.batch_size),
     }
+}
+
+// todo(zeev): make sure this is not a duplicate.
+fn calculate_total_voting_weight(
+    weighted_parties: &HashMap<PartyID, Weight>,
+    parties: &HashSet<PartyID>,
+) -> usize {
+    let mut total_voting_weight = 0;
+    for party in parties {
+        if let Some(weight) = weighted_parties.get(&party) {
+            total_voting_weight += *weight as usize;
+        }
+    }
+    total_voting_weight
 }
 
 pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
@@ -322,16 +343,36 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
     let messages = deserialize_mpc_messages(messages)?;
 
-    let res = P::advance(
+    let res = match P::advance(
         session_id,
         party_id,
         access_threshold,
-        messages,
+        messages.clone(),
         Some(private_input),
         &public_input,
         &mut rand_core::OsRng,
-    )
-    .map_err(|e| DwalletMPCError::TwoPCMPCError(format!("{:?}", e)))?;
+    ) {
+        Ok(res) => res,
+        Err(e) => {
+            let general_error = DwalletMPCError::TwoPCMPCError(format!("{:?}", e));
+            return match e.into() {
+                // No threshold was reached, so we can't proceed.
+                mpc::Error::ThresholdNotReached { honest_subset } => {
+                    let malicious_actors = messages
+                        .last()
+                        .ok_or(general_error)?
+                        .keys()
+                        .filter(|party_id| !honest_subset.contains(*party_id))
+                        .cloned()
+                        .collect();
+                    Err(DwalletMPCError::SessionFailedWithMaliciousParties(
+                        malicious_actors,
+                    ))
+                }
+                _ => Err(general_error),
+            };
+        }
+    };
 
     Ok(match res {
         mpc::AsynchronousRoundResult::Advance {
@@ -387,12 +428,15 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     }
 
     if !malicious_parties.is_empty() {
-        Err(DwalletMPCError::MaliciousParties(malicious_parties))
+        Err(DwalletMPCError::SessionFailedWithMaliciousParties(
+            malicious_parties,
+        ))
     } else {
         Ok(deserialized_results)
     }
 }
 
+// TODO (#542): move this logic to run before writing the event to the DB, maybe include within the session info
 /// Parses an [`Event`] to extract the corresponding [`MPCParty`],
 /// public input, private input and session information.
 ///
