@@ -413,42 +413,33 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     })
 }
 
-/// Deserializes MPC messages from other parties.
-/// Messages that fail to deserialize are flagged as malicious,
-/// while successful deserialization
-/// identifies the party as honest.
-///
-/// # Returns
-/// A tuple containing:
-/// - A vector of deserialized honest messages
-///   (each one maps PartyID to the deserialized message).
-/// - A set of PartyIDs that sent invalid (malicious) messages.
-/// - A set of PartyIDs that sent valid (honest) messages.
+/// Deserializes the messages received from other parties for the next advancement.
+/// Any value that fails to deserialize is considered to be sent by a malicious party.
+/// Returns the deserialized messages or an error including the IDs of the malicious parties.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
-    session_messages: Vec<HashMap<PartyID, MPCMessage>>,
-) -> (Vec<HashMap<PartyID, M>>, HashSet<PartyID>, HashSet<PartyID>) {
-    let mut malicious_parties = HashSet::new();
-    let mut honest_parties = HashSet::new();
+    messages: Vec<HashMap<PartyID, MPCMessage>>,
+) -> DwalletMPCResult<Vec<HashMap<PartyID, M>>> {
+    let mut deserialized_results = Vec::new();
+    let mut malicious_parties = Vec::new();
 
-    let deserialized_honest_session_messages: Vec<HashMap<PartyID, M>> = session_messages
-        .into_iter()
-        .map(|round_messages| {
-            round_messages
-                .into_iter()
-                .filter_map(|(party_id, message)| match bcs::from_bytes::<M>(&message) {
-                    Ok(value) => {
-                        honest_parties.insert(party_id);
-                        Some((party_id, value))
-                    }
-                    Err(_) => {
-                        malicious_parties.insert(party_id);
-                        None
-                    }
-                })
-                .collect()
-        })
-        .filter(|valid_round_messages: &HashMap<_, _>| !valid_round_messages.is_empty())
-        .collect();
+    for message_batch in &messages {
+        let mut valid_messages = HashMap::new();
+
+        for (party_id, message) in message_batch {
+            match bcs::from_bytes::<M>(&message) {
+                Ok(value) => {
+                    valid_messages.insert(*party_id, value);
+                }
+                Err(_) => {
+                    malicious_parties.push(*party_id);
+                }
+            }
+        }
+
+        if !valid_messages.is_empty() {
+            deserialized_results.push(valid_messages);
+        }
+    }
 
     if !malicious_parties.is_empty() {
         Err(DwalletMPCError::SessionFailedWithMaliciousParties(
