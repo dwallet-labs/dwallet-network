@@ -224,6 +224,7 @@ impl DWalletMPCManager {
                     {
                         let sign_session_id = ia_data.sign_session_id.clone();
                         drop(&ia_data);
+                        session.status = MPCSessionStatus::Finished;
                         drop(session);
                         let Some(mut sign_session) = self.mpc_sessions.get_mut(&sign_session_id)
                         else {
