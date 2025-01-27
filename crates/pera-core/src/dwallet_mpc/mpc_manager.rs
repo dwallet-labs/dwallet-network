@@ -74,7 +74,6 @@ pub struct DWalletMPCManager {
     epoch_id: EpochId,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) validators_data_for_network_dkg: HashMap<PartyID, ValidatorDataForNetworkDKG>,
-    /// A set of all the authorities that behaved maliciously at least once during the epoch.
     pub(crate) cryptographic_computations_orchestrator: CryptographicComputationsOrchestrator,
     /// A struct for managing malicious actors in MPC protocols.
     /// This struct maintains a record of malicious actors reported by validators.
