@@ -16,7 +16,7 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::id::ID;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
-    MPCProtocolInitData, MaliciousReport, MaliciousReport, SessionInfo, StartEncryptedShareVerificationEvent,
+    MPCProtocolInitData, MaliciousReport, SessionInfo, StartEncryptedShareVerificationEvent,
 };
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;

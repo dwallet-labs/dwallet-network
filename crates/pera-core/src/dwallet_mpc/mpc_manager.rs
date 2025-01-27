@@ -635,7 +635,7 @@ impl DWalletMPCManager {
         );
 
         self.malicious_handler
-            .report_malicious_actors(&malicious_parties_names);
+            .report_malicious_actors(&malicious_party_names);
         Ok(())
     }
 
