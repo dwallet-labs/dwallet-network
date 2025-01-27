@@ -79,8 +79,8 @@ impl MaliciousHandler {
             .clone() as usize;
 
         match self.reports.entry(report.clone()) {
-            hash_map::Entry::Occupied(ref mut entry) => {
-                if !entry.get().insert(authority) {
+            hash_map::Entry::Occupied(mut entry) => {
+                if !entry.get_mut().insert(authority) {
                     error!("authority {} already reported {:?}", authority, report);
                 }
             }
