@@ -468,12 +468,7 @@ impl DWalletMPCManager {
             MPCProtocolInitData::Sign(..)
         ) && session.pending_quorum_for_highest_round_number == LAST_SIGN_ROUND_INDEX
         {
-            self.spawn_aggregated_sign(
-                session_id,
-                handle,
-                session,
-                finished_computation_sender,
-            )?;
+            self.spawn_aggregated_sign(session_id, handle, session, finished_computation_sender)?;
         } else {
             rayon::spawn_fifo(move || {
                 if let Err(err) = session.advance(&handle) {
