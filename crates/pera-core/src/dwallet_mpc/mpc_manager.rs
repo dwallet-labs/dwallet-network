@@ -131,8 +131,6 @@ impl DWalletMPCManager {
     ) -> DwalletMPCResult<Self> {
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
-        let mpc_computations_orchestrator =
-            CryptographicComputationsOrchestrator::try_new(&epoch_store)?;
         let quorum_threshold = epoch_store.committee().quorum_threshold();
         let weighted_parties = epoch_store
             .committee()
@@ -140,6 +138,8 @@ impl DWalletMPCManager {
             .iter()
             .cloned()
             .collect();
+        let mpc_computations_orchestrator =
+            CryptographicComputationsOrchestrator::try_new(&epoch_store)?;
         Ok(Self {
             mpc_sessions: HashMap::new(),
             pending_sessions_queue: VecDeque::new(),
