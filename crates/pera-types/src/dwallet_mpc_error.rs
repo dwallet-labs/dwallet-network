@@ -105,10 +105,13 @@ pub enum DwalletMPCError {
     #[error("failed to read the network decryption key shares")]
     DwalletMPCNetworkKeysNotFound,
 
-    #[error("failed to get available parallelism")]
-    FailedToGetAvailableParallelism,
+    #[error("failed to verify signature: {0}")]
+    SignatureVerificationFailed(String),
 
-    #[error("local machine has insufficient CPU cores to run a node")]
+    #[error("failed to get available parallelism: {0}")]
+    FailedToGetAvailableParallelism(String),
+
+    #[error("the local machine has insufficient CPU cores to run a node")]
     InsufficientCPUCores,
 }
 

@@ -6,6 +6,7 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use group::PartyID;
 use mpc::Weight;
+use narwhal_config::Export;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -118,9 +119,9 @@ impl MaliciousHandler {
             .collect::<DwalletMPCResult<HashSet<_>>>()?)
     }
 
-    /// Reports a malicious actor that is disrupting the MPC process.
+    /// Reports malicious actors that are disrupting the MPC process.
     /// Reported by the validator itself.
-    pub(crate) fn report_malicious_internal(&mut self, authority: AuthorityName) {
-        self.malicious_actors.insert(authority);
+    pub(crate) fn report_malicious_actors(&mut self, authorities: &[AuthorityName]) {
+        self.malicious_actors.extend(authorities);
     }
 }
