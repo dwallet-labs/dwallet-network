@@ -226,6 +226,16 @@ impl DWalletMPCManager {
         match status {
             ReportStatus::QuorumReached => {
                 if let Some(session) = self.mpc_sessions.get_mut(&report.session_id) {
+                    if let MPCInitProtocolInfo::SignIdentifiableAbort(ia_data) =
+                        &session.session_info.mpc_round
+                    {
+                        let Some(sign_session) = self.mpc_sessions.get_mut(&report.session_id)
+                        else {
+                            return Err(DwalletMPCError::MPCSessionNotFound { session_id });
+                        };
+                        sign_session.status = MPCSessionStatus::Active;
+                        sign_session.pending_quorum_for_highest_round_number -= 1;
+                    }
                     // For every advance we increase the round number by 1,
                     // so to re-run the same round we decrease it by 1.
                     session.pending_quorum_for_highest_round_number -= 1;
