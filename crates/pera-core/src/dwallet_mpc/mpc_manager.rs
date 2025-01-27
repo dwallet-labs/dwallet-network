@@ -242,6 +242,7 @@ impl DWalletMPCManager {
                                 session_id: report.session_id,
                             });
                         };
+                        warn!("Quorum reached for sign session malicious report, restarting sign session");
                         sign_session.status = MPCSessionStatus::Active;
                         let malicious_parties = self
                             .malicious_handler
@@ -271,6 +272,7 @@ impl DWalletMPCManager {
                     &session.session_info.mpc_round,
                     MPCProtocolInitData::Sign(..)
                 ) {
+                    warn!("received a message to start a sign ia round");
                     // If one of the validators reports a failure due to malicious actors in the
                     // sign flow, all validators should start a dedicated sign IA flow.
                     // This unique behavior is needed because ideally the sign computation step
