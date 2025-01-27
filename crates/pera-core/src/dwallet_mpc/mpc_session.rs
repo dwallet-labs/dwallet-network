@@ -178,7 +178,7 @@ impl DWalletMPCSession {
                 Ok(())
             }
             Err(e) => {
-                error!("Failed to advance the MPC session: {:?}", e);
+                error!("failed to advance the MPC session: {:?}", e);
                 // TODO (#524): Handle failed MPC sessions
                 Err(e)
             }
