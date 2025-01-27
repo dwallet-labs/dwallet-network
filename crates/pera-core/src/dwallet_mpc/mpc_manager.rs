@@ -221,7 +221,7 @@ impl DWalletMPCManager {
                     if let MPCProtocolInitData::SignIdentifiableAbort(ia_data) =
                         &session.session_info.mpc_round
                     {
-                        let sign_session_id = &ia_data.sign_session_id;
+                        let sign_session_id = ia_data.sign_session_id.clone();
                         drop(session);
                         let Some(mut sign_session) = self.mpc_sessions.get_mut(&sign_session_id)
                         else {
