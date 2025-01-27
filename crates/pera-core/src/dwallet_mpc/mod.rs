@@ -446,7 +446,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
                 })
                 .collect()
         })
-        .filter(|valid_round_messages: HashMap<_, _>| !valid_round_messages.is_empty())
+        .filter(|valid_round_messages: &HashMap<_, _>| !valid_round_messages.is_empty())
         .collect();
 
     (
