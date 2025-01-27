@@ -16,6 +16,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
+// todo(zeev): move the events to mpc_events and the types to `dwallet-mpc-types` crate.
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
@@ -225,15 +227,21 @@ impl StartDKGSecondRoundEvent {
     }
 }
 
+/// Represents a report of malicious behavior in the dWallet MPC process.
+///
+/// This struct is used to record instances where validators identify malicious actors
+/// attempting to disrupt the protocol.
+/// It links the malicious actors to a specific MPC session.
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct MaliciousReport {
-    /// The malicious actor that was reported.
+    /// A list of authority names that have been identified as malicious actors.
     malicious_actors: Vec<AuthorityName>,
-    /// The session ID of the MPC session that the malicious actors are disrupting.
+    /// The unique identifier of the MPC session in which the malicious activity occurred.
     pub session_id: ObjectID,
 }
 
 impl MaliciousReport {
+    /// Creates a new instance of a malicious report.
     pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID) -> Self {
         Self {
             malicious_actors,

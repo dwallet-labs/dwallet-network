@@ -364,6 +364,7 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
         Err(e) => {
             let general_error = DwalletMPCError::TwoPCMPCError(format!("{:?}", e));
             return match e.into() {
+                // No threshold was reached, so we can't proceed.
                 mpc::Error::ThresholdNotReached { honest_subset } => {
                     let malicious_actors = messages
                         .last()
@@ -449,11 +450,13 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
         .filter(|valid_round_messages| !valid_round_messages.is_empty())
         .collect();
 
-    (
-        deserialized_honest_session_messages,
-        malicious_parties,
-        honest_parties,
-    )
+    if !malicious_parties.is_empty() {
+        Err(DwalletMPCError::SessionFailedWithMaliciousParties(
+            malicious_parties,
+        ))
+    } else {
+        Ok(deserialized_results)
+    }
 }
 
 // TODO (#542): move this logic to run before writing the event to the DB, maybe include within the session info
