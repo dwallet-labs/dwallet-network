@@ -469,10 +469,10 @@ impl DWalletMPCManager {
         ) && session.pending_quorum_for_highest_round_number == LAST_SIGN_ROUND_INDEX
         {
             self.spawn_aggregated_sign(
-                &session_id,
-                &handle,
-                &session,
-                &finished_computation_sender,
+                session_id,
+                handle,
+                session,
+                finished_computation_sender,
             )?;
         } else {
             rayon::spawn_fifo(move || {
@@ -492,10 +492,10 @@ impl DWalletMPCManager {
 
     fn spawn_aggregated_sign(
         &self,
-        session_id: &ObjectID,
-        handle: &Handle,
-        session: &DWalletMPCSession,
-        finished_computation_sender: &UnboundedSender<()>,
+        session_id: ObjectID,
+        handle: Handle,
+        session: DWalletMPCSession,
+        finished_computation_sender: UnboundedSender<()>,
     ) -> DwalletMPCResult<()> {
         let sign_last_step_delay =
             self.calculate_last_sign_step_validator_delay(&session.session_info)?;
