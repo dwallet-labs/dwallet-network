@@ -286,6 +286,9 @@ impl DWalletMPCManager {
                             .expect("Vec<u8> must have exactly 32 elements");
                         let sign_ia_session_id =
                             ObjectID::derive_id(TransactionDigest::from(session_id_bytes), 0);
+                        // TODO (#564): Make sure the pending messages from the involved parties
+                        // constitute a quorum, and if not mark the initiating authority as
+                        // malicious.
                         let pending_messages: Vec<HashMap<PartyID, MPCMessage>> = session
                             .pending_messages
                             .iter()
