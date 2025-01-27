@@ -221,11 +221,11 @@ impl DWalletMPCManager {
                     if let MPCProtocolInitData::SignIdentifiableAbort(ia_data) =
                         &session.session_info.mpc_round
                     {
-                        let Some(sign_session) = self.mpc_sessions.get_mut(&ia_data.sign_session_id)
+                        let Some(sign_session) = self.mpc_sessions.get(&ia_data.sign_session_id)
                         else {
                             return Err(DwalletMPCError::MPCSessionNotFound { session_id: report.session_id });
                         };
-                        session = sign_session;
+                        session = &mut sign_session.clone();
                         session.status = MPCSessionStatus::Active;
                     }
                     // For every advance we increase the round number by 1,
