@@ -9,7 +9,6 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use group::PartyID;
 use mpc::Weight;
-use narwhal_config::Export;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
