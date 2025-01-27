@@ -79,7 +79,7 @@ impl MaliciousHandler {
 
         match self.reports.entry(report.clone()) {
             hash_map::Entry::Occupied(mut entry) => {
-                if !entry.get().insert(authority) {
+                if !entry.get_mut().insert(authority) {
                     error!("authority {} already reported {:?}", authority, report);
                 }
             }
@@ -138,7 +138,7 @@ impl MaliciousHandler {
 
     /// Reports a malicious actor disrupting the MPC process.
     /// Reported by the validator itself.
-    pub(crate) fn report_malicious_actor_by_validator(&mut self, authority: AuthorityName) {
-        self.malicious_actors.insert(authority);
+    pub(crate) fn report_malicious_actors(&mut self, authorities: &[AuthorityName]) {
+        self.malicious_actors.extend(authorities);
     }
 }

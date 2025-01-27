@@ -1613,7 +1613,9 @@ impl AuthorityState {
     ) -> DwalletMPCResult<()> {
         let deserialized_event: ValidatorDataForNetworkDKG = bcs::from_bytes(&event.contents)?;
         epoch_store
-            .save_dwallet_mpc_message(DWalletMPCDBMessage::ValidatorDataForDKG(deserialized_event))
+            .save_dwallet_mpc_round_message(DWalletMPCDBMessage::ValidatorDataForDKG(
+                deserialized_event,
+            ))
             .await;
         Ok(())
     }

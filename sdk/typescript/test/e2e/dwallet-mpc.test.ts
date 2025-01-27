@@ -10,6 +10,7 @@ import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import { createActiveEncryptionKeysTable } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
 	Config,
+	delay,
 	mockedProtocolPublicParameters,
 	MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';
@@ -50,8 +51,7 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: timeout,
 		};
-		// sleep for 2 seconds
-		await new Promise((r) => setTimeout(r, 2000));
+		await delay(2000);
 		const dWallet = await createDWallet(
 			conf,
 			mockedProtocolPublicParameters,
@@ -64,6 +64,8 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should run Presign', async () => {
+		await delay(2000);
+
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
@@ -101,6 +103,8 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: 10 * 60 * 1000,
 		};
+		//sleep for 2 secs
+		await new Promise((r) => setTimeout(r, 2000));
 		const dWallet = await mockCreateDwallet(conf);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });

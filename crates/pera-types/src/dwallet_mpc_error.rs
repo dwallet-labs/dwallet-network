@@ -104,6 +104,15 @@ pub enum DwalletMPCError {
 
     #[error("failed to read the network decryption key shares")]
     DwalletMPCNetworkKeysNotFound,
+
+    #[error("failed to verify signature: {0}")]
+    SignatureVerificationFailed(String),
+
+    #[error("failed to get available parallelism: {0}")]
+    FailedToGetAvailableParallelism(String),
+
+    #[error("the local machine has insufficient CPU cores to run a node")]
+    InsufficientCPUCores,
 }
 
 /// A wrapper type for the result of a runtime operation.
