@@ -358,7 +358,12 @@ impl DWalletMPCManager {
 
     fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {
         let (public_input, private_input) = session_input_from_event(&event, &self)?;
-        self.push_new_mpc_session(public_input, private_input, session_info, vec![HashMap::new()])?;
+        self.push_new_mpc_session(
+            public_input,
+            private_input,
+            session_info,
+            vec![HashMap::new()],
+        )?;
         Ok(())
     }
 
