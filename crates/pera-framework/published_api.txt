@@ -148,6 +148,12 @@ BatchedSignOutput
 StartSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+UniqTest
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+UniqPresignPerMessage
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 CreatedPartialCentralizedSignedMessagesEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -177,6 +183,9 @@ launch_presign_second_round
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_batched_presign_output
 	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+sign_uniq_metadata
+	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 sign
 	public fun
