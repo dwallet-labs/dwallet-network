@@ -409,7 +409,7 @@ impl DWalletMPCSession {
     pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         if matches!(
             self.session_info.mpc_round,
-            MPCInitProtocolInfo::SignIdentifiableAbort(..)
+            MPCProtocolInitData::SignIdentifiableAbort(..)
         ) {
             return Ok(());
         }

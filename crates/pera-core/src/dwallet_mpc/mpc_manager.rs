@@ -218,7 +218,7 @@ impl DWalletMPCManager {
         match status {
             ReportStatus::QuorumReached => {
                 if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
-                    if let MPCInitProtocolInfo::SignIdentifiableAbort(ia_data) =
+                    if let MPCProtocolInitData::SignIdentifiableAbort(ia_data) =
                         &session.session_info.mpc_round
                     {
                         let Some(sign_session) = self.mpc_sessions.get_mut(&ia_data.sign_session_id)
@@ -260,7 +260,7 @@ impl DWalletMPCManager {
                 };
                 if matches!(
                     &session.session_info.mpc_round,
-                    MPCInitProtocolInfo::Sign(..)
+                    MPCProtocolInitData::Sign(..)
                 ) {
                     if session.status == MPCSessionStatus::Active {
                         session.status = MPCSessionStatus::Failed;
