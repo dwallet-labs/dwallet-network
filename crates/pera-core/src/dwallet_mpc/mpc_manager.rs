@@ -222,6 +222,8 @@ impl DWalletMPCManager {
                     if let MPCProtocolInitData::SignIdentifiableAbort(ia_data) =
                         &session.session_info.mpc_round
                     {
+                        // If we reached a quorum on the malicious actors reported in a sign flow,
+                        // we should remove them and re-run the last round without them.
                         let sign_session_id = ia_data.sign_session_id.clone();
                         drop(&ia_data);
                         session.status = MPCSessionStatus::Finished;
