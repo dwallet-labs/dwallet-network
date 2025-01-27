@@ -49,7 +49,7 @@ use pera_types::error::PeraResult;
 use pera_types::executable_transaction::CertificateProof;
 use pera_types::message_envelope::VerifiedEnvelope;
 use pera_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCOutput, DWalletMPCOutputMessage, MPCInitProtocolInfo, SessionInfo,
+    DWalletMPCEvent, DWalletMPCOutput, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
 };
 use pera_types::{
     authenticator_state::ActiveJwk,
@@ -249,7 +249,6 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
 
         let last_committed_round = self.last_consensus_stats.index.sub_dag_index;
 
-        // Check if the dwallet mpc manager should perform a state sync, and if so block consensus outputs processing & perform the state sync
         if self.should_perform_dwallet_mpc_state_sync().await {
             if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
                 error!(
@@ -260,7 +259,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             }
         }
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
-        dwallet_mpc_verifier.last_processed_round = last_committed_round;
+        dwallet_mpc_verifier.last_processed_consensus_round = last_committed_round;
         // Need to drop the verifier, as `self` is being used mutably later in this function
         drop(dwallet_mpc_verifier);
 
@@ -402,7 +401,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let mut dwallet_mpc_verifier =
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
                         self.epoch_store
-                            .save_dwallet_mpc_message(
+                            .save_dwallet_mpc_round_message(
                                 DWalletMPCDBMessage::LockNextEpochCommitteeVote(*authority),
                             )
                             .await;
@@ -525,7 +524,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     // the verified output.
                                     // We can't preform this within the execution engine,
                                     // as it requires the class-groups crate from crypto-private lib.
-                                    if let MPCInitProtocolInfo::NetworkDkg(key_scheme, _) =
+                                    if let MPCProtocolInitData::NetworkDkg(key_scheme, _) =
                                         session_info.mpc_round
                                     {
                                         let weighted_threshold_access_structure = match self
@@ -705,7 +704,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         )?;
 
         let mut new_session_info = session_info.clone();
-        new_session_info.mpc_round = MPCInitProtocolInfo::NetworkDkg(key_scheme, Some(key));
+        new_session_info.mpc_round = MPCProtocolInitData::NetworkDkg(key_scheme, Some(key));
 
         Ok(self.create_dwallet_mpc_output_system_tx(&new_session_info, verified_output))
     }
@@ -769,21 +768,27 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .collect())
     }
 
+    /// Check if the dWallet MPC manager should perform a state sync.
+    /// If so, block consensus and load all messages.
+    /// This condition is only true if we process a round
+    /// before we processed the previous round,
+    /// which can only happen if we restart the node.
     async fn should_perform_dwallet_mpc_state_sync(&self) -> bool {
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
         // Check if the dwallet mpc manager should perform a state sync, and if so block consensus and load all messages
         // This condition is only true if we process a round before we processed the previous round,
         // which can only happen if we restart the node.
         self.last_consensus_stats.index.sub_dag_index
-            > dwallet_mpc_verifier.last_processed_round + 1
+            > dwallet_mpc_verifier.last_processed_consensus_round + 1
     }
 
     /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
-    /// Needed to be performed here so system transactions will get created when they should & a fork in the
+    /// Needs to be performed here,
+    /// so system transactions will get created when they should, and a fork in the
     /// chain will be prevented.
     /// Fails only if the epoch switched in the middle of the state sync.
     async fn perform_dwallet_mpc_state_sync(&self) -> PeraResult {
-        info!("performs a state sync for the DWallet MPC node");
+        info!("Performing a state sync for the dWallet MPC node");
         let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
 
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;

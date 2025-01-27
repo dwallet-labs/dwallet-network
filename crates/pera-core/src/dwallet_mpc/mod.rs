@@ -24,13 +24,14 @@ use pera_types::base_types::{EpochId, ObjectID};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{
-    MPCInitProtocolInfo, SessionInfo, SignSessionData, StartDKGSecondRoundEvent,
+    MPCProtocolInitData, SessionInfo, SingleSignSessionData, StartDKGSecondRoundEvent,
     StartEncryptedShareVerificationEvent, StartEncryptionKeyVerificationEvent,
 };
 use serde::de::DeserializeOwned;
 use std::collections::{HashMap, HashSet};
 
 pub mod batches_manager;
+mod cryptographic_computations_orchestrator;
 mod dkg;
 pub mod dwallet_mpc_service;
 mod encrypt_user_share;
@@ -147,7 +148,7 @@ fn start_encrypted_share_verification_session_info(
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
-        mpc_round: MPCInitProtocolInfo::EncryptedShareVerification(deserialized_event),
+        mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
     }
 }
 
@@ -158,7 +159,7 @@ fn start_encryption_key_verification_session_info(
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
-        mpc_round: MPCInitProtocolInfo::EncryptionKeyVerification(deserialized_event),
+        mpc_round: MPCProtocolInitData::EncryptionKeyVerification(deserialized_event),
     }
 }
 
@@ -181,7 +182,7 @@ fn dkg_second_party_session_info(
         flow_session_id: deserialized_event.first_round_session_id.bytes,
         session_id: ObjectID::from(deserialized_event.session_id),
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCInitProtocolInfo::DKGSecond(
+        mpc_round: MPCProtocolInitData::DKGSecond(
             deserialized_event.clone(),
             dwallet_network_key_version,
         ),
@@ -199,7 +200,7 @@ fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> 
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCInitProtocolInfo::DKGFirst,
+        mpc_round: MPCProtocolInitData::DKGFirst,
     }
 }
 
@@ -222,7 +223,7 @@ fn presign_first_party_session_info(
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCInitProtocolInfo::PresignFirst(
+        mpc_round: MPCProtocolInitData::PresignFirst(
             deserialized_event.dwallet_id.bytes,
             deserialized_event.dkg_output,
             deserialized_event.batch_session_id.bytes,
@@ -251,7 +252,7 @@ fn presign_second_party_session_info(
         flow_session_id: deserialized_event.first_round_session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCInitProtocolInfo::PresignSecond(
+        mpc_round: MPCProtocolInitData::PresignSecond(
             deserialized_event.dwallet_id.bytes,
             deserialized_event.first_round_output.clone(),
             deserialized_event.batch_session_id.bytes,
@@ -290,7 +291,7 @@ fn sign_party_session_info(
         flow_session_id: deserialized_event.presign_session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCInitProtocolInfo::Sign(SignSessionData {
+        mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
             batch_session_id: deserialized_event.batched_session_id.bytes,
             message: deserialized_event.hashed_message.clone(),
             dwallet_id: deserialized_event.dwallet_id.bytes,
@@ -305,7 +306,7 @@ fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> Sess
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCInitProtocolInfo::BatchedSign(deserialized_event.hashed_messages.clone()),
+        mpc_round: MPCProtocolInitData::BatchedSign(deserialized_event.hashed_messages.clone()),
     }
 }
 
@@ -314,7 +315,7 @@ fn batched_presign_session_info(deserialized_event: &StartBatchedPresignEvent) -
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCInitProtocolInfo::BatchedPresign(deserialized_event.batch_size),
+        mpc_round: MPCProtocolInitData::BatchedPresign(deserialized_event.batch_size),
     }
 }
 

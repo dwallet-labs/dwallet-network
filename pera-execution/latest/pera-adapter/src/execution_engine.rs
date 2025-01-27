@@ -62,7 +62,7 @@ mod checked {
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
     use pera_types::messages_dwallet_mpc::{
-        DWalletMPCOutput, MPCInitProtocolInfo, SignSessionData,
+        DWalletMPCOutput, MPCProtocolInitData, SingleSignSessionData,
     };
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
@@ -1131,7 +1131,7 @@ mod checked {
         let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 
         let (move_function_name, args) = match data.session_info.mpc_round {
-            MPCInitProtocolInfo::DKGFirst => (
+            MPCProtocolInitData::DKGFirst => (
                 "create_dkg_first_round_output",
                 vec![
                     CallArg::Pure(data.session_info.session_id.to_vec()),
@@ -1139,7 +1139,7 @@ mod checked {
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                 ],
             ),
-            MPCInitProtocolInfo::DKGSecond(event_data, dwallet_network_key_version) => (
+            MPCProtocolInitData::DKGSecond(event_data, dwallet_network_key_version) => (
                 "create_dkg_second_round_output",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
@@ -1154,7 +1154,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&event_data.dkg_centralized_public_output)?),
                 ],
             ),
-            MPCInitProtocolInfo::PresignFirst(
+            MPCProtocolInitData::PresignFirst(
                 dwallet_id,
                 dkg_output,
                 batch_session_id,
@@ -1171,7 +1171,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&network_key_version)?),
                 ],
             ),
-            MPCInitProtocolInfo::PresignSecond(
+            MPCProtocolInitData::PresignSecond(
                 dwallet_id,
                 _first_round_output,
                 batch_session_id,
@@ -1204,7 +1204,7 @@ mod checked {
                     ],
                 )
             }
-            MPCInitProtocolInfo::Sign(SignSessionData {
+            MPCProtocolInitData::Sign(SingleSignSessionData {
                 batch_session_id,
                 dwallet_id,
                 ..
@@ -1219,7 +1219,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
                 ],
             ),
-            MPCInitProtocolInfo::NetworkDkg(key_type, new_key) => {
+            MPCProtocolInitData::NetworkDkg(key_type, new_key) => {
                 let new_key = new_key.ok_or(ExecutionError::new(
                     ExecutionErrorKind::TypeArgumentError {
                         argument_idx: 0,
@@ -1245,7 +1245,7 @@ mod checked {
                     ],
                 )
             }
-            MPCInitProtocolInfo::EncryptedShareVerification(verification_data) => (
+            MPCProtocolInitData::EncryptedShareVerification(verification_data) => (
                 "create_encrypted_user_share",
                 vec![
                     CallArg::Pure(verification_data.dwallet_id.bytes.to_vec()),
@@ -1261,7 +1261,7 @@ mod checked {
                     CallArg::Pure(verification_data.initiator.to_vec()),
                 ],
             ),
-            MPCInitProtocolInfo::EncryptionKeyVerification(verification_data) => {
+            MPCProtocolInitData::EncryptionKeyVerification(verification_data) => {
                 module_name = DWALLET_MODULE_NAME;
                 (
                     "create_encryption_key",

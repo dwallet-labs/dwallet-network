@@ -16,7 +16,7 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::id::ID;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
-    MPCInitProtocolInfo, MaliciousReport, SessionInfo, StartEncryptedShareVerificationEvent,
+    MPCProtocolInitData, MaliciousReport, SessionInfo, StartEncryptedShareVerificationEvent,
 };
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
@@ -104,10 +104,14 @@ impl DWalletMPCSession {
     }
 
     /// Advances the MPC session and sends the advancement result to the other validators.
+    /// The consensus submission logic is being spawned as a separate tokio task, as it's an IO
+    /// heavy task. Rayon, which is good for CPU heavy tasks, is used to perform the cryptographic
+    /// computation, and Tokio, which is good for IO heavy tasks, is used to submit the result to
+    /// the consensus.
     pub(super) fn advance(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
-                malicious_parties,
+                malicious_parties: _malicious_parties,
                 message,
             }) => {
                 let message = self.new_dwallet_mpc_message(message).map_err(|e| {
@@ -123,7 +127,7 @@ impl DWalletMPCSession {
                         .submit_to_consensus(&vec![message], &epoch_store)
                         .await
                     {
-                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                        error!("failed to submit MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())
@@ -141,7 +145,7 @@ impl DWalletMPCSession {
                         .submit_to_consensus(&vec![output], &epoch_store)
                         .await
                     {
-                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                        error!("failed to submit MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())
@@ -168,13 +172,13 @@ impl DWalletMPCSession {
                         .submit_to_consensus(&vec![output], &epoch_store)
                         .await
                     {
-                        error!("Failed to submit MPC message to consensus: {:?}", err);
+                        error!("failed to submit MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())
             }
             Err(e) => {
-                error!("Failed to advance the MPC session: {:?}", e);
+                error!("failed to advance the MPC session: {:?}", e);
                 // TODO (#524): Handle failed MPC sessions
                 Err(e)
             }
@@ -188,7 +192,7 @@ impl DWalletMPCSession {
             self.session_info.flow_session_id.to_vec().as_slice(),
         );
         match &self.session_info.mpc_round {
-            MPCInitProtocolInfo::DKGFirst => {
+            MPCProtocolInitData::DKGFirst => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<DKGFirstParty>(
                     session_id,
@@ -199,7 +203,7 @@ impl DWalletMPCSession {
                     (),
                 )
             }
-            MPCInitProtocolInfo::DKGSecond(event_data, _) => {
+            MPCProtocolInitData::DKGSecond(event_data, _) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 let result = crate::dwallet_mpc::advance::<DKGSecondParty>(
                     session_id,
@@ -230,7 +234,7 @@ impl DWalletMPCSession {
                 }
                 Ok(result)
             }
-            MPCInitProtocolInfo::PresignFirst(..) => {
+            MPCProtocolInitData::PresignFirst(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<PresignFirstParty>(
                     session_id,
@@ -241,7 +245,7 @@ impl DWalletMPCSession {
                     (),
                 )
             }
-            MPCInitProtocolInfo::PresignSecond(..) => {
+            MPCProtocolInitData::PresignSecond(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<PresignSecondParty>(
                     session_id,
@@ -252,7 +256,7 @@ impl DWalletMPCSession {
                     (),
                 )
             }
-            MPCInitProtocolInfo::Sign(..) => {
+            MPCProtocolInitData::Sign(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<SignFirstParty>(
                     session_id,
@@ -263,7 +267,7 @@ impl DWalletMPCSession {
                     self.decryption_share.clone(),
                 )
             }
-            MPCInitProtocolInfo::NetworkDkg(key_scheme, _) => advance_network_dkg(
+            MPCProtocolInitData::NetworkDkg(key_scheme, _) => advance_network_dkg(
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
@@ -278,7 +282,7 @@ impl DWalletMPCSession {
                 )?,
                 self.epoch_store()?,
             ),
-            MPCInitProtocolInfo::EncryptedShareVerification(verification_data) => {
+            MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
                 match verify_encrypted_share(verification_data) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
                         public_output: vec![],
@@ -288,7 +292,7 @@ impl DWalletMPCSession {
                     Err(err) => Err(err),
                 }
             }
-            MPCInitProtocolInfo::EncryptionKeyVerification(verification_data) => {
+            MPCProtocolInitData::EncryptionKeyVerification(verification_data) => {
                 verify_encryption_key(verification_data)
                     .map(|_| AsynchronousRoundResult::Finalize {
                         public_output: vec![],
@@ -297,7 +301,7 @@ impl DWalletMPCSession {
                     })
                     .map_err(|err| err)
             }
-            MPCInitProtocolInfo::BatchedPresign(..) | MPCInitProtocolInfo::BatchedSign(..) => {
+            MPCProtocolInitData::BatchedPresign(..) | MPCProtocolInitData::BatchedSign(..) => {
                 unreachable!("advance should never be called on a batched session")
             }
         }
