@@ -22,7 +22,7 @@ use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::messages_dwallet_mpc::{MPCInitProtocolInfo, SessionInfo};
+use pera_types::messages_dwallet_mpc::{MPCProtocolInitData, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use twopc_mpc::secp256k1::class_groups::{
@@ -536,7 +536,7 @@ fn dkg_secp256k1_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
-        mpc_round: MPCInitProtocolInfo::NetworkDkg(DWalletMPCNetworkKeyScheme::Secp256k1, None),
+        mpc_round: MPCProtocolInitData::NetworkDkg(DWalletMPCNetworkKeyScheme::Secp256k1, None),
     }
 }
 
@@ -545,7 +545,7 @@ fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
-        mpc_round: MPCInitProtocolInfo::NetworkDkg(DWalletMPCNetworkKeyScheme::Ristretto, None),
+        mpc_round: MPCProtocolInitData::NetworkDkg(DWalletMPCNetworkKeyScheme::Ristretto, None),
     }
 }
 
