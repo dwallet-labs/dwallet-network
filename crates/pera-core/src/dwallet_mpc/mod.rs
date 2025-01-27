@@ -341,15 +341,7 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-    let (messages, deserialized_malicious_parties, honest_parties) =
-        deserialize_mpc_messages(messages);
-    if calculate_total_voting_weight(&access_threshold.party_to_weight, &honest_parties)
-        < access_threshold.threshold as usize
-    {
-        return Err(DwalletMPCError::SessionFailedWithMaliciousParties(
-            deserialized_malicious_parties.into_iter().collect(),
-        ));
-    }
+    let messages = deserialize_mpc_messages(messages)?;
 
     let res = match P::advance(
         session_id,
@@ -386,21 +378,15 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
         mpc::AsynchronousRoundResult::Advance {
             malicious_parties,
             message,
-        } => {
-            let mut malicious_parties = malicious_parties;
-            malicious_parties.extend(deserialized_malicious_parties);
-            mpc::AsynchronousRoundResult::Advance {
-                malicious_parties,
-                message: bcs::to_bytes(&message)?,
-            }
-        }
+        } => mpc::AsynchronousRoundResult::Advance {
+            malicious_parties,
+            message: bcs::to_bytes(&message)?,
+        },
         mpc::AsynchronousRoundResult::Finalize {
             malicious_parties,
             private_output,
             public_output,
         } => {
-            let mut malicious_parties = malicious_parties;
-            malicious_parties.extend(deserialized_malicious_parties);
             let public_output: P::PublicOutputValue = public_output.into();
             let public_output = bcs::to_bytes(&public_output)?;
             let private_output = bcs::to_bytes(&private_output)?;
