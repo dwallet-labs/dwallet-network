@@ -376,7 +376,6 @@ impl DWalletMPCManager {
             public_input,
             private_input,
             session_info,
-            vec![HashMap::new()],
         )?;
         Ok(())
     }
@@ -744,7 +743,6 @@ impl DWalletMPCManager {
         public_input: MPCPublicInput,
         private_input: MPCPrivateInput,
         session_info: SessionInfo,
-        pending_messages: Vec<HashMap<PartyID, MPCMessage>>,
     ) -> DwalletMPCResult<()> {
         if self.mpc_sessions.contains_key(&session_info.session_id) {
             // This should never happen, as the session ID is a Move UniqueID.
@@ -776,7 +774,6 @@ impl DWalletMPCManager {
                 )?,
             },
             private_input,
-            pending_messages,
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing
