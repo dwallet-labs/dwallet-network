@@ -247,7 +247,11 @@ impl DWalletMPCOutputsVerifier {
             &protocol_public_parameters.as_ref().group_public_parameters,
         )
         .map_err(|e| {
-            DwalletMPCError::ClassGroupsError(e.to_string())
+            DwalletMPCError::ClassGroupsError(format!(
+                "{}{}",
+                "Failed to create public key: ".to_string(),
+                e.to_string()
+            ))
         })?;
 
         if let Err(err) = verify_signature(
@@ -255,9 +259,10 @@ impl DWalletMPCOutputsVerifier {
             sign_output.1,
             bcs::from_bytes(&sign_session_data.message)?,
             dwallet_public_key,
-        )
-        {
-            return Err(DwalletMPCError::SignatureVerificationFailed(err.to_string()));
+        ) {
+            return Err(DwalletMPCError::SignatureVerificationFailed(
+                err.to_string(),
+            ));
         }
         Ok(OutputVerificationResult {
             result: OutputResult::Valid,
