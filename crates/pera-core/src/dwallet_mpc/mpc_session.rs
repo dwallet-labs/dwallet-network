@@ -417,7 +417,7 @@ impl DWalletMPCSession {
         Ok(())
     }
 
-    fn rerun_last_round_without_malicious_parties(
+    pub(crate) fn rerun_last_round_without_malicious_parties(
         &mut self,
         malicious_parties: &HashSet<PartyID>
     ) -> Result<(), DwalletMPCError> {

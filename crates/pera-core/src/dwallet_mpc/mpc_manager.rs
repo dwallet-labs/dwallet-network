@@ -230,8 +230,19 @@ impl DWalletMPCManager {
                             });
                         };
                         sign_session.status = MPCSessionStatus::Active;
+                        let malicious_parties = self
+                            .malicious_handler
+                            .get_malicious_actors_ids(self.epoch_store()?)?;
+                        sign_session.rerun_last_round_without_malicious_parties(
+                            &malicious_parties,
+                        )?;
                     }
-                    self.rerun_last_round_without_malicious_parties(&report, epoch_store, session)?;
+                    let malicious_parties = self
+                        .malicious_handler
+                        .get_malicious_actors_ids(self.epoch_store()?)?;
+                    session.rerun_last_round_without_malicious_parties(
+                        &malicious_parties,
+                    )?;
                 }
             }
             ReportStatus::OverQuorum => {}
@@ -306,29 +317,6 @@ impl DWalletMPCManager {
             }
         }
 
-        Ok(())
-    }
-
-    fn rerun_last_round_without_malicious_parties(
-        mut session: &mut DWalletMPCSession,
-    ) -> Result<(), DwalletMPCError> {
-        // For every advance we increase the round number by 1,
-        // so to re-run the same round we decrease it by 1.
-        session.pending_quorum_for_highest_round_number -= 1;
-        // Remove malicious parties from the session messages.
-        let round_messages = session
-            .pending_messages
-            .get_mut(session.pending_quorum_for_highest_round_number)
-            .ok_or(DwalletMPCError::MPCSessionNotFound {
-                session_id: session.session_id,
-            })?;
-
-        self.malicious_handler
-            .get_malicious_actors_ids(epoch_store)?
-            .iter()
-            .for_each(|malicious_actor| {
-                round_messages.remove(malicious_actor);
-            });
         Ok(())
     }
 
