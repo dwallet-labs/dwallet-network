@@ -80,22 +80,16 @@ impl DWalletMPCSession {
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
         private_input: MPCPrivateInput,
-        pending_messages: Vec<HashMap<PartyID, MPCMessage>>,
     ) -> Self {
-        let mut default_pending_quorum_for_highest_round_number = 0;
-        if !pending_messages.is_empty() {
-            default_pending_quorum_for_highest_round_number = pending_messages.len();
-        }
         Self {
             status,
-            pending_messages,
+            pending_messages: vec![HashMap::new()],
             consensus_adapter,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             public_input,
             session_info,
-            pending_quorum_for_highest_round_number:
-                default_pending_quorum_for_highest_round_number,
+            pending_quorum_for_highest_round_number: 0,
             party_id,
             weighted_threshold_access_structure,
             decryption_share,
