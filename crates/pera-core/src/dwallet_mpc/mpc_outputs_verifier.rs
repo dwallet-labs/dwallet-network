@@ -14,7 +14,7 @@ use narwhal_types::Round;
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::messages_dwallet_mpc::{MPCProtocolInitData, SessionInfo, SignSessionData};
+use pera_types::messages_dwallet_mpc::{MPCProtocolInitData, SessionInfo, SingleSignSessionData};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
@@ -224,7 +224,7 @@ impl DWalletMPCOutputsVerifier {
 
     fn verify_signature(
         epoch_store: &Arc<AuthorityPerEpochStore>,
-        sign_session_data: &SignSessionData,
+        sign_session_data: &SingleSignSessionData,
         signature: &MPCPublicOutput,
     ) -> DwalletMPCResult<OutputVerificationResult> {
         let sign_output = bcs::from_bytes::<<SignFirstParty as Party>::PublicOutput>(&signature)?;
