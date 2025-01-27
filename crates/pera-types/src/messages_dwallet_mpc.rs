@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-use group::PartyID;
 use crate::base_types::{AuthorityName, ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
@@ -12,11 +10,13 @@ use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
     START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
 };
+use group::PartyID;
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
+use std::collections::HashSet;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCInitProtocolInfo {
@@ -53,7 +53,7 @@ pub enum MPCInitProtocolInfo {
     /// todo(zeev): more docs, make it clearer.
     /// TODO (#544): Check if there's a way to convert the public key to an address in Move.
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
-    SignIdentifiableAbort(SignIASessionData)
+    SignIdentifiableAbort(SignIASessionData),
 }
 
 /// The message and data for the Sign round.
@@ -74,7 +74,7 @@ pub struct SignIASessionData {
     pub initiating_authority: AuthorityName,
     pub claimed_malicious_actors: Vec<AuthorityName>,
     pub sign_session_id: ObjectID,
-    pub parties_used_for_last_step: Vec<PartyID>
+    pub parties_used_for_last_step: Vec<PartyID>,
 }
 
 impl MPCInitProtocolInfo {
@@ -248,7 +248,11 @@ pub struct MaliciousReport {
 }
 
 impl MaliciousReport {
-    pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID, involved_parties: Vec<PartyID>) -> Self {
+    pub fn new(
+        malicious_actors: Vec<AuthorityName>,
+        session_id: ObjectID,
+        involved_parties: Vec<PartyID>,
+    ) -> Self {
         Self {
             malicious_actors,
             session_id,

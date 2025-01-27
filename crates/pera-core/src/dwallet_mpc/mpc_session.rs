@@ -209,7 +209,7 @@ impl DWalletMPCSession {
                     public_input,
                     self.decryption_share.clone(),
                 )
-            },
+            }
             MPCInitProtocolInfo::DKGFirst => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance::<DKGFirstParty>(
@@ -407,7 +407,10 @@ impl DWalletMPCSession {
     /// Handles a message by either forwarding it to the session
     /// or ignoring it if the session is not active.
     pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        if matches!(self.session_info.mpc_round, MPCInitProtocolInfo::SignIdentifiableAbort(..)) {
+        if matches!(
+            self.session_info.mpc_round,
+            MPCInitProtocolInfo::SignIdentifiableAbort(..)
+        ) {
             return Ok(());
         }
         self.store_message(message)?;
