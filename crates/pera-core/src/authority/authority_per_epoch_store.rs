@@ -2646,6 +2646,23 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, ..),
+                ..
+            }) => {
+                // When sending a `DWalletMPCSessionFailedWithMalicious`,
+                // the validator also includes its public key.
+                // Here, we verify that the public key used to sign this transaction matches
+                // the provided public key.
+                // This public key is later used to identify the authority that sent the MPC message.
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "DWalletMPCSessionFailedWithMalicious: authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
                 ..
             }) => {
@@ -3895,6 +3912,23 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(..),
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind:
+                    ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(
+                        authority_name,
+                        report,
+                    ),
+                ..
+            }) => {
+                self.save_dwallet_mpc_message(
+                    DWalletMPCDBMessage::SessionFailedWithMaliciousParties(
+                        authority_name.clone(),
+                        report.clone(),
+                    ),
+                )
+                .await;
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                 ..
