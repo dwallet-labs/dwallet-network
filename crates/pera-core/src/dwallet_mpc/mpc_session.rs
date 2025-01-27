@@ -154,7 +154,7 @@ impl DWalletMPCSession {
             Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
                 error!(
                     "Session {:?} failed with malicious parties: {:?}",
-                    self.session_info.mpc_round , malicious_parties
+                    self.session_info.mpc_round, malicious_parties
                 );
                 let malicious_parties = malicious_parties
                     .into_iter()
@@ -195,8 +195,14 @@ impl DWalletMPCSession {
                         Ok(party_id_to_authority_name(party_id, &*self.epoch_store()?)?)
                     })
                     .collect::<DwalletMPCResult<Vec<_>>>()?;
-                let report =
-                    MaliciousReport::new(malicious_parties, self.session_info.session_id.clone());
+                let report = MaliciousReport::new(
+                    malicious_parties,
+                    self.session_info.session_id.clone(),
+                    self.pending_messages[self.pending_quorum_for_highest_round_number]
+                        .keys()
+                        .map(|party_id| *party_id)
+                        .collect(),
+                );
                 let output =
                     self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
                 let consensus_adapter = self.consensus_adapter.clone();
