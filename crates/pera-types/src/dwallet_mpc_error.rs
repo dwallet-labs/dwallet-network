@@ -106,7 +106,7 @@ pub enum DwalletMPCError {
     DwalletMPCNetworkKeysNotFound,
 
     #[error("failed to verify signature")]
-    SignatureVerificationFailed,
+    SignatureVerificationFailed(String),
 
     #[error("failed to get available parallelism")]
     FailedToGetAvailableParallelism(String),
