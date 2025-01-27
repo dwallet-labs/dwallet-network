@@ -231,10 +231,11 @@ impl DWalletMPCManager {
                     {
                         let Some(sign_session) = self.mpc_sessions.get_mut(&report.session_id)
                         else {
-                            return Err(DwalletMPCError::MPCSessionNotFound { session_id });
+                            return Err(DwalletMPCError::MPCSessionNotFound { session_id: report.session_id });
                         };
                         session = sign_session;
-                        sign_session.status = MPCSessionStatus::Active;
+                        //
+                        session.status = MPCSessionStatus::Active;
                     }
                     // For every advance we increase the round number by 1,
                     // so to re-run the same round we decrease it by 1.
