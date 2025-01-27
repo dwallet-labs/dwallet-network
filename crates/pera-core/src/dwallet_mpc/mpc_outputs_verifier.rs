@@ -246,8 +246,8 @@ impl DWalletMPCOutputsVerifier {
             dkg_output,
             &protocol_public_parameters.as_ref().group_public_parameters,
         )
-        .map_err(|_| {
-            DwalletMPCError::ClassGroupsError("Failed to create public key".to_string())
+        .map_err(|e| {
+            DwalletMPCError::ClassGroupsError(e.to_string())
         })?;
 
         if let Err(err) = verify_signature(
