@@ -116,7 +116,7 @@ impl DWalletMPCSession {
                 mut message,
             }) => {
                 if self.party_id == 1 {
-                    message = vec![];
+                    message = vec![1, 2, 3];
                 }
                 let message = self.new_dwallet_mpc_message(message).map_err(|e| {
                     DwalletMPCError::MPCSessionError {
@@ -173,7 +173,7 @@ impl DWalletMPCSession {
                 let report = MaliciousReport::new(
                     malicious_parties,
                     self.session_info.session_id.clone(),
-                    self.pending_messages[self.pending_quorum_for_highest_round_number]
+                    self.pending_messages[self.pending_quorum_for_highest_round_number - 1]
                         .keys()
                         .map(|party_id| *party_id)
                         .collect(),
