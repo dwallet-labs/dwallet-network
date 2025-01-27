@@ -303,7 +303,7 @@ impl DWalletMPCManager {
                                 initiating_user_address: session_clone
                                     .session_info
                                     .initiating_user_address,
-                                mpc_round: MPCInitProtocolInfo::SignIdentifiableAbort(
+                                mpc_round: MPCProtocolInitData::SignIdentifiableAbort(
                                     SignIASessionData {
                                         initiating_authority: authority_name,
                                         claimed_malicious_actors: report.malicious_actors,

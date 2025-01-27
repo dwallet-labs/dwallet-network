@@ -347,7 +347,7 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
         < access_threshold.threshold as usize
     {
         return Err(DwalletMPCError::SessionFailedWithMaliciousParties(
-            deserialized_malicious_parties.iter().collect(),
+            deserialized_malicious_parties.into_iter().collect(),
         ));
     }
 
