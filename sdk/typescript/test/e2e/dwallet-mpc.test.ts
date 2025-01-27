@@ -64,7 +64,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should run Presign', async () => {
-		await new Promise((r) => setTimeout(r, 2000));
+		await delay(2000);
 
 		let conf: Config = {
 			keypair: toolbox.keypair,

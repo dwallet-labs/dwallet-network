@@ -31,6 +31,7 @@ use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 
 pub mod batches_manager;
+mod cryptographic_computations_orchestrator;
 mod dkg;
 pub mod dwallet_mpc_service;
 mod encrypt_user_share;
