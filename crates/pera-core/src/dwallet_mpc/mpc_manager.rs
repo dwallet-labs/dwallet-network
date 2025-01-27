@@ -549,7 +549,7 @@ impl DWalletMPCManager {
 
     /// Deterministically decides by the session ID how long this validator should wait before
     /// running the last step of the sign protocol.
-    /// If while waiting the validator receives a valid signature for this session,
+    /// If while waiting, the validator receives a valid signature for this session,
     /// it will not run the last step in the sign protocol, and save computation resources.
     fn calculate_last_sign_step_validator_delay(
         &self,
