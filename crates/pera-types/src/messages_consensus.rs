@@ -7,7 +7,7 @@ use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
     CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointTimestamp,
 };
-use crate::messages_dwallet_mpc::SessionInfo;
+use crate::messages_dwallet_mpc::{MaliciousReport, SessionInfo};
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
@@ -18,6 +18,7 @@ use fastcrypto::error::FastCryptoResult;
 use fastcrypto::groups::bls12381;
 use fastcrypto_tbls::{dkg, dkg_v1};
 use fastcrypto_zkp::bn254::zk_login::{JwkId, JWK};
+use group::PartyID;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
@@ -116,6 +117,7 @@ pub enum ConsensusTransactionKey {
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
     DWalletMPCOutput(Vec<u8>, ObjectID, PeraAddress, AuthorityName),
+    DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
     LockNextCommittee(AuthorityName, EpochId),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
@@ -177,6 +179,14 @@ impl Debug for ConsensusTransactionKey {
                     "LockNextCommittee({:?}) for epoch {:?}",
                     authority.concise(),
                     epoch_id
+                )
+            }
+            ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(authority, report) => {
+                write!(
+                    f,
+                    "DWalletMPCSessionFailedWithMalicious({:?}, {:?})",
+                    authority.concise(),
+                    report,
                 )
             }
         }
@@ -311,6 +321,8 @@ pub enum ConsensusTransactionKind {
     NewJWKFetched(AuthorityName, JwkId, JWK),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
+    /// Sending Authority and its MaliciousReport.
+    DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
     LockNextCommittee(AuthorityName, EpochId),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
@@ -553,6 +565,20 @@ impl ConsensusTransaction {
         }
     }
 
+    /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
+    pub fn new_dwallet_mpc_session_failed_with_malicious(
+        authority: AuthorityName,
+        report: MaliciousReport,
+    ) -> Self {
+        let mut hasher = DefaultHasher::new();
+        report.session_id.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, report),
+        }
+    }
+
     pub fn new_randomness_dkg_message(
         authority: AuthorityName,
         versioned_message: &VersionedDkgMessage,
@@ -637,6 +663,12 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::LockNextCommittee(authority, epoch_id) => {
                 ConsensusTransactionKey::LockNextCommittee(*authority, *epoch_id)
+            }
+            ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, report) => {
+                ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(
+                    *authority,
+                    report.clone(),
+                )
             }
         }
     }
