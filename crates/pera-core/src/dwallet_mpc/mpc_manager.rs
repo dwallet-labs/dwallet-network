@@ -313,26 +313,48 @@ impl DWalletMPCManager {
                         // Need to get rid of the immutable reference to `self` before using it
                         // as mutable
                         drop(session);
-                        self.push_new_mpc_session(
-                            session_clone.public_input.clone(),
-                            None,
-                            SessionInfo {
-                                flow_session_id: sign_ia_session_id,
-                                session_id: sign_ia_session_id,
-                                initiating_user_address: session_clone
-                                    .session_info
-                                    .initiating_user_address,
-                                mpc_round: MPCProtocolInitData::SignIdentifiableAbort(
-                                    SignIASessionData {
-                                        initiating_authority: authority_name,
-                                        claimed_malicious_actors: report.malicious_actors,
-                                        sign_session_id: session_clone.session_info.session_id,
-                                        parties_used_for_last_step: report.involved_parties,
-                                    },
-                                ),
-                            },
+                        let sign_ia_session = DWalletMPCSession {
                             pending_messages,
-                        )?;
+                            session_info:      SessionInfo {
+                                    flow_session_id: sign_ia_session_id,
+                                    session_id: sign_ia_session_id,
+                                    initiating_user_address: session_clone
+                                        .session_info
+                                        .initiating_user_address,
+                                    mpc_round: MPCProtocolInitData::SignIdentifiableAbort(
+                                        SignIASessionData {
+                                            initiating_authority: authority_name,
+                                            claimed_malicious_actors: report.malicious_actors,
+                                            sign_session_id: session_clone.session_info.session_id,
+                                            parties_used_for_last_step: report.involved_parties,
+                                        },
+                                    ),
+                                },
+                            party_id: session_clone.party_id,
+                            public_input: session_clone.public_input,
+                            pending_quorum_for_highest_round_number: session_clone.pending_quorum_for_highest_round_number,
+                            epoch_store: self.epoch_store()?,
+                        };
+                        // self.push_new_mpc_session(
+                        //     session_clone.public_input.clone(),
+                        //     None,
+                        //     SessionInfo {
+                        //         flow_session_id: sign_ia_session_id,
+                        //         session_id: sign_ia_session_id,
+                        //         initiating_user_address: session_clone
+                        //             .session_info
+                        //             .initiating_user_address,
+                        //         mpc_round: MPCProtocolInitData::SignIdentifiableAbort(
+                        //             SignIASessionData {
+                        //                 initiating_authority: authority_name,
+                        //                 claimed_malicious_actors: report.malicious_actors,
+                        //                 sign_session_id: session_clone.session_info.session_id,
+                        //                 parties_used_for_last_step: report.involved_parties,
+                        //             },
+                        //         ),
+                        //     },
+                        //     pending_messages,
+                        // )?;
                     }
                 }
             }
