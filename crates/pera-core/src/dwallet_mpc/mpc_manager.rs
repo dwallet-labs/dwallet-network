@@ -43,6 +43,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::mem;
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
@@ -222,6 +223,7 @@ impl DWalletMPCManager {
                         &session.session_info.mpc_round
                     {
                         let sign_session_id = ia_data.sign_session_id.clone();
+                        drop(&ia_data);
                         drop(session);
                         let Some(mut sign_session) = self.mpc_sessions.get_mut(&sign_session_id)
                         else {
@@ -232,17 +234,18 @@ impl DWalletMPCManager {
                         sign_session.status = MPCSessionStatus::Active;
                         let malicious_parties = self
                             .malicious_handler
-                            .get_malicious_actors_ids(self.epoch_store()?)?;
+                            .get_malicious_actors_ids(epoch_store)?;
                         sign_session.rerun_last_round_without_malicious_parties(
                             &malicious_parties,
                         )?;
+                    } else {
+                        let malicious_parties = self
+                            .malicious_handler
+                            .get_malicious_actors_ids(epoch_store)?;
+                        session.rerun_last_round_without_malicious_parties(
+                            &malicious_parties,
+                        )?;
                     }
-                    let malicious_parties = self
-                        .malicious_handler
-                        .get_malicious_actors_ids(self.epoch_store()?)?;
-                    session.rerun_last_round_without_malicious_parties(
-                        &malicious_parties,
-                    )?;
                 }
             }
             ReportStatus::OverQuorum => {}
