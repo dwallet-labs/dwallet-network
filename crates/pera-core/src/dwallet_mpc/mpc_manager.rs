@@ -299,20 +299,22 @@ impl DWalletMPCManager {
                                 filtered_round_messages.clone()
                             })
                             .collect();
+                        let session_clone = session.clone();
+                        drop(session);
                         self.push_new_mpc_session(
-                            session.public_input.clone(),
+                            session_clone.public_input.clone(),
                             None,
                             SessionInfo {
                                 flow_session_id: sign_ia_session_id,
                                 session_id: sign_ia_session_id,
-                                initiating_user_address: session
+                                initiating_user_address: session_clone
                                     .session_info
                                     .initiating_user_address,
                                 mpc_round: MPCInitProtocolInfo::SignIdentifiableAbort(
                                     SignIASessionData {
                                         initiating_authority: authority_name,
                                         claimed_malicious_actors: report.malicious_actors,
-                                        sign_session_id: session.session_info.session_id,
+                                        sign_session_id: session_clone.session_info.session_id,
                                         parties_used_for_last_step: report.involved_parties,
                                     },
                                 ),
