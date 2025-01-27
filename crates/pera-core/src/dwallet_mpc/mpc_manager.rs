@@ -271,6 +271,11 @@ impl DWalletMPCManager {
                     &session.session_info.mpc_round,
                     MPCProtocolInitData::Sign(..)
                 ) {
+                    // If one of the validators reports a failure due to malicious actors in the
+                    // sign flow, all validators should start a dedicated sign IA flow.
+                    // This unique behavior is needed because ideally the sign computation step
+                    // only get executed by one validator, and in order to agree on the malicious
+                    // actors all validators should run this step.
                     if session.status == MPCSessionStatus::Active {
                         session.status = MPCSessionStatus::Failed;
                         let session_id_bytes: [u8; 32] = session
