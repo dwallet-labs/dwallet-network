@@ -235,16 +235,13 @@ impl DWalletMPCManager {
                         let malicious_parties = self
                             .malicious_handler
                             .get_malicious_actors_ids(epoch_store)?;
-                        sign_session.rerun_last_round_without_malicious_parties(
-                            &malicious_parties,
-                        )?;
+                        sign_session
+                            .rerun_last_round_without_malicious_parties(&malicious_parties)?;
                     } else {
                         let malicious_parties = self
                             .malicious_handler
                             .get_malicious_actors_ids(epoch_store)?;
-                        session.rerun_last_round_without_malicious_parties(
-                            &malicious_parties,
-                        )?;
+                        session.rerun_last_round_without_malicious_parties(&malicious_parties)?;
                     }
                 }
             }

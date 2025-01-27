@@ -419,7 +419,7 @@ impl DWalletMPCSession {
 
     pub(crate) fn rerun_last_round_without_malicious_parties(
         &mut self,
-        malicious_parties: &HashSet<PartyID>
+        malicious_parties: &HashSet<PartyID>,
     ) -> Result<(), DwalletMPCError> {
         // For every advance we increase the round number by 1,
         // so to re-run the same round we decrease it by 1.
@@ -432,12 +432,9 @@ impl DWalletMPCSession {
                 session_id: self.session_info.session_id,
             })?;
 
-        malicious_parties
-            .iter()
-            .for_each(|malicious_actor| {
-                round_messages.remove(malicious_actor);
-            });
+        malicious_parties.iter().for_each(|malicious_actor| {
+            round_messages.remove(malicious_actor);
+        });
         Ok(())
     }
-
 }
