@@ -113,8 +113,11 @@ impl DWalletMPCSession {
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties: _malicious_parties,
-                message,
+                mut message,
             }) => {
+                if self.party_id == 1 {
+                    message = vec![];
+                }
                 let message = self.new_dwallet_mpc_message(message).map_err(|e| {
                     DwalletMPCError::MPCSessionError {
                         session_id: self.session_info.session_id,
@@ -123,7 +126,12 @@ impl DWalletMPCSession {
                 })?;
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
+                let party_id = *self.party_id;
+                let round = self.session_info.mpc_round.clone();
                 tokio_runtime_handle.spawn(async move {
+                    if party_id == 2 && matches!(round, MPCProtocolInitData::Sign(..)) {
+                        tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+                    }
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![message], &epoch_store)
                         .await
