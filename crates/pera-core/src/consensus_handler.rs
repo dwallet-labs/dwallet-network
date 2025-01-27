@@ -8,7 +8,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
 };
@@ -41,14 +41,16 @@ use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
 use narwhal_config::Committee;
 use narwhal_executor::{ExecutionIndices, ExecutionState};
-use narwhal_types::ConsensusOutput;
+use narwhal_types::{ConsensusOutput, Round};
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use pera_types::error::PeraResult;
 use pera_types::executable_transaction::CertificateProof;
 use pera_types::message_envelope::VerifiedEnvelope;
-use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound, SessionInfo};
+use pera_types::messages_dwallet_mpc::{
+    DWalletMPCEvent, DWalletMPCOutput, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
+};
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -247,7 +249,6 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
 
         let last_committed_round = self.last_consensus_stats.index.sub_dag_index;
 
-        // Check if the dwallet mpc manager should perform a state sync, and if so block consensus outputs processing & perform the state sync
         if self.should_perform_dwallet_mpc_state_sync().await {
             if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
                 error!(
@@ -258,7 +259,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             }
         }
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
-        dwallet_mpc_verifier.last_processed_round = last_committed_round;
+        dwallet_mpc_verifier.last_processed_consensus_round = last_committed_round;
         // Need to drop the verifier, as `self` is being used mutably later in this function
         drop(dwallet_mpc_verifier);
 
@@ -400,8 +401,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let mut dwallet_mpc_verifier =
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
                         self.epoch_store
-                            .save_dwallet_mpc_message(
-                                DWalletMPCChannelMessage::LockNextEpochCommitteeVote(*authority),
+                            .save_dwallet_mpc_round_message(
+                                DWalletMPCDBMessage::LockNextEpochCommitteeVote(*authority),
                             )
                             .await;
                         if dwallet_mpc_verifier.should_lock_committee(*authority) {
@@ -443,17 +444,15 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             );
                             continue;
                         };
+                        self.epoch_store
+                            .save_dwallet_mpc_output(DWalletMPCOutputMessage {
+                                output: output.clone(),
+                                authority: origin_authority.clone(),
+                                session_info: session_info.clone(),
+                            })
+                            .await;
                         let mut dwallet_mpc_verifier =
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
-
-                        self.epoch_store
-                            .save_dwallet_mpc_message(DWalletMPCChannelMessage::Output(
-                                output.clone(),
-                                origin_authority.clone(),
-                                session_info.clone(),
-                            ))
-                            .await;
-
                         let output_verification_result = dwallet_mpc_verifier
                             .try_verify_output(output, &session_info, origin_authority)
                             .unwrap_or_else(|e| {
@@ -463,8 +462,15 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     malicious_actors: vec![origin_authority],
                                 }
                             });
+                        let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
+                        manager.flag_authorities_as_malicious(
+                            &output_verification_result.malicious_actors,
+                        );
                         match output_verification_result.result {
                             OutputResult::Valid => {
+                                self.epoch_store
+                                    .save_dwallet_mpc_completed_session(session_info.session_id)
+                                    .await;
                                 if session_info.mpc_round.is_part_of_batch() {
                                     let mut batches_manager =
                                         self.epoch_store.get_dwallet_mpc_batches_manager().await
@@ -518,7 +524,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     // the verified output.
                                     // We can't preform this within the execution engine,
                                     // as it requires the class-groups crate from crypto-private lib.
-                                    if let MPCRound::NetworkDkg(key_scheme, _) =
+                                    if let MPCProtocolInitData::NetworkDkg(key_scheme, _) =
                                         session_info.mpc_round
                                     {
                                         let weighted_threshold_access_structure = match self
@@ -698,7 +704,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         )?;
 
         let mut new_session_info = session_info.clone();
-        new_session_info.mpc_round = MPCRound::NetworkDkg(key_scheme, Some(key));
+        new_session_info.mpc_round = MPCProtocolInitData::NetworkDkg(key_scheme, Some(key));
 
         Ok(self.create_dwallet_mpc_output_system_tx(&new_session_info, verified_output))
     }
@@ -721,7 +727,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// hence async code involving it can cause compilation errors.
     async fn load_dwallet_mpc_messages_from_epoch_start(
         &self,
-    ) -> PeraResult<Vec<DWalletMPCChannelMessage>> {
+    ) -> PeraResult<Vec<DWalletMPCDBMessage>> {
         Ok(self
             .epoch_store
             .tables()?
@@ -732,69 +738,109 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .collect())
     }
 
+    /// Loads all DWallet MPC outputs from the epoch start from the epoch tables.
+    /// Needed to be a separate function because the DB table does not implement the `Send` trait,
+    /// hence async code involving it can cause compilation errors.
+    async fn load_dwallet_mpc_outputs_from_epoch_start(
+        &self,
+    ) -> PeraResult<Vec<DWalletMPCOutputMessage>> {
+        Ok(self
+            .epoch_store
+            .tables()?
+            .dwallet_mpc_outputs
+            .unbounded_iter()
+            .map(|(_, messages)| messages)
+            .flatten()
+            .collect())
+    }
+
+    /// Loads all DWallet MPC events from the epoch start from the epoch tables.
+    /// Needed to be a separate function because the DB table does not implement the `Send` trait,
+    /// hence async code involving it can cause compilation errors.
+    async fn load_dwallet_mpc_events_from_epoch_start(&self) -> PeraResult<Vec<DWalletMPCEvent>> {
+        Ok(self
+            .epoch_store
+            .tables()?
+            .dwallet_mpc_events
+            .unbounded_iter()
+            .map(|(_, messages)| messages)
+            .flatten()
+            .collect())
+    }
+
+    /// Check if the dWallet MPC manager should perform a state sync.
+    /// If so, block consensus and load all messages.
+    /// This condition is only true if we process a round
+    /// before we processed the previous round,
+    /// which can only happen if we restart the node.
     async fn should_perform_dwallet_mpc_state_sync(&self) -> bool {
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
         // Check if the dwallet mpc manager should perform a state sync, and if so block consensus and load all messages
         // This condition is only true if we process a round before we processed the previous round,
         // which can only happen if we restart the node.
         self.last_consensus_stats.index.sub_dag_index
-            > dwallet_mpc_verifier.last_processed_round + 1
+            > dwallet_mpc_verifier.last_processed_consensus_round + 1
     }
 
     /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
-    /// Needed to be performed here so system transactions will get created when they should & a fork in the
+    /// Needs to be performed here,
+    /// so system transactions will get created when they should, and a fork in the
     /// chain will be prevented.
     /// Fails only if the epoch switched in the middle of the state sync.
     async fn perform_dwallet_mpc_state_sync(&self) -> PeraResult {
-        info!("performs a state sync for the DWallet MPC node");
+        info!("Performing a state sync for the dWallet MPC node");
+        let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
+
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
         let mut dwallet_mpc_batches_manager =
             self.epoch_store.get_dwallet_mpc_batches_manager().await;
-        for message in self.load_dwallet_mpc_messages_from_epoch_start().await? {
-            match message {
-                DWalletMPCChannelMessage::Output(output, origin_authority, session_info) => {
-                    match dwallet_mpc_verifier.try_verify_output(
-                        &output,
-                        &session_info,
-                        origin_authority,
-                    ) {
-                        Ok(result) => {
-                            // TODO (#524): Handle malicious behavior.
-                            if result.result == OutputResult::Valid {
-                                if session_info.mpc_round.is_part_of_batch() {
-                                    if let Err(err) = dwallet_mpc_batches_manager
-                                        .store_verified_output(session_info.clone(), output.clone())
-                                    {
-                                        error!(
-                                        "error storing verified output in batch for session {:?}: {:?}",
-                                        session_info.session_id, err
-                                    );
-                                    }
-                                }
+        for event in self.load_dwallet_mpc_events_from_epoch_start().await? {
+            dwallet_mpc_batches_manager.handle_new_event(&event.session_info);
+            dwallet_mpc_verifier.handle_new_event(&event.session_info);
+        }
+        for output in self.load_dwallet_mpc_outputs_from_epoch_start().await? {
+            match dwallet_mpc_verifier.try_verify_output(
+                &output.output,
+                &output.session_info,
+                output.authority,
+            ) {
+                Ok(result) => {
+                    manager.flag_authorities_as_malicious(&result.malicious_actors);
+                    // TODO (#524): Handle malicious behavior.
+                    if result.result == OutputResult::Valid {
+                        if output.session_info.mpc_round.is_part_of_batch() {
+                            if let Err(err) = dwallet_mpc_batches_manager.store_verified_output(
+                                output.session_info.clone(),
+                                output.output.clone(),
+                            ) {
+                                error!(
+                                    "error storing verified output in batch for session {:?}: {:?}",
+                                    output.session_info.session_id, err
+                                );
                             }
-                        }
-                        Err(err) => {
-                            error!(
-                                "failed to verify output from session {:?} and party {:?}: {:?}",
-                                session_info.session_id, origin_authority, err
-                            );
                         }
                     }
                 }
-                DWalletMPCChannelMessage::Event(_, session_info) => {
-                    dwallet_mpc_batches_manager.handle_new_event(&session_info);
-                    dwallet_mpc_verifier.handle_new_event(&session_info);
+                Err(err) => {
+                    error!(
+                        "failed to verify output from session {:?} and party {:?}: {:?}",
+                        output.session_info.session_id, output.authority, err
+                    );
                 }
-                DWalletMPCChannelMessage::LockNextEpochCommitteeVote(authority) => {
+            }
+        }
+        for message in self.load_dwallet_mpc_messages_from_epoch_start().await? {
+            match message {
+                DWalletMPCDBMessage::LockNextEpochCommitteeVote(authority) => {
                     dwallet_mpc_verifier.should_lock_committee(authority);
                 }
-
-                DWalletMPCChannelMessage::Message(_)
-                | DWalletMPCChannelMessage::EndOfDelivery
-                | DWalletMPCChannelMessage::StartLockNextEpochCommittee
-                | DWalletMPCChannelMessage::ValidatorDataForDKG(_)
-                | DWalletMPCChannelMessage::MPCSessionFailed(_)
-                | DWalletMPCChannelMessage::PerformCryptographicComputations => {}
+                DWalletMPCDBMessage::Message(_)
+                | DWalletMPCDBMessage::EndOfDelivery
+                | DWalletMPCDBMessage::StartLockNextEpochCommittee
+                | DWalletMPCDBMessage::ValidatorDataForDKG(_)
+                | DWalletMPCDBMessage::MPCSessionFailed(_)
+                | DWalletMPCDBMessage::SessionFailedWithMaliciousParties(..)
+                | DWalletMPCDBMessage::PerformCryptographicComputations => {}
             }
         }
         Ok(())
@@ -923,6 +969,9 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
         ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
         ConsensusTransactionKind::LockNextCommittee(..) => "lock_next_committee",
+        ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..) => {
+            "dwallet_mpc_session_failed_with_malicious"
+        }
     }
 }
 

@@ -145,7 +145,7 @@ pub use crate::checkpoints::checkpoint_executor::{
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
 use crate::dwallet_mpc::mpc_events::{LockedNextEpochCommitteeEvent, ValidatorDataForNetworkDKG};
-use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
@@ -168,6 +168,7 @@ use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::execution_config_utils::to_binary_config;
+use pera_types::messages_dwallet_mpc::DWalletMPCEvent;
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1597,10 +1598,10 @@ impl AuthorityState {
             // being emitted before the MPC outputs manager is initialized.
             dwallet_mpc_outputs_verifier.handle_new_event(&session_info);
             epoch_store
-                .save_dwallet_mpc_message(DWalletMPCChannelMessage::Event(
-                    event.clone(),
+                .save_dwallet_mpc_event(DWalletMPCEvent {
+                    event: event.clone(),
                     session_info,
-                ))
+                })
                 .await;
         }
         Ok(())
@@ -1612,7 +1613,7 @@ impl AuthorityState {
     ) -> DwalletMPCResult<()> {
         let deserialized_event: ValidatorDataForNetworkDKG = bcs::from_bytes(&event.contents)?;
         epoch_store
-            .save_dwallet_mpc_message(DWalletMPCChannelMessage::ValidatorDataForDKG(
+            .save_dwallet_mpc_round_message(DWalletMPCDBMessage::ValidatorDataForDKG(
                 deserialized_event,
             ))
             .await;

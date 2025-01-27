@@ -1440,7 +1440,14 @@ and emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa
 the beginning of the DKG process.
 
 
-<a name="@Effects_13"></a>
+<a name="@Parameters_13"></a>
+
+##### Parameters
+
+- <code>_pera_system_state</code>: The Pera system state object.
+
+
+<a name="@Effects_14"></a>
 
 ##### Effects
 
@@ -1449,7 +1456,7 @@ the beginning of the DKG process.
 - Emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent">StartDKGFirstRoundEvent</a></code>.
 
 
-<a name="@Emits_14"></a>
+<a name="@Emits_15"></a>
 
 ##### Emits
 
@@ -1499,7 +1506,7 @@ This function is called by blockchain itself.
 Validators call it, it's part of the blockchain logic.
 
 
-<a name="@Effects_15"></a>
+<a name="@Effects_16"></a>
 
 ##### Effects
 
@@ -1507,7 +1514,7 @@ Validators call it, it's part of the blockchain logic.
 - Emits necessary metadata and links it to the associated session.
 
 
-<a name="@Parameters_16"></a>
+<a name="@Parameters_17"></a>
 
 ##### Parameters
 
@@ -1518,7 +1525,7 @@ Validators call it, it's part of the blockchain logic.
 - <code>ctx</code>: The transaction context.
 
 
-<a name="@Panics_17"></a>
+<a name="@Panics_18"></a>
 
 ##### Panics
 
@@ -1569,7 +1576,7 @@ and emits an event for validators to begin their participation in this round.
 This function handles the creation of a new DKG session ID and emits an event containing
 all the necessary parameters to continue the DKG process.
 
-<a name="@Parameters_18"></a>
+<a name="@Parameters_19"></a>
 
 ##### Parameters
 
@@ -1582,6 +1589,7 @@ all the necessary parameters to continue the DKG process.
 - <code>signed_centralized_public_output</code>: The centralized public output signed by the caller.
 - <code>encryptor_ed25519_pubkey</code>: The Ed25519 public key of the encryptor.
 - <code>centralized_public_output</code>: The centralized public output of the DKG process.
+- <code>_pera_system_state</code>: The Pera system state object. Its ID is always 0x5.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_second_round">launch_dkg_second_round</a>(dwallet_cap: &<a href="dwallet.md#0x3_dwallet_DWalletCap">dwallet::DWalletCap</a>, centralized_public_key_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_output: &<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">dwallet_2pc_mpc_ecdsa_k1::DKGFirstRoundOutput</a>, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryption_key: &<a href="dwallet.md#0x3_dwallet_EncryptionKey">dwallet::EncryptionKey</a>, signed_centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, _pera_system_state: &<a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <b>address</b>
@@ -1643,7 +1651,7 @@ to the blockchain. The chain verifies that the encrypted data matches the expect
 associated with the dWallet before creating an [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a></code>] object.
 
 
-<a name="@Parameters_19"></a>
+<a name="@Parameters_20"></a>
 
 ##### Parameters
 
@@ -1651,10 +1659,11 @@ associated with the dWallet before creating an [<code><a href="dwallet_2pc_mpc_e
 - **<code>destination_encryption_key</code>**: A reference to the encryption key used for encrypting the secret key share.
 - **<code>encrypted_secret_share_and_proof</code>**: The encrypted secret key share, accompanied by a cryptographic proof.
 - **<code>source_signed_centralized_public_output</code>**: The signed centralized public output corresponding to the secret share.
+- **<code>_pera_system_state</code>**: The Pera system state object. Its ID is always 0x5.
 - **<code>source_ed25519_pubkey</code>**: The Ed25519 public key of the source (encryptor) used for verifying the signature.
 
 
-<a name="@Effects_20"></a>
+<a name="@Effects_21"></a>
 
 ##### Effects
 
@@ -1662,7 +1671,7 @@ associated with the dWallet before creating an [<code><a href="dwallet_2pc_mpc_e
 which is captured by the blockchain to initiate the verification process.
 
 
-<a name="@Emits_21"></a>
+<a name="@Emits_22"></a>
 
 ##### Emits
 
@@ -1719,7 +1728,7 @@ once the associated encryption and cryptographic proofs have been verified.
 It finalizes the process by storing the encrypted user share on-chain and emitting the relevant event.
 
 
-<a name="@Parameters_22"></a>
+<a name="@Parameters_23"></a>
 
 ##### Parameters
 
@@ -1731,7 +1740,7 @@ It finalizes the process by storing the encrypted user share on-chain and emitti
 - **<code>encryptor_ed25519_pubkey</code>**: The Ed25519 public key of the encryptor used for signing.
 - **<code>initiator</code>**: The address of the entity that performed the encryption.
 
-<a name="@Effects_23"></a>
+<a name="@Effects_24"></a>
 
 ##### Effects
 
@@ -1803,7 +1812,7 @@ events to record the results of the process.
 This function is called by the blockchain.
 
 
-<a name="@Parameters_24"></a>
+<a name="@Parameters_25"></a>
 
 ##### Parameters
 
@@ -1820,7 +1829,7 @@ representing the decentralized computation result.
 - **<code>centralized_public_output</code>**: The centralized public output from the DKG process.
 
 
-<a name="@Effects_25"></a>
+<a name="@Effects_26"></a>
 
 ##### Effects
 
@@ -1830,7 +1839,7 @@ representing the decentralized computation result.
 - Freezes the created <code>DWallet</code> object to make it immutable.
 
 
-<a name="@Panics_26"></a>
+<a name="@Panics_27"></a>
 
 ##### Panics
 
@@ -1909,7 +1918,7 @@ validators to begin processing the first round of the presign process for each s
 - Each session is linked to the parent batch via <code>batch_session_id</code>.
 
 
-<a name="@Effects_27"></a>
+<a name="@Effects_28"></a>
 
 ##### Effects
 
@@ -1918,12 +1927,13 @@ validators to begin processing the first round of the presign process for each s
 - Emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignFirstRoundEvent">StartPresignFirstRoundEvent</a></code> for each presign in the batch, with relevant details.
 
 
-<a name="@Parameters_28"></a>
+<a name="@Parameters_29"></a>
 
 ##### Parameters
 
 - <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code>: A reference to the target dWallet. This is used to retrieve the dWallet's ID and output.
 - <code>batch_size</code>: The number of presign sessions to be created in this batch.
+- <code>_pera_system_state</code>: The Pera system state object. Its ID is always 0x5.
 - <code>ctx</code>: The mutable transaction context, used to generate unique object IDs and retrieve the initiator.
 
 
@@ -1978,7 +1988,7 @@ This function emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc
 to begin the second round of the presign process.
 
 
-<a name="@Parameters_29"></a>
+<a name="@Parameters_30"></a>
 
 ##### Parameters
 
@@ -1991,14 +2001,14 @@ to begin the second round of the presign process.
 - <code>ctx</code>: The transaction context used to emit the event.
 
 
-<a name="@Panics_30"></a>
+<a name="@Panics_31"></a>
 
 ##### Panics
 
 - Panics with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code> if the sender of the transaction is not the system address.
 
 
-<a name="@Emits_31"></a>
+<a name="@Emits_32"></a>
 
 ##### Emits
 
@@ -2058,7 +2068,7 @@ It creates a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecds
 emits a <code>CompletedPresignEvent</code>, and transfers the result to the initiating user.
 
 
-<a name="@Parameters_32"></a>
+<a name="@Parameters_33"></a>
 
 ##### Parameters
 
@@ -2070,21 +2080,21 @@ emits a <code>CompletedPresignEvent</code>, and transfers the result to the init
 - <code>ctx</code>: The transaction context.
 
 
-<a name="@Emits_33"></a>
+<a name="@Emits_34"></a>
 
 ##### Emits
 
 - <code>CompletedPresignEvent</code>: Includes the initiator, dWallet ID, and presign ID.
 
 
-<a name="@Panics_34"></a>
+<a name="@Panics_35"></a>
 
 ##### Panics
 
 - Panics with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code> if the sender of the transaction is not the system address.
 
 
-<a name="@Effects_35"></a>
+<a name="@Effects_36"></a>
 
 ##### Effects
 
@@ -2155,7 +2165,7 @@ It also "burns" the [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_
 as every presign can only be used to sign only one message.
 
 
-<a name="@Effects_36"></a>
+<a name="@Effects_37"></a>
 
 ##### Effects
 
@@ -2166,7 +2176,7 @@ as every presign can only be used to sign only one message.
 and additional metadata.
 
 
-<a name="@Emits_37"></a>
+<a name="@Emits_38"></a>
 
 ##### Emits
 
@@ -2177,7 +2187,7 @@ and additional metadata.
 and DKG output.
 
 
-<a name="@Aborts_38"></a>
+<a name="@Aborts_39"></a>
 
 ##### Aborts
 
@@ -2193,7 +2203,7 @@ the expected DWalletCap ID for any of the message approvals.
 in the same order as the <code>hashed_messages</code>.
 
 
-<a name="@Parameters_39"></a>
+<a name="@Parameters_40"></a>
 
 ##### Parameters
 
@@ -2204,6 +2214,7 @@ in the same order as the <code>hashed_messages</code>.
 - <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code>: The dWallet object.
 - <code>centralized_signed_messages</code>: The list of centralized signatures.
 - <code>presign_session_id</code>: The session ID of the presign process.
+- <code>_pera_system_state</code>: The Pera system state object. Its ID is always 0x5.
 - <code>ctx</code>: The mutable transaction context.
 
 
@@ -2282,7 +2293,7 @@ blockchain logic executed by validators. The emitted event contains the
 completed sign output that should be consumed by the initiating user.
 
 
-<a name="@Parameters_40"></a>
+<a name="@Parameters_41"></a>
 
 ##### Parameters
 
@@ -2291,7 +2302,7 @@ completed sign output that should be consumed by the initiating user.
 - **<code>ctx</code>**: The transaction context used for event emission.
 
 
-<a name="@Requirements_41"></a>
+<a name="@Requirements_42"></a>
 
 ##### Requirements
 
@@ -2299,7 +2310,7 @@ completed sign output that should be consumed by the initiating user.
 the function will abort with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code>.
 
 
-<a name="@Events_42"></a>
+<a name="@Events_43"></a>
 
 ##### Events
 
@@ -2307,7 +2318,7 @@ the function will abort with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwal
 signaling the completion of the sign process for the batch session.
 
 
-<a name="@Errors_43"></a>
+<a name="@Errors_44"></a>
 
 ##### Errors
 
@@ -2364,7 +2375,7 @@ This function creates a dWallet object with random data,
 useful for testing or initialization in non-production environments.
 
 
-<a name="@Parameters_44"></a>
+<a name="@Parameters_45"></a>
 
 ##### Parameters
 
@@ -2373,7 +2384,7 @@ useful for testing or initialization in non-production environments.
 - <code>dkg_output</code>: The decentralized DKG output.
 
 
-<a name="@Effects_45"></a>
+<a name="@Effects_46"></a>
 
 ##### Effects
 
@@ -2381,7 +2392,7 @@ useful for testing or initialization in non-production environments.
 - Links the dWallet to the provided capability.
 
 
-<a name="@Returns_46"></a>
+<a name="@Returns_47"></a>
 
 ##### Returns
 
