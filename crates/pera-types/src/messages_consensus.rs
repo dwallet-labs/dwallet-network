@@ -321,6 +321,7 @@ pub enum ConsensusTransactionKind {
     NewJWKFetched(AuthorityName, JwkId, JWK),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
+    /// Sending Authority and its MaliciousReport.
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
     LockNextCommittee(AuthorityName, EpochId),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
@@ -564,6 +565,7 @@ impl ConsensusTransaction {
         }
     }
 
+    /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
     pub fn new_dwallet_mpc_session_failed_with_malicious(
         authority: AuthorityName,
         report: MaliciousReport,

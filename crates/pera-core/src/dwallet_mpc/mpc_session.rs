@@ -128,7 +128,7 @@ impl DWalletMPCSession {
                         .submit_to_consensus(&vec![message], &epoch_store)
                         .await
                     {
-                        error!("failed to submit MPC message to consensus: {:?}", err);
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())
@@ -180,6 +180,33 @@ impl DWalletMPCSession {
                         .await
                     {
                         error!("failed to submit MPC message to consensus: {:?}", err);
+                    }
+                });
+                Ok(())
+            }
+            Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
+                error!(
+                    "session failed with malicious parties: {:?}",
+                    malicious_parties
+                );
+                let malicious_parties = malicious_parties
+                    .into_iter()
+                    .map(|party_id| {
+                        Ok(party_id_to_authority_name(party_id, &*self.epoch_store()?)?)
+                    })
+                    .collect::<DwalletMPCResult<Vec<_>>>()?;
+                let report =
+                    MaliciousReport::new(malicious_parties, self.session_info.session_id.clone());
+                let output =
+                    self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
+                let consensus_adapter = self.consensus_adapter.clone();
+                let epoch_store = self.epoch_store()?.clone();
+                tokio_runtime_handle.spawn(async move {
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![output], &epoch_store)
+                        .await
+                    {
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())
@@ -362,6 +389,9 @@ impl DWalletMPCSession {
         ))
     }
 
+    /// Report that the session failed because of malicious actors.
+    /// Once a quorum of validators reports the same actor, it is considered malicious.
+    /// The session will be continued, and the malicious actors will be ignored.
     fn new_dwallet_report_failed_session_with_malicious_actors(
         &self,
         report: MaliciousReport,
