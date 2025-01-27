@@ -84,7 +84,7 @@ impl CryptographicComputationsOrchestrator {
                 crypto_round_number: session.pending_quorum_for_highest_round_number,
             };
             self.pending_computation_map
-                .insert(session_next_round_metadata.clone(), session.clone());
+                .insert(session_next_round_metadata.clone(), session);
             self.pending_for_computation_order
                 .push_back(session_next_round_metadata);
         }

@@ -82,6 +82,10 @@ impl DWalletMPCSession {
         private_input: MPCPrivateInput,
         pending_messages: Vec<HashMap<PartyID, MPCMessage>>,
     ) -> Self {
+        let mut default_pending_quorum_for_highest_round_number = 0;
+        if !pending_messages.is_empty() {
+            default_pending_quorum_for_highest_round_number = pending_messages.len();
+        }
         Self {
             status,
             pending_messages,
@@ -90,7 +94,8 @@ impl DWalletMPCSession {
             epoch_id: epoch,
             public_input,
             session_info,
-            pending_quorum_for_highest_round_number: 0,
+            pending_quorum_for_highest_round_number:
+                default_pending_quorum_for_highest_round_number,
             party_id,
             weighted_threshold_access_structure,
             decryption_share,
