@@ -14,7 +14,7 @@ use narwhal_types::Round;
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::messages_dwallet_mpc::{MPCInitProtocolInfo, SessionInfo, SignSessionData};
+use pera_types::messages_dwallet_mpc::{MPCProtocolInitData, SessionInfo, SingleSignSessionData};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
@@ -39,11 +39,12 @@ pub struct DWalletMPCOutputsVerifier {
     // todo(zeev): why is it here?
     pub completed_locking_next_committee: bool,
     voted_to_lock_committee: HashSet<AuthorityName>,
-    /// The latest narwhal round that was processed.
-    /// Used to check if there's a need to perform a state sync -
-    /// if the latest_processed_dwallet_round is behind the currently processed round by more than one,
+    /// The latest consensus round that was processed.
+    /// Used to check if there's a need to perform a state sync —
+    /// if the `latest_processed_dwallet_round` is behind
+    /// the currently processed round by more than one,
     /// a state sync should be performed.
-    pub(crate) last_processed_round: Round,
+    pub(crate) last_processed_consensus_round: Round,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
 }
@@ -94,7 +95,7 @@ impl DWalletMPCOutputsVerifier {
                 .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
-            last_processed_round: 0,
+            last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
         }
     }
@@ -141,7 +142,7 @@ impl DWalletMPCOutputsVerifier {
                 malicious_actors: vec![],
             });
         }
-        if let MPCInitProtocolInfo::Sign(sign_session_data) = &session_info.mpc_round {
+        if let MPCProtocolInitData::Sign(sign_session_data) = &session_info.mpc_round {
             return match Self::verify_signature(&epoch_store, sign_session_data, output) {
                 Ok(res) => {
                     session.current_result = OutputResult::AlreadyCommitted;
@@ -223,7 +224,7 @@ impl DWalletMPCOutputsVerifier {
 
     fn verify_signature(
         epoch_store: &Arc<AuthorityPerEpochStore>,
-        sign_session_data: &SignSessionData,
+        sign_session_data: &SingleSignSessionData,
         signature: &MPCPublicOutput,
     ) -> DwalletMPCResult<OutputVerificationResult> {
         let sign_output = bcs::from_bytes::<<SignFirstParty as Party>::PublicOutput>(&signature)?;
@@ -245,19 +246,23 @@ impl DWalletMPCOutputsVerifier {
             dkg_output,
             &protocol_public_parameters.as_ref().group_public_parameters,
         )
-        .map_err(|_| {
-            DwalletMPCError::ClassGroupsError("Failed to create public key".to_string())
+        .map_err(|e| {
+            DwalletMPCError::ClassGroupsError(format!(
+                "{}{}",
+                "Failed to create public key: ".to_string(),
+                e.to_string()
+            ))
         })?;
 
-        if verify_signature(
+        if let Err(err) = verify_signature(
             sign_output.0,
             sign_output.1,
             bcs::from_bytes(&sign_session_data.message)?,
             dwallet_public_key,
-        )
-        .is_err()
-        {
-            return Err(DwalletMPCError::SignatureVerificationFailed);
+        ) {
+            return Err(DwalletMPCError::SignatureVerificationFailed(
+                err.to_string(),
+            ));
         }
         Ok(OutputVerificationResult {
             result: OutputResult::Valid,

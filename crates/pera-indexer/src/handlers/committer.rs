@@ -170,7 +170,7 @@ async fn commit_checkpoints<S>(
             .advance_epoch(epoch_data)
             .await
             .tap_err(|e| {
-                error!("Failed to advance epoch with error: {}", e.to_string());
+                error!("failed to advance epoch with error: {}", e.to_string());
             })
             .expect("Advancing epochs in DB should not fail.");
         metrics.total_epoch_committed.inc();
