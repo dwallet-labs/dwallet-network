@@ -37,12 +37,10 @@ module pera_system::dwallet {
     const EMessageApprovalDWalletMismatch: u64 = 4;
     const EMissingApprovalOrWrongApprovalOrder: u64 = 5;
     const EInvalidHashScheme: u64 = 6;
-
-    const EApprovalsAndMessagesLenMismatch: u64 = 3;
-    const EExtraDataAndMessagesLenMismatch: u64 = 6;
-    const EApprovalsAndSignaturesLenMismatch: u64 = 7;
-    // const EInvalidSignatures: u64 = 8;
-    const ECentralizedSignedMessagesAndMessagesLenMismatch: u64 = 5;
+    const EApprovalsAndMessagesLenMismatch: u64 = 7;
+    const EExtraDataAndMessagesLenMismatch: u64 = 8;
+    const EApprovalsAndSignaturesLenMismatch: u64 = 9;
+    const ECentralizedSignedMessagesAndMessagesLenMismatch: u64 = 10;
 
 
     // <<<<<<<<<<<<<<< Error Codes <<<<<<<<<<<<<<
@@ -80,6 +78,8 @@ module pera_system::dwallet {
     /// When a matching user B, that agrees to sell BTC for ETH at price X,
     /// signs a transaction with this information,
     /// the blockchain can sign both transactions, and the exchange is completed.
+    ///
+    /// D: The type of the extra fields that can be stored with the object.
     public struct PartialCentralizedSignedMessages<D: store> has key {
         /// A unique identifier for this `PartialCentralizedSignedMessages` object.
         id: UID,
@@ -103,7 +103,7 @@ module pera_system::dwallet {
         dwallet_mpc_network_decryption_key_version: u8,
 
         /// Extra data that can be stored with the object, specific to every implementation.
-        extra_data: vector<D>,
+        extra_fields: vector<D>,
     }
 
     /// Event emitted to start a batched sign process.
@@ -174,10 +174,11 @@ module pera_system::dwallet {
         /// The MPC network decryption key version that is used to decrypt the associated dWallet.
         dwallet_mpc_network_decryption_key_version: u8,
 
-        extra_data: D,
+        /// Extra fields that can be stored with the object, specific to every protocol implementation.
+        extra_fields: D,
     }
 
-    public struct UniqTest<T: drop + copy> {
+    public struct SignExtraFields<T: drop + copy> {
         data: T,
     }
 
@@ -215,11 +216,16 @@ module pera_system::dwallet {
         }
     }
 
+    /// Creates a new [`PartialCentralizedSignedMessages`] object.
+    /// This object is used to store messages that have been signed by a user,
+    /// but not yet by the blockchain.
+    /// T: The eliptic curve type used for the dWallet.
+    /// D: The type of the extra fields that can be stored with the object.
     public(package) fun create_partial_centralized_signed_messages<T: drop, D: store>(
         messages: vector<vector<u8>>,
         signatures: vector<vector<u8>>,
         dwallet: &DWallet<T>,
-        extra_data: vector<D>,
+        extra_fields: vector<D>,
         ctx: &mut TxContext
     ): PartialCentralizedSignedMessages<D> {
         PartialCentralizedSignedMessages<D> {
@@ -230,42 +236,8 @@ module pera_system::dwallet {
             dwallet_output: dwallet.decentralized_public_output,
             dwallet_cap_id: dwallet.dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version: dwallet.dwallet_mpc_network_decryption_key_version,
-            extra_data,
+            extra_fields,
         }
-    }
-
-    public(package) fun transfer_partial_centralized_signed_messages<D: store>(
-        partial_signatures: PartialCentralizedSignedMessages<D>,
-        target: address,
-    ) {
-        transfer::transfer(partial_signatures, target);
-    }
-
-    public(package) fun unpack_partial_centralized_signed_messages<D: store>(
-        partial_centralized_signed_messages: PartialCentralizedSignedMessages<D>
-    ): ( vector<vector<u8>>, vector<vector<u8>>, ID, vector<u8>, ID, u8, vector<D> ) {
-
-        let PartialCentralizedSignedMessages {
-            id,
-            messages,
-            centralized_signatures,
-            dwallet_id,
-            dwallet_output,
-            dwallet_cap_id,
-            dwallet_mpc_network_decryption_key_version,
-            extra_data,
-        } = partial_centralized_signed_messages;
-
-        object::delete(id);
-        (
-            messages,
-            centralized_signatures,
-            dwallet_id,
-            dwallet_output,
-            dwallet_cap_id,
-            dwallet_mpc_network_decryption_key_version,
-            extra_data,
-        )
     }
 
     /// Retrieve the ID of the `DWalletCap` associated with a given dWallet.
@@ -685,7 +657,7 @@ module pera_system::dwallet {
         dwallet_id: ID,
         dwallet_cap_id: ID,
         dwallet_mpc_network_decryption_key_version: u8,
-        extra_data: vector<D>,
+        extra_fields: vector<D>,
         ctx: &mut TxContext
     ): PartialCentralizedSignedMessages<D> {
         PartialCentralizedSignedMessages<D> {
@@ -696,26 +668,62 @@ module pera_system::dwallet {
             dwallet_output: vector::empty(),
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
-            extra_data,
+            extra_fields,
         }
     }
 
-    #[allow(unused_type_parameter)]
+    /// Initiates the signing process for a given dWallet.
+    ///
+    /// This function emits a `StartSignEvent` and a `StartBatchedSignEvent`,
+    /// providing all necessary metadata to ensure the integrity of the signing process.
+    /// It validates the linkage between the `DWallet`, `DWalletCap`, and `Presign` objects.
+    /// Additionally, it "burns" the `Presign` object by transferring it to the system address,
+    /// as each presign can only be used to sign one message.
+    ///
+    /// # Effects
+    /// - Validates the linkage between dWallet components.
+    /// - Ensures that the number of `hashed_messages`, `message_approvals`,
+    ///   `centralized_signed_messages`, and `presigns` are equal.
+    /// - Emits the following events:
+    ///   - `StartBatchedSignEvent`: Contains the session details and the list of hashed messages.
+    ///   - `StartSignEvent`: Includes session details, hashed message, presign outputs,
+    ///     DKG output, and metadata.
+    ///
+    /// # Aborts
+    /// - **`EDwalletMismatch`**: If the `dwallet` object does not match the `Presign` object.
+    /// - **`EApprovalsAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
+    ///   match the number of `message_approvals`.
+    /// - **`ECentralizedSignedMessagesAndMessagesLenMismatch`**: If the number of `hashed_messages`
+    ///   does not match the number of `centralized_signed_messages`.
+    /// - **`EExtraDataAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
+    ///   match the number of `presigns`.
+    /// - **`EMessageApprovalDWalletMismatch`**: If the `DWalletCap` ID does not match the
+    ///   expected `DWalletCap` ID for any of the message approvals.
+    /// - **`EMissingApprovalOrWrongApprovalOrder`**: If the approvals are not in the correct order.
+    ///
+    /// # Parameters
+    /// - `message_approvals`: A mutable vector of `MessageApproval` objects representing
+    ///    approvals for the messages.
+    /// - `messages`: A vector of messages (in `vector<u8>` format) to be signed.
+    /// - `presigns`: A mutable vector of `Presign` objects containing intermediate signing outputs.
+    /// - `dwallet`: A reference to the `DWallet` object being used for signing.
+    /// - `centralized_signed_messages`: A mutable vector of centralized party signatures.
+    ///   for the messages being signed.
     public fun sign<T: drop, D: copy + drop>(
         message_approvals: &mut vector<MessageApproval>,
         mut messages: vector<vector<u8>>,
         dwallet: &DWallet<T>,
         mut centralized_signed_messages: vector<vector<u8>>,
-        mut extra_data: vector<UniqTest<D>>,
+        mut extra_fields: vector<SignExtraFields<D>>,
         ctx: &mut TxContext
     ) {
         let messages_len: u64 = vector::length(&messages);
-        let extra_data_len: u64 = vector::length(&extra_data);
+        let extra_fields_len: u64 = vector::length(&extra_fields);
         let approvals_len: u64 = vector::length(message_approvals);
         let centralized_signed_len: u64 = vector::length(&centralized_signed_messages);
         assert!(messages_len == approvals_len, EApprovalsAndMessagesLenMismatch);
         assert!(messages_len == centralized_signed_len, ECentralizedSignedMessagesAndMessagesLenMismatch);
-        assert!(messages_len == extra_data_len, EExtraDataAndMessagesLenMismatch);
+        assert!(messages_len == extra_fields_len, EExtraDataAndMessagesLenMismatch);
         let expected_dwallet_cap_id = get_dwallet_cap_id(dwallet);
         let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         let mut hashed_messages = hash_messages(message_approvals);
@@ -725,8 +733,8 @@ module pera_system::dwallet {
             initiator: tx_context::sender(ctx)
         });
         let mut i = 0;
-        while (!extra_data.is_empty()) {
-            let UniqTest {data} = vector::pop_back(&mut extra_data);
+        while (!extra_fields.is_empty()) {
+            let SignExtraFields {data} = vector::pop_back(&mut extra_fields);
             let message = vector::pop_back(&mut messages);
             pop_and_verify_message_approval(expected_dwallet_cap_id, message, message_approvals);
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
@@ -741,11 +749,11 @@ module pera_system::dwallet {
                 dkg_output: get_dwallet_centralized_public_output<T>(dwallet),
                 hashed_message,
                 dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version<T>(dwallet),
-                extra_data: data,
+                extra_fields: data,
             });
             i = i + 1;
         };
-        extra_data.destroy_empty();
+        extra_fields.destroy_empty();
     }
 
     /// Emits a `CompletedSignEvent` with the MPC Sign protocol output.
@@ -802,32 +810,30 @@ module pera_system::dwallet {
         partial_signatures_object_id: ID,
     }
 
-           /// A function to publish messages signed by the user on chain with on-chain verification,
+    /// A function to publish messages signed by the user on chain with on-chain verification,
     /// without launching the chain's sign flow immediately.
     ///
     /// See the docs of [`PartialCentralizedSignedMessages`] for more details on when this may be used.
     public fun publish_partially_signed_messages<T: drop, D: copy + drop + store>(
         signatures: vector<vector<u8>>,
         messages: vector<vector<u8>>,
-        extra_data: vector<UniqTest<D>>,
+        extra_fields: vector<SignExtraFields<D>>,
         dwallet: &DWallet<T>,
         ctx: &mut TxContext
     ) {
         let messages_len = vector::length(&messages);
         let signatures_len = vector::length(&signatures);
-        let extra_data_len = vector::length(&extra_data);
+        let extra_fields_len = vector::length(&extra_fields);
         assert!(messages_len == signatures_len, EApprovalsAndSignaturesLenMismatch);
-        assert!(messages_len == extra_data_len, EExtraDataAndMessagesLenMismatch);
+        assert!(messages_len == extra_fields_len, EExtraDataAndMessagesLenMismatch);
 
         // Todo (#415): Add the event for the verify_partially_signed_signatures
-
-        let extra_data_unpacked = vector::map!(extra_data, |UniqTest { data }| data);
-
+        let extra_fields_unpacked = vector::map!(extra_fields, |SignExtraFields { data }| data);
         let partial_signatures = create_partial_centralized_signed_messages<T, D>(
             messages,
             signatures,
             dwallet,
-            extra_data_unpacked,
+            extra_fields_unpacked,
             ctx,
         );
 
@@ -835,35 +841,36 @@ module pera_system::dwallet {
             partial_signatures_object_id: object::id(&partial_signatures),
         });
 
-        transfer_partial_centralized_signed_messages(partial_signatures, tx_context::sender(ctx));
+        transfer::transfer(partial_signatures, tx_context::sender(ctx));
     }
 
-    public(package) fun create_sign_hot_potato<D: store + copy + drop>(data: D): UniqTest<D> {
-        UniqTest { data }
+    /// A function to create a [`SignExtraFields`] object.
+    /// Extra fields are used to store additional data with the object, specific to every protocol implementation.
+    /// D: The type of the extra fields that can be stored with the object.
+    public(package) fun create_sign_extra_fields<D: store + copy + drop>(data: D): SignExtraFields<D> {
+        SignExtraFields { data }
     }
-        // todo(yael):
-    // this function should be changed to recieve something like this:
-    // future_sign<D: store, E: store + copy + drop>
-    // PartialCentralizedSignedMessages<D,E> should be changed to this and reanmed to `PartialCentralizedSignedMessages`
-    // Then consult with Omer on how to store the event and data (see `PartialUserSignedMessages` in sign-ia-wasm).
-    // After this is done and tested move it to the dwallet.move file and fix the tests.
+
     /// A function to launch a sign flow with a previously published [`PartialCentralizedSignedMessages`].
-    ///
+    /// D: The type of the extra fields that can be stored with the object.
     /// See the docs of [`PartialCentralizedSignedMessages`] for more details on when this may be used.
     public fun future_sign<D: store + copy + drop>(
         partial_signature: PartialCentralizedSignedMessages<D>,
         message_approvals: &mut vector<MessageApproval>,
         ctx: &mut TxContext
     ) {
-        let (
+        let PartialCentralizedSignedMessages<D> {
+            id,
             mut messages,
-            mut signatures,
+            mut centralized_signatures,
             dwallet_id,
             dwallet_output,
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
-            mut presign_data,
-        ) = unpack_partial_centralized_signed_messages<D>(partial_signature);
+            mut extra_fields,
+        } = partial_signature;
+        object::delete(id);
+
         let message_approvals_len = vector::length(message_approvals);
         let messages_len = vector::length(&messages);
         assert!(message_approvals_len == messages_len, EApprovalsAndMessagesLenMismatch);
@@ -880,9 +887,9 @@ module pera_system::dwallet {
             let message = vector::pop_back(&mut messages);
             pop_and_verify_message_approval(dwallet_cap_id, message, message_approvals);
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
-            let centralized_signed_message = vector::pop_back(&mut signatures);
+            let centralized_signed_message = vector::pop_back(&mut centralized_signatures);
             let hashed_message = vector::pop_back(&mut hashed_messages);
-            let data =  vector::pop_back(&mut presign_data);
+            let data =  vector::pop_back(&mut extra_fields);
             event::emit(StartSignEvent<D> { 
                 session_id: id,
                 initiator: tx_context::sender(ctx),
@@ -892,21 +899,11 @@ module pera_system::dwallet {
                 dkg_output: dwallet_output,
                 hashed_message,
                 dwallet_mpc_network_decryption_key_version,
-                extra_data: data,
+                extra_fields: data,
             });
             i = i + 1;
         };
     }
-
-    /// Verifies that the user's centralized party signatures are valid.
-    /// todo(itay): why is it here?
-    // native fun verify_partially_signed_signatures(
-    //     partial_signatures: vector<vector<u8>>,
-    //     messages: vector<vector<u8>>,
-    //     presigns: vector<vector<u8>>,
-    //     dkg_output: vector<u8>
-    // ): bool;
-
 
     #[test_only]
     /// Call the underlying `create_sign_output`.

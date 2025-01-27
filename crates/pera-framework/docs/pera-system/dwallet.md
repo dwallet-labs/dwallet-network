@@ -34,7 +34,7 @@ It encapsulates the session ID, capability ID, and the outputs from the DKG roun
 -  [Struct `CompletedSignEvent`](#0x3_dwallet_CompletedSignEvent)
 -  [Resource `BatchedSignOutput`](#0x3_dwallet_BatchedSignOutput)
 -  [Struct `StartSignEvent`](#0x3_dwallet_StartSignEvent)
--  [Struct `UniqTest`](#0x3_dwallet_UniqTest)
+-  [Struct `SignExtraFields`](#0x3_dwallet_SignExtraFields)
 -  [Resource `DWalletCap`](#0x3_dwallet_DWalletCap)
 -  [Resource `EncryptionKey`](#0x3_dwallet_EncryptionKey)
 -  [Struct `CreatedEncryptionKeyEvent`](#0x3_dwallet_CreatedEncryptionKeyEvent)
@@ -45,8 +45,6 @@ It encapsulates the session ID, capability ID, and the outputs from the DKG roun
 -  [Constants](#@Constants_4)
 -  [Function `create_dwallet`](#0x3_dwallet_create_dwallet)
 -  [Function `create_partial_centralized_signed_messages`](#0x3_dwallet_create_partial_centralized_signed_messages)
--  [Function `transfer_partial_centralized_signed_messages`](#0x3_dwallet_transfer_partial_centralized_signed_messages)
--  [Function `unpack_partial_centralized_signed_messages`](#0x3_dwallet_unpack_partial_centralized_signed_messages)
 -  [Function `get_dwallet_cap_id`](#0x3_dwallet_get_dwallet_cap_id)
 -  [Function `get_dwallet_decentralized_public_output`](#0x3_dwallet_get_dwallet_decentralized_public_output)
 -  [Function `get_dwallet_centralized_public_output`](#0x3_dwallet_get_dwallet_centralized_public_output)
@@ -67,9 +65,12 @@ It encapsulates the session ID, capability ID, and the outputs from the DKG roun
 -  [Function `hash_message`](#0x3_dwallet_hash_message)
 -  [Function `is_supported_hash_scheme`](#0x3_dwallet_is_supported_hash_scheme)
 -  [Function `sign`](#0x3_dwallet_sign)
+    -  [Effects](#@Effects_14)
+    -  [Aborts](#@Aborts_15)
+    -  [Parameters](#@Parameters_16)
 -  [Function `create_sign_output`](#0x3_dwallet_create_sign_output)
 -  [Function `publish_partially_signed_messages`](#0x3_dwallet_publish_partially_signed_messages)
--  [Function `create_sign_hot_potato`](#0x3_dwallet_create_sign_hot_potato)
+-  [Function `create_sign_extra_fields`](#0x3_dwallet_create_sign_extra_fields)
 -  [Function `future_sign`](#0x3_dwallet_future_sign)
 
 
@@ -161,6 +162,8 @@ When a matching user B, that agrees to sell BTC for ETH at price X,
 signs a transaction with this information,
 the blockchain can sign both transactions, and the exchange is completed.
 
+D: The type of the extra fields that can be stored with the object.
+
 
 <pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a>&lt;D: store&gt; <b>has</b> key
 </code></pre>
@@ -215,7 +218,7 @@ the blockchain can sign both transactions, and the exchange is completed.
  The MPC network decryption key version that is used to decrypt the associated dWallet.
 </dd>
 <dt>
-<code>extra_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;</code>
+<code>extra_fields: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;</code>
 </dt>
 <dd>
  Extra data that can be stored with the object, specific to every implementation.
@@ -426,23 +429,23 @@ to a specific dWallet, Presign session, and batched process.
  The MPC network decryption key version that is used to decrypt the associated dWallet.
 </dd>
 <dt>
-<code>extra_data: D</code>
+<code>extra_fields: D</code>
 </dt>
 <dd>
-
+ Extra fields that can be stored with the object, specific to every protocol implementation.
 </dd>
 </dl>
 
 
 </details>
 
-<a name="0x3_dwallet_UniqTest"></a>
+<a name="0x3_dwallet_SignExtraFields"></a>
 
-## Struct `UniqTest`
+## Struct `SignExtraFields`
 
 
 
-<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_UniqTest">UniqTest</a>&lt;T: <b>copy</b>, drop&gt;
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_SignExtraFields">SignExtraFields</a>&lt;T: <b>copy</b>, drop&gt;
 </code></pre>
 
 
@@ -793,7 +796,7 @@ Event emitted when a [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSi
 
 
 
-<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EApprovalsAndMessagesLenMismatch">EApprovalsAndMessagesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 3;
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EApprovalsAndMessagesLenMismatch">EApprovalsAndMessagesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 7;
 </code></pre>
 
 
@@ -802,7 +805,7 @@ Event emitted when a [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSi
 
 
 
-<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EApprovalsAndSignaturesLenMismatch">EApprovalsAndSignaturesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 7;
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EApprovalsAndSignaturesLenMismatch">EApprovalsAndSignaturesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 9;
 </code></pre>
 
 
@@ -811,7 +814,7 @@ Event emitted when a [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSi
 
 
 
-<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_ECentralizedSignedMessagesAndMessagesLenMismatch">ECentralizedSignedMessagesAndMessagesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 5;
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_ECentralizedSignedMessagesAndMessagesLenMismatch">ECentralizedSignedMessagesAndMessagesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 10;
 </code></pre>
 
 
@@ -820,7 +823,7 @@ Event emitted when a [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSi
 
 
 
-<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 6;
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 8;
 </code></pre>
 
 
@@ -982,9 +985,14 @@ A new [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>] object
 
 ## Function `create_partial_centralized_signed_messages`
 
+Creates a new [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a></code>] object.
+This object is used to store messages that have been signed by a user,
+but not yet by the blockchain.
+T: The eliptic curve type used for the dWallet.
+D: The type of the extra fields that can be stored with the object.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_partial_centralized_signed_messages">create_partial_centralized_signed_messages</a>&lt;T: drop, D: store&gt;(messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, extra_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">dwallet::PartialCentralizedSignedMessages</a>&lt;D&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_partial_centralized_signed_messages">create_partial_centralized_signed_messages</a>&lt;T: drop, D: store&gt;(messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, extra_fields: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">dwallet::PartialCentralizedSignedMessages</a>&lt;D&gt;
 </code></pre>
 
 
@@ -997,7 +1005,7 @@ A new [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>] object
     messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;,
-    extra_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;,
+    extra_fields: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;,
     ctx: &<b>mut</b> TxContext
 ): <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a>&lt;D&gt; {
     <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a>&lt;D&gt; {
@@ -1008,82 +1016,8 @@ A new [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>] object
         dwallet_output: <a href="dwallet.md#0x3_dwallet">dwallet</a>.decentralized_public_output,
         dwallet_cap_id: <a href="dwallet.md#0x3_dwallet">dwallet</a>.dwallet_cap_id,
         dwallet_mpc_network_decryption_key_version: <a href="dwallet.md#0x3_dwallet">dwallet</a>.dwallet_mpc_network_decryption_key_version,
-        extra_data,
+        extra_fields,
     }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_dwallet_transfer_partial_centralized_signed_messages"></a>
-
-## Function `transfer_partial_centralized_signed_messages`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_transfer_partial_centralized_signed_messages">transfer_partial_centralized_signed_messages</a>&lt;D: store&gt;(partial_signatures: <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">dwallet::PartialCentralizedSignedMessages</a>&lt;D&gt;, target: <b>address</b>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_transfer_partial_centralized_signed_messages">transfer_partial_centralized_signed_messages</a>&lt;D: store&gt;(
-    partial_signatures: <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a>&lt;D&gt;,
-    target: <b>address</b>,
-) {
-    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(partial_signatures, target);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_dwallet_unpack_partial_centralized_signed_messages"></a>
-
-## Function `unpack_partial_centralized_signed_messages`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_unpack_partial_centralized_signed_messages">unpack_partial_centralized_signed_messages</a>&lt;D: store&gt;(partial_centralized_signed_messages: <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">dwallet::PartialCentralizedSignedMessages</a>&lt;D&gt;): (<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, u8, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_unpack_partial_centralized_signed_messages">unpack_partial_centralized_signed_messages</a>&lt;D: store&gt;(
-    partial_centralized_signed_messages: <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a>&lt;D&gt;
-): ( <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ID, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ID, u8, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt; ) {
-
-    <b>let</b> <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a> {
-        id,
-        messages,
-        centralized_signatures,
-        dwallet_id,
-        dwallet_output,
-        dwallet_cap_id,
-        dwallet_mpc_network_decryption_key_version,
-        extra_data,
-    } = partial_centralized_signed_messages;
-
-    <a href="../pera-framework/object.md#0x2_object_delete">object::delete</a>(id);
-    (
-        messages,
-        centralized_signatures,
-        dwallet_id,
-        dwallet_output,
-        dwallet_cap_id,
-        dwallet_mpc_network_decryption_key_version,
-        extra_data,
-    )
 }
 </code></pre>
 
@@ -1790,9 +1724,58 @@ Checks if the given hash scheme is supported for message signing.
 
 ## Function `sign`
 
+Initiates the signing process for a given dWallet.
+
+This function emits a <code><a href="dwallet.md#0x3_dwallet_StartSignEvent">StartSignEvent</a></code> and a <code><a href="dwallet.md#0x3_dwallet_StartBatchedSignEvent">StartBatchedSignEvent</a></code>,
+providing all necessary metadata to ensure the integrity of the signing process.
+It validates the linkage between the <code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>, <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code>, and <code>Presign</code> objects.
+Additionally, it "burns" the <code>Presign</code> object by transferring it to the system address,
+as each presign can only be used to sign one message.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_sign">sign</a>&lt;T: drop, D: <b>copy</b>, drop&gt;(message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, centralized_signed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, extra_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_UniqTest">dwallet::UniqTest</a>&lt;D&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<a name="@Effects_14"></a>
+
+### Effects
+
+- Validates the linkage between dWallet components.
+- Ensures that the number of <code>hashed_messages</code>, <code>message_approvals</code>,
+<code>centralized_signed_messages</code>, and <code>presigns</code> are equal.
+- Emits the following events:
+- <code><a href="dwallet.md#0x3_dwallet_StartBatchedSignEvent">StartBatchedSignEvent</a></code>: Contains the session details and the list of hashed messages.
+- <code><a href="dwallet.md#0x3_dwallet_StartSignEvent">StartSignEvent</a></code>: Includes session details, hashed message, presign outputs,
+DKG output, and metadata.
+
+
+<a name="@Aborts_15"></a>
+
+### Aborts
+
+- **<code>EDwalletMismatch</code>**: If the <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code> object does not match the <code>Presign</code> object.
+- **<code><a href="dwallet.md#0x3_dwallet_EApprovalsAndMessagesLenMismatch">EApprovalsAndMessagesLenMismatch</a></code>**: If the number of <code>hashed_messages</code> does not
+match the number of <code>message_approvals</code>.
+- **<code><a href="dwallet.md#0x3_dwallet_ECentralizedSignedMessagesAndMessagesLenMismatch">ECentralizedSignedMessagesAndMessagesLenMismatch</a></code>**: If the number of <code>hashed_messages</code>
+does not match the number of <code>centralized_signed_messages</code>.
+- **<code><a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a></code>**: If the number of <code>hashed_messages</code> does not
+match the number of <code>presigns</code>.
+- **<code><a href="dwallet.md#0x3_dwallet_EMessageApprovalDWalletMismatch">EMessageApprovalDWalletMismatch</a></code>**: If the <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> ID does not match the
+expected <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> ID for any of the message approvals.
+- **<code><a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a></code>**: If the approvals are not in the correct order.
+
+
+<a name="@Parameters_16"></a>
+
+### Parameters
+
+- <code>message_approvals</code>: A mutable vector of <code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a></code> objects representing
+approvals for the messages.
+- <code>messages</code>: A vector of messages (in <code><a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code> format) to be signed.
+- <code>presigns</code>: A mutable vector of <code>Presign</code> objects containing intermediate signing outputs.
+- <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code>: A reference to the <code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code> object being used for signing.
+- <code>centralized_signed_messages</code>: A mutable vector of centralized party signatures.
+for the messages being signed.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_sign">sign</a>&lt;T: drop, D: <b>copy</b>, drop&gt;(message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, centralized_signed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, extra_fields: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignExtraFields">dwallet::SignExtraFields</a>&lt;D&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1806,16 +1789,16 @@ Checks if the given hash scheme is supported for message signing.
     <b>mut</b> messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;,
     <b>mut</b> centralized_signed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
-    <b>mut</b> extra_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_UniqTest">UniqTest</a>&lt;D&gt;&gt;,
+    <b>mut</b> extra_fields: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignExtraFields">SignExtraFields</a>&lt;D&gt;&gt;,
     ctx: &<b>mut</b> TxContext
 ) {
     <b>let</b> messages_len: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&messages);
-    <b>let</b> extra_data_len: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&extra_data);
+    <b>let</b> extra_fields_len: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&extra_fields);
     <b>let</b> approvals_len: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(message_approvals);
     <b>let</b> centralized_signed_len: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&centralized_signed_messages);
     <b>assert</b>!(messages_len == approvals_len, <a href="dwallet.md#0x3_dwallet_EApprovalsAndMessagesLenMismatch">EApprovalsAndMessagesLenMismatch</a>);
     <b>assert</b>!(messages_len == centralized_signed_len, <a href="dwallet.md#0x3_dwallet_ECentralizedSignedMessagesAndMessagesLenMismatch">ECentralizedSignedMessagesAndMessagesLenMismatch</a>);
-    <b>assert</b>!(messages_len == extra_data_len, <a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>);
+    <b>assert</b>!(messages_len == extra_fields_len, <a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>);
     <b>let</b> expected_dwallet_cap_id = <a href="dwallet.md#0x3_dwallet_get_dwallet_cap_id">get_dwallet_cap_id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>);
     <b>let</b> batch_session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
     <b>let</b> <b>mut</b> hashed_messages = <a href="dwallet.md#0x3_dwallet_hash_messages">hash_messages</a>(message_approvals);
@@ -1825,8 +1808,8 @@ Checks if the given hash scheme is supported for message signing.
         initiator: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx)
     });
     <b>let</b> <b>mut</b> i = 0;
-    <b>while</b> (!extra_data.is_empty()) {
-        <b>let</b> <a href="dwallet.md#0x3_dwallet_UniqTest">UniqTest</a> {data} = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> extra_data);
+    <b>while</b> (!extra_fields.is_empty()) {
+        <b>let</b> <a href="dwallet.md#0x3_dwallet_SignExtraFields">SignExtraFields</a> {data} = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> extra_fields);
         <b>let</b> message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> messages);
         <a href="dwallet.md#0x3_dwallet_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(expected_dwallet_cap_id, message, message_approvals);
         <b>let</b> id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
@@ -1841,11 +1824,11 @@ Checks if the given hash scheme is supported for message signing.
             dkg_output: <a href="dwallet.md#0x3_dwallet_get_dwallet_centralized_public_output">get_dwallet_centralized_public_output</a>&lt;T&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
             hashed_message,
             dwallet_mpc_network_decryption_key_version: <a href="dwallet.md#0x3_dwallet_get_dwallet_mpc_network_decryption_key_version">get_dwallet_mpc_network_decryption_key_version</a>&lt;T&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-            extra_data: data,
+            extra_fields: data,
         });
         i = i + 1;
     };
-    extra_data.destroy_empty();
+    extra_fields.destroy_empty();
 }
 </code></pre>
 
@@ -1864,7 +1847,7 @@ blockchain logic executed by validators. The emitted event contains the
 completed sign output that should be consumed by the initiating user.
 
 
-<a name="@Parameters_14"></a>
+<a name="@Parameters_17"></a>
 
 ##### Parameters
 
@@ -1873,7 +1856,7 @@ completed sign output that should be consumed by the initiating user.
 - **<code>ctx</code>**: The transaction context used for event emission.
 
 
-<a name="@Requirements_15"></a>
+<a name="@Requirements_18"></a>
 
 ##### Requirements
 
@@ -1881,7 +1864,7 @@ completed sign output that should be consumed by the initiating user.
 the function will abort with <code><a href="dwallet.md#0x3_dwallet_ENotSystemAddress">ENotSystemAddress</a></code>.
 
 
-<a name="@Events_16"></a>
+<a name="@Events_19"></a>
 
 ##### Events
 
@@ -1889,7 +1872,7 @@ the function will abort with <code><a href="dwallet.md#0x3_dwallet_ENotSystemAdd
 signaling the completion of the sign process for the batch session.
 
 
-<a name="@Errors_17"></a>
+<a name="@Errors_20"></a>
 
 ##### Errors
 
@@ -1946,7 +1929,7 @@ without launching the chain's sign flow immediately.
 See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a></code>] for more details on when this may be used.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_publish_partially_signed_messages">publish_partially_signed_messages</a>&lt;T: drop, D: <b>copy</b>, drop, store&gt;(signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, extra_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_UniqTest">dwallet::UniqTest</a>&lt;D&gt;&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_publish_partially_signed_messages">publish_partially_signed_messages</a>&lt;T: drop, D: <b>copy</b>, drop, store&gt;(signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, extra_fields: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignExtraFields">dwallet::SignExtraFields</a>&lt;D&gt;&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1958,26 +1941,23 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_publish_partially_signed_messages">publish_partially_signed_messages</a>&lt;T: drop, D: <b>copy</b> + drop + store&gt;(
     signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
-    extra_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_UniqTest">UniqTest</a>&lt;D&gt;&gt;,
+    extra_fields: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignExtraFields">SignExtraFields</a>&lt;D&gt;&gt;,
     <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;,
     ctx: &<b>mut</b> TxContext
 ) {
     <b>let</b> messages_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&messages);
     <b>let</b> signatures_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&signatures);
-    <b>let</b> extra_data_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&extra_data);
+    <b>let</b> extra_fields_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&extra_fields);
     <b>assert</b>!(messages_len == signatures_len, <a href="dwallet.md#0x3_dwallet_EApprovalsAndSignaturesLenMismatch">EApprovalsAndSignaturesLenMismatch</a>);
-    <b>assert</b>!(messages_len == extra_data_len, <a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>);
+    <b>assert</b>!(messages_len == extra_fields_len, <a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>);
 
     // Todo (#415): Add the <a href="../pera-framework/event.md#0x2_event">event</a> for the verify_partially_signed_signatures
-
-    <b>let</b> extra_data_unpacked = vector::map!(extra_data, |<a href="dwallet.md#0x3_dwallet_UniqTest">UniqTest</a> { data }| data);
-    // extra_data.destroy_empty();
-
+    <b>let</b> extra_fields_unpacked = vector::map!(extra_fields, |<a href="dwallet.md#0x3_dwallet_SignExtraFields">SignExtraFields</a> { data }| data);
     <b>let</b> partial_signatures = <a href="dwallet.md#0x3_dwallet_create_partial_centralized_signed_messages">create_partial_centralized_signed_messages</a>&lt;T, D&gt;(
         messages,
         signatures,
         <a href="dwallet.md#0x3_dwallet">dwallet</a>,
-        extra_data_unpacked,
+        extra_fields_unpacked,
         ctx,
     );
 
@@ -1985,7 +1965,7 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
         partial_signatures_object_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&partial_signatures),
     });
 
-    <a href="dwallet.md#0x3_dwallet_transfer_partial_centralized_signed_messages">transfer_partial_centralized_signed_messages</a>(partial_signatures, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
+    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(partial_signatures, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
 }
 </code></pre>
 
@@ -1993,13 +1973,16 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
 
 </details>
 
-<a name="0x3_dwallet_create_sign_hot_potato"></a>
+<a name="0x3_dwallet_create_sign_extra_fields"></a>
 
-## Function `create_sign_hot_potato`
+## Function `create_sign_extra_fields`
+
+A function to create a [<code><a href="dwallet.md#0x3_dwallet_SignExtraFields">SignExtraFields</a></code>] object.
+Extra fields are used to store additional data with the object, specific to every protocol implementation.
+D: The type of the extra fields that can be stored with the object.
 
 
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_sign_hot_potato">create_sign_hot_potato</a>&lt;D: <b>copy</b>, drop, store&gt;(data: D): <a href="dwallet.md#0x3_dwallet_UniqTest">dwallet::UniqTest</a>&lt;D&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_sign_extra_fields">create_sign_extra_fields</a>&lt;D: <b>copy</b>, drop, store&gt;(data: D): <a href="dwallet.md#0x3_dwallet_SignExtraFields">dwallet::SignExtraFields</a>&lt;D&gt;
 </code></pre>
 
 
@@ -2008,8 +1991,8 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_sign_hot_potato">create_sign_hot_potato</a>&lt;D: store + <b>copy</b> + drop&gt;(data: D): <a href="dwallet.md#0x3_dwallet_UniqTest">UniqTest</a>&lt;D&gt; {
-    <a href="dwallet.md#0x3_dwallet_UniqTest">UniqTest</a> { data }
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_sign_extra_fields">create_sign_extra_fields</a>&lt;D: store + <b>copy</b> + drop&gt;(data: D): <a href="dwallet.md#0x3_dwallet_SignExtraFields">SignExtraFields</a>&lt;D&gt; {
+    <a href="dwallet.md#0x3_dwallet_SignExtraFields">SignExtraFields</a> { data }
 }
 </code></pre>
 
@@ -2022,7 +2005,7 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
 ## Function `future_sign`
 
 A function to launch a sign flow with a previously published [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a></code>].
-
+D: The type of the extra fields that can be stored with the object.
 See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a></code>] for more details on when this may be used.
 
 
@@ -2040,15 +2023,18 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
     message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;,
     ctx: &<b>mut</b> TxContext
 ) {
-    <b>let</b> (
+    <b>let</b> <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a>&lt;D&gt; {
+        id,
         <b>mut</b> messages,
-        <b>mut</b> signatures,
+        <b>mut</b> centralized_signatures,
         dwallet_id,
         dwallet_output,
         dwallet_cap_id,
         dwallet_mpc_network_decryption_key_version,
-        <b>mut</b> presign_data,
-    ) = <a href="dwallet.md#0x3_dwallet_unpack_partial_centralized_signed_messages">unpack_partial_centralized_signed_messages</a>&lt;D&gt;(partial_signature);
+        <b>mut</b> extra_fields,
+    } = partial_signature;
+    <a href="../pera-framework/object.md#0x2_object_delete">object::delete</a>(id);
+
     <b>let</b> message_approvals_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(message_approvals);
     <b>let</b> messages_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&messages);
     <b>assert</b>!(message_approvals_len == messages_len, <a href="dwallet.md#0x3_dwallet_EApprovalsAndMessagesLenMismatch">EApprovalsAndMessagesLenMismatch</a>);
@@ -2065,9 +2051,9 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
         <b>let</b> message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> messages);
         <a href="dwallet.md#0x3_dwallet_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(dwallet_cap_id, message, message_approvals);
         <b>let</b> id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
-        <b>let</b> centralized_signed_message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> signatures);
+        <b>let</b> centralized_signed_message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> centralized_signatures);
         <b>let</b> hashed_message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> hashed_messages);
-        <b>let</b> data =  <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> presign_data);
+        <b>let</b> data =  <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> extra_fields);
         <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet.md#0x3_dwallet_StartSignEvent">StartSignEvent</a>&lt;D&gt; {
             session_id: id,
             initiator: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
@@ -2077,7 +2063,7 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
             dkg_output: dwallet_output,
             hashed_message,
             dwallet_mpc_network_decryption_key_version,
-            extra_data: data,
+            extra_fields: data,
         });
         i = i + 1;
     };

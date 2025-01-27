@@ -16,7 +16,7 @@ BatchedSignOutput
 StartSignEvent
 	public struct
 	0x3::dwallet
-UniqTest
+SignExtraFields
 	public struct
 	0x3::dwallet
 DWalletCap
@@ -44,12 +44,6 @@ create_dwallet
 	public(package) fun
 	0x3::dwallet
 create_partial_centralized_signed_messages
-	public(package) fun
-	0x3::dwallet
-transfer_partial_centralized_signed_messages
-	public(package) fun
-	0x3::dwallet
-unpack_partial_centralized_signed_messages
 	public(package) fun
 	0x3::dwallet
 get_dwallet_cap_id
@@ -118,7 +112,7 @@ create_sign_output
 publish_partially_signed_messages
 	public fun
 	0x3::dwallet
-create_sign_hot_potato
+create_sign_extra_fields
 	public(package) fun
 	0x3::dwallet
 future_sign
@@ -166,7 +160,7 @@ StartPresignSecondRoundEvent
 CompletedBatchedPresignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-UniqPresignPerMessage
+SignExtraFieldsForECDSAK1
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
@@ -196,7 +190,7 @@ launch_presign_second_round
 create_batched_presign_output
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-sign_uniq_metadata
+create_sign_extra_fields
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_mock_dwallet_for_testing

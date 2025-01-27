@@ -15,8 +15,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         get_dwallet_mpc_network_decryption_key_version,
         EncryptionKey,
         get_encryption_key,
-        UniqTest,
-        create_sign_hot_potato,
+        SignExtraFields,
     };
     use pera::event;
 
@@ -384,14 +383,12 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     // SIGN TYPES
 
-    // public struct SignData has store {
-    //     /// The presigns bytes for each message.
-    //     /// The matching presign objects are being "burned" before this object is created.
-    //     presigns: vector<vector<u8>>,
-
-    //     /// The presigns session IDs.
-    //     presign_session_ids: vector<ID>,
-    // }
+    public struct SignExtraFieldsForECDSAK1 has store, drop, copy {
+        /// The presign object ID, the presign ID will be used as the sign MPC protocol ID.
+        presign_id: ID,
+        /// The presign protocol output as bytes.
+        presign_output: vector<u8>,
+    }
 
     // END OF SIGN TYPES
 
@@ -399,7 +396,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Error raised when the sender is not the system address.
     const ENotSystemAddress: u64 = 1;
     const EDwalletMismatch: u64 = 2;
-    
     // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
@@ -928,96 +924,46 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         );
     }
 
-    public struct UniqPresignPerMessage has store, drop, copy {
-        /// The presign object ID, the presign ID will be used as the sign MPC protocol ID.
-        presign_id: ID,
-        /// The presign protocol output as bytes.
-        presign_output: vector<u8>,
-    }
-
     #[test_only]
-    /// Call the underlying create UniqPresignPerMessage.
+    /// Call the underlying create SignExtraFieldsForECDSAK1.
     /// This function is intended for testing purposes only and should not be used in production.
     /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_onl
     public fun create_uniq_presign_per_message(
         presign_id: ID,
         presign_output: vector<u8>,
-    ): UniqPresignPerMessage {
-        UniqPresignPerMessage {
+    ): SignExtraFieldsForECDSAK1 {
+        SignExtraFieldsForECDSAK1 {
             presign_id,
             presign_output,
         }
     }
 
-    /// Initiates the signing process for a given dWallet.
+    /// Creates a vector of `SignExtraFields` objects from a vector of `Presign` objects.
     ///
-    /// This function emits a `StartSignEvent` and a `StartBatchedSignEvent`,
-    /// providing all necessary metadata to ensure the integrity of the signing process.
-    /// It validates the linkage between the `DWallet`, `DWalletCap`, and `Presign` objects.
-    /// Additionally, it "burns" the `Presign` object by transferring it to the system address,
-    /// as each presign can only be used to sign one message.
+    /// This function constructs the necessary data structures for the signing process using ECDSA K1.
+    /// It takes a vector of `Presign` objects, extracts the relevant data, and removes the original objects.
+    /// Additionally, it ensures that the `DWallet` associated with the `Presign` objects matches the provided `DWallet`.
     ///
-    /// # Effects
-    /// - Validates the linkage between dWallet components.
-    /// - Ensures that the number of `hashed_messages`, `message_approvals`,
-    ///   `centralized_signed_messages`, and `presigns` are equal.
-    /// - Emits the following events:
-    ///   - `StartBatchedSignEvent`: Contains the session details and the list of hashed messages.
-    ///   - `StartSignEvent`: Includes session details, hashed message, presign outputs,
-    ///     DKG output, and metadata.
-    ///
-    /// # Aborts
-    /// - **`EDwalletMismatch`**: If the `dwallet` object does not match the `Presign` object.
-    /// - **`EApprovalsAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
-    ///   match the number of `message_approvals`.
-    /// - **`ECentralizedSignedMessagesAndMessagesLenMismatch`**: If the number of `hashed_messages`
-    ///   does not match the number of `centralized_signed_messages`.
-    /// - **`EExtraDataAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
-    ///   match the number of `presigns`.
-    /// - **`EMessageApprovalDWalletMismatch`**: If the `DWalletCap` ID does not match the
-    ///   expected `DWalletCap` ID for any of the message approvals.
-    /// - **`EMissingApprovalOrWrongApprovalOrder`**: If the approvals are not in the correct order.
-    ///
-    /// # Parameters
-    /// - `message_approvals`: A mutable vector of `MessageApproval` objects representing
-    ///    approvals for the messages.
-    /// - `messages`: A vector of messages (in `vector<u8>` format) to be signed.
-    /// - `presigns`: A mutable vector of `Presign` objects containing intermediate signing outputs.
-    /// - `dwallet`: A reference to the `DWallet` object being used for signing.
-    /// - `centralized_signed_messages`: A mutable vector of centralized party signatures.
-    ///   for the messages being signed.
-    
-    public fun sign_uniq_metadata(
-        mut presigns: vector<Presign>,
+    /// The function returns a vector of `SignExtraFields` objects, which are essential for the signing process.
+    /// The returned value must be used in a PTB; otherwise, the transaction will fail due to the "Hot Potato" pattern.
+
+    public fun create_sign_extra_fields(
+        presigns: vector<Presign>,
         dwallet: &DWallet<Secp256K1>,
-    ): vector<UniqTest<UniqPresignPerMessage>> {
-        let mut hot_potatos = vector::empty();
-        let presigns_len =  vector::length(&presigns);
-        let mut i = 0;
-        while (i < presigns_len) {
-            let presign_obj = vector::pop_back(&mut presigns);
-            let Presign {id, presign, first_round_session_id, dwallet_id} = presign_obj;
+    ): vector<SignExtraFields<SignExtraFieldsForECDSAK1>> {
+        let extra_fields = vector::map!(presigns, |presign| {
+            let Presign {id, presign, first_round_session_id, dwallet_id} = presign;
             assert!(object::id(dwallet) == dwallet_id, EDwalletMismatch);
-            let uniq_presign_per_message = UniqPresignPerMessage {
+            let extra_fields_per_sign = SignExtraFieldsForECDSAK1 {
                 presign_id: first_round_session_id,
                 presign_output: presign,
             };
-            let uniq_test = create_sign_hot_potato<UniqPresignPerMessage>(uniq_presign_per_message); 
-            hot_potatos.push_back(uniq_test);
-            i = i + 1;
             object::delete(id);
-        };
-        presigns.destroy_empty();
-        hot_potatos
+            dwallet::create_sign_extra_fields<SignExtraFieldsForECDSAK1>(extra_fields_per_sign)
+        });
+
+        extra_fields
     }
-
-
-
-    // todo(yael):
-    // consult with Omer on what types should this get, probalby the sign<T: drop> and then
-    // pass it the `dwallet`, dwallet: &DWallet<T>,
-    // Ask Omer if this needs to be in the dwallet.move file.
-    // Make sure the Move and TS tests are working.
 
     /// Generates a mock `DWallet<Secp256K1>` object for testing purposes.
     ///
