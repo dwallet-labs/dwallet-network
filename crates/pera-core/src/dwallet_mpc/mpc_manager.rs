@@ -44,6 +44,7 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::debug;
 use tracing::{error, info, warn};
@@ -467,38 +468,12 @@ impl DWalletMPCManager {
             MPCProtocolInitData::Sign(..)
         ) && session.pending_quorum_for_highest_round_number == LAST_SIGN_ROUND_INDEX
         {
-            let sign_last_step_delay =
-                self.calculate_last_sign_step_validator_delay(&session.session_info)?;
-            let epoch_store = self.epoch_store()?;
-            tokio::spawn(async move {
-                tokio::time::sleep(tokio::time::Duration::from_secs(
-                    sign_last_step_delay as u64,
-                ))
-                .await;
-                let manager = epoch_store.get_dwallet_mpc_manager().await;
-                let Some(session) = manager.mpc_sessions.get(&session_id) else {
-                    error!("failed to get session when checking if sign last round should get executed");
-                    return;
-                };
-                if session.status == MPCSessionStatus::Active {
-                    info!(
-                        "running last sign cryptographic step for session_id: {:?}",
-                        session_id
-                    );
-                    let session = session.clone();
-                    rayon::spawn_fifo(move || {
-                        if let Err(err) = session.advance(&handle) {
-                            error!("failed to advance session with error: {:?}", err);
-                        }
-                        if let Err(err) = finished_computation_sender.send(()) {
-                            error!(
-                                "Failed to send a finished computation message with error: {:?}",
-                                err
-                            );
-                        }
-                    });
-                }
-            });
+            self.spawn_aggregated_sign(
+                &session_id,
+                &handle,
+                &session,
+                &finished_computation_sender,
+            );
         } else {
             rayon::spawn_fifo(move || {
                 if let Err(err) = session.advance(&handle) {
@@ -513,6 +488,49 @@ impl DWalletMPCManager {
             });
         }
         Ok(())
+    }
+
+    fn spawn_aggregated_sign(
+        &self,
+        session_id: &ObjectID,
+        handle: &Handle,
+        session: &DWalletMPCSession,
+        finished_computation_sender: &UnboundedSender<()>,
+    ) {
+        let sign_last_step_delay =
+            self.calculate_last_sign_step_validator_delay(&session.session_info)?;
+        let epoch_store = self.epoch_store()?;
+        tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_secs(
+                sign_last_step_delay as u64,
+            ))
+            .await;
+            let manager = epoch_store.get_dwallet_mpc_manager().await;
+            let Some(session) = manager.mpc_sessions.get(&session_id) else {
+                error!(
+                    "failed to get session when checking if sign last round should get executed"
+                );
+                return;
+            };
+            if session.status == MPCSessionStatus::Active {
+                info!(
+                    "running last sign cryptographic step for session_id: {:?}",
+                    session_id
+                );
+                let session = session.clone();
+                rayon::spawn_fifo(move || {
+                    if let Err(err) = session.advance(&handle) {
+                        error!("failed to advance session with error: {:?}", err);
+                    }
+                    if let Err(err) = finished_computation_sender.send(()) {
+                        error!(
+                            "Failed to send a finished computation message with error: {:?}",
+                            err
+                        );
+                    }
+                });
+            }
+        });
     }
 
     /// Update the encryption of decryption key share with the new shares.
