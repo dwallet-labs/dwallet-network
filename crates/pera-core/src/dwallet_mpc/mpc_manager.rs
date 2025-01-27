@@ -323,6 +323,7 @@ impl DWalletMPCManager {
                         };
                         session_clone.pending_messages = filtered_pending_messages;
                         session_clone.status = MPCSessionStatus::Active;
+                        session_clone.pending_quorum_for_highest_round_number -=1;
                         // Need to get rid of the immutable reference to `self` before using it
                         // as mutable
                         drop(session);
