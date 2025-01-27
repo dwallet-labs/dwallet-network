@@ -4,7 +4,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
 use tracing::error;
@@ -416,4 +416,28 @@ impl DWalletMPCSession {
         self.store_message(message)?;
         Ok(())
     }
+
+    fn rerun_last_round_without_malicious_parties(
+        &mut self,
+        malicious_parties: &HashSet<PartyID>
+    ) -> Result<(), DwalletMPCError> {
+        // For every advance we increase the round number by 1,
+        // so to re-run the same round we decrease it by 1.
+        self.pending_quorum_for_highest_round_number -= 1;
+        // Remove malicious parties from the session messages.
+        let round_messages = self
+            .pending_messages
+            .get_mut(self.pending_quorum_for_highest_round_number)
+            .ok_or(DwalletMPCError::MPCSessionNotFound {
+                session_id: self.session_info.session_id,
+            })?;
+
+        malicious_parties
+            .iter()
+            .for_each(|malicious_actor| {
+                round_messages.remove(malicious_actor);
+            });
+        Ok(())
+    }
+
 }
