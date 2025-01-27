@@ -42,9 +42,9 @@ pub(super) struct DWalletMPCSession {
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
     pub(super) pending_messages: Vec<HashMap<PartyID, MPCMessage>>,
-    pub(super) epoch_store: Weak<AuthorityPerEpochStore>,
-    pub(super) consensus_adapter: Arc<dyn SubmitToConsensus>,
-    pub(super) epoch_id: EpochId,
+    epoch_store: Weak<AuthorityPerEpochStore>,
+    consensus_adapter: Arc<dyn SubmitToConsensus>,
+    epoch_id: EpochId,
     /// The total number of parties in the chain
     /// We can calculate the threshold and parties IDs (indexes) from it.
     /// To calculate the party's ID, all we need to know is the number of parties,
@@ -55,13 +55,13 @@ pub(super) struct DWalletMPCSession {
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
     pub(super) pending_quorum_for_highest_round_number: usize,
-    pub(super) party_id: PartyID,
+    party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
-    pub(super) weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+    weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
-    pub(super) decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
-    pub(super) private_input: MPCPrivateInput,
+    private_input: MPCPrivateInput,
 }
 
 // todo remove
