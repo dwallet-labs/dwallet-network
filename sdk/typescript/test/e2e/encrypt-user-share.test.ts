@@ -110,7 +110,7 @@ describe('encrypt user share', () => {
 			client: sourceClient.client,
 			timeout: fiveMinutes,
 		};
-		await delay(10000);
+		await delay(5000);
 		const dwallet = await createDWallet(
 			conf,
 			mockedProtocolPublicParameters,
