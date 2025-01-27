@@ -6,8 +6,15 @@ use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use twopc_mpc::dkg::Protocol;
 
+/// The index of the last sign cryptographic round.
+/// Needed to be known in advance as this cryptographic step should ideally get computed only once
+/// by the `sign aggregation` protocol.
 pub(crate) const LAST_SIGN_ROUND_INDEX: usize = 1;
-pub(crate) const SIGN_LAST_ROUND_COMPUTATION_AVERAGE_TIME_SECS: usize = 30;
+/// The time a validator waits for each other validator to produce the result of the last sign
+/// computation round.
+/// Used to determine how long a validator should wait before running the final step of the sign
+/// MPC flow.
+pub(crate) const SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS: usize = 30;
 
 pub(super) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;

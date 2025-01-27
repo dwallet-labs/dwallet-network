@@ -11,7 +11,7 @@ use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::session_input_from_event;
 use crate::dwallet_mpc::sign::{
-    LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_AVERAGE_TIME_SECS,
+    LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
 };
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
 use crate::epoch::randomness::SINGLETON_KEY;
@@ -36,7 +36,7 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCInitProtocolInfo, MaliciousReport,
+    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCProtocolInitData, MaliciousReport,
     SessionInfo, SignIASessionData,
 };
 use rayon::prelude::*;
@@ -44,6 +44,7 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::debug;
 use tracing::{error, info, warn};
@@ -461,7 +462,7 @@ impl DWalletMPCManager {
                 let is_valid_network_dkg_transaction =
                     matches!(
                         session.session_info.mpc_round,
-                        MPCInitProtocolInfo::NetworkDkg(..)
+                        MPCProtocolInitData::NetworkDkg(..)
                     ) && self.validators_data_for_network_dkg.len()
                         == self
                             .weighted_threshold_access_structure
@@ -543,41 +544,10 @@ impl DWalletMPCManager {
             .clone();
         if matches!(
             session.session_info.mpc_round,
-            MPCInitProtocolInfo::Sign(..)
+            MPCProtocolInitData::Sign(..)
         ) && session.pending_quorum_for_highest_round_number == LAST_SIGN_ROUND_INDEX
         {
-            let sign_last_step_delay =
-                self.calculate_last_sign_step_validator_delay(&session.session_info)?;
-            let epoch_store = self.epoch_store()?;
-            tokio::spawn(async move {
-                tokio::time::sleep(tokio::time::Duration::from_secs(
-                    sign_last_step_delay as u64,
-                ))
-                .await;
-                let manager = epoch_store.get_dwallet_mpc_manager().await;
-                let Some(session) = manager.mpc_sessions.get(&session_id) else {
-                    error!("failed to get session when checking if sign last round should get executed");
-                    return;
-                };
-                if session.status == MPCSessionStatus::Active {
-                    info!(
-                        "running last sign cryptographic step for session_id: {:?}",
-                        session_id
-                    );
-                    let session = session.clone();
-                    rayon::spawn_fifo(move || {
-                        if let Err(err) = session.advance(&handle) {
-                            error!("failed to advance session with error: {:?}", err);
-                        }
-                        if let Err(err) = finished_computation_sender.send(()) {
-                            error!(
-                                "Failed to send a finished computation message with error: {:?}",
-                                err
-                            );
-                        }
-                    });
-                }
-            });
+            self.spawn_aggregated_sign(session_id, handle, session, finished_computation_sender)?;
         } else {
             rayon::spawn_fifo(move || {
                 if let Err(err) = session.advance(&handle) {
@@ -594,6 +564,50 @@ impl DWalletMPCManager {
         Ok(())
     }
 
+    fn spawn_aggregated_sign(
+        &self,
+        session_id: ObjectID,
+        handle: Handle,
+        session: DWalletMPCSession,
+        finished_computation_sender: UnboundedSender<()>,
+    ) -> DwalletMPCResult<()> {
+        let sign_last_step_delay =
+            self.calculate_last_sign_step_validator_delay(&session.session_info)?;
+        let epoch_store = self.epoch_store()?;
+        tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_secs(
+                sign_last_step_delay as u64,
+            ))
+            .await;
+            let manager = epoch_store.get_dwallet_mpc_manager().await;
+            let Some(session) = manager.mpc_sessions.get(&session_id) else {
+                error!(
+                    "failed to get session when checking if sign last round should get executed"
+                );
+                return;
+            };
+            if session.status == MPCSessionStatus::Active {
+                info!(
+                    "running last sign cryptographic step for session_id: {:?}",
+                    session_id
+                );
+                let session = session.clone();
+                rayon::spawn_fifo(move || {
+                    if let Err(err) = session.advance(&handle) {
+                        error!("failed to advance session with error: {:?}", err);
+                    }
+                    if let Err(err) = finished_computation_sender.send(()) {
+                        error!(
+                            "Failed to send a finished computation message with error: {:?}",
+                            err
+                        );
+                    }
+                });
+            }
+        });
+        Ok(())
+    }
+
     /// Update the encryption of decryption key share with the new shares.
     /// This function is called when the network DKG protocol is done.
     fn update_dwallet_mpc_network_key(
@@ -602,7 +616,7 @@ impl DWalletMPCManager {
         public_output: MPCPublicOutput,
         private_output: MPCPrivateOutput,
     ) -> DwalletMPCResult<()> {
-        if let MPCInitProtocolInfo::NetworkDkg(key_type, _) = session_info.mpc_round {
+        if let MPCProtocolInitData::NetworkDkg(key_type, _) = session_info.mpc_round {
             let epoch_store = self.epoch_store()?;
             let network_keys = epoch_store
                 .dwallet_mpc_network_keys
@@ -628,7 +642,7 @@ impl DWalletMPCManager {
 
     /// Deterministically decides by the session ID how long this validator should wait before
     /// running the last step of the sign protocol.
-    /// If while waiting the validator receives a valid signature for this session,
+    /// If while waiting, the validator receives a valid signature for this session,
     /// it will not run the last step in the sign protocol, and save computation resources.
     fn calculate_last_sign_step_validator_delay(
         &self,
@@ -644,7 +658,7 @@ impl DWalletMPCManager {
             .iter()
             .position(|&x| x == *authority_name)
             .ok_or(DwalletMPCError::InvalidMPCPartyType)?;
-        Ok(SIGN_LAST_ROUND_COMPUTATION_AVERAGE_TIME_SECS * position)
+        Ok(SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS * position)
     }
 
     /// Handles a message by forwarding it to the relevant MPC session.
@@ -736,7 +750,7 @@ impl DWalletMPCManager {
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             match session_info.mpc_round {
-                MPCInitProtocolInfo::NetworkDkg(..) => HashMap::new(),
+                MPCProtocolInitData::NetworkDkg(..) => HashMap::new(),
                 _ => self.get_decryption_key_shares(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),

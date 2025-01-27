@@ -19,7 +19,7 @@ use shared_crypto::intent::IntentScope;
 use std::collections::HashSet;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum MPCInitProtocolInfo {
+pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
     DKGFirst,
     /// The second round of the DKG protocol.
@@ -35,7 +35,7 @@ pub enum MPCInitProtocolInfo {
     /// the Presign first round output, and the batch session ID.
     PresignSecond(ObjectID, MPCPublicOutput, ObjectID),
     /// The first and only round of the Sign protocol.
-    Sign(SignSessionData),
+    Sign(SingleSignSessionData),
     /// A batched sign session, contains the list of messages that are being signed.
     // TODO (#536): Store batch state and logic on Sui & remove this field.
     BatchedSign(Vec<Vec<u8>>),
@@ -58,7 +58,7 @@ pub enum MPCInitProtocolInfo {
 
 /// The message and data for the Sign round.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct SignSessionData {
+pub struct SingleSignSessionData {
     pub batch_session_id: ObjectID,
     pub message: Vec<u8>,
     /// The dWallet ID that is used to sign, needed mostly for audit.
@@ -77,16 +77,16 @@ pub struct SignIASessionData {
     pub parties_used_for_last_step: Vec<PartyID>,
 }
 
-impl MPCInitProtocolInfo {
+impl MPCProtocolInitData {
     /// Returns `true` if the round output is part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
         matches!(
             self,
-            MPCInitProtocolInfo::Sign(..)
-                | MPCInitProtocolInfo::PresignSecond(..)
-                | MPCInitProtocolInfo::BatchedSign(..)
-                | MPCInitProtocolInfo::BatchedPresign(..)
-                | MPCInitProtocolInfo::SignIdentifiableAbort(..)
+            MPCProtocolInitData::Sign(..)
+                | MPCProtocolInitData::PresignSecond(..)
+                | MPCProtocolInitData::BatchedSign(..)
+                | MPCProtocolInitData::BatchedPresign(..)
+                | MPCProtocolInitData::SignIdentifiableAbort(..)
         )
     }
 }
@@ -147,12 +147,12 @@ pub struct SessionInfo {
     pub initiating_user_address: PeraAddress,
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
-    pub mpc_round: MPCInitProtocolInfo,
+    pub mpc_round: MPCProtocolInitData,
 }
 
 /// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
-/// Defined here so that we can use it in the [`MPCInitProtocolInfo`] enum,
-/// as the inner data of the [`MPCInitProtocolInfo::EncryptedShareVerification`].
+/// Defined here so that we can use it in the [`MPCProtocolInitData`] enum,
+/// as the inner data of the [`MPCProtocolInitData::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
     pub encrypted_secret_share_and_proof: Vec<u8>,
