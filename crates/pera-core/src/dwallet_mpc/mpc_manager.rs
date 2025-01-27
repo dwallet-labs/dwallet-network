@@ -289,7 +289,7 @@ impl DWalletMPCManager {
                             })
                             .collect();
                         self.push_new_mpc_session(
-                            vec![],
+                            session.public_input.clone(),
                             None,
                             SessionInfo {
                                 flow_session_id: sign_ia_session_id,
@@ -302,7 +302,7 @@ impl DWalletMPCManager {
                                         initiating_authority: authority_name,
                                         claimed_malicious_actors: report.malicious_actors,
                                         sign_session_id: session.session_info.session_id,
-                                        parties_used_for_last_step: vec![],
+                                        parties_used_for_last_step: report.involved_parties,
                                     },
                                 ),
                             },
