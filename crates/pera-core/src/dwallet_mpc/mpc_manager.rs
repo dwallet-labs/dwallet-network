@@ -300,6 +300,8 @@ impl DWalletMPCManager {
                             })
                             .collect();
                         let session_clone = session.clone();
+                        // Need to get rid of the immutable reference to `self` before using it
+                        // as mutable
                         drop(session);
                         self.push_new_mpc_session(
                             session_clone.public_input.clone(),
