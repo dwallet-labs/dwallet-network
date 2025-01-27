@@ -231,6 +231,8 @@ impl DWalletMPCManager {
                         // If we reached a quorum on the malicious actors reported in a sign flow,
                         // we should remove them and re-run the last round without them.
                         let sign_session_id = ia_data.sign_session_id.clone();
+                        // Drops to remove the mutable references to `self`, so we'll be able to
+                        // get & change the sign session this IA session is pointing to.
                         drop(&ia_data);
                         session.status = MPCSessionStatus::Finished;
                         drop(session);
