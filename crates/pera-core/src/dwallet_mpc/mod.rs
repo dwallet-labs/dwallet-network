@@ -325,7 +325,7 @@ fn calculate_total_voting_weight(
     parties: &HashSet<PartyID>,
 ) -> usize {
     let mut total_voting_weight = 0;
-    for party in parties {
+    for party in parties.iter() {
         if let Some(weight) = weighted_parties.get(&party) {
             total_voting_weight += *weight as usize;
         }
