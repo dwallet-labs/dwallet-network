@@ -11,7 +11,7 @@ use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::session_input_from_event;
 use crate::dwallet_mpc::sign::{
-    LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_AVERAGE_TIME_SECS,
+    LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
 };
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
 use crate::epoch::randomness::SINGLETON_KEY;
@@ -565,7 +565,7 @@ impl DWalletMPCManager {
             .iter()
             .position(|&x| x == *authority_name)
             .ok_or(DwalletMPCError::InvalidMPCPartyType)?;
-        Ok(SIGN_LAST_ROUND_COMPUTATION_AVERAGE_TIME_SECS * position)
+        Ok(SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS * position)
     }
 
     /// Handles a message by forwarding it to the relevant MPC session.
