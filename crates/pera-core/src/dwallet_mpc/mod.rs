@@ -5,7 +5,7 @@ use crate::dwallet_mpc::dkg::{
 };
 use crate::dwallet_mpc::mpc_events::{
     StartBatchedPresignEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent, StartNetworkDKGEvent,
-    StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignRoundEvent,
+    StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::presign::{
@@ -29,6 +29,7 @@ use pera_types::messages_dwallet_mpc::{
 };
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
+use crate::dwallet_mpc::ecdsa_k1::AlgorithmSpecificData;
 
 pub mod batches_manager;
 mod dkg;
@@ -40,6 +41,7 @@ pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
+mod ecdsa_k1;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
@@ -102,8 +104,8 @@ pub(crate) fn session_info_from_event(
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(presign_second_party_session_info(&deserialized_event)))
         }
-        t if t == &StartSignRoundEvent::type_() => {
-            let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
+        t if t == &StartSignEvent::<AlgorithmSpecificData>::type_(AlgorithmSpecificData::type_().into()) => {
+            let deserialized_event: StartSignEvent::<AlgorithmSpecificData> = bcs::from_bytes(&event.contents)?;
             Ok(Some(sign_party_session_info(&deserialized_event, party_id)))
         }
         t if t == &StartBatchedSignEvent::type_() => {
@@ -257,7 +259,7 @@ fn presign_second_party_session_info(
 }
 
 fn sign_public_input(
-    deserialized_event: StartSignRoundEvent,
+    deserialized_event: &StartSignEvent::<AlgorithmSpecificData>,
     dwallet_mpc_manager: &DWalletMPCManager,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
@@ -270,21 +272,21 @@ fn sign_public_input(
     Ok(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
-            deserialized_event.dkg_output.clone(),
+            deserialized_event.dwallet_decentralized_public_output.clone(),
             deserialized_event.hashed_message.clone(),
-            deserialized_event.presign.clone(),
-            deserialized_event.centralized_signed_message.clone(),
+            deserialized_event.signing_algorithm_data.presign_output.clone(),
+            deserialized_event.signing_algorithm_data.message_centralized_signature.clone(),
             bcs::from_bytes(&decryption_pp)?,
         )?,
     )
 }
 
 fn sign_party_session_info(
-    deserialized_event: &StartSignRoundEvent,
+    deserialized_event: &StartSignEvent::<AlgorithmSpecificData>,
     _party_id: PartyID,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.presign_session_id.bytes,
+        flow_session_id: deserialized_event.signing_algorithm_data.presign_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCRound::Sign(SignMessageData {
@@ -465,8 +467,8 @@ pub(crate) fn session_input_from_event(
                 None,
             ))
         }
-        t if t == &StartSignRoundEvent::type_() => {
-            let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
+        t if t == &StartSignEvent::<AlgorithmSpecificData>::type_(AlgorithmSpecificData::type_().into()) => {
+            let deserialized_event: StartSignEvent::<AlgorithmSpecificData> = bcs::from_bytes(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
@@ -475,7 +477,7 @@ pub(crate) fn session_input_from_event(
             )?;
             Ok((
                 sign_public_input(
-                    deserialized_event,
+                    &deserialized_event,
                     dwallet_mpc_manager,
                     protocol_public_parameters,
                 )?,
