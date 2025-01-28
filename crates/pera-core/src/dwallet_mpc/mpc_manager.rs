@@ -280,6 +280,12 @@ impl DWalletMPCManager {
                     // actors all validators should run this step.
                     if session.status == MPCSessionStatus::Active {
                         session.status = MPCSessionStatus::Failed;
+                        self.cryptographic_computations_orchestrator.pending_computation_map.remove(
+                            &DWalletMPCLocalComputationMetadata {
+                                session_id: session.session_info.session_id,
+                                crypto_round_number: session.pending_quorum_for_highest_round_number - 1,
+                            },
+                        );
                         let sign_ia_session_id = ObjectID::derive_id(
                             TransactionDigest::from(session.session_info.session_id.into_bytes()),
                             0,
