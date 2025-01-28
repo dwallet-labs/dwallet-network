@@ -89,8 +89,7 @@ module pera_system::dwallet {
         dwallet_id: ID,
 
         /// The DKG output of the dWallet.
-        // todo decentralized public output.
-        dwallet_output: vector<u8>,
+        dwallet_decentralized_public_output: vector<u8>,
 
         /// The unique identifier of the dWallet capability.
         dwallet_cap_id: ID,
@@ -159,8 +158,8 @@ module pera_system::dwallet {
         /// The unique identifier for the dWallet used in the session.
         dwallet_id: ID,
 
-        /// The output from the Distributed Key Generation (DKG) process used in this session.
-        dkg_output: vector<u8>,
+        /// The output from the dWallet DKG process used in this session.
+        dwallet_decentralized_public_output: vector<u8>,
 
         /// The hashed message to be signed in this session.
         hashed_message: vector<u8>,
@@ -225,7 +224,7 @@ module pera_system::dwallet {
             id: object::new(ctx),
             messages,
             dwallet_id: object::id(dwallet),
-            dwallet_output: dwallet.decentralized_public_output,
+            dwallet_decentralized_public_output: dwallet.decentralized_public_output,
             dwallet_cap_id: dwallet.dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version: dwallet.dwallet_mpc_network_decryption_key_version,
             signing_algorithm_data,
@@ -647,7 +646,7 @@ module pera_system::dwallet {
             id: object::new(ctx),
             messages,
             dwallet_id,
-            dwallet_output: vector::empty(),
+            dwallet_decentralized_public_output: vector::empty(),
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
             signing_algorithm_data,
@@ -713,7 +712,7 @@ module pera_system::dwallet {
         mut message_approvals: vector<MessageApproval>,
         dwallet_id: ID,
         dwallet_cap_id: ID,
-        dwallet_centralized_public_output: vector<u8>,
+        dwallet_decentralized_public_output: vector<u8>,
         dwallet_mpc_network_decryption_key_version: u8,
         mut signing_algorithm_data: vector<D>,
         ctx: &mut TxContext
@@ -738,7 +737,7 @@ module pera_system::dwallet {
                 initiator: tx_context::sender(ctx),
                 batched_session_id: batch_session_id,
                 dwallet_id,
-                dkg_output: dwallet_centralized_public_output,
+                dwallet_decentralized_public_output,
                 hashed_message,
                 dwallet_mpc_network_decryption_key_version,
                 signing_algorithm_data: data,
@@ -853,7 +852,7 @@ module pera_system::dwallet {
             id,
             messages,
             dwallet_id,
-            dwallet_output,
+            dwallet_decentralized_public_output,
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
             signing_algorithm_data,
@@ -870,7 +869,7 @@ module pera_system::dwallet {
             message_approvals,
             dwallet_id,
             dwallet_cap_id,
-            dwallet_output,
+            dwallet_decentralized_public_output,
             dwallet_mpc_network_decryption_key_version,
             signing_algorithm_data,
             ctx

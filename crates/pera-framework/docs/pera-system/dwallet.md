@@ -194,7 +194,7 @@ D: The type of the extra fields that can be stored with the object.
  The unique identifier of the associated dWallet.
 </dd>
 <dt>
-<code>dwallet_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>dwallet_decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
  The DKG output of the dWallet.
@@ -400,10 +400,10 @@ to a specific dWallet, Presign session, and batched process.
  The unique identifier for the dWallet used in the session.
 </dd>
 <dt>
-<code>dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>dwallet_decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
- The output from the Distributed Key Generation (DKG) process used in this session.
+ The output from the dWallet DKG process used in this session.
 </dd>
 <dt>
 <code>hashed_message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
@@ -982,7 +982,7 @@ D: The type of the extra fields that can be stored with the object.
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         messages,
         dwallet_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-        dwallet_output: <a href="dwallet.md#0x3_dwallet">dwallet</a>.decentralized_public_output,
+        dwallet_decentralized_public_output: <a href="dwallet.md#0x3_dwallet">dwallet</a>.decentralized_public_output,
         dwallet_cap_id: <a href="dwallet.md#0x3_dwallet">dwallet</a>.dwallet_cap_id,
         dwallet_mpc_network_decryption_key_version: <a href="dwallet.md#0x3_dwallet">dwallet</a>.dwallet_mpc_network_decryption_key_version,
         signing_algorithm_data,
@@ -1754,7 +1754,7 @@ for the messages being signed.
 
 
 
-<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_emit_sign_events">emit_sign_events</a>&lt;D: <b>copy</b>, drop&gt;(message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_mpc_network_decryption_key_version: u8, signing_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_emit_sign_events">emit_sign_events</a>&lt;D: <b>copy</b>, drop&gt;(message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_mpc_network_decryption_key_version: u8, signing_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1767,7 +1767,7 @@ for the messages being signed.
     <b>mut</b> message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;,
     dwallet_id: ID,
     dwallet_cap_id: ID,
-    dwallet_centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    dwallet_decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     dwallet_mpc_network_decryption_key_version: u8,
     <b>mut</b> signing_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;,
     ctx: &<b>mut</b> TxContext
@@ -1792,7 +1792,7 @@ for the messages being signed.
             initiator: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
             batched_session_id: batch_session_id,
             dwallet_id,
-            dkg_output: dwallet_centralized_public_output,
+            dwallet_decentralized_public_output,
             hashed_message,
             dwallet_mpc_network_decryption_key_version,
             signing_algorithm_data: data,
@@ -1996,7 +1996,7 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
         id,
         messages,
         dwallet_id,
-        dwallet_output,
+        dwallet_decentralized_public_output,
         dwallet_cap_id,
         dwallet_mpc_network_decryption_key_version,
         signing_algorithm_data,
@@ -2013,7 +2013,7 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
         message_approvals,
         dwallet_id,
         dwallet_cap_id,
-        dwallet_output,
+        dwallet_decentralized_public_output,
         dwallet_mpc_network_decryption_key_version,
         signing_algorithm_data,
         ctx
