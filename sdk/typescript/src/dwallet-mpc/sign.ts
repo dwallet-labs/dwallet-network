@@ -49,7 +49,7 @@ export async function signMessageTransactionCall(
 	messages: Uint8Array[],
 	hash: Hash,
 	createSignDataArgs: (TransactionArgument | SerializedBcs<any>)[],
-	creatreSignDataMoveFuncName: string,
+	createSignDataMoveFuncName: string,
 	dWalletCurveMoveType: string,
 	signDataMoveType: string,
 ): Promise<CompletedSignEvent> {
@@ -65,7 +65,7 @@ export async function signMessageTransactionCall(
 	});
 
 	const [signData] = tx.moveCall({
-		target: creatreSignDataMoveFuncName,
+		target: createSignDataMoveFuncName,
 		arguments: createSignDataArgs,
 	});
 

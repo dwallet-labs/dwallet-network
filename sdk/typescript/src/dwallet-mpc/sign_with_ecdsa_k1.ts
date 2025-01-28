@@ -30,11 +30,10 @@ export function createSignDataMoveArgs(
 	dWallet: DWallet | DWalletWithSecretKeyShare,
 ): (TransactionArgument | SerializedBcs<any>)[] {
 	const tx = new Transaction();
-	return [
-		tx.makeMoveVec({ elements: presignIDs.map((presignID) => tx.object(presignID)) }),
-		tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
-		tx.object(dWallet.id.id),
-	];
+	let a = tx.makeMoveVec({ elements: presignIDs.map((presignID) => tx.object(presignID)) });
+	let b = tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages));
+	let c = tx.object(dWallet.id.id);
+	return [a, b, c];
 }
 
 /**
