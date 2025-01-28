@@ -1275,6 +1275,26 @@ mod checked {
                     ],
                 )
             }
+            MPCProtocolInitData::SignIdentifiableAbort(abort_data) => {
+                let MPCProtocolInitData::Sign(sign_data) = &abort_data.sign_session_data else {
+                    error!("Invalid MPCInitProtocolInfo for SignIdentifiableAbort");
+                    return Err(ExecutionError::new(
+                        ExecutionErrorKind::InvariantViolation,
+                        Some("Invalid MPCInitProtocolInfo for SignIdentifiableAbort".into()),
+                    ));
+                };
+                (
+                    "create_sign_output",
+                    vec![
+                        // Serialized Vector of Signatures.
+                        CallArg::Pure(data.output),
+                        // The Batch Session ID.
+                        CallArg::Pure(bcs_to_bytes(&sign_data.batch_session_id)?),
+                        CallArg::Pure(abort_data.sign_session_data.initiating_user_address.to_vec()),
+                        CallArg::Pure(bcs_to_bytes(&sign_data.dwallet_id)?),
+                    ],
+                )
+            }
             _ => {
                 unreachable!(
                     "MPCRound {:?} is not supported for creating an on chain output",

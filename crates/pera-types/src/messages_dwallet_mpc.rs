@@ -75,7 +75,7 @@ pub struct SingleSignSessionData {
 pub struct SignIASessionData {
     pub initiating_authority: AuthorityName,
     pub claimed_malicious_actors: Vec<AuthorityName>,
-    pub sign_session_id: ObjectID,
+    pub sign_session_data: SessionInfo,
     pub parties_used_for_last_step: Vec<PartyID>,
 }
 

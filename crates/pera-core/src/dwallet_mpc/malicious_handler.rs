@@ -47,6 +47,9 @@ pub(crate) enum ReportStatus {
     /// The case where a Quorum has been reached before,
     /// prevent duplicate reports.
     OverQuorum,
+    /// This report has been received by an already-detected malicious party,
+    /// and therefore it is ignored.
+    Ignored
 }
 
 impl MaliciousHandler {
@@ -71,6 +74,9 @@ impl MaliciousHandler {
         report: MaliciousReport,
         authority: AuthorityName,
     ) -> DwalletMPCResult<ReportStatus> {
+        if self.malicious_actors.contains(&authority) {
+            return Ok(ReportStatus::Ignored);
+        }
         let authority_voting_weight = self
             .weighted_parties
             .get(&authority)

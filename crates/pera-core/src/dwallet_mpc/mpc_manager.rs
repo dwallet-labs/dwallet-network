@@ -234,21 +234,18 @@ impl DWalletMPCManager {
                         // Drops to remove the mutable references to `self`, so we'll be able to
                         // get & change the sign session this IA session is pointing to.
                         drop(&ia_data);
-                        session.status = MPCSessionStatus::Finished;
-                        drop(session);
-                        let Some(mut sign_session) = self.mpc_sessions.get_mut(&sign_session_id)
+                        let Some(sign_session) = self.mpc_sessions.get_mut(&sign_session_id)
                         else {
                             return Err(DwalletMPCError::MPCSessionNotFound {
                                 session_id: report.session_id,
                             });
                         };
                         warn!("Quorum reached for sign session malicious report, restarting sign session");
-                        sign_session.status = MPCSessionStatus::Active;
                         let malicious_parties = self
                             .malicious_handler
                             .get_malicious_actors_ids(epoch_store)?;
-                        sign_session
-                            .rerun_last_round_without_malicious_parties(&malicious_parties)?;
+                        session.pending_messages = sign_session.pending_messages.clone();
+                        session.rerun_last_round_without_malicious_parties(&malicious_parties)?;
                     } else {
                         let malicious_parties = self
                             .malicious_handler
@@ -280,15 +277,17 @@ impl DWalletMPCManager {
                     // actors all validators should run this step.
                     if session.status == MPCSessionStatus::Active {
                         session.status = MPCSessionStatus::Failed;
-                        self.cryptographic_computations_orchestrator.pending_computation_map.remove(
-                            &DWalletMPCLocalComputationMetadata {
+                        self.cryptographic_computations_orchestrator
+                            .pending_computation_map
+                            .remove(&DWalletMPCLocalComputationMetadata {
                                 session_id: session.session_info.session_id,
-                                crypto_round_number: session.pending_quorum_for_highest_round_number - 1,
-                            },
-                        );
+                                crypto_round_number: session
+                                    .pending_quorum_for_highest_round_number
+                                    - 1,
+                            });
                         let sign_ia_session_id = ObjectID::derive_id(
                             TransactionDigest::from(session.session_info.session_id.into_bytes()),
-                            0,
+                            1,
                         );
                         // TODO (#564): Make sure the pending messages from the involved parties
                         // constitute a quorum, and if not mark the initiating authority as
@@ -322,14 +321,14 @@ impl DWalletMPCManager {
                                 SignIASessionData {
                                     initiating_authority: authority_name,
                                     claimed_malicious_actors: report.malicious_actors,
-                                    sign_session_id: session_clone.session_info.session_id,
+                                    sign_session_data: session_clone.session_info,
                                     parties_used_for_last_step: report.involved_parties,
                                 },
                             ),
                         };
                         session_clone.pending_messages = filtered_pending_messages;
                         session_clone.status = MPCSessionStatus::Active;
-                        session_clone.pending_quorum_for_highest_round_number -=1;
+                        session_clone.pending_quorum_for_highest_round_number -= 1;
                         // Need to get rid of the immutable reference to `self` before using it
                         // as mutable
                         drop(session);
@@ -337,6 +336,7 @@ impl DWalletMPCManager {
                     }
                 }
             }
+            ReportStatus::Ignored => {}
         }
 
         Ok(())
