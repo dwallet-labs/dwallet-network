@@ -596,10 +596,12 @@ module pera_system::dwallet {
             message
         } = message_approval;
         assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMessageApprovalDWalletMismatch);
+        // Todo (#565): Move the hash calculation into the rust code.
         assert!(&message_hash == &hash_message(message, hash_scheme), EMissingApprovalOrWrongApprovalOrder);
         (message_approval_dwallet_cap_id, hash_scheme, message)
     }
 
+    // Todo (#565): Move the hash calculation into the rust code.
     public(package) fun hash_messages(message_approvals: &vector<MessageApproval>): vector<vector<u8>> {
         let mut hashed_messages = vector::empty();
         let messages_length = vector::length(message_approvals);
@@ -615,6 +617,7 @@ module pera_system::dwallet {
     }
 
     /// Hashes the given message using the specified hash scheme.
+    // Todo (#565): Move the hash calculation into the rust code.
     public(package) fun hash_message(message: vector<u8>, hash_scheme: u8): vector<u8> {
         assert!(is_supported_hash_scheme(hash_scheme), EInvalidHashScheme);
         return match (hash_scheme) {
@@ -719,6 +722,7 @@ module pera_system::dwallet {
     ){
         assert!(vector::length(&signing_algorithm_data) == vector::length(&message_approvals), EExtraDataAndMessagesLenMismatch);
         let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        // Todo (#565): Move the hash calculation into the rust code.
         let mut hashed_messages = hash_messages(&message_approvals);
 
         event::emit(StartBatchedSignEvent {
