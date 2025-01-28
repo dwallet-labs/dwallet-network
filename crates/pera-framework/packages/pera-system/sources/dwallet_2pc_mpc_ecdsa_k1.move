@@ -941,13 +941,15 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         }
     }
 
-    /// Creates a vector of `SigningAlgorithmData` objects from a vector of `Presign` objects.
+    /// Creates a vector of `SigningAlgorithmData` objects from a vector of `Presign` objects
+    /// and the centralized party message signatures.
     ///
-    /// This function constructs the necessary data structures for the signing process using ECDSA K1.
-    /// It takes a vector of `Presign` objects, extracts the relevant data, and removes the original objects.
+    /// This function constructs the necessary data structures for the signing process using the ECDSA K1 algorithm.
+    /// It takes a vector of `Presign` objects, extracts the relevant data, and destroys the original objects,
+    /// as each `Presign` can only be used to sign a single message.
+    ///
     /// Additionally, it ensures that the `DWallet` associated with the `Presign` objects matches the provided `DWallet`.
-    ///
-    /// The function returns a vector of `SigningAlgorithmData` objects, which are essential for the signing process.
+    /// The function returns a vector of `SigningAlgorithmData` objects, which are critical for the signing process.
     /// The returned value must be used in a PTB; otherwise, the transaction will fail due to the "Hot Potato" pattern.
     public fun create_signing_algorithm_data(
         presigns: vector<Presign>,

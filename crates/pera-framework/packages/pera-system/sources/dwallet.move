@@ -37,8 +37,8 @@ module pera_system::dwallet {
     const EMessageApprovalDWalletMismatch: u64 = 4;
     const EMissingApprovalOrWrongApprovalOrder: u64 = 5;
     const EInvalidHashScheme: u64 = 6;
-    const EExtraDataAndMessagesLenMismatch: u64 = 8;
-    const EMessageApprovalMismatch: u64 = 11;
+    const EExtraDataAndMessagesLenMismatch: u64 = 7;
+    const EMessageApprovalMismatch: u64 = 8;
 
 
     // <<<<<<<<<<<<<<< Error Codes <<<<<<<<<<<<<<
@@ -77,7 +77,7 @@ module pera_system::dwallet {
     /// signs a transaction with this information,
     /// the blockchain can sign both transactions, and the exchange is completed.
     ///
-    /// D: The type of the extra fields that can be stored with the object.
+    /// D: The type of extra data that can be stored with the object, specific to each algorithm.
     public struct PartialCentralizedSignedMessages<D: store> has key {
         /// A unique identifier for this `PartialCentralizedSignedMessages` object.
         id: UID,
@@ -110,6 +110,7 @@ module pera_system::dwallet {
     /// - **`initiator`**: The address of the user who initiated the protocol.
     public struct StartBatchedSignEvent has copy, drop {
         session_id: ID,
+        // Todo (#565): Move the hash calculation into the rust code.
         hashed_messages: vector<vector<u8>>,
         initiator: address
     }
@@ -144,7 +145,8 @@ module pera_system::dwallet {
     ///
     /// This event is captured by Validators to start the signing protocol.
     /// It includes all the necessary information to link the signing process
-    /// to a specific dWallet, Presign session, and batched process.
+    /// to a specific dWallet, and batched process.
+    /// D: The type of extra data that can be stored with the object, specific to each algorithm.
     public struct StartSignEvent<D: copy + drop> has copy, drop {
         /// A unique identifier for this signing session.
         session_id: ID,
@@ -167,10 +169,13 @@ module pera_system::dwallet {
         /// The MPC network decryption key version that is used to decrypt the associated dWallet.
         dwallet_mpc_network_decryption_key_version: u8,
 
-        /// Extra fields that can be stored with the object, specific to every protocol implementation.
+        /// Extra fields that can be stored with the object, specific to every signing algorithm implementation.
         signing_algorithm_data: D,
     }
 
+    /// Stores data essential for the signing process and specific to every signing algorithm implementation.
+    /// Must be passed to the signing functions and used in a PTB; otherwise, the transaction will fail due to the "Hot Potato" pattern.
+    /// D: The type of extra data that can be stored with the object, specific to each algorithm.
     public struct SigningAlgorithmData<T: drop + copy> {
         data: T,
     }
@@ -660,39 +665,29 @@ module pera_system::dwallet {
     ///
     /// This function emits a `StartSignEvent` and a `StartBatchedSignEvent`,
     /// providing all necessary metadata to ensure the integrity of the signing process.
-    /// It validates the linkage between the `DWallet`, `DWalletCap`, and `Presign` objects.
-    /// Additionally, it "burns" the `Presign` object by transferring it to the system address,
-    /// as each presign can only be used to sign one message.
+    /// It validates the linkage between the `DWallet`, `DWalletCap`, and `SigningAlgorithmData` objects.
     ///
     /// # Effects
     /// - Validates the linkage between dWallet components.
-    /// - Ensures that the number of `hashed_messages`, `message_approvals`,
-    ///   `centralized_signed_messages`, and `presigns` are equal.
+    /// - Ensures that the number of `signing_algorithm_data` and `message_approvals` are equal.
     /// - Emits the following events:
     ///   - `StartBatchedSignEvent`: Contains the session details and the list of hashed messages.
-    ///   - `StartSignEvent`: Includes session details, hashed message, presign outputs,
-    ///     DKG output, and metadata.
+    ///   - `StartSignEvent`: Includes details for each message signing proccess.
     ///
     /// # Aborts
-    /// - **`EDwalletMismatch`**: If the `dwallet` object does not match the `Presign` object.
-    /// - **`EApprovalsAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
-    ///   match the number of `message_approvals`.
-    /// - **`ECentralizedSignedMessagesAndMessagesLenMismatch`**: If the number of `hashed_messages`
-    ///   does not match the number of `centralized_signed_messages`.
     /// - **`EExtraDataAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
-    ///   match the number of `presigns`.
-    /// - **`EMessageApprovalDWalletMismatch`**: If the `DWalletCap` ID does not match the
-    ///   expected `DWalletCap` ID for any of the message approvals.
+    ///   match the number of `signing_algorithm_data`.
     /// - **`EMissingApprovalOrWrongApprovalOrder`**: If the approvals are not in the correct order.
     ///
     /// # Parameters
-    /// - `message_approvals`: A mutable vector of `MessageApproval` objects representing
-    ///    approvals for the messages.
-    /// - `messages`: A vector of messages (in `vector<u8>` format) to be signed.
-    /// - `presigns`: A mutable vector of `Presign` objects containing intermediate signing outputs.
+    /// - `message_approvals`: A vector of `MessageApproval` objects representing
+    ///    approvals for the messages, which are destroyed at the end of the transaction.
+    /// - `signing_algorithm_data`: A vector of `SigningAlgorithmData` objects containing intermediate signing outputs,
+    ///     which are destroyed at the end of the transaction.
     /// - `dwallet`: A reference to the `DWallet` object being used for signing.
-    /// - `centralized_signed_messages`: A mutable vector of centralized party signatures.
-    ///   for the messages being signed.
+    ///
+    /// T: The eliptic curve type used for the dWallet.
+    /// D: The type of the extra fields that can be stored with the object.
     public fun sign<T: drop, D: copy + drop>(
         message_approvals: vector<MessageApproval>,
         dwallet: &DWallet<T>,
@@ -866,7 +861,7 @@ module pera_system::dwallet {
         // If the messages and the aprovals are not in the same length the function will abort.
         vector::zip_map_ref!(&message_approvals, &messages, |message_approval, message| {
             assert!(message_approval.message == *message, EMessageApprovalMismatch);
-            0
+            0 // must return some value
         });
 
         emit_sign_events<D>(
