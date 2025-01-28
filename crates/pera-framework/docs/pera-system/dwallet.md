@@ -162,7 +162,7 @@ When a matching user B, that agrees to sell BTC for ETH at price X,
 signs a transaction with this information,
 the blockchain can sign both transactions, and the exchange is completed.
 
-D: The type of the extra fields that can be stored with the object.
+D: The type of extra data that can be stored with the object, specific to each algorithm.
 
 
 <pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a>&lt;D: store&gt; <b>has</b> key
@@ -362,7 +362,8 @@ Event emitted to initiate the signing process.
 
 This event is captured by Validators to start the signing protocol.
 It includes all the necessary information to link the signing process
-to a specific dWallet, Presign session, and batched process.
+to a specific dWallet, and batched process.
+D: The type of extra data that can be stored with the object, specific to each algorithm.
 
 
 <pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_StartSignEvent">StartSignEvent</a>&lt;D: <b>copy</b>, drop&gt; <b>has</b> <b>copy</b>, drop
@@ -421,7 +422,7 @@ to a specific dWallet, Presign session, and batched process.
 <code>signing_algorithm_data: D</code>
 </dt>
 <dd>
- Extra fields that can be stored with the object, specific to every protocol implementation.
+ Extra fields that can be stored with the object, specific to every signing algorithm implementation.
 </dd>
 </dl>
 
@@ -432,6 +433,9 @@ to a specific dWallet, Presign session, and batched process.
 
 ## Struct `SigningAlgorithmData`
 
+Stores data essential for the signing process and specific to every signing algorithm implementation.
+Must be passed to the signing functions and used in a PTB; otherwise, the transaction will fail due to the "Hot Potato" pattern.
+D: The type of extra data that can be stored with the object, specific to each algorithm.
 
 
 <pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_SigningAlgorithmData">SigningAlgorithmData</a>&lt;T: <b>copy</b>, drop&gt;
@@ -785,7 +789,7 @@ Event emitted when a [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSi
 
 
 
-<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 8;
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 7;
 </code></pre>
 
 
@@ -839,7 +843,7 @@ Event emitted when a [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSi
 
 
 
-<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EMessageApprovalMismatch">EMessageApprovalMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 11;
+<pre><code><b>const</b> <a href="dwallet.md#0x3_dwallet_EMessageApprovalMismatch">EMessageApprovalMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 8;
 </code></pre>
 
 
@@ -1560,6 +1564,7 @@ Pops the last message approval from the vector and verifies it against the given
         message
     } = message_approval;
     <b>assert</b>!(dwallet_cap_id == message_approval_dwallet_cap_id, <a href="dwallet.md#0x3_dwallet_EMessageApprovalDWalletMismatch">EMessageApprovalDWalletMismatch</a>);
+    // Todo (#565): Move the <a href="../pera-framework/hash.md#0x2_hash">hash</a> calculation into the rust code.
     <b>assert</b>!(&message_hash == &<a href="dwallet.md#0x3_dwallet_hash_message">hash_message</a>(message, hash_scheme), <a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a>);
     (message_approval_dwallet_cap_id, hash_scheme, message)
 }
@@ -1669,9 +1674,7 @@ Initiates the signing process for a given dWallet.
 
 This function emits a <code><a href="dwallet.md#0x3_dwallet_StartSignEvent">StartSignEvent</a></code> and a <code><a href="dwallet.md#0x3_dwallet_StartBatchedSignEvent">StartBatchedSignEvent</a></code>,
 providing all necessary metadata to ensure the integrity of the signing process.
-It validates the linkage between the <code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>, <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code>, and <code>Presign</code> objects.
-Additionally, it "burns" the <code>Presign</code> object by transferring it to the system address,
-as each presign can only be used to sign one message.
+It validates the linkage between the <code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>, <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code>, and <code><a href="dwallet.md#0x3_dwallet_SigningAlgorithmData">SigningAlgorithmData</a></code> objects.
 
 
 <a name="@Effects_14"></a>
@@ -1679,27 +1682,18 @@ as each presign can only be used to sign one message.
 ### Effects
 
 - Validates the linkage between dWallet components.
-- Ensures that the number of <code>hashed_messages</code>, <code>message_approvals</code>,
-<code>centralized_signed_messages</code>, and <code>presigns</code> are equal.
+- Ensures that the number of <code>signing_algorithm_data</code> and <code>message_approvals</code> are equal.
 - Emits the following events:
 - <code><a href="dwallet.md#0x3_dwallet_StartBatchedSignEvent">StartBatchedSignEvent</a></code>: Contains the session details and the list of hashed messages.
-- <code><a href="dwallet.md#0x3_dwallet_StartSignEvent">StartSignEvent</a></code>: Includes session details, hashed message, presign outputs,
-DKG output, and metadata.
+- <code><a href="dwallet.md#0x3_dwallet_StartSignEvent">StartSignEvent</a></code>: Includes details for each message signing proccess.
 
 
 <a name="@Aborts_15"></a>
 
 ### Aborts
 
-- **<code>EDwalletMismatch</code>**: If the <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code> object does not match the <code>Presign</code> object.
-- **<code>EApprovalsAndMessagesLenMismatch</code>**: If the number of <code>hashed_messages</code> does not
-match the number of <code>message_approvals</code>.
-- **<code>ECentralizedSignedMessagesAndMessagesLenMismatch</code>**: If the number of <code>hashed_messages</code>
-does not match the number of <code>centralized_signed_messages</code>.
 - **<code><a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a></code>**: If the number of <code>hashed_messages</code> does not
-match the number of <code>presigns</code>.
-- **<code><a href="dwallet.md#0x3_dwallet_EMessageApprovalDWalletMismatch">EMessageApprovalDWalletMismatch</a></code>**: If the <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> ID does not match the
-expected <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> ID for any of the message approvals.
+match the number of <code>signing_algorithm_data</code>.
 - **<code><a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a></code>**: If the approvals are not in the correct order.
 
 
@@ -1707,13 +1701,14 @@ expected <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code>
 
 ### Parameters
 
-- <code>message_approvals</code>: A mutable vector of <code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a></code> objects representing
-approvals for the messages.
-- <code>messages</code>: A vector of messages (in <code><a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code> format) to be signed.
-- <code>presigns</code>: A mutable vector of <code>Presign</code> objects containing intermediate signing outputs.
+- <code>message_approvals</code>: A vector of <code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a></code> objects representing
+approvals for the messages, which are destroyed at the end of the transaction.
+- <code>signing_algorithm_data</code>: A vector of <code><a href="dwallet.md#0x3_dwallet_SigningAlgorithmData">SigningAlgorithmData</a></code> objects containing intermediate signing outputs,
+which are destroyed at the end of the transaction.
 - <code><a href="dwallet.md#0x3_dwallet">dwallet</a></code>: A reference to the <code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code> object being used for signing.
-- <code>centralized_signed_messages</code>: A mutable vector of centralized party signatures.
-for the messages being signed.
+
+T: The eliptic curve type used for the dWallet.
+D: The type of the extra fields that can be stored with the object.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_sign">sign</a>&lt;T: drop, D: <b>copy</b>, drop&gt;(message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, signing_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SigningAlgorithmData">dwallet::SigningAlgorithmData</a>&lt;D&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
@@ -1774,6 +1769,7 @@ for the messages being signed.
 ){
     <b>assert</b>!(<a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&signing_algorithm_data) == <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&message_approvals), <a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>);
     <b>let</b> batch_session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
+    // Todo (#565): Move the <a href="../pera-framework/hash.md#0x2_hash">hash</a> calculation into the rust code.
     <b>let</b> <b>mut</b> hashed_messages = <a href="dwallet.md#0x3_dwallet_hash_messages">hash_messages</a>(&message_approvals);
 
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet.md#0x3_dwallet_StartBatchedSignEvent">StartBatchedSignEvent</a> {
@@ -2006,7 +2002,7 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
     // If the messages and the aprovals are not in the same length the function will <b>abort</b>.
     vector::zip_map_ref!(&message_approvals, &messages, |message_approval, message| {
         <b>assert</b>!(message_approval.message == *message, <a href="dwallet.md#0x3_dwallet_EMessageApprovalMismatch">EMessageApprovalMismatch</a>);
-        0
+        0 // must <b>return</b> some value
     });
 
     <a href="dwallet.md#0x3_dwallet_emit_sign_events">emit_sign_events</a>&lt;D&gt;(

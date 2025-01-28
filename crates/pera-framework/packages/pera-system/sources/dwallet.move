@@ -860,7 +860,7 @@ module pera_system::dwallet {
 
         // If the messages and the aprovals are not in the same length the function will abort.
         vector::zip_map_ref!(&message_approvals, &messages, |message_approval, message| {
-            assert!(message_approval.message == *message, EMessageApprovalMismatch);
+            assert!(message_approval.message == *message, EMissingApprovalOrWrongApprovalOrder);
             0 // must return some value
         });
 

@@ -388,9 +388,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         presign_id: ID,
         /// The presign protocol output as bytes.
         presign_output: vector<u8>,
-        /// The centralized signatures for each message.
-        /// The order of the signatures corresponds to the order of the messages.
-        messages_centralized_signatures: vector<vector<u8>>,
+        /// The centralized signature of a message.
+        message_centralized_signature: vector<u8>,
     }
 
     // END OF SIGN TYPES
@@ -405,7 +404,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// System address for asserting system-level actions.
     const SYSTEM_ADDRESS: address = @0x0;
 
-    // >>>>>>>>>>>>>>>>>>>>>>>> Constants >>>>>>>>>>>>>>>>>>>>>>>>
 
     /// Starts the first Distributed Key Generation (DKG) session.
     ///
@@ -934,10 +932,12 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun create_uniq_presign_per_message(
         presign_id: ID,
         presign_output: vector<u8>,
+        message_centralized_signature: vector<u8>,
     ): AlgorithmSpecificData {
         AlgorithmSpecificData {
             presign_id,
             presign_output,
+            message_centralized_signature,
         }
     }
 
@@ -953,17 +953,16 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// The returned value must be used in a PTB; otherwise, the transaction will fail due to the "Hot Potato" pattern.
     public fun create_signing_algorithm_data(
         presigns: vector<Presign>,
-        mut messages_centralized_signatures: vector<vector<u8>>,
+        messages_centralized_signatures: vector<vector<u8>>,
         dwallet: &DWallet<Secp256K1>,
     ): vector<SigningAlgorithmData<AlgorithmSpecificData>> {
-        vector::map!(presigns, |presign| {
+        vector::zip_map!(presigns, messages_centralized_signatures, | presign, message_centralized_signature | {
             let Presign {id, presign, first_round_session_id, dwallet_id} = presign;
-            vector::reverse(&mut messages_centralized_signatures);
             assert!(object::id(dwallet) == dwallet_id, EDwalletMismatch);
             let extra_data_per_sign = AlgorithmSpecificData {
                 presign_id: first_round_session_id,
                 presign_output: presign,
-                messages_centralized_signatures,
+                message_centralized_signature,
             };
             object::delete(id);
             dwallet::create_signing_algorithm_data<AlgorithmSpecificData>(extra_data_per_sign)
