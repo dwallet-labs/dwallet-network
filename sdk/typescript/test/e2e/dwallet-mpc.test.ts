@@ -102,18 +102,18 @@ describe('Test dWallet MPC', () => {
 		console.log({ presignOutput });
 	});
 
-	it('should run Sign (with ECDSA K1)', async () => {
-		let conf: Config = {
+	it('should run Sign with ECDSA K1', async () => {
+		let c: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
 			timeout: fiveMinutes * 2,
 		};
-		const dWallet = await mockCreateDwallet(conf);
+		const dWallet = await mockCreateDwallet(c);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
-		const presignOutput1 = await mockCreatePresign(conf, dWallet);
+		const presignOutput1 = await mockCreatePresign(c, dWallet);
 		expect(presignOutput1).toBeDefined();
-		const presignOutput2 = await mockCreatePresign(conf, dWallet);
+		const presignOutput2 = await mockCreatePresign(c, dWallet);
 		expect(presignOutput2).toBeDefined();
 		console.log({ presignOutput1, presignOutput2 });
 		let messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
@@ -148,7 +148,7 @@ describe('Test dWallet MPC', () => {
 
 		console.log('Signing message');
 		let signOutput = await signMessageTransactionCall(
-			conf,
+			c,
 			dWallet,
 			messages,
 			Hash.SHA256,

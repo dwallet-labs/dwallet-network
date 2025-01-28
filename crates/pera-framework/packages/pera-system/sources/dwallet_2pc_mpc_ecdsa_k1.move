@@ -1011,8 +1011,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     // TODO (#493): Remove mock functions before mainnet
     /// Created an immutable [`DWallet`] object with the given DKG output.
     public fun create_mock_dwallet(
-        dkg_output: vector<u8>,
-        dkg_centralized_output: vector<u8>,
+        dkg_decentralized_public_output: vector<u8>,
+        dkg_centralized_public_output: vector<u8>,
         ctx: &mut TxContext
     ) {
         let dwallet_cap = create_dwallet_cap(ctx);
@@ -1023,9 +1023,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let dwallet = dwallet::create_dwallet<Secp256K1>(
             session_id,
             dwallet_cap_id,
-            dkg_output,
+            dkg_decentralized_public_output,
             dwallet_mpc_network_decryption_key_version,
-            dkg_centralized_output,
+            dkg_centralized_public_output,
             ctx
         );
         transfer::public_freeze_object(dwallet);
