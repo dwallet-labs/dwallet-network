@@ -10,12 +10,17 @@ import { createDWallet } from '../../../src/dwallet-mpc/dkg.js';
 import type { Config } from '../../../src/dwallet-mpc/globals.js';
 import { MPCKeyScheme } from '../../../src/dwallet-mpc/globals.js';
 import { presign } from '../../../src/dwallet-mpc/presign.js';
-import { Hash, signMessageTransactionCall } from '../../../src/dwallet-mpc/sign.js';
+import {
+	createSignDataMoveArgs,
+	createSignDataMoveFunc,
+	dWalletCurveMoveType,
+	signDataMoveType,
+} from '../../../src/dwallet-mpc/sign_with_ecdsa_k1.js';
 
 /**
  * Run the Full MPC User Sessions
  */
-export async function fullMPCUserSessions(
+export async function fullMPCUserSessionsECDSAK1(
 	c: Config,
 	protocolPublicParameters: Uint8Array,
 	activeEncryptionKeysTableID: string,
@@ -49,15 +54,24 @@ export async function fullMPCUserSessions(
 		serializedPresignFirstRoundSessionIds,
 	);
 
-	console.log('Signing messages');
+	let signDataArgs = createSignDataMoveArgs(
+		presignCompletionEvent.presign_ids,
+		centralizedSignedMsg,
+		dWallet,
+	);
+
+	console.log('Signing message');
 	let signOutput = await signMessageTransactionCall(
 		c,
 		dWallet,
 		messages,
 		Hash.SHA256,
-		presignCompletionEvent.presign_ids,
-		centralizedSignedMsg,
+		signDataArgs,
+		createSignDataMoveFunc,
+		dWalletCurveMoveType,
+		signDataMoveType,
 	);
+
 	expect(signOutput).toBeDefined();
 	console.log({ signOutput });
 }
