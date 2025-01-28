@@ -1,3 +1,5 @@
+// noinspection ES6PreferShortImport
+
 import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import type { SerializedBcs } from '@mysten/bcs';
 
@@ -8,11 +10,12 @@ import { EncryptedUserShare, fetchEncryptedUserSecretShare } from './encrypt-use
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
 	dWalletMoveType,
+	dWalletPackageID,
+	dwalletSecp256K1MoveType,
 	fetchObjectWithType,
 	isDWallet,
 	mockedProtocolPublicParameters,
 	MPCKeyScheme,
-	packageId,
 } from './globals.js';
 import type { Config, DWallet, DWalletWithSecretKeyShare } from './globals.js';
 import { fetchProtocolPublicParameters } from './network-dkg.js';
@@ -20,21 +23,8 @@ import { presign } from './presign.js';
 import type { CompletedSignEvent } from './sign.js';
 import { Hash, signMessageTransactionCall } from './sign.js';
 
-export const dWalletCurveMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::Secp256K1`;
-export const signDataMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::AlgorithmSpecificData`;
-export const createSignDataMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_signing_algorithm_data`;
-
-export function createSignDataMoveArgs(
-	presignIDs: string[],
-	centralizedSignedMessages: Uint8Array[],
-	dWallet: DWallet | DWalletWithSecretKeyShare,
-): (TransactionArgument | SerializedBcs<any>)[] {
-	const tx = new Transaction();
-	let a = tx.makeMoveVec({ elements: presignIDs.map((presignID) => tx.object(presignID)) });
-	let b = tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages));
-	let c = tx.object(dWallet.id.id);
-	return [a, b, c];
-}
+export const signDataMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`;
+export const createSignatureAlgorithmDataMoveFunc = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::create_signature_algorithm_data`;
 
 /**
  * Presigns and Signs a message with the dWallets' on-chain encrypted secret share.
@@ -110,8 +100,24 @@ export async function signWithEncryptedDWallet(
 		messages,
 		Hash.SHA256,
 		signDataArgs,
-		createSignDataMoveFunc,
-		dWalletCurveMoveType,
+		createSignatureAlgorithmDataMoveFunc,
+		dwalletSecp256K1MoveType,
 		signDataMoveType,
 	);
+}
+
+export function createSignDataMoveArgs(
+	presignIDs: string[],
+	messagesCentralizedSignatures: Uint8Array[],
+	dWallet: DWallet | DWalletWithSecretKeyShare,
+): (TransactionArgument | SerializedBcs<any>)[] {
+	const tx = new Transaction();
+	const presigns = tx.makeMoveVec({
+		elements: presignIDs.map((presignID) => tx.object(presignID)),
+	});
+	const signatures = tx.pure(
+		bcs.vector(bcs.vector(bcs.u8())).serialize(messagesCentralizedSignatures),
+	);
+	const dwallet = tx.object(dWallet.id.id);
+	return [presigns, signatures, dwallet];
 }

@@ -11,6 +11,7 @@ import { createActiveEncryptionKeysTable } from '../../src/dwallet-mpc/encrypt-u
 import {
 	Config,
 	delay,
+	dwalletSecp256K1MoveType,
 	mockedProtocolPublicParameters,
 	MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';
@@ -23,11 +24,10 @@ import {
 	signMessageTransactionCall,
 } from '../../src/dwallet-mpc/sign';
 import {
+	createSignatureAlgorithmDataMoveFunc,
 	createSignDataMoveArgs,
-	createSignDataMoveFunc,
-	dWalletCurveMoveType,
 	signDataMoveType,
-} from '../../src/dwallet-mpc/sign_with_ecdsa_k1';
+} from '../../src/dwallet-mpc/sign_ecdsa_k1';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import { fullMPCUserSessionsECDSAK1 } from './utils/dwallet';
 import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet_mocks';
@@ -153,8 +153,8 @@ describe('Test dWallet MPC', () => {
 			messages,
 			Hash.SHA256,
 			signDataArgs,
-			createSignDataMoveFunc,
-			dWalletCurveMoveType,
+			createSignatureAlgorithmDataMoveFunc,
+			dwalletSecp256K1MoveType,
 			signDataMoveType,
 		);
 		expect(signOutput).toBeDefined();
@@ -239,8 +239,8 @@ describe('Test dWallet MPC', () => {
 			messages,
 			dWallet.id.id,
 			signDataArgs,
-			createSignDataMoveFunc,
-			dWalletCurveMoveType,
+			createSignatureAlgorithmDataMoveFunc,
+			dwalletSecp256K1MoveType,
 			signDataMoveType,
 		);
 		expect(partiallySignedMessages).toBeDefined();

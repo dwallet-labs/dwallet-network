@@ -21,7 +21,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Struct `StartPresignFirstRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignFirstRoundEvent)
 -  [Struct `StartPresignSecondRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignSecondRoundEvent)
 -  [Struct `CompletedBatchedPresignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedBatchedPresignEvent)
--  [Struct `AlgorithmSpecificData`](#0x3_dwallet_2pc_mpc_ecdsa_k1_AlgorithmSpecificData)
+-  [Struct `SignData`](#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData)
 -  [Constants](#@Constants_0)
 -  [Function `launch_dkg_first_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round)
 -  [Function `create_dkg_first_round_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output)
@@ -32,7 +32,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `launch_batched_presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_batched_presign)
 -  [Function `launch_presign_second_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_presign_second_round)
 -  [Function `create_batched_presign_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_batched_presign_output)
--  [Function `create_signing_algorithm_data`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_signing_algorithm_data)
+-  [Function `create_signature_algorithm_data`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_signature_algorithm_data)
 -  [Function `create_mock_dwallet_for_testing`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing)
 -  [Function `create_mock_dwallet`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet)
 -  [Function `create_mock_presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign)
@@ -899,13 +899,13 @@ It provides details about the presign objects created and their associated metad
 
 </details>
 
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_AlgorithmSpecificData"></a>
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_SignData"></a>
 
-## Struct `AlgorithmSpecificData`
+## Struct `SignData`
 
 
 
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_AlgorithmSpecificData">AlgorithmSpecificData</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData">SignData</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -919,7 +919,8 @@ It provides details about the presign objects created and their associated metad
 <code>presign_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
- The presign object ID, the presign ID will be used as the sign MPC protocol ID.
+ The presign object ID, this ID will
+ be used as the singature MPC protocol ID.
 </dd>
 <dt>
 <code>presign_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
@@ -931,7 +932,7 @@ It provides details about the presign objects created and their associated metad
 <code>message_centralized_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
- The centralized signature of a message.
+ The centralized party signature of a message.
 </dd>
 </dl>
 
@@ -1654,11 +1655,11 @@ emits a <code>CompletedPresignEvent</code>, and transfers the result to the init
 
 </details>
 
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_create_signing_algorithm_data"></a>
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_create_signature_algorithm_data"></a>
 
-## Function `create_signing_algorithm_data`
+## Function `create_signature_algorithm_data`
 
-Creates a vector of <code>SigningAlgorithmData</code> objects from a vector of <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> objects
+Creates a vector of <code>SignatureAlgorithmData</code> objects from a vector of <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> objects
 and the centralized party message signatures.
 
 This function constructs the necessary data structures for the signing process using the ECDSA K1 algorithm.
@@ -1666,11 +1667,12 @@ It takes a vector of <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_
 as each <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> can only be used to sign a single message.
 
 Additionally, it ensures that the <code>DWallet</code> associated with the <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code> objects matches the provided <code>DWallet</code>.
-The function returns a vector of <code>SigningAlgorithmData</code> objects, which are critical for the signing process.
-The returned value must be used in a PTB; otherwise, the transaction will fail due to the "Hot Potato" pattern.
+The function returns a vector of <code>SignatureAlgorithmData</code> objects, which are critical for the signing process.
+The returned value must be used in a programmable transaction block;
+otherwise, the transaction will fail due to the "Hot Potato" pattern.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_signing_algorithm_data">create_signing_algorithm_data</a>(presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>&gt;, messages_centralized_signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SigningAlgorithmData">dwallet::SigningAlgorithmData</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_AlgorithmSpecificData">dwallet_2pc_mpc_ecdsa_k1::AlgorithmSpecificData</a>&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_signature_algorithm_data">create_signature_algorithm_data</a>(presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>&gt;, messages_centralized_signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">dwallet::SignatureAlgorithmData</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData">dwallet_2pc_mpc_ecdsa_k1::SignData</a>&gt;&gt;
 </code></pre>
 
 
@@ -1679,21 +1681,21 @@ The returned value must be used in a PTB; otherwise, the transaction will fail d
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_signing_algorithm_data">create_signing_algorithm_data</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_signature_algorithm_data">create_signature_algorithm_data</a>(
     presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a>&gt;,
     messages_centralized_signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     <a href="dwallet.md#0x3_dwallet">dwallet</a>: &DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;,
-): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;SigningAlgorithmData&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_AlgorithmSpecificData">AlgorithmSpecificData</a>&gt;&gt; {
+): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;SignatureAlgorithmData&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData">SignData</a>&gt;&gt; {
     vector::zip_map!(presigns, messages_centralized_signatures, | presign, message_centralized_signature | {
         <b>let</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a> {id, presign, first_round_session_id, dwallet_id} = presign;
         <b>assert</b>!(<a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>) == dwallet_id, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EDwalletMismatch">EDwalletMismatch</a>);
-        <b>let</b> extra_data_per_sign = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_AlgorithmSpecificData">AlgorithmSpecificData</a> {
+        <b>let</b> data = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData">SignData</a> {
             presign_id: first_round_session_id,
             presign_output: presign,
             message_centralized_signature,
         };
         <a href="../pera-framework/object.md#0x2_object_delete">object::delete</a>(id);
-        <a href="dwallet.md#0x3_dwallet_create_signing_algorithm_data">dwallet::create_signing_algorithm_data</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_AlgorithmSpecificData">AlgorithmSpecificData</a>&gt;(extra_data_per_sign)
+        <a href="dwallet.md#0x3_dwallet_create_signature_algorithm_data">dwallet::create_signature_algorithm_data</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData">SignData</a>&gt;(data)
     })
 }
 </code></pre>

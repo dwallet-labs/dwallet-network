@@ -38,7 +38,6 @@ module pera_system::dwallet {
     const EMissingApprovalOrWrongApprovalOrder: u64 = 5;
     const EInvalidHashScheme: u64 = 6;
     const EExtraDataAndMessagesLenMismatch: u64 = 7;
-    const EMessageApprovalMismatch: u64 = 8;
 
     // <<<<<<<<<<<<<<< Error Codes <<<<<<<<<<<<<<
 

@@ -8,13 +8,13 @@ import { bcs } from '../bcs/index.js';
 import type { TransactionArgument } from '../transactions/index.js';
 import { Transaction } from '../transactions/index.js';
 import type { Config, DWallet, DWalletWithSecretKeyShare } from './globals.js';
-import { dWalletModuleName, fetchCompletedEvent, packageId } from './globals.js';
+import { dWalletModuleName, dWalletPackageID, fetchCompletedEvent } from './globals.js';
 
-const signMoveFunc = `${packageId}::${dWalletModuleName}::sign`;
-const prepareFutureSignMoveFunc = `${packageId}::${dWalletModuleName}::prepare_future_sign`;
-const completeFutureSignMoveFunc = `${packageId}::${dWalletModuleName}::sign_with_partial_centralized_message_signatures`;
-const approveMessagesMoveFunc = `${packageId}::${dWalletModuleName}::approve_messages`;
-const completedSignMoveEvent = `${packageId}::${dWalletModuleName}::CompletedSignEvent`;
+const signMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::sign`;
+const prepareFutureSignMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::prepare_future_sign`;
+const completeFutureSignMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::sign_with_partial_centralized_message_signatures`;
+const approveMessagesMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::approve_messages`;
+const completedSignMoveEvent = `${dWalletPackageID}::${dWalletModuleName}::CompletedSignEvent`;
 
 export enum Hash {
 	KECCAK256 = 0,
@@ -112,16 +112,16 @@ export async function partiallySignMessageTransactionCall(
 	c: Config,
 	messages: Uint8Array[],
 	dWalletID: string,
-	createSignDataArgs: (TransactionArgument | SerializedBcs<any>)[],
-	creatreSignDataMoveFuncName: string,
+	signatureAlgorithmData: (TransactionArgument | SerializedBcs<any>)[],
+	createSignatureAlgorithmDataMoveFunc: string,
 	dWalletMoveType: string,
-	signDataMoveType: string,
+	signatureDataMoveType: string,
 ) {
 	const tx = new Transaction();
 
 	const [signData] = tx.moveCall({
-		target: creatreSignDataMoveFuncName,
-		arguments: createSignDataArgs,
+		target: createSignatureAlgorithmDataMoveFunc,
+		arguments: signatureAlgorithmData,
 	});
 
 	tx.moveCall({
@@ -131,7 +131,7 @@ export async function partiallySignMessageTransactionCall(
 			signData,
 			tx.object(dWalletID),
 		],
-		typeArguments: [dWalletMoveType, signDataMoveType],
+		typeArguments: [dWalletMoveType, signatureDataMoveType],
 	});
 
 	let res = await c.client.signAndExecuteTransaction({

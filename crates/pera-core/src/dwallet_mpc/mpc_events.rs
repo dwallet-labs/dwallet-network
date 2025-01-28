@@ -133,14 +133,15 @@ pub struct StartSignEvent<D> {
     pub(super) batched_session_id: ID,
     /// The `DWallet` object's ID associated with the DKG output.
     pub(super) dwallet_id: ID,
-    /// The output from the dWallet DKG process used in this session.
+    /// The public output of the decentralized party in the dWallet DKG process.
     pub(super) dwallet_decentralized_public_output: Vec<u8>,
     /// Hashed messages to Sign.
     pub(super) hashed_message: Vec<u8>,
     /// The dWallet mpc network key version
     pub(super) dwallet_mpc_network_key_version: u8,
-    /// Extra fields that can be stored with the object, specific to every signing algorithm implementation.
-    pub(crate) signing_algorithm_data: D,
+    /// The type of data that can be stored with the object.
+    /// Specific to each Digital Signature Algorithm.
+    pub(crate) signature_algorithm_data: D,
 }
 
 impl<D> StartSignEvent<D> {

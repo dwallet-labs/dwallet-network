@@ -8,14 +8,13 @@ import { expect } from 'vitest';
 import { bcs } from '../../../src/bcs/index.js';
 import { createDWallet } from '../../../src/dwallet-mpc/dkg.js';
 import type { Config } from '../../../src/dwallet-mpc/globals.js';
-import { MPCKeyScheme } from '../../../src/dwallet-mpc/globals.js';
+import { dwalletSecp256K1MoveType, MPCKeyScheme } from '../../../src/dwallet-mpc/globals.js';
 import { presign } from '../../../src/dwallet-mpc/presign.js';
 import {
+	createSignatureAlgorithmDataMoveFunc,
 	createSignDataMoveArgs,
-	createSignDataMoveFunc,
-	dWalletCurveMoveType,
 	signDataMoveType,
-} from '../../../src/dwallet-mpc/sign_with_ecdsa_k1.js';
+} from '../../../src/dwallet-mpc/sign_ecdsa_k1.js';
 import { Hash, signMessageTransactionCall } from '../../../src/dwallet-mpc/sign.js';
 
 /**
@@ -68,8 +67,8 @@ export async function fullMPCUserSessionsECDSAK1(
 		messages,
 		Hash.SHA256,
 		signDataArgs,
-		createSignDataMoveFunc,
-		dWalletCurveMoveType,
+		createSignatureAlgorithmDataMoveFunc,
+		dwalletSecp256K1MoveType,
 		signDataMoveType,
 	);
 

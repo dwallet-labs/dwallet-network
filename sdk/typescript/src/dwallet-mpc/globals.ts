@@ -7,11 +7,10 @@ import { Buffer } from 'buffer';
 import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 
-export const packageId = '0x3';
-export const dWalletModuleName = 'dwallet';
 export const dWalletPackageID = '0x3';
+export const dWalletModuleName = 'dwallet';
 export const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
-const dwalletSecp256K1MoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::Secp256K1`;
+export const dwalletSecp256K1MoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::Secp256K1`;
 export const dWalletMoveType = `${dWalletPackageID}::${dWalletModuleName}::DWallet<${dwalletSecp256K1MoveType}>`;
 export const checkpointCreationTime = 2000;
 
