@@ -16,6 +16,7 @@ import {
 	dWalletCurveMoveType,
 	signDataMoveType,
 } from '../../../src/dwallet-mpc/sign_with_ecdsa_k1.js';
+import { Hash, signMessageTransactionCall } from '../../../src/dwallet-mpc/sign.js';
 
 /**
  * Run the Full MPC User Sessions
