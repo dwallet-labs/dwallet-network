@@ -88,9 +88,6 @@ create_message_approval
 approve_messages
 	public fun
 	0x3::dwallet
-remove_message_approval
-	fun
-	0x3::dwallet
 pop_and_verify_message_approval
 	public(package) fun
 	0x3::dwallet
@@ -106,16 +103,19 @@ is_supported_hash_scheme
 sign
 	public fun
 	0x3::dwallet
+emit_sign_events
+	fun
+	0x3::dwallet
 create_sign_output
 	fun
 	0x3::dwallet
-publish_partially_signed_messages
+prepare_future_sign
 	public fun
 	0x3::dwallet
 create_sign_extra_fields
 	public(package) fun
 	0x3::dwallet
-future_sign
+sign_with_partial_centralized_message_signatures
 	public fun
 	0x3::dwallet
 Secp256K1

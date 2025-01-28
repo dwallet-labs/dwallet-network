@@ -383,11 +383,14 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     // SIGN TYPES
 
-    public struct SignExtraFieldsForECDSAK1 has store, drop, copy {
+    public struct AlgorithmSpecificData has store, drop, copy {
         /// The presign object ID, the presign ID will be used as the sign MPC protocol ID.
         presign_id: ID,
         /// The presign protocol output as bytes.
         presign_output: vector<u8>,
+        /// The centralized signatures for each message.
+        /// The order of the signatures corresponds to the order of the messages.
+        messages_centralized_signatures: vector<vector<u8>>,
     }
 
     // END OF SIGN TYPES
@@ -925,14 +928,14 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[test_only]
-    /// Call the underlying create SignExtraFieldsForECDSAK1.
+    /// Call the underlying create AlgorithmSpecificData.
     /// This function is intended for testing purposes only and should not be used in production.
     /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_onl
     public fun create_uniq_presign_per_message(
         presign_id: ID,
         presign_output: vector<u8>,
-    ): SignExtraFieldsForECDSAK1 {
-        SignExtraFieldsForECDSAK1 {
+    ): AlgorithmSpecificData {
+        AlgorithmSpecificData {
             presign_id,
             presign_output,
         }
@@ -946,23 +949,23 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     ///
     /// The function returns a vector of `SignExtraFields` objects, which are essential for the signing process.
     /// The returned value must be used in a PTB; otherwise, the transaction will fail due to the "Hot Potato" pattern.
-
     public fun create_sign_extra_fields(
         presigns: vector<Presign>,
+        mut messages_centralized_signatures: vector<vector<u8>>,
         dwallet: &DWallet<Secp256K1>,
-    ): vector<SignExtraFields<SignExtraFieldsForECDSAK1>> {
-        let extra_fields = vector::map!(presigns, |presign| {
+    ): vector<SignExtraFields<AlgorithmSpecificData>> {
+        vector::map!(presigns, |presign| {
             let Presign {id, presign, first_round_session_id, dwallet_id} = presign;
+            vector::reverse(&mut messages_centralized_signatures);
             assert!(object::id(dwallet) == dwallet_id, EDwalletMismatch);
-            let extra_fields_per_sign = SignExtraFieldsForECDSAK1 {
+            let extra_fields_per_sign = AlgorithmSpecificData {
                 presign_id: first_round_session_id,
                 presign_output: presign,
+                messages_centralized_signatures,
             };
             object::delete(id);
-            dwallet::create_sign_extra_fields<SignExtraFieldsForECDSAK1>(extra_fields_per_sign)
-        });
-
-        extra_fields
+            dwallet::create_sign_extra_fields<AlgorithmSpecificData>(extra_fields_per_sign)
+        })
     }
 
     /// Generates a mock `DWallet<Secp256K1>` object for testing purposes.

@@ -927,6 +927,13 @@ It provides details about the presign objects created and their associated metad
 <dd>
  The presign protocol output as bytes.
 </dd>
+<dt>
+<code>messages_centralized_signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+ The centralized signatures for each message.
+ The order of the signatures corresponds to the order of the messages.
+</dd>
 </dl>
 
 
@@ -1662,7 +1669,7 @@ The function returns a vector of <code>SignExtraFields</code> objects, which are
 The returned value must be used in a PTB; otherwise, the transaction will fail due to the "Hot Potato" pattern.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_sign_extra_fields">create_sign_extra_fields</a>(presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignExtraFields">dwallet::SignExtraFields</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignExtraFieldsForECDSAK1">dwallet_2pc_mpc_ecdsa_k1::SignExtraFieldsForECDSAK1</a>&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_sign_extra_fields">create_sign_extra_fields</a>(presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>&gt;, messages_centralized_signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignExtraFields">dwallet::SignExtraFields</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignExtraFieldsForECDSAK1">dwallet_2pc_mpc_ecdsa_k1::SignExtraFieldsForECDSAK1</a>&gt;&gt;
 </code></pre>
 
 
@@ -1673,20 +1680,21 @@ The returned value must be used in a PTB; otherwise, the transaction will fail d
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_sign_extra_fields">create_sign_extra_fields</a>(
     presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a>&gt;,
+    <b>mut</b> messages_centralized_signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     <a href="dwallet.md#0x3_dwallet">dwallet</a>: &DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;,
 ): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;SignExtraFields&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignExtraFieldsForECDSAK1">SignExtraFieldsForECDSAK1</a>&gt;&gt; {
-    <b>let</b> extra_fields = vector::map!(presigns, |presign| {
+    vector::map!(presigns, |presign| {
         <b>let</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a> {id, presign, first_round_session_id, dwallet_id} = presign;
+        <a href="../move-stdlib/vector.md#0x1_vector_reverse">vector::reverse</a>(&<b>mut</b> messages_centralized_signatures);
         <b>assert</b>!(<a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>) == dwallet_id, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EDwalletMismatch">EDwalletMismatch</a>);
         <b>let</b> extra_fields_per_sign = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignExtraFieldsForECDSAK1">SignExtraFieldsForECDSAK1</a> {
             presign_id: first_round_session_id,
             presign_output: presign,
+            messages_centralized_signatures,
         };
         <a href="../pera-framework/object.md#0x2_object_delete">object::delete</a>(id);
         <a href="dwallet.md#0x3_dwallet_create_sign_extra_fields">dwallet::create_sign_extra_fields</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignExtraFieldsForECDSAK1">SignExtraFieldsForECDSAK1</a>&gt;(extra_fields_per_sign)
-    });
-
-    extra_fields
+    })
 }
 </code></pre>
 

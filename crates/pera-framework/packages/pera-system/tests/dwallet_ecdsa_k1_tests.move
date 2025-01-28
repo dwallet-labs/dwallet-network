@@ -20,7 +20,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         ENotSystemAddress,
         Secp256K1,
         EDwalletMismatch,
-        SignExtraFieldsForECDSAK1,
+        AlgorithmSpecificData,
         create_uniq_presign_per_message,
     };
 
@@ -408,7 +408,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             ) ];
 
             let ctx = test_scenario::ctx(&mut scenario);
-            let partial_signature_mock = pera_system::dwallet::partial_signatures_for_testing<SignExtraFieldsForECDSAK1>(
+            let partial_signature_mock = pera_system::dwallet::partial_signatures_for_testing<AlgorithmSpecificData>(
             vector[std::vector::singleton(0xAA), std::vector::singleton(0xBB)],
                 vector[vector[1], vector[2]], 
                 object::id(&dwallet),
@@ -418,7 +418,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 ctx,
             );
 
-            pera_system::dwallet::future_sign<SignExtraFieldsForECDSAK1>(
+            pera_system::dwallet::future_sign<AlgorithmSpecificData>(
                 partial_signature_mock,
                 &mut message_approvals,
                 ctx
@@ -466,7 +466,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             ) ];
 
             let ctx = test_scenario::ctx(&mut scenario);
-            let partial_signature_mock = pera_system::dwallet::partial_signatures_for_testing<SignExtraFieldsForECDSAK1>(
+            let partial_signature_mock = pera_system::dwallet::partial_signatures_for_testing<AlgorithmSpecificData>(
                 vector[vector[1], vector[2]],
                 vector[std::vector::singleton(0xAA), std::vector::singleton(0xBB)],
                 object::id(&dwallet),
@@ -476,7 +476,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 ctx,
             );
 
-            pera_system::dwallet::future_sign<SignExtraFieldsForECDSAK1>(
+            pera_system::dwallet::future_sign<AlgorithmSpecificData>(
                 partial_signature_mock,
                 &mut vector[],
                 ctx
@@ -533,7 +533,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             ) ];
 
             let ctx = test_scenario::ctx(&mut scenario);
-            let partial_signature_mock = pera_system::dwallet::partial_signatures_for_testing<SignExtraFieldsForECDSAK1>(
+            let partial_signature_mock = pera_system::dwallet::partial_signatures_for_testing<AlgorithmSpecificData>(
                 vector[vector[1], vector[2]],
                 vector[std::vector::singleton(0xAA), std::vector::singleton(0xBB)],
                 object::id(&dwallet),
@@ -543,7 +543,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 ctx,
             );
 
-            pera_system::dwallet::future_sign<SignExtraFieldsForECDSAK1>(
+            pera_system::dwallet::future_sign<AlgorithmSpecificData>(
                 partial_signature_mock,
                 &mut message_approvals,
                 ctx
@@ -620,7 +620,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             let extra_data = dwallet_2pc_mpc_ecdsa_k1::create_sign_extra_fields(vector[presign, presign2], &dwallet);
 
-            pera_system::dwallet::sign<Secp256K1, SignExtraFieldsForECDSAK1>(
+            pera_system::dwallet::sign<Secp256K1, AlgorithmSpecificData>(
                 &mut message_approvals,
                 messages_to_approve,
                 &dwallet,
@@ -727,7 +727,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             // This call should fail with EDwalletCapMismatch.
             let extra_data = dwallet_2pc_mpc_ecdsa_k1::create_sign_extra_fields(vector[presign], &dwallet);
 
-            pera_system::dwallet::sign<Secp256K1, SignExtraFieldsForECDSAK1>(
+            pera_system::dwallet::sign<Secp256K1, AlgorithmSpecificData>(
                 &mut message_approvals,
                 messages,
                 &dwallet,
@@ -803,7 +803,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             // Call the `sign` function with the **invalid dwallet** (this should fail).
             let extra_data = dwallet_2pc_mpc_ecdsa_k1::create_sign_extra_fields(vector[presign], &dwallet);
 
-            pera_system::dwallet::sign<Secp256K1, SignExtraFieldsForECDSAK1>(
+            pera_system::dwallet::sign<Secp256K1, AlgorithmSpecificData>(
                 &mut message_approvals,
                 messages,
                 &dwallet,
@@ -878,7 +878,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             let extra_data = dwallet_2pc_mpc_ecdsa_k1::create_sign_extra_fields(vector[presign], &dwallet);
 
-            pera_system::dwallet::sign<Secp256K1, SignExtraFieldsForECDSAK1>(
+            pera_system::dwallet::sign<Secp256K1, AlgorithmSpecificData>(
                 &mut message_approvals,
                 messages,
                 &dwallet,
@@ -969,7 +969,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             let extra_data = dwallet_2pc_mpc_ecdsa_k1::create_sign_extra_fields(vector[presign1, presign2], &dwallet);
 
-            pera_system::dwallet::sign<Secp256K1, SignExtraFieldsForECDSAK1>(
+            pera_system::dwallet::sign<Secp256K1, AlgorithmSpecificData>(
                 &mut message_approvals,
                 messages,
                 &dwallet,
@@ -1048,7 +1048,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             // Call the `sign` function (should fail due to mismatch).
             let extra_data = dwallet_2pc_mpc_ecdsa_k1::create_sign_extra_fields(vector[presign], &dwallet);
 
-            pera_system::dwallet::sign<Secp256K1, SignExtraFieldsForECDSAK1>(
+            pera_system::dwallet::sign<Secp256K1, AlgorithmSpecificData>(
                 &mut message_approvals,
                 messages,
                 &dwallet,
