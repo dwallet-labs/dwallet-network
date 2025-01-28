@@ -40,11 +40,10 @@ module pera_system::dwallet {
     const EExtraDataAndMessagesLenMismatch: u64 = 7;
     const EMessageApprovalMismatch: u64 = 8;
 
-
     // <<<<<<<<<<<<<<< Error Codes <<<<<<<<<<<<<<
 
-    /// `DWallet` represents a decentralized wallet that is
-    /// created after the DKG process.
+    /// `DWallet` represents a decentralized wallet (dWallet) that is
+    /// created after the Distributed key generation (DKG) process.
     public struct DWallet<phantom T> has key, store {
         /// Unique identifier for the dWallet.
         id: UID,
@@ -63,121 +62,6 @@ module pera_system::dwallet {
 
         /// The MPC network decryption key version that is used to decrypt this dWallet.
         dwallet_mpc_network_decryption_key_version: u8,
-    }
-
-    /// Messages that have been signed by a user, a.k.a the centralized party,
-    /// but not yet by the blockchain.
-    /// Used for scenarios where the user needs to first agree to sign some transaction,
-    /// and the blockchain signs this transaction only later,
-    /// when some other conditions are met.
-    ///
-    /// Can be used to implement an order-book-based exchange, for example.
-    /// User A first agrees to buy BTC with ETH at price X, and signs a transaction with this information.
-    /// When a matching user B, that agrees to sell BTC for ETH at price X,
-    /// signs a transaction with this information,
-    /// the blockchain can sign both transactions, and the exchange is completed.
-    ///
-    /// D: The type of extra data that can be stored with the object, specific to each algorithm.
-    public struct PartialCentralizedSignedMessages<D: store> has key {
-        /// A unique identifier for this `PartialCentralizedSignedMessages` object.
-        id: UID,
-
-        /// The messages that are being signed.
-        messages: vector<vector<u8>>,
-
-        /// The unique identifier of the associated dWallet.
-        dwallet_id: ID,
-
-        /// The DKG output of the dWallet.
-        dwallet_decentralized_public_output: vector<u8>,
-
-        /// The unique identifier of the dWallet capability.
-        dwallet_cap_id: ID,
-
-        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
-        dwallet_mpc_network_decryption_key_version: u8,
-
-        /// Extra data that can be stored with the object, specific to every implementation.
-        /// Every message corresponds with D, so the order of the messages and the extra fields must be maintained.
-        signing_algorithm_data: vector<D>,
-    }
-
-    /// Event emitted to start a batched sign process.
-    ///
-    /// ### Fields
-    /// - **`session_id`**: The session identifier for the batched sign process.
-    /// - **`hashed_messages`**: A list of hashed messages to be signed.
-    /// - **`initiator`**: The address of the user who initiated the protocol.
-    public struct StartBatchedSignEvent has copy, drop {
-        session_id: ID,
-        // Todo (#565): Move the hash calculation into the rust code.
-        hashed_messages: vector<vector<u8>>,
-        initiator: address
-    }
-
-    /// Event emitted to signal the completion of a Sign process.
-    ///
-    /// This event contains signatures for all signed messages in the batch.
-    public struct CompletedSignEvent has copy, drop {
-        /// The session identifier for the signing process.
-        session_id: ID,
-
-        /// The ID of the batched sign output object.
-        output_object_id: ID,
-    }
-
-    /// The output of a batched Sign session.
-    public struct BatchedSignOutput has key, store {
-        /// A unique identifier for the batched sign output.
-        id: UID,
-
-        /// The session identifier for the batched sign process.
-        session_id: ID,
-
-        /// A collection of signatures (signed messages) generated in the batched sign session.
-        signatures: vector<vector<u8>>,
-
-        /// The unique identifier of the associated dWallet.
-        dwallet_id: ID,
-    }
-
-    /// Event emitted to initiate the signing process.
-    ///
-    /// This event is captured by Validators to start the signing protocol.
-    /// It includes all the necessary information to link the signing process
-    /// to a specific dWallet, and batched process.
-    /// D: The type of extra data that can be stored with the object, specific to each algorithm.
-    public struct StartSignEvent<D: copy + drop> has copy, drop {
-        /// A unique identifier for this signing session.
-        session_id: ID,
-
-        /// The address of the user who initiated the signing event.
-        initiator: address,
-
-        /// A unique identifier for the batched signing process this session belongs to.
-        batched_session_id: ID,
-
-        /// The unique identifier for the dWallet used in the session.
-        dwallet_id: ID,
-
-        /// The output from the dWallet DKG process used in this session.
-        dwallet_decentralized_public_output: vector<u8>,
-
-        /// The hashed message to be signed in this session.
-        hashed_message: vector<u8>,
-
-        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
-        dwallet_mpc_network_decryption_key_version: u8,
-
-        /// Extra fields that can be stored with the object, specific to every signing algorithm implementation.
-        signing_algorithm_data: D,
-    }
-
-    /// Stores data essential for the signing process and specific to every signing algorithm implementation.
-    /// Must be passed to the signing functions and used in a PTB; otherwise, the transaction will fail due to the "Hot Potato" pattern.
-    /// D: The type of extra data that can be stored with the object, specific to each algorithm.
-    public struct SigningAlgorithmData<T: drop + copy> {
-        data: T,
     }
 
     /// Creates a new [`DWallet`] object of type `T`.
@@ -211,28 +95,6 @@ module pera_system::dwallet {
             decentralized_public_output,
             dwallet_mpc_network_decryption_key_version,
             centralized_public_output,
-        }
-    }
-
-    /// Creates a new [`PartialCentralizedSignedMessages`] object.
-    /// This object is used to store messages that have been signed by a user,
-    /// but not yet by the blockchain.
-    /// T: The eliptic curve type used for the dWallet.
-    /// D: The type of the extra fields that can be stored with the object.
-    public(package) fun create_partial_centralized_signed_messages<T: drop, D: store>(
-        messages: vector<vector<u8>>,
-        dwallet: &DWallet<T>,
-        signing_algorithm_data: vector<D>,
-        ctx: &mut TxContext
-    ): PartialCentralizedSignedMessages<D> {
-        PartialCentralizedSignedMessages<D> {
-            id: object::new(ctx),
-            messages,
-            dwallet_id: object::id(dwallet),
-            dwallet_decentralized_public_output: dwallet.decentralized_public_output,
-            dwallet_cap_id: dwallet.dwallet_cap_id,
-            dwallet_mpc_network_decryption_key_version: dwallet.dwallet_mpc_network_decryption_key_version,
-            signing_algorithm_data,
         }
     }
 
@@ -588,7 +450,8 @@ module pera_system::dwallet {
         message_approvals
     }
 
-    /// Pops the last message approval from the vector and verifies it against the given message & dwallet_cap_id.
+    /// Pops the last message approval from the vector and verifies it
+    /// against the given message and `dwallet_cap_id`.
     public(package) fun pop_and_verify_message_approval(
         dwallet_cap_id: ID,
         message_hash: vector<u8>,
@@ -640,6 +503,151 @@ module pera_system::dwallet {
         }
     }
 
+    /// Messages that have been signed by a user, a.k.a the centralized party,
+    /// but not yet by the blockchain.
+    /// Used for scenarios where the user needs to first agree to sign some transaction,
+    /// and the blockchain signs this transaction later,
+    /// when some other conditions are met.
+    ///
+    /// Can be used to implement an order-book-based exchange, for example.
+    /// User `A` first agrees to buy BTC with ETH at price X, and signs a transaction with this information.
+    /// When a matching user `B`, that agrees to sell BTC for ETH at price X,
+    /// signs a transaction with this information,
+    /// the blockchain can sign both transactions, and the exchange is completed.
+    ///
+    /// D: The type of data that can be stored with the object,
+    /// specific to each Digital Signature Algorithm.
+    public struct PartialCentralizedSignedMessages<D: store> has key {
+        /// A unique identifier for this object.
+        id: UID,
+
+        /// The messages that are being signed.
+        messages: vector<vector<u8>>,
+
+        /// The unique identifier of the associated dWallet.
+        dwallet_id: ID,
+
+        /// The DKG decentralized party public output for the dWallet.
+        dwallet_decentralized_public_output: vector<u8>,
+
+        /// The unique identifier of the dWallet capability.
+        dwallet_cap_id: ID,
+
+        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
+        dwallet_mpc_network_decryption_key_version: u8,
+
+        /// Data specific to every DSA implementation.
+        /// Every message (from `messages`) corresponds with a `D`, so the order of
+        /// the messages and the data fields must be maintained.
+        signature_algorithm_data: vector<D>,
+    }
+
+    /// Event emitted to start a batched sign process.
+    public struct StartBatchedSignEvent has copy, drop {
+        /// The session identifier for the batched sign process.
+        session_id: ID,
+
+        /// A list of hashed messages to be signed.
+        /// Todo (#565): Move the hash calculation into the Rust code.
+        hashed_messages: vector<vector<u8>>,
+
+        /// The address of the user who initiated the protocol.
+        initiator: address
+    }
+
+    /// Event emitted to signal the completion of a Sign process.
+    ///
+    /// This event contains signatures for all signed messages in the batch.
+    public struct CompletedSignEvent has copy, drop {
+        /// The session identifier for the signing process.
+        session_id: ID,
+
+        /// The ID of the batched sign output object (`BatchedSignOutput`).
+        output_object_id: ID,
+    }
+
+    /// The output of a batched Sign session.
+    public struct BatchedSignOutput has key, store {
+        /// A unique identifier for the batched sign output.
+        id: UID,
+
+        /// The session identifier for the batched sign process.
+        session_id: ID,
+
+        /// A collection of signatures (of the sign process messages)
+        /// generated in the batched sign session.
+        signatures: vector<vector<u8>>,
+
+        /// The unique identifier of the associated dWallet.
+        dwallet_id: ID,
+    }
+
+    /// Event emitted to initiate the signing process.
+    ///
+    /// This event is captured by Validators to start the signing protocol.
+    /// It includes all the necessary information to link the signing process
+    /// to a specific dWallet, and batched process.
+    /// D: The type of data that can be stored with the object,
+    /// specific to each Digital Signature Algorithm.
+    public struct StartSignEvent<D: copy + drop> has copy, drop {
+        /// A unique identifier for this signing session.
+        session_id: ID,
+
+        /// The address of the user who initiated the signing event.
+        initiator: address,
+
+        /// A unique identifier for the batched signing process this session belongs to.
+        batched_session_id: ID,
+
+        /// The unique identifier for the dWallet used in the session.
+        dwallet_id: ID,
+
+        /// The output from the dWallet DKG process used in this session.
+        dwallet_decentralized_public_output: vector<u8>,
+
+        /// The hashed message to be signed in this session.
+        hashed_message: vector<u8>,
+
+        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
+        dwallet_mpc_network_decryption_key_version: u8,
+
+        /// Data that can be stored with the object,
+        /// specific to each Digital Signature Algorithm.
+        signature_algorithm_data: D,
+    }
+
+    /// Stores data essential for the signing process and specific to every signature algorithm implementation.
+    /// Must be passed to the signing functions and used in the programmable transaction block;
+    /// otherwise, the transaction will fail due to the "Hot Potato" pattern.
+    /// D: The type of data that can be stored with the object,
+    /// specific to each Digital Signature Algorithm.
+    public struct SignatureAlgorithmData<D: drop + copy> {
+        data: D,
+    }
+
+    /// Creates a new [`PartialCentralizedSignedMessages`] object.
+    /// This object is used to store messages that have been signed by a user,
+    /// but not yet by the blockchain.
+    /// T: The eliptic curve type used for the dWallet (for example `Secp256k1`).
+    /// D: The type of data that can be stored with the object,
+    /// specific to each Digital Signature Algorithm.
+    public(package) fun create_partial_centralized_signed_messages<T: drop, D: store>(
+        messages: vector<vector<u8>>,
+        dwallet: &DWallet<T>,
+        signature_algorithm_data: vector<D>,
+        ctx: &mut TxContext
+    ): PartialCentralizedSignedMessages<D> {
+        PartialCentralizedSignedMessages<D> {
+            id: object::new(ctx),
+            messages,
+            dwallet_id: object::id(dwallet),
+            dwallet_decentralized_public_output: dwallet.decentralized_public_output,
+            dwallet_cap_id: dwallet.dwallet_cap_id,
+            dwallet_mpc_network_decryption_key_version: dwallet.dwallet_mpc_network_decryption_key_version,
+            signature_algorithm_data,
+        }
+    }
+
      // todo(zeev): remove this.
     #[test_only]
     public fun partial_signatures_for_testing<D: store>(
@@ -647,7 +655,7 @@ module pera_system::dwallet {
         dwallet_id: ID,
         dwallet_cap_id: ID,
         dwallet_mpc_network_decryption_key_version: u8,
-        signing_algorithm_data: vector<D>,
+        signature_algorithm_data: vector<D>,
         ctx: &mut TxContext
     ): PartialCentralizedSignedMessages<D> {
         PartialCentralizedSignedMessages<D> {
@@ -657,65 +665,81 @@ module pera_system::dwallet {
             dwallet_decentralized_public_output: vector::empty(),
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
-            signing_algorithm_data,
+            signature_algorithm_data,
         }
     }
 
-    /// Initiates the signing process for a given dWallet.
+    /// Initiates the signing process for a given dWallet of type T.
     ///
     /// This function emits a `StartSignEvent` and a `StartBatchedSignEvent`,
     /// providing all necessary metadata to ensure the integrity of the signing process.
-    /// It validates the linkage between the `DWallet`, `DWalletCap`, and `SigningAlgorithmData` objects.
+    /// It validates the linkage between the `DWallet`, `DWalletCap`, and `SignatureAlgorithmData` objects.
     ///
     /// # Effects
-    /// - Validates the linkage between dWallet components.
-    /// - Ensures that the number of `signing_algorithm_data` and `message_approvals` are equal.
+    /// - Ensures a valid linkage between `DWallet`, `DWalletCap`, and `SignatureAlgorithmData`.
+    /// - Validates that `signature_algorithm_data` and `message_approvals` have the same length.
     /// - Emits the following events:
     ///   - `StartBatchedSignEvent`: Contains the session details and the list of hashed messages.
-    ///   - `StartSignEvent`: Includes details for each message signing proccess.
+    ///   - `StartSignEvent`: Includes details for each message signing process.
     ///
     /// # Aborts
     /// - **`EExtraDataAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
-    ///   match the number of `signing_algorithm_data`.
-    /// - **`EMissingApprovalOrWrongApprovalOrder`**: If the approvals are not in the correct order.
+    ///   match the number of `signature_algorithm_data`.
+    /// - **`EMissingApprovalOrWrongApprovalOrder`**: If the approvals are missing or provided in the incorrect order.
     ///
     /// # Parameters
     /// - `message_approvals`: A vector of `MessageApproval` objects representing
     ///    approvals for the messages, which are destroyed at the end of the transaction.
-    /// - `signing_algorithm_data`: A vector of `SigningAlgorithmData` objects containing intermediate signing outputs,
-    ///     which are destroyed at the end of the transaction.
     /// - `dwallet`: A reference to the `DWallet` object being used for signing.
+    /// - `signature_algorithm_data`: A vector of `SignatureAlgorithmData` objects containing intermediate signing outputs,
+    ///   which are unpacked and then destroyed at the end of the transaction.
     ///
-    /// T: The eliptic curve type used for the dWallet.
-    /// D: The type of the extra fields that can be stored with the object.
+    /// # Type Parameters
+    /// - `T`: The elliptic curve type used for the dWallet.
+    /// D: The type of data that can be stored with the object,
+    /// specific to each Digital Signature Algorithm.
     public fun sign<T: drop, D: copy + drop>(
         message_approvals: vector<MessageApproval>,
         dwallet: &DWallet<T>,
-        signing_algorithm_data: vector<SigningAlgorithmData<D>>,
+        signature_algorithm_data: vector<SignatureAlgorithmData<D>>,
         ctx: &mut TxContext
     ) {
-        let signing_algorithm_data_unpacked = vector::map!(signing_algorithm_data, |SigningAlgorithmData { data }| data);
+        let signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |SignatureAlgorithmData { data }| data);
         emit_sign_events<D>(
             message_approvals,
             object::id(dwallet),
             dwallet.dwallet_cap_id,
             dwallet.centralized_public_output,
             dwallet.dwallet_mpc_network_decryption_key_version,
-            signing_algorithm_data_unpacked,
+            signature_algorithm_data_unpacked,
             ctx
         );
     }
 
+    /// Emits events to initiate the signing process for each message.
+    ///
+    /// This function ensures that all messages have the correct approvals, calculates
+    /// their hashes, and emits signing events.
+    ///
+    /// # Effects
+    /// - Checks that the number of `signature_algorithm_data` items matches `message_approvals`.
+    /// - Generates a new session ID for batch signing.
+    /// - Emits `StartBatchedSignEvent` containing session details and hashed messages.
+    /// - Iterates through `signature_algorithm_data`, verifying approvals and emitting `StartSignEvent` for each.
+    ///
+    /// # Aborts
+    /// - **`EExtraDataAndMessagesLenMismatch`**: If `signature_algorithm_data` and `message_approvals` have different lengths.
+    /// - **`EMissingApprovalOrWrongApprovalOrder`**: If message approvals are incorrect or missing.
     fun emit_sign_events<D: copy + drop>(
         mut message_approvals: vector<MessageApproval>,
         dwallet_id: ID,
         dwallet_cap_id: ID,
         dwallet_decentralized_public_output: vector<u8>,
         dwallet_mpc_network_decryption_key_version: u8,
-        mut signing_algorithm_data: vector<D>,
+        mut signature_algorithm_data: vector<D>,
         ctx: &mut TxContext
     ){
-        assert!(vector::length(&signing_algorithm_data) == vector::length(&message_approvals), EExtraDataAndMessagesLenMismatch);
+        assert!(vector::length(&signature_algorithm_data) == vector::length(&message_approvals), EExtraDataAndMessagesLenMismatch);
         let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         // Todo (#565): Move the hash calculation into the rust code.
         let mut hashed_messages = hash_messages(&message_approvals);
@@ -726,8 +750,8 @@ module pera_system::dwallet {
             initiator: tx_context::sender(ctx)
         });
 
-        while (!signing_algorithm_data.is_empty()) {
-            let data = vector::pop_back(&mut signing_algorithm_data);
+        while (!signature_algorithm_data.is_empty()) {
+            let data = vector::pop_back(&mut signature_algorithm_data);
             let hashed_message = vector::pop_back(&mut hashed_messages);
             let  (_dwallet_cap_approved, _hash, _message) = pop_and_verify_message_approval(dwallet_cap_id, hashed_message, &mut message_approvals);
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
@@ -739,10 +763,10 @@ module pera_system::dwallet {
                 dwallet_decentralized_public_output,
                 hashed_message,
                 dwallet_mpc_network_decryption_key_version,
-                signing_algorithm_data: data,
+                signature_algorithm_data: data,
             });
         };
-        signing_algorithm_data.destroy_empty();
+        signature_algorithm_data.destroy_empty();
     }
 
     /// Emits a `CompletedSignEvent` with the MPC Sign protocol output.
@@ -804,22 +828,23 @@ module pera_system::dwallet {
     /// A function to publish messages signed by the user on chain with on-chain verification,
     /// without launching the chain's sign flow immediately.
     ///
-    /// See the docs of [`PartialCentralizedSignedMessages`] for more details on when this may be used.
+    /// See the docs of [`PartialCentralizedSignedMessages`] for
+    /// more details on when this may be used.
     public fun prepare_future_sign<T: drop, D: copy + drop + store>(
         messages: vector<vector<u8>>,
-        signing_algorithm_data: vector<SigningAlgorithmData<D>>,
+        signature_algorithm_data: vector<SignatureAlgorithmData<D>>,
         dwallet: &DWallet<T>,
         ctx: &mut TxContext
     ) {
         let messages_len = vector::length(&messages);
-        let signing_algorithm_data_len = vector::length(&signing_algorithm_data);
-        assert!(messages_len == signing_algorithm_data_len, EExtraDataAndMessagesLenMismatch);
+        let signature_algorithm_data_len = vector::length(&signature_algorithm_data);
+        assert!(messages_len == signature_algorithm_data_len, EExtraDataAndMessagesLenMismatch);
 
-        let signing_algorithm_data_unpacked = vector::map!(signing_algorithm_data, |SigningAlgorithmData { data }| data);
+        let signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |SignatureAlgorithmData { data }| data);
         let partial_signatures = create_partial_centralized_signed_messages<T, D>(
             messages,
             dwallet,
-            signing_algorithm_data_unpacked,
+            signature_algorithm_data_unpacked,
             ctx,
         );
 
@@ -832,17 +857,30 @@ module pera_system::dwallet {
         transfer::transfer(partial_signatures, tx_context::sender(ctx));
     }
 
-    /// A function to create a [`SigningAlgorithmData`] object.
+    /// A function to create a [`SignatureAlgorithmData`] object.
     /// Extra fields are used to store additional data with the object, specific to every protocol implementation.
     /// D: The type of the extra fields that can be stored with the object.
-    public(package) fun create_signing_algorithm_data<D: store + copy + drop>(data: D): SigningAlgorithmData<D> {
-        SigningAlgorithmData { data }
+    public(package) fun create_signature_algorithm_data<D: store + copy + drop>(data: D): SignatureAlgorithmData<D> {
+        SignatureAlgorithmData { data }
     }
 
-    /// A function to launch a sign flow with a previously published [`PartialCentralizedSignedMessages`].
-    /// D: The type of the extra fields that can be stored with the object.
-    /// See the docs of [`PartialCentralizedSignedMessages`] for more details on when this may be used.
-    public fun sign_with_partial_centralized_message_signatures< D: store + copy + drop>(
+    /// Initiates a signing flow using a previously published [`PartialCentralizedSignedMessages`].
+    ///
+    /// This function takes a partial signature object, validates approvals for each message,
+    /// and emits the necessary signing events.
+    ///
+    /// ## Type Parameters
+    /// - `D`: Represents additional data fields specific for each implementation.
+    ///
+    /// ## Parameters
+    /// - `partial_signature`: A previously published `PartialCentralizedSignedMessages<D>` object
+    ///   containing messages that require approval.
+    /// - `message_approvals`: A list of approvals corresponding to the messages in `partial_signature`.
+    /// - `ctx`: The transaction context.
+    /// ## Notes
+    /// - See [`PartialCentralizedSignedMessages`] documentation for more details on usage scenarios.
+    /// - The function ensures that messages and approvals have a one-to-one correspondence before proceeding.
+    public fun sign_with_partial_centralized_message_signatures<D: store + copy + drop>(
         partial_signature: PartialCentralizedSignedMessages<D>,
         message_approvals: vector<MessageApproval>,
         ctx: &mut TxContext
@@ -854,23 +892,24 @@ module pera_system::dwallet {
             dwallet_decentralized_public_output,
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
-            signing_algorithm_data,
+            signature_algorithm_data,
         } = partial_signature;
         object::delete(id);
 
-        // If the messages and the aprovals are not in the same length the function will abort.
+        // Ensure that each message has a corresponding approval; otherwise, abort.
         vector::zip_map_ref!(&message_approvals, &messages, |message_approval, message| {
             assert!(message_approval.message == *message, EMissingApprovalOrWrongApprovalOrder);
             0 // must return some value
         });
 
+        // Emit signing events to finalize the signing process.
         emit_sign_events<D>(
             message_approvals,
             dwallet_id,
             dwallet_cap_id,
             dwallet_decentralized_public_output,
             dwallet_mpc_network_decryption_key_version,
-            signing_algorithm_data,
+            signature_algorithm_data,
             ctx
         );
     }

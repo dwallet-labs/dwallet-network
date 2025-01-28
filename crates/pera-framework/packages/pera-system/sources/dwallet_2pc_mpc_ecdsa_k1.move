@@ -15,7 +15,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         get_dwallet_mpc_network_decryption_key_version,
         EncryptionKey,
         get_encryption_key,
-        SigningAlgorithmData,
+        SignatureAlgorithmData,
     };
     use pera::event;
 
@@ -383,12 +383,15 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     // SIGN TYPES
 
-    public struct AlgorithmSpecificData has store, drop, copy {
-        /// The presign object ID, the presign ID will be used as the sign MPC protocol ID.
+    public struct SignData has store, drop, copy {
+        /// The presign object ID, this ID will
+        /// be used as the singature MPC protocol ID.
         presign_id: ID,
+
         /// The presign protocol output as bytes.
         presign_output: vector<u8>,
-        /// The centralized signature of a message.
+
+        /// The centralized party signature of a message.
         message_centralized_signature: vector<u8>,
     }
 
@@ -925,23 +928,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         );
     }
 
-    #[test_only]
-    /// Call the underlying create AlgorithmSpecificData.
-    /// This function is intended for testing purposes only and should not be used in production.
-    /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_onl
-    public fun create_uniq_presign_per_message(
-        presign_id: ID,
-        presign_output: vector<u8>,
-        message_centralized_signature: vector<u8>,
-    ): AlgorithmSpecificData {
-        AlgorithmSpecificData {
-            presign_id,
-            presign_output,
-            message_centralized_signature,
-        }
-    }
-
-    /// Creates a vector of `SigningAlgorithmData` objects from a vector of `Presign` objects
+    /// Creates a vector of `SignatureAlgorithmData` objects from a vector of `Presign` objects
     /// and the centralized party message signatures.
     ///
     /// This function constructs the necessary data structures for the signing process using the ECDSA K1 algorithm.
@@ -949,24 +936,41 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// as each `Presign` can only be used to sign a single message.
     ///
     /// Additionally, it ensures that the `DWallet` associated with the `Presign` objects matches the provided `DWallet`.
-    /// The function returns a vector of `SigningAlgorithmData` objects, which are critical for the signing process.
-    /// The returned value must be used in a PTB; otherwise, the transaction will fail due to the "Hot Potato" pattern.
-    public fun create_signing_algorithm_data(
+    /// The function returns a vector of `SignatureAlgorithmData` objects, which are critical for the signing process.
+    /// The returned value must be used in a programmable transaction block;
+    /// otherwise, the transaction will fail due to the "Hot Potato" pattern.
+    public fun create_signature_algorithm_data(
         presigns: vector<Presign>,
         messages_centralized_signatures: vector<vector<u8>>,
         dwallet: &DWallet<Secp256K1>,
-    ): vector<SigningAlgorithmData<AlgorithmSpecificData>> {
+    ): vector<SignatureAlgorithmData<SignData>> {
         vector::zip_map!(presigns, messages_centralized_signatures, | presign, message_centralized_signature | {
             let Presign {id, presign, first_round_session_id, dwallet_id} = presign;
             assert!(object::id(dwallet) == dwallet_id, EDwalletMismatch);
-            let extra_data_per_sign = AlgorithmSpecificData {
+            let data = SignData {
                 presign_id: first_round_session_id,
                 presign_output: presign,
                 message_centralized_signature,
             };
             object::delete(id);
-            dwallet::create_signing_algorithm_data<AlgorithmSpecificData>(extra_data_per_sign)
+            dwallet::create_signature_algorithm_data<SignData>(data)
         })
+    }
+
+    #[test_only]
+    /// Call the underlying create SignData.
+    /// This function is intended for testing purposes only and should not be used in production.
+    /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_onl
+    public fun create_uniqe_presign_per_message(
+        presign_id: ID,
+        presign_output: vector<u8>,
+        message_centralized_signature: vector<u8>,
+    ): SignData {
+        SignData {
+            presign_id,
+            presign_output,
+            message_centralized_signature,
+        }
     }
 
     /// Generates a mock `DWallet<Secp256K1>` object for testing purposes.
