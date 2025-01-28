@@ -16,7 +16,7 @@ BatchedSignOutput
 StartSignEvent
 	public struct
 	0x3::dwallet
-SignExtraFields
+SigningAlgorithmData
 	public struct
 	0x3::dwallet
 DWalletCap
@@ -112,7 +112,7 @@ create_sign_output
 prepare_future_sign
 	public fun
 	0x3::dwallet
-create_sign_extra_fields
+create_signing_algorithm_data
 	public(package) fun
 	0x3::dwallet
 sign_with_partial_centralized_message_signatures
@@ -160,7 +160,7 @@ StartPresignSecondRoundEvent
 CompletedBatchedPresignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-SignExtraFieldsForECDSAK1
+AlgorithmSpecificData
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
@@ -190,7 +190,7 @@ launch_presign_second_round
 create_batched_presign_output
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_sign_extra_fields
+create_signing_algorithm_data
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_mock_dwallet_for_testing

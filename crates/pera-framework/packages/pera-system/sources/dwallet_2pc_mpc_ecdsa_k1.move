@@ -15,7 +15,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         get_dwallet_mpc_network_decryption_key_version,
         EncryptionKey,
         get_encryption_key,
-        SignExtraFields,
+        SigningAlgorithmData,
     };
     use pera::event;
 
@@ -941,30 +941,30 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         }
     }
 
-    /// Creates a vector of `SignExtraFields` objects from a vector of `Presign` objects.
+    /// Creates a vector of `SigningAlgorithmData` objects from a vector of `Presign` objects.
     ///
     /// This function constructs the necessary data structures for the signing process using ECDSA K1.
     /// It takes a vector of `Presign` objects, extracts the relevant data, and removes the original objects.
     /// Additionally, it ensures that the `DWallet` associated with the `Presign` objects matches the provided `DWallet`.
     ///
-    /// The function returns a vector of `SignExtraFields` objects, which are essential for the signing process.
+    /// The function returns a vector of `SigningAlgorithmData` objects, which are essential for the signing process.
     /// The returned value must be used in a PTB; otherwise, the transaction will fail due to the "Hot Potato" pattern.
-    public fun create_sign_extra_fields(
+    public fun create_signing_algorithm_data(
         presigns: vector<Presign>,
         mut messages_centralized_signatures: vector<vector<u8>>,
         dwallet: &DWallet<Secp256K1>,
-    ): vector<SignExtraFields<AlgorithmSpecificData>> {
+    ): vector<SigningAlgorithmData<AlgorithmSpecificData>> {
         vector::map!(presigns, |presign| {
             let Presign {id, presign, first_round_session_id, dwallet_id} = presign;
             vector::reverse(&mut messages_centralized_signatures);
             assert!(object::id(dwallet) == dwallet_id, EDwalletMismatch);
-            let extra_fields_per_sign = AlgorithmSpecificData {
+            let extra_data_per_sign = AlgorithmSpecificData {
                 presign_id: first_round_session_id,
                 presign_output: presign,
                 messages_centralized_signatures,
             };
             object::delete(id);
-            dwallet::create_sign_extra_fields<AlgorithmSpecificData>(extra_fields_per_sign)
+            dwallet::create_signing_algorithm_data<AlgorithmSpecificData>(extra_data_per_sign)
         })
     }
 

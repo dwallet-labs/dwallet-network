@@ -99,9 +99,8 @@ module pera_system::dwallet {
         dwallet_mpc_network_decryption_key_version: u8,
 
         /// Extra data that can be stored with the object, specific to every implementation.
-        /// Every message co-response with D, so the order of the messages and the extra fields must be maintained.
-        // todo change to data
-        extra_fields: vector<D>,
+        /// Every message corresponds with D, so the order of the messages and the extra fields must be maintained.
+        signing_algorithm_data: vector<D>,
     }
 
     /// Event emitted to start a batched sign process.
@@ -170,11 +169,10 @@ module pera_system::dwallet {
         dwallet_mpc_network_decryption_key_version: u8,
 
         /// Extra fields that can be stored with the object, specific to every protocol implementation.
-        // todo change to data
-        extra_fields: D,
+        signing_algorithm_data: D,
     }
 
-    public struct SignExtraFields<T: drop + copy> {
+    public struct SigningAlgorithmData<T: drop + copy> {
         data: T,
     }
 
@@ -220,7 +218,7 @@ module pera_system::dwallet {
     public(package) fun create_partial_centralized_signed_messages<T: drop, D: store>(
         messages: vector<vector<u8>>,
         dwallet: &DWallet<T>,
-        extra_fields: vector<D>,
+        signing_algorithm_data: vector<D>,
         ctx: &mut TxContext
     ): PartialCentralizedSignedMessages<D> {
         PartialCentralizedSignedMessages<D> {
@@ -230,7 +228,7 @@ module pera_system::dwallet {
             dwallet_output: dwallet.decentralized_public_output,
             dwallet_cap_id: dwallet.dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version: dwallet.dwallet_mpc_network_decryption_key_version,
-            extra_fields,
+            signing_algorithm_data,
         }
     }
 
@@ -642,7 +640,7 @@ module pera_system::dwallet {
         dwallet_id: ID,
         dwallet_cap_id: ID,
         dwallet_mpc_network_decryption_key_version: u8,
-        extra_fields: vector<D>,
+        signing_algorithm_data: vector<D>,
         ctx: &mut TxContext
     ): PartialCentralizedSignedMessages<D> {
         PartialCentralizedSignedMessages<D> {
@@ -652,7 +650,7 @@ module pera_system::dwallet {
             dwallet_output: vector::empty(),
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
-            extra_fields,
+            signing_algorithm_data,
         }
     }
 
@@ -696,17 +694,17 @@ module pera_system::dwallet {
     public fun sign<T: drop, D: copy + drop>(
         message_approvals: vector<MessageApproval>,
         dwallet: &DWallet<T>,
-        extra_fields: vector<SignExtraFields<D>>,
+        signing_algorithm_data: vector<SigningAlgorithmData<D>>,
         ctx: &mut TxContext
     ) {
-        let extra_fields_unpacked = vector::map!(extra_fields, |SignExtraFields { data }| data);
+        let signing_algorithm_data_unpacked = vector::map!(signing_algorithm_data, |SigningAlgorithmData { data }| data);
         emit_sign_events<D>(
             message_approvals,
             object::id(dwallet),
             dwallet.dwallet_cap_id,
             dwallet.centralized_public_output,
             dwallet.dwallet_mpc_network_decryption_key_version,
-            extra_fields_unpacked,
+            signing_algorithm_data_unpacked,
             ctx
         );
     }
@@ -717,10 +715,10 @@ module pera_system::dwallet {
         dwallet_cap_id: ID,
         dwallet_centralized_public_output: vector<u8>,
         dwallet_mpc_network_decryption_key_version: u8,
-        mut extra_fields: vector<D>,
+        mut signing_algorithm_data: vector<D>,
         ctx: &mut TxContext
     ){
-        assert!(vector::length(&extra_fields) == vector::length(&message_approvals), EExtraDataAndMessagesLenMismatch);
+        assert!(vector::length(&signing_algorithm_data) == vector::length(&message_approvals), EExtraDataAndMessagesLenMismatch);
         let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         let mut hashed_messages = hash_messages(&message_approvals);
 
@@ -730,8 +728,8 @@ module pera_system::dwallet {
             initiator: tx_context::sender(ctx)
         });
 
-        while (!extra_fields.is_empty()) {
-            let data = vector::pop_back(&mut extra_fields);
+        while (!signing_algorithm_data.is_empty()) {
+            let data = vector::pop_back(&mut signing_algorithm_data);
             let hashed_message = vector::pop_back(&mut hashed_messages);
             let  (_dwallet_cap_approved, _hash, _message) = pop_and_verify_message_approval(dwallet_cap_id, hashed_message, &mut message_approvals);
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
@@ -743,10 +741,10 @@ module pera_system::dwallet {
                 dkg_output: dwallet_centralized_public_output,
                 hashed_message,
                 dwallet_mpc_network_decryption_key_version,
-                extra_fields: data,
+                signing_algorithm_data: data,
             });
         };
-        extra_fields.destroy_empty();
+        signing_algorithm_data.destroy_empty();
     }
 
     /// Emits a `CompletedSignEvent` with the MPC Sign protocol output.
@@ -811,19 +809,19 @@ module pera_system::dwallet {
     /// See the docs of [`PartialCentralizedSignedMessages`] for more details on when this may be used.
     public fun prepare_future_sign<T: drop, D: copy + drop + store>(
         messages: vector<vector<u8>>,
-        extra_fields: vector<SignExtraFields<D>>,
+        signing_algorithm_data: vector<SigningAlgorithmData<D>>,
         dwallet: &DWallet<T>,
         ctx: &mut TxContext
     ) {
         let messages_len = vector::length(&messages);
-        let extra_fields_len = vector::length(&extra_fields);
-        assert!(messages_len == extra_fields_len, EExtraDataAndMessagesLenMismatch);
+        let signing_algorithm_data_len = vector::length(&signing_algorithm_data);
+        assert!(messages_len == signing_algorithm_data_len, EExtraDataAndMessagesLenMismatch);
 
-        let extra_fields_unpacked = vector::map!(extra_fields, |SignExtraFields { data }| data);
+        let signing_algorithm_data_unpacked = vector::map!(signing_algorithm_data, |SigningAlgorithmData { data }| data);
         let partial_signatures = create_partial_centralized_signed_messages<T, D>(
             messages,
             dwallet,
-            extra_fields_unpacked,
+            signing_algorithm_data_unpacked,
             ctx,
         );
 
@@ -836,17 +834,16 @@ module pera_system::dwallet {
         transfer::transfer(partial_signatures, tx_context::sender(ctx));
     }
 
-    /// A function to create a [`SignExtraFields`] object.
+    /// A function to create a [`SigningAlgorithmData`] object.
     /// Extra fields are used to store additional data with the object, specific to every protocol implementation.
     /// D: The type of the extra fields that can be stored with the object.
-    public(package) fun create_sign_extra_fields<D: store + copy + drop>(data: D): SignExtraFields<D> {
-        SignExtraFields { data }
+    public(package) fun create_signing_algorithm_data<D: store + copy + drop>(data: D): SigningAlgorithmData<D> {
+        SigningAlgorithmData { data }
     }
 
     /// A function to launch a sign flow with a previously published [`PartialCentralizedSignedMessages`].
     /// D: The type of the extra fields that can be stored with the object.
     /// See the docs of [`PartialCentralizedSignedMessages`] for more details on when this may be used.
-    // todo use the sign function to avoid code duplication
     public fun sign_with_partial_centralized_message_signatures< D: store + copy + drop>(
         partial_signature: PartialCentralizedSignedMessages<D>,
         message_approvals: vector<MessageApproval>,
@@ -859,7 +856,7 @@ module pera_system::dwallet {
             dwallet_output,
             dwallet_cap_id,
             dwallet_mpc_network_decryption_key_version,
-            extra_fields,
+            signing_algorithm_data,
         } = partial_signature;
         object::delete(id);
 
@@ -875,7 +872,7 @@ module pera_system::dwallet {
             dwallet_cap_id,
             dwallet_output,
             dwallet_mpc_network_decryption_key_version,
-            extra_fields,
+            signing_algorithm_data,
             ctx
         );
     }
