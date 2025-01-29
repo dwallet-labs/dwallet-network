@@ -161,9 +161,11 @@ impl DWalletMPCOutputsVerifier {
                         &session.session_specific_state
                     {
                         // If one of the validators in the sign session sent a malicious report,
-                        // every validator need to make sure the reported validator actually marked
-                        // as malicious before the sign session got completed.
-                        // If the reported validator was not actually malicious, the reporting
+                        // every validator needs
+                        // to make sure the reported validator actually marked
+                        // as malicious
+                        // before the sign session got completed.
+                        // If the reported validator was not malicious, the reporting
                         // validator should be marked as malicious.
                         for reported_malicious_actor in
                             &sign_state.malicious_report.malicious_actors
@@ -173,7 +175,8 @@ impl DWalletMPCOutputsVerifier {
                                 .get_malicious_actors_names()
                                 .contains(&reported_malicious_actor)
                             {
-                                warn!("a sign session got completed successfully while the reported malicious actor {:?} was not actually malicious, marking the reporting authority as malicious", reported_malicious_actor);
+                                warn!("a sign session got completed successfully while the reported malicious actor {:?} was not malicious,\
+                                 marking the reporting: {:?} authority as malicious", reported_malicious_actor, sign_state.initiating_ia_authority);
                                 session_malicious_actors.push(sign_state.initiating_ia_authority);
                                 break;
                             }
