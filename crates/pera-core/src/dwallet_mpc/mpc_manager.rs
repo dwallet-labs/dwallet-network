@@ -245,60 +245,6 @@ impl DWalletMPCManager {
                         });
                 }
             }
-            ReportStatus::OverQuorum | ReportStatus::WaitingForQuorum => {}
-        }
-
-        Ok(())
-            DWalletMPCDBMessage::MPCSessionFailed(session_id) => {
-                // TODO (#524): Handle failed MPC sessions
-            }
-            DWalletMPCDBMessage::LockNextEpochCommitteeVote(_) => {}
-            DWalletMPCDBMessage::SessionFailedWithMaliciousParties(authority_name, report) => {
-                if let Err(err) =
-                    self.handle_session_failed_with_malicious_parties(authority_name, report)
-                {
-                    error!(
-                        "dWallet MPC session failed with malicious parties with error: {:?}",
-                        err
-                    );
-                }
-            }
-        }
-    }
-
-    fn handle_session_failed_with_malicious_parties(
-        &mut self,
-        authority_name: AuthorityName,
-        report: MaliciousReport,
-    ) -> DwalletMPCResult<()> {
-        let epoch_store = self.epoch_store()?;
-        let status = self
-            .malicious_handler
-            .report_malicious_actor(report.clone(), authority_name)?;
-
-        match status {
-            // Quorum reached, remove the malicious parties from the session messages.
-            ReportStatus::QuorumReached => {
-                if let Some(session) = self.mpc_sessions.get_mut(&report.session_id) {
-                    // For every advance we increase the round number by 1,
-                    // so to re-run the same round we decrease it by 1.
-                    session.pending_quorum_for_highest_round_number -= 1;
-                    // Remove malicious parties from the session messages.
-                    let round_messages = session
-                        .pending_messages
-                        .get_mut(session.pending_quorum_for_highest_round_number)
-                        .ok_or(DwalletMPCError::MPCSessionNotFound {
-                            session_id: report.session_id,
-                        })?;
-
-                    self.malicious_handler
-                        .get_malicious_actors_ids(epoch_store)?
-                        .iter()
-                        .for_each(|malicious_actor| {
-                            round_messages.remove(malicious_actor);
-                        });
-                }
-            }
             ReportStatus::WaitingForQuorum => {
                 let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) else {
                     return Err(DwalletMPCError::MPCSessionNotFound {
