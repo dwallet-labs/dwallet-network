@@ -1259,21 +1259,15 @@ mod checked {
                 "create_encrypted_user_share",
                 vec![
                     CallArg::Pure(verification_data.dwallet_id.bytes.to_vec()),
-                    CallArg::Pure(
-                        bcs::to_bytes(
-                            &verification_data.encrypted_centralized_secret_share_and_proof,
-                        )
-                        .unwrap(),
-                    ),
+                    CallArg::Pure(bcs_to_bytes(
+                        &verification_data.encrypted_centralized_secret_share_and_proof,
+                    )?),
                     CallArg::Pure(verification_data.encryption_key_id.bytes.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(
-                        bcs::to_bytes(&verification_data.centralized_public_output_signature)
-                            .unwrap(),
-                    ),
-                    CallArg::Pure(
-                        bcs::to_bytes(&verification_data.encryptor_ed25519_pubkey).unwrap(),
-                    ),
+                    CallArg::Pure(bcs_to_bytes(
+                        &verification_data.centralized_public_output_signature,
+                    )?),
+                    CallArg::Pure(bcs_to_bytes(&verification_data.encryptor_ed25519_pubkey)?),
                     CallArg::Pure(verification_data.initiator.to_vec()),
                 ],
             ),

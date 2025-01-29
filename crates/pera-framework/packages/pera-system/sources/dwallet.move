@@ -626,7 +626,7 @@ module pera_system::dwallet {
     /// T: The eliptic curve type used for the dWallet (for example `Secp256k1`).
     /// D: The type of data that can be stored with the object,
     /// specific to each Digital Signature Algorithm.
-    public(package) fun create_partial_centralized_signed_messages<T: drop, D: store>(
+    public(package) fun create_partial_centralized_signed_messages<T: drop, D: store + drop + copy>(
         messages: vector<vector<u8>>,
         dwallet: &DWallet<T>,
         signature_algorithm_data: vector<D>,
@@ -645,7 +645,7 @@ module pera_system::dwallet {
 
      // todo(zeev): remove this.
     #[test_only]
-    public fun partial_signatures_for_testing<D: store>(
+    public fun partial_signatures_for_testing<D: store + drop + copy>(
         messages: vector<vector<u8>>,
         dwallet_id: ID,
         dwallet_cap_id: ID,

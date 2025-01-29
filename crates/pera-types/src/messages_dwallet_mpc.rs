@@ -86,7 +86,7 @@ pub struct SingleSignSessionData {
     /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,
     /// The DKG output of the dWallet, used to sign and verify the message.
-    pub dkg_output: MPCPublicOutput,
+    pub dwallet_decentralized_public_output: MPCPublicOutput,
     pub network_key_version: u8,
     /// Indicates whether the future sign feature was used to start the session.
     pub is_future_sign: bool,
