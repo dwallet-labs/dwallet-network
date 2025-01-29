@@ -16,7 +16,8 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::id::ID;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
-    MPCProtocolInitData, MaliciousReport, SessionInfo, StartEncryptedShareVerificationEvent,
+    MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
+    StartEncryptedShareVerificationEvent,
 };
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
@@ -55,6 +56,7 @@ pub(super) struct DWalletMPCSession {
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
     pub(super) pending_quorum_for_highest_round_number: usize,
+    pub(super) session_specific_state: Option<MPCSessionSpecificState>,
     party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
@@ -94,6 +96,7 @@ impl DWalletMPCSession {
             weighted_threshold_access_structure,
             decryption_share,
             private_input,
+            session_specific_state: None,
         }
     }
 

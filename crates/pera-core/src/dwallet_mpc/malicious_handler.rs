@@ -90,13 +90,13 @@ impl MaliciousHandler {
             }
         }
 
-        let total_voting_weight = self.calculate_total_voting_weight(report);
+        let total_voting_weight = self.calculate_total_voting_weight(report.clone());
         let has_reached_quorum = total_voting_weight >= self.quorum_threshold as usize;
         let above_quorum = total_voting_weight > self.quorum_threshold as usize;
         let first_quorum_reached =
             total_voting_weight - authority_voting_weight < self.quorum_threshold as usize;
         if has_reached_quorum && first_quorum_reached {
-            self.malicious_actors.insert(authority);
+            self.malicious_actors.extend(report.malicious_actors);
             Ok(ReportStatus::QuorumReached)
         } else if above_quorum {
             Ok(ReportStatus::OverQuorum)

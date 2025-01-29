@@ -15,6 +15,17 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use tokio::sync::mpsc::UnboundedSender;
 
+/// The possible MPC computations update.
+/// Needed to use a channel also for start messages because in the aggregated sign flow,
+/// the Rayon task is being spawned from within a Tokio task.
+pub(crate) enum ComputationUpdate {
+    /// A new computation has started.
+    Started,
+
+    /// A computation has been completed.
+    Completed,
+}
+
 /// The orchestrator for DWallet MPC cryptographic computations.
 ///
 /// The orchestrator's job is to manage a task queue for computations
@@ -31,7 +42,7 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// A channel sender to notify the manager that a computation has been completed.
     /// This is needed to decrease the [`currently_running_sessions_count`] when a computation is
     /// done.
-    pub(crate) completed_computation_channel_sender: UnboundedSender<()>,
+    pub(crate) computation_channel_sender: UnboundedSender<ComputationUpdate>,
     /// A map of the pending cryptographic computation sessions.
     /// This map is needed to remove a session that we received a quorum of messages for
     /// its next round, so running the current completed round is redundant.
@@ -60,7 +71,7 @@ impl CryptographicComputationsOrchestrator {
 
         Ok(CryptographicComputationsOrchestrator {
             available_cores_for_cryptographic_computations: available_cores_for_computations,
-            completed_computation_channel_sender,
+            computation_channel_sender: completed_computation_channel_sender,
             pending_computation_map: HashMap::new(),
             pending_for_computation_order: VecDeque::new(),
             currently_running_sessions_count: 0,
@@ -92,7 +103,7 @@ impl CryptographicComputationsOrchestrator {
 
     fn listen_for_completed_computations(
         epoch_store: &Arc<AuthorityPerEpochStore>,
-    ) -> UnboundedSender<()> {
+    ) -> UnboundedSender<ComputationUpdate> {
         let (completed_computation_channel_sender, mut completed_computation_channel_receiver) =
             tokio::sync::mpsc::unbounded_channel();
         let epoch_store_for_channel = epoch_store.clone();
@@ -102,13 +113,22 @@ impl CryptographicComputationsOrchestrator {
                     None => {
                         break;
                     }
-                    Some(_) => {
-                        epoch_store_for_channel
-                            .get_dwallet_mpc_manager()
-                            .await
-                            .cryptographic_computations_orchestrator
-                            .currently_running_sessions_count -= 1;
-                    }
+                    Some(updateValue) => match updateValue {
+                        ComputationUpdate::Started => {
+                            epoch_store_for_channel
+                                .get_dwallet_mpc_manager()
+                                .await
+                                .cryptographic_computations_orchestrator
+                                .currently_running_sessions_count += 1;
+                        }
+                        ComputationUpdate::Completed => {
+                            epoch_store_for_channel
+                                .get_dwallet_mpc_manager()
+                                .await
+                                .cryptographic_computations_orchestrator
+                                .currently_running_sessions_count -= 1;
+                        }
+                    },
                 }
             }
         });

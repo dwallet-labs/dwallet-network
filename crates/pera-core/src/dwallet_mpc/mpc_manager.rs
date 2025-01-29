@@ -3,7 +3,9 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
-use crate::dwallet_mpc::cryptographic_computations_orchestrator::CryptographicComputationsOrchestrator;
+use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
+    ComputationUpdate, CryptographicComputationsOrchestrator,
+};
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
@@ -36,8 +38,8 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, DWalletMPCMessage};
 use pera_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCProtocolInitData, MaliciousReport,
-    SessionInfo,
+    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, MPCProtocolInitData,
+    MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
 };
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -81,7 +83,7 @@ pub struct DWalletMPCManager {
     /// This list is maintained during the Epoch.
     /// This happens automatically because the [`DWalletMPCManager`]
     /// is part of the [`AuthorityPerEpochStore`].
-    malicious_handler: MaliciousHandler,
+    pub(crate) malicious_handler: MaliciousHandler,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -198,8 +200,8 @@ impl DWalletMPCManager {
             }
             DWalletMPCDBMessage::LockNextEpochCommitteeVote(_) => {}
             DWalletMPCDBMessage::SessionFailedWithMaliciousParties(authority_name, report) => {
-                if let Err(err) =
-                    self.handle_session_failed_with_malicious_parties(authority_name, report)
+                if let Err(err) = self
+                    .handle_session_failed_with_malicious_parties_message(authority_name, report)
                 {
                     error!(
                         "dWallet MPC session failed with malicious parties with error: {:?}",
@@ -210,15 +212,22 @@ impl DWalletMPCManager {
         }
     }
 
-    fn handle_session_failed_with_malicious_parties(
+    fn handle_session_failed_with_malicious_parties_message(
         &mut self,
-        authority_name: AuthorityName,
+        reporting_authority: AuthorityName,
         report: MaliciousReport,
     ) -> DwalletMPCResult<()> {
+        if self
+            .malicious_handler
+            .get_malicious_actors_names()
+            .contains(&reporting_authority)
+        {
+            return Ok(());
+        }
         let epoch_store = self.epoch_store()?;
         let status = self
             .malicious_handler
-            .report_malicious_actor(report.clone(), authority_name)?;
+            .report_malicious_actor(report.clone(), reporting_authority)?;
 
         match status {
             // Quorum reached, remove the malicious parties from the session messages.
@@ -243,7 +252,32 @@ impl DWalletMPCManager {
                         });
                 }
             }
-            ReportStatus::OverQuorum | ReportStatus::WaitingForQuorum => {}
+            ReportStatus::WaitingForQuorum => {
+                let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) else {
+                    return Err(DwalletMPCError::MPCSessionNotFound {
+                        session_id: report.session_id,
+                    });
+                };
+                // In the aggregated signing protocol, a single malicious report is enough
+                // to trigger the Sign-Identifiable Abort protocol.
+                // In the Sign-Identifiable Abort protocol, each validator runs the final step,
+                // agreeing on the malicious parties in the session and
+                // removing their messages before the signing session continues as usual.
+                if matches!(
+                    session.session_info.mpc_round,
+                    MPCProtocolInitData::Sign(..)
+                ) && !report.malicious_actors.is_empty()
+                {
+                    if session.session_specific_state.is_none() {
+                        session.session_specific_state =
+                            Some(MPCSessionSpecificState::Sign(SignIASessionState {
+                                malicious_report: report,
+                                initiating_ia_authority: reporting_authority,
+                            }))
+                    }
+                }
+            }
+            ReportStatus::OverQuorum => {}
         }
 
         Ok(())
@@ -442,8 +476,7 @@ impl DWalletMPCManager {
             else {
                 return;
             };
-            self.cryptographic_computations_orchestrator
-                .currently_running_sessions_count += 1;
+
             if let Err(err) = self.spawn_session(&session) {
                 error!("failed to spawn session with err: {:?}", err);
                 return;
@@ -451,7 +484,7 @@ impl DWalletMPCManager {
         }
     }
 
-    fn spawn_session(&self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
+    fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
         let session_id = session.session_info.session_id;
         if self
             .mpc_sessions
@@ -467,7 +500,7 @@ impl DWalletMPCManager {
         let session = session.clone();
         let finished_computation_sender = self
             .cryptographic_computations_orchestrator
-            .completed_computation_channel_sender
+            .computation_channel_sender
             .clone();
         if matches!(
             session.session_info.mpc_round,
@@ -476,11 +509,17 @@ impl DWalletMPCManager {
         {
             self.spawn_aggregated_sign(session_id, handle, session, finished_computation_sender)?;
         } else {
+            if let Err(err) = finished_computation_sender.send(ComputationUpdate::Started) {
+                error!(
+                    "Failed to send a started computation message with error: {:?}",
+                    err
+                );
+            }
             rayon::spawn_fifo(move || {
                 if let Err(err) = session.advance(&handle) {
                     error!("failed to advance session with error: {:?}", err);
                 }
-                if let Err(err) = finished_computation_sender.send(()) {
+                if let Err(err) = finished_computation_sender.send(ComputationUpdate::Completed) {
                     error!(
                         "Failed to send a finished computation message with error: {:?}",
                         err
@@ -492,20 +531,33 @@ impl DWalletMPCManager {
     }
 
     fn spawn_aggregated_sign(
-        &self,
+        &mut self,
         session_id: ObjectID,
         handle: Handle,
         session: DWalletMPCSession,
-        finished_computation_sender: UnboundedSender<()>,
+        finished_computation_sender: UnboundedSender<ComputationUpdate>,
     ) -> DwalletMPCResult<()> {
-        let sign_last_step_delay =
-            self.calculate_last_sign_step_validator_delay(&session.session_info)?;
+        let validator_position = self.get_validator_position(&session.session_info)?;
         let epoch_store = self.epoch_store()?;
         tokio::spawn(async move {
-            tokio::time::sleep(tokio::time::Duration::from_secs(
-                sign_last_step_delay as u64,
-            ))
-            .await;
+            for _ in 0..validator_position {
+                let manager = epoch_store.get_dwallet_mpc_manager().await;
+                let Some(session) = manager.mpc_sessions.get(&session_id) else {
+                    error!(
+                    "failed to get session when checking if sign last round should get executed"
+                );
+                    return;
+                };
+                // If a malicious report has been received for the sign session, all the validators
+                // should execute the last step immediately.
+                if !session.session_specific_state.is_none() {
+                    break;
+                }
+                tokio::time::sleep(tokio::time::Duration::from_secs(
+                    SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS as u64,
+                ))
+                .await;
+            }
             let manager = epoch_store.get_dwallet_mpc_manager().await;
             let Some(session) = manager.mpc_sessions.get(&session_id) else {
                 error!(
@@ -515,15 +567,22 @@ impl DWalletMPCManager {
             };
             if session.status == MPCSessionStatus::Active {
                 info!(
-                    "Running last sign cryptographic step for session_id: {:?}",
+                    "running last sign cryptographic step for session_id: {:?}",
                     session_id
                 );
                 let session = session.clone();
+                if let Err(err) = finished_computation_sender.send(ComputationUpdate::Started) {
+                    error!(
+                        "Failed to send a started computation message with error: {:?}",
+                        err
+                    );
+                }
                 rayon::spawn_fifo(move || {
                     if let Err(err) = session.advance(&handle) {
                         error!("failed to advance session with error: {:?}", err);
                     }
-                    if let Err(err) = finished_computation_sender.send(()) {
+                    if let Err(err) = finished_computation_sender.send(ComputationUpdate::Completed)
+                    {
                         error!(
                             "Failed to send a finished computation message with error: {:?}",
                             err
@@ -571,10 +630,7 @@ impl DWalletMPCManager {
     /// running the last step of the sign protocol.
     /// If while waiting, the validator receives a valid signature for this session,
     /// it will not run the last step in the sign protocol, and save computation resources.
-    fn calculate_last_sign_step_validator_delay(
-        &self,
-        session_info: &SessionInfo,
-    ) -> DwalletMPCResult<usize> {
+    fn get_validator_position(&self, session_info: &SessionInfo) -> DwalletMPCResult<usize> {
         let session_id_as_32_bytes: [u8; 32] = session_info.session_id.into_bytes();
         let positions = &self
             .epoch_store()?
@@ -585,7 +641,7 @@ impl DWalletMPCManager {
             .iter()
             .position(|&x| x == *authority_name)
             .ok_or(DwalletMPCError::InvalidMPCPartyType)?;
-        Ok(SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS * position)
+        Ok(position)
     }
 
     /// Handles a message by forwarding it to the relevant MPC session.

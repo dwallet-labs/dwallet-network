@@ -14,7 +14,9 @@ use narwhal_types::Round;
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::messages_dwallet_mpc::{MPCProtocolInitData, SessionInfo, SingleSignSessionData};
+use pera_types::messages_dwallet_mpc::{
+    MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, SingleSignSessionData,
+};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
@@ -122,21 +124,22 @@ impl DWalletMPCOutputsVerifier {
     /// i.e., parties that voted for other outputs.
     // TODO (#311): Make sure validator don't mark other validators as malicious
     // TODO (#311): or take any active action while syncing
-    pub fn try_verify_output(
+    pub async fn try_verify_output(
         &mut self,
         output: &Vec<u8>,
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<OutputVerificationResult> {
         let epoch_store = self.epoch_store()?;
-        let Some(ref mut session) = self.mpc_sessions_outputs.get_mut(&session_info.session_id)
+        let Some(ref mut session_output_data) =
+            self.mpc_sessions_outputs.get_mut(&session_info.session_id)
         else {
             return Ok(OutputVerificationResult {
                 result: OutputResult::Malicious,
                 malicious_actors: vec![origin_authority],
             });
         };
-        if session.current_result == OutputResult::AlreadyCommitted {
+        if session_output_data.current_result == OutputResult::AlreadyCommitted {
             return Ok(OutputVerificationResult {
                 result: OutputResult::Duplicate,
                 malicious_actors: vec![],
@@ -145,10 +148,43 @@ impl DWalletMPCOutputsVerifier {
         if let MPCProtocolInitData::Sign(sign_session_data) = &session_info.mpc_round {
             return match Self::verify_signature(&epoch_store, sign_session_data, output) {
                 Ok(res) => {
-                    session.current_result = OutputResult::AlreadyCommitted;
+                    session_output_data.current_result = OutputResult::AlreadyCommitted;
+                    let mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
+                    let session = mpc_manager
+                        .mpc_sessions
+                        .get(&session_info.session_id)
+                        .ok_or(DwalletMPCError::MPCSessionNotFound {
+                            session_id: session_info.session_id,
+                        })?;
+                    let mut session_malicious_actors = res.malicious_actors;
+                    if let Some(MPCSessionSpecificState::Sign(sign_state)) =
+                        &session.session_specific_state
+                    {
+                        // If one of the validators in the sign session sent a malicious report,
+                        // every validator needs
+                        // to make sure the reported validator actually marked
+                        // as malicious
+                        // before the sign session got completed.
+                        // If the reported validator was not malicious, the reporting
+                        // validator should be marked as malicious.
+                        for reported_malicious_actor in
+                            &sign_state.malicious_report.malicious_actors
+                        {
+                            if !mpc_manager
+                                .malicious_handler
+                                .get_malicious_actors_names()
+                                .contains(&reported_malicious_actor)
+                            {
+                                warn!("a sign session got completed successfully while the reported malicious actor {:?} was not malicious,\
+                                 marking the reporting: {:?} authority as malicious", reported_malicious_actor, sign_state.initiating_ia_authority);
+                                session_malicious_actors.push(sign_state.initiating_ia_authority);
+                                break;
+                            }
+                        }
+                    }
                     Ok(OutputVerificationResult {
                         result: OutputResult::Valid,
-                        malicious_actors: res.malicious_actors,
+                        malicious_actors: session_malicious_actors,
                     })
                 }
                 Err(err) => {
@@ -165,7 +201,7 @@ impl DWalletMPCOutputsVerifier {
             };
         }
         // Sent more than once.
-        if session
+        if session_output_data
             .authorities_that_sent_output
             .contains(&origin_authority)
         {
@@ -174,36 +210,35 @@ impl DWalletMPCOutputsVerifier {
                 malicious_actors: vec![origin_authority],
             });
         }
-        session
+        session_output_data
             .authorities_that_sent_output
             .insert(origin_authority.clone());
-        session
+        session_output_data
             .session_output_to_voting_authorities
             .entry((output.clone(), session_info.clone()))
             .or_default()
             .insert(origin_authority);
 
-        let agreed_output =
-            session
-                .session_output_to_voting_authorities
-                .iter()
-                .find(|(_, voters)| {
-                    voters
-                        .iter()
-                        .map(|voter| self.weighted_parties.get(voter).unwrap_or(&0))
-                        .sum::<StakeUnit>()
-                        >= self.quorum_threshold
-                });
+        let agreed_output = session_output_data
+            .session_output_to_voting_authorities
+            .iter()
+            .find(|(_, voters)| {
+                voters
+                    .iter()
+                    .map(|voter| self.weighted_parties.get(voter).unwrap_or(&0))
+                    .sum::<StakeUnit>()
+                    >= self.quorum_threshold
+            });
 
         if let Some((agreed_output, _)) = agreed_output {
-            let voted_for_other_outputs = session
+            let voted_for_other_outputs = session_output_data
                 .session_output_to_voting_authorities
                 .iter()
                 .filter(|(output, _)| *output != agreed_output)
                 .flat_map(|(_, voters)| voters)
                 .cloned()
                 .collect();
-            session.current_result = OutputResult::AlreadyCommitted;
+            session_output_data.current_result = OutputResult::AlreadyCommitted;
             return Ok(OutputVerificationResult {
                 result: OutputResult::Valid,
                 malicious_actors: voted_for_other_outputs,
