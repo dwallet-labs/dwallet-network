@@ -265,7 +265,7 @@ impl DWalletMPCOutputsVerifier {
     ) -> DwalletMPCResult<OutputVerificationResult> {
         let sign_output = bcs::from_bytes::<<SignFirstParty as Party>::PublicOutput>(&signature)?;
         let dkg_output = bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(
-            &sign_session_data.dkg_output,
+            &sign_session_data.dwallet_decentralized_public_output,
         )?
         .public_key;
         let protocol_public_parameters = epoch_store

@@ -20,7 +20,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         Secp256K1,
         EDwalletMismatch,
         SignData,
-        create_uniqe_presign_per_message,
+        craete_sign_data,
     };
 
     const SENDER_ADDRESS: address = @0xA;
@@ -398,11 +398,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 &mut messages_to_approve
             );
 
-            let extra_data = vector[ create_uniqe_presign_per_message(
+            let extra_data = vector[ craete_sign_data(
                 object::id_from_address(@0x01),
                 std::vector::singleton(0xAA),
                 vector[1],
-            ), create_uniqe_presign_per_message(
+            ), craete_sign_data(
                 object::id_from_address(@0x02),
                 std::vector::singleton(0xBB),
                 vector[2],
@@ -456,11 +456,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
         test_scenario::next_tx(&mut scenario, sender);
         {
-            let extra_data = vector[ create_uniqe_presign_per_message(
+            let extra_data = vector[ craete_sign_data(
                 object::id_from_address(@0x01),
                 std::vector::singleton(0xAA),
                 std::vector::singleton(0xAA),
-            ), create_uniqe_presign_per_message(
+            ), craete_sign_data(
                 object::id_from_address(@0x02),
                 std::vector::singleton(0xBB),
                 std::vector::singleton(0xBB),
@@ -524,11 +524,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 &mut messages_to_approve
             );
 
-            let extra_data = vector[ create_uniqe_presign_per_message(
+            let extra_data = vector[ craete_sign_data(
                 object::id_from_address(@0x01),
                 std::vector::singleton(0xAA),
                 std::vector::singleton(0xAA),
-            ), create_uniqe_presign_per_message(
+            ), craete_sign_data(
                 object::id_from_address(@0x02),
                 std::vector::singleton(0xBB),
                 std::vector::singleton(0xBB),

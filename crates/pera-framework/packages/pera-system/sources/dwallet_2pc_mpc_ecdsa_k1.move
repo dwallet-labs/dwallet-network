@@ -971,7 +971,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Call the underlying create SignData.
     /// This function is intended for testing purposes only and should not be used in production.
     /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_onl
-    public fun create_uniqe_presign_per_message(
+    public fun craete_sign_data(
         presign_id: ID,
         presign_output: vector<u8>,
         message_centralized_signature: vector<u8>,
