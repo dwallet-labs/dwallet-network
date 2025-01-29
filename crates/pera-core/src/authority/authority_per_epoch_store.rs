@@ -354,8 +354,8 @@ pub struct AuthorityPerEpochStore {
     /// State machine managing dWallet MPC outputs.
     /// This state machine is used to store outputs and emit ones
     /// where the quorum of votes is valid.
-    pub dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
-    pub dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
+    dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
+    dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
     pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
     dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
     dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
@@ -585,8 +585,10 @@ pub struct AuthorityEpochTables {
     pub(crate) randomness_highest_completed_round: DBMap<u64, RandomnessRound>,
     /// Holds the timestamp of the most recently generated round of randomness.
     pub(crate) randomness_last_round_timestamp: DBMap<u64, TimestampMs>,
-    /// Holds all the DWallet MPC related messages that have been received since the beginning of the epoch
-    /// The key is the mysticeti round number, the value is the DWallet-mpc messages that have been received in that
+    /// Holds all the DWallet MPC related messages that have been
+    /// received since the beginning of the epoch.
+    /// The key is the consensus round number,
+    /// the value is the dWallet-mpc messages that have been received in that
     /// round.
     pub(crate) dwallet_mpc_messages: DBMap<u64, Vec<DWalletMPCDBMessage>>,
     pub(crate) dwallet_mpc_outputs: DBMap<u64, Vec<DWalletMPCOutputMessage>>,
@@ -3505,7 +3507,7 @@ impl AuthorityPerEpochStore {
         self.save_dwallet_mpc_round_message(DWalletMPCDBMessage::EndOfDelivery)
             .await;
 
-        // Save all the DWallet-MPC related DB data to the consensus commit output in order to
+        // Save all the dWallet-MPC related DB data to the consensus commit output to
         // write it to the local DB. After saving the data, clear the data from the epoch store.
         let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
         output.set_dwallet_mpc_round_messages(dwallet_mpc_round_messages.clone());
@@ -3938,7 +3940,8 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {
                 // Filter DWalletMPCMessages from the consensus output and save them in the local
-                // DB. Those messages will get processed when the DWallet MPC service will read
+                // DB.
+                // Those messages will get processed when the dWallet MPC service reads
                 // them from the DB.
                 self.save_dwallet_mpc_round_message(DWalletMPCDBMessage::Message(message.clone()))
                     .await;
@@ -4526,8 +4529,8 @@ impl ConsensusCommitOutput {
                 .map(|key| (key, true)),
         )?;
 
-        // Write all the dWallet MPC related messages from this narwhal round to the local DB.
-        // The [`DWalletMPCService`] constantly read & process those messages.
+        // Write all the dWallet MPC related messages from this consensus round to the local DB.
+        // The [`DWalletMPCService`] constantly reads and process those messages.
         if let Some(consensus_commit_stats) = &self.consensus_commit_stats {
             batch.insert_batch(
                 &tables.dwallet_mpc_messages,

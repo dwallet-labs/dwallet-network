@@ -195,7 +195,7 @@ impl DWalletMPCManager {
                     );
                 }
             }
-            DWalletMPCDBMessage::MPCSessionFailed(session_id) => {
+            DWalletMPCDBMessage::MPCSessionFailed(_session_id) => {
                 // TODO (#524): Handle failed MPC sessions
             }
             DWalletMPCDBMessage::LockNextEpochCommitteeVote(_) => {}
@@ -393,7 +393,7 @@ impl DWalletMPCManager {
             .get()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .status()?;
-        let mut ready_to_advance: Vec<DWalletMPCSession> = self
+        let ready_to_advance: Vec<DWalletMPCSession> = self
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, session)| {

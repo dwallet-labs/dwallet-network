@@ -459,9 +459,23 @@ module pera_system::dwallet {
         message_approvals: &mut vector<MessageApproval>
     ) {
         let message_approval = vector::pop_back(message_approvals);
-        let (message_approval_dwallet_cap_id, hash_scheme, approved_message) = remove_message_approval(message_approval);
+        let (message_approval_dwallet_cap_id, _hash_scheme, approved_message) = remove_message_approval(message_approval);
         assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMessageApprovalDWalletMismatch);
-        assert!(&message_hash == &hash_message(approved_message, hash_scheme), EMissingApprovalOrWrongApprovalOrder);
+        assert!(&message_hash == &approved_message, EMissingApprovalOrWrongApprovalOrder);
+    }
+
+    public(package) fun hash_messages(message_approvals: &vector<MessageApproval>): vector<vector<u8>>{
+        let mut hashed_messages = vector::empty();
+        let messages_length = vector::length(message_approvals);
+        let mut i: u64 = 0;
+        while (i < messages_length) {
+            let message = &message_approvals[i].message;
+            let hash_scheme = message_approvals[i].hash_scheme;
+            let hashed_message = hash_message(*message, hash_scheme);
+            vector::push_back(&mut hashed_messages, hashed_message);
+            i = i + 1;
+        };
+        hashed_messages
     }
 
     /// Hashes the given message using the specified hash scheme.

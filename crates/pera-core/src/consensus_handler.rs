@@ -260,7 +260,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         }
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
         dwallet_mpc_verifier.last_processed_consensus_round = last_committed_round;
-        // Need to drop the verifier, as `self` is being used mutably later in this function
+        // Need to drop the verifier, as `self` is being used mutably later in this function.
         drop(dwallet_mpc_verifier);
 
         let round = consensus_output.leader_round();
@@ -723,8 +723,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         VerifiedExecutableTransaction::new_system(transaction, self.epoch())
     }
 
-    /// Loads all DWallet MPC messages from the epoch start from the epoch tables.
-    /// Needed to be a separate function because the DB table does not implement the `Send` trait,
+    /// Loads all dWallet MPC messages from the epoch start from the epoch tables.
+    /// Needs to be a separate function because the DB table does not implement the `Send` trait,
     /// hence async code involving it can cause compilation errors.
     async fn load_dwallet_mpc_messages_from_epoch_start(
         &self,
@@ -739,8 +739,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .collect())
     }
 
-    /// Loads all DWallet MPC outputs from the epoch start from the epoch tables.
-    /// Needed to be a separate function because the DB table does not implement the `Send` trait,
+    /// Loads all dWallet MPC outputs from the epoch start from the epoch tables.
+    /// Needs to be a separate function because the DB table does not implement the `Send` trait,
     /// hence async code involving it can cause compilation errors.
     async fn load_dwallet_mpc_outputs_from_epoch_start(
         &self,
@@ -755,7 +755,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .collect())
     }
 
-    /// Loads all DWallet MPC events from the epoch start from the epoch tables.
+    /// Loads all dWallet MPC events from the epoch start from the epoch tables.
     /// Needed to be a separate function because the DB table does not implement the `Send` trait,
     /// hence async code involving it can cause compilation errors.
     async fn load_dwallet_mpc_events_from_epoch_start(&self) -> PeraResult<Vec<DWalletMPCEvent>> {
