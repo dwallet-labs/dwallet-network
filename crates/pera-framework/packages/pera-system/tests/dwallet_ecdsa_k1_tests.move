@@ -627,8 +627,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             );
 
             pera_system::dwallet::sign<Secp256K1, SignData>(
-                message_approvals,
                 &dwallet,
+                message_approvals,
                 data,
                 ctx
             );
@@ -736,8 +736,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             );
 
             pera_system::dwallet::sign<Secp256K1, SignData>(
-                message_approvals,
                 &dwallet,
+                message_approvals,
                 extra_data,
                 ctx
             );
@@ -814,8 +814,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             );
 
             pera_system::dwallet::sign<Secp256K1, SignData>(
-                message_approvals,
                 &dwallet,
+                message_approvals,
                 data,
                 ctx
             );
@@ -891,8 +891,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             );
 
             pera_system::dwallet::sign<Secp256K1, SignData>(
-                message_approvals,
                 &dwallet,
+                message_approvals,
                 data,
                 ctx
             );
@@ -972,8 +972,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             );
 
             pera_system::dwallet::sign<Secp256K1, SignData>(
-                message_approvals,
                 &dwallet,
+                message_approvals,
                 extra_data,
                 ctx
             );
