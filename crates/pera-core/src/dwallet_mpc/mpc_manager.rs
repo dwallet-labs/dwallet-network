@@ -86,7 +86,7 @@ pub struct DWalletMPCManager {
     malicious_handler: MaliciousHandler,
 }
 
-/// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
+/// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum DWalletMPCDBMessage {
     /// An MPC message from another validator.
@@ -252,8 +252,8 @@ impl DWalletMPCManager {
                     });
                 };
                 // In the aggregated signing protocol, a single malicious report is enough
-                // to trigger the Sign Identifiable Abort protocol.
-                // In the Sign Identifiable Abort protocol, each validator runs the final step,
+                // to trigger the Sign-Identifiable Abort protocol.
+                // In the Sign-Identifiable Abort protocol, each validator runs the final step,
                 // agreeing on the malicious parties in the session and
                 // removing their messages before the signing session continues as usual.
                 if matches!(
@@ -488,7 +488,7 @@ impl DWalletMPCManager {
             return Ok(());
         }
         // Hook the tokio thread pool to the rayon thread pool.
-        let handle = tokio::runtime::Handle::current();
+        let handle = Handle::current();
         let session = session.clone();
         let finished_computation_sender = self
             .cryptographic_computations_orchestrator

@@ -56,14 +56,14 @@ pub enum MPCProtocolInitData {
 }
 
 /// The session-specific state of the MPC session.
-/// I.e., state that needs to exist only in the sign protocol but is not required in the
+/// I.e., state needs to exist only in the sign protocol but is not required in the
 /// presign protocol.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCSessionSpecificState {
     Sign(SignIASessionState),
 }
 
-/// The state of a sign identifiable abort session
+/// The state of a sign-identifiable abort session.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SignIASessionState {
     pub malicious_report: MaliciousReport,
