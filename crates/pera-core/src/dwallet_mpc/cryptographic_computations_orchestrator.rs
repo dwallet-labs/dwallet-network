@@ -1,12 +1,12 @@
-//! The orchestrator for DWallet MPC cryptographic computations.
+//! The orchestrator for dWallet MPC cryptographic computations.
 //!
 //! The orchestrator's job is to manage a task queue for computations
 //! and avoid launching tasks that cannot be parallelized at the moment
 //! due to unavailable CPUs.
 //! When a CPU core is freed, and before launching the Rayon task,
 //! it ensures that the computation has not become redundant based on
-//! messages received since it was added to the queue. This approach
-//! reduces the read delay from the local DB without slowing down state sync.
+//! messages received since it was added to the queue.
+//! This approach reduces the read delay from the local DB without slowing down state sync.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -40,7 +40,7 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// The order of the [`pending_computation_map`].
     /// Needed to process the computations in the order they were received.
     pub(crate) pending_for_computation_order: VecDeque<DWalletMPCLocalComputationMetadata>,
-    /// The number of currently running cryptographic computations - i.e.,
+    /// The number of currently running cryptographic computations — i.e.,
     /// computations we called [`rayon::spawn_fifo`] for,
     /// but we didn't receive a completion message for.
     pub(crate) currently_running_sessions_count: usize,

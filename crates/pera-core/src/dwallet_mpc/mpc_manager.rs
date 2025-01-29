@@ -84,7 +84,7 @@ pub struct DWalletMPCManager {
     malicious_handler: MaliciousHandler,
 }
 
-/// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
+/// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum DWalletMPCDBMessage {
     /// An MPC message from another validator.
@@ -193,7 +193,7 @@ impl DWalletMPCManager {
                     );
                 }
             }
-            DWalletMPCDBMessage::MPCSessionFailed(session_id) => {
+            DWalletMPCDBMessage::MPCSessionFailed(_session_id) => {
                 // TODO (#524): Handle failed MPC sessions
             }
             DWalletMPCDBMessage::LockNextEpochCommitteeVote(_) => {}
@@ -359,7 +359,7 @@ impl DWalletMPCManager {
             .get()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .status()?;
-        let mut ready_to_advance: Vec<DWalletMPCSession> = self
+        let ready_to_advance: Vec<DWalletMPCSession> = self
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, session)| {
@@ -463,7 +463,7 @@ impl DWalletMPCManager {
             return Ok(());
         }
         // Hook the tokio thread pool to the rayon thread pool.
-        let handle = tokio::runtime::Handle::current();
+        let handle = Handle::current();
         let session = session.clone();
         let finished_computation_sender = self
             .cryptographic_computations_orchestrator
@@ -515,7 +515,7 @@ impl DWalletMPCManager {
             };
             if session.status == MPCSessionStatus::Active {
                 info!(
-                    "running last sign cryptographic step for session_id: {:?}",
+                    "Running last sign cryptographic step for session_id: {:?}",
                     session_id
                 );
                 let session = session.clone();
