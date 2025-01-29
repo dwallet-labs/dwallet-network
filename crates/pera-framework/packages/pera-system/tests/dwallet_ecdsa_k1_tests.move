@@ -22,7 +22,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
         SignData,
         craete_sign_data,
     };
-
+    use pera_system::governance_test_utils::set_up_pera_system_state;
+    use pera_system::pera_system::PeraSystemState;
+    
     const SENDER_ADDRESS: address = @0xA;
     const SYSTEM_ADDRESS: address = @0x0;
 
@@ -63,10 +65,13 @@ module pera_system::dwallet_ecdsa_k1_tests {
     #[test]
     public fun test_launch_dkg_first_round() {
         let mut scenario = test_scenario::begin(SENDER_ADDRESS);
+        set_up_pera_system_state(vector[@0x1, @0x2, @0x3]);
+        let system_state = scenario.take_shared<PeraSystemState>();
         scenario.next_tx(SENDER_ADDRESS);
         {
             let ctx = scenario.ctx();
-            dwallet_2pc_mpc_ecdsa_k1::launch_dkg_first_round(ctx);
+            dwallet_2pc_mpc_ecdsa_k1::launch_dkg_first_round(&system_state, ctx);
+            test_utils::destroy(system_state);
         };
         let effects: TransactionEffects = scenario.end();
 
@@ -115,6 +120,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
     public fun test_launch_dkg_second_round() {
         let sender = SYSTEM_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
+        set_up_pera_system_state(vector[@0x1, @0x2, @0x3]);
+        let system_state = scenario.take_shared<PeraSystemState>();
         test_scenario::next_tx(&mut scenario, sender);
         {
             let session_id = object::id_from_address(@0x10);
@@ -129,6 +136,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let public_key_share_and_proof: vector<u8> = std::vector::empty();
             let first_round_session_id = object::id_from_address(@0x10);
             let encryption_key = create_encryption_key_for_testing(vector[], vector[], vector[], 1, @0x0, ctx);
+            
             let session_id = dwallet_2pc_mpc_ecdsa_k1::launch_dkg_second_round(
                 &dwallet_cap,
                 public_key_share_and_proof,
@@ -139,10 +147,12 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 vector[],
                 vector[],
                 vector[],
+                &system_state,
                 test_scenario::ctx(&mut scenario),
             );
 
             assert!(session_id != @0x0, EWrongSessionAddress);
+            test_utils::destroy(system_state);
             test_utils::destroy(first_round_session_id);
             test_utils::destroy(dkg_first_round_output);
             test_utils::destroy(dwallet_cap);
@@ -257,15 +267,18 @@ module pera_system::dwallet_ecdsa_k1_tests {
             dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
         };
 
+        set_up_pera_system_state(vector[@0x1, @0x2, @0x3]);
+        let system_state = scenario.take_shared<PeraSystemState>();
         // Call `launch_batched_presign` in a new transaction
         test_scenario::next_tx(&mut scenario, sender);
         {
             let ctx = test_scenario::ctx(&mut scenario);
-
+            
             // Emit the event for the first round of presign
-            dwallet_2pc_mpc_ecdsa_k1::launch_batched_presign(&dwallet, 1, ctx);
+            dwallet_2pc_mpc_ecdsa_k1::launch_batched_presign(&dwallet, 1, &system_state, ctx);
 
             // Clean up created objects
+            test_utils::destroy(system_state);
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
         };
@@ -385,6 +398,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
         test_scenario::next_tx(&mut scenario, sender);
         dwallet_cap = test_scenario::take_from_address<DWalletCap>(&scenario, sender);
 
+        set_up_pera_system_state(vector[@0x1, @0x2, @0x3]);
+        let system_state = scenario.take_shared<PeraSystemState>();
         test_scenario::next_tx(&mut scenario, sender);
         {
             let ctx = test_scenario::ctx(&mut scenario);
@@ -421,9 +436,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
             pera_system::dwallet::sign_with_partial_centralized_message_signatures<SignData>(
                 partial_signature_mock,
                 message_approvals,
+                &system_state,
                 ctx
             );
 
+            test_utils::destroy(system_state);
             test_utils::destroy(dwallet_cap);
             test_utils::destroy(dwallet);
         };
@@ -454,6 +471,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
         test_scenario::next_tx(&mut scenario, sender);
         dwallet_cap = test_scenario::take_from_address<DWalletCap>(&scenario, sender);
 
+        set_up_pera_system_state(vector[@0x1, @0x2, @0x3]);
+        let system_state = scenario.take_shared<PeraSystemState>();
         test_scenario::next_tx(&mut scenario, sender);
         {
             let extra_data = vector[ craete_sign_data(
@@ -479,9 +498,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
             pera_system::dwallet::sign_with_partial_centralized_message_signatures<SignData>(
                 partial_signature_mock,
                 vector[],
+                &system_state,
                 ctx
             );
 
+            test_utils::destroy(system_state);
             test_utils::destroy(dwallet_cap);
             test_utils::destroy(dwallet);
         };
@@ -512,6 +533,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
         test_scenario::next_tx(&mut scenario, sender);
         dwallet_cap = test_scenario::take_from_address<DWalletCap>(&scenario, sender);
 
+        set_up_pera_system_state(vector[@0x1, @0x2, @0x3]);
+        let system_state = scenario.take_shared<PeraSystemState>();
         test_scenario::next_tx(&mut scenario, sender);
         {
             let ctx = test_scenario::ctx(&mut scenario);
@@ -548,8 +571,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
             pera_system::dwallet::sign_with_partial_centralized_message_signatures<SignData>(
                 partial_signature_mock,
                 message_approvals,
+                &system_state,
                 ctx
             );
+
+            test_utils::destroy(system_state);
             test_utils::destroy(dwallet_cap);
             test_utils::destroy(dwallet);
         };
@@ -598,6 +624,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             );
         };
 
+        set_up_pera_system_state(vector[@0x1, @0x2, @0x3]);
+        let system_state = scenario.take_shared<PeraSystemState>();
         // Third transaction: Approve messages and call the `sign` function.
         test_scenario::next_tx(&mut scenario, sender);
         {
@@ -631,9 +659,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 &dwallet,
                 message_approvals,
                 data,
+                &system_state,
                 ctx
             );
 
+            test_utils::destroy(system_state);
             test_utils::destroy(dwallet_cap);
             test_utils::destroy(dwallet);
         };
@@ -704,6 +734,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             );
         };
 
+        set_up_pera_system_state(vector[@0x1, @0x2, @0x3]);
+        let system_state = scenario.take_shared<PeraSystemState>();
         // Third transaction: Create an invalid DWalletCap and attempt to sign.
         test_scenario::next_tx(&mut scenario, sender);
         {
@@ -740,9 +772,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 &dwallet,
                 message_approvals,
                 extra_data,
+                &system_state,
                 ctx
             );
 
+            test_utils::destroy(system_state);
             test_utils::destroy(invalid_dwallet_cap);
             test_utils::destroy(dwallet);
         };
@@ -788,6 +822,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             );
         };
 
+        set_up_pera_system_state(vector[@0x1, @0x2, @0x3]);
+        let system_state = scenario.take_shared<PeraSystemState>();
         // Third transaction: Attempt to call the `sign` function with an **invalid DWallet**
         test_scenario::next_tx(&mut scenario, sender);
         {
@@ -818,9 +854,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 &dwallet,
                 message_approvals,
                 data,
+                &system_state,
                 ctx
             );
 
+            test_utils::destroy(system_state);
             test_utils::destroy(invalid_dwallet);
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
@@ -838,6 +876,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
         let dwallet;
         let dwallet_cap;
         let presign;
+        
+        set_up_pera_system_state(vector[@0x1, @0x2, @0x3]);
+        let system_state = scenario.take_shared<PeraSystemState>();
 
         test_scenario::next_tx(&mut scenario, sender);
         {
@@ -895,9 +936,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 &dwallet,
                 message_approvals,
                 data,
+                &system_state,
                 ctx
             );
 
+            test_utils::destroy(system_state);
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
         };
@@ -914,6 +957,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
         let dwallet;
         let dwallet_cap;
         let presign;
+
+        set_up_pera_system_state(vector[@0x1, @0x2, @0x3]);
+        let system_state = scenario.take_shared<PeraSystemState>();
 
         test_scenario::next_tx(&mut scenario, sender);
         {
@@ -976,9 +1022,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 &dwallet,
                 message_approvals,
                 extra_data,
+                &system_state,
                 ctx
             );
 
+            test_utils::destroy(system_state);
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
         };
