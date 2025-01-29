@@ -680,11 +680,6 @@ export async function fetchEncryptedUserSecretShare(
 		}
 
 		cursor = hasNextPage ? nextCursor : null;
-
-		// Break loop if there are no more pages
-		if (!cursor) {
-			break;
-		}
 	}
 
 	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
