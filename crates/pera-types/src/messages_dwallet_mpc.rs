@@ -104,9 +104,8 @@ impl MPCProtocolInitData {
 
     /// Is a special Round that indicates an initialization of a batch session.
     pub fn is_a_new_batch_session(&self) -> bool {
-        matches!(self, |MPCProtocolInitData::BatchedSign(..)| {
-            MPCProtocolInitData::BatchedPresign(..)
-        })
+        matches!(self, |MPCProtocolInitData::BatchedSign(..))
+            || matches!(self, MPCProtocolInitData::BatchedPresign(..))
     }
 }
 
