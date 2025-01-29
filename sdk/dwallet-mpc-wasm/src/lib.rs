@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use dwallet_mpc::{
-    centralized_public_share_from_decentralized_output_inner, create_dkg_output,
-    advance_centralized_sign_party, decrypt_user_share_inner, encrypt_secret_share_and_prove,
+    advance_centralized_sign_party, centralized_public_share_from_decentralized_output_inner,
+    create_dkg_output, decrypt_user_share_inner, encrypt_secret_share_and_prove,
     generate_secp256k1_cg_keypair_from_seed_internal, verify_secret_share,
 };
 use wasm_bindgen::prelude::*;
@@ -49,7 +49,10 @@ pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErro
 /// Encrypts the given secret share to the given encryption key.
 /// Returns a tuple of the encryption key and proof of encryption.
 #[wasm_bindgen]
-pub fn encrypt_secret_share(secret_share: Vec<u8>, encryption_key: Vec<u8>) -> Result<JsValue, JsError> {
+pub fn encrypt_secret_share(
+    secret_share: Vec<u8>,
+    encryption_key: Vec<u8>,
+) -> Result<JsValue, JsError> {
     let encryption_and_proof =
         encrypt_secret_share_and_prove(secret_share, encryption_key).map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
@@ -108,7 +111,7 @@ pub fn create_sign_centralized_output(
         bcs::from_bytes(&presigns).map_err(|e| JsError::new(&e.to_string()))?;
     let session_ids: Vec<String> =
         bcs::from_bytes(&session_ids).map_err(|e| JsError::new(&e.to_string()))?;
-    let res = advance_centralized_sign_party(
+    let signed_messages = advance_centralized_sign_party(
         protocol_public_parameters,
         key_scheme,
         centralized_party_dkg_output,
@@ -120,7 +123,7 @@ pub fn create_sign_centralized_output(
     )
     .map_err(|e| JsError::new(&e.to_string()))?;
 
-    serde_wasm_bindgen::to_value(&res).map_err(|e| JsError::new(&e.to_string()))
+    serde_wasm_bindgen::to_value(&signed_messages).map_err(|e| JsError::new(&e.to_string()))
 }
 
 // There is no way to implement From<anyhow::Error> for JsErr

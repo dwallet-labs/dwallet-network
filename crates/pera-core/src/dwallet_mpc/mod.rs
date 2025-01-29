@@ -319,7 +319,6 @@ fn batched_presign_session_info(deserialized_event: &StartBatchedPresignEvent) -
     }
 }
 
-// todo(zeev): make sure this is not a duplicate.
 fn calculate_total_voting_weight(
     weighted_parties: &HashMap<PartyID, Weight>,
     parties: &HashSet<PartyID>,

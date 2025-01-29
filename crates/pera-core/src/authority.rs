@@ -1546,7 +1546,7 @@ impl AuthorityState {
         certificate: &VerifiedExecutableTransaction,
     ) -> PeraResult {
         // The dWallet MPC components are not yet initialized in the genesis TXs.
-        // None of them should start DWallet-MPC flows.
+        // None of them should start the dWallet-MPC flows.
         // Transactions that don't contain shared objects cannot trigger dwallet MPC flows,
         // as they are not being ordered through the consensus engine.
         if certificate.transaction_data().is_genesis_tx()

@@ -108,7 +108,8 @@ impl DWalletMPCSession {
 
     /// Advances the MPC session and sends the advancement result to the other validators.
     /// The consensus submission logic is being spawned as a separate tokio task, as it's an IO
-    /// heavy task. Rayon, which is good for CPU heavy tasks, is used to perform the cryptographic
+    /// heavy task.
+    /// Rayon, which is good for CPU heavy tasks, is used to perform the cryptographic
     /// computation, and Tokio, which is good for IO heavy tasks, is used to submit the result to
     /// the consensus.
     pub(super) fn advance(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
@@ -125,7 +126,6 @@ impl DWalletMPCSession {
                 })?;
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
-                let party_id = self.party_id;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![message], &epoch_store)
@@ -137,7 +137,7 @@ impl DWalletMPCSession {
                 Ok(())
             }
             Ok(AsynchronousRoundResult::Finalize {
-                malicious_parties,
+                malicious_parties: _,
                 private_output: _,
                 public_output,
             }) => {
@@ -149,34 +149,7 @@ impl DWalletMPCSession {
                         .submit_to_consensus(&vec![output], &epoch_store)
                         .await
                     {
-                        error!("failed to submit MPC message to consensus: {:?}", err);
-                    }
-                });
-                Ok(())
-            }
-            Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
-                error!(
-                    "Session failed with malicious parties: {:?}",
-                    malicious_parties
-                );
-                let malicious_parties = malicious_parties
-                    .into_iter()
-                    .map(|party_id| {
-                        Ok(party_id_to_authority_name(party_id, &*self.epoch_store()?)?)
-                    })
-                    .collect::<DwalletMPCResult<Vec<_>>>()?;
-                let report =
-                    MaliciousReport::new(malicious_parties, self.session_info.session_id.clone());
-                let output =
-                    self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
-                let consensus_adapter = self.consensus_adapter.clone();
-                let epoch_store = self.epoch_store()?.clone();
-                tokio_runtime_handle.spawn(async move {
-                    if let Err(err) = consensus_adapter
-                        .submit_to_consensus(&vec![output], &epoch_store)
-                        .await
-                    {
-                        error!("failed to submit MPC message to consensus: {:?}", err);
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())

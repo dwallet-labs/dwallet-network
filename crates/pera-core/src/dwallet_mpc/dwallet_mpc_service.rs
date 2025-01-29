@@ -25,7 +25,7 @@ pub struct DWalletMPCService {
 }
 
 impl DWalletMPCService {
-    pub fn new(epoch_store: Arc<AuthorityPerEpochStore>, exit: watch::Receiver<()>) -> Self {
+    pub fn new(epoch_store: Arc<AuthorityPerEpochStore>, exit: Receiver<()>) -> Self {
         Self {
             last_read_consensus_round: 0,
             read_messages: 0,

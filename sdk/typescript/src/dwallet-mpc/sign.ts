@@ -59,7 +59,6 @@ export function isCompletedSignEvent(obj: any): obj is CompletedSignEvent {
 export async function signMessageTransactionCall(
 	c: Config,
 	dwalletCapID: string,
-	hashedMessages: Uint8Array[],
 	messages: Uint8Array[],
 	hash: Hash,
 	dWalletID: string,
@@ -81,7 +80,7 @@ export async function signMessageTransactionCall(
 		target: signMoveFunc,
 		arguments: [
 			messageApprovals,
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
+			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 			tx.makeMoveVec({ elements: presignIDs.map((presignID) => tx.object(presignID)) }),
 			tx.object(dWalletID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
@@ -128,7 +127,7 @@ export function isCreatedPartiallySignedMessagesEvent(
 
 export async function partiallySignMessageTransactionCall(
 	c: Config,
-	hashedMessages: Uint8Array[],
+	messages: Uint8Array[],
 	dWalletID: string,
 	presignIDs: string[],
 	centralizedSignedMessages: Uint8Array[],
@@ -139,7 +138,7 @@ export async function partiallySignMessageTransactionCall(
 		target: partiallySignMoveFunc,
 		arguments: [
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
+			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 			tx.makeMoveVec({ elements: presignIDs.map((presignID) => tx.object(presignID)) }),
 			tx.object(dWalletID),
 		],
@@ -270,7 +269,7 @@ export async function signWithEncryptedDWallet(
 				MPCKeyScheme.Secp256k1,
 				dWallet.dwallet_mpc_network_key_version,
 			);
-	const [centralizedSignedMsg, hashedMsgs] = create_sign_centralized_output(
+	const [centralizedSignedMsg] = create_sign_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
 		Uint8Array.from(dWallet.centralized_output),
@@ -284,7 +283,6 @@ export async function signWithEncryptedDWallet(
 	return await signMessageTransactionCall(
 		conf,
 		dWallet.dwallet_cap_id,
-		hashedMsgs,
 		messages,
 		Hash.SHA256,
 		dWallet.id.id,
