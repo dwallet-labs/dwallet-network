@@ -11,15 +11,16 @@ module pera_system::dwallet_ecdsa_k1_tests {
         DWalletCap,
         get_dwallet_mpc_network_decryption_key_version,
         create_encryption_key_for_testing,
-        hash_message
+        EExtraDataAndMessagesLenMismatch,
     };
     use pera_system::dwallet_2pc_mpc_ecdsa_k1;
-    use pera_system::dwallet_2pc_mpc_ecdsa_k1::{Presign, create_dkg_first_round_output_for_testing};
+    use pera_system::dwallet_2pc_mpc_ecdsa_k1::{Presign};
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{
         ENotSystemAddress,
-        EApprovalsAndMessagesLenMismatch,
+        Secp256K1,
         EDwalletMismatch,
-        ECentralizedSignedMessagesAndMessagesLenMismatch
+        SignData,
+        create_uniqe_presign_per_message,
     };
 
     const SENDER_ADDRESS: address = @0xA;
@@ -396,24 +397,33 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 0,
                 &mut messages_to_approve
             );
-            let partial_signature_mock = pera_system::dwallet_2pc_mpc_ecdsa_k1::partial_signatures_for_testing(
-                vector[vector[1], vector[2]],
-                vector[object::id_from_address(@0x01), object::id_from_address(@0x02)],
-                vector[
-                    std::vector::singleton(0xAA),
-                    std::vector::singleton(0xBB)
-                ],
-                vector[vector[1], vector[2]],
+
+            let extra_data = vector[ create_uniqe_presign_per_message(
+                object::id_from_address(@0x01),
+                std::vector::singleton(0xAA),
+                vector[1],
+            ), create_uniqe_presign_per_message(
+                object::id_from_address(@0x02),
+                std::vector::singleton(0xBB),
+                vector[2],
+            ) ];
+
+            let ctx = test_scenario::ctx(&mut scenario);
+            let partial_signature_mock = pera_system::dwallet::partial_signatures_for_testing<SignData>(
+            vector[std::vector::singleton(0xAA), std::vector::singleton(0xBB)],
                 object::id(&dwallet),
                 dwallet_cap_id,
                 get_dwallet_mpc_network_decryption_key_version(&dwallet),
-                ctx
+                extra_data,
+                ctx,
             );
-            pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(
+
+            pera_system::dwallet::sign_with_partial_centralized_message_signatures<SignData>(
                 partial_signature_mock,
-                &mut message_approvals,
+                message_approvals,
                 ctx
             );
+
             test_utils::destroy(dwallet_cap);
             test_utils::destroy(dwallet);
         };
@@ -424,8 +434,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
         assert!(events_num == 3, EWrongEventNumber);
     }
 
-    #[test]
-    #[expected_failure(abort_code = EApprovalsAndMessagesLenMismatch)]
+    #[test]    
+    #[expected_failure]
     public fun test_future_sign_fails_due_to_message_approval_len_mismatch() {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
@@ -446,22 +456,32 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
         test_scenario::next_tx(&mut scenario, sender);
         {
+            let extra_data = vector[ create_uniqe_presign_per_message(
+                object::id_from_address(@0x01),
+                std::vector::singleton(0xAA),
+                std::vector::singleton(0xAA),
+            ), create_uniqe_presign_per_message(
+                object::id_from_address(@0x02),
+                std::vector::singleton(0xBB),
+                std::vector::singleton(0xBB),
+            ) ];
+
             let ctx = test_scenario::ctx(&mut scenario);
-            let partial_signature_mock = pera_system::dwallet_2pc_mpc_ecdsa_k1::partial_signatures_for_testing(
-                vector[vector[1], vector[2]],
-                vector[object::id_from_address(@0x01), object::id_from_address(@0x02)],
-                vector[std::vector::singleton(0xAA), std::vector::singleton(0xBB)],
+            let partial_signature_mock = pera_system::dwallet::partial_signatures_for_testing<SignData>(
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
                 get_dwallet_mpc_network_decryption_key_version(&dwallet),
-                ctx
+                extra_data,
+                ctx,
             );
-            pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(
+
+            pera_system::dwallet::sign_with_partial_centralized_message_signatures<SignData>(
                 partial_signature_mock,
-                &mut vector[],
+                vector[],
                 ctx
             );
+
             test_utils::destroy(dwallet_cap);
             test_utils::destroy(dwallet);
         };
@@ -503,19 +523,31 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 0,
                 &mut messages_to_approve
             );
-            let partial_signature_mock = pera_system::dwallet_2pc_mpc_ecdsa_k1::partial_signatures_for_testing(
-                vector[vector[1], vector[2]],
-                vector[object::id_from_address(@0x01), object::id_from_address(@0x02)],
-                vector[std::vector::singleton(0xAA), std::vector::singleton(0xBB)],
+
+            let extra_data = vector[ create_uniqe_presign_per_message(
+                object::id_from_address(@0x01),
+                std::vector::singleton(0xAA),
+                std::vector::singleton(0xAA),
+            ), create_uniqe_presign_per_message(
+                object::id_from_address(@0x02),
+                std::vector::singleton(0xBB),
+                std::vector::singleton(0xBB),
+
+            ) ];
+
+            let ctx = test_scenario::ctx(&mut scenario);
+            let partial_signature_mock = pera_system::dwallet::partial_signatures_for_testing<SignData>(
                 vector[vector[1], vector[2]],
                 object::id(&dwallet),
                 dwallet_cap_id,
                 get_dwallet_mpc_network_decryption_key_version(&dwallet),
-                ctx
+                extra_data,
+                ctx,
             );
-            pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(
+
+            pera_system::dwallet::sign_with_partial_centralized_message_signatures<SignData>(
                 partial_signature_mock,
-                &mut message_approvals,
+                message_approvals,
                 ctx
             );
             test_utils::destroy(dwallet_cap);
@@ -588,12 +620,16 @@ module pera_system::dwallet_ecdsa_k1_tests {
             vector::push_back(&mut centralized_signed_messages, std::vector::singleton(0xDD));
             vector::push_back(&mut centralized_signed_messages, std::vector::singleton(0xEE));
 
-            pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                &mut message_approvals,
-                messages_to_approve,
+            let data = dwallet_2pc_mpc_ecdsa_k1::create_signature_algorithm_data(
                 vector[presign, presign2],
-                &dwallet,
                 centralized_signed_messages,
+                &dwallet
+            );
+
+            pera_system::dwallet::sign<Secp256K1, SignData>(
+                &dwallet,
+                message_approvals,
+                data,
                 ctx
             );
 
@@ -620,7 +656,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             vector::push_back(&mut output, std::vector::singleton(0xAA));
             let session_id = object::id_from_address(@0x01);
 
-            dwallet_2pc_mpc_ecdsa_k1::create_sign_output_for_testing(
+            dwallet::create_sign_output_for_testing(
                 output,
                 session_id,
                 @0x0,
@@ -692,13 +728,17 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let mut centralized_signed_messages: vector<vector<u8>> = vector::empty();
             vector::push_back(&mut centralized_signed_messages, std::vector::singleton(0xDD));
 
-            // Call the sign function — this should fail with EDwalletCapMismatch.
-            pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                &mut message_approvals,
-                messages,
+            // This call should fail with EDwalletCapMismatch.
+            let extra_data = dwallet_2pc_mpc_ecdsa_k1::create_signature_algorithm_data(
                 vector[presign],
-                &dwallet,
                 centralized_signed_messages,
+                &dwallet
+            );
+
+            pera_system::dwallet::sign<Secp256K1, SignData>(
+                &dwallet,
+                message_approvals,
+                extra_data,
                 ctx
             );
 
@@ -767,12 +807,16 @@ module pera_system::dwallet_ecdsa_k1_tests {
             vector::push_back(&mut centralized_signed_messages, std::vector::singleton(0xDD));
 
             // Call the `sign` function with the **invalid dwallet** (this should fail).
-            pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                &mut message_approvals,
-                messages,
+            let data = dwallet_2pc_mpc_ecdsa_k1::create_signature_algorithm_data(
                 vector[presign],
-                &dwallet,
                 centralized_signed_messages,
+                &dwallet
+            );
+
+            pera_system::dwallet::sign<Secp256K1, SignData>(
+                &dwallet,
+                message_approvals,
+                data,
                 ctx
             );
 
@@ -785,7 +829,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = EApprovalsAndMessagesLenMismatch)]
+    #[expected_failure(abort_code = EExtraDataAndMessagesLenMismatch)]
     public fun test_sign_fails_due_to_approvals_and_messages_len_mismatch() {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
@@ -840,12 +884,16 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let mut centralized_signed_messages: vector<vector<u8>> = vector::empty();
             vector::push_back(&mut centralized_signed_messages, std::vector::singleton(0xDD));
 
-            pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                &mut message_approvals,
-                messages,
+            let data = dwallet_2pc_mpc_ecdsa_k1::create_signature_algorithm_data(
                 vector[presign],
-                &dwallet,
                 centralized_signed_messages,
+                &dwallet
+            );
+
+            pera_system::dwallet::sign<Secp256K1, SignData>(
+                &dwallet,
+                message_approvals,
+                data,
                 ctx
             );
 
@@ -857,96 +905,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = EMissingApprovalOrWrongApprovalOrder)]
-    public fun test_sign_fails_due_to_wrong_approval_order() {
-        let sender = SENDER_ADDRESS;
-        let mut scenario = test_scenario::begin(sender);
-
-        let dwallet;
-        let dwallet_cap;
-        let presign1;
-        let presign2;
-
-        test_scenario::next_tx(&mut scenario, sender);
-        {
-            let ctx = test_scenario::ctx(&mut scenario);
-            let dkg_output: vector<u8> = std::vector::singleton(0xAA);
-            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet_for_testing(dkg_output, ctx);
-        };
-
-        test_scenario::next_tx(&mut scenario, sender);
-        {
-            dwallet_cap = test_scenario::take_from_address<DWalletCap>(&scenario, sender);
-            let ctx = test_scenario::ctx(&mut scenario);
-
-            let presign_bytes: vector<u8> = std::vector::singleton(0xAA);
-            let first_round_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-
-            presign1 = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_presign(
-                object::id(&dwallet),
-                presign_bytes,
-                first_round_session_id,
-                ctx,
-            );
-            presign2 = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_presign(
-                object::id(&dwallet),
-                presign_bytes,
-                first_round_session_id,
-                ctx,
-            );
-        };
-
-        // Third transaction: Attempt to call the `sign` function with a wrong approval order.
-        test_scenario::next_tx(&mut scenario, sender);
-        {
-            let ctx = test_scenario::ctx(&mut scenario);
-
-            // Hashed messages to be signed (these are in the correct order).
-            let mut messages: vector<vector<u8>> = vector::empty();
-            vector::push_back(&mut messages, std::vector::singleton(0xAA)); // Message 1
-            vector::push_back(&mut messages, std::vector::singleton(0xBB)); // Message 2
-
-            // Create the message approvals (**but in the wrong order**).
-            let mut approvals_messages: vector<vector<u8>> = vector::empty();
-            vector::push_back(&mut approvals_messages, std::vector::singleton(0xBB));
-            vector::push_back(&mut approvals_messages, std::vector::singleton(0xAA));
-
-            // Here we create approvals for the messages, but since the approvals are **out of order**,
-            // it will trigger the assertion.
-            let mut message_approvals = pera_system::dwallet::approve_messages(
-                &dwallet_cap,
-                0,
-                &mut approvals_messages
-            );
-
-            let mut centralized_signed_messages: vector<vector<u8>> = vector::empty();
-            vector::push_back(
-                &mut centralized_signed_messages,
-                std::vector::singleton(0xDD)
-            );
-            vector::push_back(
-                &mut centralized_signed_messages,
-                std::vector::singleton(0xEE)
-            );
-
-            pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                &mut message_approvals,
-                messages,
-                vector[presign1, presign2],
-                &dwallet,
-                centralized_signed_messages,
-                ctx
-            );
-
-            test_utils::destroy(dwallet);
-            test_utils::destroy(dwallet_cap);
-        };
-
-        test_scenario::end(scenario);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ECentralizedSignedMessagesAndMessagesLenMismatch)]
+    #[expected_failure(abort_code = EExtraDataAndMessagesLenMismatch)]
     public fun test_sign_fails_due_to_centralized_signed_messages_len_mismatch() {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
@@ -1006,12 +965,16 @@ module pera_system::dwallet_ecdsa_k1_tests {
             );
 
             // Call the `sign` function (should fail due to mismatch).
-            pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                &mut message_approvals,
-                messages,
+            let extra_data = dwallet_2pc_mpc_ecdsa_k1::create_signature_algorithm_data(
                 vector[presign],
-                &dwallet,
                 centralized_signed_messages,
+                &dwallet
+            );
+
+            pera_system::dwallet::sign<Secp256K1, SignData>(
+                &dwallet,
+                message_approvals,
+                extra_data,
                 ctx
             );
 

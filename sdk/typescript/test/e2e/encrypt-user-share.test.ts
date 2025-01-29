@@ -12,7 +12,7 @@ import {
 	generateCGKeyPairFromSuiKeyPair,
 } from '../../src/dwallet-mpc/encrypt-user-share';
 import { Config, delay, mockedProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
-import { signWithEncryptedDWallet } from '../../src/dwallet-mpc/sign';
+import { signWithEncryptedDWallet } from '../../src/dwallet-mpc/sign_ecdsa_k1';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import {
 	DKGCentralizedPrivateOutput,

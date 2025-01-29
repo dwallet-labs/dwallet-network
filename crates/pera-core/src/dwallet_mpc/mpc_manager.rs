@@ -327,7 +327,7 @@ impl DWalletMPCManager {
             .filter_map(|(_, session)| {
                 let received_weight: PartyID = match session.status {
                     MPCSessionStatus::Active => session
-                        .pending_messages
+                        .serialized_messages
                         .get(session.round_number)
                         .unwrap_or(&HashMap::new())
                         .keys()

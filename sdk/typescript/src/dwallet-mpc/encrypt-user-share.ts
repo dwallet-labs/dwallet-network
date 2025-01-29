@@ -28,14 +28,13 @@ import {
 	fetchObjectWithType,
 	isDWallet,
 	isEqual,
-	packageId,
 } from './globals.js';
 
-const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
-const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
-const startEncryptionKeyVerificationEventMoveType = `${packageId}::${dWalletModuleName}::StartEncryptionKeyVerificationEvent`;
+const startEncryptedShareVerificationMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
+const createdEncryptedSecretShareEventMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
+const startEncryptionKeyVerificationEventMoveType = `${dWalletPackageID}::${dWalletModuleName}::StartEncryptionKeyVerificationEvent`;
 const encryptedUserSecretKeyShareMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::EncryptedUserSecretKeyShare`;
-const encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
+const encryptionKeyMoveType = `${dWalletPackageID}::${dWalletModuleName}::EncryptionKey`;
 
 /**
  * Event emitted by the blockchain when an
@@ -250,7 +249,7 @@ export class EncryptedUserShare {
 		const tx = new Transaction();
 		const address = publicKey.toPeraAddress();
 		tx.moveCall({
-			target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
+			target: `${dWalletPackageID}::${dWalletModuleName}::get_active_encryption_key`,
 			arguments: [tx.object(activeEncryptionKeysTableID), tx.pure.address(address)],
 		});
 
@@ -290,7 +289,7 @@ export class EncryptedUserShare {
 		const encryptionKeySignature = await keyPair.sign(new Uint8Array(encryptionKey));
 		const tx = new Transaction();
 		tx.moveCall({
-			target: `${packageId}::${dWalletModuleName}::register_encryption_key`,
+			target: `${dWalletPackageID}::${dWalletModuleName}::register_encryption_key`,
 			arguments: [
 				tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey)),
 				tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKeySignature)),
@@ -317,7 +316,7 @@ export class EncryptedUserShare {
 		return await fetchCompletedEvent<CreatedEncryptionKeyEvent>(
 			this.toConfig(keyPair),
 			sessionID,
-			`${packageId}::${dWalletModuleName}::CreatedEncryptionKeyEvent`,
+			`${dWalletPackageID}::${dWalletModuleName}::CreatedEncryptionKeyEvent`,
 			isCreatedEncryptionKeyEvent,
 		);
 	}
@@ -403,7 +402,7 @@ export class EncryptedUserShare {
 	) {
 		const tx = new Transaction();
 		tx.moveCall({
-			target: `${packageId}::${dWalletModuleName}::upsert_active_encryption_key`,
+			target: `${dWalletPackageID}::${dWalletModuleName}::upsert_active_encryption_key`,
 			arguments: [tx.object(activeEncryptionKeysTableID), tx.object(encryptionKeyObjID)],
 		});
 
@@ -551,7 +550,7 @@ export class EncryptedUserShare {
 		);
 		// todo(zeev): this should transfer the encrypted share to the destination.
 		tx.moveCall({
-			target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::transfer_encrypted_user_share`,
+			target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::transfer_encrypted_user_share`,
 			typeArguments: [],
 			arguments: [
 				tx.object(sourceDwallet.id.id),
@@ -593,7 +592,7 @@ export class EncryptedUserShare {
 export async function createActiveEncryptionKeysTable(c: Config) {
 	const tx = new Transaction();
 	tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::create_active_encryption_keys`,
+		target: `${dWalletPackageID}::${dWalletModuleName}::create_active_encryption_keys`,
 		arguments: [],
 	});
 

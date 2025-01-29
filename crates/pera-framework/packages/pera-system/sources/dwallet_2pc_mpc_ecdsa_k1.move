@@ -10,15 +10,12 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         DWallet,
         create_dwallet_cap,
         DWalletCap,
-        get_dwallet_cap_id,
         get_dwallet_decentralized_public_output,
         get_dwallet_centralized_public_output,
         get_dwallet_mpc_network_decryption_key_version,
         EncryptionKey,
         get_encryption_key,
-        pop_and_verify_message_approval,
-        MessageApproval,
-        hash_messages,
+        SignatureAlgorithmData,
     };
     use pera::event;
 
@@ -386,126 +383,16 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     // SIGN TYPES
 
-    /// Messages that have been signed by a user, a.k.a the centralized party,
-    /// but not yet by the blockchain.
-    /// Used for scenarios where the user needs to first agree to sign some transaction,
-    /// and the blockchain signs this transaction only later,
-    /// when some other conditions are met.
-    ///
-    /// Can be used to implement an order-book-based exchange, for example.
-    /// User A first agrees to buy BTC with ETH at price X, and signs a transaction with this information.
-    /// When a matching user B, that agrees to sell BTC for ETH at price X,
-    /// signs a transaction with this information,
-    /// the blockchain can sign both transactions, and the exchange is completed.
-    public struct PartiallySignedMessages has key {
-        /// A unique identifier for this `PartiallySignedMessages` object.
-        id: UID,
+    public struct SignData has store, drop, copy {
+        /// The presign object ID, this ID will
+        /// be used as the singature MPC protocol ID.
+        presign_id: ID,
 
-        /// The presigns bytes for each message.
-        /// The matching presign objects are being "burned" before this object is created.
-        presigns: vector<vector<u8>>,
+        /// The presign protocol output as bytes.
+        presign_output: vector<u8>,
 
-        /// The presigns session IDs.
-        presign_session_ids: vector<ID>,
-
-        /// The messages that are being signed.
-        messages: vector<vector<u8>>,
-
-        /// The user centralized signatures for each message.
-        signatures: vector<vector<u8>>,
-
-        /// The unique identifier of the associated dWallet.
-        dwallet_id: ID,
-
-        /// The DKG output of the dWallet.
-        dwallet_output: vector<u8>,
-
-        /// The unique identifier of the dWallet capability.
-        dwallet_cap_id: ID,
-
-        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
-        dwallet_mpc_network_decryption_key_version: u8,
-    }
-
-    /// Event emitted when a [`PartiallySignedMessages`] object is created.
-    public struct CreatedPartiallySignedMessagesEvent has copy, drop {
-        /// The unique identifier of the created `PartiallySignedMessages` object.
-        partial_signatures_object_id: ID,
-    }
-
-    /// Event emitted to start a batched sign process.
-    ///
-    /// ### Fields
-    /// - **`session_id`**: The session identifier for the batched sign process.
-    /// - **`hashed_messages`**: A list of hashed messages to be signed.
-    /// - **`initiator`**: The address of the user who initiated the protocol.
-    public struct StartBatchedSignEvent has copy, drop {
-        session_id: ID,
-        hashed_messages: vector<vector<u8>>,
-        initiator: address
-    }
-
-    /// Event emitted to signal the completion of a Sign process.
-    ///
-    /// This event contains signatures for all signed messages in the batch.
-    public struct CompletedSignEvent has copy, drop {
-        /// The session identifier for the signing process.
-        session_id: ID,
-
-        /// A collection of signed messages.
-        signed_messages: vector<vector<u8>>,
-    }
-
-    /// The output of a batched Sign session.
-    public struct BatchedSignOutput has key, store {
-        /// A unique identifier for the batched sign output.
-        id: UID,
-
-        /// The session identifier for the batched sign process.
-        session_id: ID,
-
-        /// A collection of signatures (signed messages) generated in the batched sign session.
-        signatures: vector<vector<u8>>,
-
-        /// The unique identifier of the associated dWallet.
-        dwallet_id: ID,
-    }
-
-    /// Event emitted to initiate the signing process.
-    ///
-    /// This event is captured by Validators to start the signing protocol.
-    /// It includes all the necessary information to link the signing process
-    /// to a specific dWallet, Presign session, and batched process.
-    public struct StartSignEvent has copy, drop {
-        /// A unique identifier for this signing session.
-        session_id: ID,
-
-        /// A unique identifier for the associated Presign session.
-        presign_session_id: ID,
-
-        /// The address of the user who initiated the signing event.
-        initiator: address,
-
-        /// A unique identifier for the batched signing process this session belongs to.
-        batched_session_id: ID,
-
-        /// The unique identifier for the dWallet used in the session.
-        dwallet_id: ID,
-
-        /// The output from the Distributed Key Generation (DKG) process used in this session.
-        dkg_output: vector<u8>,
-
-        /// The hashed message to be signed in this session.
-        hashed_message: vector<u8>,
-
-        /// The Presign output used to assist in the signing process.
-        presign: vector<u8>,
-
-        /// The final signed message generated by the centralized signing process.
-        centralized_signed_message: vector<u8>,
-
-        /// The MPC network decryption key version that is used to decrypt the associated dWallet.
-        dwallet_mpc_network_decryption_key_version: u8,
+        /// The centralized party signature of a message.
+        message_centralized_signature: vector<u8>,
     }
 
     // END OF SIGN TYPES
@@ -514,18 +401,12 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Error raised when the sender is not the system address.
     const ENotSystemAddress: u64 = 1;
     const EDwalletMismatch: u64 = 2;
-    const EApprovalsAndMessagesLenMismatch: u64 = 3;
-    const ECentralizedSignedMessagesAndMessagesLenMismatch: u64 = 5;
-    const EPresignsAndMessagesLenMismatch: u64 = 6;
-    const EApprovalsAndSignaturesLenMismatch: u64 = 7;
-    const EInvalidSignatures: u64 = 8;
     // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
     /// System address for asserting system-level actions.
     const SYSTEM_ADDRESS: address = @0x0;
 
-    // >>>>>>>>>>>>>>>>>>>>>>>> Constants >>>>>>>>>>>>>>>>>>>>>>>>
 
     /// Starts the first Distributed Key Generation (DKG) session.
     ///
@@ -820,31 +701,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         }
     }
 
-    // todo(zeev): remove this.
-    #[test_only]
-    public fun partial_signatures_for_testing(
-        presigns: vector<vector<u8>>,
-        presign_session_ids: vector<ID>,
-        messages: vector<vector<u8>>,
-        signatures: vector<vector<u8>>,
-        dwallet_id: ID,
-        dwallet_cap_id: ID,
-        dwallet_mpc_network_decryption_key_version: u8,
-        ctx: &mut TxContext
-    ): PartiallySignedMessages {
-        PartiallySignedMessages {
-            id: object::new(ctx),
-            presigns,
-            presign_session_ids,
-            messages,
-            signatures,
-            dwallet_id,
-            dwallet_output: vector::empty(),
-            dwallet_cap_id,
-            dwallet_mpc_network_decryption_key_version,
-        }
-    }
-
     #[allow(unused_function)]
     #[test_only]
     /// Call the underline `create_dkg_second_round_output`.
@@ -1072,293 +928,49 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         );
     }
 
-
-    /// Initiates the signing process for a given dWallet.
+    /// Creates a vector of `SignatureAlgorithmData` objects from a vector of `Presign` objects
+    /// and the centralized party message signatures.
     ///
-    /// This function emits a `StartSignEvent` and a `StartBatchedSignEvent`,
-    /// providing all necessary metadata to ensure the integrity of the signing process.
-    /// It validates the linkage between the `DWallet`, `DWalletCap`, and `Presign` objects.
-    /// Additionally, it "burns" the `Presign` object by transferring it to the system address,
-    /// as each presign can only be used to sign one message.
+    /// This function constructs the necessary data structures for the signing process using the ECDSA K1 algorithm.
+    /// It takes a vector of `Presign` objects, extracts the relevant data, and destroys the original objects,
+    /// as each `Presign` can only be used to sign a single message.
     ///
-    /// # Effects
-    /// - Validates the linkage between dWallet components.
-    /// - Ensures that the number of `hashed_messages`, `message_approvals`,
-    ///   `centralized_signed_messages`, and `presigns` are equal.
-    /// - Emits the following events:
-    ///   - `StartBatchedSignEvent`: Contains the session details and the list of hashed messages.
-    ///   - `StartSignEvent`: Includes session details, hashed message, presign outputs,
-    ///     DKG output, and metadata.
-    ///
-    /// # Aborts
-    /// - **`EDwalletMismatch`**: If the `dwallet` object does not match the `Presign` object.
-    /// - **`EApprovalsAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
-    ///   match the number of `message_approvals`.
-    /// - **`ECentralizedSignedMessagesAndMessagesLenMismatch`**: If the number of `hashed_messages`
-    ///   does not match the number of `centralized_signed_messages`.
-    /// - **`EPresignsAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
-    ///   match the number of `presigns`.
-    /// - **`EMessageApprovalDWalletMismatch`**: If the `DWalletCap` ID does not match the
-    ///   expected `DWalletCap` ID for any of the message approvals.
-    /// - **`EMissingApprovalOrWrongApprovalOrder`**: If the approvals are not in the correct order.
-    ///
-    /// # Parameters
-    /// - `message_approvals`: A mutable vector of `MessageApproval` objects representing
-    ///    approvals for the messages.
-    /// - `messages`: A vector of messages (in `vector<u8>` format) to be signed.
-    /// - `presigns`: A mutable vector of `Presign` objects containing intermediate signing outputs.
-    /// - `dwallet`: A reference to the `DWallet` object being used for signing.
-    /// - `centralized_signed_messages`: A mutable vector of centralized party signatures.
-    ///   for the messages being signed.
-    // todo(yael):
-    // consult with Omer on what types should this get, probalby the sign<T: drop> and then
-    // pass it the `dwallet`, dwallet: &DWallet<T>,
-    // Ask Omer if this needs to be in the dwallet.move file.
-    // Make sure the Move and TS tests are working.
-    public fun sign(
-        message_approvals: &mut vector<MessageApproval>,
-        mut messages: vector<vector<u8>>,
-        mut presigns: vector<Presign>,
+    /// Additionally, it ensures that the `DWallet` associated with the `Presign` objects matches the provided `DWallet`.
+    /// The function returns a vector of `SignatureAlgorithmData` objects, which are critical for the signing process.
+    /// The returned value must be used in a programmable transaction block;
+    /// otherwise, the transaction will fail due to the "Hot Potato" pattern.
+    public fun create_signature_algorithm_data(
+        presigns: vector<Presign>,
+        messages_centralized_signatures: vector<vector<u8>>,
         dwallet: &DWallet<Secp256K1>,
-        mut centralized_signed_messages: vector<vector<u8>>,
-        ctx: &mut TxContext
-    ) {
-        let messages_len: u64 = vector::length(&messages);
-        let presigns_len: u64 = vector::length(&presigns);
-        let approvals_len: u64 = vector::length(message_approvals);
-        let centralized_signed_len: u64 = vector::length(&centralized_signed_messages);
-        assert!(messages_len == approvals_len, EApprovalsAndMessagesLenMismatch);
-        assert!(messages_len == centralized_signed_len, ECentralizedSignedMessagesAndMessagesLenMismatch);
-        assert!(messages_len == presigns_len, EPresignsAndMessagesLenMismatch);
-        let expected_dwallet_cap_id = get_dwallet_cap_id(dwallet);
-        let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-        let mut hashed_messages = hash_messages(message_approvals);
-        event::emit(StartBatchedSignEvent {
-            session_id: batch_session_id,
-            hashed_messages,
-            initiator: tx_context::sender(ctx)
-        });
-        let mut i = 0;
-        while (i < approvals_len) {
-            let presign = vector::pop_back(&mut presigns);
-            assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
-            let message = vector::pop_back(&mut messages);
-            pop_and_verify_message_approval(expected_dwallet_cap_id, message, message_approvals);
-            let id = object::id_from_address(tx_context::fresh_object_address(ctx));
-            let centralized_signed_message = vector::pop_back(&mut centralized_signed_messages);
-            let hashed_message = vector::pop_back(&mut hashed_messages);
-            event::emit(StartSignEvent {
-                session_id: id,
-                presign_session_id: presign.first_round_session_id,
-                initiator: tx_context::sender(ctx),
-                batched_session_id: batch_session_id,
-                dwallet_id: object::id(dwallet),
-                presign: presign.presign,
-                centralized_signed_message,
-                dkg_output: get_dwallet_centralized_public_output<Secp256K1>(dwallet),
-                hashed_message,
-                dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version<Secp256K1>(dwallet),
-            });
-            transfer::transfer(presign, SYSTEM_ADDRESS);
-            i = i + 1;
-        };
-        presigns.destroy_empty();
+    ): vector<SignatureAlgorithmData<SignData>> {
+        vector::zip_map!(presigns, messages_centralized_signatures, | presign, message_centralized_signature | {
+            let Presign {id, presign, first_round_session_id, dwallet_id} = presign;
+            assert!(object::id(dwallet) == dwallet_id, EDwalletMismatch);
+            let data = SignData {
+                presign_id: first_round_session_id,
+                presign_output: presign,
+                message_centralized_signature,
+            };
+            object::delete(id);
+            dwallet::create_signature_algorithm_data<SignData>(data)
+        })
     }
-
-    /// Emits a `CompletedSignEvent` with the MPC Sign protocol output.
-    ///
-    /// This function is called by the blockchain itself and is part of the core
-    /// blockchain logic executed by validators. The emitted event contains the
-    /// completed sign output that should be consumed by the initiating user.
-    ///
-    /// ### Parameters
-    /// - **`signed_messages`**: A vector containing the signed message outputs.
-    /// - **`batch_session_id`**: The unique identifier for the batch signing session.
-    /// - **`ctx`**: The transaction context used for event emission.
-    ///
-    /// ### Requirements
-    /// - The caller **must be the system address** (`@0x0`). If this condition is not met,
-    ///   the function will abort with `ENotSystemAddress`.
-    ///
-    /// ### Events
-    /// - **`CompletedSignEvent`**: Emitted with the `session_id` and `signed_messages`,
-    ///   signaling the completion of the sign process for the batch session.
-    ///
-    /// ### Errors
-    /// - **`ENotSystemAddress`**: If the caller is not the system address (`@0x0`),
-    ///   the function will abort with this error.
-    #[allow(unused_function)]
-    fun create_sign_output(
-        signed_messages: vector<vector<u8>>,
-        batch_session_id: ID,
-        initiator: address,
-        dwallet_id: ID,
-        ctx: &mut TxContext
-    ) {
-        // Ensure that only the system address can call this function.
-        assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
-
-        let sign_output = BatchedSignOutput {
-            id: object::new(ctx),
-            signatures: signed_messages,
-            dwallet_id,
-            session_id: batch_session_id
-        };
-        transfer::transfer(sign_output, initiator);
-
-        // Emit the CompletedSignEvent with session ID and signed messages.
-        event::emit(CompletedSignEvent {
-            session_id: batch_session_id,
-            signed_messages,
-        });
-    }
-
-    /// A function to publish messages signed by the user on chain with on-chain verification,
-    /// without launching the chain's sign flow immediately.
-    ///
-    /// See the docs of [`PartiallySignedMessages`] for more details on when this may be used.
-    public fun publish_partially_signed_messages(
-        signatures: vector<vector<u8>>,
-        messages: vector<vector<u8>>,
-        mut presigns: vector<Presign>,
-        dwallet: &DWallet<Secp256K1>,
-        ctx: &mut TxContext
-    ) {
-        let messages_len = vector::length(&messages);
-        let signatures_len = vector::length(&signatures);
-        let presigns_len = vector::length(&presigns);
-        assert!(messages_len == signatures_len, EApprovalsAndSignaturesLenMismatch);
-        assert!(messages_len == presigns_len, EPresignsAndMessagesLenMismatch);
-        let mut presigns_bytes: vector<vector<u8>> = vector::empty();
-        let mut presign_session_ids: vector<ID> = vector::empty();
-        let mut i = 0;
-        while (i < messages_len) {
-            let presign = vector::pop_back(&mut presigns);
-            assert!(presign.dwallet_id == object::id(dwallet), EDwalletMismatch);
-            presigns_bytes.push_back(presign.presign);
-            presign_session_ids.push_back(presign.first_round_session_id);
-            transfer::transfer(presign, SYSTEM_ADDRESS);
-            i = i + 1;
-        };
-        presigns_bytes.reverse();
-        presign_session_ids.reverse();
-        presigns.destroy_empty();
-        assert!(
-            verify_partially_signed_signatures(
-                signatures,
-                messages,
-                presigns_bytes,
-                get_dwallet_decentralized_public_output(dwallet)
-            ),
-            EInvalidSignatures
-        );
-        let partial_signatures = PartiallySignedMessages {
-            id: object::new(ctx),
-            presigns: presigns_bytes,
-            presign_session_ids,
-            messages,
-            signatures,
-            dwallet_output: get_dwallet_decentralized_public_output(dwallet),
-            dwallet_id: object::id(dwallet),
-            dwallet_cap_id: get_dwallet_cap_id(dwallet),
-            dwallet_mpc_network_decryption_key_version: get_dwallet_mpc_network_decryption_key_version(dwallet),
-        };
-        event::emit(CreatedPartiallySignedMessagesEvent {
-            partial_signatures_object_id: object::id(&partial_signatures),
-        });
-        transfer::transfer(partial_signatures, tx_context::sender(ctx));
-    }
-
-    // todo(yael):
-    // this function should be changed to recieve something like this:
-    // future_sign<D: store, E: store + copy + drop>
-    // PartiallySignedMessages<D,E> should be changed to this and reanmed to `PartialCentralizedSignedMessages`
-    // Then consult with Omer on how to store the event and data (see `PartialUserSignedMessages` in sign-ia-wasm).
-    // After this is done and tested move it to the dwallet.move file and fix the tests.
-    /// A function to launch a sign flow with a previously published [`PartiallySignedMessages`].
-    ///
-    /// See the docs of [`PartiallySignedMessages`] for more details on when this may be used.
-    public fun future_sign(
-        partial_signature: PartiallySignedMessages,
-        message_approvals: &mut vector<MessageApproval>,
-        ctx: &mut TxContext
-    ) {
-        let PartiallySignedMessages {
-            id,
-            mut presigns,
-            mut presign_session_ids,
-            mut messages,
-            mut signatures,
-            dwallet_id,
-            dwallet_cap_id,
-            dwallet_output,
-            dwallet_mpc_network_decryption_key_version,
-        } = partial_signature;
-        object::delete(id);
-        let message_approvals_len = vector::length(message_approvals);
-        let messages_len = vector::length(&messages);
-        assert!(message_approvals_len == messages_len, EApprovalsAndMessagesLenMismatch);
-        let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-        let mut hashed_messages = hash_messages(message_approvals);
-        event::emit(StartBatchedSignEvent {
-            session_id: batch_session_id,
-            hashed_messages,
-            initiator: tx_context::sender(ctx)
-        });
-        let mut i = 0;
-        while (i < message_approvals_len) {
-            let message = vector::pop_back(&mut messages);
-            pop_and_verify_message_approval(dwallet_cap_id, message, message_approvals);
-            let id = object::id_from_address(tx_context::fresh_object_address(ctx));
-            let centralized_signed_message = vector::pop_back(&mut signatures);
-            let presign = vector::pop_back(&mut presigns);
-            let presign_session_id = vector::pop_back(&mut presign_session_ids);
-            let hashed_message = vector::pop_back(&mut hashed_messages);
-            event::emit(StartSignEvent {
-                session_id: id,
-                presign_session_id,
-                initiator: tx_context::sender(ctx),
-                batched_session_id: batch_session_id,
-                dwallet_id,
-                presign,
-                centralized_signed_message,
-                dkg_output: dwallet_output,
-                hashed_message,
-                dwallet_mpc_network_decryption_key_version,
-            });
-            i = i + 1;
-        };
-    }
-
-    /// Verifies that the user's centralized party signatures are valid.
-    /// todo(itay): why is it here?
-    native fun verify_partially_signed_signatures(
-        partial_signatures: vector<vector<u8>>,
-        messages: vector<vector<u8>>,
-        presigns: vector<vector<u8>>,
-        dkg_output: vector<u8>
-    ): bool;
-
 
     #[test_only]
-    /// Call the underlying `create_sign_output`.
+    /// Call the underlying create SignData.
     /// This function is intended for testing purposes only and should not be used in production.
-    /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_only
-    public fun create_sign_output_for_testing(
-        signed_messages: vector<vector<u8>>,
-        batch_session_id: ID,
-        initiator: address,
-        dwallet_id: ID,
-        ctx: &mut TxContext
-    ) {
-        // Call the main create_sign_output function with the provided parameters
-        create_sign_output(
-            signed_messages,
-            batch_session_id,
-            initiator,
-            dwallet_id,
-            ctx
-        );
+    /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_onl
+    public fun create_uniqe_presign_per_message(
+        presign_id: ID,
+        presign_output: vector<u8>,
+        message_centralized_signature: vector<u8>,
+    ): SignData {
+        SignData {
+            presign_id,
+            presign_output,
+            message_centralized_signature,
+        }
     }
 
     /// Generates a mock `DWallet<Secp256K1>` object for testing purposes.
@@ -1399,8 +1011,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     // TODO (#493): Remove mock functions before mainnet
     /// Created an immutable [`DWallet`] object with the given DKG output.
     public fun create_mock_dwallet(
-        dkg_output: vector<u8>,
-        dkg_centralized_output: vector<u8>,
+        dkg_decentralized_public_output: vector<u8>,
+        dkg_centralized_public_output: vector<u8>,
         ctx: &mut TxContext
     ) {
         let dwallet_cap = create_dwallet_cap(ctx);
@@ -1411,9 +1023,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let dwallet = dwallet::create_dwallet<Secp256K1>(
             session_id,
             dwallet_cap_id,
-            dkg_output,
+            dkg_decentralized_public_output,
             dwallet_mpc_network_decryption_key_version,
-            dkg_centralized_output,
+            dkg_centralized_public_output,
             ctx
         );
         transfer::public_freeze_object(dwallet);

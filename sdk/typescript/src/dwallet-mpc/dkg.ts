@@ -20,12 +20,11 @@ import {
 	fetchObjectFromEvent,
 	isDWallet,
 	MPCKeyScheme,
-	packageId,
 } from './globals.js';
 
 const completedDKGSecondRoundEventMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedDKGSecondRoundEvent`;
 const startDKGFirstRoundEventMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartDKGFirstRoundEvent`;
-const dkgFirstRoundOutputEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutputEvent`;
+const dkgFirstRoundOutputEventMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutputEvent`;
 
 /**
  * Event emitted to start the first round of the DKG process.
