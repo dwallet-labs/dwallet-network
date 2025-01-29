@@ -108,7 +108,7 @@ pub fn create_sign_centralized_output(
         bcs::from_bytes(&presigns).map_err(|e| JsError::new(&e.to_string()))?;
     let session_ids: Vec<String> =
         bcs::from_bytes(&session_ids).map_err(|e| JsError::new(&e.to_string()))?;
-    let res = advance_centralized_sign_party(
+    let signed_messages = advance_centralized_sign_party(
         protocol_public_parameters,
         key_scheme,
         centralized_party_dkg_output,
@@ -120,7 +120,7 @@ pub fn create_sign_centralized_output(
     )
     .map_err(|e| JsError::new(&e.to_string()))?;
 
-    serde_wasm_bindgen::to_value(&res).map_err(|e| JsError::new(&e.to_string()))
+    serde_wasm_bindgen::to_value(&signed_messages).map_err(|e| JsError::new(&e.to_string()))
 }
 
 // There is no way to implement From<anyhow::Error> for JsErr

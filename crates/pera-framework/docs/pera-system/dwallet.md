@@ -53,6 +53,7 @@ It encapsulates the session ID, capability ID, and the outputs from the DKG roun
 -  [Function `approve_messages`](#0x3_dwallet_approve_messages)
 -  [Function `remove_message_approval`](#0x3_dwallet_remove_message_approval)
 -  [Function `pop_and_verify_message_approval`](#0x3_dwallet_pop_and_verify_message_approval)
+-  [Function `hash_messages`](#0x3_dwallet_hash_messages)
 -  [Function `hash_message`](#0x3_dwallet_hash_message)
 -  [Function `is_supported_hash_scheme`](#0x3_dwallet_is_supported_hash_scheme)
 
@@ -1277,9 +1278,43 @@ Pops the last message approval from the vector and verifies it against the given
     message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;
 ) {
     <b>let</b> message_approval = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(message_approvals);
-    <b>let</b> (message_approval_dwallet_cap_id, hash_scheme, approved_message) = <a href="dwallet.md#0x3_dwallet_remove_message_approval">remove_message_approval</a>(message_approval);
+    <b>let</b> (message_approval_dwallet_cap_id, _hash_scheme, approved_message) = <a href="dwallet.md#0x3_dwallet_remove_message_approval">remove_message_approval</a>(message_approval);
     <b>assert</b>!(dwallet_cap_id == message_approval_dwallet_cap_id, <a href="dwallet.md#0x3_dwallet_EMessageApprovalDWalletMismatch">EMessageApprovalDWalletMismatch</a>);
-    <b>assert</b>!(&message_hash == &<a href="dwallet.md#0x3_dwallet_hash_message">hash_message</a>(approved_message, hash_scheme), <a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a>);
+    <b>assert</b>!(&message_hash == &approved_message, <a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a>);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_hash_messages"></a>
+
+## Function `hash_messages`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_hash_messages">hash_messages</a>(message_approvals: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_hash_messages">hash_messages</a>(message_approvals: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;{
+    <b>let</b> <b>mut</b> hashed_messages = <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>();
+    <b>let</b> messages_length = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(message_approvals);
+    <b>let</b> <b>mut</b> i: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 0;
+    <b>while</b> (i &lt; messages_length) {
+        <b>let</b> message = &message_approvals[i].message;
+        <b>let</b> hash_scheme = message_approvals[i].hash_scheme;
+        <b>let</b> hashed_message = <a href="dwallet.md#0x3_dwallet_hash_message">hash_message</a>(*message, hash_scheme);
+        <a href="../move-stdlib/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> hashed_messages, hashed_message);
+        i = i + 1;
+    };
+    hashed_messages
 }
 </code></pre>
 
