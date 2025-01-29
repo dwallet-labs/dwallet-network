@@ -61,7 +61,7 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 pub enum MPCSessionStatus {
     Pending,
     Active,
-    Finished(MPCPublicOutput),
+    Finished,
     Failed,
 }
 
@@ -70,9 +70,7 @@ impl fmt::Display for MPCSessionStatus {
         match self {
             MPCSessionStatus::Pending => write!(f, "Pending"),
             MPCSessionStatus::Active => write!(f, "Active"),
-            MPCSessionStatus::Finished(public_output) => {
-                write!(f, "Finished({:?})", public_output)
-            }
+            MPCSessionStatus::Finished => write!(f, "Finished"),
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }
     }

@@ -60,7 +60,9 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
-    use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound, SignMessageData};
+    use pera_types::messages_dwallet_mpc::{
+        DWalletMPCOutput, MPCProtocolInitData, SingleSignSessionData,
+    };
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -1129,7 +1131,7 @@ mod checked {
         let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 
         let (move_function_name, args) = match data.session_info.mpc_round {
-            MPCRound::DKGFirst => (
+            MPCProtocolInitData::DKGFirst => (
                 "create_dkg_first_round_output",
                 vec![
                     CallArg::Pure(data.session_info.session_id.to_vec()),
@@ -1137,7 +1139,7 @@ mod checked {
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                 ],
             ),
-            MPCRound::DKGSecond(event_data, dwallet_network_key_version) => (
+            MPCProtocolInitData::DKGSecond(event_data, dwallet_network_key_version) => (
                 "create_dkg_second_round_output",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
@@ -1157,7 +1159,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&event_data.centralized_public_output)?),
                 ],
             ),
-            MPCRound::PresignFirst(
+            MPCProtocolInitData::PresignFirst(
                 dwallet_id,
                 dkg_output,
                 batch_session_id,
@@ -1174,7 +1176,11 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&network_key_version)?),
                 ],
             ),
-            MPCRound::PresignSecond(dwallet_id, _first_round_output, batch_session_id) => {
+            MPCProtocolInitData::PresignSecond(
+                dwallet_id,
+                _first_round_output,
+                batch_session_id,
+            ) => {
                 let presigns: Vec<(ObjectID, MPCPublicOutput)> = bcs::from_bytes(&data.output)
                     .map_err(|e| {
                         ExecutionError::new(
@@ -1203,7 +1209,7 @@ mod checked {
                     ],
                 )
             }
-            MPCRound::Sign(SignMessageData {
+            MPCProtocolInitData::Sign(SingleSignSessionData {
                 batch_session_id,
                 dwallet_id,
                 is_future_sign,
@@ -1223,7 +1229,7 @@ mod checked {
                     ],
                 )
             }
-            MPCRound::NetworkDkg(key_type, new_key) => {
+            MPCProtocolInitData::NetworkDkg(key_type, new_key) => {
                 let new_key = new_key.ok_or(ExecutionError::new(
                     ExecutionErrorKind::TypeArgumentError {
                         argument_idx: 0,
@@ -1249,7 +1255,7 @@ mod checked {
                     ],
                 )
             }
-            MPCRound::EncryptedShareVerification(verification_data) => (
+            MPCProtocolInitData::EncryptedShareVerification(verification_data) => (
                 "create_encrypted_user_share",
                 vec![
                     CallArg::Pure(verification_data.dwallet_id.bytes.to_vec()),
@@ -1271,7 +1277,7 @@ mod checked {
                     CallArg::Pure(verification_data.initiator.to_vec()),
                 ],
             ),
-            MPCRound::EncryptionKeyVerification(verification_data) => {
+            MPCProtocolInitData::EncryptionKeyVerification(verification_data) => {
                 module_name = DWALLET_MODULE_NAME;
                 (
                     "create_encryption_key",

@@ -5,6 +5,7 @@
 /// and the DKG process. It leverages validators to execute MPC (Multi-Party Computation)
 /// protocols to ensure trustless and decentralized wallet creation and key management.
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
+    use pera_system::pera_system::PeraSystemState;
     use pera_system::dwallet;
     use pera_system::dwallet::{
         DWallet,
@@ -415,11 +416,14 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// and emits a `StartDKGFirstRoundEvent` to signal
     /// the beginning of the DKG process.
     ///
+    /// ### Parameters
+    /// - `_pera_system_state`: The Pera system state object.
+    ///
     /// ### Effects
     /// - Generates a new `DWalletCap` object.
     /// - Transfers the `DWalletCap` to the session initiator (`ctx.sender`).
     /// - Emits a `StartDKGFirstRoundEvent`.
-    public fun launch_dkg_first_round(ctx: &mut TxContext) {
+    public fun launch_dkg_first_round(_pera_system_state: &PeraSystemState, ctx: &mut TxContext) {
         let dwallet_cap = create_dwallet_cap(ctx);
         let dwallet_cap_id = object::id(&dwallet_cap);
         transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
@@ -490,6 +494,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - `centralized_public_output_signature`: The signature for the public output of the centralized party in the DKG process.
     /// - `initiator_public_key`: The Ed25519 public key of the initiator,
     ///    used to verify the signature on the public output.
+    /// - `_pera_system_state`: The Pera system state object. Its ID is always 0x5.
     public fun launch_dkg_second_round(
         dwallet_cap: &DWalletCap,
         centralized_public_key_share_and_proof: vector<u8>,
@@ -500,6 +505,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         centralized_public_output: vector<u8>,
         centralized_public_output_signature: vector<u8>,
         initiator_public_key: vector<u8>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ): address {
         let session_id = tx_context::fresh_object_address(ctx);
@@ -531,6 +537,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - **`destination_encryption_key`**: A reference to the encryption key used for encrypting the secret key share.
     /// - **`encrypted_secret_share_and_proof`**: The encrypted secret key share, accompanied by a cryptographic proof.
     /// - **`source_signed_centralized_public_output`**: The signed centralized public output corresponding to the secret share.
+    /// - **`_pera_system_state`**: The Pera system state object. Its ID is always 0x5.
     /// - **`source_ed25519_pubkey`**: The Ed25519 public key of the source (encryptor) used for verifying the signature.
     ///
     /// ### Effects
@@ -542,6 +549,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         encrypted_centralized_secret_share_and_proof: vector<u8>,
         source_centralized_public_output_signature: vector<u8>,
         source_ed25519_pubkey: vector<u8>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext,
     ) {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
@@ -745,10 +753,12 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// ### Parameters
     /// - `dwallet`: A reference to the target dWallet. This is used to retrieve the dWallet's ID and output.
     /// - `batch_size`: The number of presign sessions to be created in this batch.
+    /// - `_pera_system_state`: The Pera system state object. Its ID is always 0x5.
     /// - `ctx`: The mutable transaction context, used to generate unique object IDs and retrieve the initiator.
     public fun launch_batched_presign(
         dwallet: &DWallet<Secp256K1>,
         batch_size: u64,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));

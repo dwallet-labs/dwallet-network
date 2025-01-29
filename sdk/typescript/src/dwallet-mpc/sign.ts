@@ -78,7 +78,11 @@ export async function signMessageTransactionCall(
 
 	tx.moveCall({
 		target: signMoveFunc,
-		arguments: [tx.object(dWallet.id.id), messageApprovals, signData],
+		arguments: [tx.object(dWallet.id.id), messageApprovals, signData, tx.sharedObjectRef({
+            objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+            initialSharedVersion: 1,
+            mutable: false,
+        }),],
 		typeArguments: [dWalletCurveMoveType, signDataMoveType],
 	});
 
@@ -180,7 +184,15 @@ export async function completeFutureSignTransactionCall(
 	});
 	tx.moveCall({
 		target: completeFutureSignMoveFunc,
-		arguments: [tx.object(partialSignaturesObjectID), messageApprovals],
+		arguments: [
+			tx.object(partialSignaturesObjectID),
+			messageApprovals,
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: false,
+			}),
+		],
 		typeArguments: [signDataMoveType],
 	});
 

@@ -1,6 +1,7 @@
-use crate::base_types::{ObjectID, PeraAddress};
+use crate::base_types::{AuthorityName, ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
+use crate::event::Event;
 use crate::id::ID;
 use crate::message_envelope::Message;
 use crate::PERA_SYSTEM_ADDRESS;
@@ -15,10 +16,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
-// todo(zeev): move this to the dwallet_mpc_types.
+// todo(zeev): move the events to mpc_events and the types to `dwallet-mpc-types` crate.
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum MPCRound {
+pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
     DKGFirst,
     /// The second round of the DKG protocol.
@@ -30,13 +31,16 @@ pub enum MPCRound {
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID (same for each message in the batch),
     /// and the dWallets' network key version.
+    // TODO (#543): Connect the two presign rounds to one.
     PresignFirst(ObjectID, MPCPublicOutput, ObjectID, u8),
     /// The second round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
     /// the Presign first round output, and the batch session ID.
     PresignSecond(ObjectID, MPCPublicOutput, ObjectID),
-    /// This is not a real round, but an indicator the Batches Manager to
-    /// register a Sign Batch session.
+    /// The first and only round of the Sign protocol.
+    Sign(SingleSignSessionData),
+    /// A batched sign session, contains the list of messages that are being signed.
+    // TODO (#536): Store batch state and logic on Sui & remove this field.
     BatchedSign(Vec<Vec<u8>>),
     /// The first and only round of the Sign protocol for each message in the Batch.
     Sign(SignMessageData),
@@ -53,36 +57,82 @@ pub enum MPCRound {
     EncryptedShareVerification(StartEncryptedShareVerificationEvent),
     /// The round of verifying the public key that signed on the encryption key is
     /// matching the initiator address.
+    /// todo(zeev): more docs, make it clearer.
+    /// TODO (#544): Check if there's a way to convert the public key to an address in Move.
     /// This is not a real MPC round,
     /// but we use it to start the verification process using the same events mechanism
     /// because the system does not support native functions.
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
 }
 
+/// The session-specific state of the MPC session.
+/// I.e., state needs to exist only in the sign protocol but is not required in the
+/// presign protocol.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum MPCSessionSpecificState {
+    Sign(SignIASessionState),
+}
+
+/// The state of a sign-identifiable abort session.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct SignIASessionState {
+    pub malicious_report: MaliciousReport,
+    pub initiating_ia_authority: AuthorityName,
+}
+
 /// The message and data for the Sign round.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct SignMessageData {
+pub struct SingleSignSessionData {
     pub batch_session_id: ObjectID,
     pub hashed_message: Vec<u8>,
     /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,
+    /// The DKG output of the dWallet, used to sign and verify the message.
+    pub dkg_output: MPCPublicOutput,
+    pub network_key_version: u8,
     /// Indicates whether the future sign feature was used to start the session.
     pub is_future_sign: bool,
 }
 
-impl MPCRound {
+impl MPCProtocolInitData {
     /// Returns `true` if the round is a single message, which is
     /// part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
-        matches!(self, MPCRound::Sign(..) | MPCRound::PresignSecond(..))
+        matches!(self, MPCProtocolInitData::Sign(..) | MPCProtocolInitData::PresignSecond(..))
     }
 
     /// Is a special Round that indicates an initialization of a batch session.
     pub fn is_a_new_batch_session(&self) -> bool {
-        matches!(self, |MPCRound::BatchedSign(..)| MPCRound::BatchedPresign(
+        matches!(self, |MPCProtocolInitData::BatchedSign(..)| MPCProtocolInitData::BatchedPresign(
             ..
         ))
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DWalletMPCEvent {
+    // TODO: remove event - do all parsing beforehand.
+    pub event: Event,
+    pub session_info: SessionInfo,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DWalletMPCOutputMessage {
+    pub output: Vec<u8>,
+    pub authority: AuthorityName,
+    pub session_info: SessionInfo,
+}
+
+/// Metadata for a local MPC computation.
+/// Includes the session ID and the cryptographic round.
+///
+/// Used to remove a pending computation if a quorum of outputs for the session
+/// is received before the computation is spawned, or if a quorum of messages
+/// for the next round of the computation is received, making the old round redundant.
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
+pub struct DWalletMPCLocalComputationMetadata {
+    pub session_id: ObjectID,
+    pub crypto_round_number: usize,
 }
 
 /// The content of the system transaction that stores the MPC session output on the chain.
@@ -115,12 +165,12 @@ pub struct SessionInfo {
     pub initiating_user_address: PeraAddress,
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
-    pub mpc_round: MPCRound,
+    pub mpc_round: MPCProtocolInitData,
 }
 
 /// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
-/// Defined here so that we can use it in the [`MPCRound`] enum,
-/// as the inner data of the [`MPCRound::EncryptedShareVerification`].
+/// Defined here so that we can use it in the [`MPCProtocolInitData`] enum,
+/// as the inner data of the [`MPCProtocolInitData::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
     /// Encrypted centralized secret key share and the associated
@@ -224,6 +274,29 @@ impl StartDKGSecondRoundEvent {
             name: START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
+        }
+    }
+}
+
+/// Represents a report of malicious behavior in the dWallet MPC process.
+///
+/// This struct is used to record instances where validators identify malicious actors
+/// attempting to disrupt the protocol.
+/// It links the malicious actors to a specific MPC session.
+#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct MaliciousReport {
+    /// A list of authority names that have been identified as malicious actors.
+    pub malicious_actors: Vec<AuthorityName>,
+    /// The unique identifier of the MPC session in which the malicious activity occurred.
+    pub session_id: ObjectID,
+}
+
+impl MaliciousReport {
+    /// Creates a new instance of a malicious report.
+    pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID) -> Self {
+        Self {
+            malicious_actors,
+            session_id,
         }
     }
 }

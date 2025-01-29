@@ -10,6 +10,7 @@ import {
 import { bcs } from '../bcs/index.js';
 import type { PublicKey } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
+import { PERA_SYSTEM_STATE_OBJECT_ID } from '../utils/index.js';
 import { EncryptedUserShare } from './encrypt-user-share.js';
 import type { Config, DWallet, DWalletWithSecretKeyShare } from './globals.js';
 import {
@@ -152,7 +153,13 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundResult> {
 	const tx = new Transaction();
 	tx.moveCall({
 		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_first_round`,
-		arguments: [],
+		arguments: [
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: false,
+			}),
+		],
 	});
 	const result = await c.client.signAndExecuteTransaction({
 		signer: c.keypair,
@@ -191,18 +198,24 @@ async function launchDKGSecondRound(
 		new Uint8Array(centralizedPublicOutput),
 	);
 	const tx = new Transaction();
+
 	tx.moveCall({
 		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_second_round`,
 		arguments: [
-			tx.object(firstRoundResult.dwallet_cap_id),
-			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicKeyShareAndProof)),
-			tx.object(firstRoundResult.output_object_id),
-			tx.pure.id(firstRoundResult.session_id),
-			tx.pure(bcs.vector(bcs.u8()).serialize(encryptedCentralizedSecretShareAndProof)),
-			tx.object(encryptionKeyID),
-			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutputSignature)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(initiatorPubKey.toRawBytes())),
+            tx.object(firstRoundResult.dwallet_cap_id),
+            tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicKeyShareAndProof)),
+            tx.object(firstRoundResult.output_object_id),
+            tx.pure.id(firstRoundResult.session_id),
+            tx.pure(bcs.vector(bcs.u8()).serialize(encryptedCentralizedSecretShareAndProof)),
+            tx.object(encryptionKeyID),
+            tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput)),
+            tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutputSignature)),
+            tx.pure(bcs.vector(bcs.u8()).serialize(initiatorPubKey.toRawBytes())),
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: false,
+			}),
 		],
 	});
 

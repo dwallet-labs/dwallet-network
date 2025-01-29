@@ -19,6 +19,7 @@ module pera_system::dwallet {
     use pera::event;
     use pera::table::{Self, Table};
     use pera::ed25519::ed25519_verify;
+    use pera_system::pera_system::PeraSystemState;
     use pera::hash;
 
     const KEY_SCHEME_CLASS_GROUPS: u8 = 0;
@@ -269,11 +270,15 @@ module pera_system::dwallet {
     /// - `encryption_key_signature`: The signature of the encryption key, signed by the signer.
     /// - `key_signer_public_key`: The public key of the signer used to verify the encryption key signature.
     /// - `encryption_key_scheme`: The scheme of the encryption key (e.g., Class Groups).
+    /// - `_pera_system_state`: The Pera system state object. Its ID is always 0x5.
+    /// Needed so the TX will get ordered in consensus before getting executed.
     public fun register_encryption_key(
         encryption_key: vector<u8>,
         encryption_key_signature: vector<u8>,
         key_signer_public_key: vector<u8>,
         encryption_key_scheme: u8,
+        // TODO (#529): Create a dedicated, small shared object instead of using the system state.
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         assert!(is_valid_encryption_key_scheme(encryption_key_scheme), EInvalidEncryptionKeyScheme);

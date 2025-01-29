@@ -5,6 +5,7 @@
 import { bcs } from '@mysten/bcs';
 
 import { Transaction } from '../transactions/index.js';
+import { PERA_SYSTEM_STATE_OBJECT_ID } from '../utils/index.js';
 import type { Config } from './globals.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
@@ -74,7 +75,15 @@ async function launchPresignFirstRound(
 
 	tx.moveCall({
 		target: launchPresignFirstRoundMoveFunc,
-		arguments: [tx.object(dwalletID), tx.pure(bcs.u64().serialize(batch_size))],
+		arguments: [
+			tx.object(dwalletID),
+			tx.pure(bcs.u64().serialize(batch_size)),
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: false,
+			}),
+		],
 	});
 
 	const res = await c.client.signAndExecuteTransaction({

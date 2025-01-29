@@ -153,6 +153,7 @@ pub struct ValidatorComponents {
     // is copied into each checkpoint service task, and they are listening to any change to this
     // channel. When the sender is dropped, a change is triggered and those tasks will exit.
     checkpoint_service_exit: watch::Sender<()>,
+    dwallet_mpc_service_exit: watch::Sender<()>,
     checkpoint_metrics: Arc<CheckpointMetrics>,
     pera_tx_validator_metrics: Arc<PeraTxValidatorMetrics>,
 }
@@ -213,6 +214,7 @@ use simulator::*;
 
 use pera_core::consensus_handler::ConsensusHandlerInitializer;
 use pera_core::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
+use pera_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use pera_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use pera_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use pera_core::safe_client::SafeClientMetricsBase;
@@ -1277,6 +1279,8 @@ impl PeraNode {
             checkpoint_metrics.clone(),
         );
 
+        let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(epoch_store.clone());
+
         // create a new map that gets injected into both the consensus handler and the consensus adapter
         // the consensus handler will write values forwarded from consensus, and the consensus adapter
         // will read the values to make decisions about which validator submits a transaction to consensus
@@ -1307,15 +1311,12 @@ impl PeraNode {
             .set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(&epoch_store))?;
         epoch_store.set_dwallet_mpc_batches_manager(DWalletMPCBatchesManager::new())?;
 
-        epoch_store.set_dwallet_mpc_sender(
-            DWalletMPCManager::try_new(
-                Arc::new(consensus_adapter.clone()),
-                Arc::clone(&epoch_store),
-                epoch_store.epoch(),
-                config.clone(),
-            )
-            .await?,
-        )?;
+        epoch_store.set_dwallet_mpc_manager(DWalletMPCManager::try_new(
+            Arc::new(consensus_adapter.clone()),
+            Arc::clone(&epoch_store),
+            epoch_store.epoch(),
+            config.clone(),
+        )?)?;
 
         let throughput_calculator = Arc::new(ConsensusThroughputCalculator::new(
             None,
@@ -1372,6 +1373,7 @@ impl PeraNode {
             consensus_store_pruner,
             consensus_adapter,
             checkpoint_service_exit,
+            dwallet_mpc_service_exit,
             checkpoint_metrics,
             pera_tx_validator_metrics,
         })
@@ -1681,6 +1683,7 @@ impl PeraNode {
                 consensus_store_pruner,
                 consensus_adapter,
                 checkpoint_service_exit,
+                dwallet_mpc_service_exit,
                 checkpoint_metrics,
                 pera_tx_validator_metrics,
             }) = self.validator_components.lock().await.take()
@@ -1688,6 +1691,7 @@ impl PeraNode {
                 info!("Reconfiguring the validator.");
                 // Stop the old checkpoint service.
                 drop(checkpoint_service_exit);
+                drop(dwallet_mpc_service_exit);
 
                 consensus_manager.shutdown().await;
 
@@ -1873,6 +1877,14 @@ impl PeraNode {
 
     pub fn randomness_handle(&self) -> randomness::Handle {
         self.randomness_handle.clone()
+    }
+
+    fn start_dwallet_mpc_service(epoch_store: Arc<AuthorityPerEpochStore>) -> watch::Sender<()> {
+        let (exit_sender, mut exit_receiver) = watch::channel(());
+        let mut service = DWalletMPCService::new(epoch_store.clone(), exit_receiver);
+        spawn_monitored_task!(service.spawn());
+
+        exit_sender
     }
 }
 

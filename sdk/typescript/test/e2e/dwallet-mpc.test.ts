@@ -59,6 +59,7 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: fiveMinutes,
 		};
+		await delay(2000);
 		const dWallet = await createDWallet(
 			conf,
 			mockedProtocolPublicParameters,
@@ -71,6 +72,8 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should run Presign', async () => {
+		await delay(2000);
+
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
@@ -109,6 +112,7 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: fiveMinutes * 2,
 		};
+		await delay(2000);
 		const dWallet = await mockCreateDwallet(c);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
