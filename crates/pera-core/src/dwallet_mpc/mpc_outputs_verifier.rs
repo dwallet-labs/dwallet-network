@@ -18,13 +18,17 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{
     MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, SingleSignSessionData,
 };
+use twopc_mpc::secp256k1::class_groups::{
+    ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+};
+
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tracing::error;
 use tracing::log::warn;
 use twopc_mpc::sign::verify_signature;
-use twopc_mpc::{secp256k1, ProtocolPublicParameters};
+use twopc_mpc::{secp256k1};
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -336,7 +340,7 @@ impl DWalletMPCOutputsVerifier {
         dkg_output: &[u8],
         presign: &[u8],
         partially_signed_message: &[u8],
-        protocol_public_parameters: &[u8],
+        protocol_public_parameters: &ProtocolPublicParameters,
         session_id: ObjectID,
     ) -> DwalletMPCResult<()> {
         twopc_mpc::sign::decentralized_party::signature_partial_decryption_round::Party::verify_encryption_of_signature_parts_prehash_class_groups(
@@ -344,11 +348,10 @@ impl DWalletMPCOutputsVerifier {
             bcs::from_bytes(dkg_output)?,
             bcs::from_bytes(presign)?,
             bcs::from_bytes(partially_signed_message)?,
-            bcs::from_bytes(protocol_public_parameters)?,
+            protocol_public_parameters,
             CommitmentSizedNumber::from_le_slice(
                 session_id.to_vec().as_slice(),
-            )
-            ,
+            ),
         ).map_err(Into::into)
     }
 
