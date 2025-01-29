@@ -7,6 +7,7 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
 use crate::dwallet_mpc::sign::SignFirstParty;
+use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
 use group::GroupElement;
 use mpc::Party;
@@ -300,6 +301,55 @@ impl DWalletMPCOutputsVerifier {
             result: OutputResult::Valid,
             malicious_actors: vec![],
         })
+    }
+
+    // message: GroupElement::Scalar,
+    // dkg_output: DKGDecentralizedPartyOutput<
+    // SCALAR_LIMBS,
+    // FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    // NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    // GroupElement,
+    // >,
+    // presign: Presign<
+    // SCALAR_LIMBS,
+    // FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    // NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    // GroupElement,
+    // >,
+    // sign_message: Message<
+    // SCALAR_LIMBS,
+    // FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    // NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    // MESSAGE_LIMBS,
+    // GroupElement,
+    // >,
+    // protocol_public_parameters: &crate::class_groups::ProtocolPublicParameters<
+    // SCALAR_LIMBS,
+    // FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    // NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    // GroupElement,
+    // >,
+    // session_id: CommitmentSizedNumber,
+
+    fn verify_partial_signature(
+        hashed_message: &[u8],
+        dkg_output: &[u8],
+        presign: &[u8],
+        partially_signed_message: &[u8],
+        protocol_public_parameters: &[u8],
+        session_id: ObjectID,
+    ) -> DwalletMPCResult<()> {
+        twopc_mpc::sign::decentralized_party::signature_partial_decryption_round::Party::verify_encryption_of_signature_parts_prehash_class_groups(
+            bcs::from_bytes(hashed_message)?,
+            bcs::from_bytes(dkg_output)?,
+            bcs::from_bytes(presign)?,
+            bcs::from_bytes(partially_signed_message)?,
+            bcs::from_bytes(protocol_public_parameters)?,
+            CommitmentSizedNumber::from_le_slice(
+                session_id.to_vec().as_slice(),
+            )
+            ,
+        ).map_err(Into::into)
     }
 
     /// Stores the session ID of the new MPC session,
