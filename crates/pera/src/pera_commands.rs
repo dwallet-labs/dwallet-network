@@ -53,7 +53,7 @@ use std::sync::Arc;
 use std::{fs, io};
 use tempfile::tempdir;
 use tracing;
-use tracing::info;
+use tracing::{error, info, warn};
 
 const CONCURRENCY_LIMIT: usize = 30;
 const DEFAULT_EPOCH_DURATION_MS: u64 = 60_000;
@@ -806,13 +806,36 @@ async fn start(
             config,
         });
 
-        start_faucet(app_state, CONCURRENCY_LIMIT, &prometheus_registry).await?;
+        tokio::spawn(start_faucet(
+            app_state,
+            CONCURRENCY_LIMIT,
+            prometheus_registry,
+        ));
     }
 
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(3));
     let mut unhealthy_cnt = 0;
+    let mut loop_index: usize = 0;
     loop {
-        for node in swarm.validator_nodes() {
+        loop_index += 1;
+        for (node_index, node) in swarm.validator_nodes().enumerate() {
+            // This code is here to turn off & on a validator & test the chain's state sync feature
+
+            // if loop_index == 9 && node_index == 3 {
+            //     error!("Stopping node 3");
+            //     node.stop();
+            // } else if loop_index == 10 && node_index == 3 {
+            //     error!("Starting node 3");
+            //     node.start().await?;
+            // }
+
+            if let Some(handle) = node.get_node_handle() {
+                let sequence = handle
+                    .inner()
+                    .state()
+                    .get_latest_checkpoint_sequence_number();
+                info!(?sequence, ?node_index);
+            }
             if let Err(err) = node.health_check(true).await {
                 unhealthy_cnt += 1;
                 if unhealthy_cnt > 3 {

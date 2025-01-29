@@ -6,6 +6,7 @@ import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-was
 
 import { bcs } from '../bcs/index.js';
 import { Transaction } from '../transactions/index.js';
+import { PERA_SYSTEM_STATE_OBJECT_ID } from '../utils/index.js';
 import { EncryptedUserShare, fetchEncryptedUserSecretShare } from './encrypt-user-share.js';
 import type { Config, DWallet } from './globals.js';
 import {
@@ -83,6 +84,11 @@ export async function signMessageTransactionCall(
 			tx.makeMoveVec({ elements: presignIDs.map((presignID) => tx.object(presignID)) }),
 			tx.object(dWalletID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: false,
+			}),
 		],
 	});
 
@@ -177,7 +183,15 @@ export async function futureSignTransactionCall(
 	});
 	tx.moveCall({
 		target: futureSignMoveFunc,
-		arguments: [tx.object(partialSignaturesObjectID), messageApprovals],
+		arguments: [
+			tx.object(partialSignaturesObjectID),
+			messageApprovals,
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: false,
+			}),
+		],
 	});
 
 	let res = await c.client.signAndExecuteTransaction({

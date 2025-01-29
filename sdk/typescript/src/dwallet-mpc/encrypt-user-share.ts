@@ -16,6 +16,7 @@ import type { Keypair, PublicKey } from '../cryptography/index.js';
 import { decodePeraPrivateKey } from '../cryptography/index.js';
 import { Ed25519Keypair, Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
+import { PERA_SYSTEM_STATE_OBJECT_ID } from '../utils/index.js';
 import type { Config, CreatedDwallet, DWallet } from './globals.js';
 import {
 	checkpointCreationTime,
@@ -248,6 +249,11 @@ export class EncryptedUserShare {
 				tx.pure(bcs.vector(bcs.u8()).serialize(signedEncryptionKey)),
 				tx.pure(bcs.vector(bcs.u8()).serialize(keyPair.getPublicKey().toRawBytes())),
 				tx.pure(bcs.u8().serialize(encryptionKeyScheme)),
+				tx.sharedObjectRef({
+					objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+					initialSharedVersion: 1,
+					mutable: false,
+				}),
 			],
 		});
 		const res = await this.client.signAndExecuteTransaction({
@@ -513,6 +519,11 @@ export class EncryptedUserShare {
 				tx.pure(bcs.vector(bcs.u8()).serialize(encryptedUserKeyShareAndProofOfEncryption)),
 				tx.pure(bcs.vector(bcs.u8()).serialize(sourceSignedCentralizedPublicOutput)),
 				tx.pure(bcs.vector(bcs.u8()).serialize(sourceKeyPair.getPublicKey().toRawBytes())),
+				tx.sharedObjectRef({
+					objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+					initialSharedVersion: 1,
+					mutable: false,
+				}),
 			],
 		});
 

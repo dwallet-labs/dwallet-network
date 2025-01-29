@@ -87,3 +87,8 @@ To generate the RPC schema, follow these steps:
 RUST_LOG=off,pera_node=info,pera_core=error;RUST_MIN_STACK=16777216 cargo run --bin pera -- start --with-faucet --force-regenesis --epoch-duration-ms 1000000000000
 ```
 
+## Testing the State Sync Mechanism Manually
+
+To test the state sync feature, uncomment the code in the `start` function located in
+`crates/pera/src/pera_commands.rs`.
+This code restarts a validator node 10 seconds after the chain starts.

@@ -1,6 +1,7 @@
-use crate::base_types::{ObjectID, PeraAddress};
+use crate::base_types::{AuthorityName, ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
+use crate::event::Event;
 use crate::id::ID;
 use crate::message_envelope::Message;
 use crate::PERA_SYSTEM_ADDRESS;
@@ -15,8 +16,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
+// todo(zeev): move the events to mpc_events and the types to `dwallet-mpc-types` crate.
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum MPCRound {
+pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
     DKGFirst,
     /// The second round of the DKG protocol.
@@ -25,14 +28,16 @@ pub enum MPCRound {
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID,
     /// and the dWallets' network key version.
+    // TODO (#543): Connect the two presign rounds to one.
     PresignFirst(ObjectID, MPCPublicOutput, ObjectID, u8),
     /// The second round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
     /// the Presign first round output, and the batch session ID.
     PresignSecond(ObjectID, MPCPublicOutput, ObjectID),
     /// The first and only round of the Sign protocol.
-    Sign(SignMessageData),
+    Sign(SingleSignSessionData),
     /// A batched sign session, contains the list of messages that are being signed.
+    // TODO (#536): Store batch state and logic on Sui & remove this field.
     BatchedSign(Vec<Vec<u8>>),
     BatchedPresign(u64),
     /// The round of the network DKG protocol.
@@ -46,29 +51,59 @@ pub enum MPCRound {
     /// The round of verifying the public key that signed on the encryption key is
     /// matching the initiator address.
     /// todo(zeev): more docs, make it clearer.
+    /// TODO (#544): Check if there's a way to convert the public key to an address in Move.
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
 }
 
 /// The message and data for the Sign round.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct SignMessageData {
+pub struct SingleSignSessionData {
     pub batch_session_id: ObjectID,
     pub message: Vec<u8>,
     /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,
+    /// The DKG output of the dWallet, used to sign and verify the message.
+    pub dkg_output: MPCPublicOutput,
+    pub network_key_version: u8,
 }
 
-impl MPCRound {
+impl MPCProtocolInitData {
     /// Returns `true` if the round output is part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
         matches!(
             self,
-            MPCRound::Sign(..)
-                | MPCRound::PresignSecond(..)
-                | MPCRound::BatchedSign(..)
-                | MPCRound::BatchedPresign(..)
+            MPCProtocolInitData::Sign(..)
+                | MPCProtocolInitData::PresignSecond(..)
+                | MPCProtocolInitData::BatchedSign(..)
+                | MPCProtocolInitData::BatchedPresign(..)
         )
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DWalletMPCEvent {
+    // TODO: remove event - do all parsing beforehand.
+    pub event: Event,
+    pub session_info: SessionInfo,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DWalletMPCOutputMessage {
+    pub output: Vec<u8>,
+    pub authority: AuthorityName,
+    pub session_info: SessionInfo,
+}
+
+/// Metadata for a local MPC computation.
+/// Includes the session ID and the cryptographic round.
+///
+/// Used to remove a pending computation if a quorum of outputs for the session
+/// is received before the computation is spawned, or if a quorum of messages
+/// for the next round of the computation is received, making the old round redundant.
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
+pub struct DWalletMPCLocalComputationMetadata {
+    pub session_id: ObjectID,
+    pub crypto_round_number: usize,
 }
 
 /// The content of the system transaction that stores the MPC session output on the chain.
@@ -101,12 +136,12 @@ pub struct SessionInfo {
     pub initiating_user_address: PeraAddress,
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
-    pub mpc_round: MPCRound,
+    pub mpc_round: MPCProtocolInitData,
 }
 
 /// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
-/// Defined here so that we can use it in the [`MPCRound`] enum,
-/// as the inner data of the [`MPCRound::EncryptedShareVerification`].
+/// Defined here so that we can use it in the [`MPCProtocolInitData`] enum,
+/// as the inner data of the [`MPCProtocolInitData::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
     pub encrypted_secret_share_and_proof: Vec<u8>,
@@ -188,6 +223,29 @@ impl StartDKGSecondRoundEvent {
             name: START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
+        }
+    }
+}
+
+/// Represents a report of malicious behavior in the dWallet MPC process.
+///
+/// This struct is used to record instances where validators identify malicious actors
+/// attempting to disrupt the protocol.
+/// It links the malicious actors to a specific MPC session.
+#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct MaliciousReport {
+    /// A list of authority names that have been identified as malicious actors.
+    malicious_actors: Vec<AuthorityName>,
+    /// The unique identifier of the MPC session in which the malicious activity occurred.
+    pub session_id: ObjectID,
+}
+
+impl MaliciousReport {
+    /// Creates a new instance of a malicious report.
+    pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID) -> Self {
+        Self {
+            malicious_actors,
+            session_id,
         }
     }
 }
