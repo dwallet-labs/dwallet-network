@@ -18,8 +18,12 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{
     MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, SingleSignSessionData,
 };
-use twopc_mpc::secp256k1::class_groups::{AsyncProtocol, ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS};
+use twopc_mpc::secp256k1::class_groups::{
+    AsyncProtocol, ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+};
 
+use dwallet_mpc::SignCentralizedParty;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
@@ -342,16 +346,16 @@ impl DWalletMPCOutputsVerifier {
         session_id: ObjectID,
     ) -> DwalletMPCResult<()> {
         let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
-        let dkg_output = bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(
-            &dkg_output,
-        )?;
+        let dkg_output = bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(&dkg_output)?;
         let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
             bcs::from_bytes(presign)?;
+        let partially_signed_message: SignCentralizedParty::OutgoingMessage =
+            bcs::from_bytes(partially_signed_message)?;
         twopc_mpc::sign::decentralized_party::signature_partial_decryption_round::Party::verify_encryption_of_signature_parts_prehash_class_groups(
             message,
             dkg_output,
             presign,
-            bcs::from_bytes(partially_signed_message)?,
+            partially_signed_message,
             protocol_public_parameters,
             CommitmentSizedNumber::from_le_slice(
                 session_id.to_vec().as_slice(),
