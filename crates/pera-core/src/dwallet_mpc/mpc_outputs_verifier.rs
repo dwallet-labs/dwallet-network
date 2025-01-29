@@ -27,8 +27,8 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tracing::error;
 use tracing::log::warn;
+use twopc_mpc::secp256k1;
 use twopc_mpc::sign::verify_signature;
-use twopc_mpc::{secp256k1};
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -352,7 +352,9 @@ impl DWalletMPCOutputsVerifier {
             CommitmentSizedNumber::from_le_slice(
                 session_id.to_vec().as_slice(),
             ),
-        ).map_err(Into::into)
+        ).map_err(|err| {
+            DwalletMPCError::TwoPCMPCError(format!("{:?}", err))
+        })
     }
 
     /// Stores the session ID of the new MPC session,
