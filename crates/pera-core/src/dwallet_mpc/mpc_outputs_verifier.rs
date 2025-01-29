@@ -343,9 +343,13 @@ impl DWalletMPCOutputsVerifier {
         protocol_public_parameters: &ProtocolPublicParameters,
         session_id: ObjectID,
     ) -> DwalletMPCResult<()> {
+        let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
+        let dkg_output = bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(
+            &dkg_output,
+        )?;
         twopc_mpc::sign::decentralized_party::signature_partial_decryption_round::Party::verify_encryption_of_signature_parts_prehash_class_groups(
-            bcs::from_bytes(hashed_message)?,
-            bcs::from_bytes(dkg_output)?,
+            message,
+            dkg_output,
             bcs::from_bytes(presign)?,
             bcs::from_bytes(partially_signed_message)?,
             protocol_public_parameters,
