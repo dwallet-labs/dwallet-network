@@ -238,7 +238,7 @@ impl DWalletMPCManager {
                     session.pending_quorum_for_highest_round_number -= 1;
                     // Remove malicious parties from the session messages.
                     let round_messages = session
-                        .pending_messages
+                        .serialized_messages
                         .get_mut(session.pending_quorum_for_highest_round_number)
                         .ok_or(DwalletMPCError::MPCSessionNotFound {
                             session_id: report.session_id,

@@ -1591,7 +1591,7 @@ impl AuthorityState {
             // being emitted before the MPC outputs manager is initialized.
             if session_info.mpc_round.is_a_new_batch_session() {
                 let mut dwallet_mpc_batches_manager =
-                    epoch_store.get_dwallet_mpc_batches_manager().await?;
+                    epoch_store.get_dwallet_mpc_batches_manager().await;
                 // Mark a new batch event as received.
                 dwallet_mpc_batches_manager.store_new_session(&session_info);
             } else {
