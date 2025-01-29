@@ -44,7 +44,7 @@ export async function fullMPCUserSessionsECDSAK1(
 			presignCompletionEvent.first_round_session_ids.map((session_id) => session_id.slice(2)),
 		)
 		.toBytes();
-	const centralizedSignedMsg = create_sign_centralized_output(
+	const centralizedMessageSignature = create_sign_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
 		Uint8Array.from(dWallet.centralized_public_output),
@@ -58,7 +58,7 @@ export async function fullMPCUserSessionsECDSAK1(
 	let signTx = new Transaction();
 	let signDataArgs = createSignDataECDSAK1MoveArgs(
 		presignCompletionEvent.presign_ids,
-		centralizedSignedMsg,
+		centralizedMessageSignature,
 		dWallet,
 		signTx,
 	);
