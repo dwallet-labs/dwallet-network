@@ -20,7 +20,6 @@ use k256::ecdsa::hazmat::bits2field;
 use k256::ecdsa::signature::digest::{Digest, FixedOutput};
 use k256::elliptic_curve::bigint::{Encoding, Uint};
 use k256::elliptic_curve::ops::Reduce;
-use k256::elliptic_curve::{group::prime::PrimeCurveAffine, Group};
 use k256::{elliptic_curve, U256};
 use mpc::two_party::Round;
 use rand_core::{OsRng, SeedableRng};
@@ -29,7 +28,6 @@ use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
-use group::KnownOrderGroupElement;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -50,7 +48,6 @@ enum Hash {
     SHA256 = 1,
 }
 
-type HashedMessages = Vec<u8>;
 type SignedMessages = Vec<u8>;
 type EncryptionOfSecretShareProof = EncryptionOfDiscreteLogProofWithoutCtx<
     SCALAR_LIMBS,
