@@ -455,6 +455,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
                         let output_verification_result = dwallet_mpc_verifier
                             .try_verify_output(output, &session_info, origin_authority)
+                            .await
                             .unwrap_or_else(|e| {
                                 error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                                 OutputVerificationResult {
@@ -799,11 +800,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             dwallet_mpc_verifier.handle_new_event(&event.session_info);
         }
         for output in self.load_dwallet_mpc_outputs_from_epoch_start().await? {
-            match dwallet_mpc_verifier.try_verify_output(
-                &output.output,
-                &output.session_info,
-                output.authority,
-            ) {
+            match dwallet_mpc_verifier
+                .try_verify_output(&output.output, &output.session_info, output.authority)
+                .await
+            {
                 Ok(result) => {
                     manager.flag_authorities_as_malicious(&result.malicious_actors);
                     // TODO (#524): Handle malicious behavior.
