@@ -626,6 +626,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 &dwallet
             );
 
+            create_pera_system_state_for_testing
             pera_system::dwallet::sign<Secp256K1, SignData>(
                 &dwallet,
                 message_approvals,

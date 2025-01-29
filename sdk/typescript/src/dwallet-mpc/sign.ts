@@ -146,6 +146,11 @@ export async function partiallySignMessageTransactionCall(
 			tx.object(dWalletID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 			signData,
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: false,
+			}),
 		],
 		typeArguments: [dWalletMoveType, signatureDataMoveType],
 	});

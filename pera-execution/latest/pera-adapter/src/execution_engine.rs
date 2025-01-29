@@ -721,7 +721,7 @@ mod checked {
                 Ok(Mode::empty_results())
             }
             TransactionKind::DWalletMPCOutput(data) => {
-                setup_and_execute_dwallet_mpc_output(
+                let res = setup_and_execute_dwallet_mpc_output(
                     data,
                     temporary_store,
                     tx_ctx,
@@ -729,7 +729,10 @@ mod checked {
                     gas_charger,
                     protocol_config,
                     metrics,
-                )?;
+                );
+
+
+                res?;
 
                 Ok(Mode::empty_results())
             }
