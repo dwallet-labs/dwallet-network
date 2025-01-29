@@ -592,13 +592,13 @@ This event contains signatures for all signed messages in the batch.
 <code>signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
 </dt>
 <dd>
- List of signatures ordered by the messages.
+ List of signatures in the same order as the sign function message approvals input.
 </dd>
 <dt>
 <code>is_future_sign: bool</code>
 </dt>
 <dd>
- The flag to indicate if the future sign feature was used before starting the current sign session.
+ Indicates whether the future sign feature was used to start the session.
 </dd>
 </dl>
 
@@ -728,7 +728,7 @@ specific to each Digital Signature Algorithm.
 <code>is_future_sign: bool</code>
 </dt>
 <dd>
- The flag to indicate if the future sign feature was used before starting the sign session.
+ Indicates whether the future sign feature was used to start the session.
 </dd>
 </dl>
 
