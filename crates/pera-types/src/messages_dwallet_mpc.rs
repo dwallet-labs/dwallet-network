@@ -55,6 +55,21 @@ pub enum MPCProtocolInitData {
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
 }
 
+/// The session-specific state of the MPC session.
+/// I.e., state that needs to exist only in the sign protocol but is not required in the
+/// presign protocol.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum MPCSessionSpecificState {
+    Sign(SignIASessionState),
+}
+
+/// The state of a sign identifiable abort session
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct SignIASessionState {
+    pub malicious_report: MaliciousReport,
+    pub initiating_ia_authority: AuthorityName,
+}
+
 /// The message and data for the Sign round.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SingleSignSessionData {
@@ -235,7 +250,7 @@ impl StartDKGSecondRoundEvent {
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct MaliciousReport {
     /// A list of authority names that have been identified as malicious actors.
-    malicious_actors: Vec<AuthorityName>,
+    pub malicious_actors: Vec<AuthorityName>,
     /// The unique identifier of the MPC session in which the malicious activity occurred.
     pub session_id: ObjectID,
 }

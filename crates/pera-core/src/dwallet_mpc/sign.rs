@@ -14,7 +14,7 @@ pub(crate) const LAST_SIGN_ROUND_INDEX: usize = 1;
 /// computation round.
 /// Used to determine how long a validator should wait before running the final step of the sign
 /// MPC flow.
-pub(crate) const SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS: usize = 30;
+pub(crate) const SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS: usize = 15;
 
 pub(super) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
