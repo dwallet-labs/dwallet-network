@@ -11,7 +11,7 @@ import type { Config, DWallet, DWalletWithSecretKeyShare } from './globals.js';
 import { dWalletModuleName, dWalletPackageID, fetchCompletedEvent } from './globals.js';
 
 const signMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::sign`;
-const prepareFutureSignMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::prepare_future_sign`;
+const requestFutureSignMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::request_future_sign`;
 const completeFutureSignMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::sign_with_partial_centralized_message_signatures`;
 const approveMessagesMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::approve_messages`;
 const completedSignMoveEvent = `${dWalletPackageID}::${dWalletModuleName}::CompletedSignEvent`;
@@ -37,6 +37,8 @@ export interface CreatedPartiallySignedMessagesEvent {
 export interface CompletedSignEvent {
 	session_id: string;
 	output_object_id: Array<Array<number>>;
+	signatures: Array<Array<number>>;
+	is_future_sign: boolean;
 }
 
 export function isCompletedSignEvent(obj: any): obj is CompletedSignEvent {
@@ -71,7 +73,7 @@ export async function signMessageTransactionCall(
 
 	tx.moveCall({
 		target: signMoveFunc,
-		arguments: [messageApprovals, tx.object(dWallet.id.id), signData],
+		arguments: [tx.object(dWallet.id.id), messageApprovals, signData],
 		typeArguments: [dWalletCurveMoveType, signDataMoveType],
 	});
 
@@ -125,11 +127,11 @@ export async function partiallySignMessageTransactionCall(
 	});
 
 	tx.moveCall({
-		target: prepareFutureSignMoveFunc,
+		target: requestFutureSignMoveFunc,
 		arguments: [
+			tx.object(dWalletID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 			signData,
-			tx.object(dWalletID),
 		],
 		typeArguments: [dWalletMoveType, signatureDataMoveType],
 	});
@@ -149,7 +151,7 @@ export async function partiallySignMessageTransactionCall(
 		: null;
 
 	if (!createdPartiallySignedMessagesEvent) {
-		throw new Error(`${prepareFutureSignMoveFunc} failed: ${res.errors}`);
+		throw new Error(`${requestFutureSignMoveFunc} failed: ${res.errors}`);
 	}
 
 	return createdPartiallySignedMessagesEvent;

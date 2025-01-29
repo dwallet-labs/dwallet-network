@@ -72,12 +72,13 @@ It encapsulates the session ID, capability ID, and the outputs from the DKG roun
     -  [Effects](#@Effects_17)
     -  [Aborts](#@Aborts_18)
 -  [Function `create_sign_output`](#0x3_dwallet_create_sign_output)
--  [Function `prepare_future_sign`](#0x3_dwallet_prepare_future_sign)
+-  [Function `request_future_sign`](#0x3_dwallet_request_future_sign)
 -  [Function `create_signature_algorithm_data`](#0x3_dwallet_create_signature_algorithm_data)
 -  [Function `sign_with_partial_centralized_message_signatures`](#0x3_dwallet_sign_with_partial_centralized_message_signatures)
         -  [Type Parameters](#@Type_Parameters_23)
         -  [Parameters](#@Parameters_24)
         -  [Notes](#@Notes_25)
+-  [Function `compare_messages_with_approvals`](#0x3_dwallet_compare_messages_with_approvals)
 
 
 <pre><code><b>use</b> <a href="../move-stdlib/hash.md#0x1_hash">0x1::hash</a>;
@@ -587,6 +588,18 @@ This event contains signatures for all signed messages in the batch.
 <dd>
  The ID of the batched sign output object (<code><a href="dwallet.md#0x3_dwallet_BatchedSignOutput">BatchedSignOutput</a></code>).
 </dd>
+<dt>
+<code>signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+ List of signatures ordered by the messages.
+</dd>
+<dt>
+<code>is_future_sign: bool</code>
+</dt>
+<dd>
+ The flag to indicate if the future sign feature was used before starting the current sign session.
+</dd>
 </dl>
 
 
@@ -711,6 +724,12 @@ specific to each Digital Signature Algorithm.
  Data that can be stored with the object,
  specific to each Digital Signature Algorithm.
 </dd>
+<dt>
+<code>is_future_sign: bool</code>
+</dt>
+<dd>
+ The flag to indicate if the future sign feature was used before starting the sign session.
+</dd>
 </dl>
 
 
@@ -727,7 +746,7 @@ D: The type of data that can be stored with the object,
 specific to each Digital Signature Algorithm.
 
 
-<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a>&lt;D: <b>copy</b>, drop&gt;
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a>&lt;D: <b>copy</b>, drop, store&gt;
 </code></pre>
 
 
@@ -1715,7 +1734,7 @@ D: The type of data that can be stored with the object,
 specific to each Digital Signature Algorithm.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_sign">sign</a>&lt;T: drop, D: <b>copy</b>, drop&gt;(message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">dwallet::SignatureAlgorithmData</a>&lt;D&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_sign">sign</a>&lt;T: drop, D: <b>copy</b>, drop, store&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">dwallet::SignatureAlgorithmData</a>&lt;D&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1724,20 +1743,21 @@ specific to each Digital Signature Algorithm.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_sign">sign</a>&lt;T: drop, D: <b>copy</b> + drop&gt;(
-    message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;,
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_sign">sign</a>&lt;T: drop, D: <b>copy</b> + drop + store&gt;(
     <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;,
+    message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;,
     signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a>&lt;D&gt;&gt;,
     ctx: &<b>mut</b> TxContext
 ) {
-    <b>let</b> signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a> { data }| data);
+    <b>let</b> signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, | <a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a> { data } | data);
     <a href="dwallet.md#0x3_dwallet_emit_sign_events">emit_sign_events</a>&lt;D&gt;(
         message_approvals,
         <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
         <a href="dwallet.md#0x3_dwallet">dwallet</a>.dwallet_cap_id,
-        <a href="dwallet.md#0x3_dwallet">dwallet</a>.centralized_public_output,
+        <a href="dwallet.md#0x3_dwallet">dwallet</a>.decentralized_public_output,
         <a href="dwallet.md#0x3_dwallet">dwallet</a>.dwallet_mpc_network_decryption_key_version,
         signature_algorithm_data_unpacked,
+        <b>false</b>,
         ctx
     );
 }
@@ -1775,7 +1795,7 @@ their hashes, and emits signing events.
 - **<code><a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a></code>**: If message approvals are incorrect or missing.
 
 
-<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_emit_sign_events">emit_sign_events</a>&lt;D: <b>copy</b>, drop&gt;(message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_mpc_network_decryption_key_version: u8, signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_emit_sign_events">emit_sign_events</a>&lt;D: <b>copy</b>, drop, store&gt;(message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_mpc_network_decryption_key_version: u8, signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;, is_future_sign: bool, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1784,30 +1804,36 @@ their hashes, and emits signing events.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_emit_sign_events">emit_sign_events</a>&lt;D: <b>copy</b> + drop&gt;(
-    <b>mut</b> message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;,
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_emit_sign_events">emit_sign_events</a>&lt;D: <b>copy</b> + drop + store&gt;(
+    message_approvals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;,
     dwallet_id: ID,
     dwallet_cap_id: ID,
     dwallet_decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     dwallet_mpc_network_decryption_key_version: u8,
-    <b>mut</b> signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;,
+    signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;D&gt;,
+    is_future_sign: bool,
     ctx: &<b>mut</b> TxContext
 ){
     <b>assert</b>!(<a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&signature_algorithm_data) == <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&message_approvals), <a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>);
-    <b>let</b> batch_session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
     // Todo (#565): Move the <a href="../pera-framework/hash.md#0x2_hash">hash</a> calculation into the rust code.
-    <b>let</b> <b>mut</b> hashed_messages = <a href="dwallet.md#0x3_dwallet_hash_messages">hash_messages</a>(&message_approvals);
+    <b>let</b> hashed_messages = <a href="dwallet.md#0x3_dwallet_hash_messages">hash_messages</a>(&message_approvals);
 
+    <b>let</b> batch_session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet.md#0x3_dwallet_StartBatchedSignEvent">StartBatchedSignEvent</a> {
         session_id: batch_session_id,
         hashed_messages,
         initiator: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx)
     });
 
-    <b>while</b> (!signature_algorithm_data.is_empty()) {
-        <b>let</b> data = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> signature_algorithm_data);
-        <b>let</b> hashed_message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> hashed_messages);
-        <b>let</b>  (_dwallet_cap_approved, _hash, _message) = <a href="dwallet.md#0x3_dwallet_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(dwallet_cap_id, hashed_message, &<b>mut</b> message_approvals);
+    vector::zip_map!(signature_algorithm_data, message_approvals, |data, message_approval| {
+        <b>let</b> <a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a> {
+            dwallet_cap_id:  message_approval_dwallet_cap_id,
+            hash_scheme,
+            message
+        } = message_approval;
+        <b>assert</b>!(dwallet_cap_id == message_approval_dwallet_cap_id, <a href="dwallet.md#0x3_dwallet_EMessageApprovalDWalletMismatch">EMessageApprovalDWalletMismatch</a>);
+        <b>let</b> hashed_message = <a href="dwallet.md#0x3_dwallet_hash_message">hash_message</a>(message, hash_scheme);
+
         <b>let</b> id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
         <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet.md#0x3_dwallet_StartSignEvent">StartSignEvent</a>&lt;D&gt; {
             session_id: id,
@@ -1818,9 +1844,10 @@ their hashes, and emits signing events.
             hashed_message,
             dwallet_mpc_network_decryption_key_version,
             signature_algorithm_data: data,
+            is_future_sign,
         });
-    };
-    signature_algorithm_data.destroy_empty();
+        <b>true</b>
+    });
 }
 </code></pre>
 
@@ -1872,7 +1899,7 @@ signaling the completion of the sign process for the batch session.
 the function will abort with this error.
 
 
-<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_create_sign_output">create_sign_output</a>(signed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, batch_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, initiator: <b>address</b>, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_create_sign_output">create_sign_output</a>(signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, batch_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, initiator: <b>address</b>, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, is_future_sign: bool, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1882,10 +1909,11 @@ the function will abort with this error.
 
 
 <pre><code><b>fun</b> <a href="dwallet.md#0x3_dwallet_create_sign_output">create_sign_output</a>(
-    signed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     batch_session_id: ID,
     initiator: <b>address</b>,
     dwallet_id: ID,
+    is_future_sign: bool,
     ctx: &<b>mut</b> TxContext
 ) {
     // Ensure that only the system <b>address</b> can call this function.
@@ -1893,9 +1921,9 @@ the function will abort with this error.
 
     <b>let</b> sign_output = <a href="dwallet.md#0x3_dwallet_BatchedSignOutput">BatchedSignOutput</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
-        signatures: signed_messages,
+        signatures: signatures,
         dwallet_id,
-        session_id: batch_session_id
+        session_id: batch_session_id,
     };
 
     // Emit the <a href="dwallet.md#0x3_dwallet_CompletedSignEvent">CompletedSignEvent</a> <b>with</b> session ID and signed messages.
@@ -1903,6 +1931,8 @@ the function will abort with this error.
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet.md#0x3_dwallet_CompletedSignEvent">CompletedSignEvent</a> {
         session_id: batch_session_id,
         output_object_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&sign_output),
+        signatures,
+        is_future_sign,
     });
 
     <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(sign_output, initiator);
@@ -1913,9 +1943,9 @@ the function will abort with this error.
 
 </details>
 
-<a name="0x3_dwallet_prepare_future_sign"></a>
+<a name="0x3_dwallet_request_future_sign"></a>
 
-## Function `prepare_future_sign`
+## Function `request_future_sign`
 
 A function to publish messages signed by the user on chain with on-chain verification,
 without launching the chain's sign flow immediately.
@@ -1924,7 +1954,7 @@ See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedM
 more details on when this may be used.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_prepare_future_sign">prepare_future_sign</a>&lt;T: drop, D: <b>copy</b>, drop, store&gt;(messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">dwallet::SignatureAlgorithmData</a>&lt;D&gt;&gt;, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_request_future_sign">request_future_sign</a>&lt;T: drop, D: <b>copy</b>, drop, store&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">dwallet::SignatureAlgorithmData</a>&lt;D&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1933,10 +1963,10 @@ more details on when this may be used.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_prepare_future_sign">prepare_future_sign</a>&lt;T: drop, D: <b>copy</b> + drop + store&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_request_future_sign">request_future_sign</a>&lt;T: drop, D: <b>copy</b> + drop + store&gt;(
+    <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;,
     messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a>&lt;D&gt;&gt;,
-    <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;,
     ctx: &<b>mut</b> TxContext
 ) {
     <b>let</b> messages_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&messages);
@@ -2052,10 +2082,7 @@ containing messages that require approval.
     <a href="../pera-framework/object.md#0x2_object_delete">object::delete</a>(id);
 
     // Ensure that each message <b>has</b> a corresponding approval; otherwise, <b>abort</b>.
-    vector::zip_map_ref!(&message_approvals, &messages, |message_approval, message| {
-        <b>assert</b>!(message_approval.message == *message, <a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a>);
-        0 // must <b>return</b> some value
-    });
+    <a href="dwallet.md#0x3_dwallet_compare_messages_with_approvals">compare_messages_with_approvals</a>(&messages, &message_approvals);
 
     // Emit signing events <b>to</b> finalize the signing process.
     <a href="dwallet.md#0x3_dwallet_emit_sign_events">emit_sign_events</a>&lt;D&gt;(
@@ -2065,8 +2092,42 @@ containing messages that require approval.
         dwallet_decentralized_public_output,
         dwallet_mpc_network_decryption_key_version,
         signature_algorithm_data,
+        <b>true</b>,
         ctx
     );
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_compare_messages_with_approvals"></a>
+
+## Function `compare_messages_with_approvals`
+
+Compares the messages with the approvals to ensure they match.
+This function can be called by the user to verify that the messages and approvals match,
+before calling the <code>sign_with_partial_centralized_message_signatures</code> function.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_compare_messages_with_approvals">compare_messages_with_approvals</a>(messages: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, approvals: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_compare_messages_with_approvals">compare_messages_with_approvals</a>(
+    messages: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    approvals: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;
+) {
+    <b>let</b> compare_vector = vector::zip_map_ref!(messages, approvals, |message, approval| {
+        <b>if</b> (message == approval.message) {<b>true</b>} <b>else</b> {<b>false</b>}
+    });
+    <b>assert</b>!(vector::all!(&compare_vector, |v| { v == <b>true</b> }), <a href="dwallet.md#0x3_dwallet_EMissingApprovalOrWrongApprovalOrder">EMissingApprovalOrWrongApprovalOrder</a>);
 }
 </code></pre>
 

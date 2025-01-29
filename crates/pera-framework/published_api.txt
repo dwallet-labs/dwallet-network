@@ -109,13 +109,16 @@ emit_sign_events
 create_sign_output
 	fun
 	0x3::dwallet
-prepare_future_sign
+request_future_sign
 	public fun
 	0x3::dwallet
 create_signature_algorithm_data
 	public(package) fun
 	0x3::dwallet
 sign_with_partial_centralized_message_signatures
+	public fun
+	0x3::dwallet
+compare_messages_with_approvals
 	public fun
 	0x3::dwallet
 Secp256K1

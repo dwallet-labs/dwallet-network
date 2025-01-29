@@ -1206,6 +1206,7 @@ mod checked {
             MPCRound::Sign(SignMessageData {
                 batch_session_id,
                 dwallet_id,
+                is_future_sign,
                 ..
             }) => (
                 "create_sign_output",
@@ -1216,6 +1217,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&batch_session_id)?),
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
+                    CallArg::Pure(bcs_to_bytes(&is_future_sign)?),
                 ],
             ),
             MPCRound::NetworkDkg(key_type, new_key) => {

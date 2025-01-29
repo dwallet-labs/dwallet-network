@@ -4,7 +4,15 @@
 //! dWallet MPC process in the `pera_system::dwallet` Move module.
 //! They include utility functions for detecting and comparing the event types.
 
-use dwallet_mpc_types::dwallet_mpc::{DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME, LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME, START_BATCHED_PRESIGN_EVENT_STRUCT_NAME, START_BATCHED_SIGN_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME, VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME, VALIDATOR_SET_MODULE_NAME};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
+    LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME, START_BATCHED_PRESIGN_EVENT_STRUCT_NAME,
+    START_BATCHED_SIGN_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
+    START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
+    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME,
+    START_SIGN_ROUND_EVENT_STRUCT_NAME, VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME,
+    VALIDATOR_SET_MODULE_NAME,
+};
 use move_core_types::ident_str;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use pera_types::{base_types::PeraAddress, id::ID, PERA_SYSTEM_ADDRESS};
@@ -142,6 +150,8 @@ pub struct StartSignEvent<D> {
     /// The type of data that can be stored with the object.
     /// Specific to each Digital Signature Algorithm.
     pub(crate) signature_algorithm_data: D,
+    /// Indicates whether the future sign feature was used to start the session.
+    pub(crate) is_future_sign: bool,
 }
 
 impl<D> StartSignEvent<D> {

@@ -563,6 +563,12 @@ module pera_system::dwallet {
 
         /// The ID of the batched sign output object (`BatchedSignOutput`).
         output_object_id: ID,
+
+         /// List of signatures ordered by the messages.
+        signatures: vector<vector<u8>>,
+
+        /// The flag to indicate if the future sign feature was used before starting the current sign session.
+        is_future_sign: bool,
     }
 
     /// The output of a batched Sign session.
@@ -613,14 +619,18 @@ module pera_system::dwallet {
         /// Data that can be stored with the object,
         /// specific to each Digital Signature Algorithm.
         signature_algorithm_data: D,
+
+        /// The flag to indicate if the future sign feature was used before starting the sign session.
+        is_future_sign: bool,
     }
 
+    // This object MUST be Hot Potato.
     /// Stores data essential for the signing process and specific to every signature algorithm implementation.
     /// Must be passed to the signing functions and used in the programmable transaction block;
     /// otherwise, the transaction will fail due to the "Hot Potato" pattern.
     /// D: The type of data that can be stored with the object,
     /// specific to each Digital Signature Algorithm.
-    public struct SignatureAlgorithmData<D: drop + copy> {
+    public struct SignatureAlgorithmData<D: drop + copy + store> {
         data: D,
     }
 
@@ -697,20 +707,21 @@ module pera_system::dwallet {
     /// - `T`: The elliptic curve type used for the dWallet.
     /// D: The type of data that can be stored with the object,
     /// specific to each Digital Signature Algorithm.
-    public fun sign<T: drop, D: copy + drop>(
-        message_approvals: vector<MessageApproval>,
+    public fun sign<T: drop, D: copy + drop + store>(
         dwallet: &DWallet<T>,
+        message_approvals: vector<MessageApproval>,
         signature_algorithm_data: vector<SignatureAlgorithmData<D>>,
         ctx: &mut TxContext
     ) {
-        let signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |SignatureAlgorithmData { data }| data);
+        let signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, | SignatureAlgorithmData { data } | data);
         emit_sign_events<D>(
             message_approvals,
             object::id(dwallet),
             dwallet.dwallet_cap_id,
-            dwallet.centralized_public_output,
+            dwallet.decentralized_public_output,
             dwallet.dwallet_mpc_network_decryption_key_version,
             signature_algorithm_data_unpacked,
+            false,
             ctx
         );
     }
@@ -729,30 +740,36 @@ module pera_system::dwallet {
     /// # Aborts
     /// - **`EExtraDataAndMessagesLenMismatch`**: If `signature_algorithm_data` and `message_approvals` have different lengths.
     /// - **`EMissingApprovalOrWrongApprovalOrder`**: If message approvals are incorrect or missing.
-    fun emit_sign_events<D: copy + drop>(
-        mut message_approvals: vector<MessageApproval>,
+    fun emit_sign_events<D: copy + drop + store>(
+        message_approvals: vector<MessageApproval>,
         dwallet_id: ID,
         dwallet_cap_id: ID,
         dwallet_decentralized_public_output: vector<u8>,
         dwallet_mpc_network_decryption_key_version: u8,
-        mut signature_algorithm_data: vector<D>,
+        signature_algorithm_data: vector<D>,
+        is_future_sign: bool,
         ctx: &mut TxContext
     ){
         assert!(vector::length(&signature_algorithm_data) == vector::length(&message_approvals), EExtraDataAndMessagesLenMismatch);
-        let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         // Todo (#565): Move the hash calculation into the rust code.
-        let mut hashed_messages = hash_messages(&message_approvals);
+        let hashed_messages = hash_messages(&message_approvals);
 
+        let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         event::emit(StartBatchedSignEvent {
             session_id: batch_session_id,
             hashed_messages,
             initiator: tx_context::sender(ctx)
         });
 
-        while (!signature_algorithm_data.is_empty()) {
-            let data = vector::pop_back(&mut signature_algorithm_data);
-            let hashed_message = vector::pop_back(&mut hashed_messages);
-            let  (_dwallet_cap_approved, _hash, _message) = pop_and_verify_message_approval(dwallet_cap_id, hashed_message, &mut message_approvals);
+        vector::zip_map!(signature_algorithm_data, message_approvals, |data, message_approval| {
+            let MessageApproval {
+                dwallet_cap_id:  message_approval_dwallet_cap_id,
+                hash_scheme,
+                message
+            } = message_approval;
+            assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMessageApprovalDWalletMismatch);
+            let hashed_message = hash_message(message, hash_scheme);
+
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
             event::emit(StartSignEvent<D> {
                 session_id: id,
@@ -763,9 +780,10 @@ module pera_system::dwallet {
                 hashed_message,
                 dwallet_mpc_network_decryption_key_version,
                 signature_algorithm_data: data,
+                is_future_sign,
             });
-        };
-        signature_algorithm_data.destroy_empty();
+            true
+        });
     }
 
     /// Emits a `CompletedSignEvent` with the MPC Sign protocol output.
@@ -792,10 +810,11 @@ module pera_system::dwallet {
     ///   the function will abort with this error.
     #[allow(unused_function)]
     fun create_sign_output(
-        signed_messages: vector<vector<u8>>,
+        signatures: vector<vector<u8>>,
         batch_session_id: ID,
         initiator: address,
         dwallet_id: ID,
+        is_future_sign: bool,
         ctx: &mut TxContext
     ) {
         // Ensure that only the system address can call this function.
@@ -803,9 +822,9 @@ module pera_system::dwallet {
 
         let sign_output = BatchedSignOutput {
             id: object::new(ctx),
-            signatures: signed_messages,
+            signatures: signatures,
             dwallet_id,
-            session_id: batch_session_id
+            session_id: batch_session_id,
         };
 
         // Emit the CompletedSignEvent with session ID and signed messages.
@@ -813,6 +832,8 @@ module pera_system::dwallet {
         event::emit(CompletedSignEvent {
             session_id: batch_session_id,
             output_object_id: object::id(&sign_output),
+            signatures,
+            is_future_sign,
         });
 
         transfer::transfer(sign_output, initiator);
@@ -829,10 +850,10 @@ module pera_system::dwallet {
     ///
     /// See the docs of [`PartialCentralizedSignedMessages`] for
     /// more details on when this may be used.
-    public fun prepare_future_sign<T: drop, D: copy + drop + store>(
+    public fun request_future_sign<T: drop, D: copy + drop + store>(
+        dwallet: &DWallet<T>,
         messages: vector<vector<u8>>,
         signature_algorithm_data: vector<SignatureAlgorithmData<D>>,
-        dwallet: &DWallet<T>,
         ctx: &mut TxContext
     ) {
         let messages_len = vector::length(&messages);
@@ -896,10 +917,7 @@ module pera_system::dwallet {
         object::delete(id);
 
         // Ensure that each message has a corresponding approval; otherwise, abort.
-        vector::zip_map_ref!(&message_approvals, &messages, |message_approval, message| {
-            assert!(message_approval.message == *message, EMissingApprovalOrWrongApprovalOrder);
-            0 // must return some value
-        });
+        compare_messages_with_approvals(&messages, &message_approvals);
 
         // Emit signing events to finalize the signing process.
         emit_sign_events<D>(
@@ -909,8 +927,22 @@ module pera_system::dwallet {
             dwallet_decentralized_public_output,
             dwallet_mpc_network_decryption_key_version,
             signature_algorithm_data,
+            true,
             ctx
         );
+    }
+
+    /// Compares the messages with the approvals to ensure they match.
+    /// This function can be called by the user to verify that the messages and approvals match,
+    /// before calling the `sign_with_partial_centralized_message_signatures` function.
+    public fun compare_messages_with_approvals(
+        messages: &vector<vector<u8>>,
+        approvals: &vector<MessageApproval>
+    ) {
+        let compare_vector = vector::zip_map_ref!(messages, approvals, |message, approval| {
+            if (message == approval.message) {true} else {false}
+        });
+        assert!(vector::all!(&compare_vector, |v| { v == true }), EMissingApprovalOrWrongApprovalOrder);
     }
 
     #[test_only]

@@ -66,6 +66,8 @@ pub struct SignMessageData {
     pub hashed_message: Vec<u8>,
     /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,
+    /// Indicates whether the future sign feature was used to start the session.
+    pub is_future_sign: bool,
 }
 
 impl MPCRound {

@@ -3,6 +3,7 @@ use crate::dwallet_mpc::dkg::{
     DKGFirstParty, DKGFirstPartyPublicInputGenerator, DKGSecondParty,
     DKGSecondPartyPublicInputGenerator,
 };
+use crate::dwallet_mpc::ecdsa_k1::SignData;
 use crate::dwallet_mpc::mpc_events::{
     StartBatchedPresignEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent, StartNetworkDKGEvent,
     StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignEvent,
@@ -29,10 +30,10 @@ use pera_types::messages_dwallet_mpc::{
 };
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
-use crate::dwallet_mpc::ecdsa_k1::SignData;
 
 pub mod batches_manager;
 mod dkg;
+mod ecdsa_k1;
 mod encrypt_user_share;
 pub(crate) mod mpc_events;
 pub mod mpc_manager;
@@ -41,7 +42,6 @@ pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
-mod ecdsa_k1;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
@@ -272,10 +272,18 @@ fn sign_public_input(
     Ok(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
-            deserialized_event.dwallet_decentralized_public_output.clone(),
+            deserialized_event
+                .dwallet_decentralized_public_output
+                .clone(),
             deserialized_event.hashed_message.clone(),
-            deserialized_event.signature_algorithm_data.presign_output.clone(),
-            deserialized_event.signature_algorithm_data.message_centralized_signature.clone(),
+            deserialized_event
+                .signature_algorithm_data
+                .presign_output
+                .clone(),
+            deserialized_event
+                .signature_algorithm_data
+                .message_centralized_signature
+                .clone(),
             bcs::from_bytes(&decryption_pp)?,
         )?,
     )
@@ -293,6 +301,7 @@ fn sign_party_session_info(
             batch_session_id: deserialized_event.batched_session_id.bytes,
             hashed_message: deserialized_event.hashed_message.clone(),
             dwallet_id: deserialized_event.dwallet_id.bytes,
+            is_future_sign: deserialized_event.is_future_sign,
         }),
     }
 }
