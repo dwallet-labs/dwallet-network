@@ -23,7 +23,7 @@ import { presign } from './presign.js';
 import type { CompletedSignEvent } from './sign.js';
 import { Hash, signMessageTransactionCall } from './sign.js';
 
-export const signDataMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`;
+export const signDataECDSAK1MoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`;
 export const createSignatureAlgorithmDataMoveFunc = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::create_signature_algorithm_data`;
 
 /**
@@ -88,7 +88,7 @@ export async function signWithEncryptedDWallet(
 		serializedPresignFirstRoundSessionIds,
 	);
 
-	let signDataArgs = createSignDataMoveArgs(
+	let signDataArgs = createSignDataECDSAK1MoveArgs(
 		presignCompletionEvent.presign_ids,
 		centralizedSignedMsg,
 		dWallet,
@@ -102,11 +102,11 @@ export async function signWithEncryptedDWallet(
 		signDataArgs,
 		createSignatureAlgorithmDataMoveFunc,
 		dwalletSecp256K1MoveType,
-		signDataMoveType,
+		signDataECDSAK1MoveType,
 	);
 }
 
-export function createSignDataMoveArgs(
+export function createSignDataECDSAK1MoveArgs(
 	presignIDs: string[],
 	messagesCentralizedSignatures: Uint8Array[],
 	dWallet: DWallet | DWalletWithSecretKeyShare,

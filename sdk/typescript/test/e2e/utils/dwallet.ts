@@ -12,8 +12,8 @@ import { dwalletSecp256K1MoveType, MPCKeyScheme } from '../../../src/dwallet-mpc
 import { presign } from '../../../src/dwallet-mpc/presign.js';
 import {
 	createSignatureAlgorithmDataMoveFunc,
-	createSignDataMoveArgs,
-	signDataMoveType,
+	createSignDataECDSAK1MoveArgs,
+	signDataECDSAK1MoveType,
 } from '../../../src/dwallet-mpc/sign_ecdsa_k1.js';
 import { Hash, signMessageTransactionCall } from '../../../src/dwallet-mpc/sign.js';
 
@@ -54,7 +54,7 @@ export async function fullMPCUserSessionsECDSAK1(
 		serializedPresignFirstRoundSessionIds,
 	);
 
-	let signDataArgs = createSignDataMoveArgs(
+	let signDataArgs = createSignDataECDSAK1MoveArgs(
 		presignCompletionEvent.presign_ids,
 		centralizedSignedMsg,
 		dWallet,
@@ -69,7 +69,7 @@ export async function fullMPCUserSessionsECDSAK1(
 		signDataArgs,
 		createSignatureAlgorithmDataMoveFunc,
 		dwalletSecp256K1MoveType,
-		signDataMoveType,
+		signDataECDSAK1MoveType,
 	);
 
 	expect(signOutput).toBeDefined();

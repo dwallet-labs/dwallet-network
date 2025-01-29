@@ -25,8 +25,8 @@ import {
 } from '../../src/dwallet-mpc/sign';
 import {
 	createSignatureAlgorithmDataMoveFunc,
-	createSignDataMoveArgs,
-	signDataMoveType,
+	createSignDataECDSAK1MoveArgs,
+	signDataECDSAK1MoveType,
 } from '../../src/dwallet-mpc/sign_ecdsa_k1';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import { fullMPCUserSessionsECDSAK1 } from './utils/dwallet';
@@ -140,7 +140,7 @@ describe('Test dWallet MPC', () => {
 			serializedPresignSessionIds,
 		);
 
-		let signDataArgs = createSignDataMoveArgs(
+		let signDataArgs = createSignDataECDSAK1MoveArgs(
 			[presignOutput1.id.id, presignOutput2.id.id],
 			centralizedSignMsg,
 			dWallet,
@@ -155,7 +155,7 @@ describe('Test dWallet MPC', () => {
 			signDataArgs,
 			createSignatureAlgorithmDataMoveFunc,
 			dwalletSecp256K1MoveType,
-			signDataMoveType,
+			signDataECDSAK1MoveType,
 		);
 		expect(signOutput).toBeDefined();
 		console.log({ signOutput });
@@ -216,7 +216,7 @@ describe('Test dWallet MPC', () => {
 				presignOutput2.first_round_session_id.slice(2),
 			])
 			.toBytes();
-		const [centralizedSignMsg] = create_sign_centralized_output(
+		const centralizedSignMsg = create_sign_centralized_output(
 			// Todo (#382): Change to real value.
 			mockedProtocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
@@ -228,7 +228,7 @@ describe('Test dWallet MPC', () => {
 			serializedPresignSessionIds,
 		);
 
-		let signDataArgs = createSignDataMoveArgs(
+		let signDataArgs = createSignDataECDSAK1MoveArgs(
 			[presignOutput1.id.id, presignOutput2.id.id],
 			centralizedSignMsg,
 			dWallet,
@@ -241,7 +241,7 @@ describe('Test dWallet MPC', () => {
 			signDataArgs,
 			createSignatureAlgorithmDataMoveFunc,
 			dwalletSecp256K1MoveType,
-			signDataMoveType,
+			signDataECDSAK1MoveType,
 		);
 		expect(partiallySignedMessages).toBeDefined();
 		console.log({ partiallySignedMessages });
@@ -252,7 +252,7 @@ describe('Test dWallet MPC', () => {
 			Hash.SHA256,
 			dWallet.dwallet_cap_id,
 			partiallySignedMessages.partial_signatures_object_id,
-			signDataMoveType,
+			signDataECDSAK1MoveType,
 		);
 		expect(completedSignEvent).toBeDefined();
 		console.log({ completedSignEvent });

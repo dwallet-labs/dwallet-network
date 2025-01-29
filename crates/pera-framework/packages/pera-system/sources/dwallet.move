@@ -564,10 +564,10 @@ module pera_system::dwallet {
         /// The ID of the batched sign output object (`BatchedSignOutput`).
         output_object_id: ID,
 
-         /// List of signatures ordered by the messages.
+         /// List of signatures in the same order as the sign function message approvals input.
         signatures: vector<vector<u8>>,
 
-        /// The flag to indicate if the future sign feature was used before starting the current sign session.
+        /// Indicates whether the future sign feature was used to start the session.
         is_future_sign: bool,
     }
 
@@ -620,7 +620,7 @@ module pera_system::dwallet {
         /// specific to each Digital Signature Algorithm.
         signature_algorithm_data: D,
 
-        /// The flag to indicate if the future sign feature was used before starting the sign session.
+        /// Indicates whether the future sign feature was used to start the session.
         is_future_sign: bool,
     }
 
