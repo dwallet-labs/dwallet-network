@@ -217,7 +217,7 @@ impl DWalletMPCSession {
                     public_input,
                     (),
                 )?;
-                if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
+                if let AsynchronousRoundResult::Finalize { .. } = &result {
                     verify_encrypted_share(&StartEncryptedShareVerificationEvent {
                         dwallet_centralized_public_output: event_data
                             .dkg_centralized_public_output
