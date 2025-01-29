@@ -83,7 +83,7 @@ pub struct DWalletMPCManager {
     /// This list is maintained during the Epoch.
     /// This happens automatically because the [`DWalletMPCManager`]
     /// is part of the [`AuthorityPerEpochStore`].
-    malicious_handler: MaliciousHandler,
+    pub(crate) malicious_handler: MaliciousHandler,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
@@ -200,8 +200,8 @@ impl DWalletMPCManager {
             }
             DWalletMPCDBMessage::LockNextEpochCommitteeVote(_) => {}
             DWalletMPCDBMessage::SessionFailedWithMaliciousParties(authority_name, report) => {
-                if let Err(err) =
-                    self.handle_session_failed_with_malicious_parties(authority_name, report)
+                if let Err(err) = self
+                    .handle_session_failed_with_malicious_parties_message(authority_name, report)
                 {
                     error!(
                         "dWallet MPC session failed with malicious parties with error: {:?}",
@@ -212,15 +212,22 @@ impl DWalletMPCManager {
         }
     }
 
-    fn handle_session_failed_with_malicious_parties(
+    fn handle_session_failed_with_malicious_parties_message(
         &mut self,
-        authority_name: AuthorityName,
+        reporting_authority: AuthorityName,
         report: MaliciousReport,
     ) -> DwalletMPCResult<()> {
+        if self
+            .malicious_handler
+            .get_malicious_actors_names()
+            .contains(&reporting_authority)
+        {
+            return Ok(());
+        }
         let epoch_store = self.epoch_store()?;
         let status = self
             .malicious_handler
-            .report_malicious_actor(report.clone(), authority_name)?;
+            .report_malicious_actor(report.clone(), reporting_authority)?;
 
         match status {
             // Quorum reached, remove the malicious parties from the session messages.
@@ -259,12 +266,13 @@ impl DWalletMPCManager {
                 if matches!(
                     session.session_info.mpc_round,
                     MPCProtocolInitData::Sign(..)
-                ) {
+                ) && !report.malicious_actors.is_empty()
+                {
                     if session.session_specific_state.is_none() {
                         session.session_specific_state =
                             Some(MPCSessionSpecificState::Sign(SignIASessionState {
                                 malicious_report: report,
-                                initiating_ia_authority: authority_name,
+                                initiating_ia_authority: reporting_authority,
                             }))
                     }
                 }
