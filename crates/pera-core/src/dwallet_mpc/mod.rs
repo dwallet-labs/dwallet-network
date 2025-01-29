@@ -307,7 +307,7 @@ fn sign_party_session_info(
             batch_session_id: deserialized_event.batched_session_id.bytes,
             hashed_message: deserialized_event.hashed_message.clone(),
             dwallet_id: deserialized_event.dwallet_id.bytes,
-            dkg_output: deserialized_event.dkg_output.clone(),
+            dkg_output: deserialized_event.dwallet_decentralized_public_output.clone(),
             network_key_version: deserialized_event.dwallet_mpc_network_key_version,
             is_future_sign: deserialized_event.is_future_sign,
         }),

@@ -293,7 +293,7 @@ impl DWalletMPCOutputsVerifier {
         if let Err(err) = verify_signature(
             sign_output.0,
             sign_output.1,
-            bcs::from_bytes(&sign_session_data.message)?,
+            bcs::from_bytes(&sign_session_data.hashed_message)?,
             dwallet_public_key,
         ) {
             return Err(DwalletMPCError::SignatureVerificationFailed(
