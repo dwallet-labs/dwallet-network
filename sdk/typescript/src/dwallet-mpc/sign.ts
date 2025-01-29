@@ -42,11 +42,18 @@ export interface CompletedSignEvent {
 }
 
 export function isCompletedSignEvent(obj: any): obj is CompletedSignEvent {
-	return obj && 'session_id' in obj && 'output_object_id' in obj;
+	return (
+		obj &&
+		'session_id' in obj &&
+		'output_object_id' in obj &&
+		'signatures' in obj &&
+		'is_future_sign' in obj
+	);
 }
 
 export async function signMessageTransactionCall(
 	c: Config,
+	tx: Transaction,
 	dWallet: DWallet | DWalletWithSecretKeyShare,
 	messages: Uint8Array[],
 	hash: Hash,
@@ -55,8 +62,6 @@ export async function signMessageTransactionCall(
 	dWalletCurveMoveType: string,
 	signDataMoveType: string,
 ): Promise<CompletedSignEvent> {
-	const tx = new Transaction();
-
 	const [messageApprovals] = tx.moveCall({
 		target: approveMessagesMoveFunc,
 		arguments: [
@@ -112,6 +117,7 @@ export function isCreatedPartiallySignedMessagesEvent(
 
 export async function partiallySignMessageTransactionCall(
 	c: Config,
+	tx: Transaction,
 	messages: Uint8Array[],
 	dWalletID: string,
 	signatureAlgorithmData: (TransactionArgument | SerializedBcs<any>)[],
@@ -119,8 +125,6 @@ export async function partiallySignMessageTransactionCall(
 	dWalletMoveType: string,
 	signatureDataMoveType: string,
 ) {
-	const tx = new Transaction();
-
 	const [signData] = tx.moveCall({
 		target: createSignatureAlgorithmDataMoveFunc,
 		arguments: signatureAlgorithmData,

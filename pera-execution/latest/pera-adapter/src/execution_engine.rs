@@ -1208,18 +1208,21 @@ mod checked {
                 dwallet_id,
                 is_future_sign,
                 ..
-            }) => (
-                "create_sign_output",
-                vec![
-                    // Serialized Vector of Signatures.
-                    CallArg::Pure(data.output),
-                    // The Batch Session ID.
-                    CallArg::Pure(bcs_to_bytes(&batch_session_id)?),
-                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
-                    CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
-                    CallArg::Pure(bcs_to_bytes(&is_future_sign)?),
-                ],
-            ),
+            }) => {
+                module_name = DWALLET_MODULE_NAME;
+                (
+                    "create_sign_output",
+                    vec![
+                        // Serialized Vector of Signatures.
+                        CallArg::Pure(data.output),
+                        // The Batch Session ID.
+                        CallArg::Pure(bcs_to_bytes(&batch_session_id)?),
+                        CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                        CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
+                        CallArg::Pure(bcs_to_bytes(&is_future_sign)?),
+                    ],
+                )
+            }
             MPCRound::NetworkDkg(key_type, new_key) => {
                 let new_key = new_key.ok_or(ExecutionError::new(
                     ExecutionErrorKind::TypeArgumentError {

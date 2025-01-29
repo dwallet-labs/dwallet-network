@@ -88,14 +88,17 @@ export async function signWithEncryptedDWallet(
 		serializedPresignFirstRoundSessionIds,
 	);
 
+	let signTx = new Transaction();
 	let signDataArgs = createSignDataECDSAK1MoveArgs(
 		presignCompletionEvent.presign_ids,
 		centralizedSignedMsg,
 		dWallet,
+		signTx,
 	);
 
 	return await signMessageTransactionCall(
 		conf,
+		signTx,
 		dWallet,
 		messages,
 		Hash.SHA256,
@@ -110,8 +113,8 @@ export function createSignDataECDSAK1MoveArgs(
 	presignIDs: string[],
 	messagesCentralizedSignatures: Uint8Array[],
 	dWallet: DWallet | DWalletWithSecretKeyShare,
+	tx: Transaction,
 ): (TransactionArgument | SerializedBcs<any>)[] {
-	const tx = new Transaction();
 	const presigns = tx.makeMoveVec({
 		elements: presignIDs.map((presignID) => tx.object(presignID)),
 	});

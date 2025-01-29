@@ -29,6 +29,7 @@ import {
 	signDataECDSAK1MoveType,
 } from '../../src/dwallet-mpc/sign_ecdsa_k1';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
+import { Transaction } from '../../src/transactions';
 import { fullMPCUserSessionsECDSAK1 } from './utils/dwallet';
 import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet_mocks';
 import { setup, TestToolbox } from './utils/setup';
@@ -140,15 +141,19 @@ describe('Test dWallet MPC', () => {
 			serializedPresignSessionIds,
 		);
 
+		let signTx = new Transaction();
+
 		let signDataArgs = createSignDataECDSAK1MoveArgs(
 			[presignOutput1.id.id, presignOutput2.id.id],
 			centralizedSignMsg,
 			dWallet,
+			signTx,
 		);
 
 		console.log('Signing message');
 		let signOutput = await signMessageTransactionCall(
 			c,
+			signTx,
 			dWallet,
 			messages,
 			Hash.SHA256,
@@ -161,7 +166,7 @@ describe('Test dWallet MPC', () => {
 		console.log({ signOutput });
 	});
 
-	it('Full user-side triggered flow: DKG, Presign, Sign (with ECDSA K1)', async () => {
+	it('Full user-side triggered flow: DKG, Presign, Sign with ECDSA K1', async () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
@@ -174,7 +179,7 @@ describe('Test dWallet MPC', () => {
 		);
 	});
 
-	it('Full flow: Network DKG, DKG, Presign, Sign (with ECDSA K1)', async () => {
+	it('Full flow: Network DKG, DKG, Presign, Sign with ECDSA K1', async () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
@@ -189,7 +194,7 @@ describe('Test dWallet MPC', () => {
 		await fullMPCUserSessionsECDSAK1(conf, protocolPublicParams, activeEncryptionKeysTableID);
 	});
 
-	it('should run future sign (with ECDSA K1)', async () => {
+	it('should run future sign with ECDSA K1', async () => {
 		let c: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
@@ -228,14 +233,18 @@ describe('Test dWallet MPC', () => {
 			serializedPresignSessionIds,
 		);
 
+		let signTx = new Transaction();
+
 		let signDataArgs = createSignDataECDSAK1MoveArgs(
 			[presignOutput1.id.id, presignOutput2.id.id],
 			centralizedSignMsg,
 			dWallet,
+			signTx,
 		);
 
 		let partiallySignedMessages = await partiallySignMessageTransactionCall(
 			c,
+			signTx,
 			messages,
 			dWallet.id.id,
 			signDataArgs,

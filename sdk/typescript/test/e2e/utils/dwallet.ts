@@ -16,6 +16,7 @@ import {
 	signDataECDSAK1MoveType,
 } from '../../../src/dwallet-mpc/sign_ecdsa_k1.js';
 import { Hash, signMessageTransactionCall } from '../../../src/dwallet-mpc/sign.js';
+import { Transaction } from '../../../src/transactions/index.js';
 
 /**
  * Run the Full MPC User Sessions
@@ -54,15 +55,18 @@ export async function fullMPCUserSessionsECDSAK1(
 		serializedPresignFirstRoundSessionIds,
 	);
 
+	let signTx = new Transaction();
 	let signDataArgs = createSignDataECDSAK1MoveArgs(
 		presignCompletionEvent.presign_ids,
 		centralizedSignedMsg,
 		dWallet,
+		signTx,
 	);
 
 	console.log('Signing message');
 	let signOutput = await signMessageTransactionCall(
 		c,
+		signTx,
 		dWallet,
 		messages,
 		Hash.SHA256,

@@ -449,25 +449,6 @@ module pera_system::dwallet {
         message_approvals
     }
 
-    /// Pops the last message approval from the vector and verifies it
-    /// against the given message and `dwallet_cap_id`.
-    public(package) fun pop_and_verify_message_approval(
-        dwallet_cap_id: ID,
-        message_hash: vector<u8>,
-        message_approvals: &mut vector<MessageApproval>
-    ): (ID, u8, vector<u8>) {
-        let message_approval = vector::pop_back(message_approvals);
-        let MessageApproval {
-            dwallet_cap_id:  message_approval_dwallet_cap_id,
-            hash_scheme,
-            message
-        } = message_approval;
-        assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMessageApprovalDWalletMismatch);
-        // Todo (#565): Move the hash calculation into the rust code.
-        assert!(&message_hash == &hash_message(message, hash_scheme), EMissingApprovalOrWrongApprovalOrder);
-        (message_approval_dwallet_cap_id, hash_scheme, message)
-    }
-
     // Todo (#565): Move the hash calculation into the rust code.
     public(package) fun hash_messages(message_approvals: &vector<MessageApproval>): vector<vector<u8>> {
         let mut hashed_messages = vector::empty();
@@ -768,6 +749,7 @@ module pera_system::dwallet {
                 message
             } = message_approval;
             assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMessageApprovalDWalletMismatch);
+            // Todo (#565): Move the hash calculation into the rust code.
             let hashed_message = hash_message(message, hash_scheme);
 
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
