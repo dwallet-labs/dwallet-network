@@ -349,13 +349,13 @@ impl DWalletMPCOutputsVerifier {
         let dkg_output = bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(&dkg_output)?;
         let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
             bcs::from_bytes(presign)?;
-        let partially_signed_message: SignCentralizedParty::OutgoingMessage =
+        let partial: <AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage =
             bcs::from_bytes(partially_signed_message)?;
         twopc_mpc::sign::decentralized_party::signature_partial_decryption_round::Party::verify_encryption_of_signature_parts_prehash_class_groups(
             message,
             dkg_output,
             presign,
-            partially_signed_message,
+            partial,
             protocol_public_parameters,
             CommitmentSizedNumber::from_le_slice(
                 session_id.to_vec().as_slice(),
