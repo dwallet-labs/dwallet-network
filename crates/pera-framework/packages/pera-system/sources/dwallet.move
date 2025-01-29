@@ -697,6 +697,7 @@ module pera_system::dwallet {
         dwallet: &DWallet<T>,
         message_approvals: vector<MessageApproval>,
         signature_algorithm_data: vector<SignatureAlgorithmData<D>>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         let signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, | SignatureAlgorithmData { data } | data);
@@ -841,6 +842,7 @@ module pera_system::dwallet {
         dwallet: &DWallet<T>,
         messages: vector<vector<u8>>,
         signature_algorithm_data: vector<SignatureAlgorithmData<D>>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         let messages_len = vector::length(&messages);
@@ -890,6 +892,7 @@ module pera_system::dwallet {
     public fun sign_with_partial_centralized_message_signatures<D: store + copy + drop>(
         partial_signature: PartialCentralizedSignedMessages<D>,
         message_approvals: vector<MessageApproval>,
+        _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
         let PartialCentralizedSignedMessages<D> {
