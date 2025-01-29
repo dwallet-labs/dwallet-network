@@ -18,9 +18,7 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{
     MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, SingleSignSessionData,
 };
-use twopc_mpc::secp256k1::class_groups::{
-    ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-};
+use twopc_mpc::secp256k1::class_groups::{AsyncProtocol, ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS};
 
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
@@ -347,10 +345,12 @@ impl DWalletMPCOutputsVerifier {
         let dkg_output = bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(
             &dkg_output,
         )?;
+        let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
+            bcs::from_bytes(presign)?;
         twopc_mpc::sign::decentralized_party::signature_partial_decryption_round::Party::verify_encryption_of_signature_parts_prehash_class_groups(
             message,
             dkg_output,
-            bcs::from_bytes(presign)?,
+            presign,
             bcs::from_bytes(partially_signed_message)?,
             protocol_public_parameters,
             CommitmentSizedNumber::from_le_slice(
