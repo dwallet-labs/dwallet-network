@@ -111,10 +111,10 @@ function isEncryptedUserSecretKeyShare(obj: any): obj is EncryptedUserSecretKeyS
 	return (
 		obj &&
 		typeof obj.dwallet_id === 'string' &&
-		obj.encrypted_centralized_secret_share_and_proof instanceof Uint8Array &&
+		'encrypted_centralized_secret_share_and_proof' in obj &&
 		typeof obj.encryption_key_id === 'string' &&
-		obj.centralized_public_output_signature instanceof Uint8Array &&
-		obj.encryptor_ed25519_pubkey instanceof Uint8Array &&
+		'centralized_public_output_signature' in obj &&
+		'encryptor_ed25519_pubkey' in obj &&
 		typeof obj.encryptor_address === 'string'
 	);
 }

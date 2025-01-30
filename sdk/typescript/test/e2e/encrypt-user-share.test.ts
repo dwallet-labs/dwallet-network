@@ -105,6 +105,7 @@ describe('encrypt user share', () => {
 	});
 
 	it('signs with an encrypted secret share', async () => {
+		console.log(sourceClient.keypair.toPeraAddress());
 		const conf: Config = {
 			keypair: sourceClient.keypair,
 			client: sourceClient.client,
