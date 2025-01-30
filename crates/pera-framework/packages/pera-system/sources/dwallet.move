@@ -828,6 +828,7 @@ module pera_system::dwallet {
     }
 
     /// Event emitted when a [`PartialCentralizedSignedMessages`] object is created.
+    #[allow(unused_field)]
     public struct CreatedPartialCentralizedSignedMessagesEvent has copy, drop {
         /// The unique identifier of the created `PartialCentralizedSignedMessages` object.
         partial_signatures_object_id: ID,
@@ -838,6 +839,11 @@ module pera_system::dwallet {
     /// D: The type of the extra fields that can be stored with the object.
     public(package) fun create_signature_algorithm_data<D: store + copy + drop>(data: D): SignatureAlgorithmData<D> {
         SignatureAlgorithmData { data }
+    }
+
+    public(package) fun deconstruct_signature_data<D: store + copy + drop>(data: SignatureAlgorithmData<D>): D {
+        let SignatureAlgorithmData { data } = data;
+        data
     }
 
     /// Initiates a signing flow using a previously published [`PartialCentralizedSignedMessages`].

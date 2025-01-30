@@ -964,7 +964,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let messages_len = vector::length(&messages);
         let signature_algorithm_data_len = vector::length(&signature_algorithm_data);
         assert!(messages_len == signature_algorithm_data_len, EExtraDataAndMessagesLenMismatch);
-        let signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |SignatureAlgorithmData { data }| data);
+        let signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |signature_algorithm_data| dwallet::deconstruct_signature_data(signature_algorithm_data));
         let presigns = vector::map!(signature_algorithm_data_unpacked, |data| data.presign_output);
         let partial_signatures = vector::map!(signature_algorithm_data_unpacked, |data| data.message_centralized_signature);
         event::emit(StartPartialSignatureVerificationEvent {

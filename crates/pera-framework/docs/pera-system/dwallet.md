@@ -71,8 +71,8 @@ It encapsulates the session ID, capability ID, and the outputs from the DKG roun
     -  [Effects](#@Effects_17)
     -  [Aborts](#@Aborts_18)
 -  [Function `create_sign_output`](#0x3_dwallet_create_sign_output)
--  [Function `request_future_sign`](#0x3_dwallet_request_future_sign)
 -  [Function `create_signature_algorithm_data`](#0x3_dwallet_create_signature_algorithm_data)
+-  [Function `deconstruct_signature_data`](#0x3_dwallet_deconstruct_signature_data)
 -  [Function `sign_with_partial_centralized_message_signatures`](#0x3_dwallet_sign_with_partial_centralized_message_signatures)
         -  [Type Parameters](#@Type_Parameters_23)
         -  [Parameters](#@Parameters_24)
@@ -1910,59 +1910,6 @@ the function will abort with this error.
 
 </details>
 
-<a name="0x3_dwallet_request_future_sign"></a>
-
-## Function `request_future_sign`
-
-A function to publish messages signed by the user on chain with on-chain verification,
-without launching the chain's sign flow immediately.
-
-See the docs of [<code><a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a></code>] for
-more details on when this may be used.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_request_future_sign">request_future_sign</a>&lt;T: drop, D: <b>copy</b>, drop, store&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">dwallet::SignatureAlgorithmData</a>&lt;D&gt;&gt;, _pera_system_state: &<a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_request_future_sign">request_future_sign</a>&lt;T: drop, D: <b>copy</b> + drop + store&gt;(
-    <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;,
-    messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
-    signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a>&lt;D&gt;&gt;,
-    _pera_system_state: &PeraSystemState,
-    ctx: &<b>mut</b> TxContext
-) {
-    <b>let</b> messages_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&messages);
-    <b>let</b> signature_algorithm_data_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&signature_algorithm_data);
-    <b>assert</b>!(messages_len == signature_algorithm_data_len, <a href="dwallet.md#0x3_dwallet_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>);
-
-    <b>let</b> signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a> { data }| data);
-    <b>let</b> partial_signatures = <a href="dwallet.md#0x3_dwallet_create_partial_centralized_signed_messages">create_partial_centralized_signed_messages</a>&lt;T, D&gt;(
-        messages,
-        <a href="dwallet.md#0x3_dwallet">dwallet</a>,
-        signature_algorithm_data_unpacked,
-        ctx,
-    );
-
-    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet.md#0x3_dwallet_CreatedPartialCentralizedSignedMessagesEvent">CreatedPartialCentralizedSignedMessagesEvent</a> {
-        partial_signatures_object_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&partial_signatures),
-    });
-
-    // Todo (#415): Add the <a href="../pera-framework/event.md#0x2_event">event</a> for the verify_partially_signed_signatures
-    // Todo (#415): <a href="dwallet.md#0x3_dwallet_PartialCentralizedSignedMessages">PartialCentralizedSignedMessages</a> will be created & retured <b>to</b> the user only after the verification is done.
-    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(partial_signatures, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_dwallet_create_signature_algorithm_data"></a>
 
 ## Function `create_signature_algorithm_data`
@@ -1983,6 +1930,31 @@ D: The type of the extra fields that can be stored with the object.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_signature_algorithm_data">create_signature_algorithm_data</a>&lt;D: store + <b>copy</b> + drop&gt;(data: D): <a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a>&lt;D&gt; {
     <a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a> { data }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_deconstruct_signature_data"></a>
+
+## Function `deconstruct_signature_data`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_deconstruct_signature_data">deconstruct_signature_data</a>&lt;D: <b>copy</b>, drop, store&gt;(data: <a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">dwallet::SignatureAlgorithmData</a>&lt;D&gt;): D
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_deconstruct_signature_data">deconstruct_signature_data</a>&lt;D: store + <b>copy</b> + drop&gt;(data: <a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a>&lt;D&gt;): D {
+    <b>let</b> <a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">SignatureAlgorithmData</a> { data } = data;
+    data
 }
 </code></pre>
 

@@ -1123,10 +1123,10 @@ emit_sign_events
 create_sign_output
 	fun
 	0x3::dwallet
-request_future_sign
-	public fun
-	0x3::dwallet
 create_signature_algorithm_data
+	public(package) fun
+	0x3::dwallet
+deconstruct_signature_data
 	public(package) fun
 	0x3::dwallet
 sign_with_partial_centralized_message_signatures
@@ -1180,6 +1180,9 @@ CompletedBatchedPresignEvent
 SignData
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartPartialSignatureVerificationEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -1206,6 +1209,9 @@ launch_presign_second_round
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_batched_presign_output
 	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+request_future_sign
+	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_signature_algorithm_data
 	public fun

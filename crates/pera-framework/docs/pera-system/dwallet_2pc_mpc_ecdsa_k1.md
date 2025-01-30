@@ -22,6 +22,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Struct `StartPresignSecondRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignSecondRoundEvent)
 -  [Struct `CompletedBatchedPresignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedBatchedPresignEvent)
 -  [Struct `SignData`](#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData)
+-  [Struct `StartPartialSignatureVerificationEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPartialSignatureVerificationEvent)
 -  [Constants](#@Constants_0)
 -  [Function `launch_dkg_first_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round)
 -  [Function `create_dkg_first_round_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output)
@@ -32,6 +33,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `launch_batched_presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_batched_presign)
 -  [Function `launch_presign_second_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_presign_second_round)
 -  [Function `create_batched_presign_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_batched_presign_output)
+-  [Function `request_future_sign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_request_future_sign)
 -  [Function `create_signature_algorithm_data`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_signature_algorithm_data)
 -  [Function `create_mock_dwallet_for_testing`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing)
 -  [Function `create_mock_dwallet`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet)
@@ -940,6 +942,63 @@ It provides details about the presign objects created and their associated metad
 
 </details>
 
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartPartialSignatureVerificationEvent"></a>
+
+## Struct `StartPartialSignatureVerificationEvent`
+
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPartialSignatureVerificationEvent">StartPartialSignatureVerificationEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>partial_signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>presigns: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>dwallet_key_version: u8</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -951,6 +1010,15 @@ Error raised when the sender is not the system address.
 
 
 <pre><code><b>const</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 1;
+</code></pre>
+
+
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_EExtraDataAndMessagesLenMismatch"></a>
+
+
+
+<pre><code><b>const</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 7;
 </code></pre>
 
 
@@ -1662,6 +1730,70 @@ emits a <code>CompletedPresignEvent</code>, and transfers the result to the init
         presigns,
         first_round_session_ids,
     });
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_request_future_sign"></a>
+
+## Function `request_future_sign`
+
+A function to publish messages signed by the user on chain with on-chain verification,
+without launching the chain's sign flow immediately.
+
+See the docs of [<code>PartialCentralizedSignedMessages</code>] for
+more details on when this may be used.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_request_future_sign">request_future_sign</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_SignatureAlgorithmData">dwallet::SignatureAlgorithmData</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData">dwallet_2pc_mpc_ecdsa_k1::SignData</a>&gt;&gt;, _pera_system_state: &<a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_request_future_sign">request_future_sign</a>(
+    <a href="dwallet.md#0x3_dwallet">dwallet</a>: &DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;,
+    messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    signature_algorithm_data: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;SignatureAlgorithmData&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData">SignData</a>&gt;&gt;,
+    _pera_system_state: &PeraSystemState,
+    ctx: &<b>mut</b> TxContext
+) {
+    <b>let</b> messages_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&messages);
+    <b>let</b> signature_algorithm_data_len = <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&signature_algorithm_data);
+    <b>assert</b>!(messages_len == signature_algorithm_data_len, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EExtraDataAndMessagesLenMismatch">EExtraDataAndMessagesLenMismatch</a>);
+    <b>let</b> signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |signature_algorithm_data| <a href="dwallet.md#0x3_dwallet_deconstruct_signature_data">dwallet::deconstruct_signature_data</a>(signature_algorithm_data));
+    <b>let</b> presigns = vector::map!(signature_algorithm_data_unpacked, |data| data.presign_output);
+    <b>let</b> partial_signatures = vector::map!(signature_algorithm_data_unpacked, |data| data.message_centralized_signature);
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPartialSignatureVerificationEvent">StartPartialSignatureVerificationEvent</a> {
+        session_id: <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx)),
+        dkg_output: get_dwallet_decentralized_public_output&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
+        partial_signatures,
+        messages,
+        presigns,
+        dwallet_key_version: get_dwallet_mpc_network_decryption_key_version(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
+    });
+
+
+    // <b>let</b> partial_signatures = create_partial_centralized_signed_messages&lt;T, D&gt;(
+    //     messages,
+    //     <a href="dwallet.md#0x3_dwallet">dwallet</a>,
+    //     signature_algorithm_data_unpacked,
+    //     ctx,
+    // );
+
+    // <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(CreatedPartialCentralizedSignedMessagesEvent {
+    // partial_signatures_object_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&partial_signatures),
+    // });
+
+    // Todo (#415): Add the <a href="../pera-framework/event.md#0x2_event">event</a> for the verify_partially_signed_signatures
+    // Todo (#415): PartialCentralizedSignedMessages will be created & retured <b>to</b> the user only after the verification is done.
+    // <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(partial_signatures, <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx));
 }
 </code></pre>
 
