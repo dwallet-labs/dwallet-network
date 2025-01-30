@@ -9,6 +9,7 @@ import { MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import { createActiveEncryptionKeysTable } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
+	checkpointCreationTime,
 	Config,
 	delay,
 	dwalletSecp256K1MoveType,
@@ -204,6 +205,7 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: fiveMinutes * 2,
 		};
+		await delay(checkpointCreationTime);
 		const dWallet = await mockCreateDwallet(c);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
@@ -255,6 +257,7 @@ describe('Test dWallet MPC', () => {
 			createSignatureAlgorithmDataMoveFunc,
 			dwalletSecp256K1MoveType,
 			signDataECDSAK1MoveType,
+			Hash.SHA256,
 		);
 		expect(partiallySignedMessages).toBeDefined();
 		console.log({ partiallySignedMessages });

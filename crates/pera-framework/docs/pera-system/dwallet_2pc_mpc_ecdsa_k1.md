@@ -32,6 +32,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `launch_batched_presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_batched_presign)
 -  [Function `launch_presign_second_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_presign_second_round)
 -  [Function `create_batched_presign_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_batched_presign_output)
+-  [Function `create_partially_signed_messages`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_partially_signed_messages)
 -  [Function `create_signature_algorithm_data`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_signature_algorithm_data)
 -  [Function `create_mock_dwallet_for_testing`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing)
 -  [Function `create_mock_dwallet`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet)
@@ -473,7 +474,8 @@ similar to the MPC processes.
  The public output of the centralized party,
  belongs to the dWallet that its centralized
  secret share is being encrypted.
- todo(zeev): we should not trust this, don't pass it.
+ This is not passed by the user,
+ but taken from the blockhain during event creation.
 </dd>
 <dt>
 <code>centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
@@ -1191,10 +1193,10 @@ associated with the dWallet before creating an [<code><a href="dwallet_2pc_mpc_e
 
 - **<code><a href="dwallet.md#0x3_dwallet">dwallet</a></code>**: A reference to the <code>DWallet&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;</code> object to which the secret share is linked.
 - **<code>destination_encryption_key</code>**: A reference to the encryption key used for encrypting the secret key share.
-- **<code>encrypted_secret_share_and_proof</code>**: The encrypted secret key share, accompanied by a cryptographic proof.
+- **<code>encrypted_centralized_secret_share_and_proof</code>**: The encrypted secret key share, accompanied by a cryptographic proof.
 - **<code>source_signed_centralized_public_output</code>**: The signed centralized public output corresponding to the secret share.
-- **<code>_pera_system_state</code>**: The Pera system state object. Its ID is always 0x5.
 - **<code>source_ed25519_pubkey</code>**: The Ed25519 public key of the source (encryptor) used for verifying the signature.
+- **<code>_pera_system_state</code>**: The Pera system state object. Its ID is always 0x5.
 
 
 <a name="@Effects_8"></a>
@@ -1262,7 +1264,7 @@ It finalizes the process by storing the encrypted user share on-chain and emitti
 - <code>encryption_key_id</code>: The <code>EncryptionKey</code> Move object ID used to encrypt the secret key share.
 - <code>session_id</code>: A unique identifier for the session related to this operation.
 - <code>centralized_public_output_signature</code>: The signed public share corresponding to the encrypted secret share.
-- <code>encryptor_ed25519_pubkey</code>: The Ed25519 public key of the encryptor used for signing.
+- <code>encryptor_ed25519_pubkey</code>: The Ed25519 public key of the encryptor, used for signing.
 - <code>initiator</code>: The address of the entity that performed the encryption operation of this secret key share.
 
 
@@ -1363,7 +1365,7 @@ representing the decentralized computation result.
 - **<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code>**: If the function is not called by the system address.
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_second_round_output">create_dkg_second_round_output</a>(initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_mpc_network_decryption_key_version: u8, encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, signed_public_share: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_second_round_output">create_dkg_second_round_output</a>(initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_mpc_network_decryption_key_version: u8, encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryption_key_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1378,9 +1380,9 @@ representing the decentralized computation result.
     decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     dwallet_cap_id: ID,
     dwallet_mpc_network_decryption_key_version: u8,
-    encrypted_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    encrypted_centralized_secret_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     encryption_key_id: ID,
-    signed_public_share: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    centralized_public_output_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     encryptor_ed25519_pubkey: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext
@@ -1397,10 +1399,10 @@ representing the decentralized computation result.
     );
 
     <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_encrypted_user_share">create_encrypted_user_share</a>(<a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-        encrypted_secret_share_and_proof,
+        encrypted_centralized_secret_share_and_proof,
         encryption_key_id,
         session_id,
-        signed_public_share,
+        centralized_public_output_signature,
         encryptor_ed25519_pubkey,
         initiator,
         ctx
@@ -1662,6 +1664,63 @@ emits a <code>CompletedPresignEvent</code>, and transfers the result to the init
         presigns,
         first_round_session_ids,
     });
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_create_partially_signed_messages"></a>
+
+## Function `create_partially_signed_messages`
+
+
+
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_partially_signed_messages">create_partially_signed_messages</a>(messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, initiator: <b>address</b>, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_mpc_network_decryption_key_version: u8, presign_ids: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>&gt;, presign_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, message_centralized_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_partially_signed_messages">create_partially_signed_messages</a>(
+    messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    session_id: ID,
+    initiator: <b>address</b>,
+    dwallet_id: ID,
+    dwallet_decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    dwallet_cap_id: ID,
+    dwallet_mpc_network_decryption_key_version: u8,
+    presign_ids: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;ID&gt;,
+    presign_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    message_centralized_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    ctx: &<b>mut</b> TxContext
+) {
+    <b>let</b> <b>mut</b> signatures_data = <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[];
+    <b>let</b> presign_ids_len = presign_ids.length();
+    <b>let</b> <b>mut</b> i: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 0;
+    <b>while</b> (i &lt; presign_ids_len) {
+        <a href="../move-stdlib/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> signatures_data, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData">SignData</a> {
+            message_centralized_signature: message_centralized_signature[i],
+            presign_id: presign_ids[i],
+            presign_output: presign_output[i],
+        });
+        i = i + 1;
+    };
+    <a href="dwallet.md#0x3_dwallet_create_partial_centralized_signed_messages">dwallet::create_partial_centralized_signed_messages</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData">SignData</a>&gt;(
+        messages,
+        dwallet_id,
+        dwallet_decentralized_public_output,
+        dwallet_cap_id,
+        dwallet_mpc_network_decryption_key_version,
+        signatures_data,
+        session_id,
+        initiator,
+        ctx,
+    );
 }
 </code></pre>
 

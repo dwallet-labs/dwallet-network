@@ -1131,8 +1131,43 @@ mod checked {
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
         let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
-
         let (move_function_name, args) = match data.session_info.mpc_round {
+            MPCProtocolInitData::PartialSignatureVerification(event_data) => {
+                let presign_ids: Vec<ObjectID> = event_data
+                    .signature_data
+                    .iter()
+                    .map(|data| data.presign_id.bytes.clone())
+                    .collect();
+                let presign_outputs: Vec<Vec<u8>> = event_data
+                    .signature_data
+                    .iter()
+                    .map(|data| data.presign_output.clone())
+                    .collect();
+                let message_centralized_signature: Vec<Vec<u8>> = event_data
+                    .signature_data
+                    .iter()
+                    .map(|data| data.message_centralized_signature.clone())
+                    .collect();
+                (
+                    "create_partially_signed_messages",
+                    vec![
+                        CallArg::Pure(bcs_to_bytes(&event_data.messages)?),
+                        CallArg::Pure(data.session_info.session_id.to_vec()),
+                        CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                        CallArg::Pure(event_data.dwallet_id.bytes.to_vec()),
+                        CallArg::Pure(bcs_to_bytes(
+                            &event_data.dwallet_decentralized_public_output,
+                        )?),
+                        CallArg::Pure(event_data.dwallet_cap_id.bytes.to_vec()),
+                        CallArg::Pure(bcs_to_bytes(
+                            &event_data.dwallet_mpc_network_decryption_key_version,
+                        )?),
+                        CallArg::Pure(bcs_to_bytes(&presign_ids)?),
+                        CallArg::Pure(bcs_to_bytes(&presign_outputs)?),
+                        CallArg::Pure(bcs_to_bytes(&message_centralized_signature)?),
+                    ],
+                )
+            }
             MPCProtocolInitData::DKGFirst => (
                 "create_dkg_first_round_output",
                 vec![

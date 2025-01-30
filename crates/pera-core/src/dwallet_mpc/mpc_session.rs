@@ -1,15 +1,10 @@
+use class_groups_constants::protocol_public_parameters;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPrivateInput, MPCPublicInput, MPCSessionStatus,
 };
 use group::PartyID;
-use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use std::collections::HashMap;
-use std::sync::{Arc, Weak};
-use tokio::runtime::Handle;
-use tracing::error;
-use twopc_mpc::sign::Protocol;
-
+use mpc::{AsynchronousRoundResult, Party, WeightedThresholdAccessStructure};
 use pera_types::base_types::{EpochId, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -19,6 +14,13 @@ use pera_types::messages_dwallet_mpc::{
     MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
     StartEncryptedShareVerificationEvent,
 };
+use std::collections::HashMap;
+use std::sync::{Arc, Weak};
+use tokio::runtime::Handle;
+use tracing::error;
+use twopc_mpc::secp256k1;
+use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
+use twopc_mpc::sign::Protocol;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
@@ -26,8 +28,11 @@ use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
-use crate::dwallet_mpc::sign::SignFirstParty;
-use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
+use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
+use crate::dwallet_mpc::{
+    authority_name_to_party_id, get_verify_partial_signatures_session_info,
+    party_id_to_authority_name, sign,
+};
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -304,6 +309,23 @@ impl DWalletMPCSession {
                         malicious_parties: vec![],
                     })
                     .map_err(|err| err)
+            }
+            MPCProtocolInitData::PartialSignatureVerification(event_data) => {
+                for i in 0..event_data.messages.len() {
+                    verify_partial_signature(
+                        &event_data.hashed_messages[i],
+                        &event_data.dwallet_decentralized_public_output,
+                        &event_data.signature_data[i].presign_output,
+                        &event_data.signature_data[i].message_centralized_signature,
+                        &bcs::from_bytes(&self.public_input)?,
+                        &event_data.signature_data[i].presign_id.bytes,
+                    )?;
+                }
+                Ok(AsynchronousRoundResult::Finalize {
+                    public_output: vec![],
+                    private_output: vec![],
+                    malicious_parties: vec![],
+                })
             }
             MPCProtocolInitData::BatchedPresign(..) | MPCProtocolInitData::BatchedSign(..) => {
                 // This case is unreachable because the batched session is handled separately.

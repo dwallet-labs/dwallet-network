@@ -1057,6 +1057,9 @@ SignatureAlgorithmData
 CreatedPartialCentralizedSignedMessagesEvent
 	public struct
 	0x3::dwallet
+StartPartialSignaturesVerificationEvent
+	public struct
+	0x3::dwallet
 create_dwallet
 	public(package) fun
 	0x3::dwallet
@@ -1101,6 +1104,9 @@ create_message_approval
 	0x3::dwallet
 approve_messages
 	public fun
+	0x3::dwallet
+hash_message_approvals
+	public(package) fun
 	0x3::dwallet
 hash_messages
 	public(package) fun
@@ -1205,6 +1211,9 @@ launch_presign_second_round
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_batched_presign_output
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_partially_signed_messages
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_signature_algorithm_data
