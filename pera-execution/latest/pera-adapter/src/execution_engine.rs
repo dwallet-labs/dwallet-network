@@ -731,7 +731,6 @@ mod checked {
                     metrics,
                 );
 
-
                 res?;
 
                 Ok(Mode::empty_results())
