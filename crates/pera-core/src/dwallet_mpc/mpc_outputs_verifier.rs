@@ -38,7 +38,6 @@ pub struct DWalletMPCOutputsVerifier {
     pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
     /// The quorum threshold of the chain.
     pub quorum_threshold: StakeUnit,
-    // todo(zeev): why is it here?
     pub completed_locking_next_committee: bool,
     voted_to_lock_committee: HashSet<AuthorityName>,
     /// The latest consensus round that was processed.
@@ -73,9 +72,9 @@ pub enum OutputResult {
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
-    /// The output has already been verified and committed to the chain
+    /// The output has already been verified and committed to the chain.
+    /// This happens every time since all honest parties send the same output.
     AlreadyCommitted,
-    Duplicate,
 }
 
 pub struct OutputVerificationResult {
@@ -141,7 +140,7 @@ impl DWalletMPCOutputsVerifier {
         };
         if session_output_data.current_result == OutputResult::AlreadyCommitted {
             return Ok(OutputVerificationResult {
-                result: OutputResult::Duplicate,
+                result: OutputResult::AlreadyCommitted,
                 malicious_actors: vec![],
             });
         }
@@ -264,7 +263,7 @@ impl DWalletMPCOutputsVerifier {
     ) -> DwalletMPCResult<OutputVerificationResult> {
         let sign_output = bcs::from_bytes::<<SignFirstParty as Party>::PublicOutput>(&signature)?;
         let dkg_output = bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(
-            &sign_session_data.dkg_output,
+            &sign_session_data.dwallet_decentralized_public_output,
         )?
         .public_key;
         let protocol_public_parameters = epoch_store
@@ -292,7 +291,7 @@ impl DWalletMPCOutputsVerifier {
         if let Err(err) = verify_signature(
             sign_output.0,
             sign_output.1,
-            bcs::from_bytes(&sign_session_data.message)?,
+            bcs::from_bytes(&sign_session_data.hashed_message)?,
             dwallet_public_key,
         ) {
             return Err(DwalletMPCError::SignatureVerificationFailed(
@@ -309,7 +308,7 @@ impl DWalletMPCOutputsVerifier {
     /// and initializes the output data for it.
     /// Needed, so we'll know when we receive a malicious output
     /// that related to a non-existing session.
-    pub fn handle_new_event(&mut self, session_info: &SessionInfo) {
+    pub fn store_new_session(&mut self, session_info: &SessionInfo) {
         self.mpc_sessions_outputs.insert(
             session_info.session_id,
             SessionOutputsData {

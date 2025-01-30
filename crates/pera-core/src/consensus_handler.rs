@@ -472,6 +472,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 self.epoch_store
                                     .save_dwallet_mpc_completed_session(session_info.session_id)
                                     .await;
+                                // Output result of a single Protocol from the batch session.
                                 if session_info.mpc_round.is_part_of_batch() {
                                     let mut batches_manager =
                                         self.epoch_store.get_dwallet_mpc_batches_manager().await
@@ -543,7 +544,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         };
 
                                         let transaction = match self
-                                            .create_dwallet_network_output_system_tx(
+                                            .create_dwallet_network_dkg_output_system_tx(
                                                 &session_info,
                                                 output,
                                                 &weighted_threshold_access_structure,
@@ -575,9 +576,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             }
                             OutputResult::NotEnoughVotes
                             | OutputResult::AlreadyCommitted
-                            | OutputResult::Malicious
-                            | OutputResult::Duplicate => {
+                            | OutputResult::Malicious => {
                                 // Ignore this output,
+                                // since there is nothing to do with it,
+                                // at this stage.
                                 continue;
                             }
                         }
@@ -690,7 +692,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .await;
     }
 
-    fn create_dwallet_network_output_system_tx(
+    fn create_dwallet_network_dkg_output_system_tx(
         &self,
         session_info: &SessionInfo,
         verified_output: &[u8],
@@ -796,8 +798,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         let mut dwallet_mpc_batches_manager =
             self.epoch_store.get_dwallet_mpc_batches_manager().await;
         for event in self.load_dwallet_mpc_events_from_epoch_start().await? {
-            dwallet_mpc_batches_manager.handle_new_event(&event.session_info);
-            dwallet_mpc_verifier.handle_new_event(&event.session_info);
+            dwallet_mpc_batches_manager.store_new_session(&event.session_info);
+            dwallet_mpc_verifier.store_new_session(&event.session_info);
         }
         for output in self.load_dwallet_mpc_outputs_from_epoch_start().await? {
             match dwallet_mpc_verifier

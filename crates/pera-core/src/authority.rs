@@ -1500,7 +1500,6 @@ impl AuthorityState {
             .filter_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store, certificate)
             .await
         {
-            // todo(zeev): debug?
             error!("failed to handle MPC events with error: {:?}", err);
         }
 
@@ -1537,7 +1536,7 @@ impl AuthorityState {
         Ok(())
     }
 
-    /// Filters the MPC signature events emitted from the transaction, if any.
+    /// Filters the dWallet MPC events emitted from the transaction, if any.
     async fn filter_dwallet_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,
@@ -1587,20 +1586,23 @@ impl AuthorityState {
             else {
                 continue;
             };
-            if session_info.mpc_round.is_part_of_batch() {
-                let mut dwallet_mpc_batches_manager =
-                    epoch_store.get_dwallet_mpc_batches_manager().await;
-                dwallet_mpc_batches_manager.handle_new_event(&session_info);
-            }
             // This function is being executed for all events, some events are
             // being emitted before the MPC outputs manager is initialized.
-            dwallet_mpc_outputs_verifier.handle_new_event(&session_info);
-            epoch_store
-                .save_dwallet_mpc_event(DWalletMPCEvent {
-                    event: event.clone(),
-                    session_info,
-                })
-                .await;
+            if session_info.mpc_round.is_a_new_batch_session() {
+                let mut dwallet_mpc_batches_manager =
+                    epoch_store.get_dwallet_mpc_batches_manager().await;
+                // Mark a new batch event as received.
+                dwallet_mpc_batches_manager.store_new_session(&session_info);
+            } else {
+                // Send the event to the dWallet MPC manager.
+                dwallet_mpc_outputs_verifier.store_new_session(&session_info);
+                epoch_store
+                    .save_dwallet_mpc_event(DWalletMPCEvent {
+                        event: event.clone(),
+                        session_info,
+                    })
+                    .await;
+            }
         }
         Ok(())
     }

@@ -51,7 +51,6 @@ mod checked {
     use pera_types::digests::{
         get_mainnet_chain_identifier, get_testnet_chain_identifier, ChainIdentifier,
     };
-    use pera_types::dwallet_mpc_error::DwalletMPCResult;
     use pera_types::effects::TransactionEffects;
     use pera_types::error::{ExecutionError, ExecutionErrorKind};
     use pera_types::execution::is_certificate_denied;
@@ -722,7 +721,7 @@ mod checked {
                 Ok(Mode::empty_results())
             }
             TransactionKind::DWalletMPCOutput(data) => {
-                setup_and_execute_dwallet_mpc_output(
+                let res = setup_and_execute_dwallet_mpc_output(
                     data,
                     temporary_store,
                     tx_ctx,
@@ -730,7 +729,9 @@ mod checked {
                     gas_charger,
                     protocol_config,
                     metrics,
-                )?;
+                );
+
+                res?;
 
                 Ok(Mode::empty_results())
             }
@@ -1114,11 +1115,12 @@ mod checked {
         builder
     }
 
-    /// Executes the transaction to store the final MPC output on-chain,
+    /// Executes the system transaction to store the final MPC output on-chain,
     /// making it accessible to the initiating user.
     /// Each validator executes this transaction locally,
-    /// and if validators represent more than two-thirds of the voting power
-    /// "vote" to include it by executing it, the transaction is added to the block.
+    /// and if validators represent more than two-thirds of the voting power,
+    /// "vote" to include this transaction by executing it,
+    /// the transaction is added to the checkpoint.
     fn setup_and_execute_dwallet_mpc_output(
         data: DWalletMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
@@ -1139,19 +1141,27 @@ mod checked {
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                 ],
             ),
-            MPCProtocolInitData::DKGSecond(event_data, dwallet_network_key_version) => (
+            MPCProtocolInitData::DKGSecond(
+                event_data,
+                dwallet_mpc_network_decryption_key_version,
+            ) => (
                 "create_dkg_second_round_output",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
+                    // decentralized_public_output.
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(event_data.dwallet_cap_id.bytes.to_vec()),
-                    CallArg::Pure(bcs_to_bytes(&dwallet_network_key_version)?),
-                    CallArg::Pure(bcs_to_bytes(&event_data.encrypted_secret_share_and_proof)?),
+                    CallArg::Pure(bcs_to_bytes(&dwallet_mpc_network_decryption_key_version)?),
+                    CallArg::Pure(bcs_to_bytes(
+                        &event_data.encrypted_centralized_secret_share_and_proof,
+                    )?),
                     CallArg::Pure(event_data.encryption_key_id.bytes.to_vec()),
-                    CallArg::Pure(bcs_to_bytes(&event_data.signed_public_share)?),
-                    CallArg::Pure(bcs_to_bytes(&event_data.encryptor_ed25519_pubkey)?),
-                    CallArg::Pure(bcs_to_bytes(&event_data.dkg_centralized_public_output)?),
+                    CallArg::Pure(bcs_to_bytes(
+                        &event_data.centralized_public_output_signature,
+                    )?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.initiator_public_key)?),
+                    CallArg::Pure(bcs_to_bytes(&event_data.centralized_public_output)?),
                 ],
             ),
             MPCProtocolInitData::PresignFirst(
@@ -1207,18 +1217,23 @@ mod checked {
             MPCProtocolInitData::Sign(SingleSignSessionData {
                 batch_session_id,
                 dwallet_id,
+                is_future_sign,
                 ..
-            }) => (
-                "create_sign_output",
-                vec![
-                    // Serialized Vector of Signatures.
-                    CallArg::Pure(data.output),
-                    // The Batch Session ID.
-                    CallArg::Pure(bcs_to_bytes(&batch_session_id)?),
-                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
-                    CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
-                ],
-            ),
+            }) => {
+                module_name = DWALLET_MODULE_NAME;
+                (
+                    "create_sign_output",
+                    vec![
+                        // Serialized Vector of Signatures.
+                        CallArg::Pure(data.output),
+                        // The Batch Session ID.
+                        CallArg::Pure(bcs_to_bytes(&batch_session_id)?),
+                        CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                        CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
+                        CallArg::Pure(bcs_to_bytes(&is_future_sign)?),
+                    ],
+                )
+            }
             MPCProtocolInitData::NetworkDkg(key_type, new_key) => {
                 let new_key = new_key.ok_or(ExecutionError::new(
                     ExecutionErrorKind::TypeArgumentError {
@@ -1249,15 +1264,15 @@ mod checked {
                 "create_encrypted_user_share",
                 vec![
                     CallArg::Pure(verification_data.dwallet_id.bytes.to_vec()),
-                    CallArg::Pure(
-                        bcs::to_bytes(&verification_data.encrypted_secret_share_and_proof).unwrap(),
-                    ),
+                    CallArg::Pure(bcs_to_bytes(
+                        &verification_data.encrypted_centralized_secret_share_and_proof,
+                    )?),
                     CallArg::Pure(verification_data.encryption_key_id.bytes.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&verification_data.signed_public_share).unwrap()),
-                    CallArg::Pure(
-                        bcs::to_bytes(&verification_data.encryptor_ed25519_pubkey).unwrap(),
-                    ),
+                    CallArg::Pure(bcs_to_bytes(
+                        &verification_data.centralized_public_output_signature,
+                    )?),
+                    CallArg::Pure(bcs_to_bytes(&verification_data.encryptor_ed25519_pubkey)?),
                     CallArg::Pure(verification_data.initiator.to_vec()),
                 ],
             ),
@@ -1268,8 +1283,8 @@ mod checked {
                     vec![
                         CallArg::Pure(bcs_to_bytes(&verification_data.encryption_key)?),
                         CallArg::Pure(bcs_to_bytes(&verification_data.encryption_key_signature)?),
-                        CallArg::Pure(bcs_to_bytes(&verification_data.sender_sui_pubkey)?),
-                        CallArg::Pure(bcs_to_bytes(&verification_data.scheme)?),
+                        CallArg::Pure(bcs_to_bytes(&verification_data.key_singer_public_key)?),
+                        CallArg::Pure(bcs_to_bytes(&verification_data.encryption_key_scheme)?),
                         CallArg::Pure(verification_data.initiator.to_vec()),
                         CallArg::Pure(data.session_info.session_id.to_vec()),
                     ],

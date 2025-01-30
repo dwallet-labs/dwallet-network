@@ -11,27 +11,34 @@ import { createActiveEncryptionKeysTable } from '../../src/dwallet-mpc/encrypt-u
 import {
 	Config,
 	delay,
+	dwalletSecp256K1MoveType,
 	mockedProtocolPublicParameters,
 	MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';
 import { fetchProtocolPublicParameters } from '../../src/dwallet-mpc/network-dkg';
 import { presign } from '../../src/dwallet-mpc/presign';
 import {
-	futureSignTransactionCall,
+	completeFutureSignTransactionCall,
 	Hash,
 	partiallySignMessageTransactionCall,
 	signMessageTransactionCall,
 } from '../../src/dwallet-mpc/sign';
+import {
+	createSignatureAlgorithmDataMoveFunc,
+	createSignDataECDSAK1MoveArgs,
+	signDataECDSAK1MoveType,
+} from '../../src/dwallet-mpc/sign_ecdsa_k1';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
-import { fullMPCUserSessions } from './utils/dwallet';
+import { Transaction } from '../../src/transactions';
+import { fullMPCUserSessionsECDSAK1 } from './utils/dwallet';
 import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet_mocks';
 import { setup, TestToolbox } from './utils/setup';
 
+const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
 	let toolbox: TestToolbox;
 	let activeEncryptionKeysTableID: string;
 
-	const timeout = 5 * 60 * 1000;
 	beforeEach(async () => {
 		toolbox = await setup();
 		console.log('Current Address', toolbox.keypair.toPeraAddress());
@@ -39,9 +46,10 @@ describe('Test dWallet MPC', () => {
 			await createActiveEncryptionKeysTable({
 				keypair: toolbox.keypair,
 				client: toolbox.client,
-				timeout: timeout,
+				timeout: fiveMinutes,
 			})
 		).objectId;
+		await delay(2000);
 	});
 
 	it('should create a dWallet (DKG)', async () => {
@@ -49,7 +57,7 @@ describe('Test dWallet MPC', () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: timeout,
+			timeout: fiveMinutes,
 		};
 		await delay(2000);
 		const dWallet = await createDWallet(
@@ -69,12 +77,13 @@ describe('Test dWallet MPC', () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 10 * 60 * 1000,
+			timeout: fiveMinutes * 2,
 		};
 		const dWallet = await mockCreateDwallet(conf);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
-		const presignOutput = await presign(conf, dWallet.id, 1);
+		const batchSize = 1;
+		const presignOutput = await presign(conf, dWallet.id.id, batchSize);
 		expect(presignOutput).toBeDefined();
 		console.log({ presignOutput });
 	});
@@ -83,7 +92,7 @@ describe('Test dWallet MPC', () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 10 * 60 * 1000,
+			timeout: fiveMinutes * 2,
 		};
 		const dWallet = await createDWallet(
 			conf,
@@ -92,24 +101,24 @@ describe('Test dWallet MPC', () => {
 		);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
-		const presignOutput = await presign(conf, dWallet.id, 1);
+		const presignOutput = await presign(conf, dWallet.id.id, 1);
 		expect(presignOutput).toBeDefined();
 		console.log({ presignOutput });
 	});
 
-	it('should run Sign', async () => {
-		let conf: Config = {
+	it('should run Sign with ECDSA K1', async () => {
+		let c: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 10 * 60 * 1000,
+			timeout: fiveMinutes * 2,
 		};
 		await delay(2000);
-		const dWallet = await mockCreateDwallet(conf);
+		const dWallet = await mockCreateDwallet(c);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
-		const presignOutput1 = await mockCreatePresign(conf, dWallet);
-		const presignOutput2 = await mockCreatePresign(conf, dWallet);
+		const presignOutput1 = await mockCreatePresign(c, dWallet);
 		expect(presignOutput1).toBeDefined();
+		const presignOutput2 = await mockCreatePresign(c, dWallet);
 		expect(presignOutput2).toBeDefined();
 		console.log({ presignOutput1, presignOutput2 });
 		let messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
@@ -125,44 +134,60 @@ describe('Test dWallet MPC', () => {
 				presignOutput2.first_round_session_id.slice(2),
 			])
 			.toBytes();
-		const [centralizedSignMsg] = create_sign_centralized_output(
+		const centralizedSignMsg = create_sign_centralized_output(
 			mockedProtocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
-			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
-			Uint8Array.from(dWallet.centralizedDKGPrivateOutput),
+			Uint8Array.from(dWallet.centralized_public_output),
+			Uint8Array.from(dWallet.centralizedSecretKeyShare),
 			serializedPresigns,
 			serializedMsgs,
 			Hash.SHA256,
 			serializedPresignSessionIds,
 		);
-		console.log('Signing message');
-		let signOutput = await signMessageTransactionCall(
-			conf,
-			dWallet.dwalletCapID,
-			messages,
-			Hash.SHA256,
-			dWallet.id,
+
+		let signTx = new Transaction();
+
+		let signDataArgs = createSignDataECDSAK1MoveArgs(
 			[presignOutput1.id.id, presignOutput2.id.id],
 			centralizedSignMsg,
+			dWallet,
+			signTx,
+		);
+
+		console.log('Signing message');
+		let signOutput = await signMessageTransactionCall(
+			c,
+			signTx,
+			dWallet,
+			messages,
+			Hash.SHA256,
+			signDataArgs,
+			createSignatureAlgorithmDataMoveFunc,
+			dwalletSecp256K1MoveType,
+			signDataECDSAK1MoveType,
 		);
 		expect(signOutput).toBeDefined();
 		console.log({ signOutput });
 	});
 
-	it('Full user-side triggered flow: DKG, Presign, Sign', async () => {
+	it('Full user-side triggered flow: DKG, Presign, Sign with ECDSA K1', async () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 10 * 60 * 1000,
+			timeout: fiveMinutes * 2,
 		};
-		await fullMPCUserSessions(conf, mockedProtocolPublicParameters, activeEncryptionKeysTableID);
+		await fullMPCUserSessionsECDSAK1(
+			conf,
+			mockedProtocolPublicParameters,
+			activeEncryptionKeysTableID,
+		);
 	});
 
-	it('Full flow: Network DKG, DKG, Presign, Sign', async () => {
+	it('Full flow: Network DKG, DKG, Presign, Sign with ECDSA K1', async () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 30 * 60 * 1000,
+			timeout: fiveMinutes * 2,
 		};
 		// Todo (#472): Start the network DKG flow from the test.
 		let protocolPublicParams = await fetchProtocolPublicParameters(
@@ -170,21 +195,20 @@ describe('Test dWallet MPC', () => {
 			MPCKeyScheme.Secp256k1,
 			null,
 		);
-		conf.timeout = 10 * 60 * 1000;
-		await fullMPCUserSessions(conf, protocolPublicParams, activeEncryptionKeysTableID);
+		await fullMPCUserSessionsECDSAK1(conf, protocolPublicParams, activeEncryptionKeysTableID);
 	});
 
-	it('should run future sign', async () => {
-		let conf: Config = {
+	it('should run future sign with ECDSA K1', async () => {
+		let c: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 10 * 60 * 1000,
+			timeout: fiveMinutes * 2,
 		};
-		const dWallet = await mockCreateDwallet(conf);
+		const dWallet = await mockCreateDwallet(c);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
-		const presignOutput1 = await mockCreatePresign(conf, dWallet);
-		const presignOutput2 = await mockCreatePresign(conf, dWallet);
+		const presignOutput1 = await mockCreatePresign(c, dWallet);
+		const presignOutput2 = await mockCreatePresign(c, dWallet);
 		expect(presignOutput1).toBeDefined();
 		expect(presignOutput2).toBeDefined();
 		console.log({ presignOutput1, presignOutput2 });
@@ -201,34 +225,47 @@ describe('Test dWallet MPC', () => {
 				presignOutput2.first_round_session_id.slice(2),
 			])
 			.toBytes();
-		const [centralizedSignMsg] = create_sign_centralized_output(
+		const centralizedSignMsg = create_sign_centralized_output(
 			// Todo (#382): Change to real value.
 			mockedProtocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
-			Uint8Array.from(dWallet.centralizedDKGPublicOutput),
-			Uint8Array.from(dWallet.centralizedDKGPrivateOutput),
+			Uint8Array.from(dWallet.centralized_public_output),
+			Uint8Array.from(dWallet.centralizedSecretKeyShare),
 			serializedPresigns,
 			serializedMsgs,
 			Hash.SHA256,
 			serializedPresignSessionIds,
 		);
-		let partiallySignedMessages = await partiallySignMessageTransactionCall(
-			conf,
-			messages,
-			dWallet.id,
+
+		let signTx = new Transaction();
+
+		let signDataArgs = createSignDataECDSAK1MoveArgs(
 			[presignOutput1.id.id, presignOutput2.id.id],
 			centralizedSignMsg,
+			dWallet,
+			signTx,
+		);
+
+		let partiallySignedMessages = await partiallySignMessageTransactionCall(
+			c,
+			signTx,
+			messages,
+			dWallet.id.id,
+			signDataArgs,
+			createSignatureAlgorithmDataMoveFunc,
+			dwalletSecp256K1MoveType,
+			signDataECDSAK1MoveType,
 		);
 		expect(partiallySignedMessages).toBeDefined();
 		console.log({ partiallySignedMessages });
-		// Sleep for 5 seconds for a checkpoint to be created, so the new object can be used.
-		await new Promise((r) => setTimeout(r, 5000));
-		let completedSignEvent = await futureSignTransactionCall(
-			conf,
+		await delay(5000);
+		let completedSignEvent = await completeFutureSignTransactionCall(
+			c,
 			messages,
 			Hash.SHA256,
-			dWallet.dwalletCapID,
+			dWallet.dwallet_cap_id,
 			partiallySignedMessages.partial_signatures_object_id,
+			signDataECDSAK1MoveType,
 		);
 		expect(completedSignEvent).toBeDefined();
 		console.log({ completedSignEvent });
@@ -240,7 +277,7 @@ describe('Test dWallet MPC', () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: timeout,
+			timeout: fiveMinutes,
 		};
 
 		const keyVersionNum = 0;
@@ -265,7 +302,7 @@ async function printOwnedObjects(
 	let cursor = null;
 
 	while (poll.value) {
-		await new Promise((r) => setTimeout(r, 3000));
+		await delay(3000);
 		const {
 			data: ownedObjects,
 			hasNextPage,
