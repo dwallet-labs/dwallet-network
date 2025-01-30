@@ -1,3 +1,5 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 // noinspection ES6PreferShortImport
 
 import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';

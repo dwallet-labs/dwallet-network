@@ -1,7 +1,7 @@
-// noinspection ES6PreferShortImport
-
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+// noinspection ES6PreferShortImport
+
 import type { SerializedBcs } from '@mysten/bcs';
 
 import { bcs } from '../bcs/index.js';

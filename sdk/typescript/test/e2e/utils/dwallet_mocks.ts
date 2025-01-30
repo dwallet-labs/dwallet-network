@@ -1,3 +1,5 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 // noinspection ES6PreferShortImport
 
 import { Buffer } from 'buffer';
@@ -116,7 +118,7 @@ export async function mockCreatePresign(
 	if (!presignID) {
 		throw new Error('create_mock_presign error: Failed to create presign');
 	}
-	await new Promise((resolve) => setTimeout(resolve, 2000));
+	await delay(2000);
 	const obj = await c.client.getObject({
 		id: presignID,
 		options: { showContent: true },

@@ -1,4 +1,7 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 // noinspection ES6PreferShortImport
+
 import type { NetworkDecryptionKeyShares } from '../client/index.js';
 import type { Config, MPCKeyScheme } from './globals.js';
 import { delay } from './globals.js';
