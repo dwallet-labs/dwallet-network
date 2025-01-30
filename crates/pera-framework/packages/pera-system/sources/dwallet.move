@@ -137,7 +137,6 @@ module pera_system::dwallet {
         }
     }
 
-    /// todo(zeev): check why we transfer both public key and address.
     /// Represents an encryption key used to encrypt a dWallet centralized (user) secret key share.
     ///
     /// Encryption keys facilitate secure data transfer between accounts on the

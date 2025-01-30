@@ -27,8 +27,6 @@ type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
     secp256k1::GroupElement,
 >;
 
-// todo(itay): add error data for the mpc errors.
-
 /// Verifies that the given encrypted secret key share matches the encryption of the dWallet's
 /// secret share, validates the signature on the dWallet's public share,
 /// and ensures the signing public key matches the address that initiated this transaction.

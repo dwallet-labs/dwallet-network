@@ -38,7 +38,6 @@ pub struct DWalletMPCOutputsVerifier {
     pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
     /// The quorum threshold of the chain.
     pub quorum_threshold: StakeUnit,
-    // todo(zeev): why is it here?
     pub completed_locking_next_committee: bool,
     voted_to_lock_committee: HashSet<AuthorityName>,
     /// The latest consensus round that was processed.
@@ -230,7 +229,6 @@ impl DWalletMPCOutputsVerifier {
                     >= self.quorum_threshold
             });
 
-        // todo(zeev): simplify.
         if let Some((agreed_output, _)) = agreed_output {
             let voted_for_other_outputs = session_output_data
                 .session_output_to_voting_authorities

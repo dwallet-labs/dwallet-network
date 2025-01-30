@@ -1141,15 +1141,18 @@ mod checked {
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                 ],
             ),
-            MPCProtocolInitData::DKGSecond(event_data, dwallet_network_key_version) => (
+            MPCProtocolInitData::DKGSecond(
+                event_data,
+                dwallet_mpc_network_decryption_key_version,
+            ) => (
                 "create_dkg_second_round_output",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    // decentralized_public_output
+                    // decentralized_public_output.
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(event_data.dwallet_cap_id.bytes.to_vec()),
-                    CallArg::Pure(bcs_to_bytes(&dwallet_network_key_version)?),
+                    CallArg::Pure(bcs_to_bytes(&dwallet_mpc_network_decryption_key_version)?),
                     CallArg::Pure(bcs_to_bytes(
                         &event_data.encrypted_centralized_secret_share_and_proof,
                     )?),

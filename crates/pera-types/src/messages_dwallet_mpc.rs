@@ -16,8 +16,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
-// todo(zeev): move the events to mpc_events and the types to `dwallet-mpc-types` crate.
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
@@ -55,7 +53,6 @@ pub enum MPCProtocolInitData {
     EncryptedShareVerification(StartEncryptedShareVerificationEvent),
     /// The round of verifying the public key that signed on the encryption key is
     /// matching the initiator address.
-    /// todo(zeev): more docs, make it clearer.
     /// TODO (#544): Check if there's a way to convert the public key to an address in Move.
     /// This is not a real MPC round,
     /// but we use it to start the verification process using the same events mechanism

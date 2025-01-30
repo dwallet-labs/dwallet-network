@@ -190,7 +190,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         /// The public output of the centralized party,
         /// belongs to the dWallet that its centralized
         /// secret share is being encrypted.
-        /// todo(zeev): we should not trust this, don't pass it.
+        /// This is not passed by the user,
+        /// but taken from the blockhain during event creation.
         centralized_public_output: vector<u8>,
 
         /// The signature of the dWallet `centralized_public_output`,
@@ -535,10 +536,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// ### Parameters
     /// - **`dwallet`**: A reference to the `DWallet<Secp256K1>` object to which the secret share is linked.
     /// - **`destination_encryption_key`**: A reference to the encryption key used for encrypting the secret key share.
-    /// - **`encrypted_secret_share_and_proof`**: The encrypted secret key share, accompanied by a cryptographic proof.
+    /// - **`encrypted_centralized_secret_share_and_proof`**: The encrypted secret key share, accompanied by a cryptographic proof.
     /// - **`source_signed_centralized_public_output`**: The signed centralized public output corresponding to the secret share.
-    /// - **`_pera_system_state`**: The Pera system state object. Its ID is always 0x5.
     /// - **`source_ed25519_pubkey`**: The Ed25519 public key of the source (encryptor) used for verifying the signature.
+    /// - **`_pera_system_state`**: The Pera system state object. Its ID is always 0x5.
     ///
     /// ### Effects
     /// - Emits a `StartEncryptedShareVerificationEvent`,
@@ -578,7 +579,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - `encryption_key_id`: The `EncryptionKey` Move object ID used to encrypt the secret key share.
     /// - `session_id`: A unique identifier for the session related to this operation.
     /// - `centralized_public_output_signature`: The signed public share corresponding to the encrypted secret share.
-    /// - `encryptor_ed25519_pubkey`: The Ed25519 public key of the encryptor used for signing.
+    /// - `encryptor_ed25519_pubkey`: The Ed25519 public key of the encryptor, used for signing.
     /// - `initiator`: The address of the entity that performed the encryption operation of this secret key share.
     #[allow(unused_function)]
     public(package) fun create_encrypted_user_share(
@@ -653,9 +654,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         decentralized_public_output: vector<u8>,
         dwallet_cap_id: ID,
         dwallet_mpc_network_decryption_key_version: u8,
-        encrypted_secret_share_and_proof: vector<u8>,
+        encrypted_centralized_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
-        signed_public_share: vector<u8>,
+        centralized_public_output_signature: vector<u8>,
         encryptor_ed25519_pubkey: vector<u8>,
         centralized_public_output: vector<u8>,
         ctx: &mut TxContext
@@ -672,10 +673,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         );
 
         create_encrypted_user_share(object::id(&dwallet),
-            encrypted_secret_share_and_proof,
+            encrypted_centralized_secret_share_and_proof,
             encryption_key_id,
             session_id,
-            signed_public_share,
+            centralized_public_output_signature,
             encryptor_ed25519_pubkey,
             initiator,
             ctx

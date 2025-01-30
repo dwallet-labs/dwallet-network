@@ -444,7 +444,7 @@ export class EncryptedUserShare {
 			dwalletID,
 		);
 
-		const decryptedKeyShare = await this.decryptAndVerifyUserShare(
+		const decryptedCentralizedKeyShare = await this.decryptAndVerifyUserShare(
 			activeEncryptionKeysTableID,
 			sourceEncryptedUserSecretShare,
 			sourceDWallet,
@@ -452,16 +452,14 @@ export class EncryptedUserShare {
 			destKeyPair,
 		);
 
-		// todo(zeev): rename.
 		const dWalletToAccept: DWalletWithSecretKeyShare = {
 			...sourceDWallet,
-			centralizedSecretKeyShare: [...decryptedKeyShare],
+			centralizedSecretKeyShare: Array.from(decryptedCentralizedKeyShare),
 		};
 
 		// Encrypt it to self, so that in the future we'd know that we already
 		// verified everything and only need to verify our signature.
 		// Need to verify the signature to not trust the blockchain to provide this data.
-		// todo(zeev): add more info.
 		const { destActiveEncryptionKeyObjID, encryptedUserKeyShareAndProofOfEncryption } =
 			await this.encryptUserShareForPublicKey(
 				destKeyPair,
@@ -483,7 +481,6 @@ export class EncryptedUserShare {
 	 * entity signed the dWallet public key share and that the decrypted key share
 	 * matches the expected public key share.
 	 */
-	// todo(zeev): check this doc.
 	// This function also verifies that the dkg output
 	// has been signed by the source public key.
 	async decryptAndVerifyUserShare(
@@ -493,8 +490,6 @@ export class EncryptedUserShare {
 		srcIkaAddr: string,
 		destIkaKeyPair: Keypair,
 	): Promise<Uint8Array> {
-		// The public key of the entity that sent
-		// this encrypted key share (not the key that was used to encrypt it).
 		const srcIkaPublicKey = new Ed25519PublicKey(
 			encryptedUserSecretKeyShare.encryptor_ed25519_pubkey,
 		);
@@ -508,7 +503,6 @@ export class EncryptedUserShare {
 		if (
 			!(await srcIkaPublicKey.verify(
 				new Uint8Array(dwallet.centralized_public_output),
-				// todo(zeev): rename to public_output
 				new Uint8Array(encryptedUserSecretKeyShare.centralized_public_output_signature),
 			))
 		) {

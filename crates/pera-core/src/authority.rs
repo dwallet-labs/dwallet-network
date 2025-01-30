@@ -1500,7 +1500,6 @@ impl AuthorityState {
             .filter_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store, certificate)
             .await
         {
-            // todo(zeev): debug?
             error!("failed to handle MPC events with error: {:?}", err);
         }
 
