@@ -993,6 +993,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         // transfer::transfer(partial_signatures, tx_context::sender(ctx));
     }
 
+    #[allow(unused_function)]
+    fun create_partial_signatures() {
+
+    }
+
 
     /// Creates a vector of `SignatureAlgorithmData` objects from a vector of `Presign` objects
     /// and the centralized party message signatures.
