@@ -422,6 +422,9 @@ impl DWalletMPCManager {
                             DwalletMPCNetworkKeysStatus::Ready(_)
                         ));
                 if session.is_ready_to_advance() && is_manager_ready {
+                    // We must first clone the session, as we approve to advance the current session
+                    // in the current round and then start waiting for the next round's messages
+                    // until it is ready to advance or finalized.
                     let session_clone = session.clone();
                     session.pending_quorum_for_highest_round_number =
                         session.pending_quorum_for_highest_round_number + 1;
