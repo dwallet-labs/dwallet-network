@@ -39,10 +39,10 @@ pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtoco
 pub(super) struct DWalletMPCSession {
     /// The status of the MPC session.
     pub(super) status: MPCSessionStatus,
-    /// The messages that are pending to be executed while advancing the session
+    /// All the messages that have been received for this session.
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
-    pub(super) pending_messages: Vec<HashMap<PartyID, MPCMessage>>,
+    pub(super) serialized_messages: Vec<HashMap<PartyID, MPCMessage>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
@@ -85,7 +85,7 @@ impl DWalletMPCSession {
     ) -> Self {
         Self {
             status,
-            pending_messages: vec![HashMap::new()],
+            serialized_messages: vec![HashMap::new()],
             consensus_adapter,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
@@ -202,7 +202,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.pending_messages.clone(),
+                    self.serialized_messages.clone(),
                     public_input,
                     (),
                 )
@@ -213,23 +213,23 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.pending_messages.clone(),
+                    self.serialized_messages.clone(),
                     public_input,
                     (),
                 )?;
                 if let AsynchronousRoundResult::Finalize { .. } = &result {
                     verify_encrypted_share(&StartEncryptedShareVerificationEvent {
-                        dwallet_centralized_public_output: event_data
-                            .dkg_centralized_public_output
-                            .clone(),
-                        encrypted_secret_share_and_proof: event_data
-                            .encrypted_secret_share_and_proof
+                        centralized_public_output: event_data.centralized_public_output.clone(),
+                        encrypted_centralized_secret_share_and_proof: event_data
+                            .encrypted_centralized_secret_share_and_proof
                             .clone(),
                         encryption_key: event_data.encryption_key.clone(),
                         encryption_key_id: event_data.encryption_key_id.clone(),
                         initiator: event_data.initiator.clone(),
-                        signed_public_share: event_data.signed_public_share.clone(),
-                        encryptor_ed25519_pubkey: event_data.encryptor_ed25519_pubkey.clone(),
+                        centralized_public_output_signature: event_data
+                            .centralized_public_output_signature
+                            .clone(),
+                        encryptor_ed25519_pubkey: event_data.initiator_public_key.clone(),
 
                         // Fields not relevant for verification; passing empty values.
                         dwallet_id: ID::new(ObjectID::new([0; 32])),
@@ -244,7 +244,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.pending_messages.clone(),
+                    self.serialized_messages.clone(),
                     public_input,
                     (),
                 )
@@ -255,7 +255,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.pending_messages.clone(),
+                    self.serialized_messages.clone(),
                     public_input,
                     (),
                 )
@@ -266,7 +266,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.pending_messages.clone(),
+                    self.serialized_messages.clone(),
                     public_input,
                     self.decryption_share.clone(),
                 )
@@ -277,7 +277,7 @@ impl DWalletMPCSession {
                 self.party_id,
                 &self.public_input,
                 key_scheme,
-                self.pending_messages.clone(),
+                self.serialized_messages.clone(),
                 bcs::from_bytes(
                     &self
                         .private_input
@@ -306,6 +306,8 @@ impl DWalletMPCSession {
                     .map_err(|err| err)
             }
             MPCProtocolInitData::BatchedPresign(..) | MPCProtocolInitData::BatchedSign(..) => {
+                // This case is unreachable because the batched session is handled separately.
+                // The bathed session is only an indicator to expect a batch of messages.
                 unreachable!("advance should never be called on a batched session")
             }
         }
@@ -317,7 +319,7 @@ impl DWalletMPCSession {
     /// the session will be restarted.
     pub(crate) fn restart(&mut self) {
         self.status = MPCSessionStatus::Active;
-        self.pending_messages = vec![HashMap::new()];
+        self.serialized_messages = vec![HashMap::new()];
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
@@ -370,8 +372,8 @@ impl DWalletMPCSession {
         let source_party_id =
             authority_name_to_party_id(&message.authority, &*self.epoch_store()?)?;
 
-        let current_round = self.pending_messages.len();
-        match self.pending_messages.get_mut(message.round_number) {
+        let current_round = self.serialized_messages.len();
+        match self.serialized_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
                 if party_to_msg.contains_key(&source_party_id) {
                     // Duplicate.
@@ -383,7 +385,7 @@ impl DWalletMPCSession {
             None if message.round_number == current_round => {
                 let mut map = HashMap::new();
                 map.insert(source_party_id, message.message.clone());
-                self.pending_messages.push(map);
+                self.serialized_messages.push(map);
             }
             _ => {
                 // Unexpected round number; rounds should grow sequentially.
@@ -396,7 +398,6 @@ impl DWalletMPCSession {
     /// Handles a message by either forwarding it to the session
     /// or ignoring it if the session is not active.
     pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        self.store_message(message)?;
-        Ok(())
+        self.store_message(message)
     }
 }

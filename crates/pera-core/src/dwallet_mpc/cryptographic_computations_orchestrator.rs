@@ -17,10 +17,11 @@ use tokio::sync::mpsc::UnboundedSender;
 
 /// The possible MPC computations update.
 /// Needed to use a channel also for start messages because in the aggregated sign flow,
-/// the rayon task is being spawned from within a tokio task.
+/// the Rayon task is being spawned from within a Tokio task.
 pub(crate) enum ComputationUpdate {
     /// A new computation has started.
     Started,
+
     /// A computation has been completed.
     Completed,
 }

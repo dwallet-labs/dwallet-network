@@ -238,7 +238,7 @@ impl DWalletMPCManager {
                     session.pending_quorum_for_highest_round_number -= 1;
                     // Remove malicious parties from the session messages.
                     let round_messages = session
-                        .pending_messages
+                        .serialized_messages
                         .get_mut(session.pending_quorum_for_highest_round_number)
                         .ok_or(DwalletMPCError::MPCSessionNotFound {
                             session_id: report.session_id,
@@ -259,8 +259,8 @@ impl DWalletMPCManager {
                     });
                 };
                 // In the aggregated signing protocol, a single malicious report is enough
-                // to trigger the Sign Identifiable Abort protocol.
-                // In the Sign Identifiable Abort protocol, each validator runs the final step,
+                // to trigger the Sign-Identifiable Abort protocol.
+                // In the Sign-Identifiable Abort protocol, each validator runs the final step,
                 // agreeing on the malicious parties in the session and
                 // removing their messages before the signing session continues as usual.
                 if matches!(
@@ -399,7 +399,7 @@ impl DWalletMPCManager {
             .filter_map(|(_, session)| {
                 let received_weight: PartyID = match session.status {
                     MPCSessionStatus::Active => session
-                        .pending_messages
+                        .serialized_messages
                         .get(session.pending_quorum_for_highest_round_number)
                         .unwrap_or(&HashMap::new())
                         .keys()

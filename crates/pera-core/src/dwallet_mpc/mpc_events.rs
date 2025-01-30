@@ -5,15 +5,16 @@
 //! They include utility functions for detecting and comparing the event types.
 
 use dwallet_mpc_types::dwallet_mpc::{
-    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME,
-    START_BATCHED_PRESIGN_EVENT_STRUCT_NAME, START_BATCHED_SIGN_EVENT_STRUCT_NAME,
-    START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
-    START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
-    VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME, VALIDATOR_SET_MODULE_NAME,
+    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
+    LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME, START_BATCHED_PRESIGN_EVENT_STRUCT_NAME,
+    START_BATCHED_SIGN_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
+    START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
+    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME,
+    START_SIGN_ROUND_EVENT_STRUCT_NAME, VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME,
+    VALIDATOR_SET_MODULE_NAME,
 };
 use move_core_types::ident_str;
-use move_core_types::language_storage::StructTag;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use pera_types::{base_types::PeraAddress, id::ID, PERA_SYSTEM_ADDRESS};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -42,7 +43,7 @@ impl StartDKGFirstRoundEvent {
     }
 }
 
-/// Represents the Rust version of the Move struct `pera_system::dwallet::StartPresignFirstRoundEvent`.
+/// Represents the Rust version of the Move struct `pera_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartPresignFirstRoundEvent {
     /// Unique identifier for the MPC session.
@@ -73,7 +74,7 @@ impl StartPresignFirstRoundEvent {
 }
 
 /// Represents the Rust version of the Move
-/// struct `pera_system::dwallet::StartPresignSecondRoundEvent`.
+/// struct `pera_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignSecondRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartPresignSecondRoundEvent {
     /// Unique identifier for the MPC session.
@@ -127,13 +128,11 @@ impl StartPresignSecondRoundEvent {
 }
 
 /// Represents the Rust version of the Move
-/// struct `pera_system::dwallet::StartSignRoundEvent`.
+/// struct `pera_system::dwallet::StartSignEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartSignRoundEvent {
+pub struct StartSignEvent<D> {
     /// Unique identifier for the MPC session.
     pub(super) session_id: ID,
-    /// Unique identifier for the MPC session.
-    pub(super) presign_session_id: ID,
     /// The address of the user that initiated this session.
     pub(super) initiator: PeraAddress,
     /// The ID of the batch sign session that contains this sign session.
@@ -142,29 +141,29 @@ pub struct StartSignRoundEvent {
     pub(super) batched_session_id: ID,
     /// The `DWallet` object's ID associated with the DKG output.
     pub(super) dwallet_id: ID,
-    /// The DKG decentralized final output to use for the presign session.
-    pub(super) dkg_output: Vec<u8>,
+    /// The public output of the decentralized party in the dWallet DKG process.
+    pub(super) dwallet_decentralized_public_output: Vec<u8>,
     /// Hashed messages to Sign.
     pub(super) hashed_message: Vec<u8>,
-    /// The serialized final presign output, constructed from the outputs of
-    /// both the first and second presign MPC rounds.
-    pub(super) presign: Vec<u8>,
-    /// Centralized signed message
-    pub(super) centralized_signed_message: Vec<u8>,
     /// The dWallet mpc network key version
     pub(super) dwallet_mpc_network_key_version: u8,
+    /// The type of data that can be stored with the object.
+    /// Specific to each Digital Signature Algorithm.
+    pub(crate) signature_algorithm_data: D,
+    /// Indicates whether the future sign feature was used to start the session.
+    pub(crate) is_future_sign: bool,
 }
 
-impl StartSignRoundEvent {
+impl<D> StartSignEvent<D> {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartSignRoundEvent`]
+    /// It is used to detect [`StartSignEvent`]
     /// events from the chain and initiate the MPC session.
-    pub fn type_() -> StructTag {
+    pub fn type_(type_param: TypeTag) -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: START_SIGN_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-            type_params: vec![],
+            module: DWALLET_MODULE_NAME.to_owned(),
+            type_params: vec![type_param],
         }
     }
 }
@@ -177,7 +176,7 @@ impl StartBatchedSignEvent {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: START_BATCHED_SIGN_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

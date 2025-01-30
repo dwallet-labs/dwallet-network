@@ -12,11 +12,11 @@ import {
 	generateCGKeyPairFromSuiKeyPair,
 } from '../../src/dwallet-mpc/encrypt-user-share';
 import { Config, delay, mockedProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
-import { signWithEncryptedDWallet } from '../../src/dwallet-mpc/sign';
+import { signWithEncryptedDWallet } from '../../src/dwallet-mpc/sign_ecdsa_k1';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import {
 	DKGCentralizedPrivateOutput,
-	DKGDecentralizedOutput,
+	DKGDecentralizedPublicOutput,
 	mockCreateDwallet,
 } from './utils/dwallet_mocks';
 import { setup, TestToolbox } from './utils/setup';
@@ -105,6 +105,7 @@ describe('encrypt user share', () => {
 	});
 
 	it('signs with an encrypted secret share', async () => {
+		console.log(sourceClient.keypair.toPeraAddress());
 		const conf: Config = {
 			keypair: sourceClient.keypair,
 			client: sourceClient.client,
@@ -121,7 +122,7 @@ describe('encrypt user share', () => {
 		const mockNetworkKey = true;
 		const completion = await signWithEncryptedDWallet(
 			conf,
-			dwallet.id,
+			dwallet.id.id,
 			activeEncryptionKeysTableID,
 			messages,
 			mockNetworkKey,
@@ -149,7 +150,7 @@ describe('encrypt user share — offline', () => {
 		expect(decrypted).toEqual(dwalletSecretKeyShare);
 		const is_valid = verify_user_share(
 			decrypted,
-			new Uint8Array(Array.from(Buffer.from(DKGDecentralizedOutput, 'base64'))),
+			new Uint8Array(Array.from(Buffer.from(DKGDecentralizedPublicOutput, 'base64'))),
 		);
 		expect(is_valid).toBeTruthy();
 	});

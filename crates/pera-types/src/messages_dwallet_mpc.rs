@@ -24,9 +24,12 @@ pub enum MPCProtocolInitData {
     DKGFirst,
     /// The second round of the DKG protocol.
     DKGSecond(StartDKGSecondRoundEvent, u8),
-    /// The first round of the Presign protocol.
+    /// This is not a real round, but an indicator the Batches Manager to
+    /// register a Presign Batch session.
+    BatchedPresign(u64),
+    /// The first round of the Presign protocol for each message in the Batch.
     /// Contains the `ObjectId` of the dWallet object,
-    /// the DKG decentralized output, the batch session ID,
+    /// the DKG decentralized output, the batch session ID (same for each message in the batch),
     /// and the dWallets' network key version.
     // TODO (#543): Connect the two presign rounds to one.
     PresignFirst(ObjectID, MPCPublicOutput, ObjectID, u8),
@@ -39,31 +42,36 @@ pub enum MPCProtocolInitData {
     /// A batched sign session, contains the list of messages that are being signed.
     // TODO (#536): Store batch state and logic on Sui & remove this field.
     BatchedSign(Vec<Vec<u8>>),
-    BatchedPresign(u64),
-    /// The round of the network DKG protocol.
+    /// The only round of the network DKG protocol.
     NetworkDkg(
         DWalletMPCNetworkKeyScheme,
         Option<NetworkDecryptionKeyShares>,
     ),
     /// The round of verifying the encrypted share proof is valid and
     /// that the signature on it is valid.
+    /// This is not a real MPC round,
+    /// but we use it to start the verification process using the same events mechanism
+    /// because the system does not support native functions.
     EncryptedShareVerification(StartEncryptedShareVerificationEvent),
     /// The round of verifying the public key that signed on the encryption key is
     /// matching the initiator address.
     /// todo(zeev): more docs, make it clearer.
     /// TODO (#544): Check if there's a way to convert the public key to an address in Move.
+    /// This is not a real MPC round,
+    /// but we use it to start the verification process using the same events mechanism
+    /// because the system does not support native functions.
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
 }
 
 /// The session-specific state of the MPC session.
-/// I.e., state that needs to exist only in the sign protocol but is not required in the
+/// I.e., state needs to exist only in the sign protocol but is not required in the
 /// presign protocol.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCSessionSpecificState {
     Sign(SignIASessionState),
 }
 
-/// The state of a sign identifiable abort session
+/// The state of a sign-identifiable abort session.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SignIASessionState {
     pub malicious_report: MaliciousReport,
@@ -74,24 +82,30 @@ pub struct SignIASessionState {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SingleSignSessionData {
     pub batch_session_id: ObjectID,
-    pub message: Vec<u8>,
+    pub hashed_message: Vec<u8>,
     /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,
     /// The DKG output of the dWallet, used to sign and verify the message.
-    pub dkg_output: MPCPublicOutput,
+    pub dwallet_decentralized_public_output: MPCPublicOutput,
     pub network_key_version: u8,
+    /// Indicates whether the future sign feature was used to start the session.
+    pub is_future_sign: bool,
 }
 
 impl MPCProtocolInitData {
-    /// Returns `true` if the round output is part of a batch, `false` otherwise.
+    /// Returns `true` if the round is a single message, which is
+    /// part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
         matches!(
             self,
-            MPCProtocolInitData::Sign(..)
-                | MPCProtocolInitData::PresignSecond(..)
-                | MPCProtocolInitData::BatchedSign(..)
-                | MPCProtocolInitData::BatchedPresign(..)
+            MPCProtocolInitData::Sign(..) | MPCProtocolInitData::PresignSecond(..)
         )
+    }
+
+    /// Is a special Round that indicates an initialization of a batch session.
+    pub fn is_a_new_batch_session(&self) -> bool {
+        matches!(self, |MPCProtocolInitData::BatchedSign(..))
+            || matches!(self, MPCProtocolInitData::BatchedPresign(..))
     }
 }
 
@@ -159,13 +173,27 @@ pub struct SessionInfo {
 /// as the inner data of the [`MPCProtocolInitData::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptedShareVerificationEvent {
-    pub encrypted_secret_share_and_proof: Vec<u8>,
-    pub dwallet_centralized_public_output: Vec<u8>,
+    /// Encrypted centralized secret key share and the associated
+    /// cryptographic proof of encryption.
+    pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
+    /// The public output of the centralized party,
+    /// belongs to the dWallet that its centralized secret share is being encrypted.
+    pub centralized_public_output: Vec<u8>,
+    /// The signature of the dWallet `centralized_public_output`,
+    /// signed by the secret key that corresponds to `encryptor_ed25519_pubkey`.
+    pub centralized_public_output_signature: Vec<u8>,
+    /// The ID of the dWallet that this encrypted secret key share belongs to.
     pub dwallet_id: ID,
+    /// The encryption key used to encrypt the secret key share with.
     pub encryption_key: Vec<u8>,
+    /// The `EncryptionKey` Move object ID.
     pub encryption_key_id: ID,
     pub session_id: ID,
-    pub signed_public_share: Vec<u8>,
+    /// The public key of the encryptor.
+    /// Used to verify the signature on the `centralized_public_output`.
+    /// Note that the "encryptor" is the entity that preformed the encryption,
+    /// and the encryption can be done with another public key, so this is NOT
+    /// the public key that was used for encryption.
     pub encryptor_ed25519_pubkey: Vec<u8>,
     pub initiator: PeraAddress,
 }
@@ -182,15 +210,15 @@ impl StartEncryptedShareVerificationEvent {
 }
 
 /// An event emitted to start an encryption key verification process.
-/// Since we cannot use native functions if we depend on Sui to hold our state,
-/// we need to emit an event to start the verification process, like we start the other MPC processes.
+/// Ika does not support native functions, so an event is emitted and
+/// caught by the blockchain, which then starts the verification process,
+/// similar to the MPC processes.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartEncryptionKeyVerificationEvent {
-    pub scheme: u8,
+    pub encryption_key_scheme: u8,
     pub encryption_key: Vec<u8>,
-    pub key_owner_address: PeraAddress,
     pub encryption_key_signature: Vec<u8>,
-    pub sender_sui_pubkey: Vec<u8>,
+    pub key_singer_public_key: Vec<u8>,
     pub initiator: PeraAddress,
     pub session_id: ID,
 }
@@ -209,23 +237,31 @@ impl StartEncryptionKeyVerificationEvent {
 /// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGSecondRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartDKGSecondRoundEvent {
-    /// Unique identifier for the MPC session.
+    /// The unique identifier for the DKG session.
     pub session_id: PeraAddress,
-    /// The address of the user that initiated this session.
+    /// The address of the user who initiated the dWallet creation.
     pub initiator: PeraAddress,
-    /// The DKG first decentralized round output.
+    /// The output from the first round of the DKG process.
     pub first_round_output: Vec<u8>,
-    /// The DKG centralized round output.
-    pub public_key_share_and_proof: Vec<u8>,
+    /// A serialized vector containing the centralized public key share and its proof.
+    pub centralized_public_key_share_and_proof: Vec<u8>,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ID,
+    /// The session ID associated with the first DKG round.
     pub first_round_session_id: ID,
-    pub encrypted_secret_share_and_proof: Vec<u8>,
+    /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
+    pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
+    /// The `EncryptionKey` object used for encrypting the secret key share.
     pub encryption_key: Vec<u8>,
+    /// The unique identifier of the `EncryptionKey` object.
     pub encryption_key_id: ID,
-    pub signed_public_share: Vec<u8>,
-    pub encryptor_ed25519_pubkey: Vec<u8>,
-    pub dkg_centralized_public_output: Vec<u8>,
+    /// The public output of the centralized party in the DKG process.
+    pub centralized_public_output: Vec<u8>,
+    /// The signature for the public output of the centralized party in the DKG process.
+    pub centralized_public_output_signature: Vec<u8>,
+    /// The Ed25519 public key of the initiator,
+    /// used to verify the signature on the centralized public output.
+    pub initiator_public_key: Vec<u8>,
 }
 
 impl StartDKGSecondRoundEvent {

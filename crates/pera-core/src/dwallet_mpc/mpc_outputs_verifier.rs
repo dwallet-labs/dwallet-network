@@ -80,9 +80,9 @@ pub enum OutputResult {
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
-    /// The output has already been verified and committed to the chain
+    /// The output has already been verified and committed to the chain.
+    /// This happens every time since all honest parties send the same output.
     AlreadyCommitted,
-    Duplicate,
 }
 
 pub struct OutputVerificationResult {
@@ -148,7 +148,7 @@ impl DWalletMPCOutputsVerifier {
         };
         if session_output_data.current_result == OutputResult::AlreadyCommitted {
             return Ok(OutputVerificationResult {
-                result: OutputResult::Duplicate,
+                result: OutputResult::AlreadyCommitted,
                 malicious_actors: vec![],
             });
         }
@@ -168,9 +168,11 @@ impl DWalletMPCOutputsVerifier {
                         &session.session_specific_state
                     {
                         // If one of the validators in the sign session sent a malicious report,
-                        // every validator need to make sure the reported validator actually marked
-                        // as malicious before the sign session got completed.
-                        // If the reported validator was not actually malicious, the reporting
+                        // every validator needs
+                        // to make sure the reported validator actually marked
+                        // as malicious
+                        // before the sign session got completed.
+                        // If the reported validator was not malicious, the reporting
                         // validator should be marked as malicious.
                         for reported_malicious_actor in
                             &sign_state.malicious_report.malicious_actors
@@ -180,7 +182,8 @@ impl DWalletMPCOutputsVerifier {
                                 .get_malicious_actors_names()
                                 .contains(&reported_malicious_actor)
                             {
-                                warn!("a sign session got completed successfully while the reported malicious actor {:?} was not actually malicious, marking the reporting authority as malicious", reported_malicious_actor);
+                                warn!("a sign session got completed successfully while the reported malicious actor {:?} was not malicious,\
+                                 marking the reporting: {:?} authority as malicious", reported_malicious_actor, sign_state.initiating_ia_authority);
                                 session_malicious_actors.push(sign_state.initiating_ia_authority);
                                 break;
                             }
@@ -234,6 +237,7 @@ impl DWalletMPCOutputsVerifier {
                     >= self.quorum_threshold
             });
 
+        // todo(zeev): simplify.
         if let Some((agreed_output, _)) = agreed_output {
             let voted_for_other_outputs = session_output_data
                 .session_output_to_voting_authorities
@@ -268,7 +272,7 @@ impl DWalletMPCOutputsVerifier {
     ) -> DwalletMPCResult<OutputVerificationResult> {
         let sign_output = bcs::from_bytes::<<SignFirstParty as Party>::PublicOutput>(&signature)?;
         let dkg_output = bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(
-            &sign_session_data.dkg_output,
+            &sign_session_data.dwallet_decentralized_public_output,
         )?
         .public_key;
         let protocol_public_parameters = epoch_store
@@ -296,7 +300,7 @@ impl DWalletMPCOutputsVerifier {
         if let Err(err) = verify_signature(
             sign_output.0,
             sign_output.1,
-            bcs::from_bytes(&sign_session_data.message)?,
+            bcs::from_bytes(&sign_session_data.hashed_message)?,
             dwallet_public_key,
         ) {
             return Err(DwalletMPCError::SignatureVerificationFailed(
@@ -369,7 +373,7 @@ impl DWalletMPCOutputsVerifier {
     /// and initializes the output data for it.
     /// Needed, so we'll know when we receive a malicious output
     /// that related to a non-existing session.
-    pub fn handle_new_event(&mut self, session_info: &SessionInfo) {
+    pub fn store_new_session(&mut self, session_info: &SessionInfo) {
         self.mpc_sessions_outputs.insert(
             session_info.session_id,
             SessionOutputsData {

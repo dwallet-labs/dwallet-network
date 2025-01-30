@@ -17,7 +17,7 @@ import { decodePeraPrivateKey } from '../cryptography/index.js';
 import { Ed25519Keypair, Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
 import { PERA_SYSTEM_STATE_OBJECT_ID } from '../utils/index.js';
-import type { Config, CreatedDwallet, DWallet } from './globals.js';
+import type { Config, DWallet, DWalletWithSecretKeyShare } from './globals.js';
 import {
 	checkpointCreationTime,
 	delay,
@@ -29,23 +29,25 @@ import {
 	fetchObjectWithType,
 	isDWallet,
 	isEqual,
-	packageId,
 } from './globals.js';
 
-const startEncryptedShareVerificationMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
-const createdEncryptedSecretShareEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
-const startEncryptionKeyVerificationEventMoveType = `${packageId}::${dWalletModuleName}::StartEncryptionKeyVerificationEvent`;
+const startEncryptedShareVerificationMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
+const createdEncryptedSecretShareEventMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedEncryptedSecretShareEvent`;
+const startEncryptionKeyVerificationEventMoveType = `${dWalletPackageID}::${dWalletModuleName}::StartEncryptionKeyVerificationEvent`;
 const encryptedUserSecretKeyShareMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::EncryptedUserSecretKeyShare`;
-const encryptionKeyMoveType = `${packageId}::${dWalletModuleName}::EncryptionKey`;
+const encryptionKeyMoveType = `${dWalletPackageID}::${dWalletModuleName}::EncryptionKey`;
 
+/**
+ * Event emitted by the blockchain when an
+ * `EncryptionKey` Move object is created.
+ */
 interface CreatedEncryptionKeyEvent {
-	scheme: number;
-	encryption_key: Uint8Array;
-	key_owner_address: string;
-	encryption_key_signature: Uint8Array;
-	key_owner_pubkey: Uint8Array;
 	session_id: string;
 	encryption_key_id: string;
+}
+
+function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent {
+	return obj && typeof obj.session_id === 'string' && typeof obj.encryption_key_id === 'string';
 }
 
 /**
@@ -58,26 +60,17 @@ interface ClassGroupsSecpKeyPair {
 }
 
 /**
- * TS representation of the Move CreatedEncryptedSecretShareEvent.
- */
-interface CreatedEncryptedSecretShareEvent {
-	encrypted_share_obj_id: string;
-	dwallet_id: string;
-	encrypted_secret_share_and_proof: Uint8Array;
-	encryption_key_id: string;
-	session_id: string;
-	encryptor_address: string;
-	encryptor_ed25519_pubkey: Uint8Array;
-	signed_public_share: Uint8Array;
-}
-
-/**
  * TS representation of an event to start an MPC session.
- * Usually the only thing needed from this event is the `session_id`, which is used to fetch the
+ * Usually the only thing needed from this event is the `session_id`,
+ * which is used to fetch the
  * completion event.
  */
 interface StartSessionEvent {
 	session_id: string;
+}
+
+function isStartSessionEvent(obj: any): obj is StartSessionEvent {
+	return 'session_id' in obj;
 }
 
 /**
@@ -89,20 +82,27 @@ interface EncryptionKey {
 	encryption_key_signature: Uint8Array;
 }
 
+const isEncryptionKey = (obj: any): obj is EncryptionKey => {
+	return 'encryption_key' in obj && 'key_owner_address' in obj && 'encryption_key_signature' in obj;
+};
+
 export enum EncryptionKeyScheme {
 	ClassGroups = 0,
 }
 
-// todo(zeev): fix the docs, explain what is each part.
+/**
+ * A verified encrypted dWallet centralized secret key share.
+ *
+ * This represents an encrypted centralized secret key share tied to
+ * a specific dWallet (`DWallet`).
+ * It includes cryptographic proof that the encryption is valid and securely linked
+ * to the associated `DWallet`.
+ */
 interface EncryptedUserSecretKeyShare {
 	dwallet_id: string;
-	encrypted_secret_share_and_proof: Uint8Array;
+	encrypted_centralized_secret_share_and_proof: Uint8Array;
 	encryption_key_id: string;
-	// todo(zeev): is it really a share or the whole output?
-	// todo(zeev): should be renamed to centralized output.
-	signed_public_share: Uint8Array;
-	// todo(zeev): rename to source, encryptor is not clear.
-	// todo(zeev): In here it's the one that called encryption func.
+	centralized_public_output_signature: Uint8Array;
 	encryptor_ed25519_pubkey: Uint8Array;
 	encryptor_address: string;
 }
@@ -110,13 +110,60 @@ interface EncryptedUserSecretKeyShare {
 function isEncryptedUserSecretKeyShare(obj: any): obj is EncryptedUserSecretKeyShare {
 	return (
 		obj &&
-		'id' in obj &&
-		'dwallet_id' in obj &&
-		'encrypted_secret_share_and_proof' in obj &&
-		'encryption_key_id' in obj &&
-		'signed_public_share' in obj &&
+		typeof obj.dwallet_id === 'string' &&
+		'encrypted_centralized_secret_share_and_proof' in obj &&
+		typeof obj.encryption_key_id === 'string' &&
+		'centralized_public_output_signature' in obj &&
 		'encryptor_ed25519_pubkey' in obj &&
-		'encryptor_address' in obj
+		typeof obj.encryptor_address === 'string'
+	);
+}
+
+/**
+ * TS representation of the Move event `CreatedEncryptedSecretShareEvent`.
+ * Emitted when an encrypted share is created by the system transaction.
+ */
+interface CreatedEncryptedSecretShareEvent {
+	// A unique identifier for the session related to this operation.
+	session_id: string;
+
+	// The ID of the `EncryptedUserSecretKeyShare` Move object.
+	encrypted_share_obj_id: string;
+
+	// The ID of the dWallet associated with this encrypted secret share.
+	dwallet_id: string;
+
+	// The encrypted centralized secret key share along with a cryptographic proof
+	// that the encryption corresponds to the dWallet's secret key share.
+	encrypted_centralized_secret_share_and_proof: Uint8Array;
+
+	// The `EncryptionKey` Move object ID that was used to encrypt the secret key share.
+	encryption_key_id: string;
+
+	// The address of the entity that performed the encryption operation of this secret key share.
+	encryptor_address: string;
+
+	// The public key of the entity that performed the encryption operation
+	// (with some encryption key — depends on the context)
+	// and signed the `centralized_public_output`.
+	// Used for verifications.
+	encryptor_ed25519_pubkey: Uint8Array;
+
+	// Signed dWallet public centralized output (signed by the `encryptor` entity).
+	centralized_public_output_signature: Uint8Array;
+}
+
+function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSecretShareEvent {
+	return (
+		obj &&
+		typeof obj.session_id === 'string' &&
+		typeof obj.encrypted_share_obj_id === 'string' &&
+		typeof obj.dwallet_id === 'string' &&
+		obj.encrypted_centralized_secret_share_and_proof instanceof Uint8Array &&
+		typeof obj.encryption_key_id === 'string' &&
+		typeof obj.encryptor_address === 'string' &&
+		obj.encryptor_ed25519_pubkey instanceof Uint8Array &&
+		obj.centralized_public_output_signature instanceof Uint8Array
 	);
 }
 
@@ -169,7 +216,7 @@ export class EncryptedUserShare {
 			);
 		}
 
-		const encryptionKeyCreationEvent = await this.registerEncryptionKey(
+		const encryptionKeyCreationEvent: CreatedEncryptionKeyEvent = await this.registerEncryptionKey(
 			keyPair,
 			expectedEncryptionKey,
 			EncryptionKeyScheme.ClassGroups,
@@ -203,7 +250,7 @@ export class EncryptedUserShare {
 		const tx = new Transaction();
 		const address = publicKey.toPeraAddress();
 		tx.moveCall({
-			target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
+			target: `${dWalletPackageID}::${dWalletModuleName}::get_active_encryption_key`,
 			arguments: [tx.object(activeEncryptionKeysTableID), tx.pure.address(address)],
 		});
 
@@ -240,13 +287,13 @@ export class EncryptedUserShare {
 		encryptionKeyScheme: EncryptionKeyScheme,
 	): Promise<CreatedEncryptionKeyEvent> {
 		// Sign the encryption key with the key pair.
-		const signedEncryptionKey = await keyPair.sign(new Uint8Array(encryptionKey));
+		const encryptionKeySignature = await keyPair.sign(new Uint8Array(encryptionKey));
 		const tx = new Transaction();
 		tx.moveCall({
-			target: `${packageId}::${dWalletModuleName}::register_encryption_key`,
+			target: `${dWalletPackageID}::${dWalletModuleName}::register_encryption_key`,
 			arguments: [
 				tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey)),
-				tx.pure(bcs.vector(bcs.u8()).serialize(signedEncryptionKey)),
+				tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKeySignature)),
 				tx.pure(bcs.vector(bcs.u8()).serialize(keyPair.getPublicKey().toRawBytes())),
 				tx.pure(bcs.u8().serialize(encryptionKeyScheme)),
 				tx.sharedObjectRef({
@@ -275,7 +322,7 @@ export class EncryptedUserShare {
 		return await fetchCompletedEvent<CreatedEncryptionKeyEvent>(
 			this.toConfig(keyPair),
 			sessionID,
-			`${packageId}::${dWalletModuleName}::CreatedEncryptionKeyEvent`,
+			`${dWalletPackageID}::${dWalletModuleName}::CreatedEncryptionKeyEvent`,
 			isCreatedEncryptionKeyEvent,
 		);
 	}
@@ -306,7 +353,7 @@ export class EncryptedUserShare {
 	async encryptUserShareForPublicKey(
 		sourceKeyPair: Keypair,
 		destSuiPublicKey: PublicKey,
-		sourceDwallet: CreatedDwallet,
+		sourceDwallet: DWalletWithSecretKeyShare,
 		activeEncryptionKeysTableID: string,
 	) {
 		const destActiveEncryptionKeyObjID = await this.getActiveEncryptionKeyObjID(
@@ -338,7 +385,7 @@ export class EncryptedUserShare {
 		// Encrypt the centralized secret key share with the destination active encryption key.
 		const encryptedUserKeyShareAndProofOfEncryption = encrypt_secret_share(
 			// Centralized Secret Key Share.
-			new Uint8Array(sourceDwallet.centralizedDKGPrivateOutput),
+			new Uint8Array(sourceDwallet.centralizedSecretKeyShare),
 			// Encryption Key.
 			new Uint8Array(destActiveEncryptionKeyObj.encryption_key),
 		);
@@ -361,7 +408,7 @@ export class EncryptedUserShare {
 	) {
 		const tx = new Transaction();
 		tx.moveCall({
-			target: `${packageId}::${dWalletModuleName}::upsert_active_encryption_key`,
+			target: `${dWalletPackageID}::${dWalletModuleName}::upsert_active_encryption_key`,
 			arguments: [tx.object(activeEncryptionKeysTableID), tx.object(encryptionKeyObjID)],
 		});
 
@@ -406,13 +453,9 @@ export class EncryptedUserShare {
 		);
 
 		// todo(zeev): rename.
-		const dwalletToSend: CreatedDwallet = {
-			id: dwalletID,
-			centralizedDKGPrivateOutput: [...decryptedKeyShare],
-			decentralizedDKGOutput: sourceDWallet.decentralized_output,
-			dwalletCapID: sourceDWallet.dwallet_cap_id,
-			dwalletMPCNetworkKeyVersion: sourceDWallet.dwallet_mpc_network_key_version,
-			centralizedDKGPublicOutput: sourceDWallet.centralized_output,
+		const dWalletToAccept: DWalletWithSecretKeyShare = {
+			...sourceDWallet,
+			centralizedSecretKeyShare: [...decryptedKeyShare],
 		};
 
 		// Encrypt it to self, so that in the future we'd know that we already
@@ -423,7 +466,7 @@ export class EncryptedUserShare {
 			await this.encryptUserShareForPublicKey(
 				destKeyPair,
 				destKeyPair.getPublicKey(),
-				dwalletToSend,
+				dWalletToAccept,
 				activeEncryptionKeysTableID,
 			);
 
@@ -431,7 +474,7 @@ export class EncryptedUserShare {
 			destKeyPair,
 			encryptedUserKeyShareAndProofOfEncryption,
 			destActiveEncryptionKeyObjID,
-			dwalletToSend,
+			dWalletToAccept,
 		);
 	}
 
@@ -441,7 +484,8 @@ export class EncryptedUserShare {
 	 * matches the expected public key share.
 	 */
 	// todo(zeev): check this doc.
-	// This function also verifies that the dkg output has been signed by the source public key.
+	// This function also verifies that the dkg output
+	// has been signed by the source public key.
 	async decryptAndVerifyUserShare(
 		activeEncryptionKeysTableID: string,
 		encryptedUserSecretKeyShare: EncryptedUserSecretKeyShare,
@@ -463,9 +507,9 @@ export class EncryptedUserShare {
 		// We do it to make sure this is the key that was stored by us on the chain.
 		if (
 			!(await srcIkaPublicKey.verify(
-				new Uint8Array(dwallet.centralized_output),
-				// todo(zeev): rename to centralized_output
-				new Uint8Array(encryptedUserSecretKeyShare.signed_public_share),
+				new Uint8Array(dwallet.centralized_public_output),
+				// todo(zeev): rename to public_output
+				new Uint8Array(encryptedUserSecretKeyShare.centralized_public_output_signature),
 			))
 		) {
 			throw new Error('the desired address did not sign the dWallet public key share');
@@ -477,13 +521,13 @@ export class EncryptedUserShare {
 		const decryptedSecretShare = decrypt_user_share(
 			destinationCGKeypair.encryptionKey,
 			destinationCGKeypair.decryptionKey,
-			encryptedUserSecretKeyShare.encrypted_secret_share_and_proof,
+			encryptedUserSecretKeyShare.encrypted_centralized_secret_share_and_proof,
 		);
 		// Before validating this centralized output,
 		// we are making sure it was signed by us.
 		const isValid = verify_user_share(
 			decryptedSecretShare,
-			new Uint8Array(dwallet.centralized_output),
+			new Uint8Array(dwallet.centralized_public_output),
 		);
 		if (!isValid) {
 			throw new Error('the decrypted key share does not match the dWallet public key share');
@@ -502,19 +546,20 @@ export class EncryptedUserShare {
 		sourceKeyPair: Keypair,
 		encryptedUserKeyShareAndProofOfEncryption: Uint8Array,
 		destEncryptionKeyObjID: string,
-		sourceDwallet: CreatedDwallet,
+		sourceDwallet: DWalletWithSecretKeyShare,
 	): Promise<CreatedEncryptedSecretShareEvent> {
 		const tx = new Transaction();
-		// Sign the DKG Public output to self, in order for the destination party to verify it later.
+		// Sign the DKG Centralized Public output,
+		// in order for the destination party to verify it later.
 		const sourceSignedCentralizedPublicOutput = await sourceKeyPair.sign(
-			new Uint8Array(sourceDwallet.centralizedDKGPublicOutput),
+			new Uint8Array(sourceDwallet.centralized_public_output),
 		);
 		// todo(zeev): this should transfer the encrypted share to the destination.
 		tx.moveCall({
-			target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::transfer_encrypted_user_share`,
+			target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::transfer_encrypted_user_share`,
 			typeArguments: [],
 			arguments: [
-				tx.object(sourceDwallet.id),
+				tx.object(sourceDwallet.id.id),
 				tx.object(destEncryptionKeyObjID),
 				tx.pure(bcs.vector(bcs.u8()).serialize(encryptedUserKeyShareAndProofOfEncryption)),
 				tx.pure(bcs.vector(bcs.u8()).serialize(sourceSignedCentralizedPublicOutput)),
@@ -558,7 +603,7 @@ export class EncryptedUserShare {
 export async function createActiveEncryptionKeysTable(c: Config) {
 	const tx = new Transaction();
 	tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::create_active_encryption_keys`,
+		target: `${dWalletPackageID}::${dWalletModuleName}::create_active_encryption_keys`,
 		arguments: [],
 	});
 
@@ -599,39 +644,6 @@ export function generateCGKeyPairFromSuiKeyPair(keyPair: Keypair): Uint8Array[] 
 	return generate_secp_cg_keypair_from_seed(decodedKeyPair.secretKey);
 }
 
-function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSecretShareEvent {
-	return (
-		'encrypted_share_obj_id' in obj &&
-		'dwallet_id' in obj &&
-		'encrypted_secret_share_and_proof' in obj &&
-		'encryption_key_id' in obj &&
-		'session_id' in obj &&
-		'encryptor_address' in obj &&
-		'encryptor_ed25519_pubkey' in obj &&
-		'signed_public_share' in obj
-	);
-}
-
-function isStartSessionEvent(obj: any): obj is StartSessionEvent {
-	return 'session_id' in obj;
-}
-
-const isEncryptionKey = (obj: any): obj is EncryptionKey => {
-	return 'encryption_key' in obj && 'key_owner_address' in obj && 'encryption_key_signature' in obj;
-};
-
-function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent {
-	return (
-		'scheme' in obj &&
-		'encryption_key' in obj &&
-		'key_owner_address' in obj &&
-		'encryption_key_signature' in obj &&
-		'key_owner_pubkey' in obj &&
-		'session_id' in obj &&
-		'encryption_key_id' in obj
-	);
-}
-
 export async function fetchEncryptedUserSecretShare(
 	conf: Config,
 	dwalletID: string,
@@ -668,11 +680,6 @@ export async function fetchEncryptedUserSecretShare(
 		}
 
 		cursor = hasNextPage ? nextCursor : null;
-
-		// Break loop if there are no more pages
-		if (!cursor) {
-			break;
-		}
 	}
 
 	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);

@@ -7,11 +7,15 @@ import { bcs } from '@mysten/bcs';
 import { Transaction } from '../transactions/index.js';
 import { PERA_SYSTEM_STATE_OBJECT_ID } from '../utils/index.js';
 import type { Config } from './globals.js';
-import { dWallet2PCMPCECDSAK1ModuleName, fetchCompletedEvent, packageId } from './globals.js';
+import {
+	dWallet2PCMPCECDSAK1ModuleName,
+	dWalletPackageID,
+	fetchCompletedEvent,
+} from './globals.js';
 
-const launchPresignFirstRoundMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::launch_batched_presign`;
-export const presignMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::Presign`;
-const completedPresignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedBatchedPresignEvent`;
+const launchPresignFirstRoundMoveFunc = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_batched_presign`;
+export const presignMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::Presign`;
+const completedPresignMoveEvent = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedBatchedPresignEvent`;
 
 interface StartBatchedPresignEvent {
 	session_id: string;
