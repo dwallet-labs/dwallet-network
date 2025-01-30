@@ -31,8 +31,6 @@ use twopc_mpc::secp256k1::class_groups::{
 use twopc_mpc::sign::Protocol;
 use twopc_mpc::ProtocolPublicParameters;
 
-// todo(itay): add error data for the mpc errors.
-
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
 pub enum DwalletMPCNetworkKeysStatus {

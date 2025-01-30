@@ -16,7 +16,8 @@ use crate::dwallet_mpc::presign::{
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPublicInput,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
+    MPCPublicOutput,
 };
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
@@ -359,7 +360,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
-) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+) -> DwalletMPCResult<mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, MPCPublicOutput>> {
     let messages = deserialize_mpc_messages(messages)?;
 
     let res = match P::advance(

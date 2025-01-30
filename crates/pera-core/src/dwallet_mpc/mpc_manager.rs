@@ -422,9 +422,10 @@ impl DWalletMPCManager {
                             DwalletMPCNetworkKeysStatus::Ready(_)
                         ));
                 if session.is_ready_to_advance() && is_manager_ready {
+                    let session_clone = session.clone();
                     session.pending_quorum_for_highest_round_number =
                         session.pending_quorum_for_highest_round_number + 1;
-                    Some(session.clone())
+                    Some(session_clone)
                 } else {
                     None
                 }
