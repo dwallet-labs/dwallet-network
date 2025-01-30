@@ -938,7 +938,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         );
     }
 
-    public struct StartPartialSignatureVerificationEvent {
+    public struct StartPartialSignatureVerificationEvent has copy, drop {
         session_id: ID,
         dkg_output: vector<u8>,
         partial_signatures: vector<vector<u8>>,
