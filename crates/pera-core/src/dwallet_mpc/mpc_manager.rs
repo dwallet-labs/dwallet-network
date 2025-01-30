@@ -58,9 +58,9 @@ use typed_store::Map;
 /// — Executing all active sessions, and
 /// — (De)activating sessions.
 ///
-/// The correct way to use the manager is to create it along with all other Pera components
-/// at the start of each epoch, ensuring it is destroyed when the epoch ends
-/// and providing a clean slate for each new epoch.
+/// The correct way to use the manager is to create it along with all other Ika components
+/// at the start of each epoch.
+/// Ensuring it is destroyed when the epoch ends and providing a clean slate for each new epoch.
 pub struct DWalletMPCManager {
     /// The party ID of the current authority. Based on the authority index in the committee.
     party_id: PartyID,

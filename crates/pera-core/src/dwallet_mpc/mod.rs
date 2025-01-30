@@ -347,12 +347,16 @@ fn calculate_total_voting_weight(
     }
     total_voting_weight
 }
-/// A helper function that wraps around a party `P`s `advance()` method, and converts its result to bytes.
-/// This is important so that generic components of the systems would not require generics
-/// to know the types of e.g. messages and outputs of every supported MPC protocol,
-/// instead working with bytes as the generic case.
-/// This and other helper functions maintain the transition to and through instantiated
-/// types and their serialized forms.
+/// Advances the state of an MPC party and serializes the result into bytes.
+///
+/// This helper function wraps around a party `P`'s `advance()` method,
+/// converting its output into a serialized byte format.
+/// This abstraction allows the system's generic components to operate uniformly on byte arrays,
+/// rather than requiring generics to handle the different message and output types
+/// for each MPC protocol.
+///
+/// By maintaining a structured transition between instantiated types, and their
+/// serialized forms, this function ensures compatibility across various components.
 pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
