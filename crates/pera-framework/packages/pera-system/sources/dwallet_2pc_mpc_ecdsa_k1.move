@@ -938,6 +938,62 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         );
     }
 
+    public struct StartPartialSignatureVerificationEvent {
+        session_id: ID,
+        dkg_output: vector<u8>,
+        partial_signatures: vector<vector<u8>>,
+        messages: vector<vector<u8>>,
+        presigns: vector<vector<u8>>,
+        dwallet_key_version: u8,
+    }
+
+    const EExtraDataAndMessagesLenMismatch: u64 = 7;
+
+    /// A function to publish messages signed by the user on chain with on-chain verification,
+    /// without launching the chain's sign flow immediately.
+    ///
+    /// See the docs of [`PartialCentralizedSignedMessages`] for
+    /// more details on when this may be used.
+    public fun request_future_sign(
+        dwallet: &DWallet<Secp256K1>,
+        messages: vector<vector<u8>>,
+        signature_algorithm_data: vector<SignatureAlgorithmData<SignData>>,
+        _pera_system_state: &PeraSystemState,
+        ctx: &mut TxContext
+    ) {
+        let messages_len = vector::length(&messages);
+        let signature_algorithm_data_len = vector::length(&signature_algorithm_data);
+        assert!(messages_len == signature_algorithm_data_len, EExtraDataAndMessagesLenMismatch);
+        let signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |SignatureAlgorithmData { data }| data);
+        let presigns = vector::map!(signature_algorithm_data_unpacked, |data| data.presign_output);
+        let partial_signatures = vector::map!(signature_algorithm_data_unpacked, |data| data.message_centralized_signature);
+        event::emit(StartPartialSignatureVerificationEvent {
+            session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+            dkg_output: get_dwallet_decentralized_public_output<Secp256K1>(dwallet),
+            partial_signatures,
+            messages,
+            presigns,
+            dwallet_key_version: get_dwallet_mpc_network_decryption_key_version(dwallet),
+        });
+
+
+        // let partial_signatures = create_partial_centralized_signed_messages<T, D>(
+        //     messages,
+        //     dwallet,
+        //     signature_algorithm_data_unpacked,
+        //     ctx,
+        // );
+
+        // event::emit(CreatedPartialCentralizedSignedMessagesEvent {
+        // partial_signatures_object_id: object::id(&partial_signatures),
+        // });
+
+        // Todo (#415): Add the event for the verify_partially_signed_signatures
+        // Todo (#415): PartialCentralizedSignedMessages will be created & retured to the user only after the verification is done.
+        // transfer::transfer(partial_signatures, tx_context::sender(ctx));
+    }
+
+
     /// Creates a vector of `SignatureAlgorithmData` objects from a vector of `Presign` objects
     /// and the centralized party message signatures.
     ///

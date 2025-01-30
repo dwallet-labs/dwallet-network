@@ -313,34 +313,6 @@ impl DWalletMPCOutputsVerifier {
         })
     }
 
-    // message: GroupElement::Scalar,
-    // dkg_output: DKGDecentralizedPartyOutput<
-    // SCALAR_LIMBS,
-    // FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    // NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    // GroupElement,
-    // >,
-    // presign: Presign<
-    // SCALAR_LIMBS,
-    // FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    // NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    // GroupElement,
-    // >,
-    // sign_message: Message<
-    // SCALAR_LIMBS,
-    // FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    // NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    // MESSAGE_LIMBS,
-    // GroupElement,
-    // >,
-    // protocol_public_parameters: &crate::class_groups::ProtocolPublicParameters<
-    // SCALAR_LIMBS,
-    // FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    // NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    // GroupElement,
-    // >,
-    // session_id: CommitmentSizedNumber,
-
     fn verify_partial_signature(
         hashed_message: &[u8],
         dkg_output: &[u8],

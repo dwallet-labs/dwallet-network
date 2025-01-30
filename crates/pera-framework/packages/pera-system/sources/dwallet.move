@@ -833,39 +833,6 @@ module pera_system::dwallet {
         partial_signatures_object_id: ID,
     }
 
-    /// A function to publish messages signed by the user on chain with on-chain verification,
-    /// without launching the chain's sign flow immediately.
-    ///
-    /// See the docs of [`PartialCentralizedSignedMessages`] for
-    /// more details on when this may be used.
-    public fun request_future_sign<T: drop, D: copy + drop + store>(
-        dwallet: &DWallet<T>,
-        messages: vector<vector<u8>>,
-        signature_algorithm_data: vector<SignatureAlgorithmData<D>>,
-        _pera_system_state: &PeraSystemState,
-        ctx: &mut TxContext
-    ) {
-        let messages_len = vector::length(&messages);
-        let signature_algorithm_data_len = vector::length(&signature_algorithm_data);
-        assert!(messages_len == signature_algorithm_data_len, EExtraDataAndMessagesLenMismatch);
-
-        let signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |SignatureAlgorithmData { data }| data);
-        let partial_signatures = create_partial_centralized_signed_messages<T, D>(
-            messages,
-            dwallet,
-            signature_algorithm_data_unpacked,
-            ctx,
-        );
-
-        event::emit(CreatedPartialCentralizedSignedMessagesEvent {
-            partial_signatures_object_id: object::id(&partial_signatures),
-        });
-
-        // Todo (#415): Add the event for the verify_partially_signed_signatures
-        // Todo (#415): PartialCentralizedSignedMessages will be created & retured to the user only after the verification is done.
-        transfer::transfer(partial_signatures, tx_context::sender(ctx));
-    }
-
     /// A function to create a [`SignatureAlgorithmData`] object.
     /// Extra fields are used to store additional data with the object, specific to every protocol implementation.
     /// D: The type of the extra fields that can be stored with the object.
