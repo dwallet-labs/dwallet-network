@@ -1,7 +1,7 @@
 //! A module to verify the dWallet MPC outputs.
 //! The module handles storing the outputs received for each session,
 //! and deciding whether an output is valid
-//! by checking if a validators with quorum of stake voted for it.
+//! by checking if an authorized validator set voted for it.
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;

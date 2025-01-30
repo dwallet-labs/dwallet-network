@@ -310,15 +310,6 @@ impl DWalletMPCSession {
         }
     }
 
-    /// A function to restart an MPC session.
-    /// Being called when session advancement has failed due to malicious parties.
-    /// Those parties will be flagged as malicious and ignored,
-    /// the session will be restarted.
-    pub(crate) fn restart(&mut self) {
-        self.status = MPCSessionStatus::Active;
-        self.serialized_messages = vec![HashMap::new()];
-    }
-
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     /// Returns None only if the epoch switched in the middle and was not available.
     fn new_dwallet_mpc_message(
