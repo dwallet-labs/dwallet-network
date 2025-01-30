@@ -7,7 +7,7 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_events::{StartNetworkDKGEvent, ValidatorDataForNetworkDKG};
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
-use crate::dwallet_mpc::{advance, authority_name_to_party_id};
+use crate::dwallet_mpc::{advance_and_serialize, authority_name_to_party_id};
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
@@ -30,6 +30,8 @@ use twopc_mpc::secp256k1::class_groups::{
 };
 use twopc_mpc::sign::Protocol;
 use twopc_mpc::ProtocolPublicParameters;
+
+// todo(itay): add error data for the mpc errors.
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -467,7 +469,7 @@ pub(crate) fn advance_network_dkg(
     epoch_store: Arc<AuthorityPerEpochStore>,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
     let res = match key_scheme {
-        DWalletMPCNetworkKeyScheme::Secp256k1 => advance::<Secp256k1Party>(
+        DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
             session_id,
             party_id,
             &weighted_threshold_access_structure,
@@ -475,7 +477,7 @@ pub(crate) fn advance_network_dkg(
             bcs::from_bytes(public_input)?,
             class_groups_decryption_key,
         ),
-        DWalletMPCNetworkKeyScheme::Ristretto => advance::<RistrettoParty>(
+        DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
             session_id,
             party_id,
             &weighted_threshold_access_structure,

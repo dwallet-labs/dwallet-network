@@ -346,8 +346,13 @@ fn calculate_total_voting_weight(
     }
     total_voting_weight
 }
-
-pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
+/// A helper function that wraps around a party `P`s `advance()` method, and converts its result to bytes.
+/// This is important so that generic components of the systems would not require generics
+/// to know the types of e.g. messages and outputs of every supported MPC protocol,
+/// instead working with bytes as the generic case.
+/// This and other helper functions maintain the transition to and through instantiated
+/// types and their serialized forms.
+pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
     access_threshold: &WeightedThresholdAccessStructure,
