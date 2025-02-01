@@ -7,6 +7,9 @@ pub enum DwalletMPCError {
     #[error("mpc session with ID `{session_id:?}` was not found")]
     MPCSessionNotFound { session_id: ObjectID },
 
+    #[error("sign state for the session with ID `{session_id:?}` was not found")]
+    AggregatedSignStateNotFound { session_id: ObjectID },
+
     #[error("mpc session with ID `{session_id:?}`, failed: {error}")]
     MPCSessionError { session_id: ObjectID, error: String },
 
