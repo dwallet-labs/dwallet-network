@@ -5,7 +5,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, Party, WeightedThresholdAccessStructure};
-use pera_types::base_types::{EpochId, ObjectID};
+use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::id::ID;
@@ -14,7 +14,7 @@ use pera_types::messages_dwallet_mpc::{
     MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
     StartEncryptedShareVerificationEvent,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
 use tracing::error;
