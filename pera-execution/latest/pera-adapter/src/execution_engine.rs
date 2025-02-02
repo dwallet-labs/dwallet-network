@@ -60,7 +60,9 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
-    use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCProtocolInitData, SignData, SingleSignSessionData};
+    use pera_types::messages_dwallet_mpc::{
+        DWalletMPCOutput, MPCProtocolInitData, SignData, SingleSignSessionData,
+    };
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -1131,7 +1133,6 @@ mod checked {
         let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
         let (move_function_name, args, type_args) = match data.session_info.mpc_round {
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
-
                 // public(package) fun create_partial_centralized_signed_messages<D: store + drop + copy>(
                 //     messages: vector<vector<u8>>,
                 //     dwallet_id: ID,
@@ -1170,7 +1171,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                 ],
-                vec![]
+                vec![],
             ),
             MPCProtocolInitData::DKGSecond(
                 event_data,
@@ -1194,7 +1195,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&event_data.initiator_public_key)?),
                     CallArg::Pure(bcs_to_bytes(&event_data.centralized_public_output)?),
                 ],
-                vec![]
+                vec![],
             ),
             MPCProtocolInitData::PresignFirst(
                 dwallet_id,
@@ -1212,7 +1213,7 @@ mod checked {
                     CallArg::Pure(batch_session_id.to_vec()),
                     CallArg::Pure(bcs_to_bytes(&network_key_version)?),
                 ],
-                vec![]
+                vec![],
             ),
             MPCProtocolInitData::PresignSecond(
                 dwallet_id,
@@ -1245,7 +1246,7 @@ mod checked {
                         })?),
                         CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
                     ],
-                    vec![]
+                    vec![],
                 )
             }
             MPCProtocolInitData::Sign(SingleSignSessionData {
@@ -1266,7 +1267,7 @@ mod checked {
                         CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
                         CallArg::Pure(bcs_to_bytes(&is_future_sign)?),
                     ],
-                    vec![]
+                    vec![],
                 )
             }
             MPCProtocolInitData::NetworkDkg(key_type, new_key) => {
@@ -1293,7 +1294,7 @@ mod checked {
                         CallArg::Pure(bcs_to_bytes(&new_key.reconstructed_commitments_to_sharing)?),
                         CallArg::Pure(bcs_to_bytes(&(key_type as u8))?),
                     ],
-                    vec![]
+                    vec![],
                 )
             }
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => (
@@ -1311,7 +1312,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&verification_data.encryptor_ed25519_pubkey)?),
                     CallArg::Pure(verification_data.initiator.to_vec()),
                 ],
-                vec![]
+                vec![],
             ),
             MPCProtocolInitData::EncryptionKeyVerification(verification_data) => {
                 module_name = DWALLET_MODULE_NAME;
@@ -1325,7 +1326,7 @@ mod checked {
                         CallArg::Pure(verification_data.initiator.to_vec()),
                         CallArg::Pure(data.session_info.session_id.to_vec()),
                     ],
-                    vec![]
+                    vec![],
                 )
             }
             _ => {
