@@ -15,7 +15,8 @@ use crate::dwallet_mpc::presign::{
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPublicInput,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
+    MPCPublicOutput,
 };
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
@@ -369,15 +370,24 @@ fn calculate_total_voting_weight(
     }
     total_voting_weight
 }
-
-pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
+/// Advances the state of an MPC party and serializes the result into bytes.
+///
+/// This helper function wraps around a party `P`'s `advance()` method,
+/// converting its output into a serialized byte format.
+/// This abstraction allows the system's generic components to operate uniformly on byte arrays,
+/// rather than requiring generics to handle the different message and output types
+/// for each MPC protocol.
+///
+/// By maintaining a structured transition between instantiated types, and their
+/// serialized forms, this function ensures compatibility across various components.
+pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
     access_threshold: &WeightedThresholdAccessStructure,
     messages: Vec<HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
-) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+) -> DwalletMPCResult<mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, MPCPublicOutput>> {
     let messages = deserialize_mpc_messages(messages)?;
 
     let res = match P::advance(

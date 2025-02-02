@@ -75,7 +75,16 @@ pub enum MPCSessionSpecificState {
 /// The state of a sign-identifiable abort session.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SignIASessionState {
-    pub malicious_report: MaliciousReport,
+    /// The first report that triggered the beginning of the Sign Identifiable Abort protocol,
+    /// in which, instead of having only one validator run the last sign step, every validator runs
+    /// the last step to agree on the malicious actors.
+    pub start_ia_flow_malicious_report: MaliciousReport,
+    /// The malicious report that have been agreed upon by a quorum of validators. If this report
+    /// is different from the `start_ia_flow_malicious_report`, the authority that sent the
+    /// `start_ia_flow_malicious_report` is being marked as malicious.
+    pub verified_malicious_report: Option<MaliciousReport>,
+    /// The first authority that sent a [`MaliciousReport`] in this sign session and triggered
+    /// the beginning of the Sign Identifiable Abort flow.
     pub initiating_ia_authority: AuthorityName,
 }
 

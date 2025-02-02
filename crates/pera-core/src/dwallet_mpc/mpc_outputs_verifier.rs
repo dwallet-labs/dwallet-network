@@ -5,10 +5,11 @@
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
 use crate::dwallet_mpc::sign::SignFirstParty;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
-use group::GroupElement;
+use group::{GroupElement, PartyID};
 use mpc::Party;
 use narwhal_types::Round;
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
@@ -68,7 +69,7 @@ pub struct SessionOutputsData {
 /// as the output can be sent twice by honest parties.
 #[derive(PartialOrd, PartialEq, Clone)]
 pub enum OutputResult {
-    Valid,
+    FirstQuorumReached,
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
@@ -133,6 +134,7 @@ impl DWalletMPCOutputsVerifier {
         let Some(ref mut session_output_data) =
             self.mpc_sessions_outputs.get_mut(&session_info.session_id)
         else {
+            // Report validators sending outputs for invalid sessions as malicious.
             return Ok(OutputVerificationResult {
                 result: OutputResult::Malicious,
                 malicious_actors: vec![origin_authority],
@@ -148,41 +150,9 @@ impl DWalletMPCOutputsVerifier {
             return match Self::verify_signature(&epoch_store, sign_session_data, output) {
                 Ok(res) => {
                     session_output_data.current_result = OutputResult::AlreadyCommitted;
-                    let mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
-                    let session = mpc_manager
-                        .mpc_sessions
-                        .get(&session_info.session_id)
-                        .ok_or(DwalletMPCError::MPCSessionNotFound {
-                            session_id: session_info.session_id,
-                        })?;
                     let mut session_malicious_actors = res.malicious_actors;
-                    if let Some(MPCSessionSpecificState::Sign(sign_state)) =
-                        &session.session_specific_state
-                    {
-                        // If one of the validators in the sign session sent a malicious report,
-                        // every validator needs
-                        // to make sure the reported validator actually marked
-                        // as malicious
-                        // before the sign session got completed.
-                        // If the reported validator was not malicious, the reporting
-                        // validator should be marked as malicious.
-                        for reported_malicious_actor in
-                            &sign_state.malicious_report.malicious_actors
-                        {
-                            if !mpc_manager
-                                .malicious_handler
-                                .get_malicious_actors_names()
-                                .contains(&reported_malicious_actor)
-                            {
-                                warn!("a sign session got completed successfully while the reported malicious actor {:?} was not malicious,\
-                                 marking the reporting: {:?} authority as malicious", reported_malicious_actor, sign_state.initiating_ia_authority);
-                                session_malicious_actors.push(sign_state.initiating_ia_authority);
-                                break;
-                            }
-                        }
-                    }
                     Ok(OutputVerificationResult {
-                        result: OutputResult::Valid,
+                        result: OutputResult::FirstQuorumReached,
                         malicious_actors: session_malicious_actors,
                     })
                 }
@@ -204,6 +174,7 @@ impl DWalletMPCOutputsVerifier {
             .authorities_that_sent_output
             .contains(&origin_authority)
         {
+            // Report validators sending an output for the same session twice as malicious.
             return Ok(OutputVerificationResult {
                 result: OutputResult::Malicious,
                 malicious_actors: vec![origin_authority],
@@ -218,15 +189,23 @@ impl DWalletMPCOutputsVerifier {
             .or_default()
             .insert(origin_authority);
 
+        let weighted_threshold_access_structure =
+            epoch_store.get_weighted_threshold_access_structure()?;
+
+        // Find the output that has a quorum of votes
         let agreed_output = session_output_data
             .session_output_to_voting_authorities
             .iter()
+            // There could be only one quorum, it is safe to use find.
             .find(|(_, voters)| {
-                voters
+                // Safe to unwrap since we know the authority exists in the map if it's in the set.
+                let voters_ids = voters
                     .iter()
-                    .map(|voter| self.weighted_parties.get(voter).unwrap_or(&0))
-                    .sum::<StakeUnit>()
-                    >= self.quorum_threshold
+                    .map(|voter| authority_name_to_party_id(voter, &epoch_store).unwrap())
+                    .collect();
+                weighted_threshold_access_structure
+                    .authorized_subset(&voters_ids)
+                    .is_ok()
             });
 
         if let Some((agreed_output, _)) = agreed_output {
@@ -239,7 +218,7 @@ impl DWalletMPCOutputsVerifier {
                 .collect();
             session_output_data.current_result = OutputResult::AlreadyCommitted;
             return Ok(OutputVerificationResult {
-                result: OutputResult::Valid,
+                result: OutputResult::FirstQuorumReached,
                 malicious_actors: voted_for_other_outputs,
             });
         }
@@ -299,7 +278,7 @@ impl DWalletMPCOutputsVerifier {
             ));
         }
         Ok(OutputVerificationResult {
-            result: OutputResult::Valid,
+            result: OutputResult::FirstQuorumReached,
             malicious_actors: vec![],
         })
     }
