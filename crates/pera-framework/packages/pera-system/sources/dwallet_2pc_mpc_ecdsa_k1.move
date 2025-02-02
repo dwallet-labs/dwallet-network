@@ -917,44 +917,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         });
     }
 
-    #[allow(unused_function)]
-    fun create_partially_signed_messages(
-        messages: vector<vector<u8>>,
-        session_id: ID,
-        initiator: address,
-        dwallet_id: ID,
-        dwallet_decentralized_public_output: vector<u8>,
-        dwallet_cap_id: ID,
-        dwallet_mpc_network_decryption_key_version: u8,
-        presign_ids: vector<ID>,
-        presign_output: vector<vector<u8>>,
-        message_centralized_signature: vector<vector<u8>>,
-        ctx: &mut TxContext
-    ) {
-        let mut signatures_data = vector[];
-        let presign_ids_len = presign_ids.length();
-        let mut i: u64 = 0;
-        while (i < presign_ids_len) {
-            vector::push_back(&mut signatures_data, SignData {
-                message_centralized_signature: message_centralized_signature[i],
-                presign_id: presign_ids[i],
-                presign_output: presign_output[i],
-            });
-            i = i + 1;
-        };
-        dwallet::create_partial_centralized_signed_messages<SignData>(
-            messages,
-            dwallet_id,
-            dwallet_decentralized_public_output,
-            dwallet_cap_id,
-            dwallet_mpc_network_decryption_key_version,
-            signatures_data,
-            session_id,
-            initiator,
-            ctx,
-        );
-    }
-
     #[test_only]
     /// Call the underlying `create_batched_presign_output`.
     /// This function is intended for testing purposes only and should not be used in production.

@@ -377,6 +377,7 @@ impl DWalletMPCSession {
                     .map_err(|err| err)
             }
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
+                for (signature_data, )
                 for i in 0..event_data.messages.len() {
                     verify_partial_signature(
                         &event_data.hashed_messages[i],
