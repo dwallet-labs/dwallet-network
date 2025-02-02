@@ -891,6 +891,7 @@ module pera_system::dwallet {
         assert!(messages_len == signature_algorithm_data_len, EExtraDataAndMessagesLenMismatch);
 
         let signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |SignatureAlgorithmData { data }| data);
+        // Todo (#565): Move the hash calculation into the rust code.
         let hashed_messages = hash_messages(&messages, hash_scheme);
         event::emit(StartPartialSignaturesVerificationEvent {
             session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
