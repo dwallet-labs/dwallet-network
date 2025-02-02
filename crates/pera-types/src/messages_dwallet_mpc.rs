@@ -336,6 +336,8 @@ impl MaliciousReport {
     }
 }
 
+/// The Secp256k1 SignData.
+///
 /// A representation of the Move object [`SignData`], which stores data specific to the
 /// signing algorithm used in the MPC protocol.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
