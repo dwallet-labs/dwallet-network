@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use fastcrypto::encoding::Base64;
 use futures::stream;
@@ -37,7 +37,7 @@ use ika_types::event::EventID;
 use ika_types::messages_checkpoint::CheckpointSequenceNumber;
 use ika_types::quorum_driver_types::ExecuteTransactionRequestType;
 use ika_types::ika_serde::BigInt;
-use ika_types::ika_system_state::ika_system_state_summary::IkaSystemStateSummary;
+use ika_types::sui::ika_system_state_summary::IkaSystemStateSummary;
 use ika_types::transaction::{Transaction, TransactionData, TransactionKind};
 
 const WAIT_FOR_LOCAL_EXECUTION_TIMEOUT: Duration = Duration::from_secs(60);
@@ -625,9 +625,9 @@ impl ReadApi {
     }
 
     // TODO(devx): we can probably cache this given an epoch
-    /// Return the reference gas price, or an error upon failure.
-    pub async fn get_reference_gas_price(&self) -> IkaRpcResult<u64> {
-        Ok(*self.api.http.get_reference_gas_price().await?)
+    /// Return the computation price per unit size, or an error upon failure.
+    pub async fn get_computation_price_per_unit_size(&self) -> IkaRpcResult<u64> {
+        Ok(*self.api.http.get_computation_price_per_unit_size().await?)
     }
 
     /// Dry run a transaction block given the provided transaction data. Returns an error upon failure.
@@ -672,7 +672,7 @@ impl ReadApi {
         &self,
         sender_address: IkaAddress,
         tx: TransactionKind,
-        gas_price: Option<BigInt<u64>>,
+        computation_price: Option<BigInt<u64>>,
         epoch: Option<BigInt<u64>>,
         additional_args: Option<DevInspectArgs>,
     ) -> IkaRpcResult<DevInspectResults> {
@@ -682,7 +682,7 @@ impl ReadApi {
             .dev_inspect_transaction_block(
                 sender_address,
                 Base64::from_bytes(&bcs::to_bytes(&tx)?),
-                gas_price,
+                computation_price,
                 epoch,
                 additional_args,
             )
@@ -1229,14 +1229,14 @@ impl GovernanceApi {
     /// Return the latest IKA system state object on-chain, or an error upon failure.
     ///
     /// Use this method to access system's information, such as the current epoch,
-    /// the protocol version, the reference gas price, the total stake, active validators,
+    /// the protocol version, the computation price per unit size, the total stake, active validators,
     /// and much more. See the [IkaSystemStateSummary] for all the available fields.
     pub async fn get_latest_ika_system_state(&self) -> IkaRpcResult<IkaSystemStateSummary> {
         Ok(self.api.http.get_latest_ika_system_state().await?)
     }
 
-    /// Return the reference gas price for the network, or an error upon failure.
-    pub async fn get_reference_gas_price(&self) -> IkaRpcResult<u64> {
-        Ok(*self.api.http.get_reference_gas_price().await?)
+    /// Return the computation price per unit size for the network, or an error upon failure.
+    pub async fn get_computation_price_per_unit_size(&self) -> IkaRpcResult<u64> {
+        Ok(*self.api.http.get_computation_price_per_unit_size().await?)
     }
 }

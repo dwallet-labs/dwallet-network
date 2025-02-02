@@ -1,22 +1,22 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::collections::BTreeMap;
 
-use crate::base_types::{AuthorityName, EpochId, ObjectRef, TransactionDigest};
 use crate::committee::StakeUnit;
-use crate::crypto::{AuthorityStrongQuorumSignInfo, ConciseAuthorityPublicKeyBytes};
-use crate::effects::{
+use crate::error::IkaError;
+use serde::{Deserialize, Serialize};
+use strum::AsRefStr;
+use sui_types::base_types::{AuthorityName, EpochId, ObjectRef, TransactionDigest};
+use sui_types::crypto::{AuthorityStrongQuorumSignInfo, ConciseAuthorityPublicKeyBytes};
+use sui_types::effects::{
     CertifiedTransactionEffects, TransactionEffects, TransactionEvents,
     VerifiedCertifiedTransactionEffects,
 };
-use crate::error::IkaError;
-use crate::messages_checkpoint::CheckpointSequenceNumber;
-use crate::object::Object;
-use crate::transaction::{Transaction, VerifiedTransaction};
-use serde::{Deserialize, Serialize};
-use strum::AsRefStr;
+use sui_types::messages_checkpoint::CheckpointSequenceNumber;
+use sui_types::object::Object;
+use sui_types::transaction::{Transaction, VerifiedTransaction};
 use thiserror::Error;
 
 pub type QuorumDriverResult = Result<QuorumDriverResponse, QuorumDriverError>;

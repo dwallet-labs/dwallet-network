@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::ops::RangeInclusive;
 
-use crate::{crypto::DefaultHash, digests::Digest};
 use fastcrypto::hash::HashFunction;
-use serde::{Deserialize, Serialize};
 pub use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
+use serde::{Deserialize, Serialize};
+use sui_types::{crypto::DefaultHash, digests::Digest};
 
 /// Models the set of protocol versions supported by a validator.
 /// The `ika-node` binary will always use the SYSTEM_DEFAULT constant, but for testing we need

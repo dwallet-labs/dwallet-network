@@ -1,21 +1,19 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::base_types::AuthorityName;
 use crate::committee::{Committee, EpochId};
 use crate::crypto::{
-    AuthorityKeyPair, AuthorityQuorumSignInfo, AuthoritySignInfo, AuthoritySignInfoTrait,
-    AuthoritySignature, AuthorityStrongQuorumSignInfo, EmptySignInfo, Signer,
+    AuthorityKeyPair, AuthorityName, AuthorityQuorumSignInfo, AuthoritySignInfo,
+    AuthoritySignInfoTrait, AuthoritySignature, AuthorityStrongQuorumSignInfo, EmptySignInfo,
+    Signer,
 };
 use crate::error::IkaResult;
-use crate::executable_transaction::CertificateProof;
+use crate::intent::{Intent, IntentScope};
 use crate::messages_checkpoint::CheckpointSequenceNumber;
-use crate::transaction::SenderSignedData;
 use fastcrypto::traits::KeyPair;
 use once_cell::sync::OnceCell;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_name::{DeserializeNameAdapter, SerializeNameAdapter};
-use shared_crypto::intent::{Intent, IntentScope};
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
@@ -169,16 +167,6 @@ where
 
     pub fn epoch(&self) -> EpochId {
         self.auth_signature.epoch
-    }
-}
-
-impl Envelope<SenderSignedData, AuthoritySignInfo> {
-    pub fn verify_committee_sigs_only(&self, committee: &Committee) -> IkaResult {
-        self.auth_signature.verify_secure(
-            self.data(),
-            Intent::ika_app(IntentScope::SenderSignedTransaction),
-            committee,
-        )
     }
 }
 
@@ -377,99 +365,5 @@ where
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0 .0)
-    }
-}
-
-/// The following implementation provides two ways to construct a VerifiedEnvelope with CertificateProof.
-/// It is implemented in this file such that we could reuse the digest without having to
-/// recompute it.
-/// We allow converting a VerifiedCertificate into a VerifiedEnvelope with CertificateProof::Certificate;
-/// and converting a VerifiedTransaction along with checkpoint information into a VerifiedEnvelope
-/// with CertificateProof::Checkpoint.
-impl<T: Message> VerifiedEnvelope<T, CertificateProof> {
-    pub fn new_from_certificate(
-        certificate: VerifiedEnvelope<T, AuthorityStrongQuorumSignInfo>,
-    ) -> Self {
-        let inner = certificate.into_inner();
-        let Envelope {
-            digest,
-            data,
-            auth_signature,
-        } = inner;
-        VerifiedEnvelope::new_unchecked(Envelope {
-            digest,
-            data,
-            auth_signature: CertificateProof::new_from_cert_sig(auth_signature),
-        })
-    }
-
-    pub fn new_from_checkpoint(
-        transaction: VerifiedEnvelope<T, EmptySignInfo>,
-        epoch: EpochId,
-        checkpoint: CheckpointSequenceNumber,
-    ) -> Self {
-        let inner = transaction.into_inner();
-        let Envelope {
-            digest,
-            data,
-            auth_signature: _,
-        } = inner;
-        VerifiedEnvelope::new_unchecked(Envelope {
-            digest,
-            data,
-            auth_signature: CertificateProof::new_from_checkpoint(epoch, checkpoint),
-        })
-    }
-
-    pub fn new_system(transaction: VerifiedEnvelope<T, EmptySignInfo>, epoch: EpochId) -> Self {
-        let inner = transaction.into_inner();
-        let Envelope {
-            digest,
-            data,
-            auth_signature: _,
-        } = inner;
-        VerifiedEnvelope::new_unchecked(Envelope {
-            digest,
-            data,
-            auth_signature: CertificateProof::new_system(epoch),
-        })
-    }
-
-    pub fn new_from_quorum_execution(
-        transaction: VerifiedEnvelope<T, EmptySignInfo>,
-        epoch: EpochId,
-    ) -> Self {
-        let inner = transaction.into_inner();
-        let Envelope {
-            digest,
-            data,
-            auth_signature: _,
-        } = inner;
-        VerifiedEnvelope::new_unchecked(Envelope {
-            digest,
-            data,
-            auth_signature: CertificateProof::QuorumExecuted(epoch),
-        })
-    }
-
-    pub fn new_from_consensus(
-        transaction: VerifiedEnvelope<T, EmptySignInfo>,
-        epoch: EpochId,
-    ) -> Self {
-        let inner = transaction.into_inner();
-        let Envelope {
-            digest,
-            data,
-            auth_signature: _,
-        } = inner;
-        VerifiedEnvelope::new_unchecked(Envelope {
-            digest,
-            data,
-            auth_signature: CertificateProof::new_from_consensus(epoch),
-        })
-    }
-
-    pub fn epoch(&self) -> EpochId {
-        self.auth_signature.epoch()
     }
 }

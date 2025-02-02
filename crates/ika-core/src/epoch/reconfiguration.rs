@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use serde::{Deserialize, Serialize};
@@ -74,5 +74,6 @@ impl ReconfigState {
 }
 
 pub trait ReconfigurationInitiator {
+    fn initiate_process_mid_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>);
     fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>);
 }

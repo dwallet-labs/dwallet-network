@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::node::RuntimeType;
 use futures::FutureExt;
-use std::sync::{Arc, Weak};
-use std::thread;
 use ika_config::NodeConfig;
 use ika_node::{IkaNode, IkaNodeHandle};
-use ika_types::base_types::ConciseableName;
 use ika_types::crypto::{AuthorityPublicKeyBytes, KeypairTraits};
+use std::sync::{Arc, Weak};
+use std::thread;
+use sui_types::base_types::ConciseableName;
 use telemetry_subscribers::get_global_telemetry_config;
 use tracing::{info, trace};
 

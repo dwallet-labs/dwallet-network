@@ -1,20 +1,9 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use clap::*;
 use fastcrypto_zkp::bn254::zk_login::OIDCProvider;
 use fastcrypto_zkp::zk_login_utils::Bn254FrElement;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::identifier::Identifier;
-use move_core_types::language_storage::{ModuleId, StructTag, TypeTag};
-use pretty_assertions::assert_str_eq;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-use roaring::RoaringBitmap;
-use serde_reflection::{Registry, Result, Samples, Tracer, TracerConfig};
-use shared_crypto::intent::{Intent, IntentMessage, PersonalMessage};
-use std::str::FromStr;
-use std::{fs::File, io::Write};
 use ika_types::base_types::IkaAddress;
 use ika_types::crypto::{
     AggregateAuthoritySignature, AuthorityQuorumSignInfo, AuthorityStrongQuorumSignInfo,
@@ -26,20 +15,20 @@ use ika_types::execution_status::{
     TypeArgumentError,
 };
 use ika_types::full_checkpoint_content::{CheckpointData, CheckpointTransaction};
-use ika_types::messages_checkpoint::CertifiedCheckpointSummary;
+use ika_types::message::{MessageKind, SenderSignedData};
+use ika_types::messages_checkpoint::CertifiedCheckpointMessage;
 use ika_types::messages_grpc::ObjectInfoRequestKind;
 use ika_types::move_package::TypeOrigin;
 use ika_types::object::Object;
-use ika_types::transaction::{SenderSignedData, TransactionData};
 use ika_types::type_input::{StructInput, TypeInput};
 use ika_types::{
     base_types::MoveObjectType_,
     crypto::Signer,
+    message::TransactionExpiration,
     messages_checkpoint::{
-        CheckpointContents, CheckpointContentsDigest, CheckpointDigest, CheckpointSummary,
+        CheckpointContents, CheckpointContentsDigest, CheckpointMessage, CheckpointMessageDigest,
         FullCheckpointContents,
     },
-    transaction::TransactionExpiration,
 };
 use ika_types::{
     base_types::{
@@ -47,21 +36,30 @@ use ika_types::{
     },
     crypto::{
         get_key_pair, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,
-        AuthorityPublicKeyBytes, AuthoritySignature, KeypairTraits, Signature, IkaKeyPair,
+        AuthorityPublicKeyBytes, AuthoritySignature, IkaKeyPair, KeypairTraits, Signature,
     },
+    message::{Argument, CallArg, Command, EndOfEpochTransactionKind, ObjectArg, TransactionKind},
     multisig::{MultiSig, MultiSigPublicKey},
     object::{Data, Owner},
     signature::GenericSignature,
     storage::DeleteKind,
-    transaction::{
-        Argument, CallArg, Command, EndOfEpochTransactionKind, ObjectArg, TransactionKind,
-    },
 };
 use ika_types::{
     crypto::{PublicKey, ZkLoginPublicIdentifier},
     effects::{IDOperation, ObjectIn, ObjectOut, TransactionEffects, UnchangedSharedKind},
     utils::DEFAULT_ADDRESS_SEED,
 };
+use move_core_types::account_address::AccountAddress;
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::{ModuleId, StructTag, TypeTag};
+use pretty_assertions::assert_str_eq;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use roaring::RoaringBitmap;
+use serde_reflection::{Registry, Result, Samples, Tracer, TracerConfig};
+use shared_crypto::intent::{Intent, IntentMessage, PersonalMessage};
+use std::str::FromStr;
+use std::{fs::File, io::Write};
 use typed_store::TypedStoreError;
 fn get_registry() -> Result<Registry> {
     let config = TracerConfig::default()
@@ -169,7 +167,7 @@ fn get_registry() -> Result<Registry> {
     let struct_tag = StructTag::from_str("0x2::coin::Coin<0x2::ika::IKA>").unwrap();
     tracer.trace_value(&mut samples, &struct_tag).unwrap();
 
-    let ccd = CheckpointDigest::random();
+    let ccd = CheckpointMessageDigest::random();
     tracer.trace_value(&mut samples, &ccd).unwrap();
 
     let tot = TypeOrigin {
@@ -233,10 +231,10 @@ fn get_registry() -> Result<Registry> {
         .trace_type::<FullCheckpointContents>(&samples)
         .unwrap();
     tracer.trace_type::<CheckpointContents>(&samples).unwrap();
-    tracer.trace_type::<CheckpointSummary>(&samples).unwrap();
+    tracer.trace_type::<CheckpointMessage>(&samples).unwrap();
 
     let sender_data = SenderSignedData::new(
-        TransactionData::new_with_gas_coins(
+        MessageKind::new_with_gas_coins(
             TransactionKind::EndOfEpochTransaction(Vec::new()),
             IkaAddress::ZERO,
             Vec::new(),
@@ -255,7 +253,7 @@ fn get_registry() -> Result<Registry> {
     tracer.trace_value(&mut samples, &quorum_sig).unwrap();
 
     tracer
-        .trace_type::<CertifiedCheckpointSummary>(&samples)
+        .trace_type::<CertifiedCheckpointMessage>(&samples)
         .unwrap();
 
     let event = Event {

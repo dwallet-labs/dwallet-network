@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::ValidatorProxy;
 use std::sync::Arc;
@@ -14,7 +14,7 @@ use tracing::{error, info};
 
 #[derive(Debug, Clone)]
 pub struct SystemState {
-    pub reference_gas_price: u64,
+    pub computation_price_per_unit_size: u64,
     pub protocol_config: Option<ProtocolConfig>,
 }
 
@@ -30,7 +30,7 @@ impl SystemStateObserver {
         let mut interval = tokio::time::interval_at(Instant::now(), Duration::from_secs(60));
         interval.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
         let (tx, rx) = watch::channel(SystemState {
-            reference_gas_price: 1u64,
+            computation_price_per_unit_size: 1u64,
             protocol_config: None,
         });
         tokio::task::spawn(async move {
@@ -40,8 +40,8 @@ impl SystemStateObserver {
                         match proxy.get_latest_system_state_object().await {
                             Ok(result) => {
                                 let p = ProtocolConfig::get_for_version(ProtocolVersion::new(result.protocol_version), Chain::Unknown);
-                                if tx.send(SystemState {reference_gas_price: result.reference_gas_price,protocol_config: Some(p)}).is_ok() {
-                                    info!("Reference gas price = {:?}", result.reference_gas_price    );
+                                if tx.send(SystemState {computation_price_per_unit_size: result.computation_price_per_unit_size,protocol_config: Some(p)}).is_ok() {
+                                    info!("Computation price per unit size = {:?}", result.computation_price_per_unit_size    );
                                 }
                             }
                             Err(err) => {

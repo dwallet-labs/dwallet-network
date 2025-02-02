@@ -2,7 +2,7 @@
 name = "ika-protocol-config"
 version = "0.1.0"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 edition = "2021"
 
@@ -13,7 +13,7 @@ workspace = true
 serde.workspace = true
 tracing.workspace = true
 serde_with.workspace = true
-ika-protocol-config-macros.workspace = true
+sui-protocol-config-macros.workspace = true
 schemars.workspace = true
 insta.workspace = true
 clap.workspace = true

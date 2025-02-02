@@ -1,6 +1,0 @@
-processed 1 task
-
-task 0, lines 4-28:
-//# publish
-Error: Transaction Effects Status: Ika Move Bytecode Verification Error. Please run the Ika Move Verifier for more information.
-Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: IkaMoveVerificationError, source: Some("PartialVMError with status UNKNOWN_VERIFICATION_ERROR with sub status 1 and message Invalid object creation in _::m::transmute. Object created without a newly created UID. The UID must come directly from ika::object::new. Or for tests, it can come from ika::test_scenario::new_object"), command: Some(0) } }

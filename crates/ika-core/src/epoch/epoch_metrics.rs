@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
 use std::sync::Arc;
@@ -21,8 +21,11 @@ pub struct EpochMetrics {
     /// Number of transactions in the epoch.
     pub epoch_transaction_count: IntGauge,
 
-    /// Total amount of gas rewards (i.e. computation gas cost) in the epoch.
-    pub epoch_total_gas_reward: IntGauge,
+    /// Total amount of computation rewards in the epoch.
+    pub epoch_total_computation_reward: IntGauge,
+
+    /// The interval from when mid-epoch reached to when we receive 2f+1 InitiateProcessMidEpoch messages.
+    pub epoch_initiate_process_mid_epoch_quorum_time_since_mid_epoch_reached_ms: IntGauge,
 
     // An active validator reconfigures through the following steps:
     // 1. Halt validator (a.k.a. close epoch) and stop accepting user transaction certs.
@@ -65,14 +68,6 @@ pub struct EpochMetrics {
     /// to become useful in the network after reconfiguration.
     // TODO: This needs to be reported properly.
     pub epoch_first_checkpoint_created_time_since_epoch_begin_ms: IntGauge,
-
-    /// Whether we are running in safe mode where reward distribution and tokenomics are disabled.
-    pub is_safe_mode: IntGauge,
-
-    /// When building the last checkpoint of the epoch, we execute advance epoch transaction once
-    /// without committing results to the store. It's useful to know whether this execution leads
-    /// to safe_mode, since in theory the result could be different from checkpoint executor.
-    pub checkpoint_builder_advance_epoch_is_safe_mode: IntGauge,
 
     /// Buffer stake current in effect for this epoch
     pub effective_buffer_stake: IntGauge,
@@ -130,9 +125,14 @@ impl EpochMetrics {
                 "Number of transactions in the epoch",
                 registry
             ).unwrap(),
-            epoch_total_gas_reward: register_int_gauge_with_registry!(
-                "epoch_total_gas_reward",
-                "Total amount of gas rewards (i.e. computation gas cost) in the epoch",
+            epoch_total_computation_reward: register_int_gauge_with_registry!(
+                "epoch_total_computation_reward",
+                "Total amount of computation rewards in the epoch",
+                registry
+            ).unwrap(),
+            epoch_initiate_process_mid_epoch_quorum_time_since_mid_epoch_reached_ms: register_int_gauge_with_registry!(
+                "epoch_initiate_process_mid_epoch_quorum_time_since_mid_epoch_reached_ms",
+                "The interval from when mid-epoch reached to when we receive 2f+1 InitiateProcessMidEpoch messages",
                 registry
             ).unwrap(),
             epoch_pending_certs_processed_time_since_epoch_close_ms: register_int_gauge_with_registry!(
@@ -164,16 +164,6 @@ impl EpochMetrics {
                 "epoch_first_checkpoint_created_time_since_epoch_begin_ms",
                 "Time interval from when the epoch opens at new epoch to the first checkpoint is created locally",
                 registry
-            ).unwrap(),
-            is_safe_mode: register_int_gauge_with_registry!(
-                "is_safe_mode",
-                "Whether we are running in safe mode",
-                registry,
-            ).unwrap(),
-            checkpoint_builder_advance_epoch_is_safe_mode: register_int_gauge_with_registry!(
-                "checkpoint_builder_advance_epoch_is_safe_mode",
-                "Whether the advance epoch execution leads to safe mode while building the last checkpoint",
-                registry,
             ).unwrap(),
             effective_buffer_stake: register_int_gauge_with_registry!(
                 "effective_buffer_stake",

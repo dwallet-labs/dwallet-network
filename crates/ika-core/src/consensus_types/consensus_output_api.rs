@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use std::{cmp::Ordering, fmt::Display};
 
 use consensus_core::{BlockAPI, CommitDigest, TransactionIndex, VerifiedBlock};
@@ -33,7 +33,7 @@ pub(crate) trait ConsensusCommitAPI: Display {
     fn transactions(&self) -> Vec<(AuthorityIndex, Vec<ParsedTransaction>)>;
 
     /// Returns the digest of consensus output.
-    fn consensus_digest(&self, protocol_config: &ProtocolConfig) -> ConsensusCommitDigest;
+    fn consensus_digest(&self) -> ConsensusCommitDigest;
 }
 
 impl ConsensusCommitAPI for consensus_core::CommittedSubDag {
@@ -80,15 +80,11 @@ impl ConsensusCommitAPI for consensus_core::CommittedSubDag {
             .collect()
     }
 
-    fn consensus_digest(&self, protocol_config: &ProtocolConfig) -> ConsensusCommitDigest {
-        if protocol_config.mysticeti_use_committed_subdag_digest() {
-            // We port CommitDigest, a consensus space object, into ConsensusCommitDigest, a ika-core space object.
-            // We assume they always have the same format.
-            static_assertions::assert_eq_size!(ConsensusCommitDigest, CommitDigest);
-            ConsensusCommitDigest::new(self.commit_ref.digest.into_inner())
-        } else {
-            ConsensusCommitDigest::default()
-        }
+    fn consensus_digest(&self) -> ConsensusCommitDigest {
+        // We port CommitDigest, a consensus space object, into ConsensusCommitDigest, an ika-core space object.
+        // We assume they always have the same format.
+        static_assertions::assert_eq_size!(ConsensusCommitDigest, CommitDigest);
+        ConsensusCommitDigest::new(self.commit_ref.digest.into_inner())
     }
 }
 

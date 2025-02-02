@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{collections::BTreeMap, sync::Arc};
 
@@ -138,7 +138,7 @@ impl InMemoryWallet {
         type_arguments: Vec<TypeTag>,
         arguments: Vec<CallArg>,
         gas_budget: u64,
-        gas_price: u64,
+        computation_price: u64,
     ) -> Transaction {
         let account = self.account(&sender).unwrap();
         let data = TransactionData::new_move_call(
@@ -150,7 +150,7 @@ impl InMemoryWallet {
             account.gas,
             arguments,
             gas_budget,
-            gas_price,
+            computation_price,
         )
         .unwrap();
         to_sender_signed_transaction(data, account.key.as_ref())
@@ -165,7 +165,7 @@ impl InMemoryWallet {
         type_arguments: Vec<TypeTag>,
         arguments: Vec<BenchMoveCallArg>,
         gas_budget: u64,
-        gas_price: u64,
+        computation_price: u64,
     ) -> Transaction {
         let account = self.account(&sender).unwrap();
         move_call_pt_impl(
@@ -178,7 +178,7 @@ impl InMemoryWallet {
             arguments,
             &account.gas,
             gas_budget,
-            gas_price,
+            computation_price,
         )
     }
 
@@ -213,7 +213,7 @@ pub fn move_call_pt_impl(
     arguments: Vec<BenchMoveCallArg>,
     gas_ref: &ObjectRef,
     gas_budget: u64,
-    gas_price: u64,
+    computation_price: u64,
 ) -> Transaction {
     let mut builder = ProgrammableTransactionBuilder::new();
     let args = convert_move_call_args(&arguments, &mut builder);
@@ -230,7 +230,7 @@ pub fn move_call_pt_impl(
         vec![*gas_ref],
         builder.finish(),
         gas_budget,
-        gas_price,
+        computation_price,
     );
     to_sender_signed_transaction(data, keypair)
 }

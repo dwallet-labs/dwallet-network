@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Transaction } from '@ika-io/ika/transactions';
 import { normalizeIkaAddress } from '@ika-io/ika/utils';

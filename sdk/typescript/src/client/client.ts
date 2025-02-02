@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { fromBase58, toBase64, toHex } from '@mysten/bcs';
 
 import type { Signer } from '../cryptography/index.js';
@@ -476,7 +476,7 @@ export class IkaClient {
 	}
 
 	/**
-	 * Getting the reference gas price for the network
+	 * Getting the computation price per unit size for the network
 	 */
 	async getReferenceGasPrice(): Promise<bigint> {
 		const resp = await this.transport.request<string>({

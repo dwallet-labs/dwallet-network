@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use criterion::*;
 
@@ -8,12 +8,12 @@ use rand::prelude::*;
 use rand::seq::SliceRandom;
 
 use futures::future::join_all;
-use prometheus::Registry;
-use std::sync::Arc;
 use ika_core::test_utils::{make_cert_with_large_committee, make_dummy_tx};
 use ika_types::committee::Committee;
 use ika_types::crypto::{get_key_pair, AccountKeyPair, AuthorityKeyPair};
-use ika_types::transaction::CertifiedTransaction;
+use ika_types::message::CertifiedTransaction;
+use prometheus::Registry;
+use std::sync::Arc;
 
 use fastcrypto_zkp::bn254::zk_login_api::ZkLoginEnv;
 use ika_core::signature_verifier::*;

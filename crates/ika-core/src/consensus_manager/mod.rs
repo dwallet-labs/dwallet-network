@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::{BlockStatusReceiver, ConsensusClient};
 use crate::consensus_handler::ConsensusHandlerInitializer;
@@ -10,16 +10,16 @@ use arc_swap::ArcSwapOption;
 use async_trait::async_trait;
 use enum_dispatch::enum_dispatch;
 use fastcrypto::traits::KeyPair as _;
+use ika_config::{ConsensusConfig, NodeConfig};
+use ika_protocol_config::ProtocolVersion;
+use ika_types::error::IkaResult;
+use ika_types::messages_consensus::ConsensusTransaction;
 use mysten_metrics::RegistryService;
 use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use ika_config::{ConsensusConfig, NodeConfig};
-use ika_protocol_config::ProtocolVersion;
-use ika_types::committee::EpochId;
-use ika_types::error::IkaResult;
-use ika_types::messages_consensus::ConsensusTransaction;
+use sui_types::committee::EpochId;
 use tokio::sync::{Mutex, MutexGuard};
 use tokio::time::{sleep, timeout};
 use tracing::info;

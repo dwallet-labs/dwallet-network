@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use mysten_metrics::histogram::Histogram as MystenHistogram;
 use prometheus::{
     register_histogram_with_registry, register_int_counter_vec_with_registry,
     register_int_counter_with_registry, register_int_gauge_vec_with_registry,
@@ -14,7 +13,7 @@ pub struct CheckpointMetrics {
     pub last_certified_checkpoint: IntGauge,
     pub last_constructed_checkpoint: IntGauge,
     pub checkpoint_errors: IntCounter,
-    pub transactions_included_in_checkpoint: IntCounter,
+    pub messages_included_in_checkpoint: IntCounter,
     pub checkpoint_roots_count: IntCounter,
     pub checkpoint_participation: IntCounterVec,
     pub last_received_checkpoint_signatures: IntGaugeVec,
@@ -23,16 +22,10 @@ pub struct CheckpointMetrics {
     pub last_ignored_checkpoint_signature_received: IntGauge,
     pub highest_accumulated_epoch: IntGauge,
     pub checkpoint_creation_latency: Histogram,
-    // TODO: delete once users are migrated to non-Mysten histogram.
-    pub checkpoint_creation_latency_ms: MystenHistogram,
     pub remote_checkpoint_forks: IntCounter,
     pub split_brain_checkpoint_forks: IntCounter,
     pub last_created_checkpoint_age: Histogram,
-    // TODO: delete once users are migrated to non-Mysten histogram.
-    pub last_created_checkpoint_age_ms: MystenHistogram,
     pub last_certified_checkpoint_age: Histogram,
-    // TODO: delete once users are migrated to non-Mysten histogram.
-    pub last_certified_checkpoint_age_ms: MystenHistogram,
 }
 
 impl CheckpointMetrics {
@@ -56,31 +49,21 @@ impl CheckpointMetrics {
                 mysten_metrics::LATENCY_SEC_BUCKETS.to_vec(),
                 registry
             ).unwrap(),
-            last_created_checkpoint_age_ms: MystenHistogram::new_in_registry(
-                "last_created_checkpoint_age_ms",
-                "Age of the last created checkpoint",
-                registry
-            ),
             last_certified_checkpoint_age: register_histogram_with_registry!(
                 "last_certified_checkpoint_age",
                 "Age of the last certified checkpoint",
                 mysten_metrics::LATENCY_SEC_BUCKETS.to_vec(),
                 registry
             ).unwrap(),
-            last_certified_checkpoint_age_ms: MystenHistogram::new_in_registry(
-                "last_certified_checkpoint_age_ms",
-                "Age of the last certified checkpoint",
-                registry
-            ),
             checkpoint_errors: register_int_counter_with_registry!(
                 "checkpoint_errors",
                 "Checkpoints errors count",
                 registry
             )
             .unwrap(),
-            transactions_included_in_checkpoint: register_int_counter_with_registry!(
-                "transactions_included_in_checkpoint",
-                "Transactions included in a checkpoint",
+            messages_included_in_checkpoint: register_int_counter_with_registry!(
+                "messages_included_in_checkpoint",
+                "Messages included in a checkpoint",
                 registry
             )
             .unwrap(),
@@ -130,15 +113,10 @@ impl CheckpointMetrics {
             .unwrap(),
             checkpoint_creation_latency: register_histogram_with_registry!(
                 "checkpoint_creation_latency",
-                "Latency from consensus commit timstamp to local checkpoint creation in milliseconds",
+                "Latency from consensus commit timestamp to local checkpoint creation in milliseconds",
                 mysten_metrics::LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             ).unwrap(),
-            checkpoint_creation_latency_ms: MystenHistogram::new_in_registry(
-                "checkpoint_creation_latency_ms",
-                "Latency from consensus commit timstamp to local checkpoint creation in milliseconds",
-                registry,
-            ),
             remote_checkpoint_forks: register_int_counter_with_registry!(
                 "remote_checkpoint_forks",
                 "Number of remote checkpoints that forked from local checkpoints",

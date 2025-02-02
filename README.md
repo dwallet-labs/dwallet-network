@@ -1,58 +1,64 @@
 <p align="center">
-<img src="https://raw.githubusercontent.com/MystenLabs/sui/refs/heads/main/docs/site/static/img/logo.svg" alt="Logo" width="100" height="100">
+<img src="https://github.com/dwallet-labs/dwallet-network/blob/main/docs/static/img/logo.svg" alt="Logo" width="500" height="300">
 </p>
 
 # Welcome to Ika
 
-[Ika](https://ika.io) is a next-generation smart contract platform with high throughput, low latency, and an asset-oriented programming model powered by the [Move programming language](https://github.com/MystenLabs/awesome-move).
+Ika is a decentralized platform empowering Web3 builders to create protocols that operate natively across any blockchain with zero trust security (eliminating the risk of trusted third parties that can be hacked or act maliciously). At the core of this architecture is the dWallet, a programmable and transferable zero trust signing mechanism that ensures user consent is cryptographically enforced, allowing developers to build secure, decentralized applications that operate across the entire Web3 ecosystem.
 
-## Ika Highlights
+A live alpha version environment of the testnet released in this repo will be available soon, follow us on [Discord](https://discord.gg/ikadotxyz) or [Twitter](https://x.com/ikadotxyz) to stay up to date.
 
-Ika offers the following benefits and capabilities:
+> _***Disclaimer***: This project is under development, and there are known bugs and issues that are being addressed. Additionally, in the testnet, the network secret shares of dWallets ARE NOT SECURE, and cannot be trusted to use with any real applications or assets. Please read the [full section below](#alpha-testnet-release) before exploring the code._
 
- * Unmatched scalability, instant settlement
- * A safe smart contract language accessible to mainstream developers
- * Ability to define rich and composable on-chain assets
- * Better user experience for web3 apps
+## Unique Value of dWallets
 
-Ika is the only blockchain today that can scale with the growth of web3 while achieving industry-leading performance, cost, programmability, and usability. As Ika approaches Mainnet launch, it will demonstrate capacity beyond the transaction processing capabilities of established systems – traditional and blockchain alike. Ika is the first internet-scale programmable blockchain platform, a foundational layer for web3.
+The dWallet is an innovative Web3 building block that has the following attributes:
 
-## Ika Architecture
+* _Noncollusive_: The user is always required to generate a signature.
+* _Massively decentralized_: Beside the user, a 2/3 threshold of a network that can include hundreds or thousands of nodes, is also required to generate a signature.
+* _Multi-Chain_: Using the default authentication method of blockchains - the signature - dWallets can offer universal and native multi-chain interoperability, without the cross-chain risks of wrapping, bridging or messaging.
+* _cryptographically secure_: The security of dWallets is based on cryptography, instead of hardware or trust assumptions.
 
-```mermaid
-flowchart LR
-    CC(CLI Client) --> ClientService
-    RC(Rest Client) --> ClientService
-    RPCC(RPC Client) --> ClientService
-    ClientService --> AuthorityAggregator
-    AuthorityAggregator --> AC1[AuthorityClient] & AC2[AuthorityClient]
-    subgraph Authority1
-      AS[AuthorityState]
-    end
-    subgraph Authority2
-      AS2[AuthorityState]
-    end
-    AC1 <==>|Network TCP| Authority1
-    AC2 <==>|Network TCP| Authority2
-```
+dWallets are the only way that exists today for Web3 builders to achieve secure, multi-chain interoperability, without the risks of cross-chain and without compromising on the core Web3 values of user ownership and decentralization.
+As Ika moves closer to its Mainnet launch, it will add support to many L1s and L2s, so builders across Web3 can use it as a composable modular signature network, adding powerful access control capabilities to any smart contract.
 
+## Cryptography of dWallets - 2PC-MPC
+
+dWallets utilize the [2PC-MPC protocol](https://github.com/dwallet-labs/2pc-mpc), a two-party ECDSA protocol we designed specifically for dWallets, where the second party is fully emulated by a network of n parties.
+
+Besides its novel structure, enabling the noncollusivity of dWallets, and the autonomy and flexibility of a permissionless Ika, the 2PC-MPC protocol also dramatically improves upon the state of the art, allowing Ika to be scalable & massively-decentralized.
+
+The 2PC-MPC protocol achieves linear-scaling in communication - O(n) - and due to novel aggregation & amortization techniques, an amortized cost per-party that remains constant up to thousands of parties - _practically_ O(1) in computation for the network, allowing it to scale and achieve decentralization, whilst being _asymptotically_ O(1) for the user: meaning the size of the network doesn't have any impact on the user as its computation and communication is constant.
 ## Ika Overview
 
-Ika is a smart contract platform maintained by a permissionless set of authorities that play a role similar to validators or miners in other blockchain systems.
+Ika is a decentralized platform, that was forked from [Sui](https://github.com/MystenLabs/sui), and similarly to Sui it is maintained by a permissionless set of authorities that play a role similar to validators or miners in other blockchain systems. Changes that were made to Ika include disabling smart contracts, implementing 2PC-MPC, and using the communication in [Sui's consensus Mysticeti](https://github.com/MystenLabs/mysticeti) for the MPC protocol between the nodes.
 
-Ika offers scalability and unprecedented low-latency for common use cases. Ika makes the vast majority of transactions processable in parallel, which makes better use of processing resources, and offers the option to increase throughput with more resources. Ika forgoes consensus to instead use simpler and lower-latency primitives for common use cases, such as payment transactions and asset transfers. This is unprecedented in the blockchain world and enables a number of new latency-sensitive distributed applications, ranging from gaming to retail payment at physical points of sale.
+dWallets on Ika are controlled by smart contracts on Sui.
 
-Ika is written in [Rust](https://www.rust-lang.org) and supports smart contracts written in the [Move programming language](https://github.com/move-language/move) to define assets that may have an owner. Move programs define operations on these assets including custom rules for their creation, the transfer of these assets to new owners, and operations that mutate assets.
+Ika has a native token called IKA that is used (much like Sui) to pay for gas, and is also used as [delegated stake on authorities](https://learn.bybit.com/blockchain/delegated-proof-of-stake-dpos/) within an epoch. The voting power of authorities within this epoch is a function of this delegated stake. Authorities are periodically reconfigured according to the stake delegated to them. In any epoch, the set of authorities is [Byzantine fault tolerant](https://pmg.csail.mit.edu/papers/osdi99.pdf). At the end of the epoch, fees collected through all transactions processed are distributed to authorities according to their contribution to the operation of the system. Authorities can in turn share some of the fees as rewards to users that delegated stakes to them.
 
-Ika has a native token called IKA, with a fixed supply. The IKA token is used to pay for gas, and is also used as [delegated stake on authorities](https://learn.bybit.com/blockchain/delegated-proof-of-stake-dpos/) within an epoch. The voting power of authorities within this epoch is a function of this delegated stake. Authorities are periodically reconfigured according to the stake delegated to them. In any epoch, the set of authorities is [Byzantine fault tolerant](https://pmg.csail.mit.edu/papers/osdi99.pdf). At the end of the epoch, fees collected through all transactions processed are distributed to authorities according to their contribution to the operation of the system. Authorities can in turn share some of the fees as rewards to users that delegated stakes to them.
+Sui is based on a number of state-of-the-art [peer-reviewed works](https://github.com/MystenLabs/sui/blob/main/docs/content/references/research-papers.mdx) and years of open source development that we are building upon with the Ika.
 
-Ika is supported by several cutting-edge [peer-reviewed studies](https://github.com/MystenLabs/sui/blob/main/docs/content/concepts/research-papers.mdx) and extensive years of open-source development.
+## Alpha Testnet Release
+
+This is currently the alpha release of the Ika Testnet. We're excited to have you join us as we introduce the composable modular signature network, and its noncollusive massively decentralized dWallets. Before you dive into the code and start testing our technology, please take a moment to read this important disclaimer:
+
+1. _Alpha Stage_: This release is an alpha version and has been made available for testing and development purposes only. It represents the very early stages of development, and as such, it may contain bugs, errors, and inconsistencies.
+1. _Not Audited_: The codebase for Ika is currently being audited internally, and has not been audited by any third-party security firms. We prioritize the security of our network and your engagement; however, the current stage of the project has not undergone the rigorous security checks that will be standard for later releases.
+1. _Expect Breaking Changes_: As we continue to refine and improve Ika, there will be breaking changes. These changes may affect your projects and code in significant ways. We will do our best to communicate these changes as they occur, but please be prepared to adapt your work accordingly.
+1. _No Reliability_: Given the alpha nature of this release, Ika should not be considered reliable for production use. Developers and users should not rely on this version with real applications or assets.
+1. _Participation at Your Own Risk_: Your participation in testing, developing, and exploring Ika is entirely at your own risk. We encourage community feedback and contributions, but please be aware of the potential issues and instabilities that may arise.
+1. _Community-Driven Exploration_: This release is aimed at fostering a community of developers and enthusiasts who are excited about dWallet technology. We encourage you to experiment, play around with the technology, and share your insights and feedback with the community. We are particularly interested in identifying bugs, vulnerabilities, and areas for improvement. Please use the GitHub issues section to report any problems or suggestions you may have, but note that THERE WILL BE NO AIRDROP INCENTIVES ATTACHED TO SUBMITTING GITHUB ISSUES, so please avoid "issue farming".
+
+We are committed to improving the Ika and moving towards a more stable and secure release with the help of our community. Thank you for being a part of this early stage of Ika. Your exploration and feedback are crucial to the network's development and success.
 
 ## More About Ika
 
-Use the following links to learn more about Ika and the Ika ecosystem:
+Use the following links to learn more about Ika and its ecosystem:
 
- * Learn more about working with Ika in the [Ika Documentation](https://docs.ika.io/).
- * Join the Ika community on [Ika Discord](https://discord.gg/ika).
- * Find out more about the Ika ecosystem on the [Ika Resources](https://ika.io/resources/) page.
- * Review information about Ika governance, [decentralization](https://ikafoundation.org/decentralization), and [Developer Grants Program](https://ika.io/grants-hub) on the [Ika Foundation](https://ikafoundation.org/) site.
+* Learn more about working with dWallets in the [Ika Documentation](https://docs.dwallet.io/).
+* Find out more about the Ika community on the [community](https://ika.xyz/community/) page and join the community on [Ika Discord](https://discord.gg/ikadotxyz).
+
+## Acknowledgement
+
+As a fork of Sui, much of Ika's code base is heavily based on the code created by [Mysten Labs, Inc.](https://mystenlabs.com) & [Facebook, Inc.](https://facebook.com) and its affiliates, including in this very file. We are grateful for the high quality and serious work that allowed us to build our Ika technology upon this infrastructure.

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 function base64UrlCharTo6Bits(base64UrlChar: string): number[] {
 	if (base64UrlChar.length !== 1) {

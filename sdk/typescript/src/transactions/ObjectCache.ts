@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { bcs } from '../bcs/index.js';
 import { normalizeIkaAddress } from '../utils/ika-types.js';

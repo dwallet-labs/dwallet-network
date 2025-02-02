@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 /* eslint-disable */
 
 import { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
@@ -1249,7 +1249,7 @@ export type EndOfEpochTransactionKindEdge = {
  * During a particular epoch the following data is fixed:
  *
  * - the protocol version
- * - the reference gas price
+ * - the computation price per unit size
  * - the set of participating validators
  */
 export type Epoch = {
@@ -1354,7 +1354,7 @@ export type Epoch = {
  * During a particular epoch the following data is fixed:
  *
  * - the protocol version
- * - the reference gas price
+ * - the computation price per unit size
  * - the set of participating validators
  */
 export type EpochCheckpointsArgs = {
@@ -1371,7 +1371,7 @@ export type EpochCheckpointsArgs = {
  * During a particular epoch the following data is fixed:
  *
  * - the protocol version
- * - the reference gas price
+ * - the computation price per unit size
  * - the set of participating validators
  */
 export type EpochTransactionBlocksArgs = {
@@ -5137,7 +5137,7 @@ export type Validator = {
    * of IKA tokens that each past IKA staker can withdraw in the future.
    */
   exchangeRatesTable?: Maybe<Owner>;
-  /** The reference gas price for this epoch. */
+  /** The computation price per unit size for this epoch. */
   gasPrice?: Maybe<Scalars['BigInt']['output']>;
   /** Validator's url containing their custom image. */
   imageUrl?: Maybe<Scalars['String']['output']>;
@@ -5157,7 +5157,7 @@ export type Validator = {
   /**
    * The validator's current valid `Cap` object. Validators can delegate
    * the operation ability to another address. The address holding this `Cap` object
-   * can then update the reference gas price and tallying rule on behalf of the validator.
+   * can then update the computation price per unit size and tallying rule on behalf of the validator.
    */
   operationCap?: Maybe<MoveObject>;
   /** Pending pool token withdrawn during the current epoch, emptied at epoch boundaries. */

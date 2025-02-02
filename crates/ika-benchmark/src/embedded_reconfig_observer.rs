@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::anyhow;
 use async_trait::async_trait;
@@ -10,7 +10,7 @@ use ika_core::{
     authority_client::NetworkAuthorityClient, quorum_driver::reconfig_observer::ReconfigObserver,
 };
 use ika_network::default_mysten_network_config;
-use ika_types::ika_system_state::IkaSystemStateTrait;
+use ika_types::sui::IkaSystemStateTrait;
 use tracing::{error, info, trace};
 
 /// A ReconfigObserver that polls validators periodically
@@ -65,7 +65,7 @@ impl EmbeddedReconfigObserver {
                     new_epoch, "Observed a new epoch, attempting to reconfig: {committee_info}"
                 );
                 auth_agg
-                    .recreate_with_net_addresses(committee_info, &network_config, false)
+                    .recreate_with_network_addresses(committee_info, &network_config, false)
                     .map(Arc::new)
                     .map_err(|se| anyhow!("Failed to recreate due to: {:?}", se.to_string()))
             }

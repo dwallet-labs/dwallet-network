@@ -1,29 +1,29 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::path::PathBuf;
-use std::time::Duration;
-use std::{num::NonZeroUsize, path::Path, sync::Arc};
-
-use rand::rngs::OsRng;
-use ika_config::genesis::{TokenAllocation, TokenDistributionScheduleBuilder};
-use ika_config::node::AuthorityOverloadConfig;
-use ika_macros::nondeterministic;
-use ika_types::base_types::{AuthorityName, IkaAddress};
-use ika_types::committee::{Committee, ProtocolVersion};
-use ika_types::crypto::{get_key_pair_from_rng, AccountKeyPair, KeypairTraits, PublicKey};
-use ika_types::object::Object;
+use ika_config::initiation::InitiationParameters;
+use ika_config::node::{
+    AuthorityOverloadConfig, RunWithRange, LOCAL_DEFAULT_SUI_FAUCET_URL,
+    LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL,
+};
+use ika_protocol_config::ProtocolVersion;
+use ika_types::committee::Committee;
+use ika_types::crypto::AuthorityName;
+use ika_types::crypto::{get_key_pair_from_rng, AccountKeyPair, KeypairTraits};
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
-use ika_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
+use rand::rngs::OsRng;
+use std::path::PathBuf;
+use std::{num::NonZeroUsize, path::Path, sync::Arc};
+use sui_macros::nondeterministic;
 
-use crate::genesis_config::{AccountConfig, ValidatorGenesisConfigBuilder, DEFAULT_GAS_AMOUNT};
-use crate::genesis_config::{GenesisConfig, ValidatorGenesisConfig};
 use crate::network_config::NetworkConfig;
-use crate::node_config_builder::ValidatorConfigBuilder;
+use crate::node_config_builder::{FullnodeConfigBuilder, ValidatorConfigBuilder};
+use crate::validator_initialization_config::ValidatorInitializationConfig;
+use crate::validator_initialization_config::ValidatorInitializationConfigBuilder;
 
 pub enum CommitteeConfig {
     Size(NonZeroUsize),
-    Validators(Vec<ValidatorGenesisConfig>),
+    Validators(Vec<ValidatorInitializationConfig>),
     AccountKeys(Vec<AccountKeyPair>),
     /// Indicates that a committee should be deterministically generated, using the provided rng
     /// as a source of randomness as well as generating deterministic network port information.
@@ -62,48 +62,57 @@ pub enum StateAccumulatorV2EnabledConfig {
 pub struct ConfigBuilder<R = OsRng> {
     rng: Option<R>,
     config_directory: PathBuf,
+    sui_fullnode_rpc_url: String,
+    sui_faucet_url: String,
+    epoch_duration_ms: Option<u64>,
+    protocol_version: Option<ProtocolVersion>,
     supported_protocol_versions_config: Option<ProtocolVersionsConfig>,
     committee: CommitteeConfig,
-    genesis_config: Option<GenesisConfig>,
-    reference_gas_price: Option<u64>,
-    additional_objects: Vec<Object>,
-    jwk_fetch_interval: Option<Duration>,
-    num_unpruned_validators: Option<usize>,
+    computation_price_per_unit_size: Option<u64>,
     authority_overload_config: Option<AuthorityOverloadConfig>,
-    data_ingestion_dir: Option<PathBuf>,
-    policy_config: Option<PolicyConfig>,
-    firewall_config: Option<RemoteFirewallConfig>,
     max_submit_position: Option<usize>,
     submit_delay_step_override_millis: Option<u64>,
-    state_accumulator_v2_enabled_config: Option<StateAccumulatorV2EnabledConfig>,
+    fullnode_count: usize,
+    // Default to supported_protocol_versions_config, but can be overridden.
+    fullnode_supported_protocol_versions_config: Option<ProtocolVersionsConfig>,
+    fullnode_run_with_range: Option<RunWithRange>,
 }
 
 impl ConfigBuilder {
-    pub fn new<P: AsRef<Path>>(config_directory: P) -> Self {
+    pub fn new<P: AsRef<Path>>(
+        config_directory: P,
+        sui_fullnode_rpc_url: String,
+        sui_faucet_url: String,
+    ) -> Self {
         Self {
             rng: Some(OsRng),
             config_directory: config_directory.as_ref().into(),
+            sui_fullnode_rpc_url,
+            sui_faucet_url,
+            epoch_duration_ms: None,
+            protocol_version: None,
             supported_protocol_versions_config: None,
             // FIXME: A network with only 1 validator does not have liveness.
             // We need to change this. There are some tests that depend on it though.
             committee: CommitteeConfig::Size(NonZeroUsize::new(1).unwrap()),
-            genesis_config: None,
-            reference_gas_price: None,
-            additional_objects: vec![],
-            jwk_fetch_interval: None,
-            num_unpruned_validators: None,
+            computation_price_per_unit_size: None,
             authority_overload_config: None,
-            data_ingestion_dir: None,
-            policy_config: None,
-            firewall_config: None,
             max_submit_position: None,
             submit_delay_step_override_millis: None,
-            state_accumulator_v2_enabled_config: None,
+            fullnode_count: 0,
+            fullnode_supported_protocol_versions_config: None,
+            fullnode_run_with_range: None,
         }
     }
 
     pub fn new_with_temp_dir() -> Self {
-        Self::new(nondeterministic!(tempfile::tempdir().unwrap()).into_path())
+        let sui_fullnode_rpc_url = LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL.to_string();
+        let sui_faucet_url = LOCAL_DEFAULT_SUI_FAUCET_URL.to_string();
+        Self::new(
+            nondeterministic!(tempfile::tempdir().unwrap()).into_path(),
+            sui_fullnode_rpc_url,
+            sui_faucet_url,
+        )
     }
 }
 
@@ -136,65 +145,26 @@ impl<R> ConfigBuilder<R> {
         self
     }
 
-    pub fn with_validators(mut self, validators: Vec<ValidatorGenesisConfig>) -> Self {
+    pub fn with_validators(mut self, validators: Vec<ValidatorInitializationConfig>) -> Self {
         self.committee = CommitteeConfig::Validators(validators);
         self
     }
 
-    pub fn with_genesis_config(mut self, genesis_config: GenesisConfig) -> Self {
-        assert!(self.genesis_config.is_none(), "Genesis config already set");
-        self.genesis_config = Some(genesis_config);
-        self
-    }
-
-    pub fn with_num_unpruned_validators(mut self, n: usize) -> Self {
-        self.num_unpruned_validators = Some(n);
-        self
-    }
-
-    pub fn with_jwk_fetch_interval(mut self, i: Duration) -> Self {
-        self.jwk_fetch_interval = Some(i);
-        self
-    }
-
-    pub fn with_data_ingestion_dir(mut self, path: PathBuf) -> Self {
-        self.data_ingestion_dir = Some(path);
-        self
-    }
-
-    pub fn with_reference_gas_price(mut self, reference_gas_price: u64) -> Self {
-        self.reference_gas_price = Some(reference_gas_price);
-        self
-    }
-
-    pub fn with_accounts(mut self, accounts: Vec<AccountConfig>) -> Self {
-        self.get_or_init_genesis_config().accounts = accounts;
-        self
-    }
-
-    pub fn with_chain_start_timestamp_ms(mut self, chain_start_timestamp_ms: u64) -> Self {
-        self.get_or_init_genesis_config()
-            .parameters
-            .chain_start_timestamp_ms = chain_start_timestamp_ms;
-        self
-    }
-
-    pub fn with_objects<I: IntoIterator<Item = Object>>(mut self, objects: I) -> Self {
-        self.additional_objects.extend(objects);
+    pub fn with_computation_price_per_unit_size(
+        mut self,
+        computation_price_per_unit_size: u64,
+    ) -> Self {
+        self.computation_price_per_unit_size = Some(computation_price_per_unit_size);
         self
     }
 
     pub fn with_epoch_duration(mut self, epoch_duration_ms: u64) -> Self {
-        self.get_or_init_genesis_config()
-            .parameters
-            .epoch_duration_ms = epoch_duration_ms;
+        self.epoch_duration_ms = Some(epoch_duration_ms);
         self
     }
 
     pub fn with_protocol_version(mut self, protocol_version: ProtocolVersion) -> Self {
-        self.get_or_init_genesis_config()
-            .parameters
-            .protocol_version = protocol_version;
+        self.protocol_version = Some(protocol_version);
         self
     }
 
@@ -216,41 +186,8 @@ impl<R> ConfigBuilder<R> {
         self
     }
 
-    pub fn with_state_accumulator_v2_enabled(mut self, enabled: bool) -> Self {
-        self.state_accumulator_v2_enabled_config =
-            Some(StateAccumulatorV2EnabledConfig::Global(enabled));
-        self
-    }
-
-    pub fn with_state_accumulator_v2_enabled_callback(
-        mut self,
-        func: StateAccumulatorV2EnabledCallback,
-    ) -> Self {
-        self.state_accumulator_v2_enabled_config =
-            Some(StateAccumulatorV2EnabledConfig::PerValidator(func));
-        self
-    }
-
-    pub fn with_state_accumulator_v2_enabled_config(
-        mut self,
-        c: StateAccumulatorV2EnabledConfig,
-    ) -> Self {
-        self.state_accumulator_v2_enabled_config = Some(c);
-        self
-    }
-
     pub fn with_authority_overload_config(mut self, c: AuthorityOverloadConfig) -> Self {
         self.authority_overload_config = Some(c);
-        self
-    }
-
-    pub fn with_policy_config(mut self, config: Option<PolicyConfig>) -> Self {
-        self.policy_config = config;
-        self
-    }
-
-    pub fn with_firewall_config(mut self, config: Option<RemoteFirewallConfig>) -> Self {
-        self.firewall_config = config;
         self
     }
 
@@ -267,42 +204,54 @@ impl<R> ConfigBuilder<R> {
         self
     }
 
+    pub fn with_fullnode_count(mut self, fullnode_count: usize) -> Self {
+        self.fullnode_count = fullnode_count;
+        self
+    }
+
+    pub fn with_fullnode_supported_protocol_versions_config(
+        mut self,
+        fullnode_supported_protocol_versions_config: ProtocolVersionsConfig,
+    ) -> Self {
+        self.fullnode_supported_protocol_versions_config =
+            Some(fullnode_supported_protocol_versions_config);
+        self
+    }
+
+    pub fn with_fullnode_run_with_range(mut self, fullnode_run_with_range: RunWithRange) -> Self {
+        self.fullnode_run_with_range = Some(fullnode_run_with_range);
+        self
+    }
+
     pub fn rng<N: rand::RngCore + rand::CryptoRng>(self, rng: N) -> ConfigBuilder<N> {
         ConfigBuilder {
             rng: Some(rng),
             config_directory: self.config_directory,
+            sui_fullnode_rpc_url: self.sui_fullnode_rpc_url,
+            sui_faucet_url: self.sui_faucet_url,
+            epoch_duration_ms: self.epoch_duration_ms,
+            protocol_version: self.protocol_version,
             supported_protocol_versions_config: self.supported_protocol_versions_config,
             committee: self.committee,
-            genesis_config: self.genesis_config,
-            reference_gas_price: self.reference_gas_price,
-            additional_objects: self.additional_objects,
-            num_unpruned_validators: self.num_unpruned_validators,
-            jwk_fetch_interval: self.jwk_fetch_interval,
+            computation_price_per_unit_size: self.computation_price_per_unit_size,
             authority_overload_config: self.authority_overload_config,
-            data_ingestion_dir: self.data_ingestion_dir,
-            policy_config: self.policy_config,
-            firewall_config: self.firewall_config,
             max_submit_position: self.max_submit_position,
             submit_delay_step_override_millis: self.submit_delay_step_override_millis,
-            state_accumulator_v2_enabled_config: self.state_accumulator_v2_enabled_config,
+            fullnode_count: self.fullnode_count,
+            fullnode_supported_protocol_versions_config: self
+                .fullnode_supported_protocol_versions_config,
+            fullnode_run_with_range: self.fullnode_run_with_range,
         }
-    }
-
-    fn get_or_init_genesis_config(&mut self) -> &mut GenesisConfig {
-        if self.genesis_config.is_none() {
-            self.genesis_config = Some(GenesisConfig::for_local_testing());
-        }
-        self.genesis_config.as_mut().unwrap()
     }
 }
 
 impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
     //TODO right now we always randomize ports, we may want to have a default port configuration
-    pub fn build(self) -> NetworkConfig {
+    pub async fn build(self) -> Result<NetworkConfig, anyhow::Error> {
         let committee = self.committee;
 
         let mut rng = self.rng.unwrap();
-        let validators = match committee {
+        let mut validator_initialization_configs = match committee {
             CommitteeConfig::Size(size) => {
                 // We always get fixed protocol keys from this function (which is isolated from
                 // external test randomness because it uses a fixed seed). Necessary because some
@@ -312,10 +261,10 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
 
                 keys.into_iter()
                     .map(|authority_key| {
-                        let mut builder = ValidatorGenesisConfigBuilder::new()
+                        let mut builder = ValidatorInitializationConfigBuilder::new()
                             .with_protocol_key_pair(authority_key);
-                        if let Some(rgp) = self.reference_gas_price {
-                            builder = builder.with_gas_price(rgp);
+                        if let Some(rgp) = self.computation_price_per_unit_size {
+                            builder = builder.with_computation_price(rgp);
                         }
                         builder.build(&mut rng)
                     })
@@ -330,11 +279,11 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 keys.into_iter()
                     .zip(protocol_keys)
                     .map(|(account_key, protocol_key)| {
-                        let mut builder = ValidatorGenesisConfigBuilder::new()
+                        let mut builder = ValidatorInitializationConfigBuilder::new()
                             .with_protocol_key_pair(protocol_key)
                             .with_account_key_pair(account_key);
-                        if let Some(rgp) = self.reference_gas_price {
-                            builder = builder.with_gas_price(rgp);
+                        if let Some(rgp) = self.computation_price_per_unit_size {
+                            builder = builder.with_computation_price(rgp);
                         }
                         builder.build(&mut rng)
                     })
@@ -351,12 +300,12 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 let mut configs = vec![];
                 for (i, key) in keys.into_iter().enumerate() {
                     let port_offset = 8000 + i * 10;
-                    let mut builder = ValidatorGenesisConfigBuilder::new()
+                    let mut builder = ValidatorInitializationConfigBuilder::new()
                         .with_ip("127.0.0.1".to_owned())
                         .with_account_key_pair(key)
                         .with_deterministic_ports(port_offset as u16);
-                    if let Some(rgp) = self.reference_gas_price {
-                        builder = builder.with_gas_price(rgp);
+                    if let Some(rgp) = self.computation_price_per_unit_size {
+                        builder = builder.with_computation_price(rgp);
                     }
                     configs.push(builder.build(&mut rng));
                 }
@@ -364,70 +313,32 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
             }
         };
 
-        let genesis_config = self
-            .genesis_config
-            .unwrap_or_else(GenesisConfig::for_local_testing);
+        for (i, validator) in validator_initialization_configs.iter_mut().enumerate() {
+            validator.name = validator.name.clone().or(Some(format!("validator-{i}")));
+        }
 
-        let (account_keys, allocations) = genesis_config.generate_accounts(&mut rng).unwrap();
+        let mut initiation_parameters = InitiationParameters::new();
+        if let Some(epoch_duration_ms) = self.epoch_duration_ms {
+            initiation_parameters.epoch_duration_ms = epoch_duration_ms;
+        }
+        if let Some(protocol_version) = self.protocol_version {
+            initiation_parameters.protocol_version = protocol_version.as_u64();
+        }
+        let (ika_package_id, ika_system_package_id, system_id, publisher_keypair) =
+            crate::sui_client::init_ika_on_sui(
+                &validator_initialization_configs,
+                self.sui_fullnode_rpc_url.to_string(),
+                self.sui_faucet_url.to_string(),
+                initiation_parameters,
+            )
+            .await?;
 
-        let token_distribution_schedule = {
-            let mut builder = TokenDistributionScheduleBuilder::new();
-            for allocation in allocations {
-                builder.add_allocation(allocation);
-            }
-            // Add allocations for each validator
-            for validator in &validators {
-                let account_key: PublicKey = validator.account_key_pair.public();
-                let address = IkaAddress::from(&account_key);
-                // Give each validator some gas so they can pay for their transactions.
-                let gas_coin = TokenAllocation {
-                    recipient_address: address,
-                    amount_nika: DEFAULT_GAS_AMOUNT,
-                    staked_with_validator: None,
-                };
-                let stake = TokenAllocation {
-                    recipient_address: address,
-                    amount_nika: validator.stake,
-                    staked_with_validator: Some(address),
-                };
-                builder.add_allocation(gas_coin);
-                builder.add_allocation(stake);
-            }
-            builder.build()
-        };
-
-        let genesis = {
-            let mut builder = ika_genesis_builder::Builder::new()
-                .with_parameters(genesis_config.parameters)
-                .add_objects(self.additional_objects);
-
-            for (i, validator) in validators.iter().enumerate() {
-                let name = validator
-                    .name
-                    .clone()
-                    .unwrap_or(format!("validator-{i}").to_string());
-                let validator_info = validator.to_validator_info(name);
-                builder =
-                    builder.add_validator(validator_info.info, validator_info.proof_of_possession);
-            }
-
-            builder = builder.with_token_distribution_schedule(token_distribution_schedule);
-
-            for validator in &validators {
-                builder = builder.add_validator_signature(&validator.key_pair);
-            }
-
-            builder.build()
-        };
-
-        let validator_configs = validators
-            .into_iter()
+        let validator_configs = validator_initialization_configs
+            .iter()
             .enumerate()
             .map(|(idx, validator)| {
                 let mut builder = ValidatorConfigBuilder::new()
-                    .with_config_directory(self.config_directory.clone())
-                    .with_policy_config(self.policy_config.clone())
-                    .with_firewall_config(self.firewall_config.clone());
+                    .with_config_directory(self.config_directory.clone());
 
                 if let Some(max_submit_position) = self.max_submit_position {
                     builder = builder.with_max_submit_position(max_submit_position);
@@ -440,17 +351,9 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                         .with_submit_delay_step_override_millis(submit_delay_step_override_millis);
                 }
 
-                if let Some(jwk_fetch_interval) = self.jwk_fetch_interval {
-                    builder = builder.with_jwk_fetch_interval(jwk_fetch_interval);
-                }
-
                 if let Some(authority_overload_config) = &self.authority_overload_config {
                     builder =
                         builder.with_authority_overload_config(authority_overload_config.clone());
-                }
-
-                if let Some(path) = &self.data_ingestion_dir {
-                    builder = builder.with_data_ingestion_dir(path.clone());
                 }
 
                 if let Some(spvc) = &self.supported_protocol_versions_config {
@@ -465,147 +368,58 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                     };
                     builder = builder.with_supported_protocol_versions(supported_versions);
                 }
-                if let Some(acc_v2_config) = &self.state_accumulator_v2_enabled_config {
-                    let state_accumulator_v2_enabled: bool = match acc_v2_config {
-                        StateAccumulatorV2EnabledConfig::Global(enabled) => *enabled,
-                        StateAccumulatorV2EnabledConfig::PerValidator(func) => func(idx),
-                    };
-                    builder =
-                        builder.with_state_accumulator_v2_enabled(state_accumulator_v2_enabled);
-                }
-                if let Some(num_unpruned_validators) = self.num_unpruned_validators {
-                    if idx < num_unpruned_validators {
-                        builder = builder.with_unpruned_checkpoints();
-                    }
-                }
-                builder.build(validator, genesis.clone())
+
+                builder.build(
+                    validator,
+                    self.sui_fullnode_rpc_url.clone(),
+                    ika_package_id,
+                    ika_system_package_id,
+                    system_id,
+                )
             })
             .collect();
-        NetworkConfig {
-            validator_configs,
-            genesis,
-            account_keys,
+        let mut fullnode_config_builder = FullnodeConfigBuilder::new()
+            .with_config_directory(self.config_directory.clone())
+            .with_run_with_range(self.fullnode_run_with_range);
+
+        if let Some(spvc) = &self.fullnode_supported_protocol_versions_config {
+            let supported_versions = match spvc {
+                ProtocolVersionsConfig::Default => SupportedProtocolVersions::SYSTEM_DEFAULT,
+                ProtocolVersionsConfig::Global(v) => *v,
+                ProtocolVersionsConfig::PerValidator(func) => func(0, None),
+            };
+            fullnode_config_builder =
+                fullnode_config_builder.with_supported_protocol_versions(supported_versions);
         }
-    }
-}
 
-#[cfg(test)]
-mod tests {
-    use ika_config::node::Genesis;
-
-    #[test]
-    fn serialize_genesis_config_in_place() {
-        let dir = tempfile::TempDir::new().unwrap();
-        let network_config = crate::network_config_builder::ConfigBuilder::new(&dir).build();
-        let genesis = network_config.genesis;
-
-        let g = Genesis::new(genesis);
-
-        let mut s = serde_yaml::to_string(&g).unwrap();
-        let loaded_genesis: Genesis = serde_yaml::from_str(&s).unwrap();
-        loaded_genesis
-            .genesis()
-            .unwrap()
-            .checkpoint_contents()
-            .digest(); // cache digest before comparing.
-        assert_eq!(g, loaded_genesis);
-
-        // If both in-place and file location are provided, prefer the in-place variant
-        s.push_str("\ngenesis-file-location: path/to/file");
-        let loaded_genesis: Genesis = serde_yaml::from_str(&s).unwrap();
-        loaded_genesis
-            .genesis()
-            .unwrap()
-            .checkpoint_contents()
-            .digest(); // cache digest before comparing.
-        assert_eq!(g, loaded_genesis);
-    }
-
-    #[test]
-    fn load_genesis_config_from_file() {
-        let file = tempfile::NamedTempFile::new().unwrap();
-        let genesis_config = Genesis::new_from_file(file.path());
-
-        let dir = tempfile::TempDir::new().unwrap();
-        let network_config = crate::network_config_builder::ConfigBuilder::new(&dir).build();
-        let genesis = network_config.genesis;
-        genesis.save(file.path()).unwrap();
-
-        let loaded_genesis = genesis_config.genesis().unwrap();
-        loaded_genesis.checkpoint_contents().digest(); // cache digest before comparing.
-        assert_eq!(&genesis, loaded_genesis);
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use std::collections::HashSet;
-    use std::sync::Arc;
-    use ika_config::genesis::Genesis;
-    use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
-    use ika_types::epoch_data::EpochData;
-    use ika_types::gas::IkaGasStatus;
-    use ika_types::in_memory_storage::InMemoryStorage;
-    use ika_types::metrics::LimitsMetrics;
-    use ika_types::ika_system_state::IkaSystemStateTrait;
-    use ika_types::transaction::CheckedInputObjects;
-
-    #[test]
-    fn roundtrip() {
-        let dir = tempfile::TempDir::new().unwrap();
-        let network_config = crate::network_config_builder::ConfigBuilder::new(&dir).build();
-        let genesis = network_config.genesis;
-
-        let s = serde_yaml::to_string(&genesis).unwrap();
-        let from_s: Genesis = serde_yaml::from_str(&s).unwrap();
-        // cache the digest so that the comparison succeeds.
-        from_s.checkpoint_contents().digest();
-        assert_eq!(genesis, from_s);
-    }
-
-    #[test]
-    fn genesis_transaction() {
-        let builder = crate::network_config_builder::ConfigBuilder::new_with_temp_dir();
-        let network_config = builder.build();
-        let genesis = network_config.genesis;
-        let protocol_version = ProtocolVersion::new(genesis.ika_system_object().protocol_version());
-        let protocol_config = ProtocolConfig::get_for_version(protocol_version, Chain::Unknown);
-
-        let genesis_transaction = genesis.transaction().clone();
-
-        let genesis_digest = *genesis_transaction.digest();
-
-        let silent = true;
-        let executor = ika_execution::executor(&protocol_config, silent, None)
-            .expect("Creating an executor should not fail here");
-
-        // Use a throwaway metrics registry for genesis transaction execution.
-        let registry = prometheus::Registry::new();
-        let metrics = Arc::new(LimitsMetrics::new(&registry));
-        let expensive_checks = false;
-        let certificate_deny_set = HashSet::new();
-        let epoch = EpochData::new_test();
-        let transaction_data = &genesis_transaction.data().intent_message().value;
-        let (kind, signer, _) = transaction_data.execution_parts();
-        let input_objects = CheckedInputObjects::new_for_genesis(vec![]);
-
-        let (_inner_temp_store, _, effects, _execution_error) = executor
-            .execute_transaction_to_effects(
-                &InMemoryStorage::new(Vec::new()),
-                &protocol_config,
-                metrics,
-                expensive_checks,
-                &certificate_deny_set,
-                &epoch.epoch_id(),
-                epoch.epoch_start_timestamp(),
-                input_objects,
-                vec![],
-                IkaGasStatus::new_unmetered(),
-                kind,
-                signer,
-                genesis_digest,
-            );
-
-        assert_eq!(&effects, genesis.effects());
+        let mut fullnode_configs = Vec::new();
+        if self.fullnode_count > 0 {
+            (0..self.fullnode_count).for_each(|idx| {
+                let mut builder = fullnode_config_builder.clone();
+                let notifier_client_key_pair = if idx == 0 {
+                    Some(publisher_keypair.copy())
+                } else {
+                    None
+                };
+                let config = builder.build(
+                    &mut OsRng,
+                    &validator_initialization_configs,
+                    self.sui_fullnode_rpc_url.clone(),
+                    ika_package_id,
+                    ika_system_package_id,
+                    system_id,
+                    notifier_client_key_pair,
+                );
+                fullnode_configs.push(config);
+            });
+        }
+        Ok(NetworkConfig {
+            validator_configs,
+            fullnode_configs,
+            validator_initialization_configs,
+            ika_package_id,
+            ika_system_package_id,
+            system_id,
+        })
     }
 }

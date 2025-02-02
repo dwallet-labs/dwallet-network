@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::*;
 use crate::utils::{build_network_and_key, build_network_with_anemo_config};
@@ -7,8 +7,8 @@ use anemo::types::PeerAffinity;
 use anemo::Result;
 use fastcrypto::ed25519::Ed25519PublicKey;
 use futures::stream::FuturesUnordered;
-use std::collections::HashSet;
 use ika_config::p2p::AllowlistedPeer;
+use std::collections::HashSet;
 use tokio::time::timeout;
 
 #[tokio::test]

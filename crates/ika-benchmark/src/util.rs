@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::workloads::Gas;
 use crate::ValidatorProxy;
@@ -38,7 +38,7 @@ pub fn make_pay_tx(
     split_amounts: Vec<u64>,
     gas: ObjectRef,
     keypair: &AccountKeyPair,
-    gas_price: u64,
+    computation_price: u64,
 ) -> Result<Transaction> {
     let pay = TransactionData::new_pay(
         sender,
@@ -46,8 +46,8 @@ pub fn make_pay_tx(
         addresses,
         split_amounts,
         gas,
-        TEST_ONLY_GAS_UNIT_FOR_TRANSFER * gas_price,
-        gas_price,
+        TEST_ONLY_GAS_UNIT_FOR_TRANSFER * computation_price,
+        computation_price,
     )?;
     Ok(to_sender_signed_transaction(pay, keypair))
 }
@@ -57,9 +57,9 @@ pub async fn publish_basics_package(
     proxy: Arc<dyn ValidatorProxy + Sync + Send>,
     sender: IkaAddress,
     keypair: &AccountKeyPair,
-    gas_price: u64,
+    computation_price: u64,
 ) -> ObjectRef {
-    let transaction = TestTransactionBuilder::new(sender, gas, gas_price)
+    let transaction = TestTransactionBuilder::new(sender, gas, computation_price)
         .publish_examples("basics")
         .build_and_sign(keypair);
     let effects = proxy.execute_transaction_block(transaction).await.unwrap();

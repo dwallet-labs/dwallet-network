@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -25,7 +25,7 @@ const openRpcSpec: OpenRpcSpec = JSON.parse(
 );
 export const LICENSE_HEADER = `
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /**
  *  ######################################
@@ -196,7 +196,7 @@ const options: {
 					alias: 'transactionBlock',
 					typeAlias: 'Transaction | Uint8Array | string',
 				},
-				gas_price: {
+				computation_price: {
 					typeAlias: 'bigint | number',
 				},
 			},

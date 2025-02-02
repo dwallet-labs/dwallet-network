@@ -1,12 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use mysten_network::config::Config;
 use std::time::Duration;
 
 pub mod api;
 pub mod discovery;
-pub mod randomness;
 pub mod state_sync;
 pub mod utils;
 

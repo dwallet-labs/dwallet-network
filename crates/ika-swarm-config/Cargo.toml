@@ -2,7 +2,7 @@
 name = "ika-swarm-config"
 version = "0.0.0"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 edition = "2021"
 
@@ -21,22 +21,36 @@ serde_yaml.workspace = true
 tempfile.workspace = true
 tracing.workspace = true
 prometheus.workspace = true
+futures.workspace = true
+tokio = { workspace = true, features = ["full"] }
 
 move-bytecode-utils.workspace = true
-narwhal-config.workspace = true
 shared-crypto.workspace = true
 ika-config.workspace = true
-ika-macros.workspace = true
+sui-macros.workspace = true
 ika-protocol-config.workspace = true
 ika-types.workspace = true
-ika-genesis-builder.workspace = true
-ika-rest-api.workspace = true
+sui-rpc-api.workspace = true
+
+sui.workspace = true
+sui-config.workspace = true
+sui-faucet.workspace = true
+sui-indexer.workspace = true
+sui-graphql-rpc.workspace = true
+sui-keys.workspace = true
+sui-sdk.workspace = true
+sui-swarm.workspace = true
+sui-swarm-config.workspace = true
+sui-types.workspace = true
+ika-move-packages.workspace = true
+move-binary-format.workspace = true
+move-core-types.workspace = true
 
 [target.'cfg(msim)'.dependencies]
-ika-simulator.workspace = true
+sui-simulator.workspace = true
 
 [dev-dependencies]
 insta.workspace = true
 tempfile.workspace = true
 
-ika-execution.workspace = true
+sui-execution.workspace = true

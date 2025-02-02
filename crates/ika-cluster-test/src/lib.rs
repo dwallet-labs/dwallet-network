@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::faucet::{FaucetClient, FaucetClientFactory};
 use async_trait::async_trait;
 use cluster::{Cluster, ClusterFactory};
@@ -19,7 +19,7 @@ use ika_test_transaction_builder::batch_make_transfer_transactions;
 use ika_types::base_types::TransactionDigest;
 use ika_types::object::Owner;
 use ika_types::quorum_driver_types::ExecuteTransactionRequestType;
-use ika_types::ika_system_state::ika_system_state_summary::IkaSystemStateSummary;
+use ika_types::sui::ika_system_state_summary::IkaSystemStateSummary;
 
 use ika_sdk::IkaClient;
 use ika_types::gas_coin::GasCoin;
@@ -112,11 +112,11 @@ impl TestContext {
             .unwrap()
     }
 
-    async fn get_reference_gas_price(&self) -> u64 {
+    async fn get_computation_price_per_unit_size(&self) -> u64 {
         self.client
             .get_fullnode_client()
             .governance_api()
-            .get_reference_gas_price()
+            .get_computation_price_per_unit_size()
             .await
             .unwrap()
     }

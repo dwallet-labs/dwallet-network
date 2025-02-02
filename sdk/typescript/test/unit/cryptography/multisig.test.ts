@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { fromBase64, toBase58, toBase64 } from '@mysten/bcs';
 import { beforeAll, describe, expect, it, test } from 'vitest';

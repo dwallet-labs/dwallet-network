@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! IkaNodeHandle wraps IkaNode in a way ikatable for access by test code.
 //!
@@ -43,9 +43,9 @@
 //! We can't prevent this completely, but we can at least make the right way the easy way.
 
 use super::IkaNode;
+use ika_core::authority::AuthorityState;
 use std::future::Future;
 use std::sync::Arc;
-use ika_core::authority::AuthorityState;
 
 /// Wrap IkaNode to allow correct access to IkaNode in simulator tests.
 pub struct IkaNodeHandle {

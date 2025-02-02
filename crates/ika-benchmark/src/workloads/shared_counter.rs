@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::drivers::Interval;
 use crate::system_state_observer::SystemStateObserver;
@@ -57,14 +57,14 @@ impl Payload for SharedCounterTestPayload {
             .system_state_observer
             .state
             .borrow()
-            .reference_gas_price;
-        let gas_price_increment = if self.max_tip_amount == 0 {
+            .computation_price_per_unit_size;
+        let computation_price_increment = if self.max_tip_amount == 0 {
             0
         } else {
             rand::thread_rng().gen_range(0..self.max_tip_amount)
         };
-        let gas_price = rgp + gas_price_increment;
-        TestTransactionBuilder::new(self.gas.1, self.gas.0, gas_price)
+        let computation_price = rgp + computation_price_increment;
+        TestTransactionBuilder::new(self.gas.1, self.gas.0, computation_price)
             .call_counter_increment(
                 self.package_id,
                 self.counter_id,
@@ -94,7 +94,7 @@ impl SharedCounterWorkloadBuilder {
         shared_counter_hotness_factor: u32,
         num_shared_counters: Option<u64>,
         shared_counter_max_tip_amount: u64,
-        reference_gas_price: u64,
+        computation_price_per_unit_size: u64,
         duration: Interval,
         group: u32,
     ) -> Option<WorkloadBuilderInfo> {
@@ -122,7 +122,7 @@ impl SharedCounterWorkloadBuilder {
                     num_counters: num_shared_counters,
                     num_payloads: max_ops,
                     max_tip_amount: shared_counter_max_tip_amount,
-                    rgp: reference_gas_price,
+                    rgp: computation_price_per_unit_size,
                 },
             ));
             let builder_info = WorkloadBuilderInfo {
@@ -208,7 +208,7 @@ impl Workload<dyn Payload> for SharedCounterWorkload {
         if self.basics_package_id.is_some() {
             return;
         }
-        let gas_price = system_state_observer.state.borrow().reference_gas_price;
+        let computation_price = system_state_observer.state.borrow().computation_price_per_unit_size;
         let (head, tail) = self
             .init_gas
             .split_first()
@@ -217,7 +217,7 @@ impl Workload<dyn Payload> for SharedCounterWorkload {
         // Publish basics package
         info!("Publishing basics package");
         self.basics_package_id = Some(
-            publish_basics_package(head.0, proxy.clone(), head.1, &head.2, gas_price)
+            publish_basics_package(head.0, proxy.clone(), head.1, &head.2, computation_price)
                 .await
                 .0,
         );
@@ -228,7 +228,7 @@ impl Workload<dyn Payload> for SharedCounterWorkload {
         }
         let mut futures = vec![];
         for (gas, sender, keypair) in tail.iter() {
-            let transaction = TestTransactionBuilder::new(*sender, *gas, gas_price)
+            let transaction = TestTransactionBuilder::new(*sender, *gas, computation_price)
                 .call_counter_create(self.basics_package_id.unwrap())
                 .build_and_sign(keypair.as_ref());
             let proxy_ref = proxy.clone();

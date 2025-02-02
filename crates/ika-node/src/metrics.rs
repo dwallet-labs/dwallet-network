@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use mysten_common::metrics::{push_metrics, MetricsPushClient};
 use mysten_network::metrics::MetricsCallbackProvider;
 use prometheus::{
@@ -7,8 +7,8 @@ use prometheus::{
     register_int_gauge_vec_with_registry, HistogramVec, IntCounterVec, IntGaugeVec, Registry,
 };
 
-use std::time::Duration;
 use ika_network::tonic::Code;
+use std::time::Duration;
 
 use mysten_metrics::RegistryService;
 

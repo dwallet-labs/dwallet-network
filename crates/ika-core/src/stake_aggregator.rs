@@ -1,18 +1,19 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use ika_types::committee::{Committee, CommitteeTrait, StakeUnit};
+use ika_types::crypto::{
+    AuthorityName, AuthorityQuorumSignInfo, AuthoritySignInfo, AuthoritySignInfoTrait,
+};
+use ika_types::error::IkaError;
+use ika_types::intent::Intent;
+use ika_types::message_envelope::{Envelope, Message};
 use serde::Serialize;
-use shared_crypto::intent::Intent;
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::sync::Arc;
-use ika_types::base_types::AuthorityName;
-use ika_types::base_types::ConciseableName;
-use ika_types::committee::{Committee, CommitteeTrait, StakeUnit};
-use ika_types::crypto::{AuthorityQuorumSignInfo, AuthoritySignInfo, AuthoritySignInfoTrait};
-use ika_types::error::IkaError;
-use ika_types::message_envelope::{Envelope, Message};
+use sui_types::base_types::ConciseableName;
 use tracing::warn;
 
 /// StakeAggregator allows us to keep track of the total stake of a set of validators.
@@ -182,7 +183,9 @@ impl<const STRENGTH: bool> StakeAggregator<AuthoritySignInfo, STRENGTH> {
                             }
                         }
                     }
-                    Err(error) => InsertResult::Failed { error },
+                    Err(error) => InsertResult::Failed {
+                        error: error.into(),
+                    },
                 }
             }
             // The following is necessary to change the template type of InsertResult.

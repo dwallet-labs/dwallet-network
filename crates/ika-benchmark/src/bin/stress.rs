@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::{anyhow, Context, Result};
 use clap::*;
@@ -103,8 +103,8 @@ async fn main() -> Result<()> {
         );
         system_state_observer.state.changed().await?;
         eprintln!(
-            "Found new state (reference gas price and/or protocol config) from system state object = {:?}",
-            system_state_observer.state.borrow().reference_gas_price
+            "Found new state (computation price per unit size and/or protocol config) from system state object = {:?}",
+            system_state_observer.state.borrow().computation_price_per_unit_size
         );
         Arc::new(system_state_observer)
     };

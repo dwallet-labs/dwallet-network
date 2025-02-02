@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::authority::AuthorityMetrics;
 use arc_swap::ArcSwap;
-use narwhal_types::TimestampMs;
+use ika_protocol_config::Chain;
+use ika_types::digests::ChainIdentifier;
 use parking_lot::Mutex;
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU64;
 use std::sync::Arc;
-use ika_protocol_config::Chain;
-use ika_types::digests::ChainIdentifier;
+use sui_types::messages_consensus::TimestampMs;
 use tracing::{debug, warn};
 
 const DEFAULT_OBSERVATIONS_WINDOW: u64 = 120; // number of observations to use to calculate the past throughput
@@ -77,11 +77,12 @@ impl ThroughputProfileRanges {
             ]
         };
 
-        match chain_id.chain() {
-            Chain::Mainnet => ThroughputProfileRanges::new(&to_profiles(500, 2_000)),
-            Chain::Testnet => ThroughputProfileRanges::new(&to_profiles(500, 2_000)),
-            Chain::Unknown => ThroughputProfileRanges::new(&to_profiles(1_000, 2_000)),
-        }
+        // match chain_id.chain() {
+        //     Chain::Mainnet => ThroughputProfileRanges::new(&to_profiles(500, 2_000)),
+        //     Chain::Testnet => ThroughputProfileRanges::new(&to_profiles(500, 2_000)),
+        //     Chain::Unknown => ThroughputProfileRanges::new(&to_profiles(1_000, 2_000)),
+        // }
+        ThroughputProfileRanges::new(&to_profiles(1_000, 2_000))
     }
 
     pub fn new(profiles: &[ThroughputProfile]) -> Self {

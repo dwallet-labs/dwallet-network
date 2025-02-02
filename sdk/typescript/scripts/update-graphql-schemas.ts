@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { execSync } from 'child_process';
 import { readFile } from 'fs/promises';
@@ -86,7 +86,7 @@ for (const { minorVersion, schema } of releasesByVersion.values()) {
 		resolve(filePath, `../../../schemas/${minorVersion}/index.ts`),
 		`
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { initGraphQLTada } from 'gql.tada';
 

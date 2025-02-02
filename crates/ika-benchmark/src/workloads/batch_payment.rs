@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::drivers::Interval;
 use crate::in_memory_wallet::InMemoryWallet;
@@ -112,7 +112,7 @@ impl Payload for BatchPaymentTestPayload {
             self.system_state_observer
                 .state
                 .borrow()
-                .reference_gas_price,
+                .computation_price_per_unit_size,
             gas_budget,
         )
     }

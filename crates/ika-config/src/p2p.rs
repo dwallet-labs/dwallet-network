@@ -1,13 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{net::SocketAddr, num::NonZeroU32, time::Duration};
 
+use ika_types::messages_checkpoint::{CheckpointMessageDigest, CheckpointSequenceNumber};
 use serde::{Deserialize, Serialize};
-use ika_types::{
-    messages_checkpoint::{CheckpointDigest, CheckpointSequenceNumber},
-    multiaddr::Multiaddr,
-};
+use sui_types::multiaddr::Multiaddr;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -29,8 +27,6 @@ pub struct P2pConfig {
     pub state_sync: Option<StateSyncConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub discovery: Option<DiscoveryConfig>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub randomness: Option<RandomnessConfig>,
     /// Size in bytes above which network messages are considered excessively large. Excessively
     /// large messages will still be handled, but logged and reported in metrics for debugging.
     ///
@@ -52,7 +48,6 @@ impl Default for P2pConfig {
             anemo_config: Default::default(),
             state_sync: None,
             discovery: None,
-            randomness: None,
             excessive_message_size: None,
         }
     }
@@ -100,7 +95,7 @@ pub struct StateSyncConfig {
     /// - in case of a network stall, to force the node to proceed with a manually-injected
     ///   checkpoint.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub pinned_checkpoints: Vec<(CheckpointSequenceNumber, CheckpointDigest)>,
+    pub pinned_checkpoints: Vec<(CheckpointSequenceNumber, CheckpointMessageDigest)>,
 
     /// Query peers for their latest checkpoint every interval period.
     ///
@@ -152,36 +147,30 @@ pub struct StateSyncConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub checkpoint_content_timeout_ms: Option<u64>,
 
-    /// Per-peer rate-limit (in requests/sec) for the PushCheckpointSummary RPC.
+    /// Per-peer rate-limit (in requests/sec) for the PushCheckpointMessage RPC.
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub push_checkpoint_summary_rate_limit: Option<NonZeroU32>,
+    pub push_checkpoint_message_rate_limit: Option<NonZeroU32>,
 
-    /// Per-peer rate-limit (in requests/sec) for the GetCheckpointSummary RPC.
+    /// Per-peer rate-limit (in requests/sec) for the GetCheckpointMessage RPC.
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_checkpoint_summary_rate_limit: Option<NonZeroU32>,
+    pub get_checkpoint_message_rate_limit: Option<NonZeroU32>,
 
-    /// Per-peer rate-limit (in requests/sec) for the GetCheckpointContents RPC.
+    /// Per-peer inflight limit for the GetCheckpointMessage RPC.
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_checkpoint_contents_rate_limit: Option<NonZeroU32>,
+    pub get_checkpoint_message_inflight_limit: Option<usize>,
 
-    /// Per-peer inflight limit for the GetCheckpointContents RPC.
-    ///
-    /// If unspecified, this will default to no limit.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_checkpoint_contents_inflight_limit: Option<usize>,
-
-    /// Per-checkpoint inflight limit for the GetCheckpointContents RPC. This is enforced globally
+    /// Per-checkpoint inflight limit for the GetCheckpointMessage RPC. This is enforced globally
     /// across all peers.
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_checkpoint_contents_per_checkpoint_limit: Option<usize>,
+    pub get_checkpoint_message_per_checkpoint_limit: Option<usize>,
 
     /// The amount of time to wait before retry if there are no peers to sync content from.
     /// If unspecified, this will set to default value
@@ -344,91 +333,5 @@ impl DiscoveryConfig {
     pub fn access_type(&self) -> AccessType {
         // defaults None to Public
         self.access_type.unwrap_or(AccessType::Public)
-    }
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct RandomnessConfig {
-    /// Maximum number of rounds ahead of our most recent completed round for which we should
-    /// accept partial signatures from other validators.
-    ///
-    /// If unspecified, this will default to 50.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_partial_sigs_rounds_ahead: Option<u64>,
-
-    /// Maximum number of rounds for which partial signatures should be concurrently sent.
-    ///
-    /// If unspecified, this will default to 20.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_partial_sigs_concurrent_sends: Option<usize>,
-
-    /// Interval at which to retry sending partial signatures until the round is complete.
-    ///
-    /// If unspecified, this will default to `5,000` milliseconds.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub partial_signature_retry_interval_ms: Option<u64>,
-
-    /// Size of the Randomness actor's mailbox. This should be set large enough to never
-    /// overflow unless a bug is encountered.
-    ///
-    /// If unspecified, this will default to `1,000,000`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub mailbox_capacity: Option<usize>,
-
-    /// Per-peer inflight limit for the SendPartialSignatures RPC.
-    ///
-    /// If unspecified, this will default to 20.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub send_partial_signatures_inflight_limit: Option<usize>,
-
-    /// Maximum proportion of total peer weight to ignore in case of byzantine behavior.
-    ///
-    /// If unspecified, this will default to 0.2.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_ignored_peer_weight_factor: Option<f64>,
-}
-
-impl RandomnessConfig {
-    pub fn max_partial_sigs_rounds_ahead(&self) -> u64 {
-        const MAX_PARTIAL_SIGS_ROUNDS_AHEAD: u64 = 50;
-
-        self.max_partial_sigs_rounds_ahead
-            .unwrap_or(MAX_PARTIAL_SIGS_ROUNDS_AHEAD)
-    }
-
-    pub fn max_partial_sigs_concurrent_sends(&self) -> usize {
-        const MAX_PARTIAL_SIGS_CONCURRENT_SENDS: usize = 20;
-
-        self.max_partial_sigs_concurrent_sends
-            .unwrap_or(MAX_PARTIAL_SIGS_CONCURRENT_SENDS)
-    }
-    pub fn partial_signature_retry_interval(&self) -> Duration {
-        const PARTIAL_SIGNATURE_RETRY_INTERVAL: u64 = 5_000; // 5 seconds
-
-        Duration::from_millis(
-            self.partial_signature_retry_interval_ms
-                .unwrap_or(PARTIAL_SIGNATURE_RETRY_INTERVAL),
-        )
-    }
-
-    pub fn mailbox_capacity(&self) -> usize {
-        const MAILBOX_CAPACITY: usize = 1_000_000;
-
-        self.mailbox_capacity.unwrap_or(MAILBOX_CAPACITY)
-    }
-
-    pub fn send_partial_signatures_inflight_limit(&self) -> usize {
-        const SEND_PARTIAL_SIGNATURES_INFLIGHT_LIMIT: usize = 20;
-
-        self.send_partial_signatures_inflight_limit
-            .unwrap_or(SEND_PARTIAL_SIGNATURES_INFLIGHT_LIMIT)
-    }
-
-    pub fn max_ignored_peer_weight_factor(&self) -> f64 {
-        const MAX_IGNORED_PEER_WEIGHT_FACTOR: f64 = 0.2;
-
-        self.max_ignored_peer_weight_factor
-            .unwrap_or(MAX_IGNORED_PEER_WEIGHT_FACTOR)
     }
 }

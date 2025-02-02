@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 #![allow(dead_code)]
 
 pub mod reader;
@@ -13,6 +13,10 @@ use anyhow::{anyhow, Result};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use bytes::Bytes;
 use fastcrypto::hash::{HashFunction, Sha3_256};
+use ika_config::node::ArchiveReaderConfig;
+use ika_config::object_storage_config::ObjectStoreConfig;
+use ika_types::messages_checkpoint::CheckpointSequenceNumber;
+use ika_types::storage::{SingleCheckpointSharedInMemoryStore, WriteStore};
 use indicatif::{ProgressBar, ProgressStyle};
 use num_enum::IntoPrimitive;
 use num_enum::TryFromPrimitive;
@@ -26,20 +30,14 @@ use std::ops::Range;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use ika_config::genesis::Genesis;
-use ika_config::node::ArchiveReaderConfig;
-use ika_config::object_storage_config::ObjectStoreConfig;
-use ika_storage::blob::{Blob, BlobEncoding};
-use ika_storage::object_store::util::{get, put};
-use ika_storage::object_store::{ObjectStoreGetExt, ObjectStorePutExt};
-use ika_storage::{compute_sha3_checksum, compute_sha3_checksum_for_bytes, SHA3_BYTES};
-use ika_types::base_types::ExecutionData;
-use ika_types::messages_checkpoint::{FullCheckpointContents, VerifiedCheckpointContents};
-use ika_types::storage::{SingleCheckpointSharedInMemoryStore, WriteStore};
+use sui_storage::blob::{Blob, BlobEncoding};
+use sui_storage::object_store::util::{get, put};
+use sui_storage::object_store::{ObjectStoreGetExt, ObjectStorePutExt};
+use sui_storage::{compute_sha3_checksum, compute_sha3_checksum_for_bytes, SHA3_BYTES};
 use tracing::{error, info};
 
 #[allow(rustdoc::invalid_html_tags)]
-/// Checkpoints and summaries are persisted as blob files. Files are committed to local store
+/// Checkpoints are persisted as blob files. Files are committed to local store
 /// by duration or file size. Committed files are synced with the remote store continuously. Files are
 /// optionally compressed with the zstd compression format. Filenames follow the format
 /// <checkpoint_seq_num>.<suffix> where `checkpoint_seq_num` is the first checkpoint present in that
@@ -49,17 +47,13 @@ use tracing::{error, info};
 ///  - archive/
 ///     - MANIFEST
 ///     - epoch_0/
-///        - 0.chk
-///        - 0.sum
-///        - 1000.chk
-///        - 1000.sum
-///        - 3000.chk
-///        - 3000.sum
+///        - 0.ika_checkpoint
+///        - 1000.ika_checkpoint
+///        - 3000.ika_checkpoint
 ///        - ...
-///        - 100000.chk
-///        - 100000.sum
+///        - 100000.ika_checkpoint
 ///     - epoch_1/
-///        - 101000.chk
+///        - 101000.ika_checkpoint
 ///        - ...
 ///
 /// Blob File Disk Format
@@ -91,12 +85,10 @@ use tracing::{error, info};
 ///├──────────────────────────────┤
 ///│      sha3 <32 bytes>         │
 ///└──────────────────────────────┘
-pub const CHECKPOINT_FILE_MAGIC: u32 = 0x0000DEAD;
-pub const SUMMARY_FILE_MAGIC: u32 = 0x0000CAFE;
+pub const CHECKPOINT_MESSAGE_FILE_MAGIC: u32 = 0x0000DEAD;
 const MANIFEST_FILE_MAGIC: u32 = 0x00C0FFEE;
 const MAGIC_BYTES: usize = 4;
-const CHECKPOINT_FILE_SUFFIX: &str = "chk";
-const SUMMARY_FILE_SUFFIX: &str = "sum";
+const CHECKPOINT_FILE_SUFFIX: &str = "ika_checkpoint";
 const EPOCH_DIR_PREFIX: &str = "epoch_";
 const MANIFEST_FILENAME: &str = "MANIFEST";
 
@@ -105,8 +97,7 @@ const MANIFEST_FILENAME: &str = "MANIFEST";
 )]
 #[repr(u8)]
 pub enum FileType {
-    CheckpointContent = 0,
-    CheckpointSummary,
+    CheckpointMessage = 0,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
@@ -121,12 +112,8 @@ impl FileMetadata {
     pub fn file_path(&self) -> Path {
         let dir_path = Path::from(format!("{}{}", EPOCH_DIR_PREFIX, self.epoch_num));
         match self.file_type {
-            FileType::CheckpointContent => dir_path.child(&*format!(
+            FileType::CheckpointMessage => dir_path.child(&*format!(
                 "{}.{CHECKPOINT_FILE_SUFFIX}",
-                self.checkpoint_seq_range.start
-            )),
-            FileType::CheckpointSummary => dir_path.child(&*format!(
-                "{}.{SUMMARY_FILE_SUFFIX}",
                 self.checkpoint_seq_range.start
             )),
         }
@@ -177,7 +164,7 @@ impl Manifest {
                     .file_metadata
                     .clone()
                     .into_iter()
-                    .filter(|f| f.file_type == FileType::CheckpointSummary)
+                    .filter(|f| f.file_type == FileType::CheckpointMessage)
                     .collect();
                 summary_files.sort_by_key(|f| f.checkpoint_seq_range.start);
                 assert!(summary_files
@@ -197,13 +184,12 @@ impl Manifest {
         epoch_num: u64,
         checkpoint_sequence_number: u64,
         checkpoint_file_metadata: FileMetadata,
-        summary_file_metadata: FileMetadata,
     ) {
         match self {
             Manifest::V1(manifest) => {
                 manifest
                     .file_metadata
-                    .extend(vec![checkpoint_file_metadata, summary_file_metadata]);
+                    .extend(vec![checkpoint_file_metadata]);
                 manifest.epoch = epoch_num;
                 manifest.next_checkpoint_seq_num = checkpoint_sequence_number;
             }
@@ -214,7 +200,6 @@ impl Manifest {
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct CheckpointUpdates {
     checkpoint_file_metadata: FileMetadata,
-    summary_file_metadata: FileMetadata,
     manifest: Manifest,
 }
 
@@ -223,18 +208,15 @@ impl CheckpointUpdates {
         epoch_num: u64,
         checkpoint_sequence_number: u64,
         checkpoint_file_metadata: FileMetadata,
-        summary_file_metadata: FileMetadata,
         manifest: &mut Manifest,
     ) -> Self {
         manifest.update(
             epoch_num,
             checkpoint_sequence_number,
             checkpoint_file_metadata.clone(),
-            summary_file_metadata.clone(),
         );
         CheckpointUpdates {
             checkpoint_file_metadata,
-            summary_file_metadata,
             manifest: manifest.clone(),
         }
     }
@@ -242,7 +224,7 @@ impl CheckpointUpdates {
         self.checkpoint_file_metadata.file_path()
     }
     pub fn summary_file_path(&self) -> Path {
-        self.summary_file_metadata.file_path()
+        self.checkpoint_file_metadata.file_path()
     }
     pub fn manifest_file_path(&self) -> Path {
         Path::from(MANIFEST_FILENAME)
@@ -363,54 +345,6 @@ pub async fn write_manifest_from_json(
     Ok(())
 }
 
-pub async fn verify_archive_with_genesis_config(
-    genesis: &std::path::Path,
-    remote_store_config: ObjectStoreConfig,
-    concurrency: usize,
-    interactive: bool,
-    num_retries: u32,
-) -> Result<()> {
-    let genesis = Genesis::load(genesis).unwrap();
-    let genesis_committee = genesis.committee()?;
-    let mut store = SingleCheckpointSharedInMemoryStore::default();
-    let contents = genesis.checkpoint_contents();
-    let fullcheckpoint_contents = FullCheckpointContents::from_contents_and_execution_data(
-        contents.clone(),
-        std::iter::once(ExecutionData::new(
-            genesis.transaction().clone(),
-            genesis.effects().clone(),
-        )),
-    );
-    store.insert_genesis_state(
-        genesis.checkpoint(),
-        VerifiedCheckpointContents::new_unchecked(fullcheckpoint_contents),
-        genesis_committee,
-    );
-
-    let num_retries = std::cmp::max(num_retries, 1);
-    for _ in 0..num_retries {
-        match verify_archive_with_local_store(
-            store.clone(),
-            remote_store_config.clone(),
-            concurrency,
-            interactive,
-        )
-        .await
-        {
-            Ok(_) => return Ok(()),
-            Err(e) => {
-                error!("Error while verifying archive: {}", e);
-                tokio::time::sleep(Duration::from_secs(10)).await;
-            }
-        }
-    }
-
-    Err::<(), anyhow::Error>(anyhow!(
-        "Failed to verify archive after {} retries",
-        num_retries
-    ))
-}
-
 pub async fn verify_archive_with_checksums(
     remote_store_config: ObjectStoreConfig,
     concurrency: usize,
@@ -464,9 +398,10 @@ where
     let latest_checkpoint = store
         .get_highest_synced_checkpoint()
         .map_err(|_| anyhow!("Failed to read highest synced checkpoint"))?
-        .sequence_number;
+        .map(|c| c.sequence_number)
+        .unwrap_or(0);
     info!("Highest synced checkpoint in db: {latest_checkpoint}");
-    let txn_counter = Arc::new(AtomicU64::new(0));
+    let action_counter = Arc::new(AtomicU64::new(0));
     let checkpoint_counter = Arc::new(AtomicU64::new(0));
     let progress_bar = if interactive {
         let progress_bar = ProgressBar::new(latest_checkpoint_in_archive).with_style(
@@ -474,7 +409,7 @@ where
                 .unwrap(),
         );
         let cloned_progress_bar = progress_bar.clone();
-        let cloned_counter = txn_counter.clone();
+        let cloned_counter = action_counter.clone();
         let cloned_checkpoint_counter = checkpoint_counter.clone();
         let instant = Instant::now();
         tokio::spawn(async move {
@@ -500,7 +435,8 @@ where
                 let latest_checkpoint = cloned_store
                     .get_highest_synced_checkpoint()
                     .map_err(|_| anyhow!("Failed to read highest synced checkpoint"))?
-                    .sequence_number;
+                    .map(|c| c.sequence_number)
+                    .unwrap_or(0);
                 let percent = (latest_checkpoint * 100) / latest_checkpoint_in_archive;
                 info!("done = {percent}%");
                 tokio::time::sleep(Duration::from_secs(60)).await;
@@ -516,16 +452,16 @@ where
         .read(
             store.clone(),
             (latest_checkpoint + 1)..u64::MAX,
-            txn_counter,
+            action_counter,
             checkpoint_counter,
-            true,
         )
         .await?;
     progress_bar.iter().for_each(|p| p.finish_and_clear());
     let end = store
         .get_highest_synced_checkpoint()
         .map_err(|_| anyhow!("Failed to read watermark"))?
-        .sequence_number;
+        .map(|c| c.sequence_number)
+        .unwrap_or(0);
     info!("Highest verified checkpoint: {}", end);
     Ok(())
 }

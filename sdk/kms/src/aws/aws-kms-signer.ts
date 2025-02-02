@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import type { PublicKey, SignatureFlag } from '@ika-io/ika/cryptography';
 import { SIGNATURE_FLAG_TO_SCHEME, Signer } from '@ika-io/ika/cryptography';
 import { fromBase64, toBase64 } from '@ika-io/ika/utils';

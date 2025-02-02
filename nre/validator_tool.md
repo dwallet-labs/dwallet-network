@@ -142,7 +142,7 @@ if the account is a delegatee.
 To become a validator candidate, first run
 
 ```bash
-$IKA_BINARY validator make-validator-info <name> <description> <image-url> <project-url> <host-name> <gas_price>
+$IKA_BINARY validator make-validator-info <name> <description> <image-url> <project-url> <host-name> <computation_price>
 ```
 
 This will generate a `validator.info` file and key pair files. The output of this command includes:

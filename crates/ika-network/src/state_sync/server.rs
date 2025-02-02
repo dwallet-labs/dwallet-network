@@ -1,40 +1,44 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{PeerHeights, StateSync, StateSyncMessage};
 use anemo::{rpc::Status, types::response::StatusCode, Request, Response, Result};
 use dashmap::DashMap;
 use futures::future::BoxFuture;
-use serde::{Deserialize, Serialize};
-use std::sync::{Arc, RwLock};
-use std::task::{Context, Poll};
+use ika_types::digests::ChainIdentifier;
 use ika_types::{
-    digests::{CheckpointContentsDigest, CheckpointDigest},
+    digests::{CheckpointContentsDigest, CheckpointMessageDigest},
     messages_checkpoint::{
-        CertifiedCheckpointSummary as Checkpoint, CheckpointSequenceNumber, FullCheckpointContents,
-        VerifiedCheckpoint,
+        CertifiedCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
     },
     storage::WriteStore,
 };
+use serde::{Deserialize, Serialize};
+use std::sync::{Arc, RwLock};
+use std::task::{Context, Poll};
 use tokio::sync::{mpsc, OwnedSemaphorePermit, Semaphore};
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum GetCheckpointSummaryRequest {
-    Latest,
-    ByDigest(CheckpointDigest),
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
+pub enum GetCheckpointMessageRequest {
+    ByDigest(CheckpointMessageDigest),
     BySequenceNumber(CheckpointSequenceNumber),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GetCheckpointAvailabilityResponse {
-    pub(crate) highest_synced_checkpoint: Checkpoint,
-    pub(crate) lowest_available_checkpoint: CheckpointSequenceNumber,
+    pub(crate) highest_synced_checkpoint: Option<CertifiedCheckpointMessage>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GetChainIdentifierResponse {
+    pub(crate) chain_identifier: ChainIdentifier,
 }
 
 pub(super) struct Server<S> {
     pub(super) store: S,
     pub(super) peer_heights: Arc<RwLock<PeerHeights>>,
     pub(super) sender: mpsc::WeakSender<StateSyncMessage>,
+    pub(crate) chain_identifier: ChainIdentifier,
 }
 
 #[anemo::async_trait]
@@ -42,9 +46,9 @@ impl<S> StateSync for Server<S>
 where
     S: WriteStore + Send + Sync + 'static,
 {
-    async fn push_checkpoint_summary(
+    async fn push_checkpoint_message(
         &self,
-        request: Request<Checkpoint>,
+        request: Request<CertifiedCheckpointMessage>,
     ) -> Result<Response<()>, Status> {
         let peer_id = request
             .peer_id()
@@ -56,20 +60,23 @@ where
             .peer_heights
             .write()
             .unwrap()
-            .update_peer_info(peer_id, checkpoint.clone(), None)
+            .update_peer_info(peer_id, checkpoint.clone())
         {
             return Ok(Response::new(()));
         }
 
-        let highest_verified_checkpoint = *self
+        let highest_verified_checkpoint = self
             .store
             .get_highest_verified_checkpoint()
-            .map_err(|e| Status::internal(e.to_string()))?
-            .sequence_number();
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        let should_sync = highest_verified_checkpoint
+            .map(|c| *checkpoint.sequence_number() > c.sequence_number)
+            .unwrap_or(true);
 
         // If this checkpoint is higher than our highest verified checkpoint notify the
         // event loop to potentially sync it
-        if *checkpoint.sequence_number() > highest_verified_checkpoint {
+        if should_sync {
             if let Some(sender) = self.sender.upgrade() {
                 sender.send(StateSyncMessage::StartSyncJob).await.unwrap();
             }
@@ -78,23 +85,20 @@ where
         Ok(Response::new(()))
     }
 
-    async fn get_checkpoint_summary(
+    async fn get_checkpoint_message(
         &self,
-        request: Request<GetCheckpointSummaryRequest>,
-    ) -> Result<Response<Option<Checkpoint>>, Status> {
+        request: Request<GetCheckpointMessageRequest>,
+    ) -> Result<Response<Option<CertifiedCheckpointMessage>>, Status> {
         let checkpoint = match request.inner() {
-            GetCheckpointSummaryRequest::Latest => {
-                self.store.get_highest_synced_checkpoint().map(Some)
-            }
-            GetCheckpointSummaryRequest::ByDigest(digest) => {
+            GetCheckpointMessageRequest::ByDigest(digest) => {
                 self.store.get_checkpoint_by_digest(digest)
             }
-            GetCheckpointSummaryRequest::BySequenceNumber(sequence_number) => self
+            GetCheckpointMessageRequest::BySequenceNumber(sequence_number) => self
                 .store
                 .get_checkpoint_by_sequence_number(*sequence_number),
         }
         .map_err(|e| Status::internal(e.to_string()))?
-        .map(VerifiedCheckpoint::into_inner);
+        .map(VerifiedCheckpointMessage::into_inner);
 
         Ok(Response::new(checkpoint))
     }
@@ -106,40 +110,33 @@ where
         let highest_synced_checkpoint = self
             .store
             .get_highest_synced_checkpoint()
-            .map_err(|e| Status::internal(e.to_string()))
-            .map(VerifiedCheckpoint::into_inner)?;
-        let lowest_available_checkpoint = self
-            .store
-            .get_lowest_available_checkpoint()
-            .map_err(|e| Status::internal(e.to_string()))?;
+            .map_err(|e| Status::internal(e.to_string()))?
+            .map(VerifiedCheckpointMessage::into_inner);
 
         Ok(Response::new(GetCheckpointAvailabilityResponse {
             highest_synced_checkpoint,
-            lowest_available_checkpoint,
         }))
     }
 
-    async fn get_checkpoint_contents(
+    async fn get_chain_identifier(
         &self,
-        request: Request<CheckpointContentsDigest>,
-    ) -> Result<Response<Option<FullCheckpointContents>>, Status> {
-        let contents = self
-            .store
-            .get_full_checkpoint_contents(request.inner())
-            .map_err(|e| Status::internal(e.to_string()))?;
-        Ok(Response::new(contents))
+        _request: Request<()>,
+    ) -> Result<Response<GetChainIdentifierResponse>, Status> {
+        Ok(Response::new(GetChainIdentifierResponse {
+            chain_identifier: self.chain_identifier,
+        }))
     }
 }
 
 /// [`Layer`] for adding a per-checkpoint limit to the number of inflight GetCheckpointContent
 /// requests.
 #[derive(Clone)]
-pub(super) struct CheckpointContentsDownloadLimitLayer {
-    inflight_per_checkpoint: Arc<DashMap<CheckpointContentsDigest, Arc<Semaphore>>>,
+pub(super) struct CheckpointMessageDownloadLimitLayer {
+    inflight_per_checkpoint: Arc<DashMap<GetCheckpointMessageRequest, Arc<Semaphore>>>,
     max_inflight_per_checkpoint: usize,
 }
 
-impl CheckpointContentsDownloadLimitLayer {
+impl CheckpointMessageDownloadLimitLayer {
     pub(super) fn new(max_inflight_per_checkpoint: usize) -> Self {
         Self {
             inflight_per_checkpoint: Arc::new(DashMap::new()),
@@ -157,11 +154,11 @@ impl CheckpointContentsDownloadLimitLayer {
     }
 }
 
-impl<S> tower::layer::Layer<S> for CheckpointContentsDownloadLimitLayer {
-    type Service = CheckpointContentsDownloadLimit<S>;
+impl<S> tower::layer::Layer<S> for CheckpointMessageDownloadLimitLayer {
+    type Service = CheckpointMessageDownloadLimit<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        CheckpointContentsDownloadLimit {
+        CheckpointMessageDownloadLimit {
             inner,
             inflight_per_checkpoint: self.inflight_per_checkpoint.clone(),
             max_inflight_per_checkpoint: self.max_inflight_per_checkpoint,
@@ -172,26 +169,26 @@ impl<S> tower::layer::Layer<S> for CheckpointContentsDownloadLimitLayer {
 /// Middleware for adding a per-checkpoint limit to the number of inflight GetCheckpointContent
 /// requests.
 #[derive(Clone)]
-pub(super) struct CheckpointContentsDownloadLimit<S> {
+pub(super) struct CheckpointMessageDownloadLimit<S> {
     inner: S,
-    inflight_per_checkpoint: Arc<DashMap<CheckpointContentsDigest, Arc<Semaphore>>>,
+    inflight_per_checkpoint: Arc<DashMap<GetCheckpointMessageRequest, Arc<Semaphore>>>,
     max_inflight_per_checkpoint: usize,
 }
 
-impl<S> tower::Service<Request<CheckpointContentsDigest>> for CheckpointContentsDownloadLimit<S>
+impl<S> tower::Service<Request<GetCheckpointMessageRequest>> for CheckpointMessageDownloadLimit<S>
 where
     S: tower::Service<
-            Request<CheckpointContentsDigest>,
-            Response = Response<Option<FullCheckpointContents>>,
+            Request<GetCheckpointMessageRequest>,
+            Response = Response<Option<CertifiedCheckpointMessage>>,
             Error = Status,
         >
         + 'static
         + Clone
         + Send,
-    <S as tower::Service<Request<CheckpointContentsDigest>>>::Future: Send,
-    Request<CheckpointContentsDigest>: 'static + Send + Sync,
+    <S as tower::Service<Request<GetCheckpointMessageRequest>>>::Future: Send,
+    Request<GetCheckpointMessageRequest>: 'static + Send + Sync,
 {
-    type Response = Response<Option<FullCheckpointContents>>;
+    type Response = Response<Option<CertifiedCheckpointMessage>>;
     type Error = S::Error;
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
@@ -200,7 +197,7 @@ where
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, req: Request<CheckpointContentsDigest>) -> Self::Future {
+    fn call(&mut self, req: Request<GetCheckpointMessageRequest>) -> Self::Future {
         let inflight_per_checkpoint = self.inflight_per_checkpoint.clone();
         let max_inflight_per_checkpoint = self.max_inflight_per_checkpoint;
         let mut inner = self.inner.clone();

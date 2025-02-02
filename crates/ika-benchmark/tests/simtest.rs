@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[cfg(msim)]
 mod test {
@@ -48,7 +48,7 @@ mod test {
     use ika_types::supported_protocol_versions::SupportedProtocolVersions;
     use ika_types::traffic_control::{FreqThresholdConfig, PolicyConfig, PolicyType};
     use ika_types::transaction::{
-        DEFAULT_VALIDATOR_GAS_PRICE, TEST_ONLY_GAS_UNIT_FOR_HEAVY_COMPUTATION_STORAGE,
+        DEFAULT_VALIDATOR_COMPUTATION_PRICE, TEST_ONLY_GAS_UNIT_FOR_HEAVY_COMPUTATION_STORAGE,
     };
     use test_cluster::{TestCluster, TestClusterBuilder};
     use tracing::{error, info, trace};
@@ -511,7 +511,7 @@ mod test {
 
         let _guard = ProtocolConfig::apply_overrides_for_testing(move |_, mut config| {
             let total_gas_limit = checkpoint_budget_factor
-                * DEFAULT_VALIDATOR_GAS_PRICE
+                * DEFAULT_VALIDATOR_COMPUTATION_PRICE
                 * TEST_ONLY_GAS_UNIT_FOR_HEAVY_COMPUTATION_STORAGE;
             config.set_per_object_congestion_control_mode_for_testing(mode);
             match mode {
@@ -565,7 +565,7 @@ mod test {
             };
             simulated_load_config.shared_counter_hotness_factor = rng.gen_range(50..=100);
 
-            // Use shared_counter_max_tip to make transactions to have different gas prices.
+            // Use shared_counter_max_tip to make transactions to have different computation prices.
             simulated_load_config.use_shared_counter_max_tip = rng.gen_bool(0.25);
             simulated_load_config.shared_counter_max_tip = rng.gen_range(1..=1000);
             info!("Simulated load config: {:?}", simulated_load_config);
@@ -1006,7 +1006,7 @@ mod test {
         let system_state_observer = {
             let mut system_state_observer = SystemStateObserver::new(proxy.clone());
             if let Ok(_) = system_state_observer.state.changed().await {
-                info!("Got the new state (reference gas price and/or protocol config) from system state object");
+                info!("Got the new state (computation price per unit size and/or protocol config) from system state object");
             }
             Arc::new(system_state_observer)
         };

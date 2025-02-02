@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // This file contains tests that detect changes in Ika configs.
 // If a PR breaks one or more tests here, the PR probably has a real impact
@@ -17,21 +17,21 @@
 // 2. Review, accept or reject changes.
 
 use fastcrypto::traits::KeyPair;
+use ika_config::genesis::{GenesisCeremonyParameters, TokenDistributionScheduleBuilder};
+use ika_config::node::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_COMPUTATION_PRICE};
+use ika_genesis_builder::validator_info::ValidatorInfo;
+use ika_genesis_builder::Builder;
+use ika_swarm_config::validator_initialization_config::GenesisConfig;
+use ika_types::base_types::IkaAddress;
+use ika_types::crypto::{
+    generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,
+    IkaKeyPair, NetworkKeyPair,
+};
+use ika_types::multiaddr::Multiaddr;
 use insta::assert_yaml_snapshot;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use std::num::NonZeroUsize;
-use ika_config::genesis::{GenesisCeremonyParameters, TokenDistributionScheduleBuilder};
-use ika_config::node::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_GAS_PRICE};
-use ika_genesis_builder::validator_info::ValidatorInfo;
-use ika_genesis_builder::Builder;
-use ika_swarm_config::genesis_config::GenesisConfig;
-use ika_types::base_types::IkaAddress;
-use ika_types::crypto::{
-    generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,
-    NetworkKeyPair, IkaKeyPair,
-};
-use ika_types::multiaddr::Multiaddr;
 
 #[test]
 #[cfg_attr(msim, ignore)]
@@ -65,11 +65,11 @@ fn populated_genesis_snapshot_matches() {
         worker_key: worker_key.public().clone(),
         account_address: IkaAddress::from(account_key.public()),
         network_key: network_key.public().clone(),
-        gas_price: DEFAULT_VALIDATOR_GAS_PRICE,
+        computation_price: DEFAULT_VALIDATOR_COMPUTATION_PRICE,
         commission_rate: DEFAULT_COMMISSION_RATE,
         network_address: "/ip4/127.0.0.1/tcp/80".parse().unwrap(),
         p2p_address: "/ip4/127.0.0.1/udp/80".parse().unwrap(),
-        narwhal_primary_address: "/ip4/127.0.0.1/udp/80".parse().unwrap(),
+        consensus_address: "/ip4/127.0.0.1/udp/80".parse().unwrap(),
         narwhal_worker_address: "/ip4/127.0.0.1/udp/80".parse().unwrap(),
         description: String::new(),
         image_url: String::new(),
@@ -106,9 +106,9 @@ fn populated_genesis_snapshot_matches() {
 #[test]
 #[cfg_attr(msim, ignore)]
 fn network_config_snapshot_matches() {
+    use ika_swarm_config::network_config_builder::ConfigBuilder;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::path::PathBuf;
-    use ika_swarm_config::network_config_builder::ConfigBuilder;
 
     let temp_dir = tempfile::tempdir().unwrap();
     let committee_size = 7;

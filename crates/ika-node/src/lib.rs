@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anemo::Network;
 use anemo::PeerId;
@@ -13,7 +13,7 @@ use arc_swap::ArcSwap;
 use fastcrypto_zkp::bn254::zk_login::JwkId;
 use fastcrypto_zkp::bn254::zk_login::OIDCProvider;
 use futures::TryFutureExt;
-use mysten_network::server::IKA_TLS_SERVER_NAME;
+use mysten_network::server::SUI_TLS_SERVER_NAME;
 use prometheus::Registry;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt;
@@ -24,26 +24,15 @@ use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Weak};
 use std::time::Duration;
-use ika_core::authority::authority_store_tables::AuthorityPerpetualTablesOptions;
-use ika_core::authority::epoch_start_configuration::EpochFlag;
-use ika_core::authority::RandomnessRoundReceiver;
-use ika_core::authority::CHAIN_IDENTIFIER;
+
 use ika_core::consensus_adapter::ConsensusClient;
 use ika_core::consensus_manager::UpdatableConsensusClient;
-use ika_core::epoch::randomness::RandomnessManager;
-use ika_core::execution_cache::build_execution_cache;
-use ika_core::state_accumulator::StateAccumulatorMetrics;
-use ika_core::storage::RestReadStore;
-use ika_core::traffic_controller::metrics::TrafficControllerMetrics;
-use ika_json_rpc::bridge_api::BridgeReadApi;
-use ika_json_rpc_api::JsonRpcMetrics;
-use ika_network::randomness;
-use ika_rest_api::RestMetrics;
-use ika_types::base_types::ConciseableName;
-use ika_types::crypto::RandomnessRound;
+
 use ika_types::digests::ChainIdentifier;
-use ika_types::messages_consensus::AuthorityCapabilitiesV2;
-use ika_types::ika_system_state::IkaSystemState;
+use ika_types::digests::CheckpointMessageDigest;
+use ika_types::sui::SystemInner;
+use sui_types::base_types::{random_object_ref, ConciseableName};
+use sui_types::crypto::RandomnessRound;
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
 use tokio::sync::{broadcast, mpsc, watch, Mutex};
@@ -54,23 +43,16 @@ use tracing::{error_span, info, Instrument};
 
 use fastcrypto_zkp::bn254::zk_login::JWK;
 pub use handle::IkaNodeHandle;
-use mysten_metrics::{spawn_monitored_task, RegistryService};
-use mysten_network::server::ServerBuilder;
-use mysten_service::server_timing::server_timing_middleware;
 use ika_archival::reader::ArchiveReaderBalancer;
 use ika_archival::writer::ArchiveWriter;
-use ika_config::node::{DBCheckpointConfig, RunWithRange};
+use ika_config::node::RunWithRange;
 use ika_config::node_config_metrics::NodeConfigMetrics;
 use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use ika_config::{ConsensusConfig, NodeConfig};
 use ika_core::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use ika_core::authority::authority_store_tables::AuthorityPerpetualTables;
 use ika_core::authority::epoch_start_configuration::EpochStartConfigTrait;
 use ika_core::authority::epoch_start_configuration::EpochStartConfiguration;
-use ika_core::authority_aggregator::{AuthAggMetrics, AuthorityAggregator};
-use ika_core::authority_server::{ValidatorService, ValidatorServiceMetrics};
-use ika_core::checkpoints::checkpoint_executor::metrics::CheckpointExecutorMetrics;
-use ika_core::checkpoints::checkpoint_executor::{CheckpointExecutor, StopReason};
+use ika_core::authority::AuthorityState;
 use ika_core::checkpoints::{
     CheckpointMetrics, CheckpointService, CheckpointStore, SendCheckpointToStateSync,
     SubmitCheckpointToConsensus,
@@ -83,56 +65,35 @@ use ika_core::consensus_throughput_calculator::{
     ConsensusThroughputCalculator, ConsensusThroughputProfiler, ThroughputProfileRanges,
 };
 use ika_core::consensus_validator::{IkaTxValidator, IkaTxValidatorMetrics};
-use ika_core::db_checkpoint_handler::DBCheckpointHandler;
 use ika_core::epoch::committee_store::CommitteeStore;
 use ika_core::epoch::consensus_store_pruner::ConsensusStorePruner;
 use ika_core::epoch::epoch_metrics::EpochMetrics;
 use ika_core::epoch::reconfiguration::ReconfigurationInitiator;
-use ika_core::jsonrpc_index::IndexStore;
-use ika_core::module_cache_metrics::ResolverMetrics;
-use ika_core::overload_monitor::overload_monitor;
-use ika_core::rest_index::RestIndexStore;
-use ika_core::signature_verifier::SignatureVerifierMetrics;
-use ika_core::state_accumulator::StateAccumulator;
 use ika_core::storage::RocksDbStore;
-use ika_core::transaction_orchestrator::TransactiondOrchestrator;
-use ika_core::{
-    authority::{AuthorityState, AuthorityStore},
-    authority_client::NetworkAuthorityClient,
-};
-use ika_json_rpc::coin_api::CoinReadApi;
-use ika_json_rpc::governance_api::GovernanceReadApi;
-use ika_json_rpc::indexer_api::IndexerApi;
-use ika_json_rpc::move_utils::MoveUtils;
-use ika_json_rpc::read_api::ReadApi;
-use ika_json_rpc::transaction_builder_api::TransactionBuilderApi;
-use ika_json_rpc::transaction_execution_api::TransactionExecutionApi;
-use ika_json_rpc::JsonRpcServerBuilder;
-use ika_macros::fail_point;
-use ika_macros::{fail_point_async, replay_log};
-use ika_network::api::ValidatorServer;
+use mysten_metrics::{spawn_monitored_task, RegistryService};
+use mysten_network::server::ServerBuilder;
+use mysten_service::server_timing::server_timing_middleware;
+
 use ika_network::discovery;
 use ika_network::discovery::TrustedPeerChangeEvent;
 use ika_network::state_sync;
 use ika_protocol_config::{Chain, ProtocolConfig};
-use ika_snapshot::uploader::StateSnapshotUploader;
-use ika_storage::{
-    http_key_value_store::HttpKVStore,
-    key_value_store::{FallbackTransactionKVStore, TransactionKeyValueStore},
-    key_value_store_metrics::KeyValueStoreMetrics,
-};
-use ika_storage::{FileCompression, StorageFormat};
-use ika_types::base_types::{AuthorityName, EpochId};
+use sui_macros::fail_point;
+use sui_macros::{fail_point_async, replay_log};
+use sui_storage::{FileCompression, StorageFormat};
+use sui_types::base_types::EpochId;
+
 use ika_types::committee::Committee;
-use ika_types::crypto::KeypairTraits;
+use ika_types::crypto::AuthorityName;
 use ika_types::error::{IkaError, IkaResult};
-use ika_types::messages_consensus::{
-    check_total_jwk_size, AuthorityCapabilitiesV1, ConsensusTransaction,
-};
+use ika_types::messages_consensus::{AuthorityCapabilitiesV1, ConsensusTransaction};
 use ika_types::quorum_driver_types::QuorumDriverEffectsQueueResult;
-use ika_types::ika_system_state::epoch_start_ika_system_state::EpochStartSystemState;
-use ika_types::ika_system_state::epoch_start_ika_system_state::EpochStartSystemStateTrait;
-use ika_types::ika_system_state::IkaSystemStateTrait;
+use ika_types::sui::epoch_start_system::EpochStartSystem;
+use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
+use ika_types::sui::SystemInnerTrait;
+use sui_types::crypto::KeypairTraits;
+
+use ika_core::consensus_adapter::SubmitToConsensus;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use typed_store::rocks::default_db_options;
 use typed_store::DBMetrics;
@@ -144,8 +105,6 @@ mod handle;
 pub mod metrics;
 
 pub struct ValidatorComponents {
-    validator_server_handle: JoinHandle<Result<()>>,
-    validator_overload_monitor_handle: Option<JoinHandle<()>>,
     consensus_manager: ConsensusManager,
     consensus_store_pruner: ConsensusStorePruner,
     consensus_adapter: Arc<ConsensusAdapter>,
@@ -159,7 +118,6 @@ pub struct P2pComponents {
     known_peers: HashMap<PeerId, String>,
     discovery_handle: discovery::Handle,
     state_sync_handle: state_sync::Handle,
-    randomness_handle: randomness::Handle,
 }
 
 #[cfg(msim)]
@@ -214,56 +172,47 @@ mod simulator {
     }
 }
 
+use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
+use ika_core::consensus_handler::ConsensusHandlerInitializer;
+use ika_core::sui_connector::metrics::SuiConnectorMetrics;
+use ika_core::sui_connector::sui_executor::StopReason;
+use ika_core::sui_connector::SuiConnectorService;
+use ika_sui_client::metrics::SuiClientMetrics;
+use ika_sui_client::SuiClient;
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
 #[cfg(msim)]
 use simulator::*;
-use ika_core::{
-    consensus_handler::ConsensusHandlerInitializer, safe_client::SafeClientMetricsBase,
-    validator_tx_finalizer::ValidatorTxFinalizer,
-};
-use ika_types::execution_config_utils::to_binary_config;
+use sui_types::execution_config_utils::to_binary_config;
 
 pub struct IkaNode {
     config: NodeConfig,
     validator_components: Mutex<Option<ValidatorComponents>>,
-    /// The http server responsible for serving JSON-RPC as well as the experimental rest service
-    _http_server: Option<tokio::task::JoinHandle<()>>,
+
     state: Arc<AuthorityState>,
-    transaction_orchestrator: Option<Arc<TransactiondOrchestrator<NetworkAuthorityClient>>>,
     registry_service: RegistryService,
     metrics: Arc<IkaNodeMetrics>,
 
     _discovery: discovery::Handle,
     _connection_monitor_handle: consensus_core::ConnectionMonitorHandle,
     state_sync_handle: state_sync::Handle,
-    randomness_handle: randomness::Handle,
     checkpoint_store: Arc<CheckpointStore>,
-    accumulator: Mutex<Option<Arc<StateAccumulator>>>,
     connection_monitor_status: Arc<ConnectionMonitorStatus>,
 
     /// Broadcast channel to send the starting system state for the next epoch.
-    end_of_epoch_channel: broadcast::Sender<IkaSystemState>,
+    end_of_epoch_channel: broadcast::Sender<SystemInner>,
 
     /// Broadcast channel to notify state-sync for new validator peers.
     trusted_peer_change_tx: watch::Sender<TrustedPeerChangeEvent>,
 
-    _db_checkpoint_handle: Option<tokio::sync::broadcast::Sender<()>>,
-
     #[cfg(msim)]
     sim_state: SimState,
 
+    sui_connector_service: Arc<SuiConnectorService>,
+
     _state_archive_handle: Option<broadcast::Sender<()>>,
 
-    _state_snapshot_uploader_handle: Option<broadcast::Sender<()>>,
-    // Channel to allow signaling upstream to shutdown ika-node
     shutdown_channel_tx: broadcast::Sender<Option<RunWithRange>>,
-
-    /// AuthorityAggregator of the network, created at start and beginning of each epoch.
-    /// Use ArcSwap so that we could mutate it without taking mut reference.
-    // TODO: Eventually we can make this auth aggregator a shared reference so that this
-    // update will automatically propagate to other uses.
-    auth_agg: Arc<ArcSwap<AuthorityAggregator<NetworkAuthorityClient>>>,
 }
 
 impl fmt::Debug for IkaNode {
@@ -274,156 +223,18 @@ impl fmt::Debug for IkaNode {
     }
 }
 
-static MAX_JWK_KEYS_PER_FETCH: usize = 100;
-
 impl IkaNode {
     pub async fn start(
         config: NodeConfig,
         registry_service: RegistryService,
         custom_rpc_runtime: Option<Handle>,
     ) -> Result<Arc<IkaNode>> {
-        Self::start_async(config, registry_service, custom_rpc_runtime, "unknown").await
-    }
-
-    fn start_jwk_updater(
-        config: &NodeConfig,
-        metrics: Arc<IkaNodeMetrics>,
-        authority: AuthorityName,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-        consensus_adapter: Arc<ConsensusAdapter>,
-    ) {
-        let epoch = epoch_store.epoch();
-
-        let supported_providers = config
-            .zklogin_oauth_providers
-            .get(&epoch_store.get_chain_identifier().chain())
-            .unwrap_or(&BTreeSet::new())
-            .iter()
-            .map(|s| OIDCProvider::from_str(s).expect("Invalid provider string"))
-            .collect::<Vec<_>>();
-
-        let fetch_interval = Duration::from_secs(config.jwk_fetch_interval_seconds);
-
-        info!(
-            ?fetch_interval,
-            "Starting JWK updater tasks with supported providers: {:?}", supported_providers
-        );
-
-        fn validate_jwk(
-            metrics: &Arc<IkaNodeMetrics>,
-            provider: &OIDCProvider,
-            id: &JwkId,
-            jwk: &JWK,
-        ) -> bool {
-            let Ok(iss_provider) = OIDCProvider::from_iss(&id.iss) else {
-                warn!(
-                    "JWK iss {:?} (retrieved from {:?}) is not a valid provider",
-                    id.iss, provider
-                );
-                metrics
-                    .invalid_jwks
-                    .with_label_values(&[&provider.to_string()])
-                    .inc();
-                return false;
-            };
-
-            if iss_provider != *provider {
-                warn!(
-                    "JWK iss {:?} (retrieved from {:?}) does not match provider {:?}",
-                    id.iss, provider, iss_provider
-                );
-                metrics
-                    .invalid_jwks
-                    .with_label_values(&[&provider.to_string()])
-                    .inc();
-                return false;
-            }
-
-            if !check_total_jwk_size(id, jwk) {
-                warn!("JWK {:?} (retrieved from {:?}) is too large", id, provider);
-                metrics
-                    .invalid_jwks
-                    .with_label_values(&[&provider.to_string()])
-                    .inc();
-                return false;
-            }
-
-            true
-        }
-
-        // metrics is:
-        //  pub struct IkaNodeMetrics {
-        //      pub jwk_requests: IntCounterVec,
-        //      pub jwk_request_errors: IntCounterVec,
-        //      pub total_jwks: IntCounterVec,
-        //      pub unique_jwks: IntCounterVec,
-        //  }
-
-        for p in supported_providers.into_iter() {
-            let provider_str = p.to_string();
-            let epoch_store = epoch_store.clone();
-            let consensus_adapter = consensus_adapter.clone();
-            let metrics = metrics.clone();
-            spawn_monitored_task!(epoch_store.clone().within_alive_epoch(
-                async move {
-                    // note: restart-safe de-duplication happens after consensus, this is
-                    // just best-effort to reduce unneeded submissions.
-                    let mut seen = HashSet::new();
-                    loop {
-                        info!("fetching JWK for provider {:?}", p);
-                        metrics.jwk_requests.with_label_values(&[&provider_str]).inc();
-                        match Self::fetch_jwks(authority, &p).await {
-                            Err(e) => {
-                                metrics.jwk_request_errors.with_label_values(&[&provider_str]).inc();
-                                warn!("Error when fetching JWK for provider {:?} {:?}", p, e);
-                                // Retry in 30 seconds
-                                tokio::time::sleep(Duration::from_secs(30)).await;
-                                continue;
-                            }
-                            Ok(mut keys) => {
-                                metrics.total_jwks
-                                    .with_label_values(&[&provider_str])
-                                    .inc_by(keys.len() as u64);
-
-                                keys.retain(|(id, jwk)| {
-                                    validate_jwk(&metrics, &p, id, jwk) &&
-                                    !epoch_store.jwk_active_in_current_epoch(id, jwk) &&
-                                    seen.insert((id.clone(), jwk.clone()))
-                                });
-
-                                metrics.unique_jwks
-                                    .with_label_values(&[&provider_str])
-                                    .inc_by(keys.len() as u64);
-
-                                // prevent oauth providers from sending too many keys,
-                                // inadvertently or otherwise
-                                if keys.len() > MAX_JWK_KEYS_PER_FETCH {
-                                    warn!("Provider {:?} sent too many JWKs, only the first {} will be used", p, MAX_JWK_KEYS_PER_FETCH);
-                                    keys.truncate(MAX_JWK_KEYS_PER_FETCH);
-                                }
-
-                                for (id, jwk) in keys.into_iter() {
-                                    info!("Submitting JWK to consensus: {:?}", id);
-
-                                    let txn = ConsensusTransaction::new_jwk_fetched(authority, id, jwk);
-                                    consensus_adapter.submit(txn, None, &epoch_store)
-                                        .tap_err(|e| warn!("Error when submitting JWKs to consensus {:?}", e))
-                                        .ok();
-                                }
-                            }
-                        }
-                        tokio::time::sleep(fetch_interval).await;
-                    }
-                }
-                .instrument(error_span!("jwk_updater_task", epoch)),
-            ));
-        }
+        Self::start_async(config, registry_service, "unknown").await
     }
 
     pub async fn start_async(
         config: NodeConfig,
         registry_service: RegistryService,
-        custom_rpc_runtime: Option<Handle>,
         software_version: &'static str,
     ) -> Result<Arc<IkaNode>> {
         NodeConfigMetrics::new(&registry_service.default_registry()).record_metrics(&config);
@@ -436,9 +247,6 @@ impl IkaNode {
             config.supported_protocol_versions = Some(SupportedProtocolVersions::SYSTEM_DEFAULT);
         }
 
-        let run_with_range = config.run_with_range;
-        let is_validator = config.consensus_config().is_some();
-        let is_full_node = !is_validator;
         let prometheus_registry = registry_service.default_registry();
 
         info!(node =? config.protocol_public_key(),
@@ -454,55 +262,54 @@ impl IkaNode {
         #[cfg(not(msim))]
         mysten_metrics::thread_stall_monitor::start_thread_stall_monitor();
 
-        let genesis = config.genesis()?.clone();
+        let sui_client_metrics = SuiClientMetrics::new(&registry_service.default_registry());
+
+        let sui_client = Arc::new(
+            SuiClient::new(
+                &config.sui_connector_config.sui_rpc_url,
+                sui_client_metrics,
+                config.sui_connector_config.ika_package_id,
+                config.sui_connector_config.ika_system_package_id,
+                config.sui_connector_config.system_id,
+            )
+            .await?,
+        );
+
+        let latest_system_state = sui_client.get_system_inner_until_success().await;
+        let epoch_start_system_state = sui_client
+            .get_epoch_start_system_until_success(&latest_system_state)
+            .await;
+
+        let previous_epoch_last_checkpoint_sequence_number =
+            latest_system_state.previous_epoch_last_checkpoint_sequence_number();
+
+        let committee = Arc::new(epoch_start_system_state.get_ika_committee());
 
         let secret = Arc::pin(config.protocol_key_pair().copy());
-        let genesis_committee = genesis.committee()?;
+        //let genesis_committee = genesis.committee()?;
         let committee_store = Arc::new(CommitteeStore::new(
             config.db_path().join("epochs"),
-            &genesis_committee,
+            &committee,
             None,
         ));
-
-        // By default, only enable write stall on validators for perpetual db.
-        let enable_write_stall = config.enable_db_write_stall.unwrap_or(is_validator);
-        let perpetual_tables_options = AuthorityPerpetualTablesOptions { enable_write_stall };
+        let perpetual_tables_options = default_db_options().optimize_db_for_write_throughput(4);
         let perpetual_tables = Arc::new(AuthorityPerpetualTables::open(
             &config.db_path().join("store"),
-            Some(perpetual_tables_options),
+            Some(perpetual_tables_options.options),
         ));
-        let is_genesis = perpetual_tables
-            .database_is_empty()
-            .expect("Database read should not fail at init.");
 
-        let store =
-            AuthorityStore::open(perpetual_tables, &genesis, &config, &prometheus_registry).await?;
+        //let cur_epoch = latest_system_state.epoch();
+        // let committee = committee_store
+        //     .get_committee(&cur_epoch)?
+        //     .expect("Committee of the current epoch must exist");
+        let chain_identifier = ChainIdentifier::from(config.sui_connector_config.system_id);
 
-        let cur_epoch = store.get_recovery_epoch_at_restart()?;
-        let committee = committee_store
-            .get_committee(&cur_epoch)?
-            .expect("Committee of the current epoch must exist");
-        let epoch_start_configuration = store
-            .get_epoch_start_configuration()?
-            .expect("EpochStartConfiguration of the current epoch must exist");
-        let cache_metrics = Arc::new(ResolverMetrics::new(&prometheus_registry));
-        let signature_verifier_metrics = SignatureVerifierMetrics::new(&prometheus_registry);
+        let epoch_start_configuration = EpochStartConfiguration::new(epoch_start_system_state)
+            .expect("EpochStartConfiguration construction cannot fail");
 
-        let cache_traits =
-            build_execution_cache(&epoch_start_configuration, &prometheus_registry, &store);
-
-        let auth_agg = {
-            let safe_client_metrics_base = SafeClientMetricsBase::new(&prometheus_registry);
-            let auth_agg_metrics = Arc::new(AuthAggMetrics::new(&prometheus_registry));
-            Arc::new(ArcSwap::new(Arc::new(
-                AuthorityAggregator::new_from_epoch_start_state(
-                    epoch_start_configuration.epoch_start_state(),
-                    &committee_store,
-                    safe_client_metrics_base,
-                    auth_agg_metrics,
-                ),
-            )))
-        };
+        // let epoch_start_configuration = store
+        //     .get_epoch_start_configuration()?
+        //     .expect("EpochStartConfiguration of the current epoch must exist");
 
         let epoch_options = default_db_options().optimize_db_for_write_throughput(4);
         let epoch_store = AuthorityPerEpochStore::new(
@@ -512,12 +319,7 @@ impl IkaNode {
             Some(epoch_options.options),
             EpochMetrics::new(&registry_service.default_registry()),
             epoch_start_configuration,
-            cache_traits.backing_package_store.clone(),
-            cache_traits.object_store.clone(),
-            cache_metrics,
-            signature_verifier_metrics,
-            &config.expensive_safety_check_config,
-            ChainIdentifier::from(*genesis.checkpoint().digest()),
+            chain_identifier.clone(),
         );
 
         info!("created epoch store");
@@ -527,19 +329,6 @@ impl IkaNode {
             epoch_store.epoch(),
             epoch_store.protocol_config()
         );
-
-        // the database is empty at genesis time
-        if is_genesis {
-            info!("checking IKA conservation at genesis");
-            // When we are opening the db table, the only time when it's safe to
-            // check IKA conservation is at genesis. Otherwise we may be in the middle of
-            // an epoch and the IKA conservation check will fail. This also initialize
-            // the expected_network_ika_amount table.
-            cache_traits
-                .reconfig_api
-                .expensive_check_ika_conservation(&epoch_store)
-                .expect("IKA conservation check cannot fail at genesis");
-        }
 
         let effective_buffer_stake = epoch_store.get_effective_buffer_stake_bps();
         let default_buffer_stake = epoch_store
@@ -556,52 +345,27 @@ impl IkaNode {
         info!("creating checkpoint store");
 
         let checkpoint_store = CheckpointStore::new(&config.db_path().join("checkpoints"));
-        checkpoint_store.insert_genesis_checkpoint(
-            genesis.checkpoint(),
-            genesis.checkpoint_contents().clone(),
-            &epoch_store,
-        );
+        // checkpoint_store.insert_genesis_checkpoint(
+        //     genesis.checkpoint(),
+        //     genesis.checkpoint_contents().clone(),
+        //     &epoch_store,
+        // );
 
         info!("creating state sync store");
-        let state_sync_store = RocksDbStore::new(
-            cache_traits.clone(),
-            committee_store.clone(),
-            checkpoint_store.clone(),
+        let state_sync_store = RocksDbStore::new(committee_store.clone(), checkpoint_store.clone());
+
+        let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
+
+        let sui_connector_service = Arc::new(
+            SuiConnectorService::new(
+                perpetual_tables.clone(),
+                checkpoint_store.clone(),
+                sui_client,
+                config.sui_connector_config.clone(),
+                sui_connector_metrics,
+            )
+            .await?,
         );
-
-        let index_store = if is_full_node && config.enable_index_processing {
-            info!("creating index store");
-            Some(Arc::new(IndexStore::new(
-                config.db_path().join("indexes"),
-                &prometheus_registry,
-                epoch_store
-                    .protocol_config()
-                    .max_move_identifier_len_as_option(),
-                config.remove_deprecated_tables,
-                &store,
-            )))
-        } else {
-            None
-        };
-
-        let rest_index = if is_full_node
-            && config.enable_experimental_rest_api
-            && config.enable_index_processing
-        {
-            Some(Arc::new(RestIndexStore::new(
-                config.db_path().join("rest_index"),
-                &store,
-                &checkpoint_store,
-                &epoch_store,
-                &cache_traits.backing_package_store,
-            )))
-        } else {
-            None
-        };
-
-        let chain_identifier = ChainIdentifier::from(*genesis.checkpoint().digest());
-        // It's ok if the value is already set due to data races.
-        let _ = CHAIN_IDENTIFIER.set(chain_identifier);
 
         info!("creating archive reader");
         // Create network
@@ -610,27 +374,17 @@ impl IkaNode {
         let archive_readers =
             ArchiveReaderBalancer::new(config.archive_reader_config(), &prometheus_registry)?;
         let (trusted_peer_change_tx, trusted_peer_change_rx) = watch::channel(Default::default());
-        let (randomness_tx, randomness_rx) = mpsc::channel(
-            config
-                .p2p_config
-                .randomness
-                .clone()
-                .unwrap_or_default()
-                .mailbox_capacity(),
-        );
         let P2pComponents {
             p2p_network,
             known_peers,
             discovery_handle,
             state_sync_handle,
-            randomness_handle,
         } = Self::create_p2p_network(
             &config,
             state_sync_store.clone(),
             chain_identifier,
             trusted_peer_change_rx,
             archive_readers.clone(),
-            randomness_tx,
             &prometheus_registry,
         )?;
 
@@ -649,131 +403,26 @@ impl IkaNode {
             Self::start_state_archival(&config, &prometheus_registry, state_sync_store.clone())
                 .await?;
 
-        info!("start snapshot upload");
-        // Start uploading state snapshot to remote store
-        let state_snapshot_handle =
-            Self::start_state_snapshot(&config, &prometheus_registry, checkpoint_store.clone())?;
-
-        // Start uploading db checkpoints to remote store
-        info!("start db checkpoint");
-        let (db_checkpoint_config, db_checkpoint_handle) = Self::start_db_checkpoint(
-            &config,
-            &prometheus_registry,
-            state_snapshot_handle.is_some(),
-        )?;
-
-        if !epoch_store
-            .protocol_config()
-            .simplified_unwrap_then_delete()
-        {
-            // We cannot prune tombstones if simplified_unwrap_then_delete is not enabled.
-            config
-                .authority_store_pruning_config
-                .set_killswitch_tombstone_pruning(true);
-        }
-
         let authority_name = config.protocol_public_key();
-        let validator_tx_finalizer =
-            config
-                .enable_validator_tx_finalizer
-                .then_some(Arc::new(ValidatorTxFinalizer::new(
-                    auth_agg.clone(),
-                    authority_name,
-                    &prometheus_registry,
-                )));
 
         info!("create authority state");
         let state = AuthorityState::new(
             authority_name,
             secret,
             config.supported_protocol_versions.unwrap(),
-            store.clone(),
-            cache_traits.clone(),
+            perpetual_tables,
             epoch_store.clone(),
             committee_store.clone(),
-            index_store.clone(),
-            rest_index,
             checkpoint_store.clone(),
             &prometheus_registry,
-            genesis.objects(),
-            &db_checkpoint_config,
             config.clone(),
-            config.indirect_objects_threshold,
-            archive_readers,
-            validator_tx_finalizer,
         )
         .await;
-        // ensure genesis txn was executed
-        if epoch_store.epoch() == 0 {
-            let txn = &genesis.transaction();
-            let span = error_span!("genesis_txn", tx_digest = ?txn.digest());
-            let transaction =
-                ika_types::executable_transaction::VerifiedExecutableTransaction::new_unchecked(
-                    ika_types::executable_transaction::ExecutableTransaction::new_from_data_and_sig(
-                        genesis.transaction().data().clone(),
-                        ika_types::executable_transaction::CertificateProof::Checkpoint(0, 0),
-                    ),
-                );
-            state
-                .try_execute_immediately(&transaction, None, &epoch_store)
-                .instrument(span)
-                .await
-                .unwrap();
-        }
 
-        checkpoint_store
-            .reexecute_local_checkpoints(&state, &epoch_store)
-            .await;
-
-        // Start the loop that receives new randomness and generates transactions for it.
-        RandomnessRoundReceiver::spawn(state.clone(), randomness_rx);
-
-        if config
-            .expensive_safety_check_config
-            .enable_secondary_index_checks()
-        {
-            if let Some(indexes) = state.indexes.clone() {
-                ika_core::verify_indexes::verify_indexes(
-                    state.get_accumulator_store().as_ref(),
-                    indexes,
-                )
-                .expect("secondary indexes are inconsistent");
-            }
-        }
+        info!("created authority state");
 
         let (end_of_epoch_channel, end_of_epoch_receiver) =
             broadcast::channel(config.end_of_epoch_broadcast_channel_capacity);
-
-        let transaction_orchestrator = if is_full_node && run_with_range.is_none() {
-            Some(Arc::new(
-                TransactiondOrchestrator::new_with_auth_aggregator(
-                    auth_agg.load_full(),
-                    state.clone(),
-                    end_of_epoch_receiver,
-                    &config.db_path(),
-                    &prometheus_registry,
-                ),
-            ))
-        } else {
-            None
-        };
-
-        let http_server = build_http_server(
-            state.clone(),
-            state_sync_store,
-            &transaction_orchestrator.clone(),
-            &config,
-            &prometheus_registry,
-            custom_rpc_runtime,
-            software_version,
-        )
-        .await?;
-
-        let accumulator = Arc::new(StateAccumulator::new(
-            cache_traits.accumulator_store.clone(),
-            &epoch_store,
-            StateAccumulatorMetrics::new(&prometheus_registry),
-        ));
 
         let authority_names_to_peer_ids = epoch_store
             .epoch_start_state()
@@ -808,11 +457,10 @@ impl IkaNode {
                 epoch_store.clone(),
                 checkpoint_store.clone(),
                 state_sync_handle.clone(),
-                randomness_handle.clone(),
-                Arc::downgrade(&accumulator),
                 connection_monitor_status.clone(),
                 &registry_service,
                 ika_node_metrics.clone(),
+                previous_epoch_last_checkpoint_sequence_number,
             )
             .await?;
             // This is only needed during cold start.
@@ -829,32 +477,25 @@ impl IkaNode {
         let node = Self {
             config,
             validator_components: Mutex::new(validator_components),
-            _http_server: http_server,
             state,
-            transaction_orchestrator,
             registry_service,
             metrics: ika_node_metrics,
 
             _discovery: discovery_handle,
             _connection_monitor_handle: connection_monitor_handle,
             state_sync_handle,
-            randomness_handle,
             checkpoint_store,
-            accumulator: Mutex::new(Some(accumulator)),
+
             end_of_epoch_channel,
             connection_monitor_status,
             trusted_peer_change_tx,
 
-            _db_checkpoint_handle: db_checkpoint_handle,
-
             #[cfg(msim)]
             sim_state: Default::default(),
 
+            sui_connector_service,
             _state_archive_handle: state_archive_handle,
-            _state_snapshot_uploader_handle: state_snapshot_handle,
             shutdown_channel_tx: shutdown_channel,
-
-            auth_agg,
         };
 
         info!("IkaNode started!");
@@ -870,7 +511,7 @@ impl IkaNode {
         Ok(node)
     }
 
-    pub fn subscribe_to_epoch_change(&self) -> broadcast::Receiver<IkaSystemState> {
+    pub fn subscribe_to_epoch_change(&self) -> broadcast::Receiver<SystemInner> {
         self.end_of_epoch_channel.subscribe()
     }
 
@@ -947,94 +588,12 @@ impl IkaNode {
         }
     }
 
-    fn start_state_snapshot(
-        config: &NodeConfig,
-        prometheus_registry: &Registry,
-        checkpoint_store: Arc<CheckpointStore>,
-    ) -> Result<Option<tokio::sync::broadcast::Sender<()>>> {
-        if let Some(remote_store_config) = &config.state_snapshot_write_config.object_store_config {
-            let snapshot_uploader = StateSnapshotUploader::new(
-                &config.db_checkpoint_path(),
-                &config.snapshot_path(),
-                remote_store_config.clone(),
-                60,
-                prometheus_registry,
-                checkpoint_store,
-            )?;
-            Ok(Some(snapshot_uploader.start()))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn start_db_checkpoint(
-        config: &NodeConfig,
-        prometheus_registry: &Registry,
-        state_snapshot_enabled: bool,
-    ) -> Result<(
-        DBCheckpointConfig,
-        Option<tokio::sync::broadcast::Sender<()>>,
-    )> {
-        let checkpoint_path = Some(
-            config
-                .db_checkpoint_config
-                .checkpoint_path
-                .clone()
-                .unwrap_or_else(|| config.db_checkpoint_path()),
-        );
-        let db_checkpoint_config = if config.db_checkpoint_config.checkpoint_path.is_none() {
-            DBCheckpointConfig {
-                checkpoint_path,
-                perform_db_checkpoints_at_epoch_end: if state_snapshot_enabled {
-                    true
-                } else {
-                    config
-                        .db_checkpoint_config
-                        .perform_db_checkpoints_at_epoch_end
-                },
-                ..config.db_checkpoint_config.clone()
-            }
-        } else {
-            config.db_checkpoint_config.clone()
-        };
-
-        match (
-            db_checkpoint_config.object_store_config.as_ref(),
-            state_snapshot_enabled,
-        ) {
-            // If db checkpoint config object store not specified but
-            // state snapshot object store is specified, create handler
-            // anyway for marking db checkpoints as completed so that they
-            // can be uploaded as state snapshots.
-            (None, false) => Ok((db_checkpoint_config, None)),
-            (_, _) => {
-                let handler = DBCheckpointHandler::new(
-                    &db_checkpoint_config.checkpoint_path.clone().unwrap(),
-                    db_checkpoint_config.object_store_config.as_ref(),
-                    60,
-                    db_checkpoint_config
-                        .prune_and_compact_before_upload
-                        .unwrap_or(true),
-                    config.indirect_objects_threshold,
-                    config.authority_store_pruning_config.clone(),
-                    prometheus_registry,
-                    state_snapshot_enabled,
-                )?;
-                Ok((
-                    db_checkpoint_config,
-                    Some(DBCheckpointHandler::start(handler)),
-                ))
-            }
-        }
-    }
-
     fn create_p2p_network(
         config: &NodeConfig,
         state_sync_store: RocksDbStore,
         chain_identifier: ChainIdentifier,
         trusted_peer_change_rx: watch::Receiver<TrustedPeerChangeEvent>,
         archive_readers: ArchiveReaderBalancer,
-        randomness_tx: mpsc::Sender<(EpochId, RandomnessRound, Vec<u8>)>,
         prometheus_registry: &Registry,
     ) -> Result<P2pComponents> {
         let (state_sync, state_sync_server) = state_sync::Builder::new()
@@ -1060,18 +619,10 @@ impl IkaNode {
             }))
             .collect();
 
-        let (randomness, randomness_router) =
-            randomness::Builder::new(config.protocol_public_key(), randomness_tx)
-                .config(config.p2p_config.randomness.clone().unwrap_or_default())
-                .with_metrics(prometheus_registry)
-                .build();
-
         let p2p_network = {
             let routes = anemo::Router::new()
                 .add_rpc_service(discovery_server)
                 .add_rpc_service(state_sync_server);
-            let routes = routes.merge(randomness_router);
-
             let inbound_network_metrics =
                 consensus_core::NetworkRouteMetrics::new("ika", "inbound", prometheus_registry);
             let outbound_network_metrics =
@@ -1168,14 +719,12 @@ impl IkaNode {
         let discovery_handle =
             discovery.start(p2p_network.clone(), config.network_key_pair().copy());
         let state_sync_handle = state_sync.start(p2p_network.clone());
-        let randomness_handle = randomness.start(p2p_network.clone());
 
         Ok(P2pComponents {
             p2p_network,
             known_peers,
             discovery_handle,
             state_sync_handle,
-            randomness_handle,
         })
     }
 
@@ -1186,11 +735,10 @@ impl IkaNode {
         epoch_store: Arc<AuthorityPerEpochStore>,
         checkpoint_store: Arc<CheckpointStore>,
         state_sync_handle: state_sync::Handle,
-        randomness_handle: randomness::Handle,
-        accumulator: Weak<StateAccumulator>,
         connection_monitor_status: Arc<ConnectionMonitorStatus>,
         registry_service: &RegistryService,
         ika_node_metrics: Arc<IkaNodeMetrics>,
+        previous_epoch_last_checkpoint_sequence_number: u64,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
         let consensus_config = config_clone
@@ -1223,32 +771,6 @@ impl IkaNode {
         let ika_tx_validator_metrics =
             IkaTxValidatorMetrics::new(&registry_service.default_registry());
 
-        let validator_server_handle = Self::start_grpc_validator_service(
-            &config,
-            state.clone(),
-            consensus_adapter.clone(),
-            &registry_service.default_registry(),
-        )
-        .await?;
-
-        // Starts an overload monitor that monitors the execution of the authority.
-        // Don't start the overload monitor when max_load_shedding_percentage is 0.
-        let validator_overload_monitor_handle = if config
-            .authority_overload_config
-            .max_load_shedding_percentage
-            > 0
-        {
-            let authority_state = Arc::downgrade(&state);
-            let overload_config = config.authority_overload_config.clone();
-            fail_point!("starting_overload_monitor");
-            Some(spawn_monitored_task!(overload_monitor(
-                authority_state,
-                overload_config,
-            )))
-        } else {
-            None
-        };
-
         Self::start_epoch_specific_validator_components(
             &config,
             state.clone(),
@@ -1256,15 +778,12 @@ impl IkaNode {
             checkpoint_store,
             epoch_store,
             state_sync_handle,
-            randomness_handle,
             consensus_manager,
             consensus_store_pruner,
-            accumulator,
-            validator_server_handle,
-            validator_overload_monitor_handle,
             checkpoint_metrics,
             ika_node_metrics,
             ika_tx_validator_metrics,
+            previous_epoch_last_checkpoint_sequence_number,
         )
         .await
     }
@@ -1276,15 +795,12 @@ impl IkaNode {
         checkpoint_store: Arc<CheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         state_sync_handle: state_sync::Handle,
-        randomness_handle: randomness::Handle,
         consensus_manager: ConsensusManager,
         consensus_store_pruner: ConsensusStorePruner,
-        accumulator: Weak<StateAccumulator>,
-        validator_server_handle: JoinHandle<Result<()>>,
-        validator_overload_monitor_handle: Option<JoinHandle<()>>,
         checkpoint_metrics: Arc<CheckpointMetrics>,
         ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
+        previous_epoch_last_checkpoint_sequence_number: u64,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_checkpoint_service(
             config,
@@ -1293,8 +809,8 @@ impl IkaNode {
             epoch_store.clone(),
             state.clone(),
             state_sync_handle,
-            accumulator,
             checkpoint_metrics.clone(),
+            previous_epoch_last_checkpoint_sequence_number,
         );
 
         // create a new map that gets injected into both the consensus handler and the consensus adapter
@@ -1303,21 +819,6 @@ impl IkaNode {
         let low_scoring_authorities = Arc::new(ArcSwap::new(Arc::new(HashMap::new())));
 
         consensus_adapter.swap_low_scoring_authorities(low_scoring_authorities.clone());
-
-        if epoch_store.randomness_state_enabled() {
-            let randomness_manager = RandomnessManager::try_new(
-                Arc::downgrade(&epoch_store),
-                Box::new(consensus_adapter.clone()),
-                randomness_handle,
-                config.protocol_key_pair(),
-            )
-            .await;
-            if let Some(randomness_manager) = randomness_manager {
-                epoch_store
-                    .set_randomness_manager(randomness_manager)
-                    .await?;
-            }
-        }
 
         let throughput_calculator = Arc::new(ConsensusThroughputCalculator::new(
             None,
@@ -1351,25 +852,12 @@ impl IkaNode {
                     state.clone(),
                     consensus_adapter.clone(),
                     checkpoint_service.clone(),
-                    state.transaction_manager().clone(),
                     ika_tx_validator_metrics.clone(),
                 ),
             )
             .await;
 
-        if epoch_store.authenticator_state_enabled() {
-            Self::start_jwk_updater(
-                config,
-                ika_node_metrics,
-                state.name,
-                epoch_store.clone(),
-                consensus_adapter.clone(),
-            );
-        }
-
         Ok(ValidatorComponents {
-            validator_server_handle,
-            validator_overload_monitor_handle,
             consensus_manager,
             consensus_store_pruner,
             consensus_adapter,
@@ -1386,8 +874,8 @@ impl IkaNode {
         epoch_store: Arc<AuthorityPerEpochStore>,
         state: Arc<AuthorityState>,
         state_sync_handle: state_sync::Handle,
-        accumulator: Weak<StateAccumulator>,
         checkpoint_metrics: Arc<CheckpointMetrics>,
+        previous_epoch_last_checkpoint_sequence_number: u64,
     ) -> (Arc<CheckpointService>, JoinSet<()>) {
         let epoch_start_timestamp_ms = epoch_store.epoch_start_state().epoch_start_timestamp_ms();
         let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
@@ -1402,6 +890,13 @@ impl IkaNode {
             sender: consensus_adapter,
             signer: state.secret.clone(),
             authority: config.protocol_public_key(),
+            next_mid_epoch_timestamp_ms: epoch_start_timestamp_ms
+                .checked_add(
+                    epoch_duration_ms
+                        .checked_div(2)
+                        .expect("Overflow calculating epoch_duration_ms / 2"),
+                )
+                .expect("Overflow calculating next_mid_epoch_timestamp_ms"),
             next_reconfiguration_timestamp_ms: epoch_start_timestamp_ms
                 .checked_add(epoch_duration_ms)
                 .expect("Overflow calculating next_reconfiguration_timestamp_ms"),
@@ -1417,13 +912,12 @@ impl IkaNode {
             state.clone(),
             checkpoint_store,
             epoch_store,
-            state.get_transaction_cache_reader().clone(),
-            accumulator,
             checkpoint_output,
             Box::new(certified_checkpoint_output),
             checkpoint_metrics,
             max_tx_per_checkpoint,
             max_checkpoint_size_bytes,
+            previous_epoch_last_checkpoint_sequence_number,
         )
     }
 
@@ -1452,52 +946,8 @@ impl IkaNode {
         )
     }
 
-    async fn start_grpc_validator_service(
-        config: &NodeConfig,
-        state: Arc<AuthorityState>,
-        consensus_adapter: Arc<ConsensusAdapter>,
-        prometheus_registry: &Registry,
-    ) -> Result<tokio::task::JoinHandle<Result<()>>> {
-        let validator_service = ValidatorService::new(
-            state.clone(),
-            consensus_adapter,
-            Arc::new(ValidatorServiceMetrics::new(prometheus_registry)),
-            TrafficControllerMetrics::new(prometheus_registry),
-            config.policy_config.clone(),
-            config.firewall_config.clone(),
-        );
-
-        let mut server_conf = mysten_network::config::Config::new();
-        server_conf.global_concurrency_limit = config.grpc_concurrency_limit;
-        server_conf.load_shed = config.grpc_load_shed;
-        let mut server_builder =
-            ServerBuilder::from_config(&server_conf, GrpcMetrics::new(prometheus_registry));
-
-        server_builder = server_builder.add_service(ValidatorServer::new(validator_service));
-
-        let tls_config = ika_tls::create_rustls_server_config(
-            config.network_key_pair().copy().private(),
-            IKA_TLS_SERVER_NAME.to_string(),
-            ika_tls::AllowAll,
-        );
-        let server = server_builder
-            .bind(config.network_address(), Some(tls_config))
-            .await
-            .map_err(|err| anyhow!(err.to_string()))?;
-        let local_addr = server.local_addr();
-        info!("Listening to traffic on {local_addr}");
-        let grpc_server = spawn_monitored_task!(server.serve().map_err(Into::into));
-
-        Ok(grpc_server)
-    }
-
     pub fn state(&self) -> Arc<AuthorityState> {
         self.state.clone()
-    }
-
-    // Only used for testing because of how epoch store is loaded.
-    pub fn reference_gas_price_for_testing(&self) -> Result<u64, anyhow::Error> {
-        self.state.reference_gas_price_for_testing()
     }
 
     pub fn clone_committee_store(&self) -> Arc<CommitteeStore> {
@@ -1510,52 +960,10 @@ impl IkaNode {
     }
     */
 
-    /// Clone an AuthorityAggregator currently used in this node's
-    /// QuorumDriver, if the node is a fullnode. After reconfig,
-    /// QuorumDriver builds a new AuthorityAggregator. The caller
-    /// of this function will mostly likely want to call this again
-    /// to get a fresh one.
-    pub fn clone_authority_aggregator(
-        &self,
-    ) -> Option<Arc<AuthorityAggregator<NetworkAuthorityClient>>> {
-        self.transaction_orchestrator
-            .as_ref()
-            .map(|to| to.clone_authority_aggregator())
-    }
-
-    pub fn transaction_orchestrator(
-        &self,
-    ) -> Option<Arc<TransactiondOrchestrator<NetworkAuthorityClient>>> {
-        self.transaction_orchestrator.clone()
-    }
-
-    pub fn subscribe_to_transaction_orchestrator_effects(
-        &self,
-    ) -> Result<tokio::sync::broadcast::Receiver<QuorumDriverEffectsQueueResult>> {
-        self.transaction_orchestrator
-            .as_ref()
-            .map(|to| to.subscribe_to_effects_queue())
-            .ok_or_else(|| anyhow::anyhow!("Transaction Orchestrator is not enabled in this node."))
-    }
-
     /// This function awaits the completion of checkpoint execution of the current epoch,
     /// after which it iniitiates reconfiguration of the entire system.
     pub async fn monitor_reconfiguration(self: Arc<Self>) -> Result<()> {
-        let checkpoint_executor_metrics =
-            CheckpointExecutorMetrics::new(&self.registry_service.default_registry());
-
         loop {
-            let mut accumulator_guard = self.accumulator.lock().await;
-            let accumulator = accumulator_guard.take().unwrap();
-            let mut checkpoint_executor = CheckpointExecutor::new(
-                self.state_sync_handle.subscribe_to_synced_checkpoints(),
-                self.checkpoint_store.clone(),
-                self.state.clone(),
-                accumulator.clone(),
-                self.config.checkpoint_executor_config.clone(),
-                checkpoint_executor_metrics.clone(),
-            );
-
             let run_with_range = self.config.run_with_range;
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
@@ -1566,58 +974,93 @@ impl IkaNode {
                 tokio::time::sleep(Duration::from_millis(1)).await;
 
                 let config = cur_epoch_store.protocol_config();
-                let binary_config = to_binary_config(config);
-                let transaction = if config.authority_capabilities_v2() {
-                    ConsensusTransaction::new_capability_notification_v2(
-                        AuthorityCapabilitiesV2::new(
-                            self.state.name,
-                            cur_epoch_store.get_chain_identifier().chain(),
-                            self.config
-                                .supported_protocol_versions
-                                .expect("Supported versions should be populated")
-                                // no need to send digests of versions less than the current version
-                                .truncate_below(config.version),
-                            self.state
-                                .get_available_system_packages(&binary_config)
-                                .await,
-                        ),
-                    )
-                } else {
-                    ConsensusTransaction::new_capability_notification(AuthorityCapabilitiesV1::new(
+                //let binary_config = to_binary_config(config);
+                let transaction = ConsensusTransaction::new_capability_notification_v1(
+                    AuthorityCapabilitiesV1::new(
                         self.state.name,
+                        Chain::Mainnet,
+                        //cur_epoch_store.get_chain_identifier().chain(),
                         self.config
                             .supported_protocol_versions
-                            .expect("Supported versions should be populated"),
-                        self.state
-                            .get_available_system_packages(&binary_config)
-                            .await,
-                    ))
-                };
+                            .expect("Supported versions should be populated")
+                            // no need to send digests of versions less than the current version
+                            .truncate_below(config.version),
+                        self.sui_connector_service
+                            .get_available_move_packages()
+                            .await?,
+                        // self.state
+                        //     .get_available_system_packages(&binary_config)
+                        //     .await,
+                    ),
+                );
                 info!(?transaction, "submitting capabilities to consensus");
                 components
                     .consensus_adapter
                     .submit(transaction, None, &cur_epoch_store)?;
+
+                let cur_epoch_store = cur_epoch_store.clone();
+                let name = self.state.name.clone();
+                let consensus_adapter = components.consensus_adapter.clone();
+
+                let versions = self
+                    .config
+                    .supported_protocol_versions
+                    .expect("Supported versions should be populated")
+                    // no need to send digests of versions less than the current version
+                    .truncate_below(config.version);
+
+                spawn_monitored_task!(async move {
+                    let mut num = 0u64;
+                    loop {
+                        tokio::time::sleep(Duration::from_millis(1000)).await;
+                        //     let transaction = ConsensusTransaction::new_capability_notification_v1(
+                        //     AuthorityCapabilitiesV1::new(
+                        //         name,
+                        //         Chain::Mainnet,
+                        //         //cur_epoch_store.get_chain_identifier().chain(),
+                        //         versions.clone(),
+                        //         vec![random_object_ref()],
+                        //         // self.state
+                        //         //     .get_available_system_packages(&binary_config)
+                        //         //     .await,
+                        //     ),
+                        // );
+                        // consensus_adapter
+                        // .submit_to_consensus(&[transaction], &cur_epoch_store).await.expect("ConsensusTransaction::new_capability_notification_v1");
+                        let transaction = ConsensusTransaction::new_test_message(name, num);
+                        consensus_adapter
+                            .submit_to_consensus(&[transaction], &cur_epoch_store)
+                            .await
+                            .expect("ConsensusTransaction::new_test_message");
+                        num += 1;
+                    }
+                });
             }
 
-            let stop_condition = checkpoint_executor
-                .run_epoch(cur_epoch_store.clone(), run_with_range)
+            let stop_condition = self
+                .sui_connector_service
+                .run_epoch(cur_epoch_store.epoch(), run_with_range)
                 .await;
-            drop(checkpoint_executor);
 
-            if stop_condition == StopReason::RunWithRangeCondition {
-                IkaNode::shutdown(&self).await;
-                self.shutdown_channel_tx
-                    .send(run_with_range)
-                    .expect("RunWithRangeCondition met but failed to send shutdown message");
-                return Ok(());
-            }
+            let (latest_system_state, epoch_start_system_state) = match stop_condition {
+                StopReason::EpochComplete(latest_system_state, epoch_start_system_state) => {
+                    (latest_system_state, epoch_start_system_state)
+                }
+                StopReason::RunWithRangeCondition => {
+                    IkaNode::shutdown(&self).await;
+                    self.shutdown_channel_tx
+                        .send(run_with_range)
+                        .expect("RunWithRangeCondition met but failed to send shutdown message");
+                    return Ok(());
+                }
+            };
 
-            // Safe to call because we are in the middle of reconfiguration.
-            let latest_system_state = self
-                .state
-                .get_object_cache_reader()
-                .get_ika_system_state_object_unsafe()
-                .expect("Read Ika System State object cannot fail");
+            // // Safe to call because we are in the middle of reconfiguration.
+            // let latest_system_state = self
+            //     .state
+            //     .get_object_cache_reader()
+            //     .get_ika_system_state_object_unsafe()
+            //     .expect("Read Ika System State object cannot fail");
 
             #[cfg(msim)]
             if !self
@@ -1628,9 +1071,6 @@ impl IkaNode {
                 debug_assert!(!latest_system_state.safe_mode());
             }
 
-            #[cfg(not(msim))]
-            debug_assert!(!latest_system_state.safe_mode());
-
             if let Err(err) = self.end_of_epoch_channel.send(latest_system_state.clone()) {
                 if self.state.is_fullnode(&cur_epoch_store) {
                     warn!(
@@ -1640,16 +1080,10 @@ impl IkaNode {
                 }
             }
 
-            cur_epoch_store.record_is_safe_mode_metric(latest_system_state.safe_mode());
-            let new_epoch_start_state = latest_system_state.into_epoch_start_state();
+            let previous_epoch_last_checkpoint_sequence_number =
+                latest_system_state.previous_epoch_last_checkpoint_sequence_number();
 
-            self.auth_agg.store(Arc::new(
-                self.auth_agg
-                    .load()
-                    .recreate_with_new_epoch_start_state(&new_epoch_start_state),
-            ));
-
-            let next_epoch_committee = new_epoch_start_state.get_ika_committee();
+            let next_epoch_committee = epoch_start_system_state.get_ika_committee();
             let next_epoch = next_epoch_committee.epoch();
             assert_eq!(cur_epoch_store.epoch() + 1, next_epoch);
 
@@ -1665,7 +1099,7 @@ impl IkaNode {
             // Update the mappings that will be used by the consensus adapter if it exists or is
             // about to be created.
             let authority_names_to_peer_ids =
-                new_epoch_start_state.get_authority_names_to_peer_ids();
+                epoch_start_system_state.get_authority_names_to_peer_ids();
             self.connection_monitor_status
                 .update_mapping_for_epoch(authority_names_to_peer_ids);
 
@@ -1674,7 +1108,7 @@ impl IkaNode {
             let _ = send_trusted_peer_change(
                 &self.config,
                 &self.trusted_peer_change_tx,
-                &new_epoch_start_state,
+                &epoch_start_system_state,
             );
 
             // The following code handles 4 different cases, depending on whether the node
@@ -1682,8 +1116,6 @@ impl IkaNode {
             // in the new epoch.
 
             let new_validator_components = if let Some(ValidatorComponents {
-                validator_server_handle,
-                validator_overload_monitor_handle,
                 consensus_manager,
                 consensus_store_pruner,
                 consensus_adapter,
@@ -1712,27 +1144,12 @@ impl IkaNode {
 
                 let new_epoch_store = self
                     .reconfigure_state(
-                        &self.state,
                         &cur_epoch_store,
                         next_epoch_committee.clone(),
-                        new_epoch_start_state,
-                        accumulator.clone(),
+                        epoch_start_system_state,
                     )
                     .await;
                 info!("Epoch store finished reconfiguration.");
-
-                // No other components should be holding a strong reference to state accumulator
-                // at this point. Confirm here before we swap in the new accumulator.
-                let accumulator_metrics = Arc::into_inner(accumulator)
-                    .expect("Accumulator should have no other references at this point")
-                    .metrics();
-                let new_accumulator = Arc::new(StateAccumulator::new(
-                    self.state.get_accumulator_store().clone(),
-                    &new_epoch_store,
-                    accumulator_metrics,
-                ));
-                let weak_accumulator = Arc::downgrade(&new_accumulator);
-                *accumulator_guard = Some(new_accumulator);
 
                 consensus_store_pruner.prune(next_epoch).await;
 
@@ -1746,15 +1163,12 @@ impl IkaNode {
                             self.checkpoint_store.clone(),
                             new_epoch_store.clone(),
                             self.state_sync_handle.clone(),
-                            self.randomness_handle.clone(),
                             consensus_manager,
                             consensus_store_pruner,
-                            weak_accumulator,
-                            validator_server_handle,
-                            validator_overload_monitor_handle,
                             checkpoint_metrics,
                             self.metrics.clone(),
                             ika_tx_validator_metrics,
+                            previous_epoch_last_checkpoint_sequence_number,
                         )
                         .await?,
                     )
@@ -1765,26 +1179,11 @@ impl IkaNode {
             } else {
                 let new_epoch_store = self
                     .reconfigure_state(
-                        &self.state,
                         &cur_epoch_store,
                         next_epoch_committee.clone(),
-                        new_epoch_start_state,
-                        accumulator.clone(),
+                        epoch_start_system_state,
                     )
                     .await;
-
-                // No other components should be holding a strong reference to state accumulator
-                // at this point. Confirm here before we swap in the new accumulator.
-                let accumulator_metrics = Arc::into_inner(accumulator)
-                    .expect("Accumulator should have no other references at this point")
-                    .metrics();
-                let new_accumulator = Arc::new(StateAccumulator::new(
-                    self.state.get_accumulator_store().clone(),
-                    &new_epoch_store,
-                    accumulator_metrics,
-                ));
-                let weak_accumulator = Arc::downgrade(&new_accumulator);
-                *accumulator_guard = Some(new_accumulator);
 
                 if self.state.is_validator(&new_epoch_store) {
                     info!("Promoting the node from fullnode to validator, starting grpc server");
@@ -1797,11 +1196,10 @@ impl IkaNode {
                             new_epoch_store.clone(),
                             self.checkpoint_store.clone(),
                             self.state_sync_handle.clone(),
-                            self.randomness_handle.clone(),
-                            weak_accumulator,
                             self.connection_monitor_status.clone(),
                             &self.registry_service,
                             self.metrics.clone(),
+                            previous_epoch_last_checkpoint_sequence_number,
                         )
                         .await?,
                     )
@@ -1815,22 +1213,6 @@ impl IkaNode {
             // Arc<AuthorityPerEpochStore> may linger.
             cur_epoch_store.release_db_handles();
 
-            if cfg!(msim)
-                && !matches!(
-                    self.config
-                        .authority_store_pruning_config
-                        .num_epochs_to_retain_for_checkpoints(),
-                    None | Some(u64::MAX) | Some(0)
-                )
-            {
-                self.state
-                .prune_checkpoints_for_eligible_epochs_for_testing(
-                    self.config.clone(),
-                    ika_core::authority::authority_store_pruner::AuthorityStorePruningMetrics::new_for_test(),
-                )
-                .await?;
-            }
-
             info!("Reconfiguration finished");
         }
     }
@@ -1843,27 +1225,14 @@ impl IkaNode {
 
     async fn reconfigure_state(
         &self,
-        state: &Arc<AuthorityState>,
         cur_epoch_store: &AuthorityPerEpochStore,
         next_epoch_committee: Committee,
-        next_epoch_start_system_state: EpochStartSystemState,
-        accumulator: Arc<StateAccumulator>,
+        next_epoch_start_system_state: EpochStartSystem,
     ) -> Arc<AuthorityPerEpochStore> {
         let next_epoch = next_epoch_committee.epoch();
 
-        let last_checkpoint = self
-            .checkpoint_store
-            .get_epoch_last_checkpoint(cur_epoch_store.epoch())
-            .expect("Error loading last checkpoint for current epoch")
-            .expect("Could not load last checkpoint for current epoch");
-
-        let epoch_start_configuration = EpochStartConfiguration::new(
-            next_epoch_start_system_state,
-            *last_checkpoint.digest(),
-            state.get_object_store().as_ref(),
-            EpochFlag::default_flags_for_new_epoch(&state.config),
-        )
-        .expect("EpochStartConfiguration construction cannot fail");
+        let epoch_start_configuration = EpochStartConfiguration::new(next_epoch_start_system_state)
+            .expect("EpochStartConfiguration construction cannot fail");
 
         let new_epoch_store = self
             .state
@@ -1872,41 +1241,17 @@ impl IkaNode {
                 self.config.supported_protocol_versions.unwrap(),
                 next_epoch_committee,
                 epoch_start_configuration,
-                accumulator,
-                &self.config.expensive_safety_check_config,
             )
             .await
             .expect("Reconfigure authority state cannot fail");
         info!(next_epoch, "Node State has been reconfigured");
         assert_eq!(next_epoch, new_epoch_store.epoch());
-        self.state.get_reconfig_api().update_epoch_flags_metrics(
-            cur_epoch_store.epoch_start_config().flags(),
-            new_epoch_store.epoch_start_config().flags(),
-        );
 
         new_epoch_store
     }
 
     pub fn get_config(&self) -> &NodeConfig {
         &self.config
-    }
-
-    pub fn randomness_handle(&self) -> randomness::Handle {
-        self.randomness_handle.clone()
-    }
-}
-
-#[cfg(not(msim))]
-impl IkaNode {
-    async fn fetch_jwks(
-        _authority: AuthorityName,
-        provider: &OIDCProvider,
-    ) -> IkaResult<Vec<(JwkId, JWK)>> {
-        use fastcrypto_zkp::bn254::zk_login::fetch_jwks;
-        let client = reqwest::Client::new();
-        fetch_jwks(provider, &client)
-            .await
-            .map_err(|_| IkaError::JWKRetrievalError)
     }
 }
 
@@ -1936,7 +1281,7 @@ impl IkaNode {
 fn send_trusted_peer_change(
     config: &NodeConfig,
     sender: &watch::Sender<TrustedPeerChangeEvent>,
-    epoch_state_state: &EpochStartSystemState,
+    epoch_state_state: &EpochStartSystem,
 ) -> Result<(), watch::error::SendError<TrustedPeerChangeEvent>> {
     sender
         .send(TrustedPeerChangeEvent {
@@ -1948,182 +1293,6 @@ fn send_trusted_peer_change(
                 err
             );
         })
-}
-
-fn build_kv_store(
-    state: &Arc<AuthorityState>,
-    config: &NodeConfig,
-    registry: &Registry,
-) -> Result<Arc<TransactionKeyValueStore>> {
-    let metrics = KeyValueStoreMetrics::new(registry);
-    let db_store = TransactionKeyValueStore::new("rocksdb", metrics.clone(), state.clone());
-
-    let base_url = &config.transaction_kv_store_read_config.base_url;
-
-    if base_url.is_empty() {
-        info!("no http kv store url provided, using local db only");
-        return Ok(Arc::new(db_store));
-    }
-
-    let base_url: url::Url = base_url.parse().tap_err(|e| {
-        error!(
-            "failed to parse config.transaction_kv_store_config.base_url ({:?}) as url: {}",
-            base_url, e
-        )
-    })?;
-
-    let network_str = match state.get_chain_identifier().map(|c| c.chain()) {
-        Some(Chain::Mainnet) => "/mainnet",
-        _ => {
-            info!("using local db only for kv store");
-            return Ok(Arc::new(db_store));
-        }
-    };
-
-    let base_url = base_url.join(network_str)?.to_string();
-    let http_store = HttpKVStore::new_kv(
-        &base_url,
-        config.transaction_kv_store_read_config.cache_size,
-        metrics.clone(),
-    )?;
-    info!("using local key-value store with fallback to http key-value store");
-    Ok(Arc::new(FallbackTransactionKVStore::new_kv(
-        db_store,
-        http_store,
-        metrics,
-        "json_rpc_fallback",
-    )))
-}
-
-pub async fn build_http_server(
-    state: Arc<AuthorityState>,
-    store: RocksDbStore,
-    transaction_orchestrator: &Option<Arc<TransactiondOrchestrator<NetworkAuthorityClient>>>,
-    config: &NodeConfig,
-    prometheus_registry: &Registry,
-    _custom_runtime: Option<Handle>,
-    software_version: &'static str,
-) -> Result<Option<tokio::task::JoinHandle<()>>> {
-    // Validators do not expose these APIs
-    if config.consensus_config().is_some() {
-        return Ok(None);
-    }
-
-    let mut router = axum::Router::new();
-
-    let json_rpc_router = {
-        let mut server = JsonRpcServerBuilder::new(
-            env!("CARGO_PKG_VERSION"),
-            prometheus_registry,
-            config.policy_config.clone(),
-            config.firewall_config.clone(),
-        );
-
-        let kv_store = build_kv_store(&state, config, prometheus_registry)?;
-
-        let metrics = Arc::new(JsonRpcMetrics::new(prometheus_registry));
-        server.register_module(ReadApi::new(
-            state.clone(),
-            kv_store.clone(),
-            metrics.clone(),
-        ))?;
-        server.register_module(CoinReadApi::new(
-            state.clone(),
-            kv_store.clone(),
-            metrics.clone(),
-        ))?;
-
-        // if run_with_range is enabled we want to prevent any transactions
-        // run_with_range = None is normal operating conditions
-        if config.run_with_range.is_none() {
-            server.register_module(TransactionBuilderApi::new(state.clone()))?;
-        }
-        server.register_module(GovernanceReadApi::new(state.clone(), metrics.clone()))?;
-        server.register_module(BridgeReadApi::new(state.clone(), metrics.clone()))?;
-
-        if let Some(transaction_orchestrator) = transaction_orchestrator {
-            server.register_module(TransactionExecutionApi::new(
-                state.clone(),
-                transaction_orchestrator.clone(),
-                metrics.clone(),
-            ))?;
-        }
-
-        let name_service_config =
-            if let (Some(package_address), Some(registry_id), Some(reverse_registry_id)) = (
-                config.name_service_package_address,
-                config.name_service_registry_id,
-                config.name_service_reverse_registry_id,
-            ) {
-                ika_json_rpc::name_service::NameServiceConfig::new(
-                    package_address,
-                    registry_id,
-                    reverse_registry_id,
-                )
-            } else {
-                ika_json_rpc::name_service::NameServiceConfig::default()
-            };
-
-        server.register_module(IndexerApi::new(
-            state.clone(),
-            ReadApi::new(state.clone(), kv_store.clone(), metrics.clone()),
-            kv_store,
-            name_service_config,
-            metrics,
-            config.indexer_max_subscriptions,
-        ))?;
-        server.register_module(MoveUtils::new(state.clone()))?;
-
-        let server_type = config.jsonrpc_server_type();
-
-        server.to_router(server_type).await?
-    };
-
-    router = router.merge(json_rpc_router);
-
-    if config.enable_experimental_rest_api {
-        let mut rest_service = ika_rest_api::RestService::new(
-            Arc::new(RestReadStore::new(state.clone(), store)),
-            software_version,
-        );
-
-        if let Some(config) = config.rest.clone() {
-            rest_service.with_config(config);
-        }
-
-        rest_service.with_metrics(RestMetrics::new(prometheus_registry));
-
-        if let Some(transaction_orchestrator) = transaction_orchestrator {
-            rest_service.with_executor(transaction_orchestrator.clone())
-        }
-
-        router = router.merge(rest_service.into_router());
-    }
-    // TODO: Remove this health check when experimental REST API becomes default
-    // This is a copy of the health check in crates/ika-rest-api/src/health.rs
-    router = router
-        .route("/health", axum::routing::get(health_check_handler))
-        .route_layer(axum::Extension(state));
-
-    let listener = tokio::net::TcpListener::bind(&config.json_rpc_address)
-        .await
-        .unwrap();
-    let addr = listener.local_addr().unwrap();
-
-    router = router.layer(axum::middleware::from_fn(server_timing_middleware));
-
-    let handle = tokio::spawn(async move {
-        axum::serve(
-            listener,
-            router.into_make_service_with_connect_info::<SocketAddr>(),
-        )
-        .await
-        .unwrap()
-    });
-
-    info!(local_addr =? addr, "Ika JSON-RPC server listening on {addr}");
-
-    Ok(Some(handle))
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -2173,7 +1342,7 @@ async fn health_check_handler(
 
 #[cfg(not(test))]
 fn max_tx_per_checkpoint(protocol_config: &ProtocolConfig) -> usize {
-    protocol_config.max_transactions_per_checkpoint() as usize
+    protocol_config.max_messages_per_checkpoint() as usize
 }
 
 #[cfg(test)]

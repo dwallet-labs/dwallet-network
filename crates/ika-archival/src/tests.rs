@@ -1,10 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::reader::{ArchiveReader, ArchiveReaderMetrics};
 use crate::writer::ArchiveWriter;
 use crate::{read_manifest, verify_archive_with_local_store, write_manifest, Manifest};
 use anyhow::{anyhow, Context, Result};
+use ika_config::node::ArchiveReaderConfig;
+use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
+use ika_storage::object_store::util::path_to_filesystem;
+use ika_storage::{FileCompression, StorageFormat};
+use ika_swarm_config::test_utils::{empty_contents, CommitteeFixture};
+use ika_types::messages_checkpoint::{VerifiedCheckpoint, VerifiedCheckpointContents};
+use ika_types::storage::{ReadStore, SharedInMemoryStore, SingleCheckpointSharedInMemoryStore};
 use more_asserts as ma;
 use object_store::DynObjectStore;
 use prometheus::Registry;
@@ -16,13 +23,6 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
-use ika_config::node::ArchiveReaderConfig;
-use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
-use ika_storage::object_store::util::path_to_filesystem;
-use ika_storage::{FileCompression, StorageFormat};
-use ika_swarm_config::test_utils::{empty_contents, CommitteeFixture};
-use ika_types::messages_checkpoint::{VerifiedCheckpoint, VerifiedCheckpointContents};
-use ika_types::storage::{ReadStore, SharedInMemoryStore, SingleCheckpointSharedInMemoryStore};
 use tempfile::tempdir;
 
 struct TestState {

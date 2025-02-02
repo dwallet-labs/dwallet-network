@@ -1,6 +1,0 @@
-current frame stack:
-  function: test (line 13)
-    scope 0 :
-      _res : 43
-      type: u64
-

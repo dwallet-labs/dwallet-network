@@ -1,3 +1,0 @@
-FROM gcr.io/distroless/cc-debian12
-
-COPY --chmod=755 ika-proxy /opt/ika/bin/ika-proxy

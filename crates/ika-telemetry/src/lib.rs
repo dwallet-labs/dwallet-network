@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use ika_core::authority::AuthorityState;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use ika_core::authority::AuthorityState;
 use tracing::trace;
 
 pub(crate) const GA_API_SECRET: &str = "zeq-aYEzS0aGdRJ8kNZTEg";
@@ -41,10 +41,11 @@ struct IpResponse {
 pub async fn send_telemetry_event(state: Arc<AuthorityState>, is_validator: bool) {
     let git_rev = env!("CARGO_PKG_VERSION").to_string();
     let ip_address = get_ip().await;
-    let chain_identifier = match state.get_chain_identifier() {
-        Some(chain_identifier) => chain_identifier.to_string(),
-        None => "Unknown".to_string(),
-    };
+    // let chain_identifier = match state.get_chain_identifier() {
+    //     Some(chain_identifier) => chain_identifier.to_string(),
+    //     None => "Unknown".to_string(),
+    // };
+    let chain_identifier = "Unknown".to_string();
     let since_the_epoch = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Now should be later than epoch!");

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // This creates the largest package possible in Move. It is used to test the limits of the TX size limits logic
 module max_package::max_package {

@@ -1,19 +1,21 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::anyhow;
 use anyhow::Result;
-use std::sync::Mutex;
-use std::sync::MutexGuard;
 use ika_config::NodeConfig;
 use ika_node::IkaNodeHandle;
-use ika_types::base_types::AuthorityName;
-use ika_types::base_types::ConciseableName;
+use ika_types::crypto::AuthorityName;
 use ika_types::crypto::KeypairTraits;
+use std::sync::Mutex;
+use std::sync::MutexGuard;
+use sui_types::base_types::ConciseableName;
 use tap::TapFallible;
 use tracing::{error, info};
 
 use super::container::Container;
+
+pub const IKA_VALIDATOR_SERVER_NAME: &str = "ika";
 
 /// A handle to an in-memory Ika Node.
 ///
@@ -50,10 +52,6 @@ impl Node {
 
     pub fn config(&self) -> MutexGuard<'_, NodeConfig> {
         self.config.lock().unwrap()
-    }
-
-    pub fn json_rpc_address(&self) -> std::net::SocketAddr {
-        self.config().json_rpc_address
     }
 
     /// Start this Node
@@ -105,31 +103,31 @@ impl Node {
             }
         }
 
-        if is_validator {
-            let network_address = self.config().network_address().clone();
-            let tls_config = ika_tls::create_rustls_client_config(
-                self.config().network_key_pair().public().to_owned(),
-                ika_tls::IKA_VALIDATOR_SERVER_NAME.to_string(),
-                None,
-            );
-            let channel = mysten_network::client::connect(&network_address, Some(tls_config))
-                .await
-                .map_err(|err| anyhow!(err.to_string()))
-                .map_err(HealthCheckError::Failure)
-                .tap_err(|e| error!("error connecting to {}: {e}", self.name().concise()))?;
-
-            let mut client = tonic_health::pb::health_client::HealthClient::new(channel);
-            client
-                .check(tonic_health::pb::HealthCheckRequest::default())
-                .await
-                .map_err(|e| HealthCheckError::Failure(e.into()))
-                .tap_err(|e| {
-                    error!(
-                        "error performing health check on {}: {e}",
-                        self.name().concise()
-                    )
-                })?;
-        }
+        // if is_validator {
+        //     let network_address = self.config().network_address().clone();
+        //     let tls_config = sui_tls::create_rustls_client_config(
+        //         self.config().network_key_pair().public().to_owned(),
+        //         IKA_VALIDATOR_SERVER_NAME.to_string(),
+        //         None,
+        //     );
+        //     let channel = mysten_network::client::connect(&network_address, Some(tls_config))
+        //         .await
+        //         .map_err(|err| anyhow!(err.to_string()))
+        //         .map_err(HealthCheckError::Failure)
+        //         .tap_err(|e| error!("error connecting to {}: {e}", self.name().concise()))?;
+        //
+        //     let mut client = tonic_health::pb::health_client::HealthClient::new(channel);
+        //     client
+        //         .check(tonic_health::pb::HealthCheckRequest::default())
+        //         .await
+        //         .map_err(|e| HealthCheckError::Failure(e.into()))
+        //         .tap_err(|e| {
+        //             error!(
+        //                 "error performing health check on {}: {e}",
+        //                 self.name().concise()
+        //             )
+        //         })?;
+        // }
 
         Ok(())
     }

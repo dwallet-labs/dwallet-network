@@ -244,7 +244,7 @@ validators:
           size: 0
       voting_power: 10000
       operation_cap_id: "0x2fd0e88948443e54727efb6d1756d8c39735a421dac7bb92be690abe205b5bfa"
-      gas_price: 1000
+      computation_price: 1000
       staking_pool:
         id: "0xdcc39ac807721ee62f3fe0a6c697cbd93389f79b1a6717a95ccd28dca27821c8"
         activation_epoch: 0
@@ -265,7 +265,7 @@ validators:
           size: 0
       commission_rate: 200
       next_epoch_stake: 20000000000000000
-      next_epoch_gas_price: 1000
+      next_epoch_computation_price: 1000
       next_epoch_commission_rate: 200
       extra_fields:
         id:
@@ -308,7 +308,7 @@ parameters:
     id:
       id: "0x3730cc216e9af079f9f8955b07b50366ee726b2d95dd102c4420e0e5102ce558"
     size: 0
-reference_gas_price: 1000
+computation_price_per_unit_size: 1000
 validator_report_records:
   contents: []
 stake_subsidy:

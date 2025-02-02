@@ -1,6 +1,0 @@
-processed 1 task
-
-task 0, lines 4-13:
-//# publish
-Error: Transaction Effects Status: Ika Move Bytecode Verification Error. Please run the Ika Move Verifier for more information.
-Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: IkaMoveVerificationError, source: Some("Invalid entry point parameter type. Expected primitive or object type. Got: vector<vector<T0>>"), command: Some(0) } }

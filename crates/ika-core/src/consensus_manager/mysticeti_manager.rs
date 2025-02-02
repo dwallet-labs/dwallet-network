@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use std::{path::PathBuf, sync::Arc};
 
 use arc_swap::ArcSwapOption;
@@ -7,31 +7,23 @@ use async_trait::async_trait;
 use consensus_config::{Committee, NetworkKeyPair, Parameters, ProtocolKeyPair};
 use consensus_core::{CommitConsumer, CommitConsumerMonitor, CommitIndex, ConsensusAuthority};
 use fastcrypto::ed25519;
+use ika_config::NodeConfig;
+use ika_types::{committee::EpochId, sui::epoch_start_system::EpochStartSystemTrait};
 use mysten_metrics::{RegistryID, RegistryService};
 use prometheus::Registry;
-use ika_config::NodeConfig;
-use ika_protocol_config::ConsensusNetwork;
-use ika_types::{
-    committee::EpochId, ika_system_state::epoch_start_ika_system_state::EpochStartSystemStateTrait,
-};
+use sui_protocol_config::ConsensusNetwork;
 use tokio::sync::Mutex;
 use tracing::info;
 
 use crate::{
     authority::authority_per_epoch_store::AuthorityPerEpochStore,
-    consensus_handler::{
-        ConsensusHandlerInitializer, ConsensusTransactionHandler, MysticetiConsensusHandler,
-    },
+    consensus_handler::{ConsensusHandlerInitializer, MysticetiConsensusHandler},
     consensus_manager::{
         ConsensusManagerMetrics, ConsensusManagerTrait, Running, RunningLockGuard,
     },
     consensus_validator::IkaTxValidator,
     mysticeti_adapter::LazyMysticetiClient,
 };
-
-#[cfg(test)]
-#[path = "../unit_tests/mysticeti_manager_tests.rs"]
-pub mod mysticeti_manager_tests;
 
 pub struct MysticetiManager {
     protocol_keypair: ProtocolKeyPair,
@@ -82,22 +74,6 @@ impl MysticetiManager {
         store_path.push(format!("{}", epoch));
         store_path
     }
-
-    fn pick_network(&self, epoch_store: &AuthorityPerEpochStore) -> ConsensusNetwork {
-        if let Ok(type_str) = std::env::var("CONSENSUS_NETWORK") {
-            match type_str.to_lowercase().as_str() {
-                "anemo" => return ConsensusNetwork::Anemo,
-                "tonic" => return ConsensusNetwork::Tonic,
-                _ => {
-                    info!(
-                        "Invalid consensus network type {} in env var. Continue to use the value from protocol config.",
-                        type_str
-                    );
-                }
-            }
-        }
-        epoch_store.protocol_config().consensus_network()
-    }
 }
 
 #[async_trait]
@@ -113,7 +89,6 @@ impl ConsensusManagerTrait for MysticetiManager {
         let committee: Committee = system_state.get_consensus_committee();
         let epoch = epoch_store.epoch();
         let protocol_config = epoch_store.protocol_config();
-        let network_type = self.pick_network(&epoch_store);
 
         let Some(_guard) = RunningLockGuard::acquire_start(
             &self.metrics,
@@ -144,7 +119,7 @@ impl ConsensusManagerTrait for MysticetiManager {
         let registry = Registry::new_custom(Some("consensus".to_string()), None).unwrap();
 
         let consensus_handler = consensus_handler_initializer.new_consensus_handler();
-        let (commit_consumer, commit_receiver, transaction_receiver) =
+        let (commit_consumer, commit_receiver, _) =
             CommitConsumer::new(consensus_handler.last_processed_subdag_index() as CommitIndex);
         let monitor = commit_consumer.monitor();
 
@@ -172,12 +147,25 @@ impl ConsensusManagerTrait for MysticetiManager {
             );
         }
 
+        // This can only be changed for all validators together at the same epoch
+        let protocol_config = if epoch >= 0 {
+            sui_protocol_config::ProtocolConfig::get_for_version(
+                sui_protocol_config::ProtocolVersion::new(70),
+                sui_protocol_config::Chain::Mainnet,
+            )
+        } else {
+            sui_protocol_config::ProtocolConfig::get_for_version(
+                sui_protocol_config::ProtocolVersion::new(70),
+                sui_protocol_config::Chain::Mainnet,
+            )
+        };
+
         let authority = ConsensusAuthority::start(
-            network_type,
+            protocol_config.consensus_network(),
             own_index,
             committee.clone(),
             parameters.clone(),
-            protocol_config.clone(),
+            protocol_config,
             self.protocol_keypair.clone(),
             self.network_keypair.clone(),
             Arc::new(tx_validator.clone()),
@@ -196,19 +184,7 @@ impl ConsensusManagerTrait for MysticetiManager {
         // Initialize the client to send transactions to this Mysticeti instance.
         self.client.set(client);
 
-        // spin up the new mysticeti consensus handler to listen for committed sub dags
-        let consensus_transaction_handler = ConsensusTransactionHandler::new(
-            epoch_store.clone(),
-            consensus_handler.transaction_manager_sender().clone(),
-            consensus_handler_initializer.metrics().clone(),
-        );
-        let handler = MysticetiConsensusHandler::new(
-            consensus_handler,
-            consensus_transaction_handler,
-            commit_receiver,
-            transaction_receiver,
-            monitor,
-        );
+        let handler = MysticetiConsensusHandler::new(consensus_handler, commit_receiver, monitor);
 
         let mut consensus_handler = self.consensus_handler.lock().await;
         *consensus_handler = Some(handler);

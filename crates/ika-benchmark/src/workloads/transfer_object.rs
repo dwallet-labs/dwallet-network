@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use async_trait::async_trait;
 use rand::seq::IteratorRandom;
@@ -78,7 +78,7 @@ impl Payload for TransferObjectTestPayload {
             self.system_state_observer
                 .state
                 .borrow()
-                .reference_gas_price,
+                .computation_price_per_unit_size,
         )
     }
     fn get_failure_type(&self) -> Option<ExpectedFailureType> {

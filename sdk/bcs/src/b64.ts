@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export function fromBase64(base64String: string): Uint8Array {
 	return Uint8Array.from(atob(base64String), (char) => char.charCodeAt(0));

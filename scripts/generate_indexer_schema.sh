@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 #
 # Update ika-indexer's generated src/schema.rs based on the schema after
 # running all its migrations on a clean database. Expects the first argument to

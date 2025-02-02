@@ -1,18 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
     state_sync::{
-        Builder, GetCheckpointSummaryRequest, PeerStateSyncInfo, StateSync, StateSyncMessage,
+        Builder, GetCheckpointMessageRequest, PeerStateSyncInfo, StateSync, StateSyncMessage,
         UnstartedStateSync,
     },
     utils::build_network,
 };
 use anemo::{PeerId, Request};
 use anyhow::anyhow;
-use prometheus::Registry;
-use std::num::NonZeroUsize;
-use std::{collections::HashMap, time::Duration};
 use ika_archival::reader::ArchiveReaderBalancer;
 use ika_archival::writer::ArchiveWriter;
 use ika_config::node::ArchiveReaderConfig;
@@ -20,9 +17,12 @@ use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use ika_storage::{FileCompression, StorageFormat};
 use ika_swarm_config::test_utils::{empty_contents, CommitteeFixture};
 use ika_types::{
-    messages_checkpoint::CheckpointDigest,
+    messages_checkpoint::CheckpointMessageDigest,
     storage::{ReadStore, SharedInMemoryStore, WriteStore},
 };
+use prometheus::Registry;
+use std::num::NonZeroUsize;
+use std::{collections::HashMap, time::Duration};
 use tempfile::tempdir;
 use tokio::time::{timeout, Instant};
 
@@ -52,7 +52,7 @@ async fn server_push_checkpoint() {
     peer_heights.write().unwrap().peers.insert(
         peer_id,
         PeerStateSyncInfo {
-            genesis_checkpoint_digest: *ordered_checkpoints[0].digest(),
+            chain_identifier: *ordered_checkpoints[0].digest(),
             on_same_chain_as_us: true,
             height: 0,
             lowest: 0,
@@ -61,12 +61,12 @@ async fn server_push_checkpoint() {
 
     let checkpoint = ordered_checkpoints[1].inner().to_owned();
     let request = Request::new(checkpoint.clone()).with_extension(peer_id);
-    server.push_checkpoint_summary(request).await.unwrap();
+    server.push_checkpoint_message(request).await.unwrap();
 
     assert_eq!(
         peer_heights.read().unwrap().peers.get(&peer_id),
         Some(&PeerStateSyncInfo {
-            genesis_checkpoint_digest: *ordered_checkpoints[0].digest(),
+            chain_identifier: *ordered_checkpoints[0].digest(),
             on_same_chain_as_us: true,
             height: 1,
             lowest: 0,
@@ -115,7 +115,7 @@ async fn server_get_checkpoint() {
 
     // Requests for the Latest checkpoint should return the genesis checkpoint
     let response = server
-        .get_checkpoint_summary(Request::new(GetCheckpointSummaryRequest::Latest))
+        .get_checkpoint_message(Request::new(GetCheckpointMessageRequest::Latest))
         .await
         .unwrap()
         .into_inner();
@@ -126,12 +126,12 @@ async fn server_get_checkpoint() {
 
     // Requests for checkpoints that aren't in the server's store
     let requests = [
-        GetCheckpointSummaryRequest::BySequenceNumber(9),
-        GetCheckpointSummaryRequest::ByDigest(CheckpointDigest::new([10; 32])),
+        GetCheckpointMessageRequest::BySequenceNumber(9),
+        GetCheckpointMessageRequest::ByDigest(CheckpointMessageDigest::new([10; 32])),
     ];
     for request in requests {
         let response = server
-            .get_checkpoint_summary(Request::new(request))
+            .get_checkpoint_message(Request::new(request))
             .await
             .unwrap()
             .into_inner();
@@ -148,9 +148,9 @@ async fn server_get_checkpoint() {
         .inner_mut()
         .update_highest_synced_checkpoint(&latest);
 
-    let request = Request::new(GetCheckpointSummaryRequest::Latest);
+    let request = Request::new(GetCheckpointMessageRequest::Latest);
     let response = server
-        .get_checkpoint_summary(request)
+        .get_checkpoint_message(request)
         .await
         .unwrap()
         .into_inner()
@@ -158,20 +158,20 @@ async fn server_get_checkpoint() {
     assert_eq!(response.data(), latest.data());
 
     for checkpoint in ordered_checkpoints {
-        let request = Request::new(GetCheckpointSummaryRequest::ByDigest(*checkpoint.digest()));
+        let request = Request::new(GetCheckpointMessageRequest::ByDigest(*checkpoint.digest()));
         let response = server
-            .get_checkpoint_summary(request)
+            .get_checkpoint_message(request)
             .await
             .unwrap()
             .into_inner()
             .unwrap();
         assert_eq!(response.data(), checkpoint.data());
 
-        let request = Request::new(GetCheckpointSummaryRequest::BySequenceNumber(
+        let request = Request::new(GetCheckpointMessageRequest::BySequenceNumber(
             *checkpoint.sequence_number(),
         ));
         let response = server
-            .get_checkpoint_summary(request)
+            .get_checkpoint_message(request)
             .await
             .unwrap()
             .into_inner()
@@ -220,7 +220,7 @@ async fn isolated_sync_job() {
     event_loop_1.peer_heights.write().unwrap().peers.insert(
         network_2.peer_id(),
         PeerStateSyncInfo {
-            genesis_checkpoint_digest: *ordered_checkpoints[0].digest(),
+            chain_identifier: *ordered_checkpoints[0].digest(),
             on_same_chain_as_us: true,
             height: *ordered_checkpoints.last().unwrap().sequence_number(),
             lowest: 0,
@@ -395,7 +395,7 @@ async fn test_state_sync_using_archive() -> anyhow::Result<()> {
     event_loop_1.peer_heights.write().unwrap().peers.insert(
         network_2.peer_id(),
         PeerStateSyncInfo {
-            genesis_checkpoint_digest: *ordered_checkpoints[0].digest(),
+            chain_identifier: *ordered_checkpoints[0].digest(),
             on_same_chain_as_us: true,
             height: *ordered_checkpoints.last().unwrap().sequence_number(),
             lowest: oldest_checkpoint_to_keep,
@@ -482,7 +482,7 @@ async fn sync_with_checkpoints_being_inserted() {
     event_loop_1.peer_heights.write().unwrap().peers.insert(
         network_2.peer_id(),
         PeerStateSyncInfo {
-            genesis_checkpoint_digest: *ordered_checkpoints[0].digest(),
+            chain_identifier: *ordered_checkpoints[0].digest(),
             on_same_chain_as_us: true,
             height: 0,
             lowest: 0,

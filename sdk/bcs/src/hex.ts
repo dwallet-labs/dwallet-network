@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export function fromHex(hexStr: string): Uint8Array {
 	const normalized = hexStr.startsWith('0x') ? hexStr.slice(2) : hexStr;

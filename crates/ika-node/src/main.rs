@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use clap::{ArgGroup, Parser};
 use std::path::PathBuf;
@@ -9,16 +9,16 @@ use tokio::sync::broadcast;
 use tokio::time::sleep;
 use tracing::{error, info};
 
-use mysten_common::sync::async_once_cell::AsyncOnceCell;
 use ika_config::node::RunWithRange;
 use ika_config::{Config, NodeConfig};
 use ika_core::runtime::IkaRuntimes;
 use ika_node::metrics;
 use ika_telemetry::send_telemetry_event;
-use ika_types::committee::EpochId;
 use ika_types::messages_checkpoint::CheckpointSequenceNumber;
-use ika_types::multiaddr::Multiaddr;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
+use mysten_common::sync::async_once_cell::AsyncOnceCell;
+use sui_types::committee::EpochId;
+use sui_types::multiaddr::Multiaddr;
 
 // Define the `GIT_REVISION` and `VERSION` consts
 bin_version::bin_version!();
@@ -112,13 +112,12 @@ fn main() {
     // if it deadlocks.
     let node_once_cell = Arc::new(AsyncOnceCell::<Arc<ika_node::IkaNode>>::new());
     let node_once_cell_clone = node_once_cell.clone();
-    let rpc_runtime = runtimes.json_rpc.handle().clone();
 
     // let ika-node signal main to shutdown runtimes
     let (runtime_shutdown_tx, runtime_shutdown_rx) = broadcast::channel::<()>(1);
 
     runtimes.ika_node.spawn(async move {
-        match ika_node::IkaNode::start_async(config, registry_service, Some(rpc_runtime), VERSION).await {
+        match ika_node::IkaNode::start_async(config, registry_service, VERSION).await {
             Ok(ika_node) => node_once_cell_clone
                 .set(ika_node)
                 .expect("Failed to set node in AsyncOnceCell"),

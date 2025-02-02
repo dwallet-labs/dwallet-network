@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use anyhow::bail;
 use async_trait::async_trait;
 use embedded_reconfig_observer::EmbeddedReconfigObserver;
@@ -26,7 +26,7 @@ use ika_types::gas::GasCostSummary;
 use ika_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use ika_types::quorum_driver_types::EffectsFinalityInfo;
 use ika_types::quorum_driver_types::FinalizedEffects;
-use ika_types::ika_system_state::ika_system_state_summary::IkaSystemStateSummary;
+use ika_types::sui::ika_system_state_summary::IkaSystemStateSummary;
 use ika_types::transaction::Argument;
 use ika_types::transaction::CallArg;
 use ika_types::transaction::ObjectArg;

@@ -1,15 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{env, fmt};
 
-use crate::{error::IkaError, ika_serde::Readable};
+use crate::error::IkaError;
 use fastcrypto::encoding::{Base58, Encoding, Hex};
+use ika_protocol_config::Chain;
 use once_cell::sync::{Lazy, OnceCell};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
-use ika_protocol_config::Chain;
+use sui_types::base_types::ObjectID;
+pub use sui_types::digests::ConsensusCommitDigest;
+use sui_types::sui_serde::Readable;
 use tracing::info;
 
 /// A representation of a 32 byte digest
@@ -142,28 +145,23 @@ impl fmt::UpperHex for Digest {
 
 /// Representation of a network's identifier by the genesis checkpoint's digest
 #[derive(
-    Clone,
-    Copy,
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Serialize,
-    Deserialize,
-    JsonSchema,
+    Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]
-pub struct ChainIdentifier(CheckpointDigest);
+pub struct ChainIdentifier(ObjectID);
 
-pub const MAINNET_CHAIN_IDENTIFIER_BASE58: &str = "4btiuiMPvEENsttpZC7CZ53DruC3MAgfznDbASZ7DR6S";
-pub const TESTNET_CHAIN_IDENTIFIER_BASE58: &str = "69WiPg3DAQiwdxfncX6wYQ2siKwAe6L9BZthQea3JNMD";
+impl Default for ChainIdentifier {
+    fn default() -> Self {
+        Self(ObjectID::ZERO)
+    }
+}
+
+pub const MAINNET_CHAIN_IDENTIFIER_BASE58: &str = "to be set";
+pub const TESTNET_CHAIN_IDENTIFIER_BASE58: &str = "to be set";
 
 pub static MAINNET_CHAIN_IDENTIFIER: OnceCell<ChainIdentifier> = OnceCell::new();
 pub static TESTNET_CHAIN_IDENTIFIER: OnceCell<ChainIdentifier> = OnceCell::new();
 
-/// For testing purposes or bootstrapping regenesis chain configuration, you can set
+/// For testing purposes or bootstrapping chain reconfiguration, you can set
 /// this environment variable to force protocol config to use a specific Chain.
 const IKA_PROTOCOL_CONFIG_CHAIN_OVERRIDE_ENV_VAR_NAME: &str = "IKA_PROTOCOL_CONFIG_CHAIN_OVERRIDE";
 
@@ -220,39 +218,43 @@ impl ChainIdentifier {
     }
 
     pub fn as_bytes(&self) -> &[u8; 32] {
-        self.0.inner()
+        self.as_bytes()
+    }
+
+    pub fn base58_encode(&self) -> String {
+        Base58::encode(self.0)
     }
 }
 
 pub fn get_mainnet_chain_identifier() -> ChainIdentifier {
-    let digest = MAINNET_CHAIN_IDENTIFIER.get_or_init(|| {
-        let digest = CheckpointDigest::new(
+    let object_id = MAINNET_CHAIN_IDENTIFIER.get_or_init(|| {
+        let object_id = ObjectID::new(
             Base58::decode(MAINNET_CHAIN_IDENTIFIER_BASE58)
                 .expect("mainnet genesis checkpoint digest literal is invalid")
                 .try_into()
                 .expect("Mainnet genesis checkpoint digest literal has incorrect length"),
         );
-        ChainIdentifier::from(digest)
+        ChainIdentifier::from(object_id)
     });
-    *digest
+    *object_id
 }
 
 pub fn get_testnet_chain_identifier() -> ChainIdentifier {
-    let digest = TESTNET_CHAIN_IDENTIFIER.get_or_init(|| {
-        let digest = CheckpointDigest::new(
+    let object_id = TESTNET_CHAIN_IDENTIFIER.get_or_init(|| {
+        let object_id = ObjectID::new(
             Base58::decode(TESTNET_CHAIN_IDENTIFIER_BASE58)
                 .expect("testnet genesis checkpoint digest literal is invalid")
                 .try_into()
                 .expect("Testnet genesis checkpoint digest literal has incorrect length"),
         );
-        ChainIdentifier::from(digest)
+        ChainIdentifier::from(object_id)
     });
-    *digest
+    *object_id
 }
 
 impl fmt::Display for ChainIdentifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for byte in self.0 .0 .0[0..4].iter() {
+        for byte in self.0.as_ref()[0..4].iter() {
             write!(f, "{:02x}", byte)?;
         }
 
@@ -260,19 +262,19 @@ impl fmt::Display for ChainIdentifier {
     }
 }
 
-impl From<CheckpointDigest> for ChainIdentifier {
-    fn from(digest: CheckpointDigest) -> Self {
-        Self(digest)
+impl From<ObjectID> for ChainIdentifier {
+    fn from(object_id: ObjectID) -> Self {
+        Self(object_id)
     }
 }
 
-/// Representation of a Checkpoint's digest
+/// Representation of a CheckpointMessage's digest
 #[derive(
     Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]
-pub struct CheckpointDigest(Digest);
+pub struct CheckpointMessageDigest(Digest);
 
-impl CheckpointDigest {
+impl CheckpointMessageDigest {
     pub const fn new(digest: [u8; 32]) -> Self {
         Self(Digest::new(digest))
     }
@@ -302,63 +304,63 @@ impl CheckpointDigest {
     }
 }
 
-impl AsRef<[u8]> for CheckpointDigest {
+impl AsRef<[u8]> for CheckpointMessageDigest {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl AsRef<[u8; 32]> for CheckpointDigest {
+impl AsRef<[u8; 32]> for CheckpointMessageDigest {
     fn as_ref(&self) -> &[u8; 32] {
         self.0.as_ref()
     }
 }
 
-impl From<CheckpointDigest> for [u8; 32] {
-    fn from(digest: CheckpointDigest) -> Self {
+impl From<CheckpointMessageDigest> for [u8; 32] {
+    fn from(digest: CheckpointMessageDigest) -> Self {
         digest.into_inner()
     }
 }
 
-impl From<[u8; 32]> for CheckpointDigest {
+impl From<[u8; 32]> for CheckpointMessageDigest {
     fn from(digest: [u8; 32]) -> Self {
         Self::new(digest)
     }
 }
 
-impl TryFrom<Vec<u8>> for CheckpointDigest {
+impl TryFrom<Vec<u8>> for CheckpointMessageDigest {
     type Error = IkaError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
-        Digest::try_from(bytes).map(CheckpointDigest)
+        Digest::try_from(bytes).map(CheckpointMessageDigest)
     }
 }
 
-impl fmt::Display for CheckpointDigest {
+impl fmt::Display for CheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)
     }
 }
 
-impl fmt::Debug for CheckpointDigest {
+impl fmt::Debug for CheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("CheckpointDigest").field(&self.0).finish()
     }
 }
 
-impl fmt::LowerHex for CheckpointDigest {
+impl fmt::LowerHex for CheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::LowerHex::fmt(&self.0, f)
     }
 }
 
-impl fmt::UpperHex for CheckpointDigest {
+impl fmt::UpperHex for CheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::UpperHex::fmt(&self.0, f)
     }
 }
 
-impl std::str::FromStr for CheckpointDigest {
+impl std::str::FromStr for CheckpointMessageDigest {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -368,7 +370,7 @@ impl std::str::FromStr for CheckpointDigest {
             return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
         }
         result.copy_from_slice(&buffer);
-        Ok(CheckpointDigest::new(result))
+        Ok(CheckpointMessageDigest::new(result))
     }
 }
 
@@ -476,7 +478,6 @@ impl fmt::UpperHex for CheckpointContentsDigest {
         fmt::UpperHex::fmt(&self.0, f)
     }
 }
-
 /// A digest of a certificate, which commits to the signatures as well as the tx.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CertificateDigest(Digest);
@@ -515,17 +516,17 @@ impl fmt::Debug for SenderSignedDataDigest {
     }
 }
 
-/// A transaction will have a (unique) digest.
+/// A message will have a (unique) digest.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct TransactionDigest(Digest);
+pub struct MessageDigest(Digest);
 
-impl Default for TransactionDigest {
+impl Default for MessageDigest {
     fn default() -> Self {
         Self::ZERO
     }
 }
 
-impl TransactionDigest {
+impl MessageDigest {
     pub const ZERO: Self = Self(Digest::ZERO);
 
     pub const fn new(digest: [u8; 32]) -> Self {
@@ -534,15 +535,6 @@ impl TransactionDigest {
 
     pub const fn from_digest(digest: Digest) -> Self {
         Self(digest)
-    }
-
-    /// A digest we use to signify the parent transaction was the genesis,
-    /// ie. for an object there is no parent digest.
-    /// Note that this is not the same as the digest of the genesis transaction,
-    /// which cannot be known ahead of time.
-    // TODO(https://github.com/MystenLabs/sui/issues/65): we can pick anything here
-    pub const fn genesis_marker() -> Self {
-        Self::ZERO
     }
 
     pub fn generate<R: rand::RngCore + rand::CryptoRng>(rng: R) -> Self {
@@ -570,74 +562,74 @@ impl TransactionDigest {
     }
 }
 
-impl AsRef<[u8]> for TransactionDigest {
+impl AsRef<[u8]> for MessageDigest {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl AsRef<[u8; 32]> for TransactionDigest {
+impl AsRef<[u8; 32]> for MessageDigest {
     fn as_ref(&self) -> &[u8; 32] {
         self.0.as_ref()
     }
 }
 
-impl From<TransactionDigest> for [u8; 32] {
-    fn from(digest: TransactionDigest) -> Self {
+impl From<MessageDigest> for [u8; 32] {
+    fn from(digest: MessageDigest) -> Self {
         digest.into_inner()
     }
 }
 
-impl From<[u8; 32]> for TransactionDigest {
+impl From<[u8; 32]> for MessageDigest {
     fn from(digest: [u8; 32]) -> Self {
         Self::new(digest)
     }
 }
 
-impl fmt::Display for TransactionDigest {
+impl fmt::Display for MessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)
     }
 }
 
-impl fmt::Debug for TransactionDigest {
+impl fmt::Debug for MessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("TransactionDigest").field(&self.0).finish()
+        f.debug_tuple("MessageDigest").field(&self.0).finish()
     }
 }
 
-impl fmt::LowerHex for TransactionDigest {
+impl fmt::LowerHex for MessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::LowerHex::fmt(&self.0, f)
     }
 }
 
-impl fmt::UpperHex for TransactionDigest {
+impl fmt::UpperHex for MessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::UpperHex::fmt(&self.0, f)
     }
 }
 
-impl TryFrom<&[u8]> for TransactionDigest {
+impl TryFrom<&[u8]> for MessageDigest {
     type Error = crate::error::IkaError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, crate::error::IkaError> {
         let arr: [u8; 32] = bytes
             .try_into()
-            .map_err(|_| crate::error::IkaError::InvalidTransactionDigest)?;
+            .map_err(|_| crate::error::IkaError::InvalidMessageDigest)?;
         Ok(Self::new(arr))
     }
 }
 
-impl TryFrom<Vec<u8>> for TransactionDigest {
+impl TryFrom<Vec<u8>> for MessageDigest {
     type Error = crate::error::IkaError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
-        Digest::try_from(bytes).map(TransactionDigest)
+        Digest::try_from(bytes).map(MessageDigest)
     }
 }
 
-impl std::str::FromStr for TransactionDigest {
+impl std::str::FromStr for MessageDigest {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -647,449 +639,6 @@ impl std::str::FromStr for TransactionDigest {
             return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
         }
         result.copy_from_slice(&buffer);
-        Ok(TransactionDigest::new(result))
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct TransactionEffectsDigest(Digest);
-
-impl TransactionEffectsDigest {
-    pub const ZERO: Self = Self(Digest::ZERO);
-
-    pub const fn new(digest: [u8; 32]) -> Self {
-        Self(Digest::new(digest))
-    }
-
-    pub fn generate<R: rand::RngCore + rand::CryptoRng>(rng: R) -> Self {
-        Self(Digest::generate(rng))
-    }
-
-    pub fn random() -> Self {
-        Self(Digest::random())
-    }
-
-    pub const fn inner(&self) -> &[u8; 32] {
-        self.0.inner()
-    }
-
-    pub const fn into_inner(self) -> [u8; 32] {
-        self.0.into_inner()
-    }
-
-    pub fn base58_encode(&self) -> String {
-        Base58::encode(self.0)
-    }
-
-    pub fn next_lexicographical(&self) -> Option<Self> {
-        self.0.next_lexicographical().map(Self)
-    }
-}
-
-impl AsRef<[u8]> for TransactionEffectsDigest {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_ref()
-    }
-}
-
-impl AsRef<[u8; 32]> for TransactionEffectsDigest {
-    fn as_ref(&self) -> &[u8; 32] {
-        self.0.as_ref()
-    }
-}
-
-impl TryFrom<Vec<u8>> for TransactionEffectsDigest {
-    type Error = IkaError;
-
-    fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
-        Digest::try_from(bytes).map(TransactionEffectsDigest)
-    }
-}
-
-impl From<TransactionEffectsDigest> for [u8; 32] {
-    fn from(digest: TransactionEffectsDigest) -> Self {
-        digest.into_inner()
-    }
-}
-
-impl From<[u8; 32]> for TransactionEffectsDigest {
-    fn from(digest: [u8; 32]) -> Self {
-        Self::new(digest)
-    }
-}
-
-impl fmt::Display for TransactionEffectsDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&self.0, f)
-    }
-}
-
-impl fmt::Debug for TransactionEffectsDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("TransactionEffectsDigest")
-            .field(&self.0)
-            .finish()
-    }
-}
-
-impl fmt::LowerHex for TransactionEffectsDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::LowerHex::fmt(&self.0, f)
-    }
-}
-
-impl fmt::UpperHex for TransactionEffectsDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::UpperHex::fmt(&self.0, f)
-    }
-}
-
-#[serde_as]
-#[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct TransactionEventsDigest(Digest);
-
-impl TransactionEventsDigest {
-    pub const ZERO: Self = Self(Digest::ZERO);
-
-    pub const fn new(digest: [u8; 32]) -> Self {
-        Self(Digest::new(digest))
-    }
-
-    pub fn random() -> Self {
-        Self(Digest::random())
-    }
-
-    pub fn next_lexicographical(&self) -> Option<Self> {
-        self.0.next_lexicographical().map(Self)
-    }
-
-    pub fn into_inner(self) -> [u8; 32] {
-        self.0.into_inner()
-    }
-}
-
-impl fmt::Debug for TransactionEventsDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("TransactionEventsDigest")
-            .field(&self.0)
-            .finish()
-    }
-}
-
-impl AsRef<[u8]> for TransactionEventsDigest {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_ref()
-    }
-}
-
-impl AsRef<[u8; 32]> for TransactionEventsDigest {
-    fn as_ref(&self) -> &[u8; 32] {
-        self.0.as_ref()
-    }
-}
-
-impl TryFrom<Vec<u8>> for TransactionEventsDigest {
-    type Error = IkaError;
-
-    fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
-        Digest::try_from(bytes).map(TransactionEventsDigest)
-    }
-}
-
-impl std::str::FromStr for TransactionEventsDigest {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut result = [0; 32];
-        let buffer = Base58::decode(s).map_err(|e| anyhow::anyhow!(e))?;
-        if buffer.len() != 32 {
-            return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
-        }
-        result.copy_from_slice(&buffer);
-        Ok(Self::new(result))
-    }
-}
-
-#[serde_as]
-#[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct EffectsAuxDataDigest(Digest);
-
-impl EffectsAuxDataDigest {
-    pub const ZERO: Self = Self(Digest::ZERO);
-
-    pub const fn new(digest: [u8; 32]) -> Self {
-        Self(Digest::new(digest))
-    }
-
-    pub fn random() -> Self {
-        Self(Digest::random())
-    }
-
-    pub fn next_lexicographical(&self) -> Option<Self> {
-        self.0.next_lexicographical().map(Self)
-    }
-
-    pub fn into_inner(self) -> [u8; 32] {
-        self.0.into_inner()
-    }
-}
-
-impl fmt::Debug for EffectsAuxDataDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("EffectsAuxDataDigest")
-            .field(&self.0)
-            .finish()
-    }
-}
-
-impl AsRef<[u8]> for EffectsAuxDataDigest {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_ref()
-    }
-}
-
-impl AsRef<[u8; 32]> for EffectsAuxDataDigest {
-    fn as_ref(&self) -> &[u8; 32] {
-        self.0.as_ref()
-    }
-}
-
-impl std::str::FromStr for EffectsAuxDataDigest {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut result = [0; 32];
-        let buffer = Base58::decode(s).map_err(|e| anyhow::anyhow!(e))?;
-        if buffer.len() != 32 {
-            return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
-        }
-        result.copy_from_slice(&buffer);
-        Ok(Self::new(result))
-    }
-}
-
-// Each object has a unique digest
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct ObjectDigest(Digest);
-
-impl ObjectDigest {
-    pub const MIN: ObjectDigest = Self::new([u8::MIN; 32]);
-    pub const MAX: ObjectDigest = Self::new([u8::MAX; 32]);
-    pub const OBJECT_DIGEST_DELETED_BYTE_VAL: u8 = 99;
-    pub const OBJECT_DIGEST_WRAPPED_BYTE_VAL: u8 = 88;
-    pub const OBJECT_DIGEST_CANCELLED_BYTE_VAL: u8 = 77;
-
-    /// A marker that signifies the object is deleted.
-    pub const OBJECT_DIGEST_DELETED: ObjectDigest =
-        Self::new([Self::OBJECT_DIGEST_DELETED_BYTE_VAL; 32]);
-
-    /// A marker that signifies the object is wrapped into another object.
-    pub const OBJECT_DIGEST_WRAPPED: ObjectDigest =
-        Self::new([Self::OBJECT_DIGEST_WRAPPED_BYTE_VAL; 32]);
-
-    pub const OBJECT_DIGEST_CANCELLED: ObjectDigest =
-        Self::new([Self::OBJECT_DIGEST_CANCELLED_BYTE_VAL; 32]);
-
-    pub const fn new(digest: [u8; 32]) -> Self {
-        Self(Digest::new(digest))
-    }
-
-    pub fn generate<R: rand::RngCore + rand::CryptoRng>(rng: R) -> Self {
-        Self(Digest::generate(rng))
-    }
-
-    pub fn random() -> Self {
-        Self(Digest::random())
-    }
-
-    pub const fn inner(&self) -> &[u8; 32] {
-        self.0.inner()
-    }
-
-    pub const fn into_inner(self) -> [u8; 32] {
-        self.0.into_inner()
-    }
-
-    pub fn is_alive(&self) -> bool {
-        *self != Self::OBJECT_DIGEST_DELETED && *self != Self::OBJECT_DIGEST_WRAPPED
-    }
-
-    pub fn is_deleted(&self) -> bool {
-        *self == Self::OBJECT_DIGEST_DELETED
-    }
-
-    pub fn is_wrapped(&self) -> bool {
-        *self == Self::OBJECT_DIGEST_WRAPPED
-    }
-
-    pub fn base58_encode(&self) -> String {
-        Base58::encode(self.0)
-    }
-}
-
-impl AsRef<[u8]> for ObjectDigest {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_ref()
-    }
-}
-
-impl AsRef<[u8; 32]> for ObjectDigest {
-    fn as_ref(&self) -> &[u8; 32] {
-        self.0.as_ref()
-    }
-}
-
-impl From<ObjectDigest> for [u8; 32] {
-    fn from(digest: ObjectDigest) -> Self {
-        digest.into_inner()
-    }
-}
-
-impl From<[u8; 32]> for ObjectDigest {
-    fn from(digest: [u8; 32]) -> Self {
-        Self::new(digest)
-    }
-}
-
-impl fmt::Display for ObjectDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&self.0, f)
-    }
-}
-
-impl fmt::Debug for ObjectDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "o#{}", self.0)
-    }
-}
-
-impl fmt::LowerHex for ObjectDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::LowerHex::fmt(&self.0, f)
-    }
-}
-
-impl fmt::UpperHex for ObjectDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::UpperHex::fmt(&self.0, f)
-    }
-}
-
-impl TryFrom<&[u8]> for ObjectDigest {
-    type Error = crate::error::IkaError;
-
-    fn try_from(bytes: &[u8]) -> Result<Self, crate::error::IkaError> {
-        let arr: [u8; 32] = bytes
-            .try_into()
-            .map_err(|_| crate::error::IkaError::InvalidTransactionDigest)?;
-        Ok(Self::new(arr))
-    }
-}
-
-impl std::str::FromStr for ObjectDigest {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut result = [0; 32];
-        let buffer = Base58::decode(s).map_err(|e| anyhow::anyhow!(e))?;
-        if buffer.len() != 32 {
-            return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
-        }
-        result.copy_from_slice(&buffer);
-        Ok(ObjectDigest::new(result))
-    }
-}
-
-/// A digest of a ZkLoginInputs, which commits to the signatures as well as the tx.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ZKLoginInputsDigest(Digest);
-
-impl ZKLoginInputsDigest {
-    pub const fn new(digest: [u8; 32]) -> Self {
-        Self(Digest::new(digest))
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct ConsensusCommitDigest(Digest);
-
-impl ConsensusCommitDigest {
-    pub const ZERO: Self = Self(Digest::ZERO);
-
-    pub const fn new(digest: [u8; 32]) -> Self {
-        Self(Digest::new(digest))
-    }
-
-    pub const fn inner(&self) -> &[u8; 32] {
-        self.0.inner()
-    }
-
-    pub const fn into_inner(self) -> [u8; 32] {
-        self.0.into_inner()
-    }
-
-    pub fn random() -> Self {
-        Self(Digest::random())
-    }
-}
-
-impl Default for ConsensusCommitDigest {
-    fn default() -> Self {
-        Self::ZERO
-    }
-}
-
-impl From<ConsensusCommitDigest> for [u8; 32] {
-    fn from(digest: ConsensusCommitDigest) -> Self {
-        digest.into_inner()
-    }
-}
-
-impl From<[u8; 32]> for ConsensusCommitDigest {
-    fn from(digest: [u8; 32]) -> Self {
-        Self::new(digest)
-    }
-}
-
-impl fmt::Display for ConsensusCommitDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&self.0, f)
-    }
-}
-
-impl fmt::Debug for ConsensusCommitDigest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("ConsensusCommitDigest")
-            .field(&self.0)
-            .finish()
-    }
-}
-
-mod test {
-    #[allow(unused_imports)]
-    use crate::digests::ChainIdentifier;
-    // check that the chain id returns mainnet
-    #[test]
-    fn test_chain_id_mainnet() {
-        let chain_id = ChainIdentifier::from_chain_short_id(&String::from("35834a8a"));
-        assert_eq!(
-            chain_id.unwrap().chain(),
-            ika_protocol_config::Chain::Mainnet
-        );
-    }
-
-    #[test]
-    fn test_chain_id_testnet() {
-        let chain_id = ChainIdentifier::from_chain_short_id(&String::from("4c78adac"));
-        assert_eq!(
-            chain_id.unwrap().chain(),
-            ika_protocol_config::Chain::Testnet
-        );
-    }
-
-    #[test]
-    fn test_chain_id_unknown() {
-        let chain_id = ChainIdentifier::from_chain_short_id(&String::from("unknown"));
-        assert_eq!(chain_id, None);
+        Ok(MessageDigest::new(result))
     }
 }

@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use prometheus::Registry;
-use std::net::{IpAddr, SocketAddr};
-use std::sync::{Arc, Weak};
 use ika_config::NodeConfig;
 use ika_node::{IkaNode, IkaNodeHandle};
 use ika_types::base_types::ConciseableName;
+use prometheus::Registry;
+use std::net::{IpAddr, SocketAddr};
+use std::sync::{Arc, Weak};
 use tokio::sync::watch;
 use tracing::{info, trace};
 

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{
     metrics::Metrics, server::Server, Discovery, DiscoveryEventLoop, DiscoveryServer, State,
@@ -8,12 +8,12 @@ use crate::discovery::TrustedPeerChangeEvent;
 use anemo::codegen::InboundRequestLayer;
 use anemo_tower::rate_limit;
 use fastcrypto::traits::KeyPair;
+use ika_config::p2p::P2pConfig;
+use ika_types::crypto::NetworkKeyPair;
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
 };
-use ika_config::p2p::P2pConfig;
-use ika_types::crypto::NetworkKeyPair;
 use tap::Pipe;
 use tokio::{
     sync::{oneshot, watch},

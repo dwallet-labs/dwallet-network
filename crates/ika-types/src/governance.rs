@@ -1,20 +1,24 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
 
-use crate::balance::Balance;
-use crate::base_types::ObjectID;
 use crate::committee::EpochId;
 use crate::error::IkaError;
-use crate::gas_coin::NIKA_PER_IKA;
-use crate::id::{ID, UID};
-use crate::object::{Data, Object};
-use crate::IKA_SYSTEM_ADDRESS;
+use crate::ika_coin::NIKA_PER_IKA;
 use serde::Deserialize;
 use serde::Serialize;
+use sui_types::balance::Balance;
+use sui_types::base_types::ObjectID;
+use sui_types::id::{ID, UID};
+use sui_types::object::{Data, Object};
+
+/// Minimum number of active validators at any moment.
+/// We do not allow the number of validators in any epoch to go below this.
+pub const MIN_VALIDATOR_COUNT: u64 = 4;
 
 /// Maximum number of active validators at any moment.
 /// We do not allow the number of validators in any epoch to go above this.
@@ -42,6 +46,12 @@ pub const VALIDATOR_VERY_LOW_STAKE_THRESHOLD_NIKA: u64 = 15_000_000 * NIKA_PER_I
 /// for this many epochs before being kicked out.
 pub const VALIDATOR_LOW_STAKE_GRACE_PERIOD: u64 = 7;
 
+/// how many reward are slashed to punish a validator, in bps.
+pub const REWARD_SLASHING_RATE: u16 = 10_000;
+
+/// Lock active committee between epochs.
+pub const LOCK_ACTIVE_COMMITTEE: bool = false;
+
 pub const STAKING_POOL_MODULE_NAME: &IdentStr = ident_str!("staking_pool");
 pub const STAKED_IKA_STRUCT_NAME: &IdentStr = ident_str!("StakedIka");
 
@@ -58,20 +68,13 @@ pub struct StakedIka {
 }
 
 impl StakedIka {
-    pub fn type_() -> StructTag {
+    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {
-            address: IKA_SYSTEM_ADDRESS,
+            address: ika_system_package_address,
             module: STAKING_POOL_MODULE_NAME.to_owned(),
             name: STAKED_IKA_STRUCT_NAME.to_owned(),
             type_params: vec![],
         }
-    }
-
-    pub fn is_staked_ika(s: &StructTag) -> bool {
-        s.address == IKA_SYSTEM_ADDRESS
-            && s.module.as_ident_str() == STAKING_POOL_MODULE_NAME
-            && s.name.as_ident_str() == STAKED_IKA_STRUCT_NAME
-            && s.type_params.is_empty()
     }
 
     pub fn id(&self) -> ObjectID {
@@ -93,25 +96,5 @@ impl StakedIka {
 
     pub fn principal(&self) -> u64 {
         self.principal.value()
-    }
-}
-
-impl TryFrom<&Object> for StakedIka {
-    type Error = IkaError;
-    fn try_from(object: &Object) -> Result<Self, Self::Error> {
-        match &object.data {
-            Data::Move(o) => {
-                if o.type_().is_staked_ika() {
-                    return bcs::from_bytes(o.contents()).map_err(|err| IkaError::TypeError {
-                        error: format!("Unable to deserialize StakedIka object: {:?}", err),
-                    });
-                }
-            }
-            Data::Package(_) => {}
-        }
-
-        Err(IkaError::TypeError {
-            error: format!("Object type is not a StakedIka: {:?}", object),
-        })
     }
 }

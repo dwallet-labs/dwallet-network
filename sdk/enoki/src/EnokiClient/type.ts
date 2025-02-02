@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { PublicKey } from '@ika-io/ika/cryptography';
 import type { ZkLoginSignatureInputs } from '@ika-io/ika/zklogin';

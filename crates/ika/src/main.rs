@@ -1,9 +1,8 @@
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) dWallet Labs Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use clap::*;
 use colored::Colorize;
-use ika::client_commands::IkaClientCommands::{ProfileTransaction, ReplayBatch, ReplayTransaction};
 use ika::ika_commands::IkaCommand;
 use ika_types::exit_main;
 use tracing::debug;
@@ -14,7 +13,7 @@ bin_version::bin_version!();
 #[derive(Parser)]
 #[clap(
     name = env!("CARGO_BIN_NAME"),
-    about = "A Byzantine fault tolerant chain with low-latency finality and high throughput",
+    about = "Ika decentralized MPC network",
     rename_all = "kebab-case",
     author,
     version = VERSION,
@@ -32,49 +31,6 @@ async fn main() {
 
     let args = Args::parse();
     let _guard = match args.command {
-        IkaCommand::Console { .. } | IkaCommand::KeyTool { .. } | IkaCommand::Move { .. } => {
-            telemetry_subscribers::TelemetryConfig::new()
-                .with_log_level("error")
-                .with_env()
-                .init()
-        }
-
-        IkaCommand::Client {
-            cmd: Some(ReplayBatch { .. }),
-            ..
-        } => telemetry_subscribers::TelemetryConfig::new()
-            .with_log_level("info")
-            .with_env()
-            .init(),
-
-        IkaCommand::Client {
-            cmd: Some(ReplayTransaction {
-                gas_info, ptb_info, ..
-            }),
-            ..
-        } => {
-            let mut config = telemetry_subscribers::TelemetryConfig::new()
-                .with_log_level("info")
-                .with_env();
-            if gas_info {
-                config = config.with_trace_target("replay_gas_info");
-            }
-            if ptb_info {
-                config = config.with_trace_target("replay_ptb_info");
-            }
-            config.init()
-        }
-
-        IkaCommand::Client {
-            cmd: Some(ProfileTransaction { .. }),
-            ..
-        } => {
-            // enable full logging for ProfileTransaction and ReplayTransaction
-            telemetry_subscribers::TelemetryConfig::new()
-                .with_env()
-                .init()
-        }
-
         _ => telemetry_subscribers::TelemetryConfig::new()
             .with_log_level("error")
             .with_env()

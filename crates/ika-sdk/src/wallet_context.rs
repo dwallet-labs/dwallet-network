@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::ika_client_config::IkaClientConfig;
 use crate::IkaClient;
@@ -16,7 +16,7 @@ use ika_json_rpc_types::{
 use ika_keys::keystore::AccountKeystore;
 use ika_types::base_types::{ObjectID, ObjectRef, IkaAddress};
 use ika_types::crypto::IkaKeyPair;
-use ika_types::gas_coin::GasCoin;
+use ika_types::gas_coin::IKACoin;
 use ika_types::transaction::{Transaction, TransactionData, TransactionDataAPI};
 use tokio::sync::RwLock;
 
@@ -115,7 +115,7 @@ impl WalletContext {
                 .get_owned_objects(
                     address,
                     Some(IkaObjectResponseQuery::new(
-                        Some(IkaObjectDataFilter::StructType(GasCoin::type_())),
+                        Some(IkaObjectDataFilter::StructType(IKACoin::type_())),
                         Some(IkaObjectDataOptions::full_content()),
                     )),
                     cursor,
@@ -138,7 +138,7 @@ impl WalletContext {
         for object in objects {
             let o = object.data;
             if let Some(o) = o {
-                let gas_coin = GasCoin::try_from(&o)?;
+                let gas_coin = IKACoin::try_from(&o)?;
                 values_objects.push((gas_coin.value(), o.clone()));
             }
         }
@@ -205,7 +205,7 @@ impl WalletContext {
             .get_owned_objects(
                 address,
                 Some(IkaObjectResponseQuery::new(
-                    Some(IkaObjectDataFilter::StructType(GasCoin::type_())),
+                    Some(IkaObjectDataFilter::StructType(IKACoin::type_())),
                     Some(IkaObjectDataOptions::full_content()),
                 )),
                 None,
@@ -267,10 +267,10 @@ impl WalletContext {
         Ok(result)
     }
 
-    pub async fn get_reference_gas_price(&self) -> Result<u64, anyhow::Error> {
+    pub async fn get_computation_price_per_unit_size(&self) -> Result<u64, anyhow::Error> {
         let client = self.get_client().await?;
-        let gas_price = client.governance_api().get_reference_gas_price().await?;
-        Ok(gas_price)
+        let computation_price = client.governance_api().get_computation_price_per_unit_size().await?;
+        Ok(computation_price)
     }
 
     /// Add an account

@@ -2,7 +2,7 @@
 	"name": "@mysten/graphql-transport",
 	"version": "0.2.28",
 	"description": "A GraphQL transport to allow IkaClient to work with RPC 2.0",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"author": "Mysten Labs <build@mystenlabs.com>",
 	"type": "commonjs",
 	"main": "./dist/cjs/index.js",

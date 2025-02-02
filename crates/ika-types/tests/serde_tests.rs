@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use ika_types::base_types::ObjectType;
+use ika_types::ika_serde::IkaStructTag;
+use ika_types::parse_ika_struct_tag;
 use move_core_types::language_storage::StructTag;
 use serde::Serialize;
 use serde_json::Value;
 use serde_with::serde_as;
 use std::str::FromStr;
-use ika_types::base_types::ObjectType;
-use ika_types::parse_ika_struct_tag;
-use ika_types::ika_serde::IkaStructTag;
 
 #[test]
 fn test_struct_tag_serde() {

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{Discovery, SignedNodeInfo, State, MAX_PEERS_TO_SEND};
 use anemo::{Request, Response};

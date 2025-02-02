@@ -1,6 +1,6 @@
 #!/bin/bash -e
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # verify that git repo is clean
 if [[ -n $(git status -s) ]]; then

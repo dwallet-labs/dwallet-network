@@ -2,7 +2,7 @@
 name = "ika-network"
 version = "0.0.0"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 edition = "2021"
 
@@ -17,8 +17,9 @@ tower.workspace = true
 shared-crypto.workspace = true
 
 ika-archival.workspace = true
-ika-macros.workspace = true
-ika-storage.workspace = true
+sui-macros.workspace = true
+sui-storage.workspace = true
+sui-types.workspace = true
 ika-types.workspace = true
 ika-config.workspace = true
 ika-swarm-config.workspace = true
@@ -44,7 +45,7 @@ anemo-build.workspace = true
 tonic-build.workspace = true
 
 [dev-dependencies]
-ika-macros.workspace = true
+sui-macros.workspace = true
 telemetry-subscribers.workspace = true
 tokio = { workspace = true, features = ["test-util"] }
 ed25519-consensus.workspace = true

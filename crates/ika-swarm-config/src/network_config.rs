@@ -1,12 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use crate::validator_initialization_config::ValidatorInitializationConfig;
+use ika_config::{Config, NodeConfig};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use ika_config::{genesis, Config, NodeConfig};
-use ika_types::committee::CommitteeWithNetworkMetadata;
-use ika_types::crypto::AccountKeyPair;
-use ika_types::multiaddr::Multiaddr;
+use sui_types::base_types::ObjectID;
 
 /// This is a config that is used for testing or local use as it contains the config and keys for
 /// all validators
@@ -14,8 +13,11 @@ use ika_types::multiaddr::Multiaddr;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NetworkConfig {
     pub validator_configs: Vec<NodeConfig>,
-    pub account_keys: Vec<AccountKeyPair>,
-    pub genesis: genesis::Genesis,
+    pub fullnode_configs: Vec<NodeConfig>,
+    pub validator_initialization_configs: Vec<ValidatorInitializationConfig>,
+    pub ika_package_id: ObjectID,
+    pub ika_system_package_id: ObjectID,
+    pub system_id: ObjectID,
 }
 
 impl Config for NetworkConfig {}
@@ -25,20 +27,15 @@ impl NetworkConfig {
         &self.validator_configs
     }
 
-    pub fn net_addresses(&self) -> Vec<Multiaddr> {
-        self.genesis
-            .committee_with_network()
-            .validators()
-            .values()
-            .map(|(_, n)| n.network_address.clone())
-            .collect()
-    }
-
-    pub fn committee_with_network(&self) -> CommitteeWithNetworkMetadata {
-        self.genesis.committee_with_network()
-    }
-
     pub fn into_validator_configs(self) -> Vec<NodeConfig> {
         self.validator_configs
+    }
+
+    pub fn fullnode_configs(&self) -> &[NodeConfig] {
+        &self.fullnode_configs
+    }
+
+    pub fn into_fullnode_configs(self) -> Vec<NodeConfig> {
+        self.fullnode_configs
     }
 }

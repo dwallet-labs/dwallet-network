@@ -278,7 +278,7 @@ See the [full list of metadata update functions here](https://github.com/MystenL
 
 ### Operation Cap
 
-To avoid touching account keys too often and allowing them to be stored off-line, validators can delegate the operation ability to another address. This address can then update the reference gas price and tallying rule on behalf of the validator.
+To avoid touching account keys too often and allowing them to be stored off-line, validators can delegate the operation ability to another address. This address can then update the computation price per unit size and tallying rule on behalf of the validator.
 
 Upon creating a `Validator`, an `UnverifiedValidatorOperationCap` is created as well and transferred to the validator address. The holder of this `Cap` object (short for "Capability") therefore could perform operational actions for this validator. To authorize another address to conduct these operations, a validator transfers the object to another address that they control. The transfer can be done by using Ika Client CLI: `ika client transfer`.
 
@@ -294,10 +294,10 @@ To get the current valid `Cap` object's ID of a validator, use the Ika Client CL
 
 ### Updating the Gas Price Survey Quote
 
-To update the Gas Price Survey Quote of a validator, which is used to calculate the Reference Gas Price at the end of the epoch, the sender needs to hold a valid [`UnverifiedValidatorOperationCap`](#operation-cap). The sender could be the validator itself, or a trusted delegatee. To do so, call `ika_system::request_set_gas_price`:
+To update the Gas Price Survey Quote of a validator, which is used to calculate the Reference Gas Price at the end of the epoch, the sender needs to hold a valid [`UnverifiedValidatorOperationCap`](#operation-cap). The sender could be the validator itself, or a trusted delegatee. To do so, call `ika_system::request_set_computation_price`:
 
 ```
-ika client call --package 0x3 --module ika_system --function request_set_gas_price --args 0x5 {cap_object_id} {new_gas_price} --gas-budget 10000
+ika client call --package 0x3 --module ika_system --function request_set_computation_price --args 0x5 {cap_object_id} {new_computation_price} --gas-budget 10000
 ```
 
 ### Reporting/Un-reporting Validators
@@ -316,7 +316,7 @@ In order for a Ika address to join the validator set, they need to first sign up
 
 ```
 ika client call --package 0x3 --module ika_system --function request_add_validator_candidate --args 0x5 {protocol_pubkey_bytes} {network_pubkey_bytes} {worker_pubkey_bytes} {proof_of_possession} {name} {description} {image_url} {project_url} {net_address}
-{p2p_address} {primary_address} {worker_address} {gas_price} {commission_rate} --gas-budget 10000
+{p2p_address} {primary_address} {worker_address} {computation_price} {commission_rate} --gas-budget 10000
 ```
 
 After an address becomes a validator candidate, any address (including the candidate address itself) can start staking with the candidate's staking pool. Refer to our dedicated staking FAQ on how staking works. Once a candidate's staking pool has accumulated at least `ika_system::MIN_VALIDATOR_JOINING_STAKE` amount of stake, the candidate can call `ika_system::request_add_validator` to officially add themselves to the next epoch's active validator set:

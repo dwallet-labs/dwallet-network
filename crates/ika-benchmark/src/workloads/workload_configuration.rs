@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::bank::BenchmarkBank;
 use crate::drivers::Interval;
@@ -140,7 +140,7 @@ impl WorkloadConfiguration {
         gas_request_chunk_size: u64,
     ) -> Result<BTreeMap<GroupID, Vec<WorkloadInfo>>> {
         // Generate the workloads and init them
-        let reference_gas_price = system_state_observer.state.borrow().reference_gas_price;
+        let computation_price_per_unit_size = system_state_observer.state.borrow().computation_price_per_unit_size;
         let (workload_params, workload_builders): (Vec<_>, Vec<_>) = workload_builders
             .into_iter()
             .flatten()
@@ -149,7 +149,7 @@ impl WorkloadConfiguration {
         let mut workloads = bank
             .generate(
                 workload_builders,
-                reference_gas_price,
+                computation_price_per_unit_size,
                 gas_request_chunk_size,
             )
             .await?;
@@ -201,7 +201,7 @@ impl WorkloadConfiguration {
             + weights.adversarial
             + weights.randomness
             + weights.expected_failure;
-        let reference_gas_price = system_state_observer.state.borrow().reference_gas_price;
+        let computation_price_per_unit_size = system_state_observer.state.borrow().computation_price_per_unit_size;
         let mut workload_builders = vec![];
         let shared_workload = SharedCounterWorkloadBuilder::from(
             weights.shared_counter as f32 / total_weight as f32,
@@ -211,7 +211,7 @@ impl WorkloadConfiguration {
             shared_counter_hotness_factor,
             num_shared_counters,
             shared_counter_max_tip,
-            reference_gas_price,
+            computation_price_per_unit_size,
             duration,
             group,
         );
@@ -223,7 +223,7 @@ impl WorkloadConfiguration {
             in_flight_ratio,
             shared_counter_hotness_factor,
             shared_counter_max_tip,
-            reference_gas_price,
+            computation_price_per_unit_size,
             duration,
             group,
         );
@@ -272,7 +272,7 @@ impl WorkloadConfiguration {
             target_qps,
             num_workers,
             in_flight_ratio,
-            reference_gas_price,
+            computation_price_per_unit_size,
             duration,
             group,
         );

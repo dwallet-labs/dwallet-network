@@ -1,15 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 #![allow(dead_code)]
 
 use crate::{
     create_file_metadata, read_manifest, write_manifest, CheckpointUpdates, FileMetadata, FileType,
-    Manifest, CHECKPOINT_FILE_MAGIC, CHECKPOINT_FILE_SUFFIX, EPOCH_DIR_PREFIX, MAGIC_BYTES,
-    SUMMARY_FILE_MAGIC, SUMMARY_FILE_SUFFIX,
+    Manifest, CHECKPOINT_FILE_SUFFIX, CHECKPOINT_MESSAGE_FILE_MAGIC, EPOCH_DIR_PREFIX, MAGIC_BYTES,
 };
 use anyhow::Result;
 use anyhow::{anyhow, Context};
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
+use ika_config::object_storage_config::ObjectStoreConfig;
+use ika_types::messages_checkpoint::{CertifiedCheckpointMessage, CheckpointSequenceNumber};
+use ika_types::storage::WriteStore;
 use object_store::DynObjectStore;
 use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
 use std::fs;
@@ -20,15 +22,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
-use ika_config::object_storage_config::ObjectStoreConfig;
-use ika_storage::blob::{Blob, BlobEncoding};
-use ika_storage::object_store::util::{copy_file, path_to_filesystem};
-use ika_storage::{compress, FileCompression, StorageFormat};
-use ika_types::messages_checkpoint::{
-    CertifiedCheckpointSummary as Checkpoint, CheckpointSequenceNumber,
-    FullCheckpointContents as CheckpointContents,
-};
-use ika_types::storage::WriteStore;
+use sui_storage::blob::{Blob, BlobEncoding};
+use sui_storage::object_store::util::{copy_file, path_to_filesystem};
+use sui_storage::{compress, FileCompression, StorageFormat};
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::Instant;
@@ -58,7 +54,6 @@ struct CheckpointWriter {
     epoch_num: u64,
     checkpoint_range: Range<u64>,
     wbuf: BufWriter<File>,
-    summary_wbuf: BufWriter<File>,
     sender: Sender<CheckpointUpdates>,
     checkpoint_buf_offset: usize,
     file_compression: FileCompression,
@@ -90,15 +85,7 @@ impl CheckpointWriter {
             &epoch_dir,
             checkpoint_sequence_num,
             CHECKPOINT_FILE_SUFFIX,
-            CHECKPOINT_FILE_MAGIC,
-            storage_format,
-            file_compression,
-        )?;
-        let summary_file = Self::next_file(
-            &epoch_dir,
-            checkpoint_sequence_num,
-            SUMMARY_FILE_SUFFIX,
-            SUMMARY_FILE_MAGIC,
+            CHECKPOINT_MESSAGE_FILE_MAGIC,
             storage_format,
             file_compression,
         )?;
@@ -107,7 +94,6 @@ impl CheckpointWriter {
             epoch_num,
             checkpoint_range: checkpoint_sequence_num..checkpoint_sequence_num,
             wbuf: BufWriter::new(checkpoint_file),
-            summary_wbuf: BufWriter::new(summary_file),
             checkpoint_buf_offset: 0,
             sender,
             file_compression,
@@ -119,27 +105,19 @@ impl CheckpointWriter {
         })
     }
 
-    pub fn write(
-        &mut self,
-        checkpoint_contents: CheckpointContents,
-        checkpoint_summary: Checkpoint,
-    ) -> Result<()> {
+    pub fn write(&mut self, checkpoint_message: CertifiedCheckpointMessage) -> Result<()> {
         match self.storage_format {
-            StorageFormat::Blob => self.write_as_blob(checkpoint_contents, checkpoint_summary),
+            StorageFormat::Blob => self.write_as_blob(checkpoint_message),
         }
     }
 
-    pub fn write_as_blob(
-        &mut self,
-        checkpoint_contents: CheckpointContents,
-        checkpoint_summary: Checkpoint,
-    ) -> Result<()> {
+    pub fn write_as_blob(&mut self, checkpoint_message: CertifiedCheckpointMessage) -> Result<()> {
         assert_eq!(
-            checkpoint_summary.sequence_number,
+            checkpoint_message.sequence_number,
             self.checkpoint_range.end
         );
 
-        if checkpoint_summary.epoch()
+        if checkpoint_message.epoch()
             == self
                 .epoch_num
                 .checked_add(1)
@@ -154,14 +132,9 @@ impl CheckpointWriter {
             self.reset()?;
         }
 
-        assert_eq!(checkpoint_summary.epoch, self.epoch_num);
+        assert_eq!(checkpoint_message.epoch, self.epoch_num);
 
-        assert_eq!(
-            checkpoint_summary.content_digest,
-            *checkpoint_contents.checkpoint_contents().digest()
-        );
-
-        let contents_blob = Blob::encode(&checkpoint_contents, BlobEncoding::Bcs)?;
+        let contents_blob = Blob::encode(&checkpoint_message, BlobEncoding::Bcs)?;
         let blob_size = contents_blob.size();
         let cut_new_checkpoint_file = (self.checkpoint_buf_offset + blob_size)
             > self.commit_file_size
@@ -172,9 +145,6 @@ impl CheckpointWriter {
         }
 
         self.checkpoint_buf_offset += contents_blob.write(&mut self.wbuf)?;
-
-        let summary_blob = Blob::encode(&checkpoint_summary, BlobEncoding::Bcs)?;
-        summary_blob.write(&mut self.summary_wbuf)?;
 
         self.checkpoint_range.end = self
             .checkpoint_range
@@ -195,39 +165,20 @@ impl CheckpointWriter {
         self.compress(&file_path)?;
         let file_metadata = create_file_metadata(
             &file_path,
-            FileType::CheckpointContent,
+            FileType::CheckpointMessage,
             self.epoch_num,
             self.checkpoint_range.clone(),
         )?;
         Ok(file_metadata)
     }
-    fn finalize_summary(&mut self) -> Result<FileMetadata> {
-        self.summary_wbuf.flush()?;
-        self.summary_wbuf.get_ref().sync_data()?;
-        let off = self.summary_wbuf.get_ref().stream_position()?;
-        self.summary_wbuf.get_ref().set_len(off)?;
-        let file_path = self.epoch_dir().join(format!(
-            "{}.{SUMMARY_FILE_SUFFIX}",
-            self.checkpoint_range.start
-        ));
-        self.compress(&file_path)?;
-        let file_metadata = create_file_metadata(
-            &file_path,
-            FileType::CheckpointSummary,
-            self.epoch_num,
-            self.checkpoint_range.clone(),
-        )?;
-        Ok(file_metadata)
-    }
+
     fn cut(&mut self) -> Result<()> {
         if !self.checkpoint_range.is_empty() {
             let checkpoint_file_metadata = self.finalize()?;
-            let summary_file_metadata = self.finalize_summary()?;
             let checkpoint_updates = CheckpointUpdates::new(
                 self.epoch_num,
                 self.checkpoint_range.end,
                 checkpoint_file_metadata,
-                summary_file_metadata,
                 &mut self.manifest,
             );
             info!("Checkpoint file cut for: {:?}", checkpoint_updates);
@@ -235,6 +186,7 @@ impl CheckpointWriter {
         }
         Ok(())
     }
+
     fn compress(&self, source: &Path) -> Result<()> {
         if self.file_compression == FileCompression::None {
             return Ok(());
@@ -246,6 +198,7 @@ impl CheckpointWriter {
         fs::rename(tmp_file_name, source)?;
         Ok(())
     }
+
     fn next_file(
         dir_path: &Path,
         checkpoint_sequence_num: u64,
@@ -266,28 +219,21 @@ impl CheckpointWriter {
         f.write_u8(file_compression.into())?;
         Ok(f)
     }
+
     fn create_new_files(&mut self) -> Result<()> {
         let f = Self::next_file(
             &self.epoch_dir(),
             self.checkpoint_range.start,
             CHECKPOINT_FILE_SUFFIX,
-            CHECKPOINT_FILE_MAGIC,
+            CHECKPOINT_MESSAGE_FILE_MAGIC,
             self.storage_format,
             self.file_compression,
         )?;
         self.checkpoint_buf_offset = MAGIC_BYTES;
         self.wbuf = BufWriter::new(f);
-        let f = Self::next_file(
-            &self.epoch_dir(),
-            self.checkpoint_range.start,
-            SUMMARY_FILE_SUFFIX,
-            SUMMARY_FILE_MAGIC,
-            self.storage_format,
-            self.file_compression,
-        )?;
-        self.summary_wbuf = BufWriter::new(f);
         Ok(())
     }
+
     fn reset(&mut self) -> Result<()> {
         self.reset_checkpoint_range();
         self.create_new_files()?;
@@ -408,22 +354,16 @@ impl ArchiveWriter {
         info!("Starting checkpoint tailing from sequence number: {checkpoint_sequence_number}");
 
         while kill.try_recv().is_err() {
-            if let Some(checkpoint_summary) = store
+            if let Some(checkpoint_message) = store
                 .get_checkpoint_by_sequence_number(checkpoint_sequence_number)
-                .map_err(|_| anyhow!("Failed to read checkpoint summary from store"))?
+                .map_err(|_| anyhow!("Failed to read checkpoint message from store"))?
             {
-                if let Some(checkpoint_contents) = store
-                    .get_full_checkpoint_contents(&checkpoint_summary.content_digest)
-                    .map_err(|_| anyhow!("Failed to read checkpoint content from store"))?
-                {
-                    checkpoint_writer
-                        .write(checkpoint_contents, checkpoint_summary.into_inner())?;
-                    checkpoint_sequence_number = checkpoint_sequence_number
-                        .checked_add(1)
-                        .context("checkpoint seq number overflow")?;
-                    // There is more checkpoints to tail, so continue without sleeping
-                    continue;
-                }
+                checkpoint_writer.write(checkpoint_message.into_inner())?;
+                checkpoint_sequence_number = checkpoint_sequence_number
+                    .checked_add(1)
+                    .context("checkpoint seq number overflow")?;
+                // There is more checkpoints to tail, so continue without sleeping
+                continue;
             }
             // Checkpoint with `checkpoint_sequence_number` is not available to read from store yet,
             // sleep for sometime and then retry

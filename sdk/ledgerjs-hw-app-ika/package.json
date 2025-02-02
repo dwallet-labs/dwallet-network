@@ -11,7 +11,7 @@
 		"Hardware Wallet"
 	],
 	"author": "Mysten Labs <build@mystenlabs.com>",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"repository": {
 		"type": "git",
 		"url": "github.com:MystenLabs/sui.git"

@@ -1,18 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::{AuthorityMetrics, AuthorityState};
-use crate::checkpoints::CheckpointServiceNoop;
 use crate::consensus_adapter::{BlockStatusReceiver, ConsensusClient, SubmitToConsensus};
 use crate::consensus_handler::SequencedConsensusTransaction;
 use consensus_core::BlockRef;
-use prometheus::Registry;
-use std::sync::{Arc, Weak};
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::executable_transaction::VerifiedExecutableTransaction;
+use ika_types::message::{VerifiedCertificate, VerifiedTransaction};
 use ika_types::messages_consensus::{ConsensusTransaction, ConsensusTransactionKind};
-use ika_types::transaction::{VerifiedCertificate, VerifiedTransaction};
+use prometheus::Registry;
+use std::sync::{Arc, Weak};
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 use tracing::debug;
@@ -52,7 +51,6 @@ impl MockConsensusClient {
         mut tx_receiver: mpsc::Receiver<ConsensusTransaction>,
         consensus_mode: ConsensusMode,
     ) {
-        let checkpoint_service = Arc::new(CheckpointServiceNoop {});
         let authority_metrics = Arc::new(AuthorityMetrics::new(&Registry::new()));
         while let Some(tx) = tx_receiver.recv().await {
             let Some(validator) = validator.upgrade() else {
@@ -66,32 +64,11 @@ impl MockConsensusClient {
                     epoch_store
                         .process_consensus_transactions_for_tests(
                             vec![SequencedConsensusTransaction::new_test(tx.clone())],
-                            &checkpoint_service,
-                            validator.get_object_cache_reader().as_ref(),
                             &authority_metrics,
                             true,
                         )
                         .await
                         .unwrap();
-                }
-            }
-            if let ConsensusTransactionKind::CertifiedTransaction(tx) = &tx.kind {
-                if tx.contains_shared_object() {
-                    validator.enqueue_certificates_for_execution(
-                        vec![VerifiedCertificate::new_unchecked(*tx.clone())],
-                        &epoch_store,
-                    );
-                }
-            }
-            if let ConsensusTransactionKind::UserTransaction(tx) = &tx.kind {
-                if tx.contains_shared_object() {
-                    validator.enqueue_transactions_for_execution(
-                        vec![VerifiedExecutableTransaction::new_from_consensus(
-                            VerifiedTransaction::new_unchecked(*tx.clone()),
-                            0,
-                        )],
-                        &epoch_store,
-                    );
                 }
             }
         }

@@ -2,214 +2,30 @@
 resolver = "2"
 
 exclude = [
-    "examples/tic-tac-toe/cli",
-    "external-crates/move/crates/bytecode-interpreter-crypto",
-    "external-crates/move/crates/bytecode-verifier-libfuzzer",
-    "external-crates/move/crates/bytecode-verifier-tests",
-    "external-crates/move/crates/bytecode-verifier-prop-tests",
-    "external-crates/move/crates/bytecode-verifier-transactional-tests",
-    "external-crates/move/crates/enum-compat-util",
-    "external-crates/move/crates/invalid-mutations",
-    "external-crates/move/crates/language-benchmarks",
-    "external-crates/move/crates/module-generation",
-    "external-crates/move/crates/move-abstract-interpreter",
-    "external-crates/move/crates/move-abstract-stack",
-    "external-crates/move/crates/move-analyzer",
-    "external-crates/move/crates/move-binary-format",
-    "external-crates/move/crates/move-borrow-graph",
-    "external-crates/move/crates/move-bytecode-source-map",
-    "external-crates/move/crates/move-bytecode-utils",
-    "external-crates/move/crates/move-bytecode-verifier",
-    "external-crates/move/crates/move-bytecode-verifier-meter",
-    "external-crates/move/crates/move-bytecode-viewer",
-    "external-crates/move/crates/move-cli",
-    "external-crates/move/crates/move-command-line-common",
-    "external-crates/move/crates/move-compiler",
-    "external-crates/move/crates/move-compiler-transactional-tests",
-    "external-crates/move/crates/move-core-types",
-    "external-crates/move/crates/move-coverage",
-    "external-crates/move/crates/move-disassembler",
-    "external-crates/move/crates/move-docgen",
-    "external-crates/move/crates/move-ir-compiler",
-    "external-crates/move/crates/move-ir-compiler-transactional-tests",
-    "external-crates/move/crates/move-ir-to-bytecode",
-    "external-crates/move/crates/move-ir-to-bytecode-syntax",
-    "external-crates/move/crates/move-ir-types",
-    "external-crates/move/crates/move-model",
-    "external-crates/move/crates/move-package",
-    "external-crates/move/crates/move-proc-macros",
-    "external-crates/move/crates/move-prover",
-    "external-crates/move/crates/move-prover-test-utils",
-    "external-crates/move/crates/move-stackless-bytecode",
-    "external-crates/move/crates/move-stdlib",
-    "external-crates/move/crates/move-stdlib-natives",
-    "external-crates/move/crates/move-symbol-pool",
-    "external-crates/move/crates/move-transactional-test-runner",
-    "external-crates/move/crates/move-unit-test",
-    "external-crates/move/crates/move-vm-config",
-    "external-crates/move/crates/move-vm-integration-tests",
-    "external-crates/move/crates/move-vm-profiler",
-    "external-crates/move/crates/move-vm-runtime",
-    "external-crates/move/crates/move-vm-test-utils",
-    "external-crates/move/crates/move-vm-transactional-tests",
-    "external-crates/move/crates/move-vm-types",
-    "external-crates/move/crates/serializer-tests",
-    "external-crates/move/crates/test-generation",
-    "external-crates/move/move-execution/v0/crates/move-bytecode-verifier",
-    "external-crates/move/move-execution/v0/crates/move-stdlib-natives",
-    "external-crates/move/move-execution/v0/crates/move-vm-runtime",
-    "external-crates/move/move-execution/v1/crates/move-bytecode-verifier",
-    "external-crates/move/move-execution/v1/crates/move-stdlib-natives",
-    "external-crates/move/move-execution/v1/crates/move-vm-runtime",
-    "external-crates/move/move-execution/v2/crates/move-abstract-interpreter",
-    "external-crates/move/move-execution/v2/crates/move-bytecode-verifier",
-    "external-crates/move/move-execution/v2/crates/move-stdlib-natives",
-    "external-crates/move/move-execution/v2/crates/move-vm-runtime",
-    "sdk/move-bytecode-template",
+    "sdk/move-bytecode-template"
 ]
 
 members = [
-    "consensus/config",
-    "consensus/core",
-    "crates/anemo-benchmark",
-    "crates/bin-version",
-    "crates/mysten-common",
-    "crates/mysten-metrics",
-    "crates/mysten-network",
-    "crates/mysten-service",
-    "crates/mysten-util-mem",
-    "crates/mysten-util-mem-derive",
-    "crates/prometheus-closure-metric",
-    "crates/shared-crypto",
-    "crates/simulacrum",
     "crates/ika",
-    "crates/ika-adapter-transactional-tests",
-    "crates/ika-analytics-indexer",
-    "crates/ika-analytics-indexer-derive",
-    "crates/ika-archival",
-    "crates/ika-authority-aggregation",
-    "crates/ika-aws-orchestrator",
-    "crates/ika-benchmark",
-    "crates/ika-bridge",
-    "crates/ika-bridge-cli",
-    "crates/ika-bridge-indexer",
-    "crates/ika-cluster-test",
     "crates/ika-config",
     "crates/ika-core",
-    "crates/ika-cost",
-    "crates/ika-data-ingestion",
-    "crates/ika-data-ingestion-core",
-    "crates/ika-deepbook-indexer",
-    "crates/ika-e2e-tests",
-    "crates/ika-enum-compat-util",
-    "crates/ika-faucet",
-    "crates/ika-field-count",
-    "crates/ika-field-count-derive",
-    "crates/ika-framework",
-    "crates/ika-framework-snapshot",
-    "crates/ika-framework-tests",
-    "crates/ika-genesis-builder",
-    "crates/ika-graphql-config",
-    "crates/ika-graphql-e2e-tests",
-    "crates/ika-graphql-rpc",
-    "crates/ika-graphql-rpc-client",
-    "crates/ika-graphql-rpc-headers",
-    "crates/ika-indexer",
-    "crates/ika-indexer-alt",
-    "crates/ika-indexer-builder",
-    "crates/ika-json",
-    "crates/ika-json-rpc",
-    "crates/ika-json-rpc-api",
-    "crates/ika-json-rpc-tests",
-    "crates/ika-json-rpc-types",
-    "crates/ika-keys",
-    "crates/ika-kvstore",
-    "crates/ika-light-client",
-    "crates/ika-macros",
-    "crates/ika-metric-checker",
-    "crates/ika-move",
-    "crates/ika-move-build",
-    "crates/ika-move-lsp",
-    "crates/ika-mvr-indexer",
-    "crates/ika-network",
     "crates/ika-node",
-    "crates/ika-open-rpc",
-    "crates/ika-open-rpc-macros",
-    "crates/ika-oracle",
-    "crates/ika-package-dump",
-    "crates/ika-package-management",
-    "crates/ika-package-resolver",
-    "crates/ika-pg-temp-db",
-    "crates/ika-proc-macros",
+    "crates/ika-sui-client",
     "crates/ika-protocol-config",
     "crates/ika-protocol-config-macros",
-    "crates/ika-proxy",
-    "crates/ika-replay",
-    "crates/ika-rest-api",
-    "crates/ika-rosetta",
-    "crates/ika-rpc-loadgen",
-    "crates/ika-sdk",
-    "crates/ika-security-watchdog",
-    "crates/ika-simulator",
-    "crates/ika-single-node-benchmark",
-    "crates/ika-snapshot",
-    "crates/ika-source-validation",
-    "crates/ika-source-validation-service",
-    "crates/ika-storage",
-    "crates/ika-surfer",
+    #"crates/ika-sdk",
     "crates/ika-swarm",
     "crates/ika-swarm-config",
-    "crates/ika-synthetic-ingestion",
     "crates/ika-telemetry",
-    "crates/ika-test-transaction-builder",
-    "crates/ika-test-validator",
-    "crates/ika-tls",
-    "crates/ika-tool",
-    "crates/ika-transaction-builder",
-    "crates/ika-transaction-checks",
-    "crates/ika-transactional-test-runner",
     "crates/ika-types",
-    "crates/ika-upgrade-compatibility-transactional-tests",
-    "crates/ika-verifier-transactional-tests",
-    "crates/ikans-indexer",
-    "crates/ikaop-cli",
-    "crates/telemetry-subscribers",
-    "crates/test-cluster",
-    "crates/transaction-fuzzer",
-    "crates/typed-store",
-    "crates/typed-store-derive",
-    "crates/typed-store-error",
-    "crates/typed-store-workspace-hack",
-    "crates/x",
-    "narwhal/config",
-    "narwhal/crypto",
-    "narwhal/executor",
-    "narwhal/network",
-    "narwhal/node",
-    "narwhal/primary",
-    "narwhal/storage",
-    "narwhal/test-utils",
-    "narwhal/types",
-    "narwhal/worker",
-    "ika-execution",
-    "ika-execution/cut",
-    "ika-execution/latest/ika-adapter",
-    "ika-execution/latest/ika-move-natives",
-    "ika-execution/latest/ika-verifier",
-    "ika-execution/v0/ika-adapter",
-    "ika-execution/v0/ika-move-natives",
-    "ika-execution/v0/ika-verifier",
-    "ika-execution/v1/ika-adapter",
-    "ika-execution/v1/ika-move-natives",
-    "ika-execution/v1/ika-verifier",
-    "ika-execution/v2/ika-adapter",
-    "ika-execution/v2/ika-move-natives",
-    "ika-execution/v2/ika-verifier",
+    "crates/ika-move-packages",
+    "crates/ika-network",
+    "crates/ika-archival",
 ]
 
 [workspace.package]
-# This version string will be inherited by ika-core, ika-faucet, ika-node, ika-tools, ika-sdk, ika-move-build, and ika crates.
-version = "1.38.3"
+# This version string will be inherited by ika-core, ika-node, ika-tools, ika-sdk, and ika crates.
+version = "1.0.0"
 
 [profile.release]
 # debug = 1 means line charts only, which is minimum needed for good stack traces
@@ -363,6 +179,7 @@ hyper = "1"
 hyper-util = "0.1.6"
 hyper-rustls = { version = "0.27", default-features = false, features = [
     "webpki-roots",
+    "http1",
     "http2",
     "ring",
     "tls12",
@@ -377,13 +194,7 @@ integer-encoding = "3.0.1"
 ipnetwork = "0.20.0"
 itertools = "0.13.0"
 jemalloc-ctl = "^0.5"
-jsonrpsee = { git = "https://github.com/wlmyng/jsonrpsee.git", rev = "b1b300784795f6a64d0fcdf8f03081a9bc38bde8", features = [
-    "server",
-    "macros",
-    "ws-client",
-    "http-client",
-    "jsonrpsee-core",
-] }
+jsonrpsee = { version = "0.24.7", features = ["server", "macros", "ws-client", "http-client", "jsonrpsee-core"] }
 json_to_table = { git = "https://github.com/zhiburt/tabled/", rev = "e449317a1c02eb6b29e409ad6617e5d9eb7b3bd4" }
 leb128 = "0.2.5"
 lru = "0.10"
@@ -396,8 +207,8 @@ moka = { version = "0.12", default-features = false, features = [
     "atomic64",
 ] }
 more-asserts = "0.3.1"
-msim = { git = "https://github.com/MystenLabs/mysten-sim.git", rev = "9c6636c399d5c60a1759f1670b1c07b3d408799a", package = "msim" }
-msim-macros = { git = "https://github.com/MystenLabs/mysten-sim.git", rev = "9c6636c399d5c60a1759f1670b1c07b3d408799a", package = "msim-macros" }
+msim = { git = "https://github.com/MystenLabs/mysten-sim.git", rev = "2a170f4cd81c5cd10f5e4a5e810068f3045f41b6", package = "msim" }
+msim-macros = { git = "https://github.com/MystenLabs/mysten-sim.git", rev = "2a170f4cd81c5cd10f5e4a5e810068f3045f41b6", package = "msim-macros" }
 multiaddr = "0.17.0"
 nexlint = { git = "https://github.com/nextest-rs/nexlint.git", rev = "7ce56bd591242a57660ed05f14ca2483c37d895b" }
 nexlint-lints = { git = "https://github.com/nextest-rs/nexlint.git", rev = "7ce56bd591242a57660ed05f14ca2483c37d895b" }
@@ -413,7 +224,7 @@ ouroboros = "0.17"
 parking_lot = "0.12.1"
 parquet = "52"
 pkcs8 = { version = "0.9.0", features = ["std"] }
-pprof = { version = "0.13.0", features = ["cpp", "frame-pointer"] }
+pprof = { version = "0.14.0", features = ["cpp", "frame-pointer"] }
 pretty_assertions = "1.3.0"
 prettytable-rs = "0.10.0"
 proc-macro2 = "1.0.47"
@@ -422,8 +233,8 @@ prometheus-http-query = { version = "0.8", default-features = false, features = 
     "rustls-tls",
 ] }
 prometheus-parse = { git = "https://github.com/asonnino/prometheus-parser.git", rev = "75334db" }
-proptest = "1.1.0"
-proptest-derive = "0.3.0"
+proptest = "1.6.0"
+proptest-derive = "0.5"
 prost = "0.13"
 prost-build = "0.13"
 prost-types = "0.13.1"
@@ -505,9 +316,10 @@ tokio-stream = { version = "0.1.14", features = ["sync", "net"] }
 tokio-util = "0.7.10"
 toml = { version = "0.7.4", features = ["preserve_order"] }
 toml_edit = { version = "0.19.10" }
-tonic = { version = "0.12", features = ["transport"] }
+tonic = { version = "0.12", features = ["transport", "tls-webpki-roots"] }
 tonic-build = { version = "0.12", features = ["prost", "transport"] }
 tonic-health = "0.12"
+tonic-reflection = "0.12"
 tonic-rustls = "0.1.0"
 tower = { version = "0.4.12", features = [
     "full",
@@ -548,7 +360,7 @@ webpki = { version = "0.102", package = "rustls-webpki", features = [
     "std",
 ] }
 wiremock = "0.5"
-x509-parser = "0.14.0"
+x509-parser = { version = "0.14.0", features = ["verify"] }
 zstd = "0.12.3"
 zeroize = "1.6.0"
 versions = "4.1.0"
@@ -556,31 +368,31 @@ linked-hash-map = "0.5.6"
 shlex = "1.3.0"
 
 # Move dependencies
-move-binary-format = { path = "external-crates/move/crates/move-binary-format" }
-move-bytecode-utils = { path = "external-crates/move/crates/move-bytecode-utils" }
-move-bytecode-source-map = { path = "external-crates/move/crates/move-bytecode-source-map" }
-move-bytecode-verifier-meter = { path = "external-crates/move/crates/move-bytecode-verifier-meter" }
-move-cli = { path = "external-crates/move/crates/move-cli" }
-move-compiler = { path = "external-crates/move/crates/move-compiler" }
-move-core-types = { path = "external-crates/move/crates/move-core-types" }
-move-disassembler = { path = "external-crates/move/crates/move-disassembler" }
-move-package = { path = "external-crates/move/crates/move-package" }
-move-unit-test = { path = "external-crates/move/crates/move-unit-test" }
-move-vm-config = { path = "external-crates/move/crates/move-vm-config" }
-move-vm-test-utils = { path = "external-crates/move/crates/move-vm-test-utils/", features = [
+move-binary-format = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-bytecode-utils = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-bytecode-source-map = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-bytecode-verifier-meter = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-cli = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-compiler = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-core-types = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-disassembler = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-package = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-unit-test = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-vm-config = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-vm-test-utils = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc", features = [
     "tiered-gas",
 ] }
-move-vm-types = { path = "external-crates/move/crates/move-vm-types" }
-move-vm-profiler = { path = "external-crates/move/crates/move-vm-profiler" }
-move-command-line-common = { path = "external-crates/move/crates/move-command-line-common" }
-move-transactional-test-runner = { path = "external-crates/move/crates/move-transactional-test-runner" }
-move-ir-types = { path = "external-crates/move/crates/move-ir-types" }
-move-prover = { path = "external-crates/move/crates/move-prover" }
-move-stackless-bytecode = { path = "external-crates/move/crates/move-stackless-bytecode" }
-move-symbol-pool = { path = "external-crates/move/crates/move-symbol-pool" }
-move-abstract-interpreter = { path = "external-crates/move/crates/move-abstract-interpreter" }
-move-abstract-stack = { path = "external-crates/move/crates/move-abstract-stack" }
-move-analyzer = { path = "external-crates/move/crates/move-analyzer" }
+move-vm-types = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-vm-profiler = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-command-line-common = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-transactional-test-runner = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-ir-types = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-prover = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-stackless-bytecode = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-symbol-pool = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-abstract-interpreter = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-abstract-stack = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+move-analyzer = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
 
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "69d496c71fb37e3d22fe85e5bbfd4256d61422b9" }
 fastcrypto-tbls = { git = "https://github.com/MystenLabs/fastcrypto", rev = "69d496c71fb37e3d22fe85e5bbfd4256d61422b9" }
@@ -604,124 +416,124 @@ anemo-tower = { git = "https://github.com/mystenlabs/anemo.git", rev = "e609f769
 # sui-sdk-types = { version = "0.0.1", features = ["hash", "serde", "schemars"] }
 ika-sdk-types = { git = "https://github.com/MystenLabs/sui-rust-sdk.git", package = "sui-sdk-types", rev = "31bd9da32a8057edc45da8f5e6a8f25b83919b93", features = ["hash", "serde", "schemars"] }
 
+### Sui Members ###
+anemo-benchmark = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+bin-version =  { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+mysten-common = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+mysten-metrics = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+mysten-network = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+mysten-service = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+mysten-util-mem = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+mysten-util-mem-derive = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+prometheus-closure-metric = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+shared-crypto = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+simulacrum = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-adapter-transactional-tests = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-analytics-indexer = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-analytics-indexer-derive = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-archival = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-authority-aggregation = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-benchmark = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-bridge = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-cluster-test = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-config = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-core = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-cost = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-data-ingestion = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-data-ingestion-core = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-e2e-tests = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-enum-compat-util = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-faucet = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-field-count = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-field-count-derive = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-framework = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-framework-snapshot = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-framework-tests = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-graphql-config = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-graphql-rpc = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-graphql-rpc-client = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-graphql-rpc-headers = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-genesis-builder = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-indexer = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-indexer-builder = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-json = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-json-rpc-api = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-json-rpc-types = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-keys = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-kvstore = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-macros = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-metric-checker = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-move = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-move-build = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-move-lsp = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-mvr-indexer = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-node = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-open-rpc = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-open-rpc-macros = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-package-dump = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-package-management = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-package-resolver = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-pg-temp-db = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-proc-macros = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-protocol-config = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-protocol-config-macros = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-proxy = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-replay = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-rosetta = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-rpc-loadgen = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-sdk = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-simulator = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-source-validation = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-source-validation-service = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-storage = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-surfer = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-swarm = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-swarm-config = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-synthetic-ingestion = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-telemetry = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-test-transaction-builder = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-test-validator = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-tls = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-rpc-api = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-transaction-builder = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-transaction-checks = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-transactional-test-runner = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-types = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-upgrade-compatibility-transactional-tests = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+sui-verifier-transactional-tests = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+telemetry-subscribers = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+test-cluster = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+transaction-fuzzer = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+typed-store = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+typed-store-error = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+x = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+
+sui-execution = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+
+consensus-config = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+consensus-core = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+
 ### Workspace Members ###
-anemo-benchmark = { path = "crates/anemo-benchmark" }
-bin-version = { path = "crates/bin-version" }
-mysten-common = { path = "crates/mysten-common" }
-mysten-metrics = { path = "crates/mysten-metrics" }
-mysten-network = { path = "crates/mysten-network" }
-mysten-service = { path = "crates/mysten-service" }
-mysten-util-mem = { path = "crates/mysten-util-mem" }
-mysten-util-mem-derive = { path = "crates/mysten-util-mem-derive" }
-prometheus-closure-metric = { path = "crates/prometheus-closure-metric" }
-shared-crypto = { path = "crates/shared-crypto" }
-simulacrum = { path = "crates/simulacrum" }
 ika = { path = "crates/ika" }
-ika-adapter-transactional-tests = { path = "crates/ika-adapter-transactional-tests" }
-ika-analytics-indexer = { path = "crates/ika-analytics-indexer" }
-ika-analytics-indexer-derive = { path = "crates/ika-analytics-indexer-derive" }
-ika-archival = { path = "crates/ika-archival" }
-ika-authority-aggregation = { path = "crates/ika-authority-aggregation" }
-ika-benchmark = { path = "crates/ika-benchmark" }
-ika-bridge = { path = "crates/ika-bridge" }
-ika-cluster-test = { path = "crates/ika-cluster-test" }
 ika-config = { path = "crates/ika-config" }
 ika-core = { path = "crates/ika-core" }
-ika-cost = { path = "crates/ika-cost" }
-ika-data-ingestion = { path = "crates/ika-data-ingestion" }
-ika-data-ingestion-core = { path = "crates/ika-data-ingestion-core" }
-ika-e2e-tests = { path = "crates/ika-e2e-tests" }
-ika-enum-compat-util = { path = "crates/ika-enum-compat-util" }
-ika-faucet = { path = "crates/ika-faucet" }
-ika-field-count = { path = "crates/ika-field-count" }
-ika-field-count-derive = { path = "crates/ika-field-count-derive" }
-ika-framework = { path = "crates/ika-framework" }
-ika-framework-snapshot = { path = "crates/ika-framework-snapshot" }
-ika-framework-tests = { path = "crates/ika-framework-tests" }
-ika-graphql-config = { path = "crates/ika-graphql-config" }
-ika-graphql-rpc = { path = "crates/ika-graphql-rpc" }
-ika-graphql-rpc-client = { path = "crates/ika-graphql-rpc-client" }
-ika-graphql-rpc-headers = { path = "crates/ika-graphql-rpc-headers" }
-ika-genesis-builder = { path = "crates/ika-genesis-builder" }
-ika-indexer = { path = "crates/ika-indexer" }
-ika-indexer-builder = { path = "crates/ika-indexer-builder" }
-ika-json = { path = "crates/ika-json" }
-ika-json-rpc = { path = "crates/ika-json-rpc" }
-ika-json-rpc-api = { path = "crates/ika-json-rpc-api" }
-ika-json-rpc-types = { path = "crates/ika-json-rpc-types" }
-ika-keys = { path = "crates/ika-keys" }
-ika-kvstore = {path = "crates/ika-kvstore"}
-ika-macros = { path = "crates/ika-macros" }
-ika-metric-checker = { path = "crates/ika-metric-checker" }
-ika-move = { path = "crates/ika-move" }
-ika-move-build = { path = "crates/ika-move-build" }
-ika-move-lsp = { path = "crates/ika-move-lsp" }
-ika-mvr-indexer = { path = "crates/ika-mvr-indexer" }
-ika-network = { path = "crates/ika-network" }
 ika-node = { path = "crates/ika-node" }
-ika-open-rpc = { path = "crates/ika-open-rpc" }
-ika-open-rpc-macros = { path = "crates/ika-open-rpc-macros" }
-ika-package-dump = { path = "crates/ika-package-dump" }
-ika-package-management = { path = "crates/ika-package-management" }
-ika-package-resolver = { path = "crates/ika-package-resolver" }
-ika-pg-temp-db = { path = "crates/ika-pg-temp-db" }
-ika-proc-macros = { path = "crates/ika-proc-macros" }
+ika-sui-client = { path = "crates/ika-sui-client" }
 ika-protocol-config = { path = "crates/ika-protocol-config" }
 ika-protocol-config-macros = { path = "crates/ika-protocol-config-macros" }
-ika-proxy = { path = "crates/ika-proxy" }
-ika-replay = { path = "crates/ika-replay" }
-ika-rosetta = { path = "crates/ika-rosetta" }
-ika-rpc-loadgen = { path = "crates/ika-rpc-loadgen" }
-ika-sdk = { path = "crates/ika-sdk" }
-ika-simulator = { path = "crates/ika-simulator" }
-ika-snapshot = { path = "crates/ika-snapshot" }
-ika-source-validation = { path = "crates/ika-source-validation" }
-ika-source-validation-service = { path = "crates/ika-source-validation-service" }
-ika-storage = { path = "crates/ika-storage" }
-ika-surfer = { path = "crates/ika-surfer" }
+#ika-sdk = { path = "crates/ika-sdk" }
 ika-swarm = { path = "crates/ika-swarm" }
 ika-swarm-config = { path = "crates/ika-swarm-config" }
-ika-synthetic-ingestion = { path = "crates/ika-synthetic-ingestion" }
 ika-telemetry = { path = "crates/ika-telemetry" }
-ika-test-transaction-builder = { path = "crates/ika-test-transaction-builder" }
-ika-test-validator = { path = "crates/ika-test-validator" }
-ika-tls = { path = "crates/ika-tls" }
-ika-rest-api = { path = "crates/ika-rest-api" }
-ika-tool = { path = "crates/ika-tool" }
-ika-transaction-builder = { path = "crates/ika-transaction-builder" }
-ika-transaction-checks = { path = "crates/ika-transaction-checks" }
-ika-transactional-test-runner = { path = "crates/ika-transactional-test-runner" }
 ika-types = { path = "crates/ika-types" }
-ika-upgrade-compatibility-transactional-tests = { path = "crates/ika-upgrade-compatibility-transactional-tests" }
-ika-verifier-transactional-tests = { path = "crates/ika-verifier-transactional-tests" }
-telemetry-subscribers = { path = "crates/telemetry-subscribers" }
-test-cluster = { path = "crates/test-cluster" }
-transaction-fuzzer = { path = "crates/transaction-fuzzer" }
-typed-store = { path = "crates/typed-store" }
-typed-store-error = { path = "crates/typed-store-error" }
-x = { path = "crates/x" }
+ika-move-packages = { path = "crates/ika-move-packages" }
+ika-move-packages-snapshot = { path = "crates/ika-move-packages-snapshot" }
+ika-network = { path = "crates/ika-network" }
+ika-archival = { path = "crates/ika-archival" }
 
-consensus-config = { path = "consensus/config" }
-consensus-core = { path = "consensus/core" }
-
-narwhal-config = { path = "narwhal/config" }
-narwhal-crypto = { path = "narwhal/crypto" }
-narwhal-executor = { path = "narwhal/executor" }
-narwhal-network = { path = "narwhal/network" }
-narwhal-node = { path = "narwhal/node" }
-narwhal-primary = { path = "narwhal/primary" }
-narwhal-storage = { path = "narwhal/storage" }
-narwhal-test-utils = { path = "narwhal/test-utils" }
-narwhal-types = { path = "narwhal/types" }
-narwhal-worker = { path = "narwhal/worker" }
-
-ika-execution = { path = "ika-execution" }
-# ika-move-natives = { path = "ika-execution/latest/ika-move-natives", package = "ika-move-natives-latest" }
-# ika-adapter = { path = "ika-execution/latest/ika-adapter", package = "ika-adapter-latest" }
-# ika-verifier = { path = "ika-execution/latest/ika-verifier", package = "ika-verifier-latest" }
-# move-stdlib = { path = "external-crates/move/move-stdlib" }
-# move-vm-runtime = { path = "external-crates/move/move-vm/runtime" }
-# move-bytecode-verifier = { path = "external-crates/move/move-bytecode-verifier" }
+#consensus-config = { path = "consensus/config" }
+#consensus-core = { path = "consensus/core" }
 
 # ikaop dependencies
 docker-api = "0.12.2"
