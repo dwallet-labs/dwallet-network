@@ -4,7 +4,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
 use tracing::error;
@@ -48,11 +48,6 @@ pub(super) struct DWalletMPCSession {
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
-    /// The total number of parties in the chain
-    /// We can calculate the threshold and parties IDs (indexes) from it.
-    /// To calculate the party's ID, all we need to know is the number of parties,
-    /// as the IDs are just the indexes of those parties.
-    /// If there are three parties, the IDs are [0, 1, 2].
     pub(super) session_info: SessionInfo,
     pub(super) public_input: MPCPublicInput,
     /// The current MPC round number of the session.
@@ -102,6 +97,8 @@ impl DWalletMPCSession {
         }
     }
 
+    /// Returns the epoch store.
+    /// Errors if the epoch was switched in the middle.
     fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
         self.epoch_store
             .upgrade()
@@ -254,6 +251,67 @@ impl DWalletMPCSession {
         Ok(())
     }
 
+    /// Returns true if the session is still verifying that a Start Sign Identifiable Report
+    /// message is valid; false otherwise.
+    /// The Sign Identifiable Abort protocol differs from other protocols as,
+    /// besides verifying that the output is valid, we must also verify that the malicious report,
+    /// which caused all other validators to spend extra resources, was honest.
+    pub(crate) fn is_verifying_sign_ia_report(&self) -> bool {
+        let Some(MPCSessionSpecificState::Sign(sign_state)) = &self.session_specific_state else {
+            return false;
+        };
+        sign_state.verified_malicious_report.is_none()
+    }
+
+    /// Starts the Sign Identifiable Abort protocol if needed.
+    ///
+    /// In the aggregated signing protocol, a single malicious report is enough
+    /// to trigger the Sign-Identifiable Abort protocol.
+    /// In the Sign-Identifiable Abort protocol, each validator runs the final step,
+    /// agreeing on the malicious parties in the session and
+    /// removing their messages before the signing session continues as usual.
+    pub(crate) fn check_for_sign_ia_start(
+        &mut self,
+        reporting_authority: AuthorityName,
+        report: MaliciousReport,
+    ) {
+        if matches!(self.session_info.mpc_round, MPCProtocolInitData::Sign(..))
+            && self.status == MPCSessionStatus::Active
+            && self.session_specific_state.is_none()
+        {
+            self.session_specific_state = Some(MPCSessionSpecificState::Sign(SignIASessionState {
+                start_ia_flow_malicious_report: report,
+                initiating_ia_authority: reporting_authority,
+                verified_malicious_report: None,
+            }))
+        }
+    }
+
+    /// In the Sign Identifiable Abort protocol, each validator sends a malicious report, even
+    /// if no malicious actors are found. This is necessary to reach agreement on a malicious report
+    /// and to punish the validator who started the Sign IA report if they sent a faulty report.
+    fn send_empty_malicious_report(
+        &self,
+        tokio_runtime_handle: &Handle,
+        consensus_adapter: &Arc<dyn SubmitToConsensus>,
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+    ) -> DwalletMPCResult<()> {
+        let empty_report = MaliciousReport::new(vec![], self.session_info.session_id.clone());
+        let report_output =
+            self.new_dwallet_report_failed_session_with_malicious_actors(empty_report)?;
+        let epoch_store = epoch_store.clone();
+        let consensus_adapter = consensus_adapter.clone();
+        tokio_runtime_handle.spawn(async move {
+            if let Err(err) = consensus_adapter
+                .submit_to_consensus(&vec![report_output], &epoch_store)
+                .await
+            {
+                error!("failed to submit an MPC message to consensus: {:?}", err);
+            }
+        });
+        Ok(())
+    }
+
     fn advance_specific_party(
         &self,
     ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
@@ -263,7 +321,7 @@ impl DWalletMPCSession {
         match &self.session_info.mpc_round {
             MPCProtocolInitData::DKGFirst => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance::<DKGFirstParty>(
+                crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -274,7 +332,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::DKGSecond(event_data, _) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                let result = crate::dwallet_mpc::advance::<DKGSecondParty>(
+                let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -305,7 +363,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::PresignFirst(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance::<PresignFirstParty>(
+                crate::dwallet_mpc::advance_and_serialize::<PresignFirstParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -316,7 +374,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::PresignSecond(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance::<PresignSecondParty>(
+                crate::dwallet_mpc::advance_and_serialize::<PresignSecondParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -327,7 +385,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::Sign(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance::<SignFirstParty>(
+                crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -452,7 +510,7 @@ impl DWalletMPCSession {
                 map.insert(source_party_id, message.message.clone());
                 self.serialized_messages.push(map);
             }
-            _ => {
+            None => {
                 // Unexpected round number; rounds should grow sequentially.
                 return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
             }
@@ -464,5 +522,27 @@ impl DWalletMPCSession {
     /// or ignoring it if the session is not active.
     pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         self.store_message(message)
+    }
+
+    pub(crate) fn is_ready_to_advance(&self) -> bool {
+        match self.status {
+            MPCSessionStatus::Active => {
+                self.pending_quorum_for_highest_round_number == 0
+                    || self
+                        .weighted_threshold_access_structure
+                        .authorized_subset(
+                            &self
+                                .serialized_messages
+                                .get(self.pending_quorum_for_highest_round_number)
+                                .unwrap_or(&HashMap::new())
+                                .keys()
+                                .cloned()
+                                .collect::<HashSet<PartyID>>(),
+                        )
+                        .ok()
+                        .is_some()
+            }
+            _ => false,
+        }
     }
 }
