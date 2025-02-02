@@ -32,7 +32,6 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `launch_batched_presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_batched_presign)
 -  [Function `launch_presign_second_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_presign_second_round)
 -  [Function `create_batched_presign_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_batched_presign_output)
--  [Function `create_partially_signed_messages`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_partially_signed_messages)
 -  [Function `create_signature_algorithm_data`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_signature_algorithm_data)
 -  [Function `create_mock_dwallet_for_testing`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet_for_testing)
 -  [Function `create_mock_dwallet`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_dwallet)
@@ -1664,63 +1663,6 @@ emits a <code>CompletedPresignEvent</code>, and transfers the result to the init
         presigns,
         first_round_session_ids,
     });
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_create_partially_signed_messages"></a>
-
-## Function `create_partially_signed_messages`
-
-
-
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_partially_signed_messages">create_partially_signed_messages</a>(messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, initiator: <b>address</b>, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_mpc_network_decryption_key_version: u8, presign_ids: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>&gt;, presign_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, message_centralized_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_partially_signed_messages">create_partially_signed_messages</a>(
-    messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
-    session_id: ID,
-    initiator: <b>address</b>,
-    dwallet_id: ID,
-    dwallet_decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    dwallet_cap_id: ID,
-    dwallet_mpc_network_decryption_key_version: u8,
-    presign_ids: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;ID&gt;,
-    presign_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
-    message_centralized_signature: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
-    ctx: &<b>mut</b> TxContext
-) {
-    <b>let</b> <b>mut</b> signatures_data = <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[];
-    <b>let</b> presign_ids_len = presign_ids.length();
-    <b>let</b> <b>mut</b> i: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 0;
-    <b>while</b> (i &lt; presign_ids_len) {
-        <a href="../move-stdlib/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> signatures_data, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData">SignData</a> {
-            message_centralized_signature: message_centralized_signature[i],
-            presign_id: presign_ids[i],
-            presign_output: presign_output[i],
-        });
-        i = i + 1;
-    };
-    <a href="dwallet.md#0x3_dwallet_create_partial_centralized_signed_messages">dwallet::create_partial_centralized_signed_messages</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignData">SignData</a>&gt;(
-        messages,
-        dwallet_id,
-        dwallet_decentralized_public_output,
-        dwallet_cap_id,
-        dwallet_mpc_network_decryption_key_version,
-        signatures_data,
-        session_id,
-        initiator,
-        ctx,
-    );
 }
 </code></pre>
 
