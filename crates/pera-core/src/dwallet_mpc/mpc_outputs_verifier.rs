@@ -150,39 +150,7 @@ impl DWalletMPCOutputsVerifier {
             return match Self::verify_signature(&epoch_store, sign_session_data, output) {
                 Ok(res) => {
                     session_output_data.current_result = OutputResult::AlreadyCommitted;
-                    let mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
-                    let session = mpc_manager
-                        .mpc_sessions
-                        .get(&session_info.session_id)
-                        .ok_or(DwalletMPCError::MPCSessionNotFound {
-                            session_id: session_info.session_id,
-                        })?;
                     let mut session_malicious_actors = res.malicious_actors;
-                    if let Some(MPCSessionSpecificState::Sign(sign_state)) =
-                        &session.session_specific_state
-                    {
-                        // If one of the validators in the sign session sent a malicious report,
-                        // every validator needs
-                        // to make sure the reported validator actually marked
-                        // as malicious
-                        // before the sign session got completed.
-                        // If the reported validator was not malicious, the reporting
-                        // validator should be marked as malicious.
-                        for reported_malicious_actor in
-                            &sign_state.malicious_report.malicious_actors
-                        {
-                            if !mpc_manager
-                                .malicious_handler
-                                .get_malicious_actors_names()
-                                .contains(&reported_malicious_actor)
-                            {
-                                warn!("a sign session got completed successfully while the reported malicious actor {:?} was not malicious,\
-                                 marking the reporting: {:?} authority as malicious", reported_malicious_actor, sign_state.initiating_ia_authority);
-                                session_malicious_actors.push(sign_state.initiating_ia_authority);
-                                break;
-                            }
-                        }
-                    }
                     Ok(OutputVerificationResult {
                         result: OutputResult::FirstQuorumReachedValid,
                         malicious_actors: session_malicious_actors,
