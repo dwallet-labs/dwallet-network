@@ -1146,7 +1146,7 @@ mod checked {
                 // ) {
                 module_name = DWALLET_MODULE_NAME;
                 (
-                    "create_partially_signed_messages",
+                    "create_partial_centralized_signed_messages",
                     vec![
                         CallArg::Pure(bcs_to_bytes(&event_data.messages)?),
                         CallArg::Pure(event_data.dwallet_id.bytes.to_vec()),
