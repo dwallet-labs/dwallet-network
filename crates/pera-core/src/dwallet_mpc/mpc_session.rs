@@ -4,7 +4,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
 use tracing::error;
@@ -46,11 +46,6 @@ pub(super) struct DWalletMPCSession {
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
-    /// The total number of parties in the chain
-    /// We can calculate the threshold and parties IDs (indexes) from it.
-    /// To calculate the party's ID, all we need to know is the number of parties,
-    /// as the IDs are just the indexes of those parties.
-    /// If there are three parties, the IDs are [0, 1, 2].
     pub(super) session_info: SessionInfo,
     pub(super) public_input: MPCPublicInput,
     /// The current MPC round number of the session.
@@ -100,6 +95,8 @@ impl DWalletMPCSession {
         }
     }
 
+    /// Returns the epoch store.
+    /// Errors if the epoch was switched in the middle.
     fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
         self.epoch_store
             .upgrade()
@@ -267,7 +264,7 @@ impl DWalletMPCSession {
         match &self.session_info.mpc_round {
             MPCProtocolInitData::DKGFirst => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance::<DKGFirstParty>(
+                crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -278,7 +275,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::DKGSecond(event_data, _) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                let result = crate::dwallet_mpc::advance::<DKGSecondParty>(
+                let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -309,7 +306,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::PresignFirst(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance::<PresignFirstParty>(
+                crate::dwallet_mpc::advance_and_serialize::<PresignFirstParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -320,7 +317,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::PresignSecond(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance::<PresignSecondParty>(
+                crate::dwallet_mpc::advance_and_serialize::<PresignSecondParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -331,7 +328,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::Sign(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance::<SignFirstParty>(
+                crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -456,7 +453,7 @@ impl DWalletMPCSession {
                 map.insert(source_party_id, message.message.clone());
                 self.serialized_messages.push(map);
             }
-            _ => {
+            None => {
                 // Unexpected round number; rounds should grow sequentially.
                 return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
             }
@@ -468,5 +465,27 @@ impl DWalletMPCSession {
     /// or ignoring it if the session is not active.
     pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         self.store_message(message)
+    }
+
+    pub(crate) fn is_ready_to_advance(&self) -> bool {
+        match self.status {
+            MPCSessionStatus::Active => {
+                self.pending_quorum_for_highest_round_number == 0
+                    || self
+                        .weighted_threshold_access_structure
+                        .authorized_subset(
+                            &self
+                                .serialized_messages
+                                .get(self.pending_quorum_for_highest_round_number)
+                                .unwrap_or(&HashMap::new())
+                                .keys()
+                                .cloned()
+                                .collect::<HashSet<PartyID>>(),
+                        )
+                        .ok()
+                        .is_some()
+            }
+            _ => false,
+        }
     }
 }

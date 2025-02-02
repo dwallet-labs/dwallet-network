@@ -5,10 +5,11 @@
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
 use crate::dwallet_mpc::sign::SignFirstParty;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
-use group::GroupElement;
+use group::{GroupElement, PartyID};
 use mpc::Party;
 use narwhal_types::Round;
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
@@ -68,7 +69,7 @@ pub struct SessionOutputsData {
 /// as the output can be sent twice by honest parties.
 #[derive(PartialOrd, PartialEq, Clone)]
 pub enum OutputResult {
-    Valid,
+    FirstQuorumReached,
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
@@ -133,6 +134,7 @@ impl DWalletMPCOutputsVerifier {
         let Some(ref mut session_output_data) =
             self.mpc_sessions_outputs.get_mut(&session_info.session_id)
         else {
+            // Report validators sending outputs for invalid sessions as malicious.
             return Ok(OutputVerificationResult {
                 result: OutputResult::Malicious,
                 malicious_actors: vec![origin_authority],
@@ -150,7 +152,7 @@ impl DWalletMPCOutputsVerifier {
                     session_output_data.current_result = OutputResult::AlreadyCommitted;
                     let mut session_malicious_actors = res.malicious_actors;
                     Ok(OutputVerificationResult {
-                        result: OutputResult::Valid,
+                        result: OutputResult::FirstQuorumReached,
                         malicious_actors: session_malicious_actors,
                     })
                 }
@@ -172,6 +174,7 @@ impl DWalletMPCOutputsVerifier {
             .authorities_that_sent_output
             .contains(&origin_authority)
         {
+            // Report validators sending an output for the same session twice as malicious.
             return Ok(OutputVerificationResult {
                 result: OutputResult::Malicious,
                 malicious_actors: vec![origin_authority],
@@ -186,15 +189,23 @@ impl DWalletMPCOutputsVerifier {
             .or_default()
             .insert(origin_authority);
 
+        let weighted_threshold_access_structure =
+            epoch_store.get_weighted_threshold_access_structure()?;
+
+        // Find the output that has a quorum of votes
         let agreed_output = session_output_data
             .session_output_to_voting_authorities
             .iter()
+            // There could be only one quorum, it is safe to use find.
             .find(|(_, voters)| {
-                voters
+                // Safe to unwrap since we know the authority exists in the map if it's in the set.
+                let voters_ids = voters
                     .iter()
-                    .map(|voter| self.weighted_parties.get(voter).unwrap_or(&0))
-                    .sum::<StakeUnit>()
-                    >= self.quorum_threshold
+                    .map(|voter| authority_name_to_party_id(voter, &epoch_store).unwrap())
+                    .collect();
+                weighted_threshold_access_structure
+                    .authorized_subset(&voters_ids)
+                    .is_ok()
             });
 
         if let Some((agreed_output, _)) = agreed_output {
@@ -207,7 +218,7 @@ impl DWalletMPCOutputsVerifier {
                 .collect();
             session_output_data.current_result = OutputResult::AlreadyCommitted;
             return Ok(OutputVerificationResult {
-                result: OutputResult::Valid,
+                result: OutputResult::FirstQuorumReached,
                 malicious_actors: voted_for_other_outputs,
             });
         }
@@ -267,7 +278,7 @@ impl DWalletMPCOutputsVerifier {
             ));
         }
         Ok(OutputVerificationResult {
-            result: OutputResult::Valid,
+            result: OutputResult::FirstQuorumReached,
             malicious_actors: vec![],
         })
     }
