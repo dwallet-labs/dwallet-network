@@ -240,7 +240,6 @@ impl DWalletMPCOutputsVerifier {
                     .is_ok()
             });
 
-        // todo(zeev): simplify.
         if let Some((agreed_output, _)) = agreed_output {
             let voted_for_other_outputs = session_output_data
                 .session_output_to_voting_authorities
