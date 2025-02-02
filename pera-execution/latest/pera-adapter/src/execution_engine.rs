@@ -1133,27 +1133,23 @@ mod checked {
         let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
         let (move_function_name, args) = match data.session_info.mpc_round {
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
-                let presign_ids: Vec<ObjectID> = event_data
-                    .signature_data
-                    .iter()
-                    .map(|data| data.presign_id.bytes.clone())
-                    .collect();
-                let presign_outputs: Vec<Vec<u8>> = event_data
-                    .signature_data
-                    .iter()
-                    .map(|data| data.presign_output.clone())
-                    .collect();
-                let message_centralized_signature: Vec<Vec<u8>> = event_data
-                    .signature_data
-                    .iter()
-                    .map(|data| data.message_centralized_signature.clone())
-                    .collect();
+
+                // public(package) fun create_partial_centralized_signed_messages<D: store + drop + copy>(
+                //     messages: vector<vector<u8>>,
+                //     dwallet_id: ID,
+                //     dwallet_decentralized_public_output: vector<u8>,
+                //     dwallet_cap_id: ID,
+                //     dwallet_mpc_network_decryption_key_version: u8,
+                //     signature_algorithm_data: vector<D>,
+                //     session_id: ID,
+                //     initiator: address,
+                //     ctx: &mut TxContext
+                // ) {
+                module_name = DWALLET_MODULE_NAME;
                 (
                     "create_partially_signed_messages",
                     vec![
                         CallArg::Pure(bcs_to_bytes(&event_data.messages)?),
-                        CallArg::Pure(data.session_info.session_id.to_vec()),
-                        CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                         CallArg::Pure(event_data.dwallet_id.bytes.to_vec()),
                         CallArg::Pure(bcs_to_bytes(
                             &event_data.dwallet_decentralized_public_output,
@@ -1162,9 +1158,9 @@ mod checked {
                         CallArg::Pure(bcs_to_bytes(
                             &event_data.dwallet_mpc_network_decryption_key_version,
                         )?),
-                        CallArg::Pure(bcs_to_bytes(&presign_ids)?),
-                        CallArg::Pure(bcs_to_bytes(&presign_outputs)?),
-                        CallArg::Pure(bcs_to_bytes(&message_centralized_signature)?),
+                        CallArg::Pure(bcs_to_bytes(&event_data.signature_data)?),
+                        CallArg::Pure(data.session_info.session_id.to_vec()),
+                        CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     ],
                 )
             }
