@@ -232,7 +232,8 @@ impl DWalletMPCManager {
         match status {
             // Quorum reached, remove the malicious parties from the session messages.
             ReportStatus::QuorumReached => {
-                if let Some(session) = self.mpc_sessions.get_mut(&report.session_id) {
+                self.check_for_malicious_ia_report(&report)?;
+                if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
                     // For every advance we increase the round number by 1,
                     // so to re-run the same round we decrease it by 1.
                     session.pending_quorum_for_highest_round_number -= 1;
@@ -258,28 +259,38 @@ impl DWalletMPCManager {
                         session_id: report.session_id,
                     });
                 };
-                // In the aggregated signing protocol, a single malicious report is enough
-                // to trigger the Sign-Identifiable Abort protocol.
-                // In the Sign-Identifiable Abort protocol, each validator runs the final step,
-                // agreeing on the malicious parties in the session and
-                // removing their messages before the signing session continues as usual.
-                if matches!(
-                    session.session_info.mpc_round,
-                    MPCProtocolInitData::Sign(..)
-                ) && !report.malicious_actors.is_empty()
-                {
-                    if session.session_specific_state.is_none() {
-                        session.session_specific_state =
-                            Some(MPCSessionSpecificState::Sign(SignIASessionState {
-                                malicious_report: report,
-                                initiating_ia_authority: reporting_authority,
-                            }))
-                    }
-                }
+                session.check_for_sign_ia_start(reporting_authority, report);
             }
             ReportStatus::OverQuorum => {}
         }
 
+        Ok(())
+    }
+
+    /// Makes sure the first agreed-upon malicious report in a sign flow is equals to the request
+    /// that triggered the Sign Identifiable Abort flow. If it isn't, we mark the validator that
+    /// sent the request to start the Sign Identifiable Abort flow as malicious, as he sent a faulty
+    /// report.
+    fn check_for_malicious_ia_report(&mut self, report: &MaliciousReport) -> DwalletMPCResult<()> {
+        let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) else {
+            return Err(DwalletMPCError::MPCSessionNotFound {
+                session_id: report.session_id,
+            });
+        };
+        let Some(MPCSessionSpecificState::Sign(ref mut sign_state)) =
+            &mut session.session_specific_state
+        else {
+            return Err(DwalletMPCError::AggregatedSignStateNotFound {
+                session_id: report.session_id,
+            });
+        };
+        if sign_state.verified_malicious_report.is_none() {
+            sign_state.verified_malicious_report = Some(report.clone());
+            if &sign_state.start_ia_flow_malicious_report != report {
+                self.malicious_handler
+                    .report_malicious_actors(&vec![sign_state.initiating_ia_authority]);
+            }
+        }
         Ok(())
     }
 
@@ -565,31 +576,32 @@ impl DWalletMPCManager {
                 );
                 return;
             };
-            if session.status == MPCSessionStatus::Active {
-                info!(
-                    "running last sign cryptographic step for session_id: {:?}",
-                    session_id
+            if session.status != MPCSessionStatus::Active && !session.is_verifying_sign_ia_report()
+            {
+                return;
+            }
+            info!(
+                "running last sign cryptographic step for session_id: {:?}",
+                session_id
+            );
+            let session = session.clone();
+            if let Err(err) = finished_computation_sender.send(ComputationUpdate::Started) {
+                error!(
+                    "Failed to send a started computation message with error: {:?}",
+                    err
                 );
-                let session = session.clone();
-                if let Err(err) = finished_computation_sender.send(ComputationUpdate::Started) {
+            }
+            rayon::spawn_fifo(move || {
+                if let Err(err) = session.advance(&handle) {
+                    error!("failed to advance session with error: {:?}", err);
+                }
+                if let Err(err) = finished_computation_sender.send(ComputationUpdate::Completed) {
                     error!(
-                        "Failed to send a started computation message with error: {:?}",
+                        "Failed to send a finished computation message with error: {:?}",
                         err
                     );
                 }
-                rayon::spawn_fifo(move || {
-                    if let Err(err) = session.advance(&handle) {
-                        error!("failed to advance session with error: {:?}", err);
-                    }
-                    if let Err(err) = finished_computation_sender.send(ComputationUpdate::Completed)
-                    {
-                        error!(
-                            "Failed to send a finished computation message with error: {:?}",
-                            err
-                        );
-                    }
-                });
-            }
+            });
         });
         Ok(())
     }
