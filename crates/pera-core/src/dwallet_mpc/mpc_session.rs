@@ -377,15 +377,18 @@ impl DWalletMPCSession {
                     .map_err(|err| err)
             }
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
-                for (signature_data, )
-                for i in 0..event_data.messages.len() {
+                for (signature_data, hashed_message) in event_data
+                    .signature_data
+                    .iter()
+                    .zip(event_data.hashed_messages.iter())
+                {
                     verify_partial_signature(
-                        &event_data.hashed_messages[i],
+                        hashed_message,
                         &event_data.dwallet_decentralized_public_output,
-                        &event_data.signature_data[i].presign_output,
-                        &event_data.signature_data[i].message_centralized_signature,
+                        &signature_data.presign_output,
+                        &signature_data.message_centralized_signature,
                         &bcs::from_bytes(&self.public_input)?,
-                        &event_data.signature_data[i].presign_id.bytes,
+                        &signature_data.presign_id.bytes,
                     )?;
                 }
                 Ok(AsynchronousRoundResult::Finalize {
