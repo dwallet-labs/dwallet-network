@@ -4,8 +4,8 @@
 /// A simple allowlist rule - allows only the addresses on the allowlist to
 /// perform an Action.
 module examples::allowlist_rule {
-    use sui::bag::{Self, Bag};
-    use sui::token::{
+    use ika::bag::{Self, Bag};
+    use ika::token::{
         Self,
         TokenPolicy,
         TokenPolicyCap,

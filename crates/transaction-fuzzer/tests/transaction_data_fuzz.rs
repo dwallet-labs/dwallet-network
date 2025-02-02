@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use proptest::prelude::*;
-use sui_types::utils::to_sender_signed_transaction;
+use ika_types::utils::to_sender_signed_transaction;
 
 use proptest::strategy::ValueTree;
 use transaction_fuzzer::account_universe::AccountCurrent;

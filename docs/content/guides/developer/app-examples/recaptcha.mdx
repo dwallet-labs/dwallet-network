@@ -6,18 +6,18 @@ draft: true
 
 This guide shows you how to write and deploy a smart contract in Move that uses reCAPTCHA to verify users are human (and not bots) before they interact with the contract. CAPTCHA is a method of bot mitigation that requires you to pass a challenge test to prove that you are human. CAPTCHA tests are effective in preventing bots from performing tasks, but the tests can become annoying or frustrating for legitimate users if they are too difficult or frequent. reCAPTCHA is a form of CAPTCHA testing.
 
-This guide assumes you have [installed Sui](../getting-started/sui-install.mdx) and understand Sui fundamentals.
+This guide assumes you have [installed Ika](../getting-started/ika-install.mdx) and understand Ika fundamentals.
 
 ## Move smart contract
 
-As with all Sui dApps, a Move package on chain powers the logic of the reCAPTCHA module. The following instruction walks you through creating and publishing the module.
+As with all Ika dApps, a Move package on chain powers the logic of the reCAPTCHA module. The following instruction walks you through creating and publishing the module.
 
 ### reCAPTCHA module
 
 Before you get started, you must initialize a Move package. Open a terminal or console in the directory you want to store the example and run the following command to create an empty package with the name `recaptcha`:
 
 ```bash
-sui move new recaptcha
+ika move new recaptcha
 ```
 
 With that done, it's time to jump into some code. Create a new file in the `sources` directory with the name `recaptcha.move` and populate the file with the following code:
@@ -31,21 +31,21 @@ module recaptcha::recaptcha {
     use std::vector;
 
     // Import the clock module for getting the current time.
-    use sui::clock::Clock;
+    use ika::clock::Clock;
     // Import the dynamic_field module for adding custom fields to objects.
-    use sui::dynamic_field as df;
+    use ika::dynamic_field as df;
     // Import the ed25519 module for verifying signatures.
-    use sui::ed25519::ed25519_verify;
+    use ika::ed25519::ed25519_verify;
     // Import the event module for emitting events.
-    use sui::event::emit;
+    use ika::event::emit;
     // Import the math module for performing mathematical operations.
-    use sui::math;
+    use ika::math;
     // Import the object module for creating and manipulating objects.
-    use sui::object::{Self, UID};
+    use ika::object::{Self, UID};
     // Import the transfer module for sharing and transferring objects.
-    use sui::transfer;
+    use ika::transfer;
     // Import the tx_context module for accessing transaction information.
-    use sui::tx_context::{sender, TxContext};
+    use ika::tx_context::{sender, TxContext};
 
     /// Error code for transactions that violate the cooldown period.
     const EVerificationExpired: u64 = 0;
@@ -62,7 +62,7 @@ module recaptcha::recaptcha {
 There are few details to take note of in this code:
 
 1. The fourth line declares the module name as `recaptcha` within the package `recaptcha`.
-1. The next eight lines use the use keyword to import types and functions from other modules, such as `sui::clock::Clock`, `sui::dynamic_field as df`, `sui::ed25519::ed25519_verify`, `sui::event::emit,sui::math`, `sui::object::{Self, UID}`, `sui::transfer`, and `sui::tx_context::{sender, TxContext}`. These modules are needed for the implementation of the reCAPTCHA verification and the interaction logic.
+1. The next eight lines use the use keyword to import types and functions from other modules, such as `ika::clock::Clock`, `ika::dynamic_field as df`, `ika::ed25519::ed25519_verify`, `ika::event::emit,ika::math`, `ika::object::{Self, UID}`, `ika::transfer`, and `ika::tx_context::{sender, TxContext}`. These modules are needed for the implementation of the reCAPTCHA verification and the interaction logic.
 1. The following three lines declare the error codes, namely: `EVerificationExpired`, `EInvalidSignature`, and `ENotYetVerified`, that are used to check the validity of the reCAPTCHA test result and the eligibility of the user. The error codes are also used in the unit tests to verify the correctness of the program.
 1. The last line declares the constant `TIME_WINDOW`, which specifies the duration of the time window in milliseconds. The time window is the period of time that the user is eligible to interact with the smart contract after passing the reCAPTCHA test.
 
@@ -94,7 +94,7 @@ fun init(ctx: &mut TxContext) {
 
 - The `Interaction` struct is used to define the data that is emitted as an event when a user successfully interacts with the smart contract. The `Interaction` event has two fields: the sender's address and the timestamp in milliseconds. The sender's address is the account that initiated the interaction, and the timestamp is the current time when the event is triggered.
 - The `Registry` struct stores the mapping of the user’s address to the expiration time of the eligibility to interact with the smart contract. It also has a `window` field that specifies the length of the time window in milliseconds. The time window is the period of time that the user is eligible to interact with the smart contract after passing the reCAPTCHA test.
-- The [`init` function](concepts/sui-move-concepts/init.mdx) creates a [shared object](concepts/object-ownership/shared.mdx) for the `Registry`. The function is called when the smart contract is deployed to the blockchain. The function creates a new registry object with a unique id and sets the time window to the constant value.
+- The [`init` function](concepts/ika-move-concepts/init.mdx) creates a [shared object](concepts/object-ownership/shared.mdx) for the `Registry`. The function is called when the smart contract is deployed to the blockchain. The function creates a new registry object with a unique id and sets the time window to the constant value.
 
 So far, you've set up the data structures within the module.
 Now, create a function that verifies the message
@@ -152,9 +152,9 @@ The `verify` function is a public function that allows anyone to register themse
 
 The function performs the following steps:
 
-- It calls the `ed25519_verify` function from the `sui::ed25519` module to check if the signature is valid for the given public key and message. The `ed25519_verify` function returns a boolean value that indicates the validity of the signature.
+- It calls the `ed25519_verify` function from the `ika::ed25519` module to check if the signature is valid for the given public key and message. The `ed25519_verify` function returns a boolean value that indicates the validity of the signature.
 - It asserts that the signature is valid, otherwise it aborts the execution with the error code `EInvalidSignature`.
-- It checks if the user's address exists as a key in the dynamic field of the registry object. The dynamic field is a way of storing key-value pairs in an object without declaring them in advance and it can be accessed, modified, or deleted using the `sui::dynamic_field` module.
+- It checks if the user's address exists as a key in the dynamic field of the registry object. The dynamic field is a way of storing key-value pairs in an object without declaring them in advance and it can be accessed, modified, or deleted using the `ika::dynamic_field` module.
 - If the user's address does not exist as a key in the dynamic field, it adds a new key-value pair to the dynamic field. The key is the user's address and the value is the expiration time of the eligibility. The expiration time is calculated by calling the `msg_to_ts` function that converts the message to a timestamp in milliseconds.
 - If the user's address already exists as a key in the dynamic field, it updates the value of the key to the new expiration time of the eligibility.
 
@@ -172,13 +172,13 @@ public fun interact(
         // Borrow a mutable reference to the interaction history object
         let timestamp_ms = df::borrow_mut<address, u64>(&mut registry.id, sender(ctx));
         // Get the current timestamp in milliseconds from the clock object
-        let current_timestamp = sui::clock::timestamp_ms(clock);
+        let current_timestamp = ika::clock::timestamp_ms(clock);
 
         if (current_timestamp - *timestamp_ms <= registry.window) {
             emit(
                 Interaction{
                     sender: sender(ctx),
-                    timestamp_ms: sui::clock::timestamp_ms(clock)
+                    timestamp_ms: ika::clock::timestamp_ms(clock)
                 }
             );
         } else {
@@ -199,7 +199,7 @@ The function takes three parameters:
 
 The function performs the following steps:
 
-- It checks if there is an existing interaction history for the sender address with the registry object. The interaction history is stored as a dynamic field in the registry object. The dynamic field is a way of storing key-value pairs in an object without declaring them in advance. The dynamic field can be accessed, modified, or deleted using the `sui::dynamic_field` module.
+- It checks if there is an existing interaction history for the sender address with the registry object. The interaction history is stored as a dynamic field in the registry object. The dynamic field is a way of storing key-value pairs in an object without declaring them in advance. The dynamic field can be accessed, modified, or deleted using the `ika::dynamic_field` module.
 - If there is an existing interaction history, it borrows a mutable reference to the interaction history object. The interaction history object contains the expiration time of the eligibility in milliseconds.
 - It gets the current timestamp in milliseconds from the clock object and compares it with the expiration time of the eligibility. If the current timestamp is within the time window of the eligibility, it emits an interaction event. The interaction event is a struct that contains the sender address and the timestamp in milliseconds. The interaction event can be used to implement the logic of the decentralized application, such as voting, bidding, or playing.
 - If the current timestamp is outside the time window of the eligibility, it aborts the execution with the error code `EVerificationExpired`. This means that the user has to pass the reCAPTCHA test again to interact with the smart contract.
@@ -209,7 +209,7 @@ And with that, your `recaptcha.move` code is complete.
 
 ## Deployment
 
-{@include: ../../../snippets/initialize-sui-client-cli.mdx}
+{@include: ../../../snippets/initialize-ika-client-cli.mdx}
 
 {@include: ../../../snippets/publish-to-devnet-with-coins.mdx}
 
@@ -356,12 +356,12 @@ That's it! You have implemented the backend for the reCAPTCHA. To run the app, y
 
 ## Frontend
 
-To implement the frontend for the reCAPTCHA, you need to create a react app that can render a user interface and interact with the backend and the smart contract. You also need to install some dependencies, such as `@mysten/dapp-kit`, `@mysten/sui`, `axios`, and `react-google-recaptcha`. These packages help you with wallet integration, transaction execution, HTTP requests, and reCAPTCHA rendering.
+To implement the frontend for the reCAPTCHA, you need to create a react app that can render a user interface and interact with the backend and the smart contract. You also need to install some dependencies, such as `@mysten/dapp-kit`, `@ika-io/ika`, `axios`, and `react-google-recaptcha`. These packages help you with wallet integration, transaction execution, HTTP requests, and reCAPTCHA rendering.
 
 Here are the steps to create the frontend:
 
 1. Initialize a new project with `pnpm create vite recaptcha-app --template react-ts`.
-2. Install the dependencies with `pnpm install --save @mysten/dapp-kit @mysten/sui axios react-google-recaptcha`.
+2. Install the dependencies with `pnpm install --save @mysten/dapp-kit @ika-io/ika axios react-google-recaptcha`.
 3. Create a file named `.env` and add the following environment variables:
    - `VITE_reCAPTCHA_SITE_KEY`: the site key that you get from Google when you register your site for reCAPTCHA
    - `VITE_reCAPTCHA_SECRET_KEY`: the secret key that you get from Google when you register your site for reCAPTCHA
@@ -378,8 +378,8 @@ import {
 	useCurrentWallet,
 	useSignAndExecuteTransaction,
 } from '@mysten/dapp-kit';
-import { Transaction } from '@mysten/sui/transactions';
-import { SUI_CLOCK_OBJECT_ID } from '@mysten/sui/utils';
+import { Transaction } from '@ika-io/ika/transactions';
+import { IKA_CLOCK_OBJECT_ID } from '@ika-io/ika/utils';
 import Axios from 'axios';
 import { useEffect, useState } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
@@ -459,7 +459,7 @@ function App() {
 
 						transaction.moveCall({
 							target: `${packageId}::${moduleId}::interact`,
-							arguments: [transaction.object(registryId), transaction.object(SUI_CLOCK_OBJECT_ID)],
+							arguments: [transaction.object(registryId), transaction.object(IKA_CLOCK_OBJECT_ID)],
 						});
 
 						console.log(
@@ -529,8 +529,8 @@ export default App;
 - Next, use the `useEffect` hook from React to run some code when the `currentWallet` state changes. In this case, you don't do anything, but you could add some logic here if you want to.
 - Finally, return a JSX element that renders the app. The app consists of the following components:
   - A `ConnectButton` component from `@mysten/dapp-kit` that allows the user to connect to their wallet.
-  - A button that allows the user to interact with the smart contract. This button is disabled unless the user passes the verification at least once. When the user clicks this button, create a new `Transaction` object from `@mysten/sui` and add a `moveCall` action that calls the `interact` function of the smart contract with the registry ID and the clock object ID as arguments. Then, use the `signAndExecuteTransaction` function from `@mysten/dapp-kit` to sign and execute the transaction block on the blockchain. You also log the result to the console.
-  - A button that allows the user to verify their identity to the smart contract. This button is disabled unless the user passes the reCAPTCHA challenge. When the user clicks this button, create a new `Transaction` object from `@mysten/sui` and add a `moveCall` action that calls the verify function of the smart contract with the registry ID, the signature, the public key, and the message as arguments. Then, use the `signAndExecuteTransaction` function from `@mysten/dapp-kit` to sign and execute the transaction block on the blockchain. You also log the result to the console.
+  - A button that allows the user to interact with the smart contract. This button is disabled unless the user passes the verification at least once. When the user clicks this button, create a new `Transaction` object from `@ika-io/ika` and add a `moveCall` action that calls the `interact` function of the smart contract with the registry ID and the clock object ID as arguments. Then, use the `signAndExecuteTransaction` function from `@mysten/dapp-kit` to sign and execute the transaction block on the blockchain. You also log the result to the console.
+  - A button that allows the user to verify their identity to the smart contract. This button is disabled unless the user passes the reCAPTCHA challenge. When the user clicks this button, create a new `Transaction` object from `@ika-io/ika` and add a `moveCall` action that calls the verify function of the smart contract with the registry ID, the signature, the public key, and the message as arguments. Then, use the `signAndExecuteTransaction` function from `@mysten/dapp-kit` to sign and execute the transaction block on the blockchain. You also log the result to the console.
   - A `ReCAPTCHA` component from `react-google-recaptcha` that renders the reCAPTCHA widget. You pass the site key and the `onChange` function as props to this component.
 
 That's it! You have implemented the frontend for the reCAPTCHA. To run the app, you can use `pnpm run dev`. To test the app, you can open the browser and go to the `localhost:5173` URL. You should see the app and can interact with the reCAPTCHA and the smart contract.

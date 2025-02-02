@@ -1,14 +1,14 @@
 ---
 title: Custom Transfer Rules
-description: Custom transfer rules enable you to define a set of rules that must be met before Sui considers a transfer operation valid.
+description: Custom transfer rules enable you to define a set of rules that must be met before Ika considers a transfer operation valid.
 ---
 
-Every Sui object must have the `key` ability. The `store` ability, on the other hand, is an optional ability you can add to Sui objects. Objects with the `store` ability:
+Every Ika object must have the `key` ability. The `store` ability, on the other hand, is an optional ability you can add to Ika objects. Objects with the `store` ability:
 
-- are transferable by anyone using the `sui::transfer::public_transfer` function; and
+- are transferable by anyone using the `ika::transfer::public_transfer` function; and
 - are able to be wrapped in other objects.
 
-Importantly for custom transfer rules, if the Sui object `O` does not have the `store` ability, you cannot call the `sui::transfer::public_transfer` function to transfer it. The Move module that defines `O` is the only entity that can transfer objects of that type using the `sui::transfer::transfer` function. Consequently, the module that defines the object `O` can define a custom transfer function for `O` that can take any number of arguments, and enforce any restrictions desired for performing a transfer operation (for example, a fee must be paid in order to transfer the object).
+Importantly for custom transfer rules, if the Ika object `O` does not have the `store` ability, you cannot call the `ika::transfer::public_transfer` function to transfer it. The Move module that defines `O` is the only entity that can transfer objects of that type using the `ika::transfer::transfer` function. Consequently, the module that defines the object `O` can define a custom transfer function for `O` that can take any number of arguments, and enforce any restrictions desired for performing a transfer operation (for example, a fee must be paid in order to transfer the object).
 
 ## The store ability and transfer rules
 
@@ -42,7 +42,7 @@ module examples::custom_transfer {
   // Check that `O` is unlocked before transferring it
   public fun transfer_unlocked(object: O, to: address) {
      assert!(object.unlocked, EObjectLocked);
-     sui::transfer::transfer(object, to)
+     ika::transfer::transfer(object, to)
   }
 }
 ```
@@ -56,8 +56,8 @@ const HomeAddress = @0xCAFE;
 
 public fun transfer_locked(object: O) {
    assert!(!object.unlocked, EObjectNotLocked);
-   sui::transfer::transfer(object, HomeAddress)
+   ika::transfer::transfer(object, HomeAddress)
 }
 ```
 
-With these rules in place, there are two different custom transfer rules for any object `O`: either it's unlocked and anyone can transfer it, or it's locked, and it can only be transferred to `0xCAFE`. Importantly, these two ways of transferring `O` are the only ways of transferring any object of type `O`. In particular, because `O` does not have the `store` ability, you cannot transfer it using the `sui::transfer::public_transfer` function. In fact, the only ways of transferring `O` are using `examples::custom_transfer::transfer_unlocked` and `examples::custom_transfer::transfer_locked`.
+With these rules in place, there are two different custom transfer rules for any object `O`: either it's unlocked and anyone can transfer it, or it's locked, and it can only be transferred to `0xCAFE`. Importantly, these two ways of transferring `O` are the only ways of transferring any object of type `O`. In particular, because `O` does not have the `store` ability, you cannot transfer it using the `ika::transfer::public_transfer` function. In fact, the only ways of transferring `O` are using `examples::custom_transfer::transfer_unlocked` and `examples::custom_transfer::transfer_locked`.

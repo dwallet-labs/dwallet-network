@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Transaction } from '@mysten/sui/transactions';
-import { toBase64 } from '@mysten/sui/utils';
+import type { Transaction } from '@ika-io/ika/transactions';
+import { toBase64 } from '@ika-io/ika/utils';
 import type {
-	SuiSignAndExecuteTransactionInput,
-	SuiSignAndExecuteTransactionOutput,
+	IkaSignAndExecuteTransactionInput,
+	IkaSignAndExecuteTransactionOutput,
 } from '@mysten/wallet-standard';
 import { signTransaction } from '@mysten/wallet-standard';
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query';
@@ -18,19 +18,19 @@ import {
 	WalletNotConnectedError,
 } from '../../errors/walletErrors.js';
 import type { PartialBy } from '../../types/utilityTypes.js';
-import { useSuiClient } from '../useSuiClient.js';
+import { useIkaClient } from '../useIkaClient.js';
 import { useCurrentAccount } from './useCurrentAccount.js';
 import { useCurrentWallet } from './useCurrentWallet.js';
 import { useReportTransactionEffects } from './useReportTransactionEffects.js';
 
 type UseSignAndExecuteTransactionArgs = PartialBy<
-	Omit<SuiSignAndExecuteTransactionInput, 'transaction'>,
+	Omit<IkaSignAndExecuteTransactionInput, 'transaction'>,
 	'account' | 'chain'
 > & {
 	transaction: Transaction | string;
 };
 
-type UseSignAndExecuteTransactionResult = SuiSignAndExecuteTransactionOutput;
+type UseSignAndExecuteTransactionResult = IkaSignAndExecuteTransactionOutput;
 
 type UseSignAndExecuteTransactionError =
 	| WalletFeatureNotSupportedError
@@ -77,7 +77,7 @@ export function useSignAndExecuteTransaction<
 > {
 	const { currentWallet, supportedIntents } = useCurrentWallet();
 	const currentAccount = useCurrentAccount();
-	const client = useSuiClient();
+	const client = useIkaClient();
 	const { mutate: reportTransactionEffects } = useReportTransactionEffects();
 
 	const executeTransaction: ({
@@ -122,8 +122,8 @@ export function useSignAndExecuteTransaction<
 			const chain = signTransactionArgs.chain ?? signerAccount?.chains[0];
 
 			if (
-				!currentWallet.features['sui:signTransaction'] &&
-				!currentWallet.features['sui:signTransactionBlock']
+				!currentWallet.features['ika:signTransaction'] &&
+				!currentWallet.features['ika:signTransactionBlock']
 			) {
 				throw new WalletFeatureNotSupportedError(
 					"This wallet doesn't support the `signTransaction` feature.",

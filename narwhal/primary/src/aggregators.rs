@@ -11,7 +11,7 @@ use crypto::{
 use fastcrypto::hash::{Digest, Hash};
 use std::collections::HashSet;
 use std::sync::Arc;
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use tracing::warn;
 use types::{
     ensure,

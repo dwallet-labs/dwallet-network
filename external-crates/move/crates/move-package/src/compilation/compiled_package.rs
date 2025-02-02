@@ -26,7 +26,7 @@ use move_compiler::{
     editions::Flavor,
     linters,
     shared::{files::MappedFiles, NamedAddressMap, NumericalAddress, PackageConfig, PackagePaths},
-    sui_mode::{self},
+    ika_mode::{self},
     Compiler,
 };
 use move_docgen::{Docgen, DocgenOptions};
@@ -485,19 +485,19 @@ impl CompiledPackage {
         paths.push(sources_package_paths.clone());
 
         let lint_level = resolution_graph.build_options.lint_flag.get();
-        let sui_mode = resolution_graph
+        let ika_mode = resolution_graph
             .build_options
             .default_flavor
-            .map_or(false, |f| f == Flavor::Sui);
+            .map_or(false, |f| f == Flavor::Ika);
 
         let mut compiler = Compiler::from_package_paths(vfs_root, paths, bytecode_deps)
             .unwrap()
             .set_flags(flags);
-        if sui_mode {
-            let (filter_attr_name, filters) = sui_mode::linters::known_filters();
+        if ika_mode {
+            let (filter_attr_name, filters) = ika_mode::linters::known_filters();
             compiler = compiler
                 .add_custom_known_filters(filter_attr_name, filters)
-                .add_visitors(sui_mode::linters::linter_visitors(lint_level))
+                .add_visitors(ika_mode::linters::linter_visitors(lint_level))
         }
         let (filter_attr_name, filters) = linters::known_filters();
         compiler = compiler

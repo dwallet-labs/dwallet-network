@@ -4,11 +4,11 @@
 import { toBase64 } from '@mysten/bcs';
 
 import { bcs } from '../../bcs/index.js';
-import type { SuiObjectRef } from '../../bcs/types.js';
+import type { IkaObjectRef } from '../../bcs/types.js';
 import type {
-	SuiClient,
-	SuiTransactionBlockResponse,
-	SuiTransactionBlockResponseOptions,
+	IkaClient,
+	IkaTransactionBlockResponse,
+	IkaTransactionBlockResponseOptions,
 } from '../../client/index.js';
 import type { Signer } from '../../cryptography/index.js';
 import type { ObjectCacheOptions } from '../ObjectCache.js';
@@ -26,7 +26,7 @@ const PARALLEL_EXECUTOR_DEFAULTS = {
 	epochBoundaryWindow: 1_000,
 } satisfies Omit<ParallelTransactionExecutorOptions, 'signer' | 'client'>;
 export interface ParallelTransactionExecutorOptions extends Omit<ObjectCacheOptions, 'address'> {
-	client: SuiClient;
+	client: IkaClient;
 	signer: Signer;
 	/** The number of coins to create in a batch when refilling the gas pool */
 	coinBatchSize?: number;
@@ -44,7 +44,7 @@ export interface ParallelTransactionExecutorOptions extends Omit<ObjectCacheOpti
 	epochBoundaryWindow?: number;
 	/** The maximum number of transactions that can be execute in parallel, this also determines the maximum number of gas coins that will be created */
 	maxPoolSize?: number;
-	/** An initial list of coins used to fund the gas pool, uses all owned SUI coins by default */
+	/** An initial list of coins used to fund the gas pool, uses all owned IKA coins by default */
 	sourceCoins?: string[];
 }
 
@@ -56,14 +56,14 @@ interface CoinWithBalance {
 }
 export class ParallelTransactionExecutor {
 	#signer: Signer;
-	#client: SuiClient;
+	#client: IkaClient;
 	#coinBatchSize: number;
 	#initialCoinBalance: bigint;
 	#minimumCoinBalance: bigint;
 	#epochBoundaryWindow: number;
 	#defaultGasBudget: bigint;
 	#maxPoolSize: number;
-	#sourceCoins: Map<string, SuiObjectRef | null> | null;
+	#sourceCoins: Map<string, IkaObjectRef | null> | null;
 	#coinPool: CoinWithBalance[] = [];
 	#cache: CachingTransactionExecutor;
 	#objectIdQueues = new Map<string, (() => void)[]>();
@@ -108,11 +108,11 @@ export class ParallelTransactionExecutor {
 		await this.#updateCache(() => this.#waitForLastDigest());
 	}
 
-	async executeTransaction(transaction: Transaction, options?: SuiTransactionBlockResponseOptions) {
+	async executeTransaction(transaction: Transaction, options?: IkaTransactionBlockResponseOptions) {
 		const { promise, resolve, reject } = promiseWithResolvers<{
 			digest: string;
 			effects: string;
-			data: SuiTransactionBlockResponse;
+			data: IkaTransactionBlockResponse;
 		}>();
 		const usedObjects = await this.#getUsedObjects(transaction);
 
@@ -182,11 +182,11 @@ export class ParallelTransactionExecutor {
 	async #execute(
 		transaction: Transaction,
 		usedObjects: Set<string>,
-		options?: SuiTransactionBlockResponseOptions,
+		options?: IkaTransactionBlockResponseOptions,
 	) {
 		let gasCoin!: CoinWithBalance;
 		try {
-			transaction.setSenderIfNotSet(this.#signer.toSuiAddress());
+			transaction.setSenderIfNotSet(this.#signer.toIkaAddress());
 
 			await this.#buildQueue.runTask(async () => {
 				const data = transaction.getData();
@@ -231,7 +231,7 @@ export class ParallelTransactionExecutor {
 			const gasResult = getGasCoinFromEffects(effects);
 			const gasUsed = effects.V2?.gasUsed;
 
-			if (gasCoin && gasUsed && gasResult.owner === this.#signer.toSuiAddress()) {
+			if (gasCoin && gasUsed && gasResult.owner === this.#signer.toIkaAddress()) {
 				const totalUsed =
 					BigInt(gasUsed.computationCost) +
 					BigInt(gasUsed.storageCost) +
@@ -353,7 +353,7 @@ export class ParallelTransactionExecutor {
 			await new Promise((resolve) => setTimeout(resolve, timeToNextEpoch));
 		}
 
-		const state = await this.#client.getLatestSuiSystemState();
+		const state = await this.#client.getLatestIkaSystemState();
 
 		this.#gasPrice = {
 			price: BigInt(state.referenceGasPrice),
@@ -376,7 +376,7 @@ export class ParallelTransactionExecutor {
 		}
 
 		const txb = new Transaction();
-		const address = this.#signer.toSuiAddress();
+		const address = this.#signer.toIkaAddress();
 		txb.setSender(address);
 
 		if (this.#sourceCoins) {

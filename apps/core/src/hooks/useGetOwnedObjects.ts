@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useSuiClient } from '@mysten/dapp-kit';
-import { PaginatedObjectsResponse, type SuiObjectDataFilter } from '@mysten/sui/client';
+import { useIkaClient } from '@mysten/dapp-kit';
+import { PaginatedObjectsResponse, type IkaObjectDataFilter } from '@ika-io/ika/client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const MAX_OBJECTS_PER_REQ = 6;
 
 export function useGetOwnedObjects(
 	address?: string | null,
-	filter?: SuiObjectDataFilter,
+	filter?: IkaObjectDataFilter,
 	maxObjectRequests = MAX_OBJECTS_PER_REQ,
 ) {
-	const client = useSuiClient();
+	const client = useIkaClient();
 	return useInfiniteQuery<PaginatedObjectsResponse>({
 		initialPageParam: null,
 		queryKey: ['get-owned-objects', address, filter, maxObjectRequests],

@@ -90,7 +90,7 @@ const Rpc = () => {
         <div className="mx-8">
           <div className="">
             <h1 className="fixed bg-white dark:bg-ifm-background-color-dark w-full py-4 top-14">
-              Sui JSON-RPC Reference - Version: {openrpc.info.version}
+              Ika JSON-RPC Reference - Version: {openrpc.info.version}
             </h1>
             
               <div className="">

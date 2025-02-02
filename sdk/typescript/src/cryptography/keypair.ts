@@ -14,7 +14,7 @@ import { toSerializedSignature } from './signature.js';
 
 export const PRIVATE_KEY_SIZE = 32;
 export const LEGACY_PRIVATE_KEY_SIZE = 64;
-export const SUI_PRIVATE_KEY_PREFIX = 'suiprivkey';
+export const IKA_PRIVATE_KEY_PREFIX = 'ikaprivkey';
 
 export type ParsedKeypair = {
 	schema: SignatureScheme;
@@ -71,8 +71,8 @@ export abstract class Signer {
 		};
 	}
 
-	toSuiAddress(): string {
-		return this.getPublicKey().toSuiAddress();
+	toIkaAddress(): string {
+		return this.getPublicKey().toIkaAddress();
 	}
 
 	/**
@@ -95,12 +95,12 @@ export abstract class Keypair extends Signer {
 
 /**
  * This returns an ParsedKeypair object based by validating the
- * 33-byte Bech32 encoded string starting with `suiprivkey`, and
+ * 33-byte Bech32 encoded string starting with `ikaprivkey`, and
  * parse out the signature scheme and the private key in bytes.
  */
-export function decodeSuiPrivateKey(value: string): ParsedKeypair {
+export function decodeIkaPrivateKey(value: string): ParsedKeypair {
 	const { prefix, words } = bech32.decode(value);
-	if (prefix !== SUI_PRIVATE_KEY_PREFIX) {
+	if (prefix !== IKA_PRIVATE_KEY_PREFIX) {
 		throw new Error('invalid private key prefix');
 	}
 	const extendedSecretKey = new Uint8Array(bech32.fromWords(words));
@@ -114,11 +114,11 @@ export function decodeSuiPrivateKey(value: string): ParsedKeypair {
 }
 
 /**
- * This returns a Bech32 encoded string starting with `suiprivkey`,
+ * This returns a Bech32 encoded string starting with `ikaprivkey`,
  * encoding 33-byte `flag || bytes` for the given the 32-byte private
  * key and its signature scheme.
  */
-export function encodeSuiPrivateKey(bytes: Uint8Array, scheme: SignatureScheme): string {
+export function encodeIkaPrivateKey(bytes: Uint8Array, scheme: SignatureScheme): string {
 	if (bytes.length !== PRIVATE_KEY_SIZE) {
 		throw new Error('Invalid bytes length');
 	}
@@ -126,5 +126,5 @@ export function encodeSuiPrivateKey(bytes: Uint8Array, scheme: SignatureScheme):
 	const privKeyBytes = new Uint8Array(bytes.length + 1);
 	privKeyBytes.set([flag]);
 	privKeyBytes.set(bytes, 1);
-	return bech32.encode(SUI_PRIVATE_KEY_PREFIX, bech32.toWords(privKeyBytes));
+	return bech32.encode(IKA_PRIVATE_KEY_PREFIX, bech32.toWords(privKeyBytes));
 }

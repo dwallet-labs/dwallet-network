@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Checkpoint, EndOfEpochData } from '@mysten/sui/client';
+import type { Checkpoint, EndOfEpochData } from '@ika-io/ika/client';
 
 import type { Rpc_Checkpoint_FieldsFragment } from '../generated/queries.js';
 

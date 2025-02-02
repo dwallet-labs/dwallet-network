@@ -6,7 +6,7 @@ A zero-knowledge proof allows a prover to validate that a statement is true with
 
 Zero-knowledge succinct non-interactive argument of knowledge (zk-SNARKs) are a family of zero-knowledge proofs that are non-interactive, have succinct proof size and efficient verification time. An important and widely used variant of them is pairing-based zk-SNARKs like the [Groth16](https://eprint.iacr.org/2016/260.pdf) proof system, which is one of the most efficient and widely used.
 
-The Move API in Sui enables you to verify any statement that can be expressed in a NP-complete language efficiently using Groth16 zk-SNARKs over either the BN254 or BLS12-381 elliptic curve constructions.
+The Move API in Ika enables you to verify any statement that can be expressed in a NP-complete language efficiently using Groth16 zk-SNARKs over either the BN254 or BLS12-381 elliptic curve constructions.
 
 There are high-level languages for expressing these statements, such as [Circom](https://docs.circom.io), used in the following example.
 
@@ -14,7 +14,7 @@ Groth16 requires a trusted setup for each circuit to generate the verification k
 
 ## Usage
 
-The following example demonstrates how to create a Groth16 proof from a statement written in Circom and then verify it using the Sui Move API. The API currently supports up to eight public inputs.
+The following example demonstrates how to create a Groth16 proof from a statement written in Circom and then verify it using the Ika Move API. The API currently supports up to eight public inputs.
 
 ### Create circuit
 
@@ -40,7 +40,7 @@ This outputs the constraints in R1CS format and the circuit in Wasm format.
 
 ### Generate proof
 
-To generate a proof verifiable in Sui, you need to generate a witness. This example uses Arkworks' [ark-circom](https://github.com/gakonst/ark-circom) Rust library. The code constructs a witness for the circuit and generates a proof for it for a given input. Finally, it verifies that the proof is correct.
+To generate a proof verifiable in Ika, you need to generate a witness. This example uses Arkworks' [ark-circom](https://github.com/gakonst/ark-circom) Rust library. The code constructs a witness for the circuit and generates a proof for it for a given input. Finally, it verifies that the proof is correct.
 
 ```rust
 use ark_bn254::Bn254;
@@ -107,9 +107,9 @@ Public inputs: 0100000001000000000000000000000000000000000000000000000000000000
 ```
 All these outputs are needed to verify the proof.
 
-### Verification in Sui
+### Verification in Ika
 
-The API in Sui for verifying a proof expects a special processed verification key, where only a subset of the values are used. Ideally, computation for this prepared verification key happens only once per circuit. You can perform this processing using the `sui::groth16::prepare_verifying_key` method of the Sui Move API with a serialization of the `params.vk` value used previously.
+The API in Ika for verifying a proof expects a special processed verification key, where only a subset of the values are used. Ideally, computation for this prepared verification key happens only once per circuit. You can perform this processing using the `ika::groth16::prepare_verifying_key` method of the Ika Move API with a serialization of the `params.vk` value used previously.
 
 The output of the `prepare_verifying_key` function is a vector with four byte arrays, which corresponds to the `vk_gamma_abc_g1_bytes`, `alpha_g1_beta_g2_bytes`, `gamma_g2_neg_pc_bytes`, `delta_g2_neg_pc_bytes`.
 
@@ -118,7 +118,7 @@ To verify a proof, you also need two more inputs, `public_inputs_bytes` and `pro
 The following example smart contract uses the output from the program above. It first prepares a verification key and verifies the corresponding proof. This example uses the BN254 elliptic curve construction, which is given as the first parameter to the `prepare_verifying_key` and `verify_groth16_proof` functions. You can use the `bls12381` function instead for BLS12-381 construction.
 
 ```rust
-use sui::groth16;
+use ika::groth16;
 
 public fun groth16_bn254_test() {
     let pvk = groth16::prepare_verifying_key(&groth16::bn254(), &x"94d781ec65145ed90beca1859d5f38ec4d1e30d4123424bb7b0c6fc618257b1551af0374b50e5da874ed3abbc80822e4378fdef9e72c423a66095361dacad8243d1a043fc217ea306d7c3dcab877be5f03502c824833fc4301ef8b712711c49ebd491d7424efffd121baf85244404bded1fe26bdf6ef5962a3361cef3ed1661d897d6654c60dca3d648ce82fa91dc737f35aa798fb52118bb20fd9ee1f84a7aabef505258940dc3bc9de41472e20634f311e5b6f7a17d82f2f2fcec06553f71e5cd295f9155e0f93cb7ed6f212d0ccddb01ebe7dd924c97a3f1fc9d03a9eb915020000000000000072548cb052d61ed254de62618c797853ad3b8a96c60141c2bfc12236638f1b0faf9ecf024817d8964c4b2fed6537bcd70600a85cdec0ca4b0435788dbffd81ab");

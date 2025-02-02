@@ -37,14 +37,14 @@ use std::{
     path::{Path, PathBuf},
 };
 use storage::{CertificateStoreCacheMetrics, NodeStorage};
-use sui_keys::keypair_file::{
+use ika_keys::keypair_file::{
     read_authority_keypair_from_file, read_network_keypair_from_file,
     write_authority_keypair_to_file, write_keypair_to_file,
 };
-use sui_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
-use sui_types::{
+use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
+use ika_types::{
     crypto::{
-        get_key_pair_from_rng, AuthorityKeyPair, AuthorityPublicKey, NetworkPublicKey, SuiKeyPair,
+        get_key_pair_from_rng, AuthorityKeyPair, AuthorityPublicKey, NetworkPublicKey, IkaKeyPair,
     },
     multiaddr::Multiaddr,
 };
@@ -76,14 +76,14 @@ struct App {
 #[derive(Subcommand)]
 enum Commands {
     /// Generate a committee, workers and the parameters config files of all validators
-    /// from a list of initial peers. This is only suitable for benchmarks as it exposes all keys.
+    /// from a list of initial peers. This is only ikatable for benchmarks as it exposes all keys.
     BenchmarkGenesis {
         #[clap(
             long,
             value_name = "ADDR",
             num_args(1..),
             value_delimiter = ',',
-            help = "A list of ip addresses to generate a genesis suitable for benchmarks"
+            help = "A list of ip addresses to generate a genesis ikatable for benchmarks"
         )]
         ips: Vec<String>,
         /// The working directory where the files will be generated.
@@ -211,7 +211,7 @@ async fn main() -> Result<(), eyre::Report> {
         }
         Commands::GenerateNetworkKeys { filename } => {
             let network_keypair: NetworkKeyPair = get_key_pair_from_rng(&mut rand::rngs::OsRng).1;
-            write_keypair_to_file(&SuiKeyPair::Ed25519(network_keypair), filename).unwrap();
+            write_keypair_to_file(&IkaKeyPair::Ed25519(network_keypair), filename).unwrap();
         }
         Commands::GetPubKey { filename } => {
             match read_network_keypair_from_file(filename) {
@@ -347,7 +347,7 @@ fn benchmark_genesis(
     for filename in primary_network_key_files {
         let network_keypair: NetworkKeyPair = get_key_pair_from_rng(&mut rng).1;
         let pk = network_keypair.public().to_string();
-        write_keypair_to_file(&SuiKeyPair::Ed25519(network_keypair), filename).unwrap();
+        write_keypair_to_file(&IkaKeyPair::Ed25519(network_keypair), filename).unwrap();
         primary_network_names.push(pk);
     }
 
@@ -399,7 +399,7 @@ fn benchmark_genesis(
     for filename in worker_key_files {
         let network_keypair: NetworkKeyPair = get_key_pair_from_rng(&mut rng).1;
         let pk = network_keypair.public().to_string();
-        write_keypair_to_file(&SuiKeyPair::Ed25519(network_keypair), filename).unwrap();
+        write_keypair_to_file(&IkaKeyPair::Ed25519(network_keypair), filename).unwrap();
         worker_names.push(pk);
     }
 

@@ -21,7 +21,7 @@ use types::FetchBatchesRequest;
 use fastcrypto::hash::Hash;
 use mysten_metrics::metered_channel;
 use mysten_metrics::spawn_logged_monitored_task;
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
 use types::{

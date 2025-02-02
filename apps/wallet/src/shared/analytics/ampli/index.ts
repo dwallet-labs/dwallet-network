@@ -15,9 +15,9 @@
  * Build: 1.0.0
  * Runtime: browser:typescript-ampli-v2
  *
- * [View Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest)
+ * [View Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest)
  *
- * [Full Setup Instructions](https://data.amplitude.com/mystenlabs/Sui%20Wallet/implementation/web)
+ * [Full Setup Instructions](https://data.amplitude.com/mystenlabs/Ika%20Wallet/implementation/web)
  */
 
 import * as amplitude from '@amplitude/analytics-browser';
@@ -73,7 +73,7 @@ export interface IdentifyProperties {
 	 */
 	activeAccountType?: string;
 	/**
-	 * The Sui Network that the user is currently interacting with.
+	 * The Ika Network that the user is currently interacting with.
 	 */
 	activeNetwork: string;
 	/**
@@ -148,7 +148,7 @@ export interface ClickedCollectibleCardProperties {
 	 */
 	isKiosk?: boolean;
 	/**
-	 * The ID of an object on Sui.
+	 * The ID of an object on Ika.
 	 */
 	objectId: string;
 	sourceScreen?: string;
@@ -167,7 +167,7 @@ export interface ClickedHideAssetProperties {
 	 */
 	collectibleType: string;
 	/**
-	 * The ID of an object on Sui.
+	 * The ID of an object on Ika.
 	 */
 	objectId: string;
 }
@@ -201,9 +201,9 @@ export interface ClickedSocialSignInButtonProperties {
 	sourceFlow: string;
 }
 
-export interface ClickedStakeSuiProperties {
+export interface ClickedStakeIkaProperties {
 	/**
-	 * Whether or not the user is already staking some SUI.
+	 * Whether or not the user is already staking some IKA.
 	 */
 	isCurrentlyStaking: boolean;
 	/**
@@ -237,15 +237,15 @@ export interface ClickedTokenClaimsBannerProperties {
 	 */
 	name: string;
 	/**
-	 * The ID of an object on Sui.
+	 * The ID of an object on Ika.
 	 */
 	objectId: string;
 	objectType: string;
 }
 
-export interface ClickedUnstakeSuiProperties {
+export interface ClickedUnstakeIkaProperties {
 	/**
-	 * The amount of SUI staked.
+	 * The amount of IKA staked.
 	 *
 	 * | Rule | Value |
 	 * |---|---|
@@ -455,7 +455,7 @@ export interface SentCoinsProperties {
 
 export interface SentCollectibleProperties {
 	/**
-	 * The ID of an object on Sui.
+	 * The ID of an object on Ika.
 	 */
 	objectId: string;
 }
@@ -466,7 +466,7 @@ export interface SentCollectibleFailedProperties {
 	 */
 	errorMessage: string;
 	/**
-	 * The ID of an object on Sui.
+	 * The ID of an object on Ika.
 	 */
 	objectId: string;
 }
@@ -484,9 +484,9 @@ export interface SignedTransactionBlockFailedProperties {
 	errorMessage: string;
 }
 
-export interface StakedSuiProperties {
+export interface StakedIkaProperties {
 	/**
-	 * The amount of SUI staked.
+	 * The amount of IKA staked.
 	 *
 	 * | Rule | Value |
 	 * |---|---|
@@ -499,13 +499,13 @@ export interface StakedSuiProperties {
 	validatorAddress: string;
 }
 
-export interface StakedSuiFailedProperties {
+export interface StakedIkaFailedProperties {
 	/**
 	 * A message associated with an error event.
 	 */
 	errorMessage: string;
 	/**
-	 * The amount of SUI staked.
+	 * The amount of IKA staked.
 	 *
 	 * | Rule | Value |
 	 * |---|---|
@@ -586,7 +586,7 @@ export interface UnpinnedCoinProperties {
 	coinType: string;
 }
 
-export interface UnstakedSuiProperties {
+export interface UnstakedIkaProperties {
 	/**
 	 * The address of the selected validator.
 	 */
@@ -695,10 +695,10 @@ export class ClickedSocialSignInButton implements BaseEvent {
 	}
 }
 
-export class ClickedStakeSui implements BaseEvent {
-	event_type = 'clicked stake SUI';
+export class ClickedStakeIka implements BaseEvent {
+	event_type = 'clicked stake IKA';
 
-	constructor(public event_properties: ClickedStakeSuiProperties) {
+	constructor(public event_properties: ClickedStakeIkaProperties) {
 		this.event_properties = event_properties;
 	}
 }
@@ -719,10 +719,10 @@ export class ClickedTokenClaimsBanner implements BaseEvent {
 	}
 }
 
-export class ClickedUnstakeSui implements BaseEvent {
-	event_type = 'clicked unstake SUI';
+export class ClickedUnstakeIka implements BaseEvent {
+	event_type = 'clicked unstake IKA';
 
-	constructor(public event_properties: ClickedUnstakeSuiProperties) {
+	constructor(public event_properties: ClickedUnstakeIkaProperties) {
 		this.event_properties = event_properties;
 	}
 }
@@ -891,18 +891,18 @@ export class SignedTransactionBlockFailed implements BaseEvent {
 	}
 }
 
-export class StakedSui implements BaseEvent {
-	event_type = 'staked SUI';
+export class StakedIka implements BaseEvent {
+	event_type = 'staked IKA';
 
-	constructor(public event_properties: StakedSuiProperties) {
+	constructor(public event_properties: StakedIkaProperties) {
 		this.event_properties = event_properties;
 	}
 }
 
-export class StakedSuiFailed implements BaseEvent {
-	event_type = 'staked SUI (failed)';
+export class StakedIkaFailed implements BaseEvent {
+	event_type = 'staked IKA (failed)';
 
-	constructor(public event_properties: StakedSuiFailedProperties) {
+	constructor(public event_properties: StakedIkaFailedProperties) {
 		this.event_properties = event_properties;
 	}
 }
@@ -947,10 +947,10 @@ export class UnpinnedCoin implements BaseEvent {
 	}
 }
 
-export class UnstakedSui implements BaseEvent {
-	event_type = 'unstaked SUI';
+export class UnstakedIka implements BaseEvent {
+	event_type = 'unstaked IKA';
 
-	constructor(public event_properties: UnstakedSuiProperties) {
+	constructor(public event_properties: UnstakedIkaProperties) {
 		this.event_properties = event_properties;
 	}
 }
@@ -1087,7 +1087,7 @@ export class Ampli {
   /**
    * added accounts
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/added%20accounts)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/added%20accounts)
    *
    * When users successfully add new accounts to the wallet.
    *
@@ -1106,7 +1106,7 @@ export class Ampli {
   /**
    * bypassed scam warning
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/bypassed%20scam%20warning)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/bypassed%20scam%20warning)
    *
    * Event to track when users bypass a scam warning within the wallet
    *
@@ -1123,7 +1123,7 @@ export class Ampli {
   /**
    * clicked bullshark quests cta
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20bullshark%20quests%20cta)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20bullshark%20quests%20cta)
    *
    * When users click the call-to-action for the interstitial/banner.
    *
@@ -1140,7 +1140,7 @@ export class Ampli {
   /**
    * clicked collectible card
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20collectible%20card)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20collectible%20card)
    *
    * When users click to view a collectible in the wallet.
    *
@@ -1159,7 +1159,7 @@ export class Ampli {
   /**
    * clicked create new account
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20create%20new%20account)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20create%20new%20account)
    *
    * When users click the button to create a new passphrase account.
    *
@@ -1176,7 +1176,7 @@ export class Ampli {
   /**
    * clicked create new wallet
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20create%20new%20wallet)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20create%20new%20wallet)
    *
    * When users click to create a new wallet during onboarding.
    *
@@ -1193,7 +1193,7 @@ export class Ampli {
   /**
    * clicked get started
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20get%20started)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20get%20started)
    *
    * When users click "Get Started" after installing the wallet.
    *
@@ -1210,7 +1210,7 @@ export class Ampli {
   /**
    * clicked hide asset
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20hide%20asset)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20hide%20asset)
    *
    * Event has no description in tracking plan.
    *
@@ -1227,7 +1227,7 @@ export class Ampli {
   /**
    * clicked import existing wallet
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20import%20existing%20wallet)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20import%20existing%20wallet)
    *
    * When users click to import an existing wallet during onboarding.
    *
@@ -1244,7 +1244,7 @@ export class Ampli {
   /**
    * clicked import passphrase
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20import%20passphrase)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20import%20passphrase)
    *
    * When users click to import an account via passphrase.
    *
@@ -1261,7 +1261,7 @@ export class Ampli {
   /**
    * clicked import private key
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20import%20private%20key)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20import%20private%20key)
    *
    * When users click the button to import an account via private key.
    *
@@ -1278,7 +1278,7 @@ export class Ampli {
   /**
    * clicked social sign in button
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20social%20sign%20in%20button)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20social%20sign%20in%20button)
    *
    * When users click a social sign-in button to create an account.
    *
@@ -1293,28 +1293,28 @@ export class Ampli {
   }
 
   /**
-   * clicked stake SUI
+   * clicked stake IKA
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20stake%20SUI)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20stake%20IKA)
    *
-   * When users click to stake SUI in the wallet.
+   * When users click to stake IKA in the wallet.
    *
    * Owner: Jon Shek
    *
    * @param properties The event's properties (e.g. isCurrentlyStaking)
    * @param options Amplitude event options.
    */
-  clickedStakeSui(
-    properties: ClickedStakeSuiProperties,
+  clickedStakeIka(
+    properties: ClickedStakeIkaProperties,
     options?: EventOptions,
   ) {
-    return this.track(new ClickedStakeSui(properties), options);
+    return this.track(new ClickedStakeIka(properties), options);
   }
 
   /**
    * clicked swap coin
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20swap%20coin)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20swap%20coin)
    *
    * When users click to swap a coin in the wallet
    *
@@ -1331,7 +1331,7 @@ export class Ampli {
   /**
    * clicked token claims banner
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20token%20claims%20banner)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20token%20claims%20banner)
    *
    * Event has no description in tracking plan.
    *
@@ -1346,28 +1346,28 @@ export class Ampli {
   }
 
   /**
-   * clicked unstake SUI
+   * clicked unstake IKA
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20unstake%20SUI)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20unstake%20IKA)
    *
-   * When users click to unstake SUI.
+   * When users click to unstake IKA.
    *
    * Owner: Jon Shek
    *
    * @param properties The event's properties (e.g. stakedAmount)
    * @param options Amplitude event options.
    */
-  clickedUnstakeSui(
-    properties: ClickedUnstakeSuiProperties,
+  clickedUnstakeIka(
+    properties: ClickedUnstakeIkaProperties,
     options?: EventOptions,
   ) {
-    return this.track(new ClickedUnstakeSui(properties), options);
+    return this.track(new ClickedUnstakeIka(properties), options);
   }
 
   /**
    * clicked usdc promo banner
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20usdc%20promo%20banner)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/clicked%20usdc%20promo%20banner)
    *
    * Event has no description in tracking plan.
    *
@@ -1384,7 +1384,7 @@ export class Ampli {
   /**
    * connected hardware wallet
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/connected%20hardware%20wallet)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/connected%20hardware%20wallet)
    *
    * When users successfully connect their hardware wallet.
    *
@@ -1403,7 +1403,7 @@ export class Ampli {
   /**
    * created new wallet
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/created%20new%20wallet)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/created%20new%20wallet)
    *
    * When users successfully create a new wallet during onboarding.
    *
@@ -1422,7 +1422,7 @@ export class Ampli {
   /**
    * disconnected application
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/disconnected%20application)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/disconnected%20application)
    *
    * When users disconnect from an application in the wallet.
    *
@@ -1441,7 +1441,7 @@ export class Ampli {
   /**
    * imported existing account
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/imported%20existing%20account)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/imported%20existing%20account)
    *
    * When users successfully import an existing account during onboarding.
    *
@@ -1460,7 +1460,7 @@ export class Ampli {
   /**
    * interacted with malicious domain
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/interacted%20with%20malicious%20domain)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/interacted%20with%20malicious%20domain)
    *
    * Event to track when a user interacts with a malicious domain and is shown the malicious domain warning overlay.
    *
@@ -1477,7 +1477,7 @@ export class Ampli {
   /**
    * opened application
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/opened%20application)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/opened%20application)
    *
    * When users click to open an application from the wallet.
    *
@@ -1496,7 +1496,7 @@ export class Ampli {
   /**
    * opened connect ledger flow
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/opened%20connect%20ledger%20flow)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/opened%20connect%20ledger%20flow)
    *
    * When users open the "Connect Ledger Wallet" flow.
    *
@@ -1515,7 +1515,7 @@ export class Ampli {
   /**
    * opened wallet extension
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/opened%20wallet%20extension)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/opened%20wallet%20extension)
    *
    * When users first open the wallet extension.
    *
@@ -1532,7 +1532,7 @@ export class Ampli {
   /**
    * pinned coin
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/pinned%20coin)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/pinned%20coin)
    *
    * When users pin an unrecognized coin on the home page.
    *
@@ -1551,7 +1551,7 @@ export class Ampli {
   /**
    * received onramp providers data
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/received%20onramp%20providers%20data)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/received%20onramp%20providers%20data)
    *
    * Event to track when data from onramp providers is received
    *
@@ -1568,7 +1568,7 @@ export class Ampli {
   /**
    * Received onramp providers data (failed)
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/Received%20onramp%20providers%20data%20(failed))
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/Received%20onramp%20providers%20data%20(failed))
    *
    * Event to track when data from onramp providers is received
    *
@@ -1585,7 +1585,7 @@ export class Ampli {
   /**
    * responded to connection request
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/responded%20to%20connection%20request)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/responded%20to%20connection%20request)
    *
    * When users respond to a connection request in the wallet.
    *
@@ -1604,7 +1604,7 @@ export class Ampli {
   /**
    * responded to transaction request
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/responded%20to%20transaction%20request)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/responded%20to%20transaction%20request)
    *
    * When users respond to a transaction request from an application.
    *
@@ -1623,7 +1623,7 @@ export class Ampli {
   /**
    * selected coin
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/selected%20coin)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/selected%20coin)
    *
    * When users select a specific coin from the home screen.
    *
@@ -1642,7 +1642,7 @@ export class Ampli {
   /**
    * selected validator
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/selected%20validator)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/selected%20validator)
    *
    * When users select a validator in the staking flow.
    *
@@ -1661,7 +1661,7 @@ export class Ampli {
   /**
    * sent coin failed
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/sent%20coin%20failed)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/sent%20coin%20failed)
    *
    * Event to track errors encountered while sending coins
    *
@@ -1678,7 +1678,7 @@ export class Ampli {
   /**
    * sent coins
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/sent%20coins)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/sent%20coins)
    *
    * When users successfully send coins to someone.
    *
@@ -1697,7 +1697,7 @@ export class Ampli {
   /**
    * sent collectible
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/sent%20collectible)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/sent%20collectible)
    *
    * Owner: William Robertson
    *
@@ -1714,7 +1714,7 @@ export class Ampli {
   /**
    * sent collectible (failed)
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/sent%20collectible%20(failed))
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/sent%20collectible%20(failed))
    *
    * Event has no description in tracking plan.
    *
@@ -1731,7 +1731,7 @@ export class Ampli {
   /**
    * signed transaction block failed
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/signed%20transaction%20block%20failed)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/signed%20transaction%20block%20failed)
    *
    * Event to track errors encountered while signing a transaction block
    *
@@ -1746,45 +1746,45 @@ export class Ampli {
   }
 
   /**
-   * staked SUI
+   * staked IKA
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/staked%20SUI)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/staked%20IKA)
    *
-   * When users successfully stake SUI with a validator.
+   * When users successfully stake IKA with a validator.
    *
    * Owner: Jon Shek
    *
    * @param properties The event's properties (e.g. stakedAmount)
    * @param options Amplitude event options.
    */
-  stakedSui(
-    properties: StakedSuiProperties,
+  stakedIka(
+    properties: StakedIkaProperties,
     options?: EventOptions,
   ) {
-    return this.track(new StakedSui(properties), options);
+    return this.track(new StakedIka(properties), options);
   }
 
   /**
-   * staked SUI (failed)
+   * staked IKA (failed)
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/staked%20SUI%20(failed))
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/staked%20IKA%20(failed))
    *
-   * Event fired when a user attempt to native stake SUI results in a failure.
+   * Event fired when a user attempt to native stake IKA results in a failure.
    *
    * @param properties The event's properties (e.g. errorMessage)
    * @param options Amplitude event options.
    */
-  stakedSuiFailed(
-    properties: StakedSuiFailedProperties,
+  stakedIkaFailed(
+    properties: StakedIkaFailedProperties,
     options?: EventOptions,
   ) {
-    return this.track(new StakedSuiFailed(properties), options);
+    return this.track(new StakedIkaFailed(properties), options);
   }
 
   /**
    * swapped coin
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/swapped%20coin)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/swapped%20coin)
    *
    * When users complete swapping 1 coin to another
    *
@@ -1801,7 +1801,7 @@ export class Ampli {
   /**
    * swapped coin (failed)
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/swapped%20coin%20(failed))
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/swapped%20coin%20(failed))
    *
    * Event has no description in tracking plan.
    *
@@ -1818,7 +1818,7 @@ export class Ampli {
   /**
    * switched account
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/switched%20account)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/switched%20account)
    *
    * When users switch their active account in the wallet.
    *
@@ -1837,7 +1837,7 @@ export class Ampli {
   /**
    * switched network
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/switched%20network)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/switched%20network)
    *
    * When users switch between different network connections.
    *
@@ -1856,7 +1856,7 @@ export class Ampli {
   /**
    * unpinned coin
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/unpinned%20coin)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/unpinned%20coin)
    *
    * When users un-pin a recognized coin on the home page.
    *
@@ -1873,28 +1873,28 @@ export class Ampli {
   }
 
   /**
-   * unstaked SUI
+   * unstaked IKA
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/unstaked%20SUI)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/unstaked%20IKA)
    *
-   * When users successfully un-stake SUI.
+   * When users successfully un-stake IKA.
    *
    * Owner: Jon Shek
    *
    * @param properties The event's properties (e.g. validatorAddress)
    * @param options Amplitude event options.
    */
-  unstakedSui(
-    properties: UnstakedSuiProperties,
+  unstakedIka(
+    properties: UnstakedIkaProperties,
     options?: EventOptions,
   ) {
-    return this.track(new UnstakedSui(properties), options);
+    return this.track(new UnstakedIka(properties), options);
   }
 
   /**
    * viewed ledger tutorial
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/viewed%20ledger%20tutorial)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/viewed%20ledger%20tutorial)
    *
    * When users click the link to get help with connecting their Ledger wallet.
    *
@@ -1911,7 +1911,7 @@ export class Ampli {
   /**
    * visited fiat on-ramp
    *
-   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/visited%20fiat%20on-ramp)
+   * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Ika%20Wallet/events/main/latest/visited%20fiat%20on-ramp)
    *
    * When users visit a fiat on-ramp from the wallet.
    *

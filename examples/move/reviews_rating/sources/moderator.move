@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module reviews_rating::moderator {
-    use sui::tx_context::{sender};
+    use ika::tx_context::{sender};
 
     /// Represents a moderator that can be used to delete reviews
     public struct Moderator has key {

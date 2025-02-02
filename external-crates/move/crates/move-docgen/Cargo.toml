@@ -29,5 +29,5 @@ tempfile.workspace = true
 move-prover-test-utils.workspace = true
 
 [[test]]
-name = "testsuite"
+name = "testikate"
 harness = false

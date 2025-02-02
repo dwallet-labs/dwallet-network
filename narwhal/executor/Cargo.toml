@@ -22,7 +22,7 @@ tonic.workspace = true
 tracing.workspace = true
 prometheus.workspace = true
 storage = { path = "../storage", package = "narwhal-storage" }
-sui-protocol-config.workspace = true
+ika-protocol-config.workspace = true
 
 types = { path = "../types", package = "narwhal-types" }
 network = { path = "../network", package = "narwhal-network" }

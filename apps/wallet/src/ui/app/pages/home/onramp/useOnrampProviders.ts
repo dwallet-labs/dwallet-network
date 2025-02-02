@@ -22,7 +22,7 @@ const MOONPAY_API_KEY =
 		: 'pk_test_RwNag1qi8jFoymVchhCSc5cYnqyPrVd5';
 
 const BACKEND_HOST =
-	process.env.NODE_ENV === 'production' ? 'https://apps-backend.sui.io' : 'http://localhost:3003';
+	process.env.NODE_ENV === 'production' ? 'https://apps-backend.ika.io' : 'http://localhost:3003';
 
 const ONRAMP_PROVIDER: OnrampProvider[] = [
 	{
@@ -35,15 +35,15 @@ const ONRAMP_PROVIDER: OnrampProvider[] = [
 		},
 		getUrl: async (address) => {
 			const params = new URLSearchParams({
-				coinType: 'SUI',
+				coinType: 'IKA',
 				fiatType: 'USD',
 				fiatAmount: '100',
-				blockchain: 'SUI',
+				blockchain: 'IKA',
 				theme: 'dark',
 				walletAddress: address,
 				returnUrl: window.location.href,
 			});
-			const url = `https://suiwallet.banxa.com/?${params}`;
+			const url = `https://ikawallet.banxa.com/?${params}`;
 			return url;
 		},
 	},
@@ -62,7 +62,7 @@ const ONRAMP_PROVIDER: OnrampProvider[] = [
 				// If you want to test ETH values, you can use something like this:
 				// cryptoCurrencyCode: 'ETH',
 				// walletAddress: '0x000000000000000000000000000000000000dead',
-				cryptoCurrencyCode: 'SUI',
+				cryptoCurrencyCode: 'IKA',
 				walletAddress: address,
 				disableWalletAddressForm: 'true',
 				themeColor: '#6fbcf0',
@@ -97,7 +97,7 @@ const ONRAMP_PROVIDER: OnrampProvider[] = [
 			const params = new URLSearchParams({
 				theme: 'light',
 				colorCode: '#6fbcf0',
-				currencyCode: 'SUI',
+				currencyCode: 'IKA',
 				walletAddress: address,
 				environment: process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'STAGING',
 			});

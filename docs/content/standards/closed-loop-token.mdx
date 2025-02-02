@@ -2,11 +2,11 @@
 title: Closed-Loop Token
 ---
 
-Using the Closed-Loop Token standard, you can limit the applications that can use the token and set up custom policies for transfers, spends, and conversions. The [`sui::token` module](https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/docs/sui-framework/token.md) in the Sui framework defines the standard.
+Using the Closed-Loop Token standard, you can limit the applications that can use the token and set up custom policies for transfers, spends, and conversions. The [`ika::token` module](https://github.com/MystenLabs/sui/blob/main/crates/ika-framework/docs/ika-framework/token.md) in the Ika framework defines the standard.
 
 ## Background and use cases
 
-The [Coin standard](./coin.mdx) on Sui is an example of an open-loop system - coins are free-flowing, [wrappable](/concepts/object-ownership/wrapped.mdx), [freely transferable](/concepts/transfers/custom-rules.mdx#the-store-ability-and-transfer-rules) and you can store them in any application. The best real world analogy would be cash - hardly regulated and can be freely used and passed.
+The [Coin standard](./coin.mdx) on Ika is an example of an open-loop system - coins are free-flowing, [wrappable](/concepts/object-ownership/wrapped.mdx), [freely transferable](/concepts/transfers/custom-rules.mdx#the-store-ability-and-transfer-rules) and you can store them in any application. The best real world analogy would be cash - hardly regulated and can be freely used and passed.
 
 Some applications, however, require constraining the scope of the token to a specific purpose. For example, some applications might need a token that you can only use for a specific service, or that an authorized account can only use, or a token that you can block certain accounts from using. A real-world analogy would be a bank account - regulated, bank-controlled, and compliant with certain rules and policies.
 
@@ -51,10 +51,10 @@ flowchart LR
 Unlike Coin, which has `key + store` abilities and thus supports wrapping and public transfers, Token has only the `key` ability and cannot be wrapped, stored as a dynamic field, or freely transferred (unless there's a custom policy for that). Due to this restriction, Token **can only be owned by an account** and can't be stored in an application (however, it can be "spent" - see [Spending section](./closed-loop-token/spending.mdx) section).
 
 ```move
-// defined in `sui::coin`
+// defined in `ika::coin`
 struct Coin<phantom T> has key, store { id: UID, balance: Balance<T> }
 
-// defined in `sui::token`
+// defined in `ika::token`
 struct Token<phantom T> has key { id: UID, balance: Balance<T> }
 ```
 

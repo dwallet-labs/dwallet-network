@@ -1,8 +1,8 @@
-# sui_nft_rental
+# ika_nft_rental
 
 ## **Description**
 
-NFT renting is a mechanism that allows individuals without ownership or possession of a specific NFT to temporarily utilize or experience it. The implementation of this process leverages the Kiosk Extension to establish an infrastructure conducive to facilitating rental transactions. This approach closely aligns with the ERC-4907 renting standard, making it a suitable choice for Solidity-based use cases intended for implementation on Sui.
+NFT renting is a mechanism that allows individuals without ownership or possession of a specific NFT to temporarily utilize or experience it. The implementation of this process leverages the Kiosk Extension to establish an infrastructure conducive to facilitating rental transactions. This approach closely aligns with the ERC-4907 renting standard, making it a ikatable choice for Solidity-based use cases intended for implementation on Ika.
 
 ## **Requirements**
 

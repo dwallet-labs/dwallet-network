@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { type SuiWallet } from '_src/dapp-interface/WalletStandardInterface';
-import { Transaction } from '@mysten/sui/transactions';
+import { type IkaWallet } from '_src/dapp-interface/WalletStandardInterface';
+import { Transaction } from '@ika-io/ika/transactions';
 import { getWallets, ReadonlyWalletAccount, type Wallet } from '@mysten/wallet-standard';
 import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
@@ -29,25 +29,25 @@ function getAccount(account: ReadonlyWalletAccount, useWrongAccount: boolean) {
 	return account;
 }
 
-function findSuiWallet(wallets: readonly Wallet[]) {
-	return (wallets.find((aWallet) => aWallet.name.includes('Sui Wallet')) ||
-		null) as SuiWallet | null;
+function findIkaWallet(wallets: readonly Wallet[]) {
+	return (wallets.find((aWallet) => aWallet.name.includes('Ika Wallet')) ||
+		null) as IkaWallet | null;
 }
 
 function App() {
-	const [suiWallet, setSuiWallet] = useState<SuiWallet | null>(() =>
-		findSuiWallet(getWallets().get()),
+	const [ikaWallet, setIkaWallet] = useState<IkaWallet | null>(() =>
+		findIkaWallet(getWallets().get()),
 	);
 	const [error, setError] = useState<string | null>(null);
 	const [accounts, setAccounts] = useState<ReadonlyWalletAccount[]>(
-		() => suiWallet?.accounts || [],
+		() => ikaWallet?.accounts || [],
 	);
 	const [useWrongAccounts, setUseWrongAccounts] = useState(false);
 
 	useEffect(() => {
 		const walletsApi = getWallets();
 		function updateWallets() {
-			setSuiWallet(findSuiWallet(walletsApi.get()));
+			setIkaWallet(findIkaWallet(walletsApi.get()));
 		}
 		const unregister1 = walletsApi.on('register', updateWallets);
 		const unregister2 = walletsApi.on('unregister', updateWallets);
@@ -57,20 +57,20 @@ function App() {
 		};
 	}, []);
 	useEffect(() => {
-		if (suiWallet) {
-			return suiWallet.features['standard:events'].on('change', ({ accounts }) => {
+		if (ikaWallet) {
+			return ikaWallet.features['standard:events'].on('change', ({ accounts }) => {
 				if (accounts) {
-					setAccounts(suiWallet.accounts);
+					setAccounts(ikaWallet.accounts);
 				}
 			});
 		}
-	}, [suiWallet]);
-	if (!suiWallet) {
-		return <h1>Sui Wallet not found</h1>;
+	}, [ikaWallet]);
+	if (!ikaWallet) {
+		return <h1>Ika Wallet not found</h1>;
 	}
 	return (
 		<>
-			<h1>Sui Wallet is installed. ({suiWallet.name})</h1>
+			<h1>Ika Wallet is installed. ({ikaWallet.name})</h1>
 			{accounts.length ? (
 				<ul data-testid="accounts-list">
 					{accounts.map((anAccount) => (
@@ -78,7 +78,7 @@ function App() {
 					))}
 				</ul>
 			) : (
-				<button onClick={async () => suiWallet.features['standard:connect'].connect()}>
+				<button onClick={async () => ikaWallet.features['standard:connect'].connect()}>
 					Connect
 				</button>
 			)}
@@ -95,12 +95,12 @@ function App() {
 					setError(null);
 					const txb = getDemoTransaction(accounts[0]?.address || '0x01');
 					try {
-						await suiWallet.features[
-							'sui:signAndExecuteTransactionBlock'
+						await ikaWallet.features[
+							'ika:signAndExecuteTransactionBlock'
 						]!.signAndExecuteTransactionBlock({
 							transactionBlock: txb,
 							account: getAccount(accounts[0], useWrongAccounts),
-							chain: 'sui:unknown',
+							chain: 'ika:unknown',
 						});
 					} catch (e) {
 						setError((e as Error).message);
@@ -114,10 +114,10 @@ function App() {
 					setError(null);
 					const txb = getDemoTransaction(accounts[0]?.address || '0x01');
 					try {
-						await suiWallet.features['sui:signTransactionBlock']!.signTransactionBlock({
+						await ikaWallet.features['ika:signTransactionBlock']!.signTransactionBlock({
 							transactionBlock: txb,
 							account: getAccount(accounts[0], useWrongAccounts),
-							chain: 'sui:unknown',
+							chain: 'ika:unknown',
 						});
 					} catch (e) {
 						setError((e as Error).message);
@@ -130,7 +130,7 @@ function App() {
 				onClick={async () => {
 					setError(null);
 					try {
-						await suiWallet.features['sui:signMessage']?.signMessage({
+						await ikaWallet.features['ika:signMessage']?.signMessage({
 							account: getAccount(accounts[0], useWrongAccounts),
 							message: new TextEncoder().encode('Test message'),
 						});

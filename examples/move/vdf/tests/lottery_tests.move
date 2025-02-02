@@ -3,8 +3,8 @@
 
 #[test_only]
 module vdf::lottery_tests {
-    use sui::test_scenario as ts;
-    use sui::clock;
+    use ika::test_scenario as ts;
+    use ika::clock;
     use vdf::lottery::{Self, Game, GameWinner};
 
     const OUTPUT: vector<u8> =

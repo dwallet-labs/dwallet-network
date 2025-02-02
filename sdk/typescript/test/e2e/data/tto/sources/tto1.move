@@ -3,7 +3,7 @@
 
 module tto::tto;
 
-use sui::transfer::Receiving;
+use ika::transfer::Receiving;
 
 public struct A has key, store {
     id: UID,

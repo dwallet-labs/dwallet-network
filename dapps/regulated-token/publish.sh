@@ -2,7 +2,7 @@
 # Copyright (c) Mysten Labs, Inc.
 # SPDX-License-Identifier: Apache-2.0
 
-PUBLISH=$(sui client publish --gas-budget 100000000 --skip-dependency-verification --with-unpublished-dependencies --json);
+PUBLISH=$(ika client publish --gas-budget 100000000 --skip-dependency-verification --with-unpublished-dependencies --json);
 
 # then we need to filter object changes and find the one where the type includes "TreasuryCap"
 # and then we need to get the packageId from that object change

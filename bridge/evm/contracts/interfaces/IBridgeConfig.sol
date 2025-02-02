@@ -9,7 +9,7 @@ interface IBridgeConfig {
     /// @notice The data struct for the supported bridge tokens.
     struct Token {
         address tokenAddress;
-        uint8 suiDecimal;
+        uint8 ikaDecimal;
         bool native;
     }
 
@@ -20,10 +20,10 @@ interface IBridgeConfig {
     /// @return address of the provided token.
     function tokenAddressOf(uint8 tokenID) external view returns (address);
 
-    /// @notice Returns the sui decimal places of the token with the given ID.
+    /// @notice Returns the ika decimal places of the token with the given ID.
     /// @param tokenID The ID of the token.
-    /// @return amount of sui decimal places of the provided token.
-    function tokenSuiDecimalOf(uint8 tokenID) external view returns (uint8);
+    /// @return amount of ika decimal places of the provided token.
+    function tokenIkaDecimalOf(uint8 tokenID) external view returns (uint8);
 
     /// @notice Returns the price of the token with the given ID.
     /// @param tokenID The ID of the token.
@@ -35,7 +35,7 @@ interface IBridgeConfig {
     /// @return true if the token is supported, false otherwise.
     function isTokenSupported(uint8 tokenID) external view returns (bool);
 
-    /// @notice Returns whether a chain is supported in SuiBridge with the given ID.
+    /// @notice Returns whether a chain is supported in IkaBridge with the given ID.
     /// @param chainId The ID of the chain.
     /// @return true if the chain is supported, false otherwise.
     function isChainSupported(uint8 chainId) external view returns (bool);
@@ -47,18 +47,18 @@ interface IBridgeConfig {
     /// @param nonce The governance action nonce.
     /// @param tokenIDs The IDs of the tokens added.
     /// @param tokenAddresses The addresses of the tokens added.
-    /// @param suiDecimals The added token's decimal places on Sui.
+    /// @param ikaDecimals The added token's decimal places on Ika.
     /// @param tokenPrices The prices of the tokens added in USD.
     event TokensAddedV2(
         uint64 nonce,
         uint8[] tokenIDs,
         address[] tokenAddresses,
-        uint8[] suiDecimals,
+        uint8[] ikaDecimals,
         uint64[] tokenPrices
     );
 
     /// @dev (deprecated in favor of TokensAddedV2)
-    event TokenAdded(uint8 tokenID, address tokenAddress, uint8 suiDecimal, uint64 tokenPrice);
+    event TokenAdded(uint8 tokenID, address tokenAddress, uint8 ikaDecimal, uint64 tokenPrice);
 
     /// @notice Event for the price update of a token.
     /// @param nonce The governance action nonce.

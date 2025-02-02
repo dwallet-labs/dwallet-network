@@ -3,7 +3,7 @@
 
 #[test_only]
 module tic_tac_toe::shared_tests {
-    use sui::test_scenario::{Self as ts, Scenario};
+    use ika::test_scenario::{Self as ts, Scenario};
     use tic_tac_toe::shared as ttt;
 
     const ALICE: address = @0xA;

@@ -13,10 +13,10 @@ import {
 	useCoinMetadata,
 	useFormatCoin,
 } from '@mysten/core';
-import { useSuiClientQuery } from '@mysten/dapp-kit';
-import { type TransactionEffects } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
-import { normalizeStructTag, SUI_DECIMALS, SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { useIkaClientQuery } from '@mysten/dapp-kit';
+import { type TransactionEffects } from '@ika-io/ika/client';
+import { Transaction } from '@ika-io/ika/transactions';
+import { normalizeStructTag, IKA_DECIMALS, IKA_TYPE_ARG } from '@ika-io/ika/utils';
 import BigNumber from 'bignumber.js';
 import { useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -39,13 +39,13 @@ export function useSwapData({
 	const activeAccountAddress = activeAccount?.address;
 	const { staleTime, refetchInterval } = useCoinsReFetchingConfig();
 
-	const { data: baseCoinBalanceData, isPending: baseCoinBalanceDataLoading } = useSuiClientQuery(
+	const { data: baseCoinBalanceData, isPending: baseCoinBalanceDataLoading } = useIkaClientQuery(
 		'getBalance',
 		{ coinType: baseCoinType, owner: activeAccountAddress! },
 		{ enabled: !!activeAccountAddress, refetchInterval, staleTime },
 	);
 
-	const { data: quoteCoinBalanceData, isPending: quoteCoinBalanceDataLoading } = useSuiClientQuery(
+	const { data: quoteCoinBalanceData, isPending: quoteCoinBalanceDataLoading } = useIkaClientQuery(
 		'getBalance',
 		{ coinType: quoteCoinType, owner: activeAccountAddress! },
 		{ enabled: !!activeAccountAddress, refetchInterval, staleTime },
@@ -107,9 +107,9 @@ export function useCoinTypesFromRouteParams() {
 		return { fromCoinType, toCoinType };
 	}
 
-	// Neither is set, default to SUI -> USDC
+	// Neither is set, default to IKA -> USDC
 	if (!fromCoinType && !toCoinType) {
-		return { fromCoinType: SUI_TYPE_ARG, toCoinType: USDC_TYPE_ARG };
+		return { fromCoinType: IKA_TYPE_ARG, toCoinType: USDC_TYPE_ARG };
 	}
 
 	return { fromCoinType, toCoinType };
@@ -119,7 +119,7 @@ export function useGetBalance({ coinType, owner }: { coinType?: string; owner?: 
 	const { data: coinMetadata } = useCoinMetadata(coinType);
 	const refetchInterval = useFeatureValue('wallet-balance-refetch-interval', 20_000);
 
-	return useSuiClientQuery(
+	return useIkaClientQuery(
 		'getBalance',
 		{
 			coinType,
@@ -203,7 +203,7 @@ export function formatSwapQuote({
 		.minus(accessFees)
 		.toFormat(toCoinDecimals);
 
-	const gas = formatBalance(getTotalGasCost(dryRunResponse.effects), SUI_DECIMALS);
+	const gas = formatBalance(getTotalGasCost(dryRunResponse.effects), IKA_DECIMALS);
 
 	return {
 		provider: result?.provider,

@@ -24,7 +24,7 @@ use mysten_network::{
     Multiaddr,
 };
 use parking_lot::RwLock;
-use sui_tls::AllowPublicKeys;
+use ika_tls::AllowPublicKeys;
 use tokio::{
     pin,
     task::JoinSet,
@@ -381,7 +381,7 @@ impl ChannelPool {
         let address = format!("https://{address}");
         let config = &self.context.parameters.tonic;
         let buffer_size = config.connection_buffer_size;
-        let client_tls_config = sui_tls::create_rustls_client_config(
+        let client_tls_config = ika_tls::create_rustls_client_config(
             self.context
                 .committee
                 .authority(peer)
@@ -737,7 +737,7 @@ impl<S: NetworkService> NetworkManager<S> for TonicManager {
             Arc::new(builder)
         };
 
-        let tls_server_config = sui_tls::create_rustls_server_config(
+        let tls_server_config = ika_tls::create_rustls_server_config(
             self.network_keypair.clone().private_key().into_inner(),
             certificate_server_name(&self.context),
             AllowPublicKeys::new(
@@ -887,7 +887,7 @@ impl<S: NetworkService> NetworkManager<S> for TonicManager {
                                 return Err(ConsensusError::NetworkServerConnection(msg));
                             }
                             trace!("Received {} certificates", certs.len());
-                            sui_tls::public_key_from_certificate(&certs[0]).map_err(|e| {
+                            ika_tls::public_key_from_certificate(&certs[0]).map_err(|e| {
                                 trace!("Failed to extract public key from certificate: {e:?}");
                                 ConsensusError::NetworkServerConnection(format!(
                                     "Failed to extract public key from certificate: {e:?}"

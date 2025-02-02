@@ -17,13 +17,13 @@
 /// shared-object register for tracking authorization.
 module owned_no_tto::cash_register {
     use common::identified_payment::{Self, IdentifiedPayment};
-    use sui::sui::SUI;
-    use sui::coin::{Self, Coin};
-    use sui::event;
+    use ika::ika::IKA;
+    use ika::coin::{Self, Coin};
+    use ika::event;
 
     public struct PaymentProcessed has copy, drop { payment_id: u64, amount: u64 }
 
-    public fun process_payment(payment: IdentifiedPayment): Coin<SUI> {
+    public fun process_payment(payment: IdentifiedPayment): Coin<IKA> {
         let (payment_id, coin) = identified_payment::unpack(payment);
         event::emit(PaymentProcessed { payment_id, amount: coin::value(&coin)});
         coin

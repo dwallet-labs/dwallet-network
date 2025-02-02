@@ -127,9 +127,9 @@ module.exports = {
 			},
 		},
 		{
-			files: ['sdk/ledgerjs-hw-app-sui/**/*', 'apps/wallet/**/*'],
+			files: ['sdk/ledgerjs-hw-app-ika/**/*', 'apps/wallet/**/*'],
 			rules: {
-				// ledgerjs-hw-app-sui and wallet use Buffer
+				// ledgerjs-hw-app-ika and wallet use Buffer
 				'no-restricted-globals': ['off'],
 				'@typescript-eslint/ban-types': ['off'],
 			},

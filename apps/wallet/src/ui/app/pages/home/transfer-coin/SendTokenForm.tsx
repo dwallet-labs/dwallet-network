@@ -10,13 +10,13 @@ import Alert from '_components/alert';
 import Loading from '_components/loading';
 import { parseAmount } from '_helpers';
 import { useGetAllCoins } from '_hooks';
-import { GAS_SYMBOL } from '_src/ui/app/redux/slices/sui-objects/Coin';
+import { GAS_SYMBOL } from '_src/ui/app/redux/slices/ika-objects/Coin';
 import { InputWithAction } from '_src/ui/app/shared/InputWithAction';
-import { CoinFormat, useCoinMetadata, useFormatCoin, useSuiNSEnabled } from '@mysten/core';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { CoinFormat, useCoinMetadata, useFormatCoin, useIkaNSEnabled } from '@mysten/core';
+import { useIkaClient } from '@mysten/dapp-kit';
 import { ArrowRight16 } from '@mysten/icons';
-import { type CoinStruct } from '@mysten/sui/client';
-import { isValidSuiNSName, SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { type CoinStruct } from '@ika-io/ika/client';
+import { isValidIkaNSName, IKA_TYPE_ARG } from '@ika-io/ika/utils';
 import { useQuery } from '@tanstack/react-query';
 import { Field, Form, Formik, useFormikContext } from 'formik';
 import { useEffect, useMemo } from 'react';
@@ -27,7 +27,7 @@ import { createValidationSchemaStepOne } from './validation';
 const initialValues = {
 	to: '',
 	amount: '',
-	isPayAllSui: false,
+	isPayAllIka: false,
 	gasBudgetEst: '',
 };
 
@@ -36,7 +36,7 @@ export type FormValues = typeof initialValues;
 export type SubmitProps = {
 	to: string;
 	amount: string;
-	isPayAllSui: boolean;
+	isPayAllIka: boolean;
 	coinIds: string[];
 	coins: CoinStruct[];
 	gasBudgetEst: string;
@@ -65,9 +65,9 @@ function GasBudgetEstimation({
 }) {
 	const activeAddress = useActiveAddress();
 	const { values, setFieldValue } = useFormikContext<FormValues>();
-	const suiNSEnabled = useSuiNSEnabled();
+	const ikaNSEnabled = useIkaNSEnabled();
 
-	const client = useSuiClient();
+	const client = useIkaClient();
 	const { data: gasBudget } = useQuery({
 		// eslint-disable-next-line @tanstack/query/exhaustive-deps
 		queryKey: [
@@ -86,12 +86,12 @@ function GasBudgetEstimation({
 			}
 
 			let to = values.to;
-			if (suiNSEnabled && isValidSuiNSName(values.to)) {
+			if (ikaNSEnabled && isValidIkaNSName(values.to)) {
 				const address = await client.resolveNameServiceAddress({
 					name: values.to,
 				});
 				if (!address) {
-					throw new Error('SuiNS name not found.');
+					throw new Error('IkaNS name not found.');
 				}
 				to = address;
 			}
@@ -99,9 +99,9 @@ function GasBudgetEstimation({
 			const tx = createTokenTransferTransaction({
 				to,
 				amount: values.amount,
-				coinType: SUI_TYPE_ARG,
+				coinType: IKA_TYPE_ARG,
 				coinDecimals,
-				isPayAllSui: values.isPayAllSui,
+				isPayAllIka: values.isPayAllIka,
 				coins,
 			});
 
@@ -111,7 +111,7 @@ function GasBudgetEstimation({
 		},
 	});
 
-	const [formattedGas] = useFormatCoin(gasBudget, SUI_TYPE_ARG);
+	const [formattedGas] = useFormatCoin(gasBudget, IKA_TYPE_ARG);
 
 	// gasBudgetEstimation should change when the amount above changes
 	useEffect(() => {
@@ -141,30 +141,30 @@ export function SendTokenForm({
 	initialAmount = '',
 	initialTo = '',
 }: SendTokenFormProps) {
-	const client = useSuiClient();
+	const client = useIkaClient();
 	const activeAddress = useActiveAddress();
 	// Get all coins of the type
 	const { data: coinsData, isPending: coinsIsPending } = useGetAllCoins(coinType, activeAddress!);
 
-	const { data: suiCoinsData, isPending: suiCoinsIsPending } = useGetAllCoins(
-		SUI_TYPE_ARG,
+	const { data: ikaCoinsData, isPending: ikaCoinsIsPending } = useGetAllCoins(
+		IKA_TYPE_ARG,
 		activeAddress!,
 	);
 
-	const suiCoins = suiCoinsData;
+	const ikaCoins = ikaCoinsData;
 	const coins = coinsData;
 	const coinBalance = totalBalance(coins || []);
-	const suiBalance = totalBalance(suiCoins || []);
+	const ikaBalance = totalBalance(ikaCoins || []);
 
 	const coinMetadata = useCoinMetadata(coinType);
 	const coinDecimals = coinMetadata.data?.decimals ?? 0;
 
 	const [tokenBalance, symbol, queryResult] = useFormatCoin(coinBalance, coinType, CoinFormat.FULL);
-	const suiNSEnabled = useSuiNSEnabled();
+	const ikaNSEnabled = useIkaNSEnabled();
 
 	const validationSchemaStepOne = useMemo(
-		() => createValidationSchemaStepOne(client, suiNSEnabled, coinBalance, symbol, coinDecimals),
-		[client, coinBalance, symbol, coinDecimals, suiNSEnabled],
+		() => createValidationSchemaStepOne(client, ikaNSEnabled, coinBalance, symbol, coinDecimals),
+		[client, coinBalance, symbol, coinDecimals, ikaNSEnabled],
 	);
 
 	// remove the comma from the token balance
@@ -174,33 +174,33 @@ export function SendTokenForm({
 	return (
 		<Loading
 			loading={
-				queryResult.isPending || coinMetadata.isPending || suiCoinsIsPending || coinsIsPending
+				queryResult.isPending || coinMetadata.isPending || ikaCoinsIsPending || coinsIsPending
 			}
 		>
 			<Formik
 				initialValues={{
 					amount: initialAmount,
 					to: initialTo,
-					isPayAllSui:
-						!!initAmountBig && initAmountBig === coinBalance && coinType === SUI_TYPE_ARG,
+					isPayAllIka:
+						!!initAmountBig && initAmountBig === coinBalance && coinType === IKA_TYPE_ARG,
 					gasBudgetEst: '',
 				}}
 				validationSchema={validationSchemaStepOne}
 				enableReinitialize
 				validateOnMount
 				validateOnChange
-				onSubmit={async ({ to, amount, isPayAllSui, gasBudgetEst }: FormValues) => {
-					if (!coins || !suiCoins) return;
+				onSubmit={async ({ to, amount, isPayAllIka, gasBudgetEst }: FormValues) => {
+					if (!coins || !ikaCoins) return;
 					const coinsIDs = [...coins]
 						.sort((a, b) => Number(b.balance) - Number(a.balance))
 						.map(({ coinObjectId }) => coinObjectId);
 
-					if (suiNSEnabled && isValidSuiNSName(to)) {
+					if (ikaNSEnabled && isValidIkaNSName(to)) {
 						const address = await client.resolveNameServiceAddress({
 							name: to,
 						});
 						if (!address) {
-							throw new Error('SuiNS name not found.');
+							throw new Error('IkaNS name not found.');
 						}
 						to = address;
 					}
@@ -208,7 +208,7 @@ export function SendTokenForm({
 					const data = {
 						to,
 						amount,
-						isPayAllSui,
+						isPayAllIka,
 						coins,
 						coinIds: coinsIDs,
 						gasBudgetEst,
@@ -217,17 +217,17 @@ export function SendTokenForm({
 				}}
 			>
 				{({ isValid, isSubmitting, setFieldValue, values, submitForm, validateField }) => {
-					const newPaySuiAll =
-						parseAmount(values.amount, coinDecimals) === coinBalance && coinType === SUI_TYPE_ARG;
-					if (values.isPayAllSui !== newPaySuiAll) {
-						setFieldValue('isPayAllSui', newPaySuiAll);
+					const newPayIkaAll =
+						parseAmount(values.amount, coinDecimals) === coinBalance && coinType === IKA_TYPE_ARG;
+					if (values.isPayAllIka !== newPayIkaAll) {
+						setFieldValue('isPayAllIka', newPayIkaAll);
 					}
 
 					const hasEnoughBalance =
-						values.isPayAllSui ||
-						suiBalance >
+						values.isPayAllIka ||
+						ikaBalance >
 							parseAmount(values.gasBudgetEst, coinDecimals) +
-								parseAmount(coinType === SUI_TYPE_ARG ? values.amount : '0', coinDecimals);
+								parseAmount(coinType === IKA_TYPE_ARG ? values.amount : '0', coinDecimals);
 
 					return (
 						<BottomMenuLayout>
@@ -245,7 +245,7 @@ export function SendTokenForm({
 											type="numberInput"
 											name="amount"
 											placeholder="0.00"
-											prefix={values.isPayAllSui ? '~ ' : ''}
+											prefix={values.isPayAllIka ? '~ ' : ''}
 											actionText="Max"
 											suffix={` ${symbol}`}
 											actionType="button"
@@ -267,7 +267,7 @@ export function SendTokenForm({
 									</div>
 									{!hasEnoughBalance && isValid ? (
 										<div className="mt-3">
-											<Alert>Insufficient SUI to cover transaction</Alert>
+											<Alert>Insufficient IKA to cover transaction</Alert>
 										</div>
 									) : null}
 

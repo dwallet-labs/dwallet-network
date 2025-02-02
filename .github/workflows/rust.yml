@@ -7,12 +7,12 @@ on:
       - 'devnet'
       - 'testnet'
       - 'mainnet'
-      - 'releases/sui-*-release'
+      - 'releases/ika-*-release'
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
   workflow_dispatch:
     inputs:
-      sui_repo_ref:
+      ika_repo_ref:
         description: "Branch / commit to test"
         type: string
         required: false
@@ -58,7 +58,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - name: Detect Changes
         uses: './.github/actions/diffs'
         id: diff
@@ -69,7 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - run: cargo xlint
 
   test:
@@ -80,7 +80,7 @@ jobs:
       # Tests written with #[sim_test] are often flaky if run as #[tokio::test] - this var
       # causes #[sim_test] to only run under the deterministic `simtest` job, and not the
       # non-deterministic `test` job.
-      SUI_SKIP_SIMTESTS: 1
+      IKA_SKIP_SIMTESTS: 1
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -90,7 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - uses: taiki-e/install-action@nextest
       - uses: taiki-e/install-action@protoc
       - name: Add postgres to PATH
@@ -101,7 +101,7 @@ jobs:
           swap-size-gb: 256
       - name: cargo test
         run: |
-          cargo nextest run --profile ci -E '!package(sui-bridge) and !package(sui-bridge-indexer)'
+          cargo nextest run --profile ci -E '!package(ika-bridge) and !package(ika-bridge-indexer)'
       # Ensure there are no uncommitted changes in the repo after running tests
       - run: scripts/changed-files.sh
         shell: bash
@@ -114,7 +114,7 @@ jobs:
       # Tests written with #[sim_test] are often flaky if run as #[tokio::test] - this var
       # causes #[sim_test] to only run under the deterministic `simtest` job, and not the
       # non-deterministic `test` job.
-      SUI_SKIP_SIMTESTS: 1
+      IKA_SKIP_SIMTESTS: 1
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -124,7 +124,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - uses: taiki-e/install-action@nextest
       - uses: taiki-e/install-action@protoc
       - name: Add postgres to PATH
@@ -133,12 +133,12 @@ jobs:
         uses: pierotofy/set-swap-space@master
         with:
           swap-size-gb: 256
-      - name: cargo test (sui-graphql staging)
+      - name: cargo test (ika-graphql staging)
         run: |
-          cargo nextest run --profile ci --features staging -E 'package(sui-graphql-rpc)' -E 'package(sui-graphql-e2e-tests)'
+          cargo nextest run --profile ci --features staging -E 'package(ika-graphql-rpc)' -E 'package(ika-graphql-e2e-tests)'
       - name: benchmark (smoke)
         run: |
-          cargo run --package sui-benchmark --bin stress -- --log-path /tmp/stress.log --num-client-threads 10 --num-server-threads 24 --num-transfer-accounts 2 bench --target-qps 100 --num-workers 10  --transfer-object 50 --shared-counter 50 --run-duration 10s --stress-stat-collection
+          cargo run --package ika-benchmark --bin stress -- --log-path /tmp/stress.log --num-client-threads 10 --num-server-threads 24 --num-transfer-accounts 2 bench --target-qps 100 --num-workers 10  --transfer-object 50 --shared-counter 50 --run-duration 10s --stress-stat-collection
       - name: doctests
         run: |
           cargo test --doc
@@ -152,7 +152,7 @@ jobs:
           locked: true
       - name: Install rustfmt
         run: rustup component add rustfmt
-      - name: sui-execution
+      - name: ika-execution
         run: |
           ./scripts/execution_layer.py generate-lib
       - name: Install diesel CLI, and cache the binary
@@ -165,7 +165,7 @@ jobs:
           ./scripts/generate_indexer_schema.sh
       - name: Indexer Alt schema
         run: |
-          ./crates/sui-indexer-alt/generate_schema.sh
+          ./crates/ika-indexer-alt/generate_schema.sh
       # Ensure there are no uncommitted changes in the repo after running tests
       - run: scripts/changed-files.sh
         shell: bash
@@ -183,7 +183,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
 
       - uses: taiki-e/install-action@nextest
 
@@ -212,7 +212,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - uses: taiki-e/install-action@nextest
       - uses: taiki-e/install-action@protoc
       - name: Add postgres to PATH
@@ -230,7 +230,7 @@ jobs:
 
   # This job ensures that Move unit tests are run if there are changes
   # to Move code but not Rust code (If there are Rust changes, they
-  # will be run as part of a larger test suite).
+  # will be run as part of a larger test ikate).
   move-test:
     needs: diff
     if: needs.diff.outputs.isRust == 'false' && needs.diff.outputs.isMove == 'true'
@@ -239,11 +239,11 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - uses: taiki-e/install-action@nextest
       - name: Run move tests
         run: |
-          cargo nextest run -p sui-framework-tests --test move_tests
+          cargo nextest run -p ika-framework-tests --test move_tests
 
   # # Disabled
   # rosetta-validation:
@@ -254,15 +254,15 @@ jobs:
   #   steps:
   #     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # Pin v4.1.1
   #       with:
-  #         ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+  #         ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
 
   #     - name: Setup environment
   #       run: .github/scripts/rosetta/setup.sh
   #       shell: bash
 
-  #     - name: Start local Sui network
+  #     - name: Start local Ika network
   #       run: |
-  #         sui start --no-full-node &
+  #         ika start --no-full-node &
   #       shell: bash
 
   #     - name: Start Rosetta servers
@@ -330,7 +330,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - run: rustup component add clippy
       # TODO(bradh): debug and re-enable this; the caching is breaking the clippy build
       # Enable caching of the 'librocksdb-sys' crate by additionally caching the
@@ -350,7 +350,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - run: rustup component add rustfmt
       - run: cargo fmt --check
 
@@ -362,7 +362,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - uses: taiki-e/install-action@cargo-deny
       - run: cargo deny check bans licenses sources
 
@@ -374,11 +374,11 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - uses: taiki-e/install-action@cargo-deny
       - run: cargo deny check advisories
 
-  sui-excution-cut:
+  ika-excution-cut:
     name: cutting a new execution layer
     needs: diff
     if: needs.diff.outputs.isRust == 'true'
@@ -386,7 +386,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - name: Install cargo-hakari, and cache the binary
         uses: baptiste0928/cargo-install@1cd874a5478fdca35d868ccc74640c5aabbb8f1b # pin@v3.0.0
         with:
@@ -394,8 +394,8 @@ jobs:
           locked: true
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
       - name: Make cut
         run: ./scripts/execution_layer.py cut for_ci_test
       - name: Check execution builds
-        run: cargo build -p sui-execution
+        run: cargo build -p ika-execution

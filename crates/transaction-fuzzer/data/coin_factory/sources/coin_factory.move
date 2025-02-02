@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 module coiner::coin_factory {
     use std::option;
-    use sui::coin::{Self, Coin, TreasuryCap};
-    use sui::transfer;
+    use ika::coin::{Self, Coin, TreasuryCap};
+    use ika::transfer;
     use std::vector;
-    use sui::tx_context::{Self, TxContext};
+    use ika::tx_context::{Self, TxContext};
 
     public struct COIN_FACTORY has drop {}
 

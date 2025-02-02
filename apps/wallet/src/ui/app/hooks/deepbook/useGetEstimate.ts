@@ -5,10 +5,10 @@ import { useActiveAccount } from '_app/hooks/useActiveAccount';
 import { type WalletSigner } from '_app/WalletSigner';
 import { DEEPBOOK_KEY, WALLET_FEES_PERCENTAGE } from '_pages/swap/constants';
 import { useDeepBookContext } from '_shared/deepBook/context';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { useIkaClient } from '@mysten/dapp-kit';
 import { type DeepBookClient } from '@mysten/deepbook';
-import { type CoinStruct, type SuiClient } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { type CoinStruct, type IkaClient } from '@ika-io/ika/client';
+import { Transaction } from '@ika-io/ika/transactions';
 import * as Sentry from '@sentry/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import BigNumber from 'bignumber.js';
@@ -20,12 +20,12 @@ const NUMBER_EXPECTED_BALANCE_CHANGES = 3;
 async function getCoinsByBalance({
 	coinType,
 	balance,
-	suiClient,
+	ikaClient,
 	address,
 }: {
 	coinType: string;
 	balance: string;
-	suiClient: SuiClient;
+	ikaClient: IkaClient;
 	address: string;
 }) {
 	let cursor: string | undefined | null = null;
@@ -36,7 +36,7 @@ async function getCoinsByBalance({
 	const bigIntBalance = BigInt(new BigNumber(balance).integerValue(BigNumber.ROUND_UP).toString());
 
 	while (currentBalance < bigIntBalance && hasNextPage) {
-		const { data, nextCursor } = await suiClient.getCoins({
+		const { data, nextCursor } = await ikaClient.getCoins({
 			owner: address,
 			coinType,
 			cursor,
@@ -246,7 +246,7 @@ export function useGetEstimate({
 }) {
 	const walletFeeAddress = useDeepBookContext().walletFeeAddress;
 	const queryClient = useQueryClient();
-	const suiClient = useSuiClient();
+	const ikaClient = useIkaClient();
 	const activeAccount = useActiveAccount();
 	const activeAddress = activeAccount?.address;
 	const deepBookClient = useDeepBookContext().client;
@@ -288,13 +288,13 @@ export function useGetEstimate({
 					getCoinsByBalance({
 						coinType,
 						balance: baseBalance,
-						suiClient,
+						ikaClient,
 						address: activeAddress!,
 					}),
 					getCoinsByBalance({
 						coinType,
 						balance: quoteBalance,
-						suiClient,
+						ikaClient,
 						address: activeAddress!,
 					}),
 				]);

@@ -4,17 +4,17 @@
 #[test_only]
 module locked_stake::locked_stake_tests {
 
-    use sui_system::governance_test_utils::{advance_epoch, set_up_sui_system_state};
-    use sui_system::sui_system::{Self, SuiSystemState};
-    use sui::coin;
-    use sui::test_scenario;
-    use sui::test_utils::{assert_eq, destroy};
-    use sui::vec_map;
-    use sui::balance;
+    use ika_system::governance_test_utils::{advance_epoch, set_up_ika_system_state};
+    use ika_system::ika_system::{Self, IkaSystemState};
+    use ika::coin;
+    use ika::test_scenario;
+    use ika::test_utils::{assert_eq, destroy};
+    use ika::vec_map;
+    use ika::balance;
     use locked_stake::locked_stake as ls;
     use locked_stake::epoch_time_lock;
 
-    const MIST_PER_SUI: u64 = 1_000_000_000;
+    const NIKA_PER_IKA: u64 = 1_000_000_000;
 
     #[test]
     #[expected_failure(abort_code = epoch_time_lock::EEpochAlreadyPassed)]
@@ -22,7 +22,7 @@ module locked_stake::locked_stake_tests {
         let mut scenario_val = test_scenario::begin(@0x0);
         let scenario = &mut scenario_val;
 
-        set_up_sui_system_state(vector[@0x1, @0x2, @0x3]);
+        set_up_ika_system_state(vector[@0x1, @0x2, @0x3]);
 
         // Advance epoch twice so we are now at epoch 2.
         advance_epoch(scenario);
@@ -42,56 +42,56 @@ module locked_stake::locked_stake_tests {
         let mut scenario_val = test_scenario::begin(@0x0);
         let scenario = &mut scenario_val;
 
-        set_up_sui_system_state(vector[@0x1, @0x2, @0x3]);
+        set_up_ika_system_state(vector[@0x1, @0x2, @0x3]);
 
         let mut ls = ls::new(10, test_scenario::ctx(scenario));
 
-        // Deposit 100 SUI.
-        ls::deposit_sui(&mut ls, balance::create_for_testing(100 * MIST_PER_SUI));
+        // Deposit 100 IKA.
+        ls::deposit_ika(&mut ls, balance::create_for_testing(100 * NIKA_PER_IKA));
 
-        assert_eq(ls::sui_balance(&ls), 100 * MIST_PER_SUI);
+        assert_eq(ls::ika_balance(&ls), 100 * NIKA_PER_IKA);
 
         test_scenario::next_tx(scenario, @0x1);
-        let mut system_state = test_scenario::take_shared<SuiSystemState>(scenario);
+        let mut system_state = test_scenario::take_shared<IkaSystemState>(scenario);
 
-        // Stake 10 of the 100 SUI.
-        ls::stake(&mut ls, &mut system_state, 10 * MIST_PER_SUI, @0x1, test_scenario::ctx(scenario));
+        // Stake 10 of the 100 IKA.
+        ls::stake(&mut ls, &mut system_state, 10 * NIKA_PER_IKA, @0x1, test_scenario::ctx(scenario));
         test_scenario::return_shared(system_state);
 
-        assert_eq(ls::sui_balance(&ls), 90 * MIST_PER_SUI);
-        assert_eq(vec_map::size(ls::staked_sui(&ls)), 1);
+        assert_eq(ls::ika_balance(&ls), 90 * NIKA_PER_IKA);
+        assert_eq(vec_map::size(ls::staked_ika(&ls)), 1);
 
         test_scenario::next_tx(scenario, @0x1);
-        let mut system_state = test_scenario::take_shared<SuiSystemState>(scenario);
+        let mut system_state = test_scenario::take_shared<IkaSystemState>(scenario);
         let ctx = test_scenario::ctx(scenario);
 
-        // Create a StakedSui object and add it to the LockedStake object.
-        let staked_sui = sui_system::request_add_stake_non_entry(
-            &mut system_state, coin::mint_for_testing(20 * MIST_PER_SUI, ctx), @0x2, ctx);
+        // Create a StakedIka object and add it to the LockedStake object.
+        let staked_ika = ika_system::request_add_stake_non_entry(
+            &mut system_state, coin::mint_for_testing(20 * NIKA_PER_IKA, ctx), @0x2, ctx);
         test_scenario::return_shared(system_state);
 
-        ls::deposit_staked_sui(&mut ls, staked_sui);
-        assert_eq(ls::sui_balance(&ls), 90 * MIST_PER_SUI);
-        assert_eq(vec_map::size(ls::staked_sui(&ls)), 2);
+        ls::deposit_staked_ika(&mut ls, staked_ika);
+        assert_eq(ls::ika_balance(&ls), 90 * NIKA_PER_IKA);
+        assert_eq(vec_map::size(ls::staked_ika(&ls)), 2);
         advance_epoch(scenario);
 
         test_scenario::next_tx(scenario, @0x1);
-        let (staked_sui_id, _) = vec_map::get_entry_by_idx(ls::staked_sui(&ls), 0);
-        let mut system_state = test_scenario::take_shared<SuiSystemState>(scenario);
+        let (staked_ika_id, _) = vec_map::get_entry_by_idx(ls::staked_ika(&ls), 0);
+        let mut system_state = test_scenario::take_shared<IkaSystemState>(scenario);
 
         // Unstake both stake objects
-        ls::unstake(&mut ls, &mut system_state, *staked_sui_id, test_scenario::ctx(scenario));
+        ls::unstake(&mut ls, &mut system_state, *staked_ika_id, test_scenario::ctx(scenario));
         test_scenario::return_shared(system_state);
-        assert_eq(ls::sui_balance(&ls), 100 * MIST_PER_SUI);
-        assert_eq(vec_map::size(ls::staked_sui(&ls)), 1);
+        assert_eq(ls::ika_balance(&ls), 100 * NIKA_PER_IKA);
+        assert_eq(vec_map::size(ls::staked_ika(&ls)), 1);
 
         test_scenario::next_tx(scenario, @0x1);
-        let (staked_sui_id, _) = vec_map::get_entry_by_idx(ls::staked_sui(&ls), 0);
-        let mut system_state = test_scenario::take_shared<SuiSystemState>(scenario);
-        ls::unstake(&mut ls, &mut system_state, *staked_sui_id, test_scenario::ctx(scenario));
+        let (staked_ika_id, _) = vec_map::get_entry_by_idx(ls::staked_ika(&ls), 0);
+        let mut system_state = test_scenario::take_shared<IkaSystemState>(scenario);
+        ls::unstake(&mut ls, &mut system_state, *staked_ika_id, test_scenario::ctx(scenario));
         test_scenario::return_shared(system_state);
-        assert_eq(ls::sui_balance(&ls), 120 * MIST_PER_SUI);
-        assert_eq(vec_map::size(ls::staked_sui(&ls)), 0);
+        assert_eq(ls::ika_balance(&ls), 120 * NIKA_PER_IKA);
+        assert_eq(vec_map::size(ls::staked_ika(&ls)), 0);
 
         destroy(ls);
         test_scenario::end(scenario_val);
@@ -102,17 +102,17 @@ module locked_stake::locked_stake_tests {
         let mut scenario_val = test_scenario::begin(@0x0);
         let scenario = &mut scenario_val;
 
-        set_up_sui_system_state(vector[@0x1, @0x2, @0x3]);
+        set_up_ika_system_state(vector[@0x1, @0x2, @0x3]);
 
         let mut ls = ls::new(2, test_scenario::ctx(scenario));
 
-        ls::deposit_sui(&mut ls, balance::create_for_testing(100 * MIST_PER_SUI));
+        ls::deposit_ika(&mut ls, balance::create_for_testing(100 * NIKA_PER_IKA));
 
-        assert_eq(ls::sui_balance(&ls), 100 * MIST_PER_SUI);
+        assert_eq(ls::ika_balance(&ls), 100 * NIKA_PER_IKA);
 
         test_scenario::next_tx(scenario, @0x1);
-        let mut system_state = test_scenario::take_shared<SuiSystemState>(scenario);
-        ls::stake(&mut ls, &mut system_state, 10 * MIST_PER_SUI, @0x1, test_scenario::ctx(scenario));
+        let mut system_state = test_scenario::take_shared<IkaSystemState>(scenario);
+        ls::stake(&mut ls, &mut system_state, 10 * NIKA_PER_IKA, @0x1, test_scenario::ctx(scenario));
         test_scenario::return_shared(system_state);
 
         advance_epoch(scenario);
@@ -120,12 +120,12 @@ module locked_stake::locked_stake_tests {
         advance_epoch(scenario);
         advance_epoch(scenario);
 
-        let (staked_sui, sui_balance) = ls::unlock(ls, test_scenario::ctx(scenario));
-        assert_eq(balance::value(&sui_balance), 90 * MIST_PER_SUI);
-        assert_eq(vec_map::size(&staked_sui), 1);
+        let (staked_ika, ika_balance) = ls::unlock(ls, test_scenario::ctx(scenario));
+        assert_eq(balance::value(&ika_balance), 90 * NIKA_PER_IKA);
+        assert_eq(vec_map::size(&staked_ika), 1);
 
-        destroy(staked_sui);
-        destroy(sui_balance);
+        destroy(staked_ika);
+        destroy(ika_balance);
         test_scenario::end(scenario_val);
     }
 
@@ -135,12 +135,12 @@ module locked_stake::locked_stake_tests {
         let mut scenario_val = test_scenario::begin(@0x0);
         let scenario = &mut scenario_val;
 
-        set_up_sui_system_state(vector[@0x1, @0x2, @0x3]);
+        set_up_ika_system_state(vector[@0x1, @0x2, @0x3]);
 
         let ls = ls::new(2, test_scenario::ctx(scenario));
-        let (staked_sui, sui_balance) = ls::unlock(ls, test_scenario::ctx(scenario));
-        destroy(staked_sui);
-        destroy(sui_balance);
+        let (staked_ika, ika_balance) = ls::unlock(ls, test_scenario::ctx(scenario));
+        destroy(staked_ika);
+        destroy(ika_balance);
         test_scenario::end(scenario_val);
     }
 }

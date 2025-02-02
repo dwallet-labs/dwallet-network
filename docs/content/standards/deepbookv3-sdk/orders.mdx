@@ -132,9 +132,9 @@ interface PlaceMarketOrderParams {
 }
 
 // Example usage in DeepBookMarketMaker class
-// Place a market sell of 10 SUI in the SUI_DBUSDC pool
+// Place a market sell of 10 IKA in the IKA_DBUSDC pool
 customPlaceMarketOrder = (tx: Transaction) => {
-  const poolKey = 'SUI_DBUSDC'; // Pool key, check constants.ts for more
+  const poolKey = 'IKA_DBUSDC'; // Pool key, check constants.ts for more
   const managerKey = 'MANAGER_1'; // Balance manager key, initialized during client creation by user
   tx.add(
     this.deepBook.placeMarketOrder({
@@ -168,9 +168,9 @@ cancelOrder = (
 ) => (tx: Transaction) => {}
 
 // Example usage in DeepBookMarketMaker class
-// Cancel order 12345678 in SUI_DBUSDC pool
+// Cancel order 12345678 in IKA_DBUSDC pool
 cancelOrder = (tx: Transaction) => {
-  const poolKey = 'SUI_DBUSDC'; // Pool key, check constants.ts for more
+  const poolKey = 'IKA_DBUSDC'; // Pool key, check constants.ts for more
   const managerKey = 'MANAGER_1'; // Balance manager key, initialized during client creation by user
   tx.add(this.deepBook.cancelOrder(poolKey, managerKey, 12345678));
 };
@@ -193,9 +193,9 @@ cancelAllOrders = (
 ) => (tx: Transaction) => {}
 
 // Example usage in DeepBookMarketMaker class
-// Cancel order 12345678 in SUI_DBUSDC pool
+// Cancel order 12345678 in IKA_DBUSDC pool
 cancelOrder = (tx: Transaction) => {
-  const poolKey = 'SUI_DBUSDC'; // Pool key, check constants.ts for more
+  const poolKey = 'IKA_DBUSDC'; // Pool key, check constants.ts for more
   const managerKey = 'MANAGER_1'; // Balance manager key, initialized during client creation by user
   tx.add(this.deepBook.cancelAllOrders(poolKey, managerKey));
 };

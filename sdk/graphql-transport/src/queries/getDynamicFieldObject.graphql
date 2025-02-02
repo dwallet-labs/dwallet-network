@@ -7,7 +7,7 @@ query getTypeLayout($type: String!) {
 	}
 }
 
-query getDynamicFieldObject($parentId: SuiAddress!, $name: DynamicFieldName!) {
+query getDynamicFieldObject($parentId: IkaAddress!, $name: DynamicFieldName!) {
 	owner(address: $parentId) {
 		dynamicObjectField(name: $name) {
 			value {

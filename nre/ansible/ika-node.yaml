@@ -1,0 +1,10 @@
+---
+- hosts: "{{ host }}"
+  become: yes
+  roles:
+    - ika-node
+  vars:
+    skip_iptables: false
+    skip_monitoring: false
+    reset_db: false
+    start_ika: true

@@ -3,7 +3,7 @@ title: Tic-Tac-Toe
 effort: small
 ---
 
-This guide covers three different implementations of the game tic-tac-toe on Sui. The first example utilizes a centralized admin that marks the board on the users’ behalf. The second example utilizes a shared object that both users can mutate. And the third example utilizes a multisig, where instead of sharing the game board, it's in a 1-of-2 multisig of both users’ accounts.
+This guide covers three different implementations of the game tic-tac-toe on Ika. The first example utilizes a centralized admin that marks the board on the users’ behalf. The second example utilizes a shared object that both users can mutate. And the third example utilizes a multisig, where instead of sharing the game board, it's in a 1-of-2 multisig of both users’ accounts.
 
 ## owned.move
 
@@ -41,7 +41,7 @@ An alternative version of this game, shared tic-tac-toe, uses shared objects for
 
 ## shared.move
 
-In the previous version, the admin owned the game object, preventing players from directly changing the gameboard, as well as requiring two transactions for each marker placement. In this version, the game object is a shared object, allowing both players to access and modify it directly, enabling them to place markers in just one transaction. However, using a shared object generally incurs extra costs because Sui needs to sequence the operations from different transactions. In the context of this game, where players are expected to take turns, this shouldn't significantly impact performance. Overall, this shared object approach simplifies the implementation compared to the previous method.
+In the previous version, the admin owned the game object, preventing players from directly changing the gameboard, as well as requiring two transactions for each marker placement. In this version, the game object is a shared object, allowing both players to access and modify it directly, enabling them to place markers in just one transaction. However, using a shared object generally incurs extra costs because Ika needs to sequence the operations from different transactions. In the context of this game, where players are expected to take turns, this shouldn't significantly impact performance. Overall, this shared object approach simplifies the implementation compared to the previous method.
 
 As the following code demonstrates, the `Game` object in this example is almost identical to the one before it. The only differences are that it does not include an `admin` field, which is only relevant for the multisig version of the game, and it does not have `store`, because it only ever exists as a shared object (so it cannot be transferred or wrapped).
 
@@ -76,7 +76,7 @@ A multisig account is defined by the public keys of its constituent keypairs, th
 export function multiSigPublicKey(keys: PublicKey[]): MultiSigPublicKey {
   const deduplicated: { [key: string]: PublicKey } = {};
   for (const key of keys) {
-    deduplicated[key.toSuiAddress()] = key;
+    deduplicated[key.toIkaAddress()] = key;
   }
 
   return MultiSigPublicKey.fromPublicKeys({
@@ -95,7 +95,7 @@ export function multiSigPublicKey(keys: PublicKey[]): MultiSigPublicKey {
 {@inject: examples/tic-tac-toe/ui/src/MultiSig.ts}
 </details>
 
-Note that an address on Sui can be derived from a public key (this fact is used in the previous example to deduplicate public keys based on their accompanying address), but the opposite is not true. This means that to start a game of multisig tic-tac-toe, players must exchange public keys, instead of addresses.
+Note that an address on Ika can be derived from a public key (this fact is used in the previous example to deduplicate public keys based on their accompanying address), but the opposite is not true. This means that to start a game of multisig tic-tac-toe, players must exchange public keys, instead of addresses.
 
 ### Building a multisig transaction ([source](https://github.com/MystenLabs/sui/blob/main/examples/tic-tac-toe/ui/src/hooks/useTransactions.ts))
 
@@ -109,13 +109,13 @@ newMultiSigGame(player: PublicKey, opponent: PublicKey): Transaction {
   const game = tx.moveCall({
     target: `${this.packageId}::owned::new`,
     arguments: [
-      tx.pure.address(player.toSuiAddress()),
-      tx.pure.address(opponent.toSuiAddress()),
+      tx.pure.address(player.toIkaAddress()),
+      tx.pure.address(opponent.toIkaAddress()),
       tx.pure(bcs.vector(bcs.u8()).serialize(admin.toRawBytes()).toBytes()),
     ],
   });
 
-  tx.transferObjects([game], admin.toSuiAddress());
+  tx.transferObjects([game], admin.toIkaAddress());
 
   return tx;
 }
@@ -146,7 +146,7 @@ function OwnedGame({
 }): ReactElement {
   const adminKey = game.admin ? new MultiSigPublicKey(new Uint8Array(game.admin)) : null;
 
-  const client = useSuiClient();
+  const client = useIkaClient();
   const signAndExecute = useExecutor();
   const multiSignAndExecute = useExecutor({
     execute: ({ bytes, signature }) => {
@@ -180,7 +180,7 @@ function OwnedGame({
 
         if (mark && mark.type === 'created') {
           const recv = tx.receiveMark(game, mark);
-          recv.setSender(adminKey!!.toSuiAddress());
+          recv.setSender(adminKey!!.toIkaAddress());
           recv.setGasOwner(account?.address!!);
 
           multiSignAndExecute({ tx: recv }, () => {

@@ -4,11 +4,11 @@
 /// This example illustrates how to use the `Token` without a `TokenPolicy`. And
 /// only rely on `TreasuryCap` for minting and burning tokens.
 module examples::coffee {
-    use sui::tx_context::{sender};
-    use sui::coin::{Self, TreasuryCap, Coin};
-    use sui::balance::{Self, Balance};
-    use sui::token::{Self, Token};
-    use sui::sui::SUI;
+    use ika::tx_context::{sender};
+    use ika::coin::{Self, TreasuryCap, Coin};
+    use ika::balance::{Self, Balance};
+    use ika::token::{Self, Token};
+    use ika::ika::IKA;
 
     /// Error code for incorrect amount.
     const EIncorrectAmount: u64 = 0;
@@ -16,7 +16,7 @@ module examples::coffee {
     /// Or trying to transfer but not enough points to pay the commission.
     const ENotEnoughPoints: u64 = 1;
 
-    /// 10 SUI for a coffee.
+    /// 10 IKA for a coffee.
     const COFFEE_PRICE: u64 = 10_000_000_000;
 
     /// OTW for the Token.
@@ -28,8 +28,8 @@ module examples::coffee {
         id: UID,
         /// The treasury cap for the `COFFEE` points.
         coffee_points: TreasuryCap<COFFEE>,
-        /// The SUI balance of the shop; the shop can sell Coffee for SUI.
-        balance: Balance<SUI>,
+        /// The IKA balance of the shop; the shop can sell Coffee for IKA.
+        balance: Balance<IKA>,
     }
 
     /// Event marking that a Coffee was purchased; transaction sender serves as
@@ -45,8 +45,8 @@ module examples::coffee {
             ctx
         );
 
-        sui::transfer::public_freeze_object(metadata);
-        sui::transfer::share_object(CoffeeShop {
+        ika::transfer::public_freeze_object(metadata);
+        ika::transfer::share_object(CoffeeShop {
             coffee_points,
             id: object::new(ctx),
             balance: balance::zero(),
@@ -55,8 +55,8 @@ module examples::coffee {
 
     /// Buy a coffee from the shop. Emitted event is tracked by the real coffee
     /// shop and the customer gets a free coffee after 4 purchases.
-    public fun buy_coffee(app: &mut CoffeeShop, payment: Coin<SUI>, ctx: &mut TxContext) {
-        // Check if the customer has enough SUI to pay for the coffee.
+    public fun buy_coffee(app: &mut CoffeeShop, payment: Coin<IKA>, ctx: &mut TxContext) {
+        // Check if the customer has enough IKA to pay for the coffee.
         assert!(coin::value(&payment) > COFFEE_PRICE, EIncorrectAmount);
 
         let token = token::mint(&mut app.coffee_points, 1, ctx);
@@ -64,7 +64,7 @@ module examples::coffee {
 
         token::confirm_with_treasury_cap(&mut app.coffee_points, request, ctx);
         coin::put(&mut app.balance, payment);
-        sui::event::emit(CoffeePurchased {})
+        ika::event::emit(CoffeePurchased {})
     }
 
     /// Claim a free coffee from the shop. Emitted event is tracked by the real
@@ -77,7 +77,7 @@ module examples::coffee {
         // While we could use `burn`, spend illustrates another way of doing this
         let request = token::spend(points, ctx);
         token::confirm_with_treasury_cap(&mut app.coffee_points, request, ctx);
-        sui::event::emit(CoffeePurchased {})
+        ika::event::emit(CoffeePurchased {})
     }
 
     /// We allow transfer of `COFFEE` points to other customers but we charge 1

@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { SuiClient } from '@mysten/sui/client';
-import type { TransactionObjectArgument } from '@mysten/sui/transactions';
+import type { IkaClient } from '@ika-io/ika/client';
+import type { TransactionObjectArgument } from '@ika-io/ika/transactions';
 
 import type { BaseRulePackageIds } from '../constants.js';
 
@@ -29,7 +29,7 @@ export enum Network {
  * The Client Options for Both KioskClient & TransferPolicyManager.
  */
 export type KioskClientOptions = {
-	client: SuiClient;
+	client: IkaClient;
 	network: Network;
 	packageIds?: BaseRulePackageIds;
 };

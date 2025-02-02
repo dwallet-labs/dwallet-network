@@ -4,11 +4,11 @@
 import type {
 	Checkpoint,
 	DynamicFieldInfo,
-	SuiCallArg,
-	SuiMoveNormalizedModule,
-	SuiParsedData,
-	SuiTransaction,
-	SuiValidatorSummary,
+	IkaCallArg,
+	IkaMoveNormalizedModule,
+	IkaParsedData,
+	IkaTransaction,
+	IkaValidatorSummary,
 } from './generated.js';
 
 export type ResolvedNameServiceNames = {
@@ -19,7 +19,7 @@ export type ResolvedNameServiceNames = {
 
 export type EpochInfo = {
 	epoch: string;
-	validators: SuiValidatorSummary[];
+	validators: IkaValidatorSummary[];
 	epochTotalTransactions: string;
 	firstCheckpointId: string;
 	epochStartTimestamp: string;
@@ -111,12 +111,12 @@ export type DynamicFieldPage = {
 	hasNextPage: boolean;
 };
 
-export type SuiMoveNormalizedModules = Record<string, SuiMoveNormalizedModule>;
+export type IkaMoveNormalizedModules = Record<string, IkaMoveNormalizedModule>;
 
-export type SuiMoveObject = Extract<SuiParsedData, { dataType: 'moveObject' }>;
-export type SuiMovePackage = Extract<SuiParsedData, { dataType: 'package' }>;
+export type IkaMoveObject = Extract<IkaParsedData, { dataType: 'moveObject' }>;
+export type IkaMovePackage = Extract<IkaParsedData, { dataType: 'package' }>;
 
 export type ProgrammableTransaction = {
-	transactions: SuiTransaction[];
-	inputs: SuiCallArg[];
+	transactions: IkaTransaction[];
+	inputs: IkaCallArg[];
 };

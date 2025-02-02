@@ -30,7 +30,7 @@ export function StorageMigrationPage() {
 			<CardLayout
 				title={data === 'inProgress' ? 'Storage migration in progress, please wait' : ''}
 				subtitle={data === 'required' ? 'Storage migration is required' : ''}
-				icon="sui"
+				icon="ika"
 			>
 				{data === 'required' && !migrationMutation.isSuccess ? (
 					<PasswordInputDialog

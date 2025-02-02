@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-import { SuiTransactionBlockResponse } from '@mysten/sui/client';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { IkaTransactionBlockResponse } from '@ika-io/ika/client';
+import { IKA_TYPE_ARG } from '@ika-io/ika/utils';
 import { useMemo } from 'react';
 
 import { getTotalGasUsed } from '../utils/transaction';
 
-export function useGetTransferAmount(txnData: SuiTransactionBlockResponse) {
+export function useGetTransferAmount(txnData: IkaTransactionBlockResponse) {
 	const { balanceChanges } = txnData;
 	const sender = txnData.transaction?.data.sender;
 	const gas = txnData.effects && getTotalGasUsed(txnData.effects);
@@ -24,7 +24,7 @@ export function useGetTransferAmount(txnData: SuiTransactionBlockResponse) {
 										? owner.ObjectOwner
 										: '',
 						amount:
-							coinType === SUI_TYPE_ARG && BigInt(amount) < 0n
+							coinType === IKA_TYPE_ARG && BigInt(amount) < 0n
 								? BigInt(amount) + BigInt(gas ?? 0n)
 								: BigInt(amount),
 					}))

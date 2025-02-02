@@ -536,7 +536,7 @@ function processJSONLocalLocation(
         // a native functino that would return a mutable reference, we should
         // consider how to handle value changes via such reference, but it's unlikely
         // that such a function would ever be added to either Move stdlib or
-        // the Sui framework.
+        // the Ika framework.
         return undefined;
     }
 }

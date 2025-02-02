@@ -8,9 +8,9 @@ import {
 	type QredoAPI,
 	type TransactionInfoResponse,
 } from '_src/shared/qredo-api';
-import { type SuiClient } from '@mysten/sui/client';
-import { messageWithIntent } from '@mysten/sui/cryptography';
-import { toBase64 } from '@mysten/sui/utils';
+import { type IkaClient } from '@ika-io/ika/client';
+import { messageWithIntent } from '@ika-io/ika/cryptography';
+import { toBase64 } from '@ika-io/ika/utils';
 import mitt from 'mitt';
 
 import { WalletSigner } from './WalletSigner';
@@ -35,7 +35,7 @@ export class QredoSigner extends WalletSigner {
 	#apiEnv: API_ENV;
 
 	constructor(
-		client: SuiClient,
+		client: IkaClient,
 		account: QredoSerializedUiAccount,
 		qredoAPI: QredoAPI,
 		apiEnv: API_ENV,
@@ -148,7 +148,7 @@ export class QredoSigner extends WalletSigner {
 		});
 	};
 
-	connect(client: SuiClient): WalletSigner {
+	connect(client: IkaClient): WalletSigner {
 		return new QredoSigner(client, this.#qredoAccount, this.#qredoAPI, this.#apiEnv);
 	}
 

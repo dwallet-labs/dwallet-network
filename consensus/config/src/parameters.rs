@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 /// Operational configurations of a consensus authority.
 ///
 /// All fields should tolerate inconsistencies among authorities, without affecting safety of the
-/// protocol. Otherwise, they need to be part of Sui protocol config or epoch state on-chain.
+/// protocol. Otherwise, they need to be part of Ika protocol config or epoch state on-chain.
 ///
 /// NOTE: fields with default values are specified in the serde default functions. Most operators
 /// should not need to specify any field, except db_path.

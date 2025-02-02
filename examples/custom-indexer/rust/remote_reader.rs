@@ -3,8 +3,8 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
-use sui_types::full_checkpoint_content::CheckpointData;
-use sui_data_ingestion_core::{Worker, setup_single_workflow};
+use ika_types::full_checkpoint_content::CheckpointData;
+use ika_data_ingestion_core::{Worker, setup_single_workflow};
 
 struct CustomWorker;
 
@@ -23,7 +23,7 @@ impl Worker for CustomWorker {
 async fn main() -> Result<()> {
     let (executor, term_sender) = setup_single_workflow(
         CustomWorker,
-        "https://checkpoints.testnet.sui.io".to_string(),
+        "https://checkpoints.testnet.ika.io".to_string(),
         0, /* initial checkpoint number */
         5, /* concurrency */
         None, /* extra reader options */

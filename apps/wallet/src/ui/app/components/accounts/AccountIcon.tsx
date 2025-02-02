@@ -10,13 +10,13 @@ import {
 	LogoTwitch,
 	SocialFacebook24,
 	SocialKakao24,
-	Sui,
+	Ika,
 } from '@mysten/icons';
 
-function SuiIcon() {
+function IkaIcon() {
 	return (
 		<div className="bg-steel rounded-full text-white h-4 w-4 flex items-center justify-center p-1">
-			<Sui />
+			<Ika />
 		</div>
 	);
 }
@@ -32,7 +32,7 @@ function ProviderIcon({ provider }: { provider: string }) {
 		case 'kakao':
 			return <SocialKakao24 className="h-4 w-4" />;
 		default:
-			return <SuiIcon />;
+			return <IkaIcon />;
 	}
 }
 
@@ -46,5 +46,5 @@ export function AccountIcon({ account }: { account: SerializedUIAccount }) {
 	if (account.type === 'ledger') {
 		return <LedgerLogo17 className="h-4 w-4" />;
 	}
-	return <SuiIcon />;
+	return <IkaIcon />;
 }

@@ -3,9 +3,9 @@
 import { CONSTANTS, QueryKey } from "@/constants";
 import { useTransactionExecution } from "@/hooks/useTransactionExecution";
 import { ApiEscrowObject, ApiLockedObject } from "@/types/types";
-import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
-import { SuiObjectData } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import { useCurrentAccount, useIkaClient } from "@mysten/dapp-kit";
+import { IkaObjectData } from "@ika-io/ika/client";
+import { Transaction } from "@ika-io/ika/transactions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 /**
@@ -20,7 +20,7 @@ export function useCreateEscrowMutation() {
       object,
       locked,
     }: {
-      object: SuiObjectData;
+      object: IkaObjectData;
       locked: ApiLockedObject;
     }) => {
       if (!currentAccount?.address)
@@ -53,10 +53,10 @@ export function useCancelEscrowMutation() {
   return useMutation({
     mutationFn: async ({
       escrow,
-      suiObject,
+      ikaObject,
     }: {
       escrow: ApiEscrowObject;
-      suiObject: SuiObjectData;
+      ikaObject: IkaObjectData;
     }) => {
       if (!currentAccount?.address)
         throw new Error("You need to connect your wallet!");
@@ -65,7 +65,7 @@ export function useCancelEscrowMutation() {
       const item = txb.moveCall({
         target: `${CONSTANTS.escrowContract.packageId}::shared::return_to_sender`,
         arguments: [txb.object(escrow.objectId)],
-        typeArguments: [suiObject?.type!],
+        typeArguments: [ikaObject?.type!],
       });
 
       txb.transferObjects([item], txb.pure.address(currentAccount?.address!));
@@ -86,7 +86,7 @@ export function useCancelEscrowMutation() {
  */
 export function useAcceptEscrowMutation() {
   const currentAccount = useCurrentAccount();
-  const client = useSuiClient();
+  const client = useIkaClient();
   const executeTransaction = useTransactionExecution();
   const queryClient = useQueryClient();
 

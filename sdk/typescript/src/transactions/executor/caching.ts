@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { bcs } from '../../bcs/index.js';
-import type { ExecuteTransactionBlockParams, SuiClient } from '../../client/index.js';
+import type { ExecuteTransactionBlockParams, IkaClient } from '../../client/index.js';
 import type { Signer } from '../../cryptography/keypair.js';
 import type { BuildTransactionOptions } from '../json-rpc-resolver.js';
 import type { ObjectCacheOptions } from '../ObjectCache.js';
@@ -11,7 +11,7 @@ import type { Transaction } from '../Transaction.js';
 import { isTransaction } from '../Transaction.js';
 
 export class CachingTransactionExecutor {
-	#client: SuiClient;
+	#client: IkaClient;
 	#lastDigest: string | null = null;
 	cache: ObjectCache;
 
@@ -19,7 +19,7 @@ export class CachingTransactionExecutor {
 		client,
 		...options
 	}: ObjectCacheOptions & {
-		client: SuiClient;
+		client: IkaClient;
 	}) {
 		this.#client = client;
 		this.cache = new ObjectCache(options);
@@ -85,7 +85,7 @@ export class CachingTransactionExecutor {
 
 		signer: Signer;
 	} & Omit<ExecuteTransactionBlockParams, 'transactionBlock' | 'signature'>) {
-		transaction.setSenderIfNotSet(input.signer.toSuiAddress());
+		transaction.setSenderIfNotSet(input.signer.toIkaAddress());
 		const bytes = await this.buildTransaction({ transaction });
 		const { signature } = await input.signer.signTransaction(bytes);
 		const results = await this.executeTransaction({

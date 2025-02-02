@@ -19,7 +19,7 @@
 //!   flexibility in the cases where the traits can't be used.
 //! - It allows for measuring blocks even when only an interior pointer can be
 //!   obtained for heap allocations, e.g. `HashSet` and `HashMap`. (This relies
-//!   on the heap allocator having suitable support, which mozjemalloc has.)
+//!   on the heap allocator having ikatable support, which mozjemalloc has.)
 //! - It allows handling of types like `Rc` and `Arc` by providing traits that
 //!   are different to the ones for non-graph structures.
 //!

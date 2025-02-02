@@ -13,7 +13,7 @@ import PageTitle from '_src/ui/app/shared/PageTitle';
 import { getKioskIdFromOwnerCap, isKioskOwnerToken, useMultiGetObjects } from '@mysten/core';
 import { useKioskClient } from '@mysten/core/src/hooks/useKioskClient';
 import { EyeClose16 } from '@mysten/icons';
-import { normalizeStructTag } from '@mysten/sui/utils';
+import { normalizeStructTag } from '@ika-io/ika/utils';
 import { keepPreviousData } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -115,7 +115,7 @@ function HiddenNftsPage() {
 									</Link>
 									<div className="h-8 w-8">
 										<Button
-											variant="secondarySui"
+											variant="secondaryIka"
 											size="icon"
 											onClick={() => {
 												showAsset(objectId);

@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { normalizeIkaAddress } from '@ika-io/ika/utils';
 
 import { BalanceManagerContract } from '../transactions/balanceManager.js';
 import type { BalanceManager, Environment } from '../types/index.js';
@@ -47,7 +47,7 @@ export class DeepBookConfig {
 		coins?: CoinMap;
 		pools?: PoolMap;
 	}) {
-		this.address = normalizeSuiAddress(address);
+		this.address = normalizeIkaAddress(address);
 		this.adminCap = adminCap;
 		this.balanceManagers = balanceManagers || {};
 

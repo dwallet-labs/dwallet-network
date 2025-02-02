@@ -6,6 +6,6 @@
   @apply !bg-transparent !shadow-none !flex-shrink-0 !py-2 !px-3 !text-sm;
 }
 
-.sui-object-card .rt-CardInner {
+.ika-object-card .rt-CardInner {
   @apply flex flex-col justify-between;
 }

@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { createNetworkConfig, SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui/client';
+import { createNetworkConfig, IkaClientProvider, WalletProvider } from '@mysten/dapp-kit';
+import { getFullnodeUrl } from '@ika-io/ika/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { Outlet } from 'react-router-dom';
@@ -22,7 +22,7 @@ const { networkConfig } = createNetworkConfig({
 export default function Root() {
 	return (
 		<QueryClientProvider client={queryClient}>
-			<SuiClientProvider defaultNetwork="testnet" networks={networkConfig}>
+			<IkaClientProvider defaultNetwork="testnet" networks={networkConfig}>
 				<WalletProvider>
 					<KioskClientProvider>
 						<Header />
@@ -35,7 +35,7 @@ export default function Root() {
 						<Toaster position="bottom-center" />
 					</KioskClientProvider>
 				</WalletProvider>
-			</SuiClientProvider>
+			</IkaClientProvider>
 		</QueryClientProvider>
 	);
 }

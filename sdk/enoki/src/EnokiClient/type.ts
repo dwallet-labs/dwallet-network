@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { PublicKey } from '@mysten/sui/cryptography';
-import type { ZkLoginSignatureInputs } from '@mysten/sui/zklogin';
+import type { PublicKey } from '@ika-io/ika/cryptography';
+import type { ZkLoginSignatureInputs } from '@ika-io/ika/zklogin';
 
 import type { AuthProvider } from '../EnokiFlow.js';
 

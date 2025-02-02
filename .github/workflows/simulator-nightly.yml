@@ -8,7 +8,7 @@ on:
     - cron: '0 9 * * *' # equivalent to 1am PST
   workflow_dispatch:
     inputs:
-      sui_ref:
+      ika_ref:
         description: "Branch / commit to test"
         type: string
         required: true
@@ -20,7 +20,7 @@ on:
         default: "30"
 
 env:
-  SUI_REF: "${{ github.event.inputs.sui_ref || 'main' }}"
+  IKA_REF: "${{ github.event.inputs.ika_ref || 'main' }}"
   TEST_NUM: "${{ github.event.inputs.test_num || '30' }}"
 
 jobs:
@@ -46,7 +46,7 @@ jobs:
           # Specify the publically accessible address of your Teleport proxy.
           proxy: proxy.mysten-int.com:443
           # Specify the name of the join token for your bot.
-          token: sui-simtest-token
+          token: ika-simtest-token
           # Specify the length of time that the generated credentials should be
           # valid for. This is optional and defaults to "1h"
           certificate-ttl: 2h
@@ -54,29 +54,29 @@ jobs:
       # Cargo clean and git restore on any left over files from git checkout, and deletes all remote tracking branches
       - name: Environment clean
         run: | 
-          tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 5 ssh ubuntu@simtest-01 "source ~/.bashrc && source ~/.cargo/env && rm -rf ~/sui"
+          tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 5 ssh ubuntu@simtest-01 "source ~/.bashrc && source ~/.cargo/env && rm -rf ~/ika"
           tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 5 ssh ubuntu@simtest-01 "source ~/.bashrc && source ~/.cargo/env && cd ~/ && git clone git@github.com:MystenLabs/sui.git"
  
       # Deleting files in tmpfs that usually fill up pretty quickly after each run. Cargo clean to free up space as well.
       - name: Tmpfs and cargo clean
         run: |  
           tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 5 ssh ubuntu@simtest-01 "sudo rm -rf /tmp/*"
-          tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 5 ssh ubuntu@simtest-01 "source ~/.bashrc && source ~/.cargo/env && cd ~/sui && cargo clean"
+          tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 5 ssh ubuntu@simtest-01 "source ~/.bashrc && source ~/.cargo/env && cd ~/ika && cargo clean"
 
-      # Checkout out the latest sui repo
-      - name: Checkout sui repo
+      # Checkout out the latest ika repo
+      - name: Checkout ika repo
         run: |
-          tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 10 ssh ubuntu@simtest-01 "source ~/.bashrc && source ~/.cargo/env && cd ~/sui && git fetch origin && git checkout ${{ env.SUI_REF }}"
+          tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 10 ssh ubuntu@simtest-01 "source ~/.bashrc && source ~/.cargo/env && cd ~/ika && git fetch origin && git checkout ${{ env.IKA_REF }}"
 
       # Setting up cargo and simtest
       - name: Install simtest
         run: |
-          tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 10 ssh ubuntu@simtest-01 "source ~/.bashrc && source ~/.cargo/env && cd ~/sui && ./scripts/simtest/install.sh"
+          tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 10 ssh ubuntu@simtest-01 "source ~/.bashrc && source ~/.cargo/env && cd ~/ika && ./scripts/simtest/install.sh"
 
       # Run simulator tests
       - name: Run simtest
         run: |
-          tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 120 ssh ubuntu@simtest-01 "source ~/.bashrc && source ~/.cargo/env && cd ~/sui && RUSTUP_MAX_RETRIES=10 CARGO_TERM_COLOR=always CARGO_INCREMENTAL=0 CARGO_NET_RETRY=10 RUST_BACKTRACE=short RUST_LOG=off NUM_CPUS=24 TEST_NUM=${{ env.TEST_NUM }} ./scripts/simtest/simtest-run.sh"
+          tsh -i ${{ steps.auth.outputs.identity-file }} --ttl 120 ssh ubuntu@simtest-01 "source ~/.bashrc && source ~/.cargo/env && cd ~/ika && RUSTUP_MAX_RETRIES=10 CARGO_TERM_COLOR=always CARGO_INCREMENTAL=0 CARGO_NET_RETRY=10 RUST_BACKTRACE=short RUST_LOG=off NUM_CPUS=24 TEST_NUM=${{ env.TEST_NUM }} ./scripts/simtest/simtest-run.sh"
   
   notify:
     name: Notify
@@ -87,15 +87,15 @@ jobs:
     steps:
     - uses: technote-space/workflow-conclusion-action@45ce8e0eb155657ab8ccf346ade734257fd196a5 # Pin v4.1.1
 
-    - name: Checkout sui repo main branch
+    - name: Checkout ika repo main branch
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # Pin v4.1.1
     
-    - name: Get sui commit
+    - name: Get ika commit
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        export sui_sha=$(git rev-parse HEAD)
-        echo "sui_sha=${sui_sha}" >> $GITHUB_ENV
+        export ika_sha=$(git rev-parse HEAD)
+        echo "ika_sha=${ika_sha}" >> $GITHUB_ENV
 
     - name: Get link to logs
       env:
@@ -138,14 +138,14 @@ jobs:
       uses: slackapi/slack-github-action@34c3fd73326693ef04728f8611669d918a2d781d # pin@v1.19.0
       env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        SUI_SHA: ${{ env.sui_sha }}
+        IKA_SHA: ${{ env.ika_sha }}
         GH_JOB_LINK: ${{ env.gh_job_link }}
         SLACK_ID: ${{ env.slack_id }}
         ONCALL_NAME: ${{ env.oncall_name }}
       with:
         channel-id: 'simtest-nightly'
         slack-message: |
-          :sui::error-cross: *${{ github.workflow }}* workflow status: `${{ env.WORKFLOW_CONCLUSION }}`
-          Sui commit: <https://github.com/MystenLabs/sui/commit/${{ env.SUI_SHA }}|${{ env.SUI_SHA }}>
+          :ika::error-cross: *${{ github.workflow }}* workflow status: `${{ env.WORKFLOW_CONCLUSION }}`
+          Ika commit: <https://github.com/MystenLabs/sui/commit/${{ env.IKA_SHA }}|${{ env.IKA_SHA }}>
           Run: <${{ env.GH_JOB_LINK }}|${{ github.run_id }}>
           <@${{ env.SLACK_ID }}>, current `${{ env.ONCALL_NAME }}` oncall, please debug failures: `tsh ssh ubuntu@simtest-01` and look in the `/home/ubuntu/simtest_logs/{date}` folder for test results

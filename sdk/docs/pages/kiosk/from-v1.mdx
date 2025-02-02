@@ -21,7 +21,7 @@ The following example is from the original Kiosk SDK V1 documentation.
 
 ```typescript
 import { placeAndList } from '@mysten/kiosk';
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@ika-io/ika/transactions';
 
 const placeAndListToKiosk = async () => {
 	const kiosk = 'SomeKioskId';
@@ -46,7 +46,7 @@ Using the new SDK, you can build the same transaction as follows:
 ```typescript
 /// You need to do this only once and re-use it in the application.
 const kioskClient = new KioskClient({
-	client: new SuiClient({
+	client: new IkaClient({
 		url: getFullnodeUrl('mainnet'),
 	}),
 	network: Network.MAINNET,
@@ -79,10 +79,10 @@ The following example is from the original Kiosk SDK V1 documentation.
 
 ```typescript
 import { createKioskAndShare } from '@mysten/kiosk';
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@ika-io/ika/transactions';
 
 const createKiosk = async () => {
-	const accountAddress = '0xSomeSuiAddress';
+	const accountAddress = '0xSomeIkaAddress';
 
 	const tx = new Transaction();
 	const kiosk_cap = createKioskAndShare(tx);
@@ -101,7 +101,7 @@ Using the new SDK, you can build the same transaction as follows:
 ```typescript
 /// You need to do this only once and re-use it in the application.
 const kioskClient = new KioskClient({
-	client: new SuiClient({
+	client: new IkaClient({
 		url: getFullnodeUrl('mainnet'),
 	}),
 	network: Network.MAINNET,
@@ -112,7 +112,7 @@ const placeAndListToKiosk = async () => {
 
 	const kioskTx = new KioskTransaction({ transaction: tx, kioskClient });
 
-	kioskTx.shareAndTransferCap('0xSomeSuiAddress').finalize();
+	kioskTx.shareAndTransferCap('0xSomeIkaAddress').finalize();
 
 	// ... continue to sign and execute the transaction
 };
@@ -126,10 +126,10 @@ The following example is from the original Kiosk SDK V1 documentation.
 
 ```typescript
 import { queryTransferPolicy, purchaseAndResolvePolicies, place, testnetEnvironment } from '@mysten/kiosk';
-import { SuiClient } from '@mysten/sui/client';
+import { IkaClient } from '@ika-io/ika/client';
 
-const client = new SuiClient(
-  url: 'https://fullnode.testnet.sui.io:443',
+const client = new IkaClient(
+  url: 'https://fullnode.testnet.ika.io:443',
 );
 
 // The kiosk we're purchasing from.
@@ -142,7 +142,7 @@ const item = {
   listing: {
     isExclusive: false,
     listingId: "0x368b512ff2514dbea814f26ec9a3d41198c00e8ed778099961e9ed22a9f0032b",
-    price: "20000000000" // in MIST
+    price: "20000000000" // in NIKA
   }
 }
 const ownedKiosk = `0xMyKioskAddress`;
@@ -191,7 +191,7 @@ Using the new SDK, you can build the same transaction as follows:
 ```typescript
 /// You need to do this only once and re-use it in the application.
 const kioskClient = new KioskClient({
-    client: new SuiClient({
+    client: new IkaClient({
         url: getFullnodeUrl('mainnet'),
     }),
     network: Network.MAINNET,
@@ -206,7 +206,7 @@ const item = {
   listing: {
     isExclusive: false,
     listingId: "0x368b512ff2514dbea814f26ec9a3d41198c00e8ed778099961e9ed22a9f0032b",
-    price: "20000000000" // in MIST
+    price: "20000000000" // in NIKA
   }
 }
 
@@ -245,9 +245,9 @@ import {
 	percentageToBasisPoints,
 	testnetEnvironment,
 } from '@mysten/kiosk';
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@ika-io/ika/transactions';
 
-// Attaches a royalty rule of 1% or 0.1 SUI (whichever is bigger)
+// Attaches a royalty rule of 1% or 0.1 IKA (whichever is bigger)
 // as well as a kiosk lock, making the objects tradeable only from/to a kiosk.
 const attachStrongRoyalties = async () => {
 	const type = 'SomePackageId::type::MyType'; // the Type for which we're attaching rules.
@@ -256,7 +256,7 @@ const attachStrongRoyalties = async () => {
 
 	// Royalties configuration.
 	const percentage = 2.55; // 2.55%
-	const minAmount = 100_000_000; // 0.1 SUI.
+	const minAmount = 100_000_000; // 0.1 IKA.
 
 	// The environment on which we're referencing the rules package.
 	// Use `mainnetEnvironment` for mainnet.
@@ -287,7 +287,7 @@ On the new SDK, the same transaction can be built as follows:
 ```typescript
 /// You need to do this only once and re-use it in the application.
 const kioskClient = new KioskClient({
-	client: new SuiClient({
+	client: new IkaClient({
 		url: getFullnodeUrl('mainnet'),
 	}),
 	network: Network.MAINNET,

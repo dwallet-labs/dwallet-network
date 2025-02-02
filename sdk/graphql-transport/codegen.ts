@@ -11,7 +11,7 @@ const header = `
 
 const config: CodegenConfig = {
 	overwrite: true,
-	schema: '../../crates/sui-graphql-rpc/schema.graphql',
+	schema: '../../crates/ika-graphql-rpc/schema.graphql',
 	documents: ['src/queries/*.graphql'],
 	ignoreNoDocuments: true,
 	generates: {

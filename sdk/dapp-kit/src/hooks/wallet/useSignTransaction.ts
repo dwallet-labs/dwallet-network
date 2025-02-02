@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Transaction } from '@mysten/sui/transactions';
+import type { Transaction } from '@ika-io/ika/transactions';
 import { signTransaction } from '@mysten/wallet-standard';
-import type { SignedTransaction, SuiSignTransactionInput } from '@mysten/wallet-standard';
+import type { SignedTransaction, IkaSignTransactionInput } from '@mysten/wallet-standard';
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 
@@ -14,13 +14,13 @@ import {
 	WalletNotConnectedError,
 } from '../../errors/walletErrors.js';
 import type { PartialBy } from '../../types/utilityTypes.js';
-import { useSuiClient } from '../useSuiClient.js';
+import { useIkaClient } from '../useIkaClient.js';
 import { useCurrentAccount } from './useCurrentAccount.js';
 import { useCurrentWallet } from './useCurrentWallet.js';
 import { useReportTransactionEffects } from './useReportTransactionEffects.js';
 
 type UseSignTransactionArgs = PartialBy<
-	Omit<SuiSignTransactionInput, 'transaction'>,
+	Omit<IkaSignTransactionInput, 'transaction'>,
 	'account' | 'chain'
 > & {
 	transaction: Transaction | string;
@@ -59,7 +59,7 @@ export function useSignTransaction({
 > {
 	const { currentWallet } = useCurrentWallet();
 	const currentAccount = useCurrentAccount();
-	const client = useSuiClient();
+	const client = useIkaClient();
 
 	const { mutate: reportTransactionEffects } = useReportTransactionEffects();
 
@@ -78,8 +78,8 @@ export function useSignTransaction({
 			}
 
 			if (
-				!currentWallet.features['sui:signTransaction'] &&
-				!currentWallet.features['sui:signTransactionBlock']
+				!currentWallet.features['ika:signTransaction'] &&
+				!currentWallet.features['ika:signTransactionBlock']
 			) {
 				throw new WalletFeatureNotSupportedError(
 					"This wallet doesn't support the `signTransaction` feature.",

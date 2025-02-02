@@ -57,7 +57,7 @@ module basics::counter {
 
 #[test_only]
 module basics::counter_test {
-    use sui::test_scenario as ts;
+    use ika::test_scenario as ts;
     use basics::counter::{Self, Counter};
 
     #[test]

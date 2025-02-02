@@ -12,7 +12,7 @@ jobs:
       - name: Run split cluster check script
         id: mn-split-cluster-check
         run: | 
-            SUI_PROTOCOL_CONFIG_CHAIN_OVERRIDE=mainnet \
+            IKA_PROTOCOL_CONFIG_CHAIN_OVERRIDE=mainnet \
             scripts/compatibility/split-cluster-check.sh origin/mainnet ${{ github.sha }}
 
   validate-testnet:
@@ -25,5 +25,5 @@ jobs:
       - name: Run split cluster check script
         id: tn-split-cluster-check
         run: | 
-            SUI_PROTOCOL_CONFIG_CHAIN_OVERRIDE=testnet \
+            IKA_PROTOCOL_CONFIG_CHAIN_OVERRIDE=testnet \
             scripts/compatibility/split-cluster-check.sh origin/testnet ${{ github.sha }}

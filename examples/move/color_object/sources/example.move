@@ -52,7 +52,7 @@ module color_object::example {
     }
 
     // === Tests ===
-    #[test_only] use sui::test_scenario as ts;
+    #[test_only] use ika::test_scenario as ts;
 
     // === Tests covered in Chapter 1 ===
 

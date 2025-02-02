@@ -34,9 +34,9 @@ storage = { path = "../storage", package = "narwhal-storage" }
 types = { path = "../types", package = "narwhal-types" }
 worker = { path = "../worker", package = "narwhal-worker" }
 eyre.workspace = true
-sui-keys.workspace = true
-sui-types.workspace = true
-sui-protocol-config.workspace = true
+ika-keys.workspace = true
+ika-types.workspace = true
+ika-protocol-config.workspace = true
 
 mysten-metrics.workspace = true
 mysten-network.workspace = true

@@ -3,8 +3,8 @@
 
 import 'tsconfig-paths/register';
 
-import { requestSuiFromFaucetV0 } from '@mysten/sui/faucet';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { requestIkaFromFaucetV0 } from '@ika-io/ika/faucet';
+import { Ed25519Keypair } from '@ika-io/ika/keypairs/ed25519';
 import * as bip39 from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english';
 
@@ -20,6 +20,6 @@ export async function generateKeypair() {
 
 const FAUCET_HOST = 'http://127.0.0.1:9123';
 
-export async function requestSuiFromFaucet(recipient: string) {
-	await requestSuiFromFaucetV0({ host: FAUCET_HOST, recipient });
+export async function requestIkaFromFaucet(recipient: string) {
+	await requestIkaFromFaucetV0({ host: FAUCET_HOST, recipient });
 }

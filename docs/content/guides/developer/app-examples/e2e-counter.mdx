@@ -4,7 +4,7 @@ description: An app that allows users to create counters that anyone can increme
 effort: small
 ---
 
-This example walks you through building a basic distributed counter app, covering the full end-to-end flow of building your Sui Move module and connecting it to your React Sui dApp. The app allows users to create counters that anyone can increment, but only the owner can reset. 
+This example walks you through building a basic distributed counter app, covering the full end-to-end flow of building your Ika Move module and connecting it to your React Ika dApp. The app allows users to create counters that anyone can increment, but only the owner can reset. 
 
 The guide is split into two parts:
 
@@ -26,17 +26,17 @@ The guide is split into two parts:
 
 Before getting started, make sure you have:
 
-- [Installed the latest version of Sui](../getting-started/sui-install.mdx).
+- [Installed the latest version of Ika](../getting-started/ika-install.mdx).
 
 ## Directory structure
 
-To begin, create a new folder on your system titled `react-e2e-counter` to hold all your project files. You can name this directory differently, but the rest of the guide references this file structure. Inside that folder, create two more folders: `move` and `src`. Inside the `move` folder, create a `counter` directory. Finally, create a `sources` folder inside `counter`. Different projects have their own directory structure, but it's common to split code into functional groups to help with maintenance. See [Write a Move Package](../first-app/write-package.mdx) to learn more about package structure and how to use the Sui CLI to scaffold a new project.
+To begin, create a new folder on your system titled `react-e2e-counter` to hold all your project files. You can name this directory differently, but the rest of the guide references this file structure. Inside that folder, create two more folders: `move` and `src`. Inside the `move` folder, create a `counter` directory. Finally, create a `sources` folder inside `counter`. Different projects have their own directory structure, but it's common to split code into functional groups to help with maintenance. See [Write a Move Package](../first-app/write-package.mdx) to learn more about package structure and how to use the Ika CLI to scaffold a new project.
 
 :::checkpoint
 
-- You have the latest version of Sui installed. If you run `sui --version` in your terminal or console, it responds with the currently installed version.
-- Your active environment is pointing to the expected network. Run `sui client active-env` to make sure. If you receive a warning about a client and server API version mismatch, update Sui using the version in the relevant branch (`mainnet`, `testnet`, `devent`) of the Sui repo.
-- Your active address has SUI. Run `sui client balance` in your terminal or console. If there is no balance, [acquire SUI](../getting-started/get-coins.mdx) from the faucet (not available in Mainnet).
+- You have the latest version of Ika installed. If you run `ika --version` in your terminal or console, it responds with the currently installed version.
+- Your active environment is pointing to the expected network. Run `ika client active-env` to make sure. If you receive a warning about a client and server API version mismatch, update Ika using the version in the relevant branch (`mainnet`, `testnet`, `devent`) of the Ika repo.
+- Your active address has IKA. Run `ika client balance` in your terminal or console. If there is no balance, [acquire IKA](../getting-started/get-coins.mdx) from the faucet (not available in Mainnet).
 - You have a directory to place the files you create in. The top-level directory is named `react-e2e-counter` if you want to match the directory structure in this guide. 
 
 :::
@@ -51,7 +51,7 @@ To begin writing your smart contracts, create a file inside `react-e2e-counter/m
 
 :::info
 
-If you are targeting a network other than Testnet, be sure to update the `rev` value for the Sui dependency.
+If you are targeting a network other than Testnet, be sure to update the `rev` value for the Ika dependency.
 
 :::
 
@@ -91,7 +91,7 @@ The `set_value` function accepts a mutable reference to any shared `Counter` obj
 
 :::tip Additional resources
 
-Learn more about taking [object references as input](../../../concepts/sui-move-concepts.mdx#entry-points)
+Learn more about taking [object references as input](../../../concepts/ika-move-concepts.mdx#entry-points)
 
 :::
 
@@ -103,31 +103,31 @@ The final module should look like this
 
 :::checkpoint
 
-Your smart contract is complete. You should be able to run the `sui move build` command from `react-e2e-counter/move/counter` and receive a response similar to the following:
+Your smart contract is complete. You should be able to run the `ika move build` command from `react-e2e-counter/move/counter` and receive a response similar to the following:
 ```sh
 UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
-INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY Ika
 INCLUDING DEPENDENCY MoveStdlib
 BUILDING counter
 ```
-You always run `sui move build` at the same level as your `Move.toml` file. After a successful build, you now have a `build` folder inside `react-e2e-counter/move/counter`.
+You always run `ika move build` at the same level as your `Move.toml` file. After a successful build, you now have a `build` folder inside `react-e2e-counter/move/counter`.
 
 :::
 
 ### Deployment {#deployment}
 
-{@include: ../../../snippets/initialize-sui-client-cli.mdx}
+{@include: ../../../snippets/initialize-ika-client-cli.mdx}
 
-Next, configure the Sui CLI to use `testnet` as the active environment, as well. If you haven't already set up a `testnet` environment, do so by running the following command in a terminal or console:
+Next, configure the Ika CLI to use `testnet` as the active environment, as well. If you haven't already set up a `testnet` environment, do so by running the following command in a terminal or console:
 
 ```bash
-sui client new-env --alias testnet --rpc https://fullnode.testnet.sui.io:443
+ika client new-env --alias testnet --rpc https://fullnode.testnet.ika.io:443
 ```
 
 Run the following command to activate the `testnet` environment:
 
 ```bash
-sui client switch --env testnet
+ika client switch --env testnet
 ```
 
 {@include: ../../../snippets/publish-to-devnet-with-coins.mdx}
@@ -154,7 +154,7 @@ Partial snippet of CLI deployment output.
 │  │ ObjectID: 0x0fcc6d770d80aa409a9645e78ac4810be6400919ac7f507bddd2f9d279da509f                  │
 │  │ Sender: 0x8e8cae7791a93778800b88b6a274de5c32a86484593568d38619c7ea71999654                    │
 │  │ Owner: Account Address ( 0x8e8cae7791a93778800b88b6a274de5c32a86484593568d38619c7ea71999654 ) │
-│  │ ObjectType: 0x2::coin::Coin<0x2::sui::SUI>                                                    │
+│  │ ObjectType: 0x2::coin::Coin<0x2::ika::IKA>                                                    │
 │  │ Version: 47482286                                                                             │
 │  │ Digest: A6TH6ja5TM4S6nZBwB14AB17ZgixCijYX1aNMGHF3syv                                          │
 │  └──                                                                                             │
@@ -210,9 +210,9 @@ Before getting started, make sure you have:
 
 :::tip Additional resources
 
-- Tooling: [Sui Typescript SDK](https://sdk.mystenlabs.com/typescript) for basic usage on how to interact with Sui using Typescript.
-- Tooling: [Sui dApp Kit](https://sdk.mystenlabs.com/dapp-kit) to learn basic building blocks for developing a dApp in the Sui ecosystem with React.js.
-- Tooling: [`@mysten/dapp`](https://sdk.mystenlabs.com/dapp-kit/create-dapp), used within this project to quickly scaffold a React-based Sui dApp.
+- Tooling: [Ika Typescript SDK](https://sdk.mystenlabs.com/typescript) for basic usage on how to interact with Ika using Typescript.
+- Tooling: [Ika dApp Kit](https://sdk.mystenlabs.com/dapp-kit) to learn basic building blocks for developing a dApp in the Ika ecosystem with React.js.
+- Tooling: [`@mysten/dapp`](https://sdk.mystenlabs.com/dapp-kit/create-dapp), used within this project to quickly scaffold a React-based Ika dApp.
 
 :::
 
@@ -328,7 +328,7 @@ This component renders a button that enables the user to create a counter. Now, 
   {@inject: sdk/create-dapp/templates/react-e2e-counter/src/CreateCounter.tsx noComments}
 </details>
 
-The `create` function now creates a new Sui `Transaction` and calls the `create` function from your Move module. The PTB is then signed and executed via the `useSignAndExecuteTransaction` hook. The `onCreated` callback is called with the new counter's ID when the transaction is successful.
+The `create` function now creates a new Ika `Transaction` and calls the `create` function from your Move module. The PTB is then signed and executed via the `useSignAndExecuteTransaction` hook. The `onCreated` callback is called with the new counter's ID when the transaction is successful.
 
 ### Set up routing
 
@@ -340,7 +340,7 @@ Now that your users can create counters, you need a way to route to them. Routin
   </summary>
   ```tsx
     import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
-    import { isValidSuiObjectId } from "@mysten/sui/utils";
+    import { isValidIkaObjectId } from "@ika-io/ika/utils";
     import { Box, Container, Flex, Heading } from "@radix-ui/themes";
     import { useState } from "react";
     import { CreateCounter } from "./CreateCounter";
@@ -349,7 +349,7 @@ Now that your users can create counters, you need a way to route to them. Routin
       const currentAccount = useCurrentAccount();
       const [counterId, setCounter] = useState(() => {
         const hash = window.location.hash.slice(1);
-        return isValidSuiObjectId(hash) ? hash : null;
+        return isValidIkaObjectId(hash) ? hash : null;
       });
 
       return (
@@ -436,9 +436,9 @@ For your counter, you want to display three elements:
   ```tsx
     import {
       useCurrentAccount,
-      useSuiClientQuery,
+      useIkaClientQuery,
     } from "@mysten/dapp-kit";
-    import { SuiObjectData } from "@mysten/sui/client";
+    import { IkaObjectData } from "@ika-io/ika/client";
     import { Button, Flex, Heading, Text } from "@radix-ui/themes";
     import { useState } from "react";
     import ClipLoader from "react-spinners/ClipLoader";
@@ -446,7 +446,7 @@ For your counter, you want to display three elements:
 
     export function Counter({ id }: { id: string }) {
       const currentAccount = useCurrentAccount();
-      const { data, isPending, error, refetch } = useSuiClientQuery("getObject", {
+      const { data, isPending, error, refetch } = useIkaClientQuery("getObject", {
         id,
         options: {
           showContent: true,
@@ -503,7 +503,7 @@ For your counter, you want to display three elements:
         </>
       );
     }
-    function getCounterFields(data: SuiObjectData) {
+    function getCounterFields(data: IkaObjectData) {
       if (data.content?.dataType !== "moveObject") {
         return null;
       }
@@ -513,9 +513,9 @@ For your counter, you want to display three elements:
   ```
 </details>
 
-This snippet has a few new concepts to examine. It uses the `useSuiClientQuery` hook to make the `getObject` RPC call. This returns a data object representing your counter. dApp Kit doesn't know which fields your counter object has, so define a `getCounterFields` helper that gets the counter fields, and adds a type-cast so that you can access the expected `value` and `owner` fields in your component.
+This snippet has a few new concepts to examine. It uses the `useIkaClientQuery` hook to make the `getObject` RPC call. This returns a data object representing your counter. dApp Kit doesn't know which fields your counter object has, so define a `getCounterFields` helper that gets the counter fields, and adds a type-cast so that you can access the expected `value` and `owner` fields in your component.
 
-The code also adds an `executeMoveCall` function that still needs implementing. This works just like the `create` function you used to create the counter. Instead of using a callback prop like you did for `CreateCounter`, you can use the refetch provided by `useSuiClientQuery` to reload your `Counter` object after you've executed your PTB.
+The code also adds an `executeMoveCall` function that still needs implementing. This works just like the `create` function you used to create the counter. Instead of using a callback prop like you did for `CreateCounter`, you can use the refetch provided by `useIkaClientQuery` to reload your `Counter` object after you've executed your PTB.
 
 <details>
   <summary>

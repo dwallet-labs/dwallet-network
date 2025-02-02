@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCurrentAccount } from '@mysten/dapp-kit';
-import { isValidSuiAddress, normalizeSuiAddress } from '@mysten/sui/utils';
+import { isValidIkaAddress, normalizeIkaAddress } from '@ika-io/ika/utils';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { Box, Button, Em, Flex, Separator, Spinner, Text, TextField } from '@radix-ui/themes';
 import { useTransactions } from 'hooks/useTransactions';
@@ -114,6 +114,6 @@ function normalizedAddress(address?: string): string | null {
 		return null;
 	}
 
-	address = normalizeSuiAddress(address);
-	return isValidSuiAddress(address) ? address : null;
+	address = normalizeIkaAddress(address);
+	return isValidIkaAddress(address) ? address : null;
 }

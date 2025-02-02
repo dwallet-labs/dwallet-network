@@ -15,14 +15,14 @@ const Ref = (props) => {
       <p>{schema.description && <Markdown>{schema.description}</Markdown>}</p>
       {schema.properties && (
         <>
-          <div className="grid grid-cols-6 ml-4 bg-sui-gray-50 dark:bg-sui-gray-80 rounded-lg">
-            <div className="col-span-2 p-2 text-sui-gray-95 dark:text-sui-gray-50 font-bold">
+          <div className="grid grid-cols-6 ml-4 bg-ika-gray-50 dark:bg-ika-gray-80 rounded-lg">
+            <div className="col-span-2 p-2 text-ika-gray-95 dark:text-ika-gray-50 font-bold">
               Parameter
             </div>
-            <div className="p-2 text-sui-gray-95 dark:text-sui-gray-50 text-sui-gray-35 font-bold">
+            <div className="p-2 text-ika-gray-95 dark:text-ika-gray-50 text-ika-gray-35 font-bold">
               Required
             </div>
-            <div className="col-span-3 p-2 text-sui-gray-95 dark:text-sui-gray-50 text-sui-gray-35 font-bold">
+            <div className="col-span-3 p-2 text-ika-gray-95 dark:text-ika-gray-50 text-ika-gray-35 font-bold">
               Description
             </div>
           </div>
@@ -31,7 +31,7 @@ const Ref = (props) => {
             return (
               <div
                 key={idx}
-                className="grid grid-cols-6 even:bg-sui-gray-35 dark:even:bg-sui-gray-95 ml-4 rounded-lg items-center"
+                className="grid grid-cols-6 even:bg-ika-gray-35 dark:even:bg-ika-gray-95 ml-4 rounded-lg items-center"
               >
                 <div className="col-span-2 p-2 overflow-x-auto">
                   <PropType proptype={property}></PropType>

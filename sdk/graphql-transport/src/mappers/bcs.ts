@@ -3,7 +3,7 @@
 
 import { toBase64 } from '@mysten/bcs';
 import type { BcsType } from '@mysten/bcs';
-import { bcs } from '@mysten/sui/bcs';
+import { bcs } from '@ika-io/ika/bcs';
 
 import type { MoveTypeLayout } from './move.js';
 import { toShortTypeString } from './util.js';

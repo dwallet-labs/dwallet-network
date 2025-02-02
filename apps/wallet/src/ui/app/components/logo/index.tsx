@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { API_ENV } from '_src/shared/api-env';
-import { SuiCustomRpc, SuiDevnet, SuiLocal, SuiMainnet, SuiTestnet } from '@mysten/icons';
+import { IkaCustomRpc, IkaDevnet, IkaLocal, IkaMainnet, IkaTestnet } from '@mysten/icons';
 
 type LogoProps = {
 	networkName?: API_ENV;
 };
 
 const networkLogos = {
-	[API_ENV.mainnet]: SuiMainnet,
-	[API_ENV.devNet]: SuiDevnet,
-	[API_ENV.testNet]: SuiTestnet,
-	[API_ENV.local]: SuiLocal,
-	[API_ENV.customRPC]: SuiCustomRpc,
+	[API_ENV.mainnet]: IkaMainnet,
+	[API_ENV.devNet]: IkaDevnet,
+	[API_ENV.testNet]: IkaTestnet,
+	[API_ENV.local]: IkaLocal,
+	[API_ENV.customRPC]: IkaCustomRpc,
 };
 
 const Logo = ({ networkName }: LogoProps) => {

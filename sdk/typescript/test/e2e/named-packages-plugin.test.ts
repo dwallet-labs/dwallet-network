@@ -3,14 +3,14 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { SuiGraphQLClient } from '../../src/graphql/client';
+import { IkaGraphQLClient } from '../../src/graphql/client';
 import { namedPackagesPlugin, Transaction } from '../../src/transactions';
-import { normalizeSuiAddress } from '../../src/utils';
+import { normalizeIkaAddress } from '../../src/utils';
 
 Transaction.registerGlobalSerializationPlugin(
 	'namedPackagesPlugin',
 	namedPackagesPlugin({
-		suiGraphQLClient: new SuiGraphQLClient({
+		ikaGraphQLClient: new IkaGraphQLClient({
 			url: 'http://127.0.0.1:9125',
 		}),
 		overrides: {
@@ -57,9 +57,9 @@ describe('Name Resolution Plugin (.move)', () => {
 
 		const json = JSON.parse(await transaction.toJSON());
 
-		expect(json.commands[0].MoveCall.package).toBe(normalizeSuiAddress('0x1'));
+		expect(json.commands[0].MoveCall.package).toBe(normalizeIkaAddress('0x1'));
 		expect(json.commands[1].MoveCall.typeArguments[0]).toBe(`0x1::string::String`);
-		expect(json.commands[2].MoveCall.package).toBe(normalizeSuiAddress('0x1'));
+		expect(json.commands[2].MoveCall.package).toBe(normalizeIkaAddress('0x1'));
 		expect(json.commands[2].MoveCall.typeArguments[0]).toBe(
 			`0x1::vector::empty<0x1::string::String>`,
 		);

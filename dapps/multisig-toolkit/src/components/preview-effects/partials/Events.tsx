@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { SuiEvent } from '@mysten/sui/client';
+import { IkaEvent } from '@ika-io/ika/client';
 import { ReactNode } from 'react';
 
 import { Textarea } from '@/components/ui/textarea';
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ObjectLink } from '../ObjectLink';
 import { PreviewCard } from '../PreviewCard';
 
-export function Events({ events }: { events: SuiEvent[] }) {
+export function Events({ events }: { events: IkaEvent[] }) {
 	if (events.length === 0) {
 		return <div>No events were emitted.</div>;
 	}
@@ -23,7 +23,7 @@ export function Events({ events }: { events: SuiEvent[] }) {
 	);
 }
 
-export function Event({ event }: { event: SuiEvent }) {
+export function Event({ event }: { event: IkaEvent }) {
 	const fields: Record<string, ReactNode> = {
 		'Package ID': <ObjectLink inputObject={event.packageId} />,
 		Sender: <ObjectLink owner={{ AddressOwner: event.sender }} />,

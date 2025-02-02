@@ -27,7 +27,7 @@ type CardProps = Props & AnchorHTMLAttributes<HTMLAnchorElement>;
 
 export const SummaryCardFooter = ({ children }: { children: ReactNode }) => {
 	return (
-		<div className="-mb-4.5 -mx-4.5 px-4 py-2 rounded-b-2xl flex justify-between items-center bg-sui/10 ">
+		<div className="-mb-4.5 -mx-4.5 px-4 py-2 rounded-b-2xl flex justify-between items-center bg-ika/10 ">
 			{children}
 		</div>
 	);

@@ -7,8 +7,8 @@ import { TxnIcon } from '_src/ui/app/components/transactions-card/TxnIcon';
 import { useGetQredoTransaction } from '_src/ui/app/hooks/useGetQredoTransaction';
 import { Text } from '_src/ui/app/shared/text';
 import { formatDate, useOnScreen } from '@mysten/core';
-import { bcs } from '@mysten/sui/bcs';
-import { fromBase64 } from '@mysten/sui/utils';
+import { bcs } from '@ika-io/ika/bcs';
+import { fromBase64 } from '@ika-io/ika/utils';
 import { useMemo, useRef } from 'react';
 
 export type QredoTransactionProps = {
@@ -52,8 +52,8 @@ export function QredoTransaction({ qredoID, qredoTransactionID }: QredoTransacti
 			<div className="flex flex-col gap-1 overflow-hidden">
 				{isPending ? (
 					<>
-						<div className="bg-sui-lightest h-3 w-20 rounded" />
-						<div className="bg-sui-lightest h-3 w-16 rounded" />
+						<div className="bg-ika-lightest h-3 w-20 rounded" />
+						<div className="bg-ika-lightest h-3 w-16 rounded" />
 					</>
 				) : data ? (
 					<>

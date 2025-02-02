@@ -14,9 +14,9 @@ use transaction_fuzzer::type_arg_fuzzer::run_pt;
 use transaction_fuzzer::type_arg_fuzzer::type_factory_pt_for_tags;
 use transaction_fuzzer::{executor::Executor, type_arg_fuzzer::gen_type_tag};
 
-use sui_types::base_types::ObjectRef;
-use sui_types::effects::TransactionEffectsAPI;
-use sui_types::object::Owner;
+use ika_types::base_types::ObjectRef;
+use ika_types::effects::TransactionEffectsAPI;
+use ika_types::object::Owner;
 
 fn publish_type_factory(exec: &mut Executor, account: &mut AccountCurrent) -> ObjectRef {
     let effects = exec.publish("type_factory", vec![], account);

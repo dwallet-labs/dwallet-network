@@ -5,7 +5,7 @@
 /// platform-specific parameter.
 module std::address {
     /// Should be converted to a native function.
-    /// Current implementation only works for Sui.
+    /// Current implementation only works for Ika.
     public fun length(): u64 {
         32
     }

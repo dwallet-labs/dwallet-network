@@ -35,32 +35,32 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
 # check if binaries have already been built
-if [ -f "$WORKING_DIR/sui-node-release" ] && [ -f "$WORKING_DIR/sui-release" ] && [ -f "$WORKING_DIR/sui-node-candidate" ]; then
+if [ -f "$WORKING_DIR/ika-node-release" ] && [ -f "$WORKING_DIR/ika-release" ] && [ -f "$WORKING_DIR/ika-node-candidate" ]; then
   echo "Binaries already built, skipping build"
 else
-  echo "Building sui-node and sui at $RELEASE_COMMIT"
+  echo "Building ika-node and ika at $RELEASE_COMMIT"
 
   # remember current commit
   CURRENT_COMMIT=$(git rev-parse HEAD)
 
   git checkout $RELEASE_COMMIT || exit 1
-  cargo build --bin sui-node --bin sui || exit 1
-  cp ./target/debug/sui-node "$WORKING_DIR/sui-node-release"
-  cp ./target/debug/sui "$WORKING_DIR/sui-release"
+  cargo build --bin ika-node --bin ika || exit 1
+  cp ./target/debug/ika-node "$WORKING_DIR/ika-node-release"
+  cp ./target/debug/ika "$WORKING_DIR/ika-release"
 
-  echo "Building sui-node at $RELEASE_CANDIDATE_COMMIT"
+  echo "Building ika-node at $RELEASE_CANDIDATE_COMMIT"
   git checkout $RELEASE_CANDIDATE_COMMIT || exit 1
-  cargo build --bin sui-node || exit 1
-  cp ./target/debug/sui-node "$WORKING_DIR/sui-node-candidate"
+  cargo build --bin ika-node || exit 1
+  cp ./target/debug/ika-node "$WORKING_DIR/ika-node-candidate"
 
   echo "returning to $CURRENT_COMMIT"
   git checkout $CURRENT_COMMIT || exit 1
 fi
 
-export SUI_CONFIG_DIR="$WORKING_DIR/config"
-rm -rf "$SUI_CONFIG_DIR"
+export IKA_CONFIG_DIR="$WORKING_DIR/config"
+rm -rf "$IKA_CONFIG_DIR"
 
-"$WORKING_DIR/sui-release" genesis --epoch-duration-ms 20000
+"$WORKING_DIR/ika-release" genesis --epoch-duration-ms 20000
 
 LOG_DIR="$WORKING_DIR/logs"
 
@@ -70,20 +70,20 @@ mkdir -p "$LOG_DIR"
 CONFIGS=()
 while IFS= read -r -d '' file; do
   CONFIGS+=("$file")
-done < <(find "$SUI_CONFIG_DIR" -name "127.0.0.1*.yaml" -print0)
+done < <(find "$IKA_CONFIG_DIR" -name "127.0.0.1*.yaml" -print0)
 
-export RUST_LOG=sui=debug,info
+export RUST_LOG=ika=debug,info
 
 # 2 release nodes
-"$WORKING_DIR/sui-node-release" --config-path "${CONFIGS[0]}" > "$LOG_DIR/node-0.log" 2>&1 &
-"$WORKING_DIR/sui-node-release" --config-path "${CONFIGS[1]}" > "$LOG_DIR/node-1.log" 2>&1 &
+"$WORKING_DIR/ika-node-release" --config-path "${CONFIGS[0]}" > "$LOG_DIR/node-0.log" 2>&1 &
+"$WORKING_DIR/ika-node-release" --config-path "${CONFIGS[1]}" > "$LOG_DIR/node-1.log" 2>&1 &
 
 # 2 candidate nodes
-"$WORKING_DIR/sui-node-candidate" --config-path "${CONFIGS[2]}" > "$LOG_DIR/node-2.log" 2>&1 &
-"$WORKING_DIR/sui-node-candidate" --config-path "${CONFIGS[3]}" > "$LOG_DIR/node-3.log" 2>&1 &
+"$WORKING_DIR/ika-node-candidate" --config-path "${CONFIGS[2]}" > "$LOG_DIR/node-2.log" 2>&1 &
+"$WORKING_DIR/ika-node-candidate" --config-path "${CONFIGS[3]}" > "$LOG_DIR/node-3.log" 2>&1 &
 
 # and a fullnode
-"$WORKING_DIR/sui-node-release" --config-path "$SUI_CONFIG_DIR/fullnode.yaml" > "$LOG_DIR/fullnode.log" 2>&1 &
+"$WORKING_DIR/ika-node-release" --config-path "$IKA_CONFIG_DIR/fullnode.yaml" > "$LOG_DIR/fullnode.log" 2>&1 &
 
 echo "sleeping for 60 seconds"
 sleep 60

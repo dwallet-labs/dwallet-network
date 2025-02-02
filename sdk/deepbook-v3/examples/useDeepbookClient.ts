@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@ika-io/ika/transactions';
 import { config } from 'dotenv';
 
 import { DeepBookMarketMaker } from './deepbookMarketMaker.js';
@@ -31,11 +31,11 @@ config();
 	const tx = new Transaction();
 
 	// Read only call
-	console.log(await mmClient.checkManagerBalance('MANAGER_1', 'SUI'));
-	console.log(await mmClient.getLevel2Range('SUI_DBUSDC', 0.1, 100, true));
+	console.log(await mmClient.checkManagerBalance('MANAGER_1', 'IKA'));
+	console.log(await mmClient.getLevel2Range('IKA_DBUSDC', 0.1, 100, true));
 
 	// // Balance manager contract call
-	// mmClient.balanceManager.depositIntoManager('MANAGER_1', 'SUI', 10)(tx);
+	// mmClient.balanceManager.depositIntoManager('MANAGER_1', 'IKA', 10)(tx);
 
 	// // Example PTB call
 	// mmClient.placeLimitOrderExample(tx);

@@ -1,0 +1,9 @@
+[package]
+name = "test_functions"
+edition = "2024.beta"
+
+[dependencies]
+Ika = { local = "../../../../ika-framework/packages/ika-framework" }
+
+[addresses]
+test_functions = "0x0"

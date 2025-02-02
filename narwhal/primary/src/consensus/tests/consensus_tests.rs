@@ -6,7 +6,7 @@ use std::{collections::BTreeSet, sync::Arc};
 use fastcrypto::hash::Hash;
 use prometheus::Registry;
 use storage::NodeStorage;
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use telemetry_subscribers::TelemetryGuards;
 use test_utils::latest_protocol_version;
 use test_utils::{temp_dir, CommitteeFixture};

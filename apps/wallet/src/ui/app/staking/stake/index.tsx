@@ -13,7 +13,7 @@ function StakePage() {
 	const unstake = searchParams.get('unstake') === 'true';
 
 	const navigate = useNavigate();
-	const stakingTitle = unstake ? 'Unstake SUI' : 'Stake SUI';
+	const stakingTitle = unstake ? 'Unstake IKA' : 'Stake IKA';
 
 	return (
 		<Overlay

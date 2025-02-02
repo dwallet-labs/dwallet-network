@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 query getOwnedObjects(
-	$owner: SuiAddress!
+	$owner: IkaAddress!
 	$limit: Int
 	$cursor: String
 	$showBcs: Boolean = false
@@ -28,7 +28,7 @@ query getOwnedObjects(
 }
 
 query getObject(
-	$id: SuiAddress!
+	$id: IkaAddress!
 	$showBcs: Boolean = false
 	$showOwner: Boolean = false
 	$showPreviousTransaction: Boolean = false
@@ -43,7 +43,7 @@ query getObject(
 }
 
 query tryGetPastObject(
-	$id: SuiAddress!
+	$id: IkaAddress!
 	$version: UInt53
 	$showBcs: Boolean = false
 	$showOwner: Boolean = false
@@ -63,7 +63,7 @@ query tryGetPastObject(
 }
 
 query multiGetObjects(
-	$ids: [SuiAddress!]!
+	$ids: [IkaAddress!]!
 	$limit: Int
 	$cursor: String
 	$showBcs: Boolean = false

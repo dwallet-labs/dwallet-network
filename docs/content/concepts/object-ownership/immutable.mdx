@@ -2,11 +2,11 @@
 title: Immutable Objects
 ---
 
-Objects in Sui can have different types of ownership, with two broad categories: immutable objects and mutable objects. An immutable object is an object that can't be mutated, transferred, or deleted. Immutable objects have no owner, so anyone can use them.
+Objects in Ika can have different types of ownership, with two broad categories: immutable objects and mutable objects. An immutable object is an object that can't be mutated, transferred, or deleted. Immutable objects have no owner, so anyone can use them.
 
 ## Create immutable object
 
-To convert an object into an immutable object, call the `public_freeze_object` function from the [transfer module](https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/sui-framework/sources/transfer.move):
+To convert an object into an immutable object, call the `public_freeze_object` function from the [transfer module](https://github.com/MystenLabs/sui/blob/main/crates/ika-framework/packages/ika-framework/sources/transfer.move):
 
 ```move
 public native fun public_freeze_object<T: key>(obj: T);
@@ -43,8 +43,8 @@ This function creates a new `ColorObject` and immediately makes it immutable bef
 
 ## Use immutable object
 
-After an object becomes immutable, the rules of who can use this object in Sui Move calls change:
-You can only pass an immutable object as a read-only, immutable reference to Sui Move entry functions as `&T`.
+After an object becomes immutable, the rules of who can use this object in Ika Move calls change:
+You can only pass an immutable object as a read-only, immutable reference to Ika Move entry functions as `&T`.
 
 Anyone can use immutable objects.
 
@@ -118,47 +118,47 @@ As you have learned, the function fails when the `ColorObject` is immutable.
 First, view the objects you own:
 
 ```shell
-export ADDR=`sui client active-address`
+export ADDR=`ika client active-address`
 
-sui client objects $ADDR
+ika client objects $ADDR
 ```
 
-Publish the `ColorObject` code on-chain using the Sui Client CLI:
+Publish the `ColorObject` code on-chain using the Ika Client CLI:
 
 {@include: ../../snippets/info-gas-budget.mdx}
 
 ```shell
-sui client publish $ROOT/examples/move/color_object --gas-budget <GAS-AMOUNT>
+ika client publish $ROOT/examples/move/color_object --gas-budget <GAS-AMOUNT>
 ```
 
 Set the package object ID to the `$PACKAGE` environment variable, if you have it set. Then create a new `ColorObject`:
 
 ```shell
-sui client call --gas-budget <GAS-AMOUNT> --package $PACKAGE --module "color_object" --function "create" --args 0 255 0
+ika client call --gas-budget <GAS-AMOUNT> --package $PACKAGE --module "color_object" --function "create" --args 0 255 0
 ```
 
 Set the newly created object ID to `$OBJECT`. To view the objects in the current active address:
 
 ```shell
-sui client objects $ADDR
+ika client objects $ADDR
 ```
 
 You should see an object with the ID you used for `$OBJECT`. To turn it into an immutable object:
 
 ```shell
-sui client call --gas-budget <GAS-AMOUNT> --package $PACKAGE --module "color_object" --function "freeze_object" --args \"$OBJECT\"
+ika client call --gas-budget <GAS-AMOUNT> --package $PACKAGE --module "color_object" --function "freeze_object" --args \"$OBJECT\"
 ```
 
 View the list of objects again:
 
 ```shell
-sui client objects $ADDR
+ika client objects $ADDR
 ```
 
 `$OBJECT` is no longer listed. It's no longer owned by anyone. You can see that it's now immutable by querying the object information:
 
 ```shell
-sui client object $OBJECT
+ika client object $OBJECT
 ```
 
 The response includes:
@@ -170,7 +170,7 @@ Owner: Immutable
 If you try to mutate it:
 
 ```shell
-sui client call --gas-budget <GAS-AMOUNT> --package $PACKAGE --module "color_object" --function "update" --args \"$OBJECT\" 0 0 0
+ika client call --gas-budget <GAS-AMOUNT> --package $PACKAGE --module "color_object" --function "update" --args \"$OBJECT\" 0 0 0
 ```
 
 The response indicates that you can't pass an immutable object to a mutable argument.

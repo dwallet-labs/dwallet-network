@@ -12,13 +12,13 @@ use executor::Executor;
 use proptest::collection::vec;
 use proptest::test_runner::TestRunner;
 use std::fmt::Debug;
-use sui_protocol_config::ProtocolConfig;
-use sui_types::base_types::{ObjectID, SuiAddress};
-use sui_types::crypto::get_key_pair;
-use sui_types::crypto::AccountKeyPair;
-use sui_types::digests::TransactionDigest;
-use sui_types::object::{MoveObject, Object, Owner, OBJECT_START_VERSION};
-use sui_types::{gas_coin::TOTAL_SUPPLY_MIST, transaction::GasData};
+use ika_protocol_config::ProtocolConfig;
+use ika_types::base_types::{ObjectID, IkaAddress};
+use ika_types::crypto::get_key_pair;
+use ika_types::crypto::AccountKeyPair;
+use ika_types::digests::TransactionDigest;
+use ika_types::object::{MoveObject, Object, Owner, OBJECT_START_VERSION};
+use ika_types::{gas_coin::TOTAL_SUPPLY_NIKA, transaction::GasData};
 
 use proptest::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};
@@ -38,12 +38,12 @@ fn generate_random_gas_data(
     gas_coin_owners: Vec<Owner>, // arbitrarily generated owners, can be shared or immutable or obj-owned too
     owned_by_sender: bool,       // whether to set owned gas coins to be owned by the sender
 ) -> GasDataWithObjects {
-    let (sender, sender_key): (SuiAddress, AccountKeyPair) = get_key_pair();
+    let (sender, sender_key): (IkaAddress, AccountKeyPair) = get_key_pair();
     let mut rng = StdRng::from_seed(seed);
     let mut gas_objects = vec![];
     let mut object_refs = vec![];
 
-    let max_gas_balance = TOTAL_SUPPLY_MIST;
+    let max_gas_balance = TOTAL_SUPPLY_NIKA;
 
     let total_gas_balance = rng.gen_range(0..=max_gas_balance);
     let mut remaining_gas_balance = total_gas_balance;

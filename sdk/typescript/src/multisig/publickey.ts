@@ -14,8 +14,8 @@ import {
 } from '../cryptography/signature-scheme.js';
 import type { SignatureFlag, SignatureScheme } from '../cryptography/signature-scheme.js';
 import { parseSerializedSignature } from '../cryptography/signature.js';
-import type { SuiGraphQLClient } from '../graphql/client.js';
-import { normalizeSuiAddress } from '../utils/sui-types.js';
+import type { IkaGraphQLClient } from '../graphql/client.js';
+import { normalizeIkaAddress } from '../utils/ika-types.js';
 // eslint-disable-next-line import/no-cycle
 import { publicKeyFromRawBytes } from '../verify/index.js';
 import { toZkLoginPublicIdentifier } from '../zklogin/publickey.js';
@@ -76,7 +76,7 @@ export class MultiSigPublicKey extends PublicKey {
 		 *  MultiSig public key as buffer or base-64 encoded string
 		 */
 		value: string | Uint8Array | MultiSigPublicKeyStruct,
-		options: { client?: SuiGraphQLClient } = {},
+		options: { client?: IkaGraphQLClient } = {},
 	) {
 		super();
 
@@ -184,9 +184,9 @@ export class MultiSigPublicKey extends PublicKey {
 	}
 
 	/**
-	 * Return the Sui address associated with this MultiSig public key
+	 * Return the Ika address associated with this MultiSig public key
 	 */
-	override toSuiAddress(): string {
+	override toIkaAddress(): string {
 		// max length = 1 flag byte + (max pk size + max weight size (u8)) * max signer size + 2 threshold bytes (u16)
 		const maxLength = 1 + (64 + 1) * MAX_SIGNER_IN_MULTISIG + 2;
 		const tmp = new Uint8Array(maxLength);
@@ -196,16 +196,16 @@ export class MultiSigPublicKey extends PublicKey {
 		// The initial value 3 ensures that following data will be after the flag byte and threshold bytes
 		let i = 3;
 		for (const { publicKey, weight } of this.publicKeys) {
-			const bytes = publicKey.toSuiBytes();
+			const bytes = publicKey.toIkaBytes();
 			tmp.set(bytes, i);
 			i += bytes.length;
 			tmp.set([weight], i++);
 		}
-		return normalizeSuiAddress(bytesToHex(blake2b(tmp.slice(0, i), { dkLen: 32 })));
+		return normalizeIkaAddress(bytesToHex(blake2b(tmp.slice(0, i), { dkLen: 32 })));
 	}
 
 	/**
-	 * Return the Sui address associated with this MultiSig public key
+	 * Return the Ika address associated with this MultiSig public key
 	 */
 	flag(): number {
 		return SIGNATURE_SCHEME_TO_FLAG['MultiSig'];
@@ -315,7 +315,7 @@ export class MultiSigPublicKey extends PublicKey {
  */
 export function parsePartialSignatures(
 	multisig: MultiSigStruct,
-	options: { client?: SuiGraphQLClient } = {},
+	options: { client?: IkaGraphQLClient } = {},
 ): ParsedPartialMultiSigSignature[] {
 	let res: ParsedPartialMultiSigSignature[] = new Array(multisig.sigs.length);
 	for (let i = 0; i < multisig.sigs.length; i++) {

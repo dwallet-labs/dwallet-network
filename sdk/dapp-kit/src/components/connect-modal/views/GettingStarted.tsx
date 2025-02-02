@@ -9,10 +9,10 @@ import * as styles from './GettingStarted.css.js';
 export function GettingStarted() {
 	return (
 		<div className={styles.container}>
-			<Heading as="h2">Get Started with Sui</Heading>
+			<Heading as="h2">Get Started with Ika</Heading>
 			<div className={styles.content}>
-				<InfoSection title="Install the Sui Wallet Extension">
-					We recommend pinning Sui Wallet to your taskbar for quicker access.
+				<InfoSection title="Install the Ika Wallet Extension">
+					We recommend pinning Ika Wallet to your taskbar for quicker access.
 				</InfoSection>
 				<InfoSection title="Create or Import a Wallet">
 					Be sure to back up your wallet using a secure method. Never share your secret phrase with
@@ -24,7 +24,7 @@ export function GettingStarted() {
 				<div className={styles.installButtonContainer}>
 					<Button variant="outline" asChild>
 						<a
-							href="https://chrome.google.com/webstore/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil"
+							href="https://chrome.google.com/webstore/detail/ika-wallet/opcgpfmipidbgpenhmajoajpbobppdil"
 							target="_blank"
 							rel="noreferrer"
 						>

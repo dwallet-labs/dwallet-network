@@ -5,7 +5,7 @@ const path = require("path");
 
 const injectCode = (context, opts) => {
   return {
-    name: "sui-inject-code-plugin",
+    name: "ika-inject-code-plugin",
 
     configureWebpack(config, _isServer, _utils) {
       const pluginContentDocsPath = path.join(

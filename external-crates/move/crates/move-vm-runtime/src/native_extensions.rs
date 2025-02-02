@@ -11,7 +11,7 @@ use std::{any::TypeId, collections::HashMap};
 /// The implementation uses the crate `better_any` which implements a version of the `Any`
 /// type, called `Tid<`a>`, which allows for up to one lifetime parameter. This
 /// avoids that extensions need to have `'static` lifetime, which `Any` requires. In order to make a
-/// struct suitable to be a 'Tid', use `#[derive(Tid)]` in the struct declaration. (See also
+/// struct ikatable to be a 'Tid', use `#[derive(Tid)]` in the struct declaration. (See also
 /// tests at the end of this module.)
 #[derive(Default)]
 pub struct NativeContextExtensions<'a> {

@@ -64,7 +64,7 @@ function MenuList() {
 					weight="semibold"
 				/>
 				<Text variant="bodySmall" weight="medium" color="steel">
-					On Sui Wallet version v{version}
+					On Ika Wallet version v{version}
 				</Text>
 			</div>
 		</MenuLayout>

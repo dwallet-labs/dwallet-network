@@ -55,7 +55,7 @@ use std::{
     time::Duration,
 };
 use storage::{CertificateStore, PayloadStore, ProposerStore, VoteDigestStore};
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use tokio::{sync::oneshot, time::Instant};
 use tokio::{sync::watch, task::JoinHandle};
 use tower::ServiceBuilder;

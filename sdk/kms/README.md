@@ -1,6 +1,6 @@
-# Sui KMS Signers
+# Ika KMS Signers
 
-The Sui KMS Signers package provides a set of tools for securely signing transactions using Key
+The Ika KMS Signers package provides a set of tools for securely signing transactions using Key
 Management Services (KMS) like AWS KMS.
 
 ## Table of Contents
@@ -14,7 +14,7 @@ Management Services (KMS) like AWS KMS.
 
 ## AWS KMS Signer
 
-The AWS KMS Signer allows you to leverage AWS's Key Management Service to sign Sui transactions.
+The AWS KMS Signer allows you to leverage AWS's Key Management Service to sign Ika transactions.
 
 ### Usage
 

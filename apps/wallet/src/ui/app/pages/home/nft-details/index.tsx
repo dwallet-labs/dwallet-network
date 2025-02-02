@@ -18,7 +18,7 @@ import PageTitle from '_src/ui/app/shared/PageTitle';
 import { Text } from '_src/ui/app/shared/text';
 import { useGetKioskContents } from '@mysten/core';
 import { ArrowRight16, ArrowUpRight12 } from '@mysten/icons';
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@ika-io/ika/utils';
 import cl from 'clsx';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -120,13 +120,13 @@ function NFTDetailsPage() {
 												label="Owner"
 												value={
 													<Link
-														color="suiDark"
+														color="ikaDark"
 														weight="medium"
 														size="body"
 														mono
 														href={ownerExplorerLink}
 														text={formatAddress(ownerAddress)}
-														title="View on Sui Explorer"
+														title="View on Ika Explorer"
 													/>
 												}
 											/>
@@ -136,13 +136,13 @@ function NFTDetailsPage() {
 											value={
 												nftId ? (
 													<Link
-														color="suiDark"
+														color="ikaDark"
 														weight="medium"
 														size="body"
 														mono
 														href={objectExplorerLink || ''}
 														text={formatAddress(nftId)}
-														title="View on Sui Explorer"
+														title="View on Ika Explorer"
 													/>
 												) : null
 											}
@@ -192,13 +192,13 @@ function NFTDetailsPage() {
 											<Button
 												after={<ArrowUpRight12 />}
 												variant="outline"
-												href="https://docs.sui.io/build/sui-kiosk"
+												href="https://docs.ika.io/build/ika-kiosk"
 												text="Learn more about Kiosks"
 											/>
 											<Button
 												after={<ArrowUpRight12 />}
 												variant="outline"
-												href={`https://sui.hyperspace.xyz/wallet/sui/${accountAddress}?tokenAddress=${nftId}`}
+												href={`https://ika.hyperspace.xyz/wallet/ika/${accountAddress}?tokenAddress=${nftId}`}
 												text="Marketplace"
 											/>
 										</div>

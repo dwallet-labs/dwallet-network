@@ -1759,7 +1759,7 @@ pub fn get_compiled_pkg(
     let build_config = move_package::BuildConfig {
         test_mode: true,
         install_dir: Some(tempdir().unwrap().path().to_path_buf()),
-        default_flavor: Some(Flavor::Sui),
+        default_flavor: Some(Flavor::Ika),
         lint_flag: lint.into(),
         skip_fetch_latest_git_deps: has_precompiled_deps(pkg_path, pkg_dependencies.clone()),
         ..Default::default()

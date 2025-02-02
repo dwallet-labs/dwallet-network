@@ -10,13 +10,13 @@ export default function ProtocolConfig() {
   const data = {
     jsonrpc: "2.0",
     id: 1,
-    method: "sui_getProtocolConfig",
+    method: "ika_getProtocolConfig",
     params: [],
   };
   const urls = [
-    "https://fullnode.mainnet.sui.io:443",
-    "https://fullnode.testnet.sui.io:443",
-    "https://fullnode.devnet.sui.io:443",
+    "https://fullnode.mainnet.ika.io:443",
+    "https://fullnode.testnet.ika.io:443",
+    "https://fullnode.devnet.ika.io:443",
   ];
   const [results, setResults] = useState({
     mainnet: null,
@@ -102,7 +102,7 @@ export default function ProtocolConfig() {
   }
 
   return (
-    <Tabs groupId="sui-network">
+    <Tabs groupId="ika-network">
       <TabItem value="mainnet" label="Mainnet">
         <DisplayResults results={results.mainnet} />
       </TabItem>

@@ -16,7 +16,7 @@ const CompNav = (props) => {
           <div key={component}>
             <Link href={`#${component.toLowerCase()}`}
             data-to-scrollspy-id={`${component.toLowerCase()}`}
-            className="my-1 pl-4 block text-sui-gray-95 dark:text-sui-grey-35 hover:no-underline dark:hover:text-sui-blue">
+            className="my-1 pl-4 block text-ika-gray-95 dark:text-ika-grey-35 hover:no-underline dark:hover:text-ika-blue">
               {component}
             </Link>
             </div>

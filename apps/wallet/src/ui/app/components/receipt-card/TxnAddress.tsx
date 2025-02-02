@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useResolveSuiNSName } from '_app/hooks/useAppResolveSuinsName';
+import { useResolveIkaNSName } from '_app/hooks/useAppResolveIkansName';
 import { Text } from '_src/ui/app/shared/text';
 
 import { TxnAddressLink } from './TxnAddressLink';
@@ -12,7 +12,7 @@ type TxnAddressProps = {
 };
 
 export function TxnAddress({ address, label }: TxnAddressProps) {
-	const domainName = useResolveSuiNSName(address);
+	const domainName = useResolveIkaNSName(address);
 
 	return (
 		<div className="flex justify-between w-full items-center py-3.5 first:pt-0">

@@ -3,13 +3,13 @@
 
 #[test_only]
 module elgamal::tests {
-    use sui::bls12381::{Self, Scalar, G1};
-    use sui::group_ops::Element;
-    use sui::random;
+    use ika::bls12381::{Self, Scalar, G1};
+    use ika::group_ops::Element;
+    use ika::random;
 
     use elgamal::example;
 
-    use sui::test_utils::assert_eq;
+    use ika::test_utils::assert_eq;
 
     #[test]
     fun test_elgamal_equality() {

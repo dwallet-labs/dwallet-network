@@ -4,10 +4,10 @@
 module bridged_ka::ka {
     use std::option;
 
-    use sui::coin;
-    use sui::transfer;
-    use sui::tx_context;
-    use sui::tx_context::TxContext;
+    use ika::coin;
+    use ika::transfer;
+    use ika::tx_context;
+    use ika::tx_context::TxContext;
 
     struct KA has drop {}
 
@@ -19,7 +19,7 @@ module bridged_ka::ka {
             DECIMAL,
             b"Ka",
             b"Ka Coin",
-            b"Ka, the opposite of Sui",
+            b"Ka, the opposite of Ika",
             option::none(),
             ctx
         );

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { bcs } from '../bcs/index.js';
-import { normalizeSuiAddress } from '../utils/sui-types.js';
+import { normalizeIkaAddress } from '../utils/ika-types.js';
 import type { OpenMoveTypeSignature } from './data/internal.js';
 import type { TransactionPlugin } from './json-rpc-resolver.js';
 
@@ -76,12 +76,12 @@ export abstract class AsyncCache {
 	}
 
 	async getMoveFunctionDefinition(ref: { package: string; module: string; function: string }) {
-		const functionName = `${normalizeSuiAddress(ref.package)}::${ref.module}::${ref.function}`;
+		const functionName = `${normalizeIkaAddress(ref.package)}::${ref.module}::${ref.function}`;
 		return this.get('MoveFunction', functionName);
 	}
 
 	async addMoveFunctionDefinition(functionEntry: MoveFunctionCacheEntry) {
-		const pkg = normalizeSuiAddress(functionEntry.package);
+		const pkg = normalizeIkaAddress(functionEntry.package);
 		const functionName = `${pkg}::${functionEntry.module}::${functionEntry.function}`;
 		const entry = {
 			...functionEntry,
@@ -94,7 +94,7 @@ export abstract class AsyncCache {
 	}
 
 	async deleteMoveFunctionDefinition(ref: { package: string; module: string; function: string }) {
-		const functionName = `${normalizeSuiAddress(ref.package)}::${ref.module}::${ref.function}`;
+		const functionName = `${normalizeIkaAddress(ref.package)}::${ref.module}::${ref.function}`;
 		await this.delete('MoveFunction', functionName);
 	}
 

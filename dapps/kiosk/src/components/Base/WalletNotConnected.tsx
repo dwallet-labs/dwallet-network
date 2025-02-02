@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { SuiConnectButton } from './SuiConnectButton';
+import { IkaConnectButton } from './IkaConnectButton';
 
 export function WalletNotConnected() {
 	return (
@@ -15,7 +15,7 @@ export function WalletNotConnected() {
 							purchase from other kiosks.
 						</p>
 					</div>
-					<SuiConnectButton />
+					<IkaConnectButton />
 				</div>
 			</div>
 		</div>

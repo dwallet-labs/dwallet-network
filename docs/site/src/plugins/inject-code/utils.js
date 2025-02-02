@@ -94,8 +94,8 @@ exports.processOptions = (text, options) => {
     )
     .replace(/^\s*\/\/\s*docs::\/?.*\r?$\n?/gm, "")
     .replace(
-      /sui\s?=\s?{\s?local\s?=.*sui-framework.*/i,
-      'Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }',
+      /ika\s?=\s?{\s?local\s?=.*ika-framework.*/i,
+      'Ika = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/ika-framework/packages/ika-framework", rev = "framework/testnet" }',
     );
   processed = removeComments(processed, options);
   processed = removeTests(processed, options);

@@ -86,7 +86,7 @@ impl LazyNarwhalClient {
 
     pub async fn get(&self) -> Arc<ArcSwap<LocalNarwhalClient>> {
         // Narwhal may not have started and created LocalNarwhalClient, so retry in a loop.
-        // Retries should only happen on Sui process start.
+        // Retries should only happen on Ika process start.
         const NARWHAL_WORKER_START_TIMEOUT: Duration = Duration::from_secs(30);
         if let Ok(client) = timeout(NARWHAL_WORKER_START_TIMEOUT, async {
             loop {

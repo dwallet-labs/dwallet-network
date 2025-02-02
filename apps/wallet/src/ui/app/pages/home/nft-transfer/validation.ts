@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { createSuiAddressValidation } from '_components/address-input/validation';
-import { type SuiClient } from '@mysten/sui/client';
+import { createIkaAddressValidation } from '_components/address-input/validation';
+import { type IkaClient } from '@ika-io/ika/client';
 import * as Yup from 'yup';
 
 export function createValidationSchema(
-	client: SuiClient,
-	suiNSEnabled: boolean,
+	client: IkaClient,
+	ikaNSEnabled: boolean,
 	senderAddress: string,
 	objectId: string,
 ) {
 	return Yup.object({
-		to: createSuiAddressValidation(client, suiNSEnabled)
+		to: createIkaAddressValidation(client, ikaNSEnabled)
 			.test(
 				'sender-address',
 				// eslint-disable-next-line no-template-curly-in-string

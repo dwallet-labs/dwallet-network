@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-import { coinWithBalance } from '@mysten/sui/transactions';
-import type { Transaction } from '@mysten/sui/transactions';
+import { coinWithBalance } from '@ika-io/ika/transactions';
+import type { Transaction } from '@ika-io/ika/transactions';
 
 import type { DeepBookConfig } from '../utils/config.js';
 

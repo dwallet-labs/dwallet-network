@@ -65,25 +65,25 @@ async function findPkgRoot(): Promise<string | undefined> {
     return undefined;
 }
 
-async function suiMoveCmd(context: Readonly<Context>, cmd: string): Promise<void> {
+async function ikaMoveCmd(context: Readonly<Context>, cmd: string): Promise<void> {
     const version = childProcess.spawnSync(
-        context.configuration.suiPath, ['--version'], { encoding: 'utf8' },
+        context.configuration.ikaPath, ['--version'], { encoding: 'utf8' },
     );
     if (version.stdout) {
         const pkgRoot = await findPkgRoot();
         if (pkgRoot !== undefined) {
-            const terminalName = 'sui move';
+            const terminalName = 'ika move';
             let terminal = vscode.window.terminals.find(t => t.name === terminalName);
             if (!terminal) {
                 terminal = vscode.window.createTerminal(terminalName);
             }
             terminal.show(true);
             terminal.sendText('cd ' + pkgRoot, true);
-            terminal.sendText(`sui move ${cmd}`, true);
+            terminal.sendText(`ika move ${cmd}`, true);
         }
     } else {
         await vscode.window.showErrorMessage(
-            `A problem occurred when executing the Sui command: '${context.configuration.suiPath}'`,
+            `A problem occurred when executing the Ika command: '${context.configuration.ikaPath}'`,
         );
     }
 }
@@ -92,14 +92,14 @@ async function suiMoveCmd(context: Readonly<Context>, cmd: string): Promise<void
  * An extension command that that builds the current Move project.
  */
 async function buildProject(context: Readonly<Context>): Promise<void> {
-    return suiMoveCmd(context, 'build');
+    return ikaMoveCmd(context, 'build');
 }
 
 /**
  * An extension command that that builds the current Move project.
  */
 async function testProject(context: Readonly<Context>): Promise<void> {
-    return suiMoveCmd(context, 'test');
+    return ikaMoveCmd(context, 'test');
 }
 
 /**

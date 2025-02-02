@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 /// @title BridgeUtils
-/// @notice This library defines the message format and constants for the Sui native bridge. It also
+/// @notice This library defines the message format and constants for the Ika native bridge. It also
 /// provides functions to encode and decode bridge messages and their payloads.
 /// @dev This library only utilizes internal functions to enable upgradeability via the OpenZeppelin
 /// UUPS proxy pattern (external libraries are not supported).
@@ -63,13 +63,13 @@ library BridgeUtils {
     uint32 public constant ADD_EVM_TOKENS_STAKE_REQUIRED = 5001;
 
     // token Ids
-    uint8 public constant SUI = 0;
+    uint8 public constant IKA = 0;
     uint8 public constant BTC = 1;
     uint8 public constant ETH = 2;
     uint8 public constant USDC = 3;
     uint8 public constant USDT = 4;
 
-    string public constant MESSAGE_PREFIX = "SUI_BRIDGE_MESSAGE";
+    string public constant MESSAGE_PREFIX = "IKA_BRIDGE_MESSAGE";
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
@@ -117,17 +117,17 @@ library BridgeUtils {
         }
     }
 
-    /// @notice Converts the provided token amount to the Sui decimal adjusted amount.
+    /// @notice Converts the provided token amount to the Ika decimal adjusted amount.
     /// @param erc20Decimal The erc20 decimal value for the token.
-    /// @param suiDecimal The sui decimal value for the token.
-    /// @param amount The ERC20 amount of the tokens to convert to Sui.
-    /// @return Sui converted amount.
-    function convertERC20ToSuiDecimal(uint8 erc20Decimal, uint8 suiDecimal, uint256 amount)
+    /// @param ikaDecimal The ika decimal value for the token.
+    /// @param amount The ERC20 amount of the tokens to convert to Ika.
+    /// @return Ika converted amount.
+    function convertERC20ToIkaDecimal(uint8 erc20Decimal, uint8 ikaDecimal, uint256 amount)
         internal
         pure
         returns (uint64)
     {
-        if (erc20Decimal == suiDecimal) {
+        if (erc20Decimal == ikaDecimal) {
             // ensure provided amount is greater than 0
             require(amount > 0, "BridgeUtils: Insufficient amount provided");
             // Ensure converted amount fits within uint64
@@ -135,10 +135,10 @@ library BridgeUtils {
             return uint64(amount);
         }
 
-        require(erc20Decimal > suiDecimal, "BridgeUtils: Invalid Sui decimal");
+        require(erc20Decimal > ikaDecimal, "BridgeUtils: Invalid Ika decimal");
 
         // Difference in decimal places
-        uint256 factor = 10 ** (erc20Decimal - suiDecimal);
+        uint256 factor = 10 ** (erc20Decimal - ikaDecimal);
         amount = amount / factor;
 
         // Ensure the converted amount fits within uint64
@@ -150,24 +150,24 @@ library BridgeUtils {
         return uint64(amount);
     }
 
-    /// @notice Converts the provided Sui decimal adjusted amount to the ERC20 token amount.
+    /// @notice Converts the provided Ika decimal adjusted amount to the ERC20 token amount.
     /// @param erc20Decimal The erc20 decimal value for the token.
-    /// @param suiDecimal The sui decimal value for the token.
-    /// @param amount The Sui amount of the tokens to convert to ERC20.
+    /// @param ikaDecimal The ika decimal value for the token.
+    /// @param amount The Ika amount of the tokens to convert to ERC20.
     /// @return ERC20 converted amount.
-    function convertSuiToERC20Decimal(uint8 erc20Decimal, uint8 suiDecimal, uint64 amount)
+    function convertIkaToERC20Decimal(uint8 erc20Decimal, uint8 ikaDecimal, uint64 amount)
         internal
         pure
         returns (uint256)
     {
-        if (suiDecimal == erc20Decimal) {
+        if (ikaDecimal == erc20Decimal) {
             return uint256(amount);
         }
 
-        require(erc20Decimal > suiDecimal, "BridgeUtils: Invalid Sui decimal");
+        require(erc20Decimal > ikaDecimal, "BridgeUtils: Invalid Ika decimal");
 
         // Difference in decimal places
-        uint256 factor = 10 ** (erc20Decimal - suiDecimal);
+        uint256 factor = 10 ** (erc20Decimal - ikaDecimal);
         return uint256(amount * factor);
     }
 
@@ -175,7 +175,7 @@ library BridgeUtils {
     /// @dev The function will revert if the payload length is invalid.
     ///     TokenTransfer payload is 64 bytes.
     ///     byte 0       : sender address length
-    ///     bytes 1-32   : sender address (as we only support Sui now, it has to be 32 bytes long)
+    ///     bytes 1-32   : sender address (as we only support Ika now, it has to be 32 bytes long)
     ///     bytes 33     : target chain id
     ///     byte 34      : target address length
     ///     bytes 35-54  : target address
@@ -194,7 +194,7 @@ library BridgeUtils {
 
         require(
             senderAddressLength == 32,
-            "BridgeUtils: Invalid sender address length, Sui address must be 32 bytes"
+            "BridgeUtils: Invalid sender address length, Ika address must be 32 bytes"
         );
 
         // used to offset already read bytes
@@ -382,15 +382,15 @@ library BridgeUtils {
     ///     byte 2 -> n      : token IDs
     ///     byte n + 1       : number of addresses
     ///     bytes n + 2 -> m : addresses
-    ///     byte m + 1       : number of sui decimals
-    ///     bytes m + 2 -> i : sui decimals
+    ///     byte m + 1       : number of ika decimals
+    ///     bytes m + 2 -> i : ika decimals
     ///     byte i + 1       : number of prices
     ///     bytes i + 2 -> j : prices (uint64)
     /// @param _payload The payload to be decoded.
     /// @return native whether the token is native to the chain.
     /// @return tokenIDs the token ID to be added.
     /// @return tokenAddresses the address of the token to be added.
-    /// @return suiDecimals the Sui decimal places of the tokens to be added.
+    /// @return ikaDecimals the Ika decimal places of the tokens to be added.
     /// @return tokenPrices the price of the tokens to be added.
     function decodeAddTokensPayload(bytes memory _payload)
         internal
@@ -399,7 +399,7 @@ library BridgeUtils {
             bool native,
             uint8[] memory tokenIDs,
             address[] memory tokenAddresses,
-            uint8[] memory suiDecimals,
+            uint8[] memory ikaDecimals,
             uint64[] memory tokenPrices
         )
     {
@@ -429,9 +429,9 @@ library BridgeUtils {
         }
 
         uint8 decimalCount = uint8(_payload[offset++]);
-        suiDecimals = new uint8[](decimalCount);
+        ikaDecimals = new uint8[](decimalCount);
         for (uint8 i; i < decimalCount; i++) {
-            suiDecimals[i] = uint8(_payload[offset++]);
+            ikaDecimals[i] = uint8(_payload[offset++]);
         }
 
         uint8 priceCount = uint8(_payload[offset++]);

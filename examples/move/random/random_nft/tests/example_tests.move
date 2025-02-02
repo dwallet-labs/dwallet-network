@@ -3,9 +3,9 @@
 
 #[test_only]
 module random_nft::tests {
-    use sui::test_scenario as ts;
+    use ika::test_scenario as ts;
     use std::string;
-    use sui::random::{Self, Random};
+    use ika::random::{Self, Random};
 
     use random_nft::example;
 

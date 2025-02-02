@@ -1,29 +1,29 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { SuiMoveNormalizedType } from '../client/index.js';
-import { normalizeSuiAddress } from '../utils/sui-types.js';
+import type { IkaMoveNormalizedType } from '../client/index.js';
+import { normalizeIkaAddress } from '../utils/ika-types.js';
 import type { CallArg } from './data/internal.js';
 
 export function extractMutableReference(
-	normalizedType: SuiMoveNormalizedType,
-): SuiMoveNormalizedType | undefined {
+	normalizedType: IkaMoveNormalizedType,
+): IkaMoveNormalizedType | undefined {
 	return typeof normalizedType === 'object' && 'MutableReference' in normalizedType
 		? normalizedType.MutableReference
 		: undefined;
 }
 
 export function extractReference(
-	normalizedType: SuiMoveNormalizedType,
-): SuiMoveNormalizedType | undefined {
+	normalizedType: IkaMoveNormalizedType,
+): IkaMoveNormalizedType | undefined {
 	return typeof normalizedType === 'object' && 'Reference' in normalizedType
 		? normalizedType.Reference
 		: undefined;
 }
 
 export function extractStructTag(
-	normalizedType: SuiMoveNormalizedType,
-): Extract<SuiMoveNormalizedType, { Struct: unknown }> | undefined {
+	normalizedType: IkaMoveNormalizedType,
+): Extract<IkaMoveNormalizedType, { Struct: unknown }> | undefined {
 	if (typeof normalizedType === 'object' && 'Struct' in normalizedType) {
 		return normalizedType;
 	}
@@ -43,23 +43,23 @@ export function extractStructTag(
 
 export function getIdFromCallArg(arg: string | CallArg) {
 	if (typeof arg === 'string') {
-		return normalizeSuiAddress(arg);
+		return normalizeIkaAddress(arg);
 	}
 
 	if (arg.Object) {
 		if (arg.Object.ImmOrOwnedObject) {
-			return normalizeSuiAddress(arg.Object.ImmOrOwnedObject.objectId);
+			return normalizeIkaAddress(arg.Object.ImmOrOwnedObject.objectId);
 		}
 
 		if (arg.Object.Receiving) {
-			return normalizeSuiAddress(arg.Object.Receiving.objectId);
+			return normalizeIkaAddress(arg.Object.Receiving.objectId);
 		}
 
-		return normalizeSuiAddress(arg.Object.SharedObject.objectId);
+		return normalizeIkaAddress(arg.Object.SharedObject.objectId);
 	}
 
 	if (arg.UnresolvedObject) {
-		return normalizeSuiAddress(arg.UnresolvedObject.objectId);
+		return normalizeIkaAddress(arg.UnresolvedObject.objectId);
 	}
 
 	return undefined;

@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useResolveSuiNSName } from '_app/hooks/useAppResolveSuinsName';
+import { useResolveIkaNSName } from '_app/hooks/useAppResolveIkansName';
 import { AccountIcon } from '_components/accounts/AccountIcon';
 import { LockUnlockButton } from '_components/accounts/LockUnlockButton';
 import { useUnlockAccount } from '_components/accounts/UnlockAccountContext';
 import { type SerializedUIAccount } from '_src/background/accounts/Account';
 import { CheckFill16 } from '@mysten/icons';
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@ika-io/ika/utils';
 import clsx from 'clsx';
 
 interface Props {
@@ -18,7 +18,7 @@ interface Props {
 }
 
 export function AccountItemApproveConnection({ account, selected, disabled, showLock }: Props) {
-	const domainName = useResolveSuiNSName(account?.address);
+	const domainName = useResolveIkaNSName(account?.address);
 	const accountName = account?.nickname ?? domainName ?? formatAddress(account?.address || '');
 	const { unlockAccount, lockAccount, isPending, accountToUnlock } = useUnlockAccount();
 

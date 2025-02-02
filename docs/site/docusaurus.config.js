@@ -13,13 +13,13 @@ require("dotenv").config();
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: "Sui Documentation",
+  title: "Ika Documentation",
   tagline:
-    "Sui is a next-generation smart contract platform with high throughput, low latency, and an asset-oriented programming model powered by Move",
+    "Ika is a next-generation smart contract platform with high throughput, low latency, and an asset-oriented programming model powered by Move",
   favicon: "/img/favicon.ico",
 
   // Set the production url of your site here
-  url: "https://docs.sui.io",
+  url: "https://docs.ika.io",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: "/",
@@ -65,9 +65,9 @@ const config = {
     [
       "@graphql-markdown/docusaurus",
       {
-        schema: "../../crates/sui-graphql-rpc/schema.graphql",
+        schema: "../../crates/ika-graphql-rpc/schema.graphql",
         rootPath: "../content", // docs will be generated under rootPath/baseURL
-        baseURL: "references/sui-api/sui-graphql/reference",
+        baseURL: "references/ika-api/ika-graphql/reference",
         loaders: {
           GraphQLFileLoader: "@graphql-tools/graphql-file-loader",
         },
@@ -169,7 +169,7 @@ const config = {
         // Public API key: it is safe to commit it
         apiKey: "7f24db6c4ec06d6905592deb228f4460",
 
-        indexName: "sui",
+        indexName: "ika",
 
         // Optional: see doc section below
         contextualSearch: false,
@@ -191,17 +191,17 @@ const config = {
 
         //... other Algolia params
       },
-      image: "img/sui-doc-og.png",
+      image: "img/ika-doc-og.png",
       docs: {
         sidebar: {
           autoCollapseCategories: false,
         },
       },
       navbar: {
-        title: "Sui Documentation",
+        title: "Ika Documentation",
         logo: {
-          alt: "Sui Docs Logo",
-          src: "img/sui-logo.svg",
+          alt: "Ika Docs Logo",
+          src: "img/ika-logo.svg",
         },
         items: [
           {
@@ -236,12 +236,12 @@ const config = {
       },
       footer: {
         logo: {
-          alt: "Sui Logo",
-          src: "img/sui-logo-footer.svg",
-          href: "https://sui.io",
+          alt: "Ika Logo",
+          src: "img/ika-logo-footer.svg",
+          href: "https://ika.io",
         },
         style: "dark",
-        copyright: `© ${new Date().getFullYear()} Sui Foundation | Documentation distributed under <a href="https://github.com/MystenLabs/sui/blob/main/docs/site/LICENSE">CC BY 4.0</a>`,
+        copyright: `© ${new Date().getFullYear()} Ika Foundation | Documentation distributed under <a href="https://github.com/MystenLabs/sui/blob/main/docs/site/LICENSE">CC BY 4.0</a>`,
       },
       prism: {
         theme: themes.github,

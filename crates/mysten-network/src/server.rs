@@ -360,8 +360,8 @@ impl tonic::transport::server::Connected for TcpOrTlsStream {
     }
 }
 
-/// TLS server name to use for the public Sui validator interface.
-pub const SUI_TLS_SERVER_NAME: &str = "sui";
+/// TLS server name to use for the public Ika validator interface.
+pub const IKA_TLS_SERVER_NAME: &str = "ika";
 
 pub struct Server {
     server: BoxFuture<(), tonic::transport::Error>,

@@ -4,8 +4,8 @@
 import ExplorerLink from '_src/ui/app/components/explorer-link';
 import { ExplorerLinkType } from '_src/ui/app/components/explorer-link/ExplorerLinkType';
 import { Text } from '_src/ui/app/shared/text';
-import { type TransactionInput } from '@mysten/sui/transactions';
-import { formatAddress } from '@mysten/sui/utils';
+import { type TransactionInput } from '@ika-io/ika/transactions';
+import { formatAddress } from '@ika-io/ika/utils';
 
 interface InputProps {
 	input: TransactionInput;

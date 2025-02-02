@@ -4,19 +4,19 @@
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use std::path::PathBuf;
 use std::time::Duration;
-use sui_config::local_ip_utils::get_available_port;
-use sui_indexer::tempdb::TempDb;
-use sui_indexer::test_utils::{
+use ika_config::local_ip_utils::get_available_port;
+use ika_indexer::tempdb::TempDb;
+use ika_indexer::test_utils::{
     start_indexer_jsonrpc_for_testing, start_indexer_writer_for_testing,
 };
-use sui_json_rpc_api::ReadApiClient;
-use sui_sdk::{SuiClient, SuiClientBuilder};
+use ika_json_rpc_api::ReadApiClient;
+use ika_sdk::{IkaClient, IkaClientBuilder};
 use tempfile::TempDir;
 use tokio::time::sleep;
 
 pub(crate) struct IndexerHandle {
     pub(crate) rpc_client: HttpClient,
-    pub(crate) sui_client: SuiClient,
+    pub(crate) ika_client: IkaClient,
     pub(crate) rpc_url: String,
     #[allow(unused)]
     cancellation_tokens: Vec<tokio_util::sync::DropGuard>,
@@ -68,14 +68,14 @@ pub(crate) async fn setup_indexer_backed_rpc(
         sleep(Duration::from_millis(100)).await;
     }
 
-    let sui_client = SuiClientBuilder::default()
+    let ika_client = IkaClientBuilder::default()
         .build(&rpc_address)
         .await
         .unwrap();
 
     IndexerHandle {
         rpc_client,
-        sui_client,
+        ika_client,
         rpc_url: rpc_address.clone(),
         database,
         data_ingestion_dir: temp_data_ingestion_dir,

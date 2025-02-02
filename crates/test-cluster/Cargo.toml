@@ -20,30 +20,30 @@ tokio = { workspace = true, features = ["full", "tracing", "test-util"] }
 tokio-util.workspace = true
 rand.workspace = true
 tempfile.workspace = true
-sui-config.workspace = true
-sui-core = { workspace = true, features = ["test-utils"] }
-sui-framework.workspace = true
-sui-swarm-config.workspace = true
-sui-indexer.workspace = true
-sui-json-rpc.workspace = true
-sui-json-rpc-types.workspace = true
-sui-json-rpc-api.workspace = true
-sui-node.workspace = true
-sui-pg-temp-db.workspace = true
-sui-protocol-config.workspace = true
-sui-swarm.workspace = true
-sui-types = { workspace = true, features = ["test-utils"] }
+ika-config.workspace = true
+ika-core = { workspace = true, features = ["test-utils"] }
+ika-framework.workspace = true
+ika-swarm-config.workspace = true
+ika-indexer.workspace = true
+ika-json-rpc.workspace = true
+ika-json-rpc-types.workspace = true
+ika-json-rpc-api.workspace = true
+ika-node.workspace = true
+ika-pg-temp-db.workspace = true
+ika-protocol-config.workspace = true
+ika-swarm.workspace = true
+ika-types = { workspace = true, features = ["test-utils"] }
 prometheus.workspace = true
-sui-keys.workspace = true
-sui-sdk.workspace = true
-sui-test-transaction-builder.workspace = true
+ika-keys.workspace = true
+ika-sdk.workspace = true
+ika-test-transaction-builder.workspace = true
 
 move-binary-format.workspace = true
 
 [target.'cfg(msim)'.dependencies]
-sui-simulator.workspace = true
+ika-simulator.workspace = true
 fastcrypto-zkp.workspace = true
 
 [dev-dependencies]
-sui-json-rpc-api.workspace = true
-sui-macros.workspace = true
+ika-json-rpc-api.workspace = true
+ika-macros.workspace = true

@@ -1,5 +1,5 @@
 {
-	"name": "sui-monorepo",
+	"name": "ika-monorepo",
 	"private": true,
 	"license": "Apache-2.0",
 	"scripts": {
@@ -9,7 +9,7 @@
 		"wallet": "turbo --filter ./apps/wallet",
 		"sdk": "turbo --filter ./sdk/typescript",
 		"bcs": "turbo --filter ./sdk/bcs",
-		"changeset-version": "pnpm changeset version && pnpm --filter @mysten/sui codegen:version",
+		"changeset-version": "pnpm changeset version && pnpm --filter @ika-io/ika codegen:version",
 		"prettier:check": "prettier -c --ignore-unknown .",
 		"prettier:fix": "prettier -w --ignore-unknown .",
 		"prettier:fix:watch": "onchange '**' -i -f add -f change -j 5 -- prettier -w --ignore-unknown {{file}}",

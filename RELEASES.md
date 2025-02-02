@@ -1,10 +1,10 @@
-# Sui Releases
+# Ika Releases
 https://github.com/MystenLabs/sui/releases
 
 ## Past Releases
 * 23-05-17: [1.1.0](https://github.com/MystenLabs/sui/releases/tag/mainnet-v1.1.0)
 * 23-05-08: [1.1.0](https://github.com/MystenLabs/sui/releases/tag/devnet-v1.1.0)
-* 23-05-02: [1.0.0](https://github.com/MystenLabs/sui/releases/tag/sui-v1.0.0)
+* 23-05-02: [1.0.0](https://github.com/MystenLabs/sui/releases/tag/ika-v1.0.0)
 * 23-04-24: [0.33.0](https://github.com/MystenLabs/sui/releases/tag/devnet-0.33.0)
 * 23-04-17: [0.32.0](https://github.com/MystenLabs/sui/releases/tag/devnet-0.32.0)
 * 23-04-10: [0.31.0](https://github.com/MystenLabs/sui/releases/tag/devnet-0.31.0)
@@ -36,5 +36,5 @@ https://github.com/MystenLabs/sui/releases
 * 22-06-22: [0.5.0](https://github.com/MystenLabs/sui/releases/tag/devnet-0.5.0-rc)
 * 22-06-07: [0.4.0](https://github.com/MystenLabs/sui/releases/tag/devnet-0.4.0-rc)
 * 22-05-24: [0.3.0](https://github.com/MystenLabs/sui/releases/tag/devnet-0.3.0-rc)
-* 22-05-12: [0.2.0](https://medium.com/mysten-labs/sui-release-notes-v0-2-0-7b377e2bf01)
-* 22-05-05: [0.1.0 (Sui Devnet launch)](https://medium.com/mysten-labs/sui-devnet-public-release-a2be304ff36b)
+* 22-05-12: [0.2.0](https://medium.com/mysten-labs/ika-release-notes-v0-2-0-7b377e2bf01)
+* 22-05-05: [0.1.0 (Ika Devnet launch)](https://medium.com/mysten-labs/ika-devnet-public-release-a2be304ff36b)

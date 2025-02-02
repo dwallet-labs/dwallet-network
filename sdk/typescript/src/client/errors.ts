@@ -20,9 +20,9 @@ const CODE_TO_ERROR_TYPE: Record<number, string> = {
 	'-32002': 'TransactionExecutionClientError',
 };
 
-export class SuiHTTPTransportError extends Error {}
+export class IkaHTTPTransportError extends Error {}
 
-export class JsonRpcError extends SuiHTTPTransportError {
+export class JsonRpcError extends IkaHTTPTransportError {
 	code: number;
 	type: string;
 
@@ -33,7 +33,7 @@ export class JsonRpcError extends SuiHTTPTransportError {
 	}
 }
 
-export class SuiHTTPStatusError extends SuiHTTPTransportError {
+export class IkaHTTPStatusError extends IkaHTTPTransportError {
 	status: number;
 	statusText: string;
 

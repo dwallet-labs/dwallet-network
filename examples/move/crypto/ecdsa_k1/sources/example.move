@@ -8,8 +8,8 @@
 ///    object with the public key.
 /// 3) Verify a Secp256k1 signature, produce an event for whether it is verified.
 module ecdsa_k1::example {
-    use sui::ecdsa_k1;
-    use sui::event;
+    use ika::ecdsa_k1;
+    use ika::event;
 
     // === Object Types ===
 
@@ -36,7 +36,7 @@ module ecdsa_k1::example {
     ) {
         let hashed = Output {
             id: object::new(ctx),
-            value: sui::hash::keccak256(&data),
+            value: ika::hash::keccak256(&data),
         };
         // Transfer an output data object holding the hashed data to the recipient.
         transfer::public_transfer(hashed, recipient)
@@ -92,7 +92,7 @@ module ecdsa_k1::example {
         };
 
         // Take the last 20 bytes of the hash of the 64-bytes uncompressed pubkey.
-        let hashed = sui::hash::keccak256(&uncompressed_64);
+        let hashed = ika::hash::keccak256(&uncompressed_64);
         let mut addr = vector[];
         let mut i = 12;
         while (i < 32) {

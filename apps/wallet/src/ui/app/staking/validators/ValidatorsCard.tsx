@@ -13,13 +13,13 @@ import {
 	DELEGATED_STAKES_QUERY_STALE_TIME,
 } from '_src/shared/constants';
 import { useGetDelegatedStake } from '@mysten/core';
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { useIkaClientQuery } from '@mysten/dapp-kit';
 import { Plus12 } from '@mysten/icons';
-import type { StakeObject } from '@mysten/sui/client';
+import type { StakeObject } from '@ika-io/ika/client';
 import { useMemo } from 'react';
 
 import { useActiveAddress } from '../../hooks/useActiveAddress';
-import { getAllStakeSui } from '../getAllStakeSui';
+import { getAllStakeIka } from '../getAllStakeIka';
 import { StakeAmount } from '../home/StakeAmount';
 import { StakeCard, type DelegationObjectWithValidator } from '../home/StakedCard';
 
@@ -36,20 +36,20 @@ export function ValidatorsCard() {
 		refetchInterval: DELEGATED_STAKES_QUERY_REFETCH_INTERVAL,
 	});
 
-	const { data: system } = useSuiClientQuery('getLatestSuiSystemState');
+	const { data: system } = useIkaClientQuery('getLatestIkaSystemState');
 	const activeValidators = system?.activeValidators;
 
 	// Total active stake for all Staked validators
 	const totalStake = useMemo(() => {
 		if (!delegatedStake) return 0n;
-		return getAllStakeSui(delegatedStake);
+		return getAllStakeIka(delegatedStake);
 	}, [delegatedStake]);
 
 	const delegations = useMemo(() => {
 		return delegatedStake?.flatMap((delegation) => {
 			return delegation.stakes.map((d) => ({
 				...d,
-				// flag any inactive validator for the stakeSui object
+				// flag any inactive validator for the stakeIka object
 				// if the stakingPoolId is not found in the activeValidators list flag as inactive
 				inactiveValidator: !activeValidators?.find(
 					({ stakingPoolId }) => stakingPoolId === delegation.stakingPool,
@@ -108,7 +108,7 @@ export function ValidatorsCard() {
 						{hasInactiveValidatorDelegation ? (
 							<div className="mb-3">
 								<Alert>
-									Unstake SUI from the inactive validators and stake on an active validator to start
+									Unstake IKA from the inactive validators and stake on an active validator to start
 									earning rewards again.
 								</Alert>
 							</div>
@@ -121,7 +121,7 @@ export function ValidatorsCard() {
 										<StakeCard
 											delegationObject={delegation as DelegationObjectWithValidator}
 											currentEpoch={Number(system.epoch)}
-											key={delegation.stakedSuiId}
+											key={delegation.stakedIkaId}
 											inactiveValidator
 										/>
 									))}
@@ -155,7 +155,7 @@ export function ValidatorsCard() {
 										<StakeCard
 											delegationObject={delegation as DelegationObjectWithValidator}
 											currentEpoch={Number(system.epoch)}
-											key={delegation.stakedSuiId}
+											key={delegation.stakedIkaId}
 										/>
 									))}
 						</div>
@@ -167,13 +167,13 @@ export function ValidatorsCard() {
 						variant="secondary"
 						to="new"
 						onClick={() =>
-							ampli.clickedStakeSui({
+							ampli.clickedStakeIka({
 								isCurrentlyStaking: true,
 								sourceFlow: 'Validator card',
 							})
 						}
 						before={<Plus12 />}
-						text="Stake SUI"
+						text="Stake IKA"
 					/>
 				</Menu>
 			</BottomMenuLayout>

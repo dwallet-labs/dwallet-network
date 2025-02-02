@@ -7,7 +7,7 @@ on:
     types: [ opened, synchronize, reopened, ready_for_review ]
   workflow_dispatch:
     inputs:
-      sui_repo_ref:
+      ika_repo_ref:
         description: "Branch / commit to test"
         type: string
         required: false
@@ -35,7 +35,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
   
       - name: pnpm setup
         uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # pin@v3.0.0
@@ -67,7 +67,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
         with:
-          ref: ${{ github.event.inputs.sui_repo_ref || github.ref }}
+          ref: ${{ github.event.inputs.ika_repo_ref || github.ref }}
 
       - name: pnpm setup
         uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # pin@v3.0.0

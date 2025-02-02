@@ -1,0 +1,18 @@
+# Filtering on package and module
+{
+  transactionBlocks(
+    filter: {
+      function: "0x3::ika_system"
+    }
+  ) {
+    nodes {
+      sender {
+        address
+      }
+      gasInput {
+        gasPrice
+        gasBudget
+      }
+    }
+  }
+}

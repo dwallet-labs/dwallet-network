@@ -1,22 +1,22 @@
 {
     "release_binaries": [
-        "sui",
-        "sui-node",
-        "sui-tool",
-        "sui-faucet",
-        "sui-data-ingestion",
-        "sui-bridge",
-        "sui-bridge-cli",
-        "sui-graphql-rpc",
-        "sui-test-validator",
+        "ika",
+        "ika-node",
+        "ika-tool",
+        "ika-faucet",
+        "ika-data-ingestion",
+        "ika-bridge",
+        "ika-bridge-cli",
+        "ika-graphql-rpc",
+        "ika-test-validator",
         "move-analyzer"
     ],
     "internal_binaries": [
         "stress",
-        "sui-proxy",
-        "sui-metric-checker",
-        "sui-analytics-indexer",
-        "sui-security-watchdog",
-		"suiop"
+        "ika-proxy",
+        "ika-metric-checker",
+        "ika-analytics-indexer",
+        "ika-security-watchdog",
+		"ikaop"
 	]
 }

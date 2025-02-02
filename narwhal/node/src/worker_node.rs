@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 use storage::NodeStorage;
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 use tracing::{info, instrument};

@@ -3,15 +3,15 @@
 
 export { formatAddress, formatDigest } from './format.js';
 export {
-	isValidSuiAddress,
-	isValidSuiObjectId,
+	isValidIkaAddress,
+	isValidIkaObjectId,
 	isValidTransactionDigest,
 	normalizeStructTag,
-	normalizeSuiAddress,
-	normalizeSuiObjectId,
+	normalizeIkaAddress,
+	normalizeIkaObjectId,
 	parseStructTag,
-	SUI_ADDRESS_LENGTH,
-} from './sui-types.js';
+	IKA_ADDRESS_LENGTH,
+} from './ika-types.js';
 
 export {
 	fromB64,
@@ -25,18 +25,18 @@ export {
 	fromBase58,
 	toBase58,
 } from '@mysten/bcs';
-export { isValidSuiNSName, normalizeSuiNSName } from './suins.js';
+export { isValidIkaNSName, normalizeIkaNSName } from './ikans.js';
 
 export {
-	SUI_DECIMALS,
-	MIST_PER_SUI,
+	IKA_DECIMALS,
+	NIKA_PER_IKA,
 	MOVE_STDLIB_ADDRESS,
-	SUI_FRAMEWORK_ADDRESS,
-	SUI_SYSTEM_ADDRESS,
-	SUI_CLOCK_OBJECT_ID,
-	SUI_SYSTEM_MODULE_NAME,
-	SUI_TYPE_ARG,
-	SUI_SYSTEM_STATE_OBJECT_ID,
+	IKA_FRAMEWORK_ADDRESS,
+	IKA_SYSTEM_ADDRESS,
+	IKA_CLOCK_OBJECT_ID,
+	IKA_SYSTEM_MODULE_NAME,
+	IKA_TYPE_ARG,
+	IKA_SYSTEM_STATE_OBJECT_ID,
 } from './constants.js';
 
 export { isValidNamedPackage, isValidNamedType } from './move-registry.js';

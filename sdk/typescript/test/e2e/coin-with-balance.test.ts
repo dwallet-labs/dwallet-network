@@ -9,7 +9,7 @@ import { bcs } from '../../src/bcs';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import { Transaction } from '../../src/transactions';
 import { coinWithBalance } from '../../src/transactions/intents/CoinWithBalance';
-import { normalizeSuiAddress } from '../../src/utils';
+import { normalizeIkaAddress } from '../../src/utils';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('coinWithBalance', () => {
@@ -23,11 +23,11 @@ describe('coinWithBalance', () => {
 		[toolbox, publishToolbox] = await Promise.all([setup(), setup()]);
 		const packagePath = resolve(__dirname, './data/coin_metadata');
 		packageId = await publishToolbox.getPackage(packagePath);
-		testType = normalizeSuiAddress(packageId) + '::test::TEST';
-		testTypeZero = normalizeSuiAddress(packageId) + '::test_zero::TEST_ZERO';
+		testType = normalizeIkaAddress(packageId) + '::test::TEST';
+		testTypeZero = normalizeIkaAddress(packageId) + '::test_zero::TEST_ZERO';
 	});
 
-	it('works with sui', async () => {
+	it('works with ika', async () => {
 		const tx = new Transaction();
 		const receiver = new Ed25519Keypair();
 
@@ -38,9 +38,9 @@ describe('coinWithBalance', () => {
 					balance: 12345n,
 				}),
 			],
-			receiver.toSuiAddress(),
+			receiver.toIkaAddress(),
 		);
-		tx.setSender(publishToolbox.keypair.toSuiAddress());
+		tx.setSender(publishToolbox.keypair.toIkaAddress());
 
 		expect(
 			JSON.parse(
@@ -59,11 +59,11 @@ describe('coinWithBalance', () => {
 			inputs: [
 				{
 					Pure: {
-						bytes: toBase64(fromHex(receiver.toSuiAddress())),
+						bytes: toBase64(fromHex(receiver.toIkaAddress())),
 					},
 				},
 			],
-			sender: publishToolbox.keypair.toSuiAddress(),
+			sender: publishToolbox.keypair.toIkaAddress(),
 			commands: [
 				{
 					$Intent: {
@@ -109,7 +109,7 @@ describe('coinWithBalance', () => {
 			inputs: [
 				{
 					Pure: {
-						bytes: toBase64(fromHex(receiver.toSuiAddress())),
+						bytes: toBase64(fromHex(receiver.toIkaAddress())),
 					},
 				},
 				{
@@ -118,7 +118,7 @@ describe('coinWithBalance', () => {
 					},
 				},
 			],
-			sender: publishToolbox.keypair.toSuiAddress(),
+			sender: publishToolbox.keypair.toIkaAddress(),
 			commands: [
 				{
 					SplitCoins: {
@@ -164,13 +164,13 @@ describe('coinWithBalance', () => {
 				(change) =>
 					typeof change.owner === 'object' &&
 					'AddressOwner' in change.owner &&
-					change.owner.AddressOwner === receiver.toSuiAddress(),
+					change.owner.AddressOwner === receiver.toIkaAddress(),
 			),
 		).toEqual({
 			amount: '12345',
-			coinType: '0x2::sui::SUI',
+			coinType: '0x2::ika::IKA',
 			owner: {
-				AddressOwner: receiver.toSuiAddress(),
+				AddressOwner: receiver.toIkaAddress(),
 			},
 		});
 	});
@@ -186,9 +186,9 @@ describe('coinWithBalance', () => {
 					balance: 1n,
 				}),
 			],
-			receiver.toSuiAddress(),
+			receiver.toIkaAddress(),
 		);
-		tx.setSender(publishToolbox.keypair.toSuiAddress());
+		tx.setSender(publishToolbox.keypair.toIkaAddress());
 
 		expect(
 			JSON.parse(
@@ -207,11 +207,11 @@ describe('coinWithBalance', () => {
 			inputs: [
 				{
 					Pure: {
-						bytes: toBase64(fromHex(receiver.toSuiAddress())),
+						bytes: toBase64(fromHex(receiver.toIkaAddress())),
 					},
 				},
 			],
-			sender: publishToolbox.keypair.toSuiAddress(),
+			sender: publishToolbox.keypair.toIkaAddress(),
 			commands: [
 				{
 					$Intent: {
@@ -257,7 +257,7 @@ describe('coinWithBalance', () => {
 			inputs: [
 				{
 					Pure: {
-						bytes: toBase64(fromHex(receiver.toSuiAddress())),
+						bytes: toBase64(fromHex(receiver.toIkaAddress())),
 					},
 				},
 				{
@@ -271,7 +271,7 @@ describe('coinWithBalance', () => {
 					},
 				},
 			],
-			sender: publishToolbox.keypair.toSuiAddress(),
+			sender: publishToolbox.keypair.toIkaAddress(),
 			commands: [
 				{
 					SplitCoins: {
@@ -313,13 +313,13 @@ describe('coinWithBalance', () => {
 				(change) =>
 					typeof change.owner === 'object' &&
 					'AddressOwner' in change.owner &&
-					change.owner.AddressOwner === receiver.toSuiAddress(),
+					change.owner.AddressOwner === receiver.toIkaAddress(),
 			),
 		).toEqual({
 			amount: '1',
 			coinType: testType,
 			owner: {
-				AddressOwner: receiver.toSuiAddress(),
+				AddressOwner: receiver.toIkaAddress(),
 			},
 		});
 	});
@@ -335,9 +335,9 @@ describe('coinWithBalance', () => {
 					balance: 0n,
 				}),
 			],
-			receiver.toSuiAddress(),
+			receiver.toIkaAddress(),
 		);
-		tx.setSender(publishToolbox.keypair.toSuiAddress());
+		tx.setSender(publishToolbox.keypair.toIkaAddress());
 
 		expect(
 			JSON.parse(
@@ -356,11 +356,11 @@ describe('coinWithBalance', () => {
 			inputs: [
 				{
 					Pure: {
-						bytes: toBase64(fromHex(receiver.toSuiAddress())),
+						bytes: toBase64(fromHex(receiver.toIkaAddress())),
 					},
 				},
 			],
-			sender: publishToolbox.keypair.toSuiAddress(),
+			sender: publishToolbox.keypair.toIkaAddress(),
 			commands: [
 				{
 					$Intent: {
@@ -406,11 +406,11 @@ describe('coinWithBalance', () => {
 			inputs: [
 				{
 					Pure: {
-						bytes: toBase64(fromHex(receiver.toSuiAddress())),
+						bytes: toBase64(fromHex(receiver.toIkaAddress())),
 					},
 				},
 			],
-			sender: publishToolbox.keypair.toSuiAddress(),
+			sender: publishToolbox.keypair.toIkaAddress(),
 			commands: [
 				{
 					MoveCall: {
@@ -451,7 +451,7 @@ describe('coinWithBalance', () => {
 
 				return (
 					change.objectType === `0x2::coin::Coin<${testTypeZero}>` &&
-					change.owner.AddressOwner === receiver.toSuiAddress()
+					change.owner.AddressOwner === receiver.toIkaAddress()
 				);
 			}).length,
 		).toEqual(1);
@@ -469,10 +469,10 @@ describe('coinWithBalance', () => {
 				coinWithBalance({ type: 'gas', balance: 4n }),
 				coinWithBalance({ type: testTypeZero, balance: 0n }),
 			],
-			receiver.toSuiAddress(),
+			receiver.toIkaAddress(),
 		);
 
-		tx.setSender(publishToolbox.keypair.toSuiAddress());
+		tx.setSender(publishToolbox.keypair.toIkaAddress());
 
 		expect(
 			JSON.parse(
@@ -491,11 +491,11 @@ describe('coinWithBalance', () => {
 			inputs: [
 				{
 					Pure: {
-						bytes: toBase64(fromHex(receiver.toSuiAddress())),
+						bytes: toBase64(fromHex(receiver.toIkaAddress())),
 					},
 				},
 			],
-			sender: publishToolbox.keypair.toSuiAddress(),
+			sender: publishToolbox.keypair.toIkaAddress(),
 			commands: [
 				{
 					$Intent: {
@@ -593,7 +593,7 @@ describe('coinWithBalance', () => {
 			inputs: [
 				{
 					Pure: {
-						bytes: toBase64(fromHex(receiver.toSuiAddress())),
+						bytes: toBase64(fromHex(receiver.toIkaAddress())),
 					},
 				},
 				{
@@ -622,7 +622,7 @@ describe('coinWithBalance', () => {
 					},
 				},
 			],
-			sender: publishToolbox.keypair.toSuiAddress(),
+			sender: publishToolbox.keypair.toIkaAddress(),
 			commands: [
 				{
 					SplitCoins: {
@@ -715,21 +715,21 @@ describe('coinWithBalance', () => {
 				(change) =>
 					typeof change.owner === 'object' &&
 					'AddressOwner' in change.owner &&
-					change.owner.AddressOwner === receiver.toSuiAddress(),
+					change.owner.AddressOwner === receiver.toIkaAddress(),
 			),
 		).toEqual([
 			{
 				amount: '7',
-				coinType: '0x2::sui::SUI',
+				coinType: '0x2::ika::IKA',
 				owner: {
-					AddressOwner: receiver.toSuiAddress(),
+					AddressOwner: receiver.toIkaAddress(),
 				},
 			},
 			{
 				amount: '3',
 				coinType: testType,
 				owner: {
-					AddressOwner: receiver.toSuiAddress(),
+					AddressOwner: receiver.toIkaAddress(),
 				},
 			},
 		]);
@@ -740,7 +740,7 @@ describe('coinWithBalance', () => {
 
 				return (
 					change.objectType === `0x2::coin::Coin<${testTypeZero}>` &&
-					change.owner.AddressOwner === receiver.toSuiAddress()
+					change.owner.AddressOwner === receiver.toIkaAddress()
 				);
 			}).length,
 		).toEqual(1);

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCurrentAccount, useSuiClient, useSuiClientContext } from '@mysten/dapp-kit';
+import { useCurrentAccount, useIkaClient, useIkaClientContext } from '@mysten/dapp-kit';
 import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { useNetworkVariable } from 'config';
 
@@ -21,9 +21,9 @@ const REFETCH_INTERVAL = 5000;
  * `game`, if there is one.
  */
 export function useTurnCapQuery(game?: string): [UseTurnCapResult, InvalidateTurnCapQuery] {
-	const suiClient = useSuiClient();
+	const ikaClient = useIkaClient();
 	const queryClient = useQueryClient();
-	const ctx = useSuiClientContext();
+	const ctx = useIkaClientContext();
 	const packageId = useNetworkVariable('packageId');
 	const account = useCurrentAccount();
 
@@ -39,7 +39,7 @@ export function useTurnCapQuery(game?: string): [UseTurnCapResult, InvalidateTur
 			}
 
 			for (;;) {
-				const resp = await suiClient.getOwnedObjects({
+				const resp = await ikaClient.getOwnedObjects({
 					owner,
 					filter: {
 						StructType: `${packageId}::owned::TurnCap`,

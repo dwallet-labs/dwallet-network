@@ -28,7 +28,7 @@
 		"@hookform/resolvers": "^3.9.0",
 		"@mysten/dapp-kit": "workspace:*",
 		"@mysten/kiosk": "workspace:*",
-		"@mysten/sui": "workspace:*",
+		"@ika-io/ika": "workspace:*",
 		"@sentry/react": "^7.59.2",
 		"@tanstack/react-query": "^5.50.1",
 		"bignumber.js": "^9.1.1",

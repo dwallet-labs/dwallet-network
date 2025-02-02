@@ -8,7 +8,7 @@ use crate::executor::{ExecutionResult, Executor};
 use once_cell::sync::Lazy;
 use proptest::{prelude::*, strategy::Union};
 use std::{fmt, sync::Arc};
-use sui_types::{storage::ObjectStore, transaction::Transaction};
+use ika_types::{storage::ObjectStore, transaction::Transaction};
 
 mod account;
 mod helpers;
@@ -56,7 +56,7 @@ pub trait AUTransactionGen: fmt::Debug {
         exec: &mut Executor,
     ) -> (Transaction, ExecutionResult);
 
-    /// Creates an arced version of this transaction, suitable for dynamic dispatch.
+    /// Creates an arced version of this transaction, ikatable for dynamic dispatch.
     fn arced(self) -> Arc<dyn AUTransactionGen>
     where
         Self: 'static + Sized,
@@ -136,15 +136,15 @@ pub fn assert_accounts_match(
     for (idx, account) in universe.accounts().iter().enumerate() {
         for (balance_idx, acc_object) in account.current_coins.iter().enumerate() {
             let object = object_store.get_object(&acc_object.id()).unwrap().unwrap();
-            let total_sui_value =
-                object.get_total_sui(layout_resolver.as_mut()).unwrap() - object.storage_rebate;
+            let total_ika_value =
+                object.get_total_ika(layout_resolver.as_mut()).unwrap() - object.storage_rebate;
             let account_balance_i = account.current_balances[balance_idx];
             prop_assert_eq!(
                 account_balance_i,
-                total_sui_value,
+                total_ika_value,
                 "account {} should have correct balance {} for object {} but got {}",
                 idx,
-                total_sui_value,
+                total_ika_value,
                 acc_object.id(),
                 account_balance_i
             );

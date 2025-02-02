@@ -202,6 +202,6 @@
     "tokenIds": [2],
     "supportedTokens": ["0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"],
     "tokenPrices": [260000000000],
-    "suiDecimals": [8],
+    "ikaDecimals": [8],
     "weth": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 }

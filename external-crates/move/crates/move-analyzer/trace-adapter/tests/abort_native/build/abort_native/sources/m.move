@@ -5,7 +5,7 @@ module abort_native::m;
 
 fun foo(v: vector<u8>, p: u64): (u64, address) {
     let val = p + p;
-    let addr = sui::address::from_bytes(v);
+    let addr = ika::address::from_bytes(v);
     (val, addr)
 }
 

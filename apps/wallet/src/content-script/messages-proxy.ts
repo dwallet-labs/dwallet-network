@@ -7,7 +7,7 @@ import type { Message } from '_src/shared/messaging/messages';
 import { take } from 'rxjs';
 
 function createPort(windowMsgStream: WindowMessageStream, currentMsg?: Message) {
-	const port = PortStream.connectToBackgroundService('sui_content<->background');
+	const port = PortStream.connectToBackgroundService('ika_content<->background');
 	if (currentMsg) {
 		port.sendMessage(currentMsg);
 	}
@@ -24,7 +24,7 @@ function createPort(windowMsgStream: WindowMessageStream, currentMsg?: Message) 
 }
 
 export function setupMessagesProxy() {
-	const windowMsgStream = new WindowMessageStream('sui_content-script', 'sui_in-page');
+	const windowMsgStream = new WindowMessageStream('ika_content-script', 'ika_in-page');
 	windowMsgStream.messages.pipe(take(1)).subscribe((msg) => {
 		createPort(windowMsgStream, msg);
 	});

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@ika-io/ika/utils';
 import { CheckIcon, CopyIcon } from '@radix-ui/react-icons';
 import { Button, Flex, Link, Tooltip } from '@radix-ui/themes';
 import { useNetworkVariable } from 'config';

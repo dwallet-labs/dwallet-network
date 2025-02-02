@@ -30,7 +30,7 @@ const styles = cva(
 				heroDark: [
 					'text-hero-dark hover:text-hero-darkest focus:text-hero-darkest disabled:text-hero-dark',
 				],
-				suiDark: ['text-sui-dark'],
+				ikaDark: ['text-ika-dark'],
 				hero: ['text-hero hover:text-hero-dark focus:text-hero-dark disabled:text-hero-dark'],
 			},
 			weight: {
@@ -66,8 +66,8 @@ const iconStyles = cva(['transition flex'], {
 			heroDark: [
 				'text-hero group-hover:text-hero-darkest group-focus:text-hero-darkest group-disabled:text-hero-dark',
 			],
-			suiDark: [
-				'text-steel group-hover:text-sui-dark group-focus:text-sui-dark group-disabled:text-steel',
+			ikaDark: [
+				'text-steel group-hover:text-ika-dark group-focus:text-ika-dark group-disabled:text-steel',
 			],
 			hero: [
 				'text-hero group-hover:text-hero-dark group-focus:text-hero-dark group-disabled:text-hero-dark',

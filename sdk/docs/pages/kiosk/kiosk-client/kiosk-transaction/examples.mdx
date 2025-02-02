@@ -12,7 +12,7 @@ Transaction.
 
 Assume that the mint function of the contract is:
 
-`public fun mint(coin: Coin<SUI>, kiosk: &mut Kiosk, cap: &KioskOwnerCap){...}`
+`public fun mint(coin: Coin<IKA>, kiosk: &mut Kiosk, cap: &KioskOwnerCap){...}`
 
 ### When the user has a kiosk
 
@@ -36,7 +36,7 @@ const mint = async () => {
     const tx = new Transaction();
     const kioskTx = new KioskTransaction({ kioskClient, transaction: tx, cap: await getCap() }});
 
-    // Assume it costs one SUI
+    // Assume it costs one IKA
     let coin = tx.splitCoins(tx.gas, [1_000_000_000]);
 
     // A function that mints directly into the kiosk.
@@ -70,7 +70,7 @@ const mint = async () => {
     // Creates a kiosk.
     kioskTx.create();
 
-    // We'll assume it costs 1 SUI
+    // We'll assume it costs 1 IKA
     let coin = tx.splitCoins(tx.gas, [1_000_000_000]);
 
     // A function that mints directly into the kiosk.

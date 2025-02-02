@@ -4,7 +4,7 @@ version = "0.0.1"
 edition = "2024.beta"
 
 [dependencies]
-Sui = { local = "../../../crates/sui-framework/packages/sui-framework", override = true }
+Ika = { local = "../../../crates/ika-framework/packages/ika-framework", override = true }
 
 [addresses]
 reviews_rating =  "0x0"

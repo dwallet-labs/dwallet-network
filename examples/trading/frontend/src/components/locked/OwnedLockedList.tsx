@@ -3,7 +3,7 @@
 
 import { CONSTANTS } from "@/constants";
 import { InfiniteScrollArea } from "@/components/InfiniteScrollArea";
-import { useCurrentAccount, useSuiClientInfiniteQuery } from "@mysten/dapp-kit";
+import { useCurrentAccount, useIkaClientInfiniteQuery } from "@mysten/dapp-kit";
 import { LockedObject } from "./LockedObject";
 
 /**
@@ -14,7 +14,7 @@ export function OwnedLockedList() {
   const account = useCurrentAccount();
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useSuiClientInfiniteQuery(
+    useIkaClientInfiniteQuery(
       "getOwnedObjects",
       {
         filter: {

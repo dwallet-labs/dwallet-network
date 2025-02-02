@@ -12,15 +12,15 @@ import {
 	ConnectButton,
 	useCurrentAccount,
 	useReportTransactionEffects,
-	useSuiClient,
+	useIkaClient,
 } from '@mysten/dapp-kit';
-import { toBase64 } from '@mysten/sui/utils';
+import { toBase64 } from '@ika-io/ika/utils';
 import { useState } from 'react';
 
 function MyComponent() {
 	const { mutateAsync: reportTransactionEffects } = useReportTransactionEffects();
 	const [signature, setSignature] = useState('');
-	const client = useSuiClient();
+	const client = useIkaClient();
 	const currentAccount = useCurrentAccount();
 
 	return (

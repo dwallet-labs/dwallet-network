@@ -7,7 +7,7 @@ import { useActiveAddress } from '_hooks';
 import { useUsdcPromo } from '_pages/home/usdc-promo/useUsdcPromo';
 import { ampli } from '_shared/analytics/ampli';
 import { useCoinMetadata } from '@mysten/core';
-import { type CoinBalance } from '@mysten/sui/client';
+import { type CoinBalance } from '@ika-io/ika/client';
 import BigNumber from 'bignumber.js';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';

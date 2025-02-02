@@ -11,7 +11,7 @@ use itertools::Itertools as _;
 use mysten_metrics::monitored_mpsc::UnboundedReceiver;
 use mysten_metrics::monitored_scope;
 use parking_lot::RwLock;
-use sui_macros::fail_point;
+use ika_macros::fail_point;
 use tokio::{
     sync::{broadcast, watch},
     time::Instant,
@@ -1175,7 +1175,7 @@ mod test {
     use consensus_config::{AuthorityIndex, Parameters};
     use futures::{stream::FuturesUnordered, StreamExt};
     use rstest::rstest;
-    use sui_protocol_config::ProtocolConfig;
+    use ika_protocol_config::ProtocolConfig;
     use tokio::time::sleep;
 
     use super::*;

@@ -4,7 +4,7 @@
 import networkEnv from '_src/background/NetworkEnv';
 import { getFromSessionStorage, setToSessionStorage } from '_src/background/storage-utils';
 import { type NetworkEnvType } from '_src/shared/api-env';
-import { getActiveNetworkSuiClient } from '_src/shared/sui-client';
+import { getActiveNetworkIkaClient } from '_src/shared/ika-client';
 
 type EpochCacheInfo = {
 	epoch: number;
@@ -16,9 +16,9 @@ function epochCacheKey(network: NetworkEnvType) {
 }
 
 async function getCurrentEpochRequest(): Promise<EpochCacheInfo> {
-	const suiClient = await getActiveNetworkSuiClient();
+	const ikaClient = await getActiveNetworkIkaClient();
 	const { epoch, epochDurationMs, epochStartTimestampMs } =
-		await suiClient.getLatestSuiSystemState();
+		await ikaClient.getLatestIkaSystemState();
 	return {
 		epoch: Number(epoch),
 		epochEndTimestamp: Number(epochStartTimestampMs) + Number(epochDurationMs),

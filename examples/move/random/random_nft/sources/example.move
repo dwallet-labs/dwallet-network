@@ -5,8 +5,8 @@
 /// The probability of getting a gold, silver, or bronze NFT is 10%, 30%, and 60% respectively.
 module random_nft::example {
     use std::string;
-    use sui::object::delete;
-    use sui::random::{Random, new_generator};
+    use ika::object::delete;
+    use ika::random::{Random, new_generator};
 
     const EInvalidParams: u64 = 0;
 

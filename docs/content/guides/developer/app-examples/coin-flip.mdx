@@ -2,7 +2,7 @@
 title: Coin Flip
 ---
 
-This example walks you through building a coin flip dApp, covering the full end-to-end flow of building your Sui Move module and connecting it to your React Sui dApp. This coin flip dApp utilizes verifiable random functions (VRFs) to create a fair coin game on the Sui blockchain. The user (human) plays against the house (module) and places a bet on either heads or tails. The user then either receives double their bet, or gets nothing, depending on the outcome of the game.
+This example walks you through building a coin flip dApp, covering the full end-to-end flow of building your Ika Move module and connecting it to your React Ika dApp. This coin flip dApp utilizes verifiable random functions (VRFs) to create a fair coin game on the Ika blockchain. The user (human) plays against the house (module) and places a bet on either heads or tails. The user then either receives double their bet, or gets nothing, depending on the outcome of the game.
 
 The guide is split into two parts:
 
@@ -13,17 +13,17 @@ The guide is split into two parts:
 
 Source code locations for the smart contracts and frontend: 
 - [Move package repository](https://github.com/MystenLabs/satoshi-coin-flip)
-- [Frontend repository](https://github.com/sui-foundation/satoshi-coin-flip-frontend-example)
+- [Frontend repository](https://github.com/ika-foundation/satoshi-coin-flip-frontend-example)
 
 :::
 
 ## What the guide teaches
 
 - **Shared objects:** The guide teaches you how to use [shared objects](concepts/object-ownership/shared.mdx), in this case to create a globally accessible `HouseData` object.
-- **One-time witnesses:** The guide teaches you how to use [one-time witnesses](concepts/sui-move-concepts.mdx#one-time-witness) to ensure only a single instance of the `HouseData` object ever exists.
+- **One-time witnesses:** The guide teaches you how to use [one-time witnesses](concepts/ika-move-concepts.mdx#one-time-witness) to ensure only a single instance of the `HouseData` object ever exists.
 - **Asserts:** The guide teaches you how to use [asserts](https://move-book.com/move-basics/assert-and-abort.html?highlight=asserts#assert) to abort functions due to certain conditions not being met.
 - **Address-owned objects:** The guide teaches you how to use [address-owned objects](concepts/object-ownership/address-owned.mdx) when necessary.
-- **Events:** The guide teaches you how to emit events in your contracts, which can be used to track on-chain activity. For more information on events, see [Using Events](../sui-101/using-events.mdx) for practical usage of events on Sui or [Events in The Move Book](https://move-book.com/programmability/events.html) to learn about event structure and how to emit them in Move.
+- **Events:** The guide teaches you how to emit events in your contracts, which can be used to track on-chain activity. For more information on events, see [Using Events](../ika-101/using-events.mdx) for practical usage of events on Ika or [Events in The Move Book](https://move-book.com/programmability/events.html) to learn about event structure and how to emit them in Move.
 - **Storage rebates:** The guide shows you best practices regarding [storage fee rebates](concepts/tokenomics/storage-fund.mdx#incentives).
 - **MEV attack protection:** The guide introduces you to [MEV attacks](https://github.com/MystenLabs/satoshi-coin-flip?tab=readme-ov-file#mev-attack-resistant-single-player-satoshi-smart-contract-flow), how to make your contracts MEV-resistant, and the trade-offs between protection and user experience.
 
@@ -32,7 +32,7 @@ Source code locations for the smart contracts and frontend:
 
 Before getting started, make sure you have:
 
-- [Installed the latest version of Sui](../getting-started/sui-install.mdx).
+- [Installed the latest version of Ika](../getting-started/ika-install.mdx).
 
 ## Smart contracts {#smart-contracts}
 
@@ -53,10 +53,10 @@ Create a new file in the `sources` directory with the name `house_data.move` and
 ```move title='house_data.move'
 module satoshi_flip::house_data {
 
-  use sui::balance::{Self, Balance};
-  use sui::sui::SUI;
-  use sui::coin::{Self, Coin};
-  use sui::package::{Self};
+  use ika::balance::{Self, Balance};
+  use ika::ika::IKA;
+  use ika::coin::{Self, Coin};
+  use ika::package::{Self};
 
   // Error codes
   const ECallerNotHouse: u64 = 0;
@@ -67,7 +67,7 @@ module satoshi_flip::house_data {
 There are few details to take note of in this code:
 
 1. The first line declares the module name as `house_data` within the package `satoshi_flip`.
-1. Seven lines begin with the `use` keyword, which enables this module to use types and functions declared in other modules (in this case, they are all coming from the Sui standard library).
+1. Seven lines begin with the `use` keyword, which enables this module to use types and functions declared in other modules (in this case, they are all coming from the Ika standard library).
 1. Two error codes. These codes are used in assertions and unit tests to ensure that the program is running as intended.
 
 Next, add some more code to this module:
@@ -76,12 +76,12 @@ Next, add some more code to this module:
   /// Configuration and Treasury object, managed by the house.
   public struct HouseData has key {
     id: UID,
-    balance: Balance<SUI>,
+    balance: Balance<IKA>,
     house: address,
     public_key: vector<u8>,
     max_stake: u64,
     min_stake: u64,
-    fees: Balance<SUI>,
+    fees: Balance<IKA>,
     base_fee_in_bp: u16
   }
 
@@ -110,12 +110,12 @@ Next, add some more code to this module:
 - The first struct, `HouseData`, stores the most essential information pertaining to the game.
 - The second struct, `HouseCap`, is a capability that initializes the house data.
 - The third struct, `HOUSE_DATA`, is a one-time witness that ensures only a single instance of this `HouseData` ever exists.
-- The [`init` function](concepts/sui-move-concepts/init.mdx) creates and sends the `Publisher` and `HouseCap` objects to the sender.
+- The [`init` function](concepts/ika-move-concepts/init.mdx) creates and sends the `Publisher` and `HouseCap` objects to the sender.
 
 So far, you've set up the data structures within the module. Now, create a function that initializes the house data and shares the `HouseData` object:
 
 ```move title='house_data.move'
-  public fun initialize_house_data(house_cap: HouseCap, coin: Coin<SUI>, public_key: vector<u8>, ctx: &mut TxContext) {
+  public fun initialize_house_data(house_cap: HouseCap, coin: Coin<IKA>, public_key: vector<u8>, ctx: &mut TxContext) {
     assert!(coin.value() > 0, EInsufficientBalance);
 
     let house_data = HouseData {
@@ -123,8 +123,8 @@ So far, you've set up the data structures within the module. Now, create a funct
       balance: coin.into_balance(),
       house: ctx.sender(),
       public_key,
-      max_stake: 50_000_000_000, // 50 SUI, 1 SUI = 10^9.
-      min_stake: 1_000_000_000, // 1 SUI.
+      max_stake: 50_000_000_000, // 50 IKA, 1 IKA = 10^9.
+      min_stake: 1_000_000_000, // 1 IKA.
       fees: balance::zero(),
       base_fee_in_bp: 100 // 1% in basis points.
     };
@@ -139,7 +139,7 @@ So far, you've set up the data structures within the module. Now, create a funct
 With the house data initialized, you also need to add some functions that enable some important administrative tasks for the house to perform:
 
 ```move title='house_data.move'
-  public fun top_up(house_data: &mut HouseData, coin: Coin<SUI>, _: &mut TxContext) {
+  public fun top_up(house_data: &mut HouseData, coin: Coin<IKA>, _: &mut TxContext) {
     coin::put(&mut house_data.balance, coin)
   }
 
@@ -178,7 +178,7 @@ With the house data initialized, you also need to add some functions that enable
 
 All of these functions contain an `assert!` call that ensures only the house can call them:
 
-- `top_up`: Add to the balance of the house to ensure that there is enough SUI for future games.
+- `top_up`: Add to the balance of the house to ensure that there is enough IKA for future games.
 - `withdraw`: Withdraw the entire balance of the house object.
 - `claim_fees`: Withdraw the accumulated fees of the house object.
 - `update_max_stake`, `update_min_stake`: Update the maximum and minimum stake allowed in the game, respectively.
@@ -188,11 +188,11 @@ You have established the data structure of this module, but without the appropri
 ```move title='house_data.move'
   // --------------- Mutable References ---------------
 
-  public(package) fun borrow_balance_mut(house_data: &mut HouseData): &mut Balance<SUI> {
+  public(package) fun borrow_balance_mut(house_data: &mut HouseData): &mut Balance<IKA> {
     &mut house_data.balance
   }
 
-  public(package) fun borrow_fees_mut(house_data: &mut HouseData): &mut Balance<SUI> {
+  public(package) fun borrow_fees_mut(house_data: &mut HouseData): &mut Balance<IKA> {
     &mut house_data.fees
   }
 
@@ -260,7 +260,7 @@ In the same `sources` directory, now create a file named `counter_nft.move`. A `
 ```move title='counter_nft.move'
 module satoshi_flip::counter_nft {
 
-  use sui::bcs::{Self};
+  use ika::bcs::{Self};
 
   public struct Counter has key {
     id: UID,
@@ -328,13 +328,13 @@ Create the game module. In the `sources` directory, create a new file called `si
 module satoshi_flip::single_player_satoshi {
   use std::string::String;
 
-  use sui::coin::{Self, Coin};
-  use sui::balance::Balance;
-  use sui::sui::SUI;
-  use sui::bls12381::bls12381_min_pk_verify;
-  use sui::event::emit;
-  use sui::hash::{blake2b256};
-  use sui::dynamic_object_field::{Self as dof};
+  use ika::coin::{Self, Coin};
+  use ika::balance::Balance;
+  use ika::ika::IKA;
+  use ika::bls12381::bls12381_min_pk_verify;
+  use ika::event::emit;
+  use ika::hash::{blake2b256};
+  use ika::dynamic_object_field::{Self as dof};
 
   use satoshi_flip::counter_nft::Counter;
   use satoshi_flip::house_data::HouseData;
@@ -380,7 +380,7 @@ Add a struct to the module:
   public struct Game has key, store {
     id: UID,
     guess_placed_epoch: u64,
-    total_stake: Balance<SUI>,
+    total_stake: Balance<IKA>,
     guess: String,
     player: address,
     vrf_input: vector<u8>,
@@ -534,7 +534,7 @@ The rest of the functions are accessors and helper functions used to retrieve va
   }
 
   /// Internal helper function used to create a new game.
-  fun internal_start_game(guess: String, counter: &mut Counter, coin: Coin<SUI>, house_data: &mut HouseData, fee_bp: u16, ctx: &mut TxContext): (ID, Game) {
+  fun internal_start_game(guess: String, counter: &mut Counter, coin: Coin<IKA>, house_data: &mut HouseData, fee_bp: u16, ctx: &mut TxContext): (ID, Game) {
     // Ensure guess is valid.
     map_guess(guess);
     let user_stake = coin.value();
@@ -603,18 +603,18 @@ Now that you have written our contracts, it's time to deploy them.
 
 ### Deployment {#deployment}
 
-{@include: ../../../snippets/initialize-sui-client-cli.mdx}
+{@include: ../../../snippets/initialize-ika-client-cli.mdx}
 
-Next, configure the Sui CLI to use `testnet` as the active environment, as well. If you haven't already set up a `testnet` environment, do so by running the following command in a terminal or console:
+Next, configure the Ika CLI to use `testnet` as the active environment, as well. If you haven't already set up a `testnet` environment, do so by running the following command in a terminal or console:
 
 ```bash
-sui client new-env --alias testnet --rpc https://fullnode.testnet.sui.io:443
+ika client new-env --alias testnet --rpc https://fullnode.testnet.ika.io:443
 ```
 
 Run the following command to activate the `testnet` environment:
 
 ```bash
-sui client switch --env testnet
+ika client switch --env testnet
 ```
 
 {@include: ../../../snippets/publish-to-devnet-with-coins.mdx}
@@ -657,7 +657,7 @@ Partial snippet of CLI deployment output.
 │  │ ObjectID: 0x0e4eb516f8899e116a26f927c8aaddae8466c8cdc3822f05c15159e3a8ff8006                          │
 │  │ Sender: 0x8e8cae7791a93778800b88b6a274de5c32a86484593568d38619c7ea71999654                            │
 │  │ Owner: Account Address ( 0x8e8cae7791a93778800b88b6a274de5c32a86484593568d38619c7ea71999654 )         │
-│  │ ObjectType: 0x2::coin::Coin<0x2::sui::SUI>                                                            │
+│  │ ObjectType: 0x2::coin::Coin<0x2::ika::IKA>                                                            │
 │  │ Version: 75261540                                                                                     │
 │  │ Digest: Ezmi94kWCfjRzgGTwnXehv9ipPvYQ7T6Z4wefPLRQPPY                                                  │
 │  └──                                                                                                     │
@@ -687,7 +687,7 @@ In this final part of the dApp example, you build a frontend (UI) that allows en
 
 :::info
 
-To skip building the frontend and test out your newly deployed package, use the provided [Satoshi Coin Flip Frontend Example repository](https://github.com/sui-foundation/satoshi-coin-flip-frontend-example) and follow the instructions in the example's `README.md` file
+To skip building the frontend and test out your newly deployed package, use the provided [Satoshi Coin Flip Frontend Example repository](https://github.com/ika-foundation/satoshi-coin-flip-frontend-example) and follow the instructions in the example's `README.md` file
 
 :::
 
@@ -700,9 +700,9 @@ Before getting started, make sure you have:
 
 :::tip Additional resources
 
-- Tooling: [Sui TypeScript SDK](https://sdk.mystenlabs.com/typescript) for basic usage on how to interact with Sui using TypeScript.
-- Tooling: [Sui dApp Kit](https://sdk.mystenlabs.com/dapp-kit) to learn basic building blocks for developing a dApp in the Sui ecosystem with React.js.
-- Tooling: [`@mysten/dapp`](https://sdk.mystenlabs.com/dapp-kit/create-dapp), used within this project to quickly scaffold a React-based Sui dApp.
+- Tooling: [Ika TypeScript SDK](https://sdk.mystenlabs.com/typescript) for basic usage on how to interact with Ika using TypeScript.
+- Tooling: [Ika dApp Kit](https://sdk.mystenlabs.com/dapp-kit) to learn basic building blocks for developing a dApp in the Ika ecosystem with React.js.
+- Tooling: [`@mysten/dapp`](https://sdk.mystenlabs.com/dapp-kit/create-dapp), used within this project to quickly scaffold a React-based Ika dApp.
 
 :::
 
@@ -750,7 +750,7 @@ The UI interacts with the [Single Player smart contract](guides/developer/app-ex
 
 :::info
 
-The following frontend code snippets include only the most relevant sections. Refer to the [Satoshi Coin Flip Frontend Example repository](https://github.com/sui-foundation/satoshi-coin-flip-frontend-example) for complete source code.
+The following frontend code snippets include only the most relevant sections. Refer to the [Satoshi Coin Flip Frontend Example repository](https://github.com/ika-foundation/satoshi-coin-flip-frontend-example) for complete source code.
 
 :::
 
@@ -839,7 +839,7 @@ Okay, that’s a good start to have an overview of the project. Time to move to 
     // Split gas coin into house stake coin
     // SDK will take care for us abstracting away of up-front coin selections
     const [houseStakeCoin] = txb.splitCoins(txb.gas, [
-      MIST_PER_SUI * BigInt(houseStake),
+      NIKA_PER_IKA * BigInt(houseStake),
     ]);
     // Calling smart contract function
     txb.moveCall({
@@ -868,7 +868,7 @@ Okay, that’s a good start to have an overview of the project. Time to move to 
         onError: (err) => {
           toast.error(err.message);
         },
-        onSuccess: (result: SuiTransactionBlockResponse) => {
+        onSuccess: (result: IkaTransactionBlockResponse) => {
           let houseDataObjId;
 
 
@@ -891,7 +891,7 @@ Okay, that’s a good start to have an overview of the project. Time to move to 
   }}
 ```
 
-To use a [programmable transaction block](/concepts/transactions/prog-txn-blocks.mdx) (PTB) in Sui, create a `Transaction`. To initiate a Move call, you must know the global identifier of a public function in your smart contract. The global identifier usually takes the following form:
+To use a [programmable transaction block](/concepts/transactions/prog-txn-blocks.mdx) (PTB) in Ika, create a `Transaction`. To initiate a Move call, you must know the global identifier of a public function in your smart contract. The global identifier usually takes the following form:
 
 ```
 ${PACKAGE_ID}::${MODULE_NAME}::${FUNCTION_NAME}
@@ -906,8 +906,8 @@ ${PACKAGE_ID}::house_data::initialize_house_data
 There are a few parameters that you need to pass into `initialize_house_data()` Move function: the `HouseCap` ID, the House stake, and the House BLS public key:
 
 - Import the `HouseCap` ID from `constants.ts`, which you set up in the previous section.
-- Use `Transaction::splitCoin` for the House stake to create a new coin with a defined amount split from the Gas Coin `txb.gas`. Think of the gas coin as one singular coin available for gas payment from your account (which might cover the entire remaining balance of your account). This is useful for Sui payments - instead of manually selecting the coins for gas payment or manually splitting/merging to have the coin with correct amount for your Move call, the gas coin is the single entry point for this, with all the heavy lifting delegated to the SDK behind the scenes.
-- Pass the BLS public key as bytes `vector<u8>`. When providing inputs that are not on-chain objects, serialize them as BCS using a combination of `txb.pure` and `bcs` imported from `@mysten/sui/bcs`.
+- Use `Transaction::splitCoin` for the House stake to create a new coin with a defined amount split from the Gas Coin `txb.gas`. Think of the gas coin as one singular coin available for gas payment from your account (which might cover the entire remaining balance of your account). This is useful for Ika payments - instead of manually selecting the coins for gas payment or manually splitting/merging to have the coin with correct amount for your Move call, the gas coin is the single entry point for this, with all the heavy lifting delegated to the SDK behind the scenes.
+- Pass the BLS public key as bytes `vector<u8>`. When providing inputs that are not on-chain objects, serialize them as BCS using a combination of `txb.pure` and `bcs` imported from `@ika-io/ika/bcs`.
 
 Now sign and execute the transaction block. dApp Kit provides a React hook `useSignAndExecuteTransaction()` to streamline this process. This hook, when executed, prompts the UI for you to approve, sign, and execute the transaction block. You can configure the hook with the `showObjectChanges` option to return the newly-created `HouseData` shared object as the result of the transaction block. This `HouseData` object is important as you use it as input for later Move calls, so save its ID somewhere.
 
@@ -916,7 +916,7 @@ Great, now you know how to initialize the `HouseData` shared object. Move to the
 In this game, the users must create a `Counter` object to start the game. So there should be a place in the Player column UI to list the existing `Counter` object information for the player to choose. It seems likely that you will reuse the fetching logic for the `Counter` object in several places in your UI, so it’s good practice to isolate this logic into a React hook, which you call `useFetchCounterNft()` in `useFetchCounterNft.ts`:
 
 ```typescript title='containers/Player/useFetchCounterNft.ts'
-import { useCurrentAccount, useSuiClientQuery } from '@mysten/dapp-kit';
+import { useCurrentAccount, useIkaClientQuery } from '@mysten/dapp-kit';
 
 import 'react';
 
@@ -924,7 +924,7 @@ import { PACKAGE_ID } from '../../constants';
 
 // React hook to fetch CounterNFT owned by connected wallet
 // This hook is to demonstrate how to use `@mysten/dapp-kit` React hook to query data
-// besides using SuiClient directly
+// besides using IkaClient directly
 export function useFetchCounterNft() {
   const account = useCurrentAccount();
 
@@ -934,7 +934,7 @@ export function useFetchCounterNft() {
 
   // Fetch CounterNFT owned by current connected wallet
   // Only fetch the 1st one
-  const { data, isLoading, isError, error, refetch } = useSuiClientQuery(
+  const { data, isLoading, isError, error, refetch } = useIkaClientQuery(
     'getOwnedObjects',
     {
       owner: account.address,
@@ -967,7 +967,7 @@ export function useFetchCounterNft() {
 }
 ```
 
-This hook logic is very basic: if there is no current connected wallet, return empty data; otherwise, fetch the `Counter` object and return it. dApp Kit provides a React hook, `useSuiClientQuery()`, that enables interaction with [Sui RPC](references/sui-api.mdx) methods. Different RPC methods require different parameters. To fetch the object owned by a known address, use the [`getOwnedObjects` query](/sui-api-ref#suix_getownedobjects).
+This hook logic is very basic: if there is no current connected wallet, return empty data; otherwise, fetch the `Counter` object and return it. dApp Kit provides a React hook, `useIkaClientQuery()`, that enables interaction with [Ika RPC](references/ika-api.mdx) methods. Different RPC methods require different parameters. To fetch the object owned by a known address, use the [`getOwnedObjects` query](/ika-api-ref#ikax_getownedobjects).
 
 Now, pass the address of the connected wallet, as well as the global identifier for the `Counter`. This is in similar format to the global identifier type for function calls:
 
@@ -1050,7 +1050,7 @@ Great, now you can create the game with the created `Counter` object. Isolate th
 const txb = new Transaction();
 
 // Player stake
-const [stakeCoin] = txb.splitCoins(txb.gas, [MIST_PER_SUI * BigInt(stake)]);
+const [stakeCoin] = txb.splitCoins(txb.gas, [NIKA_PER_IKA * BigInt(stake)]);
 
 // Create the game with CounterNFT
 txb.moveCall({
@@ -1071,7 +1071,7 @@ execCreateGame(
     onError: (err) => {
       toast.error(err.message);
     },
-    onSuccess: (result: SuiTransactionBlockResponse) => {
+    onSuccess: (result: IkaTransactionBlockResponse) => {
       toast.success(`Digest: ${result.digest}`);
     },
   },
@@ -1085,7 +1085,7 @@ One final step remains: settle the game. There are a couple of ways you can use 
 
 :::info
 
-Event subscriptions are deprecated. To learn future-safe methods to work with events, see [Using Events](../sui-101/using-events.mdx).
+Event subscriptions are deprecated. To learn future-safe methods to work with events, see [Using Events](../ika-101/using-events.mdx).
 
 :::
 
@@ -1094,7 +1094,7 @@ All of this logic is in `HouseFinishGame.tsx`:
 ```typescript title='containers/House/HouseFinishGame.tsx'
 // This component will help the House to automatically finish the game whenever new game is started
 export function HouseFinishGame() {
-  const suiClient = useSuiClient();
+  const ikaClient = useIkaClient();
   const { mutate: execFinishGame } = useSignAndExecuteTransactionBlock();
 
   const [housePrivHex] = useContext(HouseKeypairContext);
@@ -1102,7 +1102,7 @@ export function HouseFinishGame() {
 
   useEffect(() => {
     // Subscribe to NewGame event
-    const unsub = suiClient.subscribeEvent({
+    const unsub = ikaClient.subscribeEvent({
       filter: {
         MoveEventType: `${PACKAGE_ID}::single_player_satoshi::NewGame`,
       },
@@ -1141,7 +1141,7 @@ export function HouseFinishGame() {
               onError: (err) => {
                 toast.error(err.message);
               },
-              onSuccess: (result: SuiTransactionBlockResponse) => {
+              onSuccess: (result: IkaTransactionBlockResponse) => {
                 toast.success(`Digest: ${result.digest}`);
               },
             },
@@ -1155,15 +1155,15 @@ export function HouseFinishGame() {
     return () => {
       (async () => (await unsub)())();
     };
-  }, [housePrivHex, houseDataId, suiClient]);
+  }, [housePrivHex, houseDataId, ikaClient]);
 
   return null;
 }
 ```
 
-To get the underlying `SuiClient` instance from the SDK, use `useSuiClient()`. You want to subscribe to events whenever the `HouseFinishGame` component loads. To do this, use the React hook `useEffect()` from the core React library.
+To get the underlying `IkaClient` instance from the SDK, use `useIkaClient()`. You want to subscribe to events whenever the `HouseFinishGame` component loads. To do this, use the React hook `useEffect()` from the core React library.
 
-`SuiClient` exposes a method called `subscribeEvent()` that enables you to subscribe to a variety of event types. `SuiClient::subscribeEvent()` is actually a thin wrapper around the RPC method [`suix_subscribeEvent`](/sui-api-ref#suix_subscribeevent).
+`IkaClient` exposes a method called `subscribeEvent()` that enables you to subscribe to a variety of event types. `IkaClient::subscribeEvent()` is actually a thin wrapper around the RPC method [`ikax_subscribeEvent`](/ika-api-ref#ikax_subscribeevent).
 
 The logic is that whenever a new game starts, you want to settle the game immediately. The necessary event to achieve this is the Move event type called `single_player_satoshi::NewGame`. If you inspect the parsed payload of the event through `event.parsedJson`, you can see the corresponding event fields declared in the smart contract. In this case, you just need to use two fields, the Game ID and the VRF input.
 
@@ -1171,4 +1171,4 @@ The next steps are similar to the previous Move calls, but you have to use the B
 
 Last but not least, remember to unsubscribe from the event whenever the `HouseFinishGame` component dismounts. This is important as you might not want to subscribe to the same event multiple times.
 
-Congratulations, you completed the frontend. You can carry the lessons learned here forward when using the dApp Kit to build your next Sui project.
+Congratulations, you completed the frontend. You can carry the lessons learned here forward when using the dApp Kit to build your next Ika project.

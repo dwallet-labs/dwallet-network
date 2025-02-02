@@ -8,7 +8,7 @@ import Browser from 'webextension-polyfill';
 export const growthbook = new GrowthBook({
 	// If you want to develop locally, you can set the API host to this:
 	// apiHost: 'http://localhost:3003',
-	apiHost: 'https://apps-backend.sui.io',
+	apiHost: 'https://apps-backend.ika.io',
 	clientKey: process.env.NODE_ENV === 'development' ? 'development' : 'production',
 	enableDevMode: process.env.NODE_ENV === 'development',
 });

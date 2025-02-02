@@ -4,12 +4,12 @@
 module reviews_rating::service {
     use std::string::String;
 
-    use sui::balance::{Self, Balance};
-    use sui::clock::Clock;
-    use sui::coin::{Self, Coin};
-    use sui::dynamic_field as df;
-    use sui::sui::SUI;
-    use sui::object_table::{Self, ObjectTable};
+    use ika::balance::{Self, Balance};
+    use ika::clock::Clock;
+    use ika::coin::{Self, Coin};
+    use ika::dynamic_field as df;
+    use ika::ika::IKA;
+    use ika::object_table::{Self, ObjectTable};
     
     use reviews_rating::moderator::{Moderator};
     use reviews_rating::review::{Self, Review};
@@ -29,7 +29,7 @@ module reviews_rating::service {
     /// Represents a service
     public struct Service has key, store {
         id: UID,
-        reward_pool: Balance<SUI>,
+        reward_pool: Balance<IKA>,
         reward: u64,
         top_reviews: vector<ID>,
         reviews: ObjectTable<ID, Review>,
@@ -219,7 +219,7 @@ module reviews_rating::service {
     /// Adds coins to reward pool
     public fun top_up_reward(
         service: &mut Service,
-        coin: Coin<SUI>
+        coin: Coin<IKA>
     ) {
         service.reward_pool.join(coin.into_balance());
     }

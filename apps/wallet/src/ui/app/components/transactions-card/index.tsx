@@ -6,7 +6,7 @@ import { Text } from '_app/shared/text';
 import { useGetTxnRecipientAddress } from '_hooks';
 import { useRecognizedPackages } from '_src/ui/app/hooks/useRecognizedPackages';
 import { getLabel, useTransactionSummary } from '@mysten/core';
-import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
+import type { IkaTransactionBlockResponse } from '@ika-io/ika/client';
 import { Link } from 'react-router-dom';
 
 import { TxnTypeLabel } from './TxnActionLabel';
@@ -16,7 +16,7 @@ export function TransactionCard({
 	txn,
 	address,
 }: {
-	txn: SuiTransactionBlockResponse;
+	txn: IkaTransactionBlockResponse;
 	address: string;
 }) {
 	const executionStatus = txn.effects?.status.status;
@@ -28,7 +28,7 @@ export function TransactionCard({
 		recognizedPackagesList,
 	});
 
-	// we only show Sui Transfer amount or the first non-Sui transfer amount
+	// we only show Ika Transfer amount or the first non-Ika transfer amount
 
 	const recipientAddress = useGetTxnRecipientAddress({ txn, address });
 
@@ -42,8 +42,8 @@ export function TransactionCard({
 	// For other transaction show Sent or Received
 
 	// TODO: Support programmable tx:
-	// Show sui symbol only if transfer transferAmount coinType is SUI_TYPE_ARG, staking or unstaking
-	const showSuiSymbol = false;
+	// Show ika symbol only if transfer transferAmount coinType is IKA_TYPE_ARG, staking or unstaking
+	const showIkaSymbol = false;
 
 	const timestamp = txn.timestampMs;
 
@@ -86,9 +86,9 @@ export function TransactionCard({
 									<Text color="gray-90" weight="semibold">
 										{summary?.label}
 									</Text>
-									{showSuiSymbol && (
+									{showIkaSymbol && (
 										<Text color="gray-90" weight="normal" variant="subtitleSmall">
-											SUI
+											IKA
 										</Text>
 									)}
 								</div>

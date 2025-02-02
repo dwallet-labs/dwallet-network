@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { TransactionObjectArgument } from '@mysten/sui/transactions';
+import type { TransactionObjectArgument } from '@ika-io/ika/transactions';
 
 // SPDX-License-Identifier: Apache-2.0
 export interface BalanceManager {

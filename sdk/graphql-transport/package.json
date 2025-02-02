@@ -1,7 +1,7 @@
 {
 	"name": "@mysten/graphql-transport",
 	"version": "0.2.28",
-	"description": "A GraphQL transport to allow SuiClient to work with RPC 2.0",
+	"description": "A GraphQL transport to allow IkaClient to work with RPC 2.0",
 	"license": "Apache-2.0",
 	"author": "Mysten Labs <build@mystenlabs.com>",
 	"type": "commonjs",
@@ -31,7 +31,7 @@
 		"prettier:check": "prettier -c --ignore-unknown .",
 		"prettier:fix": "prettier -w --ignore-unknown .",
 		"test:e2e:nowait": "vitest run e2e",
-		"test:e2e:prepare": "docker-compose down && docker-compose up -d && cargo build --bin sui --profile dev && cross-env RUST_LOG=info,sui=error,anemo_tower=warn,consensus=off cargo run --bin sui -- start --with-faucet --force-regenesis --with-indexer --pg-port 5435 --pg-db-name sui_indexer_v2 --with-graphql",
+		"test:e2e:prepare": "docker-compose down && docker-compose up -d && cargo build --bin ika --profile dev && cross-env RUST_LOG=info,ika=error,anemo_tower=warn,consensus=off cargo run --bin ika -- start --with-faucet --force-regenesis --with-indexer --pg-port 5435 --pg-db-name ika_indexer_v2 --with-graphql",
 		"test:e2e": "wait-on http://127.0.0.1:9123 -l --timeout 180000 && vitest"
 	},
 	"repository": {
@@ -60,7 +60,7 @@
 	"dependencies": {
 		"@graphql-typed-document-node/core": "^3.2.0",
 		"@mysten/bcs": "workspace:*",
-		"@mysten/sui": "workspace:*",
+		"@ika-io/ika": "workspace:*",
 		"graphql": "^16.9.0"
 	}
 }

@@ -18,7 +18,7 @@ use std::{
     time::Duration,
 };
 use storage::CertificateStore;
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use tokio::{
     sync::watch,
     task::{spawn_blocking, JoinHandle, JoinSet},
@@ -38,7 +38,7 @@ pub mod certificate_fetcher_tests;
 
 // Maximum number of certificates to fetch with one request.
 const MAX_CERTIFICATES_TO_FETCH: usize = 2_000;
-// Seconds to wait for a response before issuing another parallel fetch request.
+// Seconds to wait for a response before isikang another parallel fetch request.
 const PARALLEL_FETCH_REQUEST_INTERVAL_SECS: Duration = Duration::from_secs(5);
 // The timeout for an iteration of parallel fetch requests over all peers would be
 // num peers * PARALLEL_FETCH_REQUEST_INTERVAL_SECS + PARALLEL_FETCH_REQUEST_ADDITIONAL_TIMEOUT

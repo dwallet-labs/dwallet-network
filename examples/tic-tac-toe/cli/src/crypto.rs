@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use anyhow::{anyhow, Result};
 use fastcrypto::encoding::{Base64, Encoding};
-use sui_types::{
+use ika_types::{
     crypto::{EncodeDecodeBase64, PublicKey, SignatureScheme},
     multisig::MultiSigPublicKey,
 };

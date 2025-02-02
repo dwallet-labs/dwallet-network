@@ -1,33 +1,33 @@
-# Install Sui TypeScript SDK
+# Install Ika TypeScript SDK
 
-The Sui TypeScript SDK is available in the
-[Sui monorepo](https://github.com/MystenLabs/sui/tree/main/sdk) and NPM.
+The Ika TypeScript SDK is available in the
+[Ika monorepo](https://github.com/MystenLabs/sui/tree/main/sdk) and NPM.
 
 ## Install from NPM
 
-To use the Sui TypeScript SDK in your project, run the following command in your project root:
+To use the Ika TypeScript SDK in your project, run the following command in your project root:
 
 ```sh npm2yarn
-npm i @mysten/sui
+npm i @ika-io/ika
 ```
 
-## Experimental tag for use with a local Sui network
+## Experimental tag for use with a local Ika network
 
-Projects developing against one of the on-chain Sui networks (Devnet, Testnet, Mainnet) should use
+Projects developing against one of the on-chain Ika networks (Devnet, Testnet, Mainnet) should use
 the base SDK published in the NPM registry (previous section) because the code aligns with the
 relevant JSON-RPC. If your developing against a
-[local network](https://docs.sui.io/guides/developer/getting-started/local-network) built from the
-`main` branch of the Sui monorepo, however, you should use the `experimental`-tagged SDK package as
+[local network](https://docs.ika.io/guides/developer/getting-started/local-network) built from the
+`main` branch of the Ika monorepo, however, you should use the `experimental`-tagged SDK package as
 it contains the latest features (or a local build detailed in the section that follows).
 
 ```sh npm2yarn
-npm i @mysten/sui@experimental
+npm i @ika-io/ika@experimental
 ```
 
 ## Install from local build
 
-To build the SDK from the Sui monorepo, you must use [pnpm](https://pnpm.io/). With pnpm installed,
-run the following command from the `sui` root directory:
+To build the SDK from the Ika monorepo, you must use [pnpm](https://pnpm.io/). With pnpm installed,
+run the following command from the `ika` root directory:
 
 ```bash
 # Install all dependencies
@@ -36,11 +36,11 @@ pnpm install
 pnpm sdk build
 ```
 
-With the SDK built, you can import the library from your `sui` project. To do so, use a path to the
-`sui/sdk/typescript` directory that is relative to your project. For example, if you created a
-folder `my-sui-project` at the same level as `sui`, use the following to import the locally built
-Sui TypeScript package:
+With the SDK built, you can import the library from your `ika` project. To do so, use a path to the
+`ika/sdk/typescript` directory that is relative to your project. For example, if you created a
+folder `my-ika-project` at the same level as `ika`, use the following to import the locally built
+Ika TypeScript package:
 
 ```bash
-pnpm add ../sui/sdk/typescript
+pnpm add ../ika/sdk/typescript
 ```

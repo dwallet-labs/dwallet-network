@@ -16,7 +16,7 @@ parking_lot.workspace = true
 quinn-proto.workspace = true
 prometheus.workspace = true
 rand = { workspace = true, features = ["small_rng"] }
-sui-macros.workspace = true
+ika-macros.workspace = true
 tokio = { workspace = true, features = ["rt", "net", "sync", "macros", "time"] }
 tracing.workspace = true
 types = { path = "../types", package = "narwhal-types" }

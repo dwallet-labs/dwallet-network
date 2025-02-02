@@ -44,5 +44,5 @@ move-stdlib.workspace = true
 datatest-stable.workspace = true
 
 [[test]]
-name = "move_check_testsuite"
+name = "move_check_testikate"
 harness = false

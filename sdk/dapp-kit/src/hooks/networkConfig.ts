@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { SuiClientOptions } from '@mysten/sui/client';
+import type { IkaClientOptions } from '@ika-io/ika/client';
 
-import { useSuiClientContext } from './useSuiClient.js';
+import { useIkaClientContext } from './useIkaClient.js';
 
-export type NetworkConfig<T extends object = object> = SuiClientOptions & {
+export type NetworkConfig<T extends object = object> = IkaClientOptions & {
 	variables?: T;
 };
 
@@ -15,7 +15,7 @@ export function createNetworkConfig<
 	Variables extends object = NonNullable<Config['variables']>,
 >(networkConfig: T) {
 	function useNetworkConfig(): Config {
-		const { config } = useSuiClientContext();
+		const { config } = useIkaClientContext();
 
 		if (!config) {
 			throw new Error('No network config found');

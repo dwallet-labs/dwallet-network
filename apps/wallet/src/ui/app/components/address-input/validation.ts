@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useSuiNSEnabled } from '@mysten/core';
-import { useSuiClient } from '@mysten/dapp-kit';
-import { type SuiClient } from '@mysten/sui/client';
-import { isValidSuiAddress, isValidSuiNSName } from '@mysten/sui/utils';
+import { useIkaNSEnabled } from '@mysten/core';
+import { useIkaClient } from '@mysten/dapp-kit';
+import { type IkaClient } from '@ika-io/ika/client';
+import { isValidIkaAddress, isValidIkaNSName } from '@ika-io/ika/utils';
 import { useMemo } from 'react';
 import * as Yup from 'yup';
 
 const CACHE_EXPIRY_TIME = 60 * 1000; // 1 minute in milliseconds
 
-export function createSuiAddressValidation(client: SuiClient, suiNSEnabled: boolean) {
+export function createIkaAddressValidation(client: IkaClient, ikaNSEnabled: boolean) {
 	const resolveCache = new Map<string, { valid: boolean; expiry: number }>();
 
 	const currentTime = Date.now();
@@ -18,8 +18,8 @@ export function createSuiAddressValidation(client: SuiClient, suiNSEnabled: bool
 		.ensure()
 		.trim()
 		.required()
-		.test('is-sui-address', 'Invalid address. Please check again.', async (value) => {
-			if (suiNSEnabled && isValidSuiNSName(value)) {
+		.test('is-ika-address', 'Invalid address. Please check again.', async (value) => {
+			if (ikaNSEnabled && isValidIkaNSName(value)) {
 				if (resolveCache.has(value)) {
 					const cachedEntry = resolveCache.get(value)!;
 					if (currentTime < cachedEntry.expiry) {
@@ -41,16 +41,16 @@ export function createSuiAddressValidation(client: SuiClient, suiNSEnabled: bool
 				return !!address;
 			}
 
-			return isValidSuiAddress(value);
+			return isValidIkaAddress(value);
 		})
 		.label("Recipient's address");
 }
 
-export function useSuiAddressValidation() {
-	const client = useSuiClient();
-	const suiNSEnabled = useSuiNSEnabled();
+export function useIkaAddressValidation() {
+	const client = useIkaClient();
+	const ikaNSEnabled = useIkaNSEnabled();
 
 	return useMemo(() => {
-		return createSuiAddressValidation(client, suiNSEnabled);
-	}, [client, suiNSEnabled]);
+		return createIkaAddressValidation(client, ikaNSEnabled);
+	}, [client, ikaNSEnabled]);
 }

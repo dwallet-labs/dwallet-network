@@ -4,7 +4,7 @@
 import type { BcsType, BcsTypeOptions } from '@mysten/bcs';
 import { bcs, fromBase58, fromBase64, fromHex, toBase58, toBase64, toHex } from '@mysten/bcs';
 
-import { isValidSuiAddress, normalizeSuiAddress, SUI_ADDRESS_LENGTH } from '../utils/sui-types.js';
+import { isValidIkaAddress, normalizeIkaAddress, IKA_ADDRESS_LENGTH } from '../utils/ika-types.js';
 import { TypeTagSerializer } from './type-tag-serializer.js';
 import type { TypeTag as TypeTagType } from './types.js';
 
@@ -27,16 +27,16 @@ function optionEnum<T extends BcsType<any, any>>(type: T) {
 	});
 }
 
-export const Address = bcs.bytes(SUI_ADDRESS_LENGTH).transform({
+export const Address = bcs.bytes(IKA_ADDRESS_LENGTH).transform({
 	validate: (val) => {
 		const address = typeof val === 'string' ? val : toHex(val);
-		if (!address || !isValidSuiAddress(normalizeSuiAddress(address))) {
-			throw new Error(`Invalid Sui address ${address}`);
+		if (!address || !isValidIkaAddress(normalizeIkaAddress(address))) {
+			throw new Error(`Invalid Ika address ${address}`);
 		}
 	},
 	input: (val: string | Uint8Array) =>
-		typeof val === 'string' ? fromHex(normalizeSuiAddress(val)) : val,
-	output: (val) => normalizeSuiAddress(toHex(val)),
+		typeof val === 'string' ? fromHex(normalizeIkaAddress(val)) : val,
+	output: (val) => normalizeIkaAddress(toHex(val)),
 });
 
 export const ObjectDigest = bcs.vector(bcs.u8()).transform({
@@ -50,7 +50,7 @@ export const ObjectDigest = bcs.vector(bcs.u8()).transform({
 	},
 });
 
-export const SuiObjectRef = bcs.struct('SuiObjectRef', {
+export const IkaObjectRef = bcs.struct('IkaObjectRef', {
 	objectId: Address,
 	version: bcs.u64(),
 	digest: ObjectDigest,
@@ -63,9 +63,9 @@ export const SharedObjectRef = bcs.struct('SharedObjectRef', {
 });
 
 export const ObjectArg = bcs.enum('ObjectArg', {
-	ImmOrOwnedObject: SuiObjectRef,
+	ImmOrOwnedObject: IkaObjectRef,
 	SharedObject: SharedObjectRef,
-	Receiving: SuiObjectRef,
+	Receiving: IkaObjectRef,
 });
 
 export const CallArg = bcs.enum('CallArg', {
@@ -210,7 +210,7 @@ export const StructTag = bcs.struct('StructTag', {
 });
 
 export const GasData = bcs.struct('GasData', {
-	payment: bcs.vector(SuiObjectRef),
+	payment: bcs.vector(IkaObjectRef),
 	owner: Address,
 	price: bcs.u64(),
 	budget: bcs.u64(),
@@ -239,7 +239,7 @@ export const IntentVersion = bcs.enum('IntentVersion', {
 });
 
 export const AppId = bcs.enum('AppId', {
-	Sui: null,
+	Ika: null,
 });
 
 export const Intent = bcs.struct('Intent', {

@@ -5,10 +5,10 @@ import {
 	ConnectButton,
 	useCurrentAccount,
 	useSignTransaction,
-	useSuiClient,
+	useIkaClient,
 } from '@mysten/dapp-kit';
-import { SuiTransactionBlockResponse } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { IkaTransactionBlockResponse } from '@ika-io/ika/client';
+import { Transaction } from '@ika-io/ika/transactions';
 import { ComponentProps, ReactNode, useMemo, useState } from 'react';
 
 import { sponsorTransaction } from './utils/sponsorTransaction';
@@ -39,7 +39,7 @@ const CodePanel = ({
 );
 
 export function App() {
-	const client = useSuiClient();
+	const client = useIkaClient();
 	const currentAccount = useCurrentAccount();
 	const { mutateAsync: signTransaction } = useSignTransaction();
 	const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ export function App() {
 	const [signedTx, setSignedTx] = useState<Awaited<ReturnType<typeof signTransaction>> | null>(
 		null,
 	);
-	const [executedTx, setExecutedTx] = useState<SuiTransactionBlockResponse | null>(null);
+	const [executedTx, setExecutedTx] = useState<IkaTransactionBlockResponse | null>(null);
 
 	const tx = useMemo(() => {
 		if (!currentAccount) return null;

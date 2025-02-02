@@ -6,9 +6,9 @@ import "@mysten/dapp-kit/dist/index.css";
 import "@radix-ui/themes/styles.css";
 import "./styles/base.css";
 
-import { getFullnodeUrl } from "@mysten/sui/client";
+import { getFullnodeUrl } from "@ika-io/ika/client";
 import {
-  SuiClientProvider,
+  IkaClientProvider,
   WalletProvider,
   createNetworkConfig,
 } from "@mysten/dapp-kit";
@@ -31,11 +31,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Theme appearance="light">
       <QueryClientProvider client={queryClient}>
-        <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
+        <IkaClientProvider networks={networkConfig} defaultNetwork="testnet">
           <WalletProvider autoConnect>
             <RouterProvider router={router} />
           </WalletProvider>
-        </SuiClientProvider>
+        </IkaClientProvider>
       </QueryClientProvider>
     </Theme>
   </React.StrictMode>,

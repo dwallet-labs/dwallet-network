@@ -1,23 +1,23 @@
-# Sui Owned Object Pools Quick Start
+# Ika Owned Object Pools Quick Start
 
 import { Callout } from 'nextra/components';
 
 <Callout type="warning">
-	Sui Owned Object Pools (SuiOOP) has been replaced by
+	Ika Owned Object Pools (IkaOOP) has been replaced by
 	[`ParallelTransactionExecutor`](../typescript/executors#paralleltransactionexecutor) from
-	`@mysten/sui/transactions`
+	`@ika-io/ika/transactions`
 
-    Sui Owned Object Pools (SuiOOP) is no longer maintained.
+    Ika Owned Object Pools (IkaOOP) is no longer maintained.
 
 </Callout>
 
-SuiOOP is a TypeScript library that provides a set of tools for managing multiple concurrent
-transactions on the Sui network to help avoid object equivocation and locking.
+IkaOOP is a TypeScript library that provides a set of tools for managing multiple concurrent
+transactions on the Ika network to help avoid object equivocation and locking.
 
 ## Installation
 
 ```sh npm2yarn
-npm i suioop
+npm i ikaoop
 ```
 
 ## Usage
@@ -28,7 +28,7 @@ At a high level, this is how you implement the library:
 // Initialize the ExecutorServiceHandler.
 const eshandler = await ExecutorServiceHandler.initialize(
 adminKeypair,
-suiClient,
+ikaClient,
 );
 
 /// And then for each incoming request...
@@ -36,7 +36,7 @@ suiClient,
 const myTransaction;
 
 /// and send it for execution
-const promise = eshandler.execute(myTransaction, suiClient, splitStrategy);
+const promise = eshandler.execute(myTransaction, ikaClient, splitStrategy);
 ```
 
 See [End-to-End Examples](/typescript/owned-object-pool/examples) for sample code you can run.

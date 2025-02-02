@@ -5,7 +5,7 @@ import type { Message } from '_messages';
 import { filter, fromEvent, map, share } from 'rxjs';
 import type { Observable } from 'rxjs';
 
-export type ClientType = 'sui_in-page' | 'sui_content-script';
+export type ClientType = 'ika_in-page' | 'ika_content-script';
 
 type WindowMessage = {
 	target: ClientType;

@@ -33,9 +33,9 @@ const styles = cva(
 					'visited:text-steel-darkest',
 					'disabled:bg-hero-darkest/5 disabled:text-steel/50',
 				],
-				secondarySui: [
+				secondaryIka: [
 					'bg-transparent text-steel border-none',
-					'hover:bg-sui-light focus:bg-sui-light',
+					'hover:bg-ika-light focus:bg-ika-light',
 					'visited:text-steel-darker',
 					'active:text-steel-dark/70',
 					'disabled:bg-gray-40 disabled:text-steel/50',
@@ -67,7 +67,7 @@ const styles = cva(
 					'disabled:text-steel-dark/50',
 				],
 				hidden: [
-					'bg-gray-45 bg-opacity-25 text-gray-60 hover:text-sui-dark hover:bg-gray-35 hover:bg-opacity-75 border-none h-full w-full backdrop-blur-md',
+					'bg-gray-45 bg-opacity-25 text-gray-60 hover:text-ika-dark hover:bg-gray-35 hover:bg-opacity-75 border-none h-full w-full backdrop-blur-md',
 				],
 			},
 			size: {
@@ -85,14 +85,14 @@ const iconStyles = cva('flex', {
 			none: 'border-none',
 		},
 		variant: {
-			primary: ['text-sui-light group-active:text-steel/70 group-disabled:text-steel/50'],
+			primary: ['text-ika-light group-active:text-steel/70 group-disabled:text-steel/50'],
 			secondary: [
 				'text-steel',
 				'group-hover:text-steel-darker group-focus:text-steel-darker',
 				'group-active:text-steel-dark/70',
 				'group-disabled:text-steel/50',
 			],
-			secondarySui: [
+			secondaryIka: [
 				'text-steel',
 				'group-hover:text-hero group-focus:text-hero',
 				'group-active:text-hero/70',

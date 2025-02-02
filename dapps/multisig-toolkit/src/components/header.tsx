@@ -16,7 +16,7 @@ export function Header() {
 				<div className="flex items-center gap-2">
 					<KeyRound strokeWidth={2} size={18} className="text-primary/80" />
 					<h1 className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-						Sui MultiSig Toolkit
+						Ika MultiSig Toolkit
 					</h1>
 				</div>
 			</NavLink>

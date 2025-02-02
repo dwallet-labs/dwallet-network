@@ -8,7 +8,7 @@ mod metrics;
 
 pub use errors::{SubscriberError, SubscriberResult};
 pub use state::ExecutionIndices;
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 
 use crate::metrics::ExecutorMetrics;
 use crate::subscriber::spawn_subscriber;

@@ -7,7 +7,7 @@ import "openzeppelin-foundry-upgrades/Options.sol";
 import "../contracts/BridgeCommittee.sol";
 import "../contracts/BridgeVault.sol";
 import "../contracts/BridgeLimiter.sol";
-import "../contracts/SuiBridge.sol";
+import "../contracts/IkaBridge.sol";
 import "../contracts/BridgeConfig.sol";
 
 contract BridgeBaseTest is Test {
@@ -41,12 +41,12 @@ contract BridgeBaseTest is Test {
 
     uint64 USD_VALUE_MULTIPLIER = 100000000; // 8 DP accuracy
 
-    uint64 SUI_PRICE = 1_28000000;
+    uint64 IKA_PRICE = 1_28000000;
     uint64 BTC_PRICE = 43251_89000000;
     uint64 ETH_PRICE = 2596_96000000;
     uint64 USDC_PRICE = 1_00000000;
     uint64[] tokenPrices;
-    uint8[] suiDecimals;
+    uint8[] ikaDecimals;
     uint8[] tokenIds;
     address[] supportedTokens;
     uint8[] supportedChains;
@@ -56,7 +56,7 @@ contract BridgeBaseTest is Test {
     uint16 minStakeRequired = 10000;
 
     BridgeCommittee public committee;
-    SuiBridge public bridge;
+    IkaBridge public bridge;
     BridgeVault public vault;
     BridgeLimiter public limiter;
     BridgeConfig public config;
@@ -119,14 +119,14 @@ contract BridgeBaseTest is Test {
         supportedChains = new uint8[](1);
         supportedChains[0] = 0;
         tokenPrices = new uint64[](5);
-        suiDecimals = new uint8[](5);
+        ikaDecimals = new uint8[](5);
         tokenIds = new uint8[](5);
-        suiDecimals[0] = 9;
-        suiDecimals[1] = 8;
-        suiDecimals[2] = 8;
-        suiDecimals[3] = 6;
-        suiDecimals[4] = 6;
-        tokenPrices[0] = SUI_PRICE;
+        ikaDecimals[0] = 9;
+        ikaDecimals[1] = 8;
+        ikaDecimals[2] = 8;
+        ikaDecimals[3] = 6;
+        ikaDecimals[4] = 6;
+        tokenPrices[0] = IKA_PRICE;
         tokenPrices[1] = BTC_PRICE;
         tokenPrices[2] = ETH_PRICE;
         tokenPrices[3] = USDC_PRICE;
@@ -141,7 +141,7 @@ contract BridgeBaseTest is Test {
             "BridgeConfig.sol",
             abi.encodeCall(
                 BridgeConfig.initialize,
-                (address(committee), chainID, supportedTokens, tokenPrices, tokenIds, suiDecimals, supportedChains)
+                (address(committee), chainID, supportedTokens, tokenPrices, tokenIds, ikaDecimals, supportedChains)
             ),
             opts
         );
@@ -172,15 +172,15 @@ contract BridgeBaseTest is Test {
 
         // deploy bridge =====================================================================
 
-        address _suiBridge = Upgrades.deployUUPSProxy(
-            "SuiBridge.sol",
+        address _ikaBridge = Upgrades.deployUUPSProxy(
+            "IkaBridge.sol",
             abi.encodeCall(
-                SuiBridge.initialize, (address(committee), address(vault), address(limiter))
+                IkaBridge.initialize, (address(committee), address(vault), address(limiter))
             ),
             opts
         );
 
-        bridge = SuiBridge(_suiBridge);
+        bridge = IkaBridge(_ikaBridge);
 
         vault.transferOwnership(address(bridge));
         limiter.transferOwnership(address(bridge));

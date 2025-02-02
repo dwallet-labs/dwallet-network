@@ -1,18 +1,18 @@
 ---
 title: Programmable Transaction Blocks
-description: Programmable transaction blocks are a group of commands that complete a transaction on Sui.
+description: Programmable transaction blocks are a group of commands that complete a transaction on Ika.
 ---
 
-On Sui, a transaction is more than a basic record of the flow of assets. Transactions on Sui are composed of a number of commands that execute on inputs to define the result of the transaction. Termed programmable transaction blocks (PTBs), these groups of commands define all user transactions on Sui. PTBs allow a user to call multiple Move functions, manage their objects, and manage their coins in a single transaction--without publishing a new Move package. Designed with automation and transaction builders in mind, PTBs are a lightweight and flexible way of generating transactions. More intricate programming patterns, such as loops, are not supported, however, and in those cases you must publish a new Move package.
+On Ika, a transaction is more than a basic record of the flow of assets. Transactions on Ika are composed of a number of commands that execute on inputs to define the result of the transaction. Termed programmable transaction blocks (PTBs), these groups of commands define all user transactions on Ika. PTBs allow a user to call multiple Move functions, manage their objects, and manage their coins in a single transaction--without publishing a new Move package. Designed with automation and transaction builders in mind, PTBs are a lightweight and flexible way of generating transactions. More intricate programming patterns, such as loops, are not supported, however, and in those cases you must publish a new Move package.
 
 As mentioned, each PTB is comprised of individual transaction commands (sometimes referred to simply as transactions or commands). Each transaction command executes in order, and you can use the results from one transaction command in any subsequent transaction command. The effects, specifically object modifications or transfers, of all transaction commands in a block are applied atomically at the end of the transaction. If one transaction command fails, the entire block fails and no effects from the commands are applied.
 
 A PTB can perform up to 1,024 unique operations in a single execution, whereas transactions on traditional blockchains would require 1,024 individual executions to accomplish the same result. The structure also promotes cheaper gas fees. The cost of facilitating individual transactions is always more than the cost of those same transactions blocked together in a PTB.
 
-The remainder of this topic covers the semantics of the execution of the transaction commands. It assumes familiarity with the Sui object model and the Move language. For more information on those topics, see the following documents:
+The remainder of this topic covers the semantics of the execution of the transaction commands. It assumes familiarity with the Ika object model and the Move language. For more information on those topics, see the following documents:
 
 - [Object model](../object-model.mdx)
-- [Move Concepts](../sui-move-concepts.mdx)
+- [Move Concepts](../ika-move-concepts.mdx)
 
 ## Transaction type
 
@@ -29,12 +29,12 @@ Looking closer at the two main components:
 - The `inputs` value is a vector of arguments, `[Input]`. These arguments are either objects or pure values that you can use in the commands. The objects are either owned by the sender or are shared/immutable objects. The pure values represent simple Move values, such as `u64` or `String` values, which you can be construct purely from their bytes. For historical reasons, `Input` is `CallArg` in the Rust implementation.
 - The `commands` value is a vector of commands, `[Command]`. The possible commands are:
   - `TransferObjects` sends multiple (one or more) objects to a specified address.
-  - `SplitCoins` splits off multiple (one or more) coins from a single coin. It can be any `sui::coin::Coin<_>` object.
-  - `MergeCoins` merges multiple (one or more) coins into a single coin. Any `sui::coin::Coin<_>` objects can be merged, as long as they are all of the same type.
+  - `SplitCoins` splits off multiple (one or more) coins from a single coin. It can be any `ika::coin::Coin<_>` object.
+  - `MergeCoins` merges multiple (one or more) coins into a single coin. Any `ika::coin::Coin<_>` objects can be merged, as long as they are all of the same type.
   - `MakeMoveVec` creates a vector (potentially empty) of Move values. This is used primarily to construct vectors of Move values to be used as arguments to `MoveCall`.
   - `MoveCall` invokes either an `entry` or a `public` Move function in a published package.
   - `Publish` creates a new package and calls the `init` function of each module in the package.
-  - `Upgrade` upgrades an existing package. The upgrade is gated by the `sui::package::UpgradeCap` for that package.
+  - `Upgrade` upgrades an existing package. The upgrade is gated by the `ika::package::UpgradeCap` for that package.
 
 ## Inputs and results
 
@@ -44,7 +44,7 @@ The inputs and results can be seen as populating an array of values. For inputs,
 
 ### Inputs
 
-Input arguments to a PTB are broadly categorized as either objects or pure values. The direct implementation of these arguments is often obscured by transaction builders or SDKs. This section describes information or data the Sui network needs when specifying the list of inputs, `[Input]`. Each `Input` is either an object, `Input::Object(ObjectArg)`, which contains the necessary metadata to specify to object being used, or a pure value, `Input::Pure(PureArg)`, which contains the bytes of the value.
+Input arguments to a PTB are broadly categorized as either objects or pure values. The direct implementation of these arguments is often obscured by transaction builders or SDKs. This section describes information or data the Ika network needs when specifying the list of inputs, `[Input]`. Each `Input` is either an object, `Input::Object(ObjectArg)`, which contains the necessary metadata to specify to object being used, or a pure value, `Input::Pure(PureArg)`, which contains the bytes of the value.
 
 For object inputs, the metadata needed differs depending on the type of [ownership of the object](../object-ownership.mdx). The data for the `ObjectArg` enum follows:
 
@@ -52,9 +52,9 @@ If the object is owned by an address (or it is immutable), then use `ObjectArg::
 
 If an object is shared, then use `Object::SharedObject { id: ObjectID, initial_shared_version: SequenceNumber, mutable: bool }`. Unlike `ImmOrOwnedObject`, a shared objects version and digest are determined by the network's consensus protocol. The `initial_shared_version` is the version of the object when it was first shared, which is used by consensus when it has not yet seen a transaction with that object. While all shared objects _can_ be mutated, the `mutable` flag indicates whether the object is to be used mutably in this transaction. In the case where the `mutable` flag is set to `false`, the object is read-only, and the system can schedule other read-only transactions in parallel.
 
-If the object is owned by another object, as in it was sent to an object's ID via the `TransferObjects` command or the `sui::transfer::transfer` function, then use `ObjectArg::Receiving(ObjectID, SequenceNumber, ObjectDigest)`. The object data is the same as for the `ImmOrOwnedObject` case.
+If the object is owned by another object, as in it was sent to an object's ID via the `TransferObjects` command or the `ika::transfer::transfer` function, then use `ObjectArg::Receiving(ObjectID, SequenceNumber, ObjectDigest)`. The object data is the same as for the `ImmOrOwnedObject` case.
 
-For pure inputs, the only data provided is the [BCS](https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/docs/bcs.md) bytes, which are deserialized to construct Move values. Not all Move values can be constructed from BCS bytes. This means that even if the bytes match the expected layout for a given Move type, they cannot be deserialized into a value of that type unless the type is one of the types permitted for `Pure` values. The following types are allowed to be used with pure values:
+For pure inputs, the only data provided is the [BCS](https://github.com/MystenLabs/sui/blob/main/crates/ika-framework/docs/bcs.md) bytes, which are deserialized to construct Move values. Not all Move values can be constructed from BCS bytes. This means that even if the bytes match the expected layout for a given Move type, they cannot be deserialized into a value of that type unless the type is one of the types permitted for `Pure` values. The following types are allowed to be used with pure values:
 
 - All primitive types:
   - `u8`
@@ -66,7 +66,7 @@ For pure inputs, the only data provided is the [BCS](https://github.com/MystenLa
   - `bool`
   - `address`
 - A string, either an ASCII string (`std::ascii::String`) or UTF8 string (`std::string::String`). In either case, the bytes are validated to be a valid string with the respective encoding.
-- An object ID `sui::object::ID`.
+- An object ID `ika::object::ID`.
 - A vector, `vector<T>`, where `T` is a valid type for a pure input, checked recursively.
 - An option, `std::option::Option<T>`, where `T` is a valid type for a pure input, checked recursively.
 
@@ -77,9 +77,9 @@ Interestingly, the bytes are not validated until the type is specified in a comm
 Each transaction command produces a (possibly empty) array of values. The type of the value can be any arbitrary Move type, so unlike inputs, the values are not limited to objects or pure values. The number of results generated and their types are specific to each transaction command. The specifics for each command can be found in the section for that command, but in summary:
 
 - `MoveCall`: the number of results and their types are determined by the Move function being called. Move functions that return references are not supported at this time.
-- `SplitCoins`: produces (one or more) coins from a single coin. The type of each coin is `sui::coin::Coin<T>` where the specific coin type `T` matches the coin being split.
-- `Publish`: returns the upgrade capability, `sui::package::UpgradeCap`, for the newly published package.
-- `Upgrade`: returns the upgrade receipt, `sui::package::UpgradeReceipt`, for the upgraded package.
+- `SplitCoins`: produces (one or more) coins from a single coin. The type of each coin is `ika::coin::Coin<T>` where the specific coin type `T` matches the coin being split.
+- `Publish`: returns the upgrade capability, `ika::package::UpgradeCap`, for the newly published package.
+- `Upgrade`: returns the upgrade receipt, `ika::package::UpgradeReceipt`, for the upgraded package.
 - `TransferObjects` and `MergeCoins` do not produce any results (an empty result vector).
 
 ### Argument structure and usage
@@ -87,7 +87,7 @@ Each transaction command produces a (possibly empty) array of values. The type o
 Each command takes `Argument`s that specify the input or result being used. The usage (by-reference or by-value) is inferred based on the type of the argument and the expected argument of the command. First, examine the structure of the `Argument` enum.
 
 - `Input(u16)` is an input argument, where the `u16` is the index of the input in the input vector. For example, given an input vector of `[Object1, Object2, Pure1, Object3]`, `Object1` is accessed with `Input(0)` and `Pure1` is accessed with `Input(2)`.
-- `GasCoin` is a special input argument representing the object for the `SUI` coin used to pay for gas. It is kept separate from the other inputs because the gas coin is always present in each transaction and has special restrictions (see below) not present for other inputs. Additionally, the gas coin being separate makes its usage explicit, which is helpful for sponsored transactions where the sponsor might not want the sender to use the gas coin for anything other than gas.  
+- `GasCoin` is a special input argument representing the object for the `IKA` coin used to pay for gas. It is kept separate from the other inputs because the gas coin is always present in each transaction and has special restrictions (see below) not present for other inputs. Additionally, the gas coin being separate makes its usage explicit, which is helpful for sponsored transactions where the sponsor might not want the sender to use the gas coin for anything other than gas.  
     
   The gas coin cannot be taken by-value except with the `TransferObjects` command. If you need an owned version of the gas coin, you can first use `SplitCoins` to split off a single coin.    
     
@@ -104,7 +104,7 @@ For the execution of PTBs, the input vector is populated by the input objects or
 
 At the beginning of execution, the PTB runtime takes the already loaded input objects and loads them into the input array. The objects are already verified by the network, checking rules like existence and valid ownership. The pure value bytes are also loaded into the array but not validated until usage.
 
-The most important thing to note at this stage is the effects on the gas coin. At the beginning of execution, the maximum gas budget (in terms of `SUI`) is withdrawn from the gas coin. Any unused gas is returned to the gas coin at the end of execution, even if the coin has changed owners.
+The most important thing to note at this stage is the effects on the gas coin. At the beginning of execution, the maximum gas budget (in terms of `IKA`) is withdrawn from the gas coin. Any unused gas is returned to the gas coin at the end of execution, even if the coin has changed owners.
 
 ### Executing a transaction command
 
@@ -115,7 +115,7 @@ Each transaction command is then executed in order. First, examine the rules aro
 You can use each argument by-reference or by-value. The usage is based on the type of the argument and the type signature of the command.
   - If the signature expects an `&mut T`, the runtime checks the argument has type `T` and it is then mutably borrowed.
   - If the signature expects an `&T`, the runtime checks the argument has type `T` and it is then immutably borrowed.
-  - If the signature expects a `T`, the runtime checks the argument has type `T` and it is copied if `T: copy` and moved otherwise. No object in Sui has `copy` because the unique ID field `sui::object::UID` present in all objects does not have the `copy` ability.
+  - If the signature expects a `T`, the runtime checks the argument has type `T` and it is copied if `T: copy` and moved otherwise. No object in Ika has `copy` because the unique ID field `ika::object::UID` present in all objects does not have the `copy` ability.
 
 The transaction fails if an argument is used in any form after being moved. There is no way to restore an argument to its position (its input or result index) after it is moved.
 
@@ -127,7 +127,7 @@ The borrowing of arguments has other rules to ensure unique safe usage of an arg
   - Moved, there must be no outstanding borrows. Moving a borrowed value would dangle those outstanding borrows, making them unsafe.
   - Copied, there can be outstanding borrows, mutable or immutable. While it might lead to some unexpected results in some cases, there is no safety concern.
 
-Object inputs have the type of their object `T` as you might expect. However, for `ObjectArg::Receiving` inputs, the object type `T` is instead wrapped as `sui::transfer::Receiving<T>`. This is because the object is not owned by the sender, but instead by another object. And to prove ownership with that parent object, you call the `sui::transfer::receive` function to remove the wrapper.
+Object inputs have the type of their object `T` as you might expect. However, for `ObjectArg::Receiving` inputs, the object type `T` is instead wrapped as `ika::transfer::Receiving<T>`. This is because the object is not owned by the sender, but instead by another object. And to prove ownership with that parent object, you call the `ika::transfer::receive` function to remove the wrapper.
 
 The `GasCoin` has special restrictions on being used by-value (moved). You can only use it by-value with the `TransferObjects` command.
 
@@ -153,24 +153,24 @@ The command has the form `TransferObjects(ObjectArgs, AddressArg)` where `Object
 The command has the form `SplitCoins(CoinArg, AmountArgs)` where `CoinArg` is the coin being split and `AmountArgs` is a vector of amounts to split off.
 
 - When the transaction is signed, the network verifies that the `AmountArgs` is non-empty.
-- The coin argument `CoinArg: Argument` must be a coin of type `sui::coin::Coin<T>` where `T` is the type of the coin being split. It can be any coin type and is not limited to `SUI` coins.
+- The coin argument `CoinArg: Argument` must be a coin of type `ika::coin::Coin<T>` where `T` is the type of the coin being split. It can be any coin type and is not limited to `IKA` coins.
 - The amount arguments `AmountArgs: [Argument]` must be `u64` values, which could come from a `Pure` input or a result.
 - The coin argument `CoinArg` is taken by mutable reference.
 - The amount arguments `AmountArgs` are taken by value (copied).
-- The result of the command is a vector of coins, `sui::coin::Coin<T>`. The coin type `T` is the same as the coin being split, and the number of results matches the number of arguments
-- For a rough signature expressed in Move, it is similar to a function `<T: key + store>(coin: &mut sui::coin::Coin<T>, amounts: vector<u64>): vector<sui::coin::Coin<T>>` where the result `vector` is guaranteed to have the same length as the `amounts` vector.
+- The result of the command is a vector of coins, `ika::coin::Coin<T>`. The coin type `T` is the same as the coin being split, and the number of results matches the number of arguments
+- For a rough signature expressed in Move, it is similar to a function `<T: key + store>(coin: &mut ika::coin::Coin<T>, amounts: vector<u64>): vector<ika::coin::Coin<T>>` where the result `vector` is guaranteed to have the same length as the `amounts` vector.
 
 #### `MergeCoins`
 
 The command has the form `MergeCoins(CoinArg, ToMergeArgs)` where the `CoinArg` is the target coin in which the `ToMergeArgs` coins are merged into. In other words, you merge multiple coins (`ToMergeArgs`) into a single coin (`CoinArg`).
 
 - When the transaction is signed, the network verifies that the `ToMergeArgs` is non-empty.
-- The coin argument `CoinArg: Argument` must be a coin of type `sui::coin::Coin<T>` where `T` is the type of the coin being merged. It can be any coin type and is not limited to `SUI` coins.
-- The coin arguments `ToMergeArgs: [Argument]` must be `sui::coin::Coin<T>` values where the `T` is the same type as the `CoinArg`.
+- The coin argument `CoinArg: Argument` must be a coin of type `ika::coin::Coin<T>` where `T` is the type of the coin being merged. It can be any coin type and is not limited to `IKA` coins.
+- The coin arguments `ToMergeArgs: [Argument]` must be `ika::coin::Coin<T>` values where the `T` is the same type as the `CoinArg`.
 - The coin argument `CoinArg` is taken by mutable reference.
 - The merge arguments `ToMergeArgs` are taken by value (moved).
 - The command does not produce any results (an empty result vector).
-- For a rough signature expressed in Move, it is similar to a function `<T: key + store>(coin: &mut sui::coin::Coin<T>, to_merge: vector<sui::coin::Coin<T>>): ()`
+- For a rough signature expressed in Move, it is similar to a function `<T: key + store>(coin: &mut ika::coin::Coin<T>, to_merge: vector<ika::coin::Coin<T>>): ()`
 
 #### `MakeMoveVec`
 
@@ -206,7 +206,7 @@ The transitive dependencies `TransitiveDependencies: [ObjectID]` are the Object 
 
 After the modules in the package are verified, the `init` function of each module is called in same order as the module byte vector `ModuleBytes`.
 
-The command produces a single result of type `sui::package::UpgradeCap`, which is the upgrade capability for the newly published package.
+The command produces a single result of type `ika::package::UpgradeCap`, which is the upgrade capability for the newly published package.
 
 #### `Upgrade`
 
@@ -216,9 +216,9 @@ For details on the `ModuleBytes` and `TransitiveDependencies`, see the [`Publish
 
 The `Package: ObjectID` is the Object ID of the package being upgraded. The package must exist and be the latest version.
 
-The `UpgradeTicket: sui::package::UpgradeTicket` is the upgrade ticket for the package being upgraded and is generated from the `sui::package::UpgradeCap`. The ticket is taken by value (moved).
+The `UpgradeTicket: ika::package::UpgradeTicket` is the upgrade ticket for the package being upgraded and is generated from the `ika::package::UpgradeCap`. The ticket is taken by value (moved).
 
-The command produces a single result type `sui::package::UpgradeReceipt` which provides proof for that upgrade. For more details on upgrades, see [Upgrading Packages](../sui-move-concepts/packages/upgrade.mdx).
+The command produces a single result type `ika::package::UpgradeReceipt` which provides proof for that upgrade. For more details on upgrades, see [Upgrading Packages](../ika-move-concepts/packages/upgrade.mdx).
 
 ### End of execution
 
@@ -235,15 +235,15 @@ For results, the following checks are performed:
   - If the value has `copy` but not `drop`, it's last usage must have been by-value. In that way, it's last usage is treated as a move.
   - Otherwise, an error is given because there is an unused value without `drop`.
 
-Any remaining SUI deducted from the gas coin at the beginning of execution is returned to the coin, even if the owner has changed. In other words, the maximum possible gas is deducted at the beginning of execution, and then the unused gas is returned at the end of execution (all in SUI). Because you can take the gas coin only by-value with `TransferObjects`, it will not have been wrapped or deleted.
+Any remaining IKA deducted from the gas coin at the beginning of execution is returned to the coin, even if the owner has changed. In other words, the maximum possible gas is deducted at the beginning of execution, and then the unused gas is returned at the end of execution (all in IKA). Because you can take the gas coin only by-value with `TransferObjects`, it will not have been wrapped or deleted.
 
-The total effects (which contain the created, mutated, and deleted objects) are then passed out of the execution layer and are applied by the Sui network.
+The total effects (which contain the created, mutated, and deleted objects) are then passed out of the execution layer and are applied by the Ika network.
 
 ## Example
 
 Let's walk through an example of a PTB's execution. While this example is not exhaustive in demonstrating all the rules, it does show the general flow of execution.
 
-Suppose you want to buy two items from a marketplace costing `100 MIST`. You keep one for yourself, and then send the object and the remaining coin to a friend at address `0x808`. You can do that all in one PTB:
+Suppose you want to buy two items from a marketplace costing `100 NIKA`. You keep one for yourself, and then send the object and the remaining coin to a friend at address `0x808`. You can do that all in one PTB:
 
 ```rust
 {
@@ -256,18 +256,18 @@ Suppose you want to buy two items from a marketplace costing `100 MIST`. You kee
     SplitCoins(GasCoin, [Input(2)]),
     MoveCall("some_package", "some_marketplace", "buy_two", [], [Input(1), NestedResult(0, 0)]),
     TransferObjects([GasCoin, NestedResult(1, 0)], Input(0)),
-    MoveCall("sui", "tx_context", "sender", [], []),
+    MoveCall("ika", "tx_context", "sender", [], []),
     TransferObjects([NestedResult(1, 1)], NestedResult(3, 0)),
   ]
 }
 ```
 
-The inputs include the friend's address, the marketplace object, and the value for the coin split. For the commands, split off the coin, call the market place function, send the gas coin and one object, grab your address (via `sui::tx_context::sender`), and then send the remaining object to yourself. For simplicity, the documentation refers to the package names by name, but note that in practice they are referenced by the package's Object ID.
+The inputs include the friend's address, the marketplace object, and the value for the coin split. For the commands, split off the coin, call the market place function, send the gas coin and one object, grab your address (via `ika::tx_context::sender`), and then send the remaining object to yourself. For simplicity, the documentation refers to the package names by name, but note that in practice they are referenced by the package's Object ID.
 
 To walk through this, first look at the memory locations, for the gas object, inputs, and results
 
 ```rust
-Gas Coin: sui::coin::Coin<SUI> { id: gas_coin, balance: sui::balance::Balance<SUI> { value: 1_000_000u64 } }
+Gas Coin: ika::coin::Coin<IKA> { id: gas_coin, balance: ika::balance::Balance<IKA> { value: 1_000_000u64 } }
 Inputs: [
   Pure(/* @0x808 BCS bytes */ ...),
   some_package::some_marketplace::Marketplace { id: market_id, ... },
@@ -285,7 +285,7 @@ Note that while gas is deducted at each command, that aspect of execution is not
 Before execution, remove the gas budget from the gas coin. Assume a gas budget of `500_000` so the gas coin now has a value of `500_000u64`.
 
 ```rust
-Gas Coin: Coin<SUI> { id: gas_coin, ... value: 500_000u64 ... } // The maximum gas is deducted
+Gas Coin: Coin<IKA> { id: gas_coin, ... value: 500_000u64 ... } // The maximum gas is deducted
 Inputs: [
   Pure(/* @0x808 BCS bytes */ ...),
   Marketplace { id: market_id, ... },
@@ -305,14 +305,14 @@ For the result, a new coin object is made.
 This gives us updated memory locations of
 
 ```rust
-Gas Coin: Coin<SUI> { id: gas_coin, ... value: 499_900u64 ... }
+Gas Coin: Coin<IKA> { id: gas_coin, ... value: 499_900u64 ... }
 Inputs: [
   Pure(/* @0x808 BCS bytes */ ...),
   Marketplace { id: market_id, ... },
   Pure(/* 100u64 BCS bytes */ ...),
 ]
 Results: [
-  [Coin<SUI> { id: new_coin, value: 100u64 ... }], // The result of SplitCoins
+  [Coin<IKA> { id: new_coin, value: 100u64 ... }], // The result of SplitCoins
 ],
 ```
 
@@ -323,18 +323,18 @@ Now the command, `MoveCall("some_package", "some_marketplace", "buy_two", [], [I
 ```move
 entry fun buy_two(
     marketplace: &mut Marketplace,
-    coin: Coin<Sui>,
+    coin: Coin<Ika>,
     ctx: &mut TxContext,
 ): (Item, Item)
 ```
 where `Item` is the type of the two objects being sold.
 
-Since the `marketplace` parameter has type `&mut Marketplace`, use `Input(1)` by mutable reference. Assume some modifications are being made into the value of the `Marketplace` object. However, the `coin` parameter has type `Coin<Sui>`, so use `NestedResult(0, 0)` by value. The `TxContext` input is automatically provided by the runtime.
+Since the `marketplace` parameter has type `&mut Marketplace`, use `Input(1)` by mutable reference. Assume some modifications are being made into the value of the `Marketplace` object. However, the `coin` parameter has type `Coin<Ika>`, so use `NestedResult(0, 0)` by value. The `TxContext` input is automatically provided by the runtime.
 
 This gives updated memory locations, where `_` indicates the object has been moved.
 
 ```rust
-Gas Coin: Coin<SUI> { id: gas_coin, ... value: 499_900u64 ... }
+Gas Coin: Coin<IKA> { id: gas_coin, ... value: 499_900u64 ... }
 Inputs: [
   Pure(/* @0x808 BCS bytes */ ...),
   Marketplace { id: market_id, ...  }, // Any mutations are applied
@@ -346,7 +346,7 @@ Results: [
 ],
 ```
 
-Assume that `buy_two` deletes its `Coin<SUI>` object argument and transfers the `Balance<SUI>` into the `Marketplace` object.
+Assume that `buy_two` deletes its `Coin<IKA>` object argument and transfers the `Balance<IKA>` into the `Marketplace` object.
 
 ### Command 2: `TransferObjects`
 
@@ -370,7 +370,7 @@ Results: [
 
 ### Command 3: `MoveCall`
 
-Make another Move call, this one to `sui::tx_context::sender` with the signature
+Make another Move call, this one to `ika::tx_context::sender` with the signature
 
 ```move
 public fun sender(ctx: &TxContext): address

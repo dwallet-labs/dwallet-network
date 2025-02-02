@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createNetworkConfig } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui/client';
+import { getFullnodeUrl } from '@ika-io/ika/client';
 
 import DevnetPackage from './env.devnet.ts';
 import LocalnetPackage from './env.localnet.ts';
@@ -20,21 +20,21 @@ const { networkConfig, useNetworkVariable } = createNetworkConfig({
 	devnet: {
 		url: getFullnodeUrl('devnet'),
 		variables: {
-			explorer: (id: string) => `https://suiscan.xyz/devnet/object/${id}/`,
+			explorer: (id: string) => `https://ikascan.xyz/devnet/object/${id}/`,
 			...DevnetPackage,
 		},
 	},
 	testnet: {
 		url: getFullnodeUrl('testnet'),
 		variables: {
-			explorer: (id: string) => `https://suiscan.xyz/testnet/object/${id}/`,
+			explorer: (id: string) => `https://ikascan.xyz/testnet/object/${id}/`,
 			...TestnetPackage,
 		},
 	},
 	mainnet: {
 		url: getFullnodeUrl('mainnet'),
 		variables: {
-			explorer: (id: string) => `https://suiscan.xyz/mainnet/object/${id}/`,
+			explorer: (id: string) => `https://ikascan.xyz/mainnet/object/${id}/`,
 			...MainnetPackage,
 		},
 	},

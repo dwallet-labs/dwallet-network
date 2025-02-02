@@ -9,7 +9,7 @@ use std::{
 
 use config::AuthorityIdentifier;
 use storage::ConsensusStore;
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use test_utils::{latest_protocol_version, mock_certificate, CommitteeFixture};
 use types::{Certificate, CommittedSubDag, ReputationScores, Round};
 

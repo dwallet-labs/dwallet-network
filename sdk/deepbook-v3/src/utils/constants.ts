@@ -29,9 +29,9 @@ export const testnetCoins: CoinMap = {
 		type: `0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP`,
 		scalar: 1000000,
 	},
-	SUI: {
+	IKA: {
 		address: `0x0000000000000000000000000000000000000000000000000000000000000002`,
-		type: `0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI`,
+		type: `0x0000000000000000000000000000000000000000000000000000000000000002::ika::IKA`,
 		scalar: 1000000000,
 	},
 	DBUSDC: {
@@ -52,9 +52,9 @@ export const mainnetCoins: CoinMap = {
 		type: `0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP`,
 		scalar: 1000000,
 	},
-	SUI: {
+	IKA: {
 		address: `0x0000000000000000000000000000000000000000000000000000000000000002`,
-		type: `0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI`,
+		type: `0x0000000000000000000000000000000000000000000000000000000000000002::ika::IKA`,
 		scalar: 1000000000,
 	},
 	USDC: {
@@ -95,14 +95,14 @@ export const mainnetCoins: CoinMap = {
 };
 
 export const testnetPools: PoolMap = {
-	DEEP_SUI: {
+	DEEP_IKA: {
 		address: `0x0d1b1746d220bd5ebac5231c7685480a16f1c707a46306095a4c67dc7ce4dcae`,
 		baseCoin: 'DEEP',
-		quoteCoin: 'SUI',
+		quoteCoin: 'IKA',
 	},
-	SUI_DBUSDC: {
+	IKA_DBUSDC: {
 		address: `0x520c89c6c78c566eed0ebf24f854a8c22d8fdd06a6f16ad01f108dad7f1baaea`,
-		baseCoin: 'SUI',
+		baseCoin: 'IKA',
 		quoteCoin: 'DBUSDC',
 	},
 	DEEP_DBUSDC: {
@@ -118,14 +118,14 @@ export const testnetPools: PoolMap = {
 };
 
 export const mainnetPools: PoolMap = {
-	DEEP_SUI: {
+	DEEP_IKA: {
 		address: `0xb663828d6217467c8a1838a03793da896cbe745b150ebd57d82f814ca579fc22`,
 		baseCoin: 'DEEP',
-		quoteCoin: 'SUI',
+		quoteCoin: 'IKA',
 	},
-	SUI_USDC: {
+	IKA_USDC: {
 		address: `0xe05dafb5133bcffb8d59f4e12465dc0e9faeaa05e3e342a08fe135800e3e4407`,
-		baseCoin: 'SUI',
+		baseCoin: 'IKA',
 		quoteCoin: 'USDC',
 	},
 	DEEP_USDC: {
@@ -153,9 +153,9 @@ export const mainnetPools: PoolMap = {
 		baseCoin: 'NS',
 		quoteCoin: 'USDC',
 	},
-	NS_SUI: {
+	NS_IKA: {
 		address: `0x27c4fdb3b846aa3ae4a65ef5127a309aa3c1f466671471a806d8912a18b253e8`,
 		baseCoin: 'NS',
-		quoteCoin: 'SUI',
+		quoteCoin: 'IKA',
 	},
 };

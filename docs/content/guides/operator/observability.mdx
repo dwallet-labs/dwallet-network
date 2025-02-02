@@ -4,19 +4,19 @@ sidebar_label: Observability
 draft: true
 ---
 
-Good observability capabilities are key to the development and growth of Sui. This is made more challenging by the distributed and asynchronous nature of Sui, with multiple client and validator processes distributed over a potentially global network.
+Good observability capabilities are key to the development and growth of Ika. This is made more challenging by the distributed and asynchronous nature of Ika, with multiple client and validator processes distributed over a potentially global network.
 
-The observability stack in Sui is based on the [Tokio tracing](https://tokio.rs/blog/2019-08-tracing) library. The rest of this document highlights specific aspects of achieving good observability through structured logging and metrics in Sui.
+The observability stack in Ika is based on the [Tokio tracing](https://tokio.rs/blog/2019-08-tracing) library. The rest of this document highlights specific aspects of achieving good observability through structured logging and metrics in Ika.
 
 :::info
 
-The output here is largely for the consumption of Sui operators, administrators, and developers. The content of logs and traces do not represent the authoritative, certified output of validators and are subject to potentially byzantine behavior.
+The output here is largely for the consumption of Ika operators, administrators, and developers. The content of logs and traces do not represent the authoritative, certified output of validators and are subject to potentially byzantine behavior.
 
 :::
 
 ## Contexts, scopes, and tracing transaction flow {#context-scope-trace}
 
-In a distributed and asynchronous system like Sui, one cannot rely on looking at individual logs over time in a single thread. To solve this problem, use the approach of structured logging. Structured logging offers a way to tie together logs, events, and blocks of functionality across threads and process boundaries.
+In a distributed and asynchronous system like Ika, one cannot rely on looking at individual logs over time in a single thread. To solve this problem, use the approach of structured logging. Structured logging offers a way to tie together logs, events, and blocks of functionality across threads and process boundaries.
 
 ### Spans and events {#spans-and-events}
 
@@ -72,7 +72,7 @@ For more details, see the [EnvFilter](https://docs.rs/tracing-subscriber/latest/
 
 ## Metrics {#metrics}
 
-Sui includes Prometheus-based metrics:
+Ika includes Prometheus-based metrics:
 
 - `rpc_requests_by_route` and related for RPC Server API metrics and latencies (see `rpc-server.rs`)
 - Validator transaction metrics (see `AuthorityMetrics` in `authority.rs`)
@@ -95,19 +95,19 @@ You can configure `RUST_LOG` for custom logging output, including filtering - se
 
 ### Tracing and span output {#tracing-and-span-output}
 
-To generate detailed span start and end logs, define the `SUI_JSON_SPAN_LOGS` environment variable. This causes all output to be in JSON format, which is not as human-readable, so it is not enabled by default.
+To generate detailed span start and end logs, define the `IKA_JSON_SPAN_LOGS` environment variable. This causes all output to be in JSON format, which is not as human-readable, so it is not enabled by default.
 
 You can send this output to a tool or service for indexing, alerts, aggregation, and analysis.
 
 The following example output shows certificate processing in the authority with span logging. Note the `START` and `END` annotations, and notice how `DB_UPDATE_STATE` which is nested is embedded within `PROCESS_CERT`. Also notice `elapsed_milliseconds`, which logs the duration of each span.
 
 ```bash
-{"v":0,"name":"sui","msg":"[PROCESS_CERT - START]","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.241421Z","target":"sui_core::authority_server","line":67,"file":"sui_core/src/authority_server.rs","tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493"}
-{"v":0,"name":"sui","msg":"[PROCESS_CERT - EVENT] Read inputs for transaction from DB","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.246688Z","target":"sui_core::authority","line":393,"file":"sui_core/src/authority.rs","num_inputs":2,"tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493"}
-{"v":0,"name":"sui","msg":"[PROCESS_CERT - EVENT] Finished execution of transaction with status Success { gas_used: 18 }","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.246759Z","target":"sui_core::authority","line":409,"file":"sui_core/src/authority.rs","gas_used":18,"tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493"}
-{"v":0,"name":"sui","msg":"[DB_UPDATE_STATE - START]","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.247888Z","target":"sui_core::authority","line":430,"file":"sui_core/src/authority.rs","tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493"}
-{"v":0,"name":"sui","msg":"[DB_UPDATE_STATE - END]","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.248114Z","target":"sui_core::authority","line":430,"file":"sui_core/src/authority.rs","tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493","elapsed_milliseconds":0}
-{"v":0,"name":"sui","msg":"[PROCESS_CERT - END]","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.248688Z","target":"sui_core::authority_server","line":67,"file":"sui_core/src/authority_server.rs","tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493","elapsed_milliseconds":2}
+{"v":0,"name":"ika","msg":"[PROCESS_CERT - START]","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.241421Z","target":"ika_core::authority_server","line":67,"file":"ika_core/src/authority_server.rs","tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493"}
+{"v":0,"name":"ika","msg":"[PROCESS_CERT - EVENT] Read inputs for transaction from DB","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.246688Z","target":"ika_core::authority","line":393,"file":"ika_core/src/authority.rs","num_inputs":2,"tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493"}
+{"v":0,"name":"ika","msg":"[PROCESS_CERT - EVENT] Finished execution of transaction with status Success { gas_used: 18 }","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.246759Z","target":"ika_core::authority","line":409,"file":"ika_core/src/authority.rs","gas_used":18,"tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493"}
+{"v":0,"name":"ika","msg":"[DB_UPDATE_STATE - START]","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.247888Z","target":"ika_core::authority","line":430,"file":"ika_core/src/authority.rs","tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493"}
+{"v":0,"name":"ika","msg":"[DB_UPDATE_STATE - END]","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.248114Z","target":"ika_core::authority","line":430,"file":"ika_core/src/authority.rs","tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493","elapsed_milliseconds":0}
+{"v":0,"name":"ika","msg":"[PROCESS_CERT - END]","level":20,"hostname":"Evan-MLbook.lan","pid":51425,"time":"2022-03-08T22:48:11.248688Z","target":"ika_core::authority_server","line":67,"file":"ika_core/src/authority_server.rs","tx_digest":"t#d1385064287c2ad67e4019dd118d487a39ca91a40e0fd8e678dbc32e112a1493","elapsed_milliseconds":2}
 ```
 
 ### Jaeger (seeing distributed traces) {#jaeger}
@@ -120,14 +120,14 @@ To see nested spans visualized with [Jaeger](https://www.jaegertracing.io), do t
 docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 jaegertracing/all-in-one:latest
 ```
 
-1.  Run Sui like this (trace enables the most detailed spans):
+1.  Run Ika like this (trace enables the most detailed spans):
 
 ```bash
-SUI_TRACING_ENABLE=1 RUST_LOG="info,sui_core=trace" ./sui start
+IKA_TRACING_ENABLE=1 RUST_LOG="info,ika_core=trace" ./ika start
 ```
 
-1.  Run some transfers with Sui CLI client, or run the benchmarking tool.
-1.  Browse to `http://localhost:16686/` and select Sui as the service.
+1.  Run some transfers with Ika CLI client, or run the benchmarking tool.
+1.  Browse to `http://localhost:16686/` and select Ika as the service.
 
 :::info
 
@@ -139,22 +139,22 @@ Separate spans (that are not nested) are not connected as a single trace for now
 
 [Tokio-console](https://github.com/tokio-rs/console) is an awesome CLI tool designed to analyze and help debug Rust apps using Tokio, in real time! It relies on a special subscriber.
 
-1.  Build Sui using a special flag: `RUSTFLAGS="--cfg tokio_unstable" cargo build`.
-1.  Start Sui with `SUI_TOKIO_CONSOLE` set to 1.
+1.  Build Ika using a special flag: `RUSTFLAGS="--cfg tokio_unstable" cargo build`.
+1.  Start Ika with `IKA_TOKIO_CONSOLE` set to 1.
 1.  Clone the console repo and `cargo run` to launch the console.
 
 :::tip
 
-Adding Tokio-console support might significantly slow down Sui validators/gateways.
+Adding Tokio-console support might significantly slow down Ika validators/gateways.
 
 :::
 
 ### Memory profiling {#memory-profiling}
 
-Sui uses the [jemalloc memory allocator](https://jemalloc.net/) by default on most platforms, and there is code that enables automatic memory profiling using jemalloc's sampling profiler, which is very lightweight and designed for production use. The profiling code spits out profiles at most every 5 minutes, and only when total memory has increased by a default 20%. Profiling files are named `jeprof.<TIMESTAMP>.<memorysize>MB.prof` so that it is easy to
+Ika uses the [jemalloc memory allocator](https://jemalloc.net/) by default on most platforms, and there is code that enables automatic memory profiling using jemalloc's sampling profiler, which is very lightweight and designed for production use. The profiling code spits out profiles at most every 5 minutes, and only when total memory has increased by a default 20%. Profiling files are named `jeprof.<TIMESTAMP>.<memorysize>MB.prof` so that it is easy to
 correlate to metrics and incidents, for ease of debugging.
 
-For the memory profiling to work, you need to set the environment variable `_RJEM_MALLOC_CONF=prof:true`. If you use the [Docker image](https://hub.docker.com/r/mysten/sui-node) they are set automatically.
+For the memory profiling to work, you need to set the environment variable `_RJEM_MALLOC_CONF=prof:true`. If you use the [Docker image](https://hub.docker.com/r/ika-io/ika-node) they are set automatically.
 
 Running some allocator-based heap profilers such as [Bytehound](https://github.com/koute/bytehound) will essentially disable automatic jemalloc profiling, because they interfere with or don't implement `jemalloc_ctl` stats APIs.
 
@@ -162,8 +162,8 @@ To view the profile files, one needs to do the following, on the same platform a
 
 1.  Install `libunwind`, the `dot` utility from graphviz, and jeprof. On Debian: `apt-get install libjemalloc-dev libunwind-dev graphviz`.
 1.  Build with debug symbols: `cargo build --profile bench-profiling`
-1.  cd to `$SUI_REPO/target/bench-profiling`
-1.  Run `jeprof --svg sui-node jeprof.xxyyzz.heap` - select the heap profile based on
+1.  cd to `$IKA_REPO/target/bench-profiling`
+1.  Run `jeprof --svg ika-node jeprof.xxyyzz.heap` - select the heap profile based on
     timestamp and memory size in the filename.
 
 :::tip

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { KIOSK_OWNER_CAP, Network, PERSONAL_KIOSK_RULE_ADDRESS } from '@mysten/kiosk';
-import { SuiObjectData, SuiObjectResponse } from '@mysten/sui/client';
+import { IkaObjectData, IkaObjectResponse } from '@ika-io/ika/client';
 
 export const ORIGINBYTE_KIOSK_MODULE =
 	'0x95a441d389b07437d00dd07e0b6f05f513d7659b13fd7c5d3923c7d9d847199b::ob_kiosk';
@@ -11,10 +11,10 @@ export const ORIGINBYTE_KIOSK_OWNER_TOKEN = `${ORIGINBYTE_KIOSK_MODULE}::OwnerTo
 
 export function isKioskOwnerToken(
 	network: Network,
-	object?: SuiObjectResponse | SuiObjectData | null,
+	object?: IkaObjectResponse | IkaObjectData | null,
 ) {
 	if (!object) return false;
-	const objectData = 'data' in object && object.data ? object.data : (object as SuiObjectData);
+	const objectData = 'data' in object && object.data ? object.data : (object as IkaObjectData);
 	return [
 		KIOSK_OWNER_CAP,
 		`${PERSONAL_KIOSK_RULE_ADDRESS[network]}::personal_kiosk::PersonalKioskCap`,
@@ -22,8 +22,8 @@ export function isKioskOwnerToken(
 	].includes(objectData?.type ?? '');
 }
 
-export function getKioskIdFromOwnerCap(object: SuiObjectResponse | SuiObjectData) {
-	const objectData = 'data' in object && object.data ? object.data : (object as SuiObjectData);
+export function getKioskIdFromOwnerCap(object: IkaObjectResponse | IkaObjectData) {
+	const objectData = 'data' in object && object.data ? object.data : (object as IkaObjectData);
 	const fields =
 		objectData.content?.dataType === 'moveObject'
 			? (objectData.content.fields as {

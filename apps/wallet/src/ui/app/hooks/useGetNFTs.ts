@@ -3,16 +3,16 @@
 
 import { hasDisplayData, isKioskOwnerToken, useGetOwnedObjects } from '@mysten/core';
 import { useKioskClient } from '@mysten/core/src/hooks/useKioskClient';
-import { type SuiObjectData } from '@mysten/sui/client';
+import { type IkaObjectData } from '@ika-io/ika/client';
 import { useMemo } from 'react';
 
 import { useBuyNLargeAssets } from '../components/buynlarge/useBuyNLargeAssets';
 import { useHiddenAssets } from '../pages/home/hidden-assets/HiddenAssetsProvider';
 
 type OwnedAssets = {
-	visual: SuiObjectData[];
-	other: SuiObjectData[];
-	hidden: SuiObjectData[];
+	visual: IkaObjectData[];
+	other: IkaObjectData[];
+	hidden: IkaObjectData[];
 };
 
 export enum AssetFilterTypes {
@@ -58,10 +58,10 @@ export function useGetNFTs(address?: string | null) {
 			.filter((asset) => !hiddenAssetIds.includes(asset.data?.objectId!))
 			.reduce((acc, curr) => {
 				if (hasDisplayData(curr) || isKioskOwnerToken(kioskClient.network, curr))
-					acc.visual.push(curr.data as SuiObjectData);
-				if (!hasDisplayData(curr)) acc.other.push(curr.data as SuiObjectData);
+					acc.visual.push(curr.data as IkaObjectData);
+				if (!hasDisplayData(curr)) acc.other.push(curr.data as IkaObjectData);
 				if (hiddenAssetIds.includes(curr.data?.objectId!))
-					acc.hidden.push(curr.data as SuiObjectData);
+					acc.hidden.push(curr.data as IkaObjectData);
 				return acc;
 			}, ownedAssets);
 

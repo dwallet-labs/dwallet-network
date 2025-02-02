@@ -78,7 +78,7 @@ describe('Keypairs', () => {
 		for (const t of TEST_CASES) {
 			const keypair = Ed25519Keypair.deriveKeypair(t[0], DERIVATION_PATH);
 			expect(keypair.getPublicKey().toBase64()).toEqual(t[1]);
-			expect(keypair.getPublicKey().toSuiAddress()).toEqual(t[2]);
+			expect(keypair.getPublicKey().toIkaAddress()).toEqual(t[2]);
 
 			const { signature: serializedSignature } = await keypair.signTransaction(tx_bytes);
 			const { signature } = parseSerializedSignature(serializedSignature);
@@ -119,7 +119,7 @@ describe('Keypairs', () => {
 		for (const t of TEST_CASES_SECP256K1) {
 			const keypair = Secp256k1Keypair.deriveKeypair(t[0], DERIVATION_PATH_SECP256K1);
 			expect(keypair.getPublicKey().toBase64()).toEqual(t[1]);
-			expect(keypair.getPublicKey().toSuiAddress()).toEqual(t[2]);
+			expect(keypair.getPublicKey().toIkaAddress()).toEqual(t[2]);
 
 			const { signature: serializedSignature } = await keypair.signTransaction(tx_bytes);
 			const { signature } = parseSerializedSignature(serializedSignature);

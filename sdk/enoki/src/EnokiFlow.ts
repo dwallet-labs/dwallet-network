@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { SuiClient } from '@mysten/sui/client';
-import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import type { Transaction } from '@mysten/sui/transactions';
-import { fromBase64, toBase64 } from '@mysten/sui/utils';
-import type { ZkLoginSignatureInputs } from '@mysten/sui/zklogin';
+import type { IkaClient } from '@ika-io/ika/client';
+import { decodeIkaPrivateKey } from '@ika-io/ika/cryptography';
+import { Ed25519Keypair } from '@ika-io/ika/keypairs/ed25519';
+import type { Transaction } from '@ika-io/ika/transactions';
+import { fromBase64, toBase64 } from '@ika-io/ika/utils';
+import type { ZkLoginSignatureInputs } from '@ika-io/ika/zklogin';
 import { decodeJwt } from 'jose';
 import type { WritableAtom } from 'nanostores';
 import { atom, onMount, onSet } from 'nanostores';
@@ -163,7 +163,7 @@ export class EnokiFlow {
 			expiresAt: estimatedExpiration,
 			maxEpoch,
 			randomness,
-			ephemeralKeyPair: toBase64(decodeSuiPrivateKey(ephemeralKeyPair.getSecretKey()).secretKey),
+			ephemeralKeyPair: toBase64(decodeIkaPrivateKey(ephemeralKeyPair.getSecretKey()).secretKey),
 		});
 
 		return oauthUrl;
@@ -322,7 +322,7 @@ export class EnokiFlow {
 	}: {
 		network?: 'mainnet' | 'testnet';
 		transaction: Transaction;
-		client: SuiClient;
+		client: IkaClient;
 	}) {
 		const session = await this.getSession();
 
@@ -351,7 +351,7 @@ export class EnokiFlow {
 		network?: 'mainnet' | 'testnet';
 		bytes: string;
 		digest: string;
-		client: SuiClient;
+		client: IkaClient;
 	}) {
 		const keypair = await this.getKeypair({ network });
 		const userSignature = await keypair.signTransaction(fromBase64(bytes));
@@ -374,7 +374,7 @@ export class EnokiFlow {
 	}: {
 		network?: 'mainnet' | 'testnet';
 		transaction: Transaction;
-		client: SuiClient;
+		client: IkaClient;
 	}) {
 		const { bytes, digest } = await this.sponsorTransaction({
 			network,

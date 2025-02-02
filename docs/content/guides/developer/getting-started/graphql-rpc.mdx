@@ -1,18 +1,18 @@
 ---
-title: Querying Sui RPC with GraphQL
-description: Intoductory guide to making queries of the Sui RPC using the GraphQL service.
+title: Querying Ika RPC with GraphQL
+description: Intoductory guide to making queries of the Ika RPC using the GraphQL service.
 ---
 
-The quickest way to access the GraphQL service for Sui RPC is through the online IDE that provides a complete toolbox for fetching data and executing transactions on the network. The online IDE provides features such as auto-completion (use Ctrl+Space or just start typing), built-in documentation (Book icon, top-left), multi-tabs, and more.
+The quickest way to access the GraphQL service for Ika RPC is through the online IDE that provides a complete toolbox for fetching data and executing transactions on the network. The online IDE provides features such as auto-completion (use Ctrl+Space or just start typing), built-in documentation (Book icon, top-left), multi-tabs, and more.
 
-The online IDE is available for [Mainnet](https://sui-mainnet.mystenlabs.com/graphql) and [Testnet](https://sui-testnet.mystenlabs.com/graphql). This guide contains various queries that you can try directly in the IDE.
+The online IDE is available for [Mainnet](https://ika-mainnet.mystenlabs.com/graphql) and [Testnet](https://ika-testnet.mystenlabs.com/graphql). This guide contains various queries that you can try directly in the IDE.
 
 :::info
 - Any existing addresses/object IDs in these examples refer to `mainnet` data only.
-- Both [mainnet](https://sui-mainnet.mystenlabs.com/graphql) and [testnet](https://sui-testnet.mystenlabs.com/graphql) services are rate-limited to keep network throughput optimized.
+- Both [mainnet](https://ika-mainnet.mystenlabs.com/graphql) and [testnet](https://ika-testnet.mystenlabs.com/graphql) services are rate-limited to keep network throughput optimized.
 :::
 
-For more details about some concepts used in the examples below, please see the [GraphQL concepts](../../../concepts/graphql-rpc.mdx) page, and consult the [reference](../../../references/sui-graphql.mdx) for full documentation on the supported schema.
+For more details about some concepts used in the examples below, please see the [GraphQL concepts](../../../concepts/graphql-rpc.mdx) page, and consult the [reference](../../../references/ika-graphql.mdx) for full documentation on the supported schema.
 
 
 ## Discovering the schema
@@ -99,14 +99,14 @@ query {
 
 ## Finding all transactions that touched a given object
 
-This example finds all the transactions that touched (modified/transferred/deleted) a given object. This is useful for when we want to trace the flow of a Coin/StakeSui/NFT.
+This example finds all the transactions that touched (modified/transferred/deleted) a given object. This is useful for when we want to trace the flow of a Coin/StakeIka/NFT.
 
 :::info
 This example uses GraphQL [variables](../../../concepts/graphql-rpc.mdx#variables) and [pagination](../../../concepts/graphql-rpc.mdx#pagination). When using the online IDE, copy the variables JSON to the "Variables" window, below the main editor.
 :::
 
 ```graphql
-query ($objectID: SuiAddress!) {
+query ($objectID: IkaAddress!) {
   transactionBlocks(filter: {changedObject: $objectID}) {
     nodes {
       sender {
@@ -158,9 +158,9 @@ This example makes usage of the filter `last`, which indicates that the user onl
 This example finds the balance changes of all the transactions where a given address called a staking-related function. This is useful when you want to get your staking or unstaking history.
 
 ```graphql
-query ($address: SuiAddress!) {
+query ($address: IkaAddress!) {
   transactionBlocks(filter: {
-    function: "0x3::sui_system::request_add_stake"
+    function: "0x3::ika_system::request_add_stake"
     sentAddress: $address
   }) {
     nodes {
@@ -242,14 +242,14 @@ fragment MoveValueFields on MoveValue {
 
 ## Fetching all dynamic fields on an object
 
-This query can be used to paginate over the dynamic fields of an object. This works even when the object in question is [wrapped](../../../concepts/object-ownership/wrapped.mdx), by using the <a href="/references/sui-api/sui-graphql/reference/queries/owner" data-noBrokenLinkCheck='true'>owner</a> query, so can be used for iterating over the elements of on-chain data structures, like [Tables and Bags](../../../concepts/dynamic-fields/tables-bags.mdx).
+This query can be used to paginate over the dynamic fields of an object. This works even when the object in question is [wrapped](../../../concepts/object-ownership/wrapped.mdx), by using the <a href="/references/ika-api/ika-graphql/reference/queries/owner" data-noBrokenLinkCheck='true'>owner</a> query, so can be used for iterating over the elements of on-chain data structures, like [Tables and Bags](../../../concepts/dynamic-fields/tables-bags.mdx).
 
 :::info
 This example uses [fragments](../../../concepts/graphql-rpc.mdx#fragments) and [variables](../../../concepts/graphql-rpc.mdx#variables).
 :::
 
 ```graphql
-query ($id: SuiAddress!) {
+query ($id: IkaAddress!) {
   owner(address: $id) {
     dynamicFields {
       nodes {
@@ -328,7 +328,7 @@ This example uses GraphQL [variables](../../../concepts/graphql-rpc.mdx#variable
 
 ## Executing a transaction
 
-Transaction execution takes in two arguments, `txBytes` and `signatures`. `txBytes` is the serialized unsigned transaction data, which can be generated when using the Sui CLI's `client call` [command](../../../references/cli/client.mdx), to call a Move function by passing the `--serialize-unsigned-transaction` flag. The `signatures` can be generated using Sui CLI's [keytool](../../../references/cli/keytool.mdx) command `sui keytool sign`. More information on Sui CLI can be found [here](/references/cli).
+Transaction execution takes in two arguments, `txBytes` and `signatures`. `txBytes` is the serialized unsigned transaction data, which can be generated when using the Ika CLI's `client call` [command](../../../references/cli/client.mdx), to call a Move function by passing the `--serialize-unsigned-transaction` flag. The `signatures` can be generated using Ika CLI's [keytool](../../../references/cli/keytool.mdx) command `ika keytool sign`. More information on Ika CLI can be found [here](/references/cli).
 
 ```graphql
 mutation ($tx: String!, $sigs: [String!]!) {
@@ -361,16 +361,16 @@ mutation ($tx: String!, $sigs: [String!]!) {
 
 ## Other examples
 
-You can find other examples in the [repository](https://github.com/MystenLabs/sui/tree/releases/sui-graphql-rpc-v2024.1.0-release/crates/sui-graphql-rpc/examples), grouped into sub-directories. For example, there are directories for [transaction block effects](https://github.com/MystenLabs/sui/tree/releases/sui-graphql-rpc-v2024.1.0-release/crates/sui-graphql-rpc/examples/transaction_block_effects), [protocol configs](https://github.com/MystenLabs/sui/tree/releases/sui-graphql-rpc-v2024.1.0-release/crates/sui-graphql-rpc/examples/protocol_configs), [stake connection](https://github.com/MystenLabs/sui/tree/releases/sui-graphql-rpc-v2024.1.0-release/crates/sui-graphql-rpc/examples/stake_connection), and more.
+You can find other examples in the [repository](https://github.com/MystenLabs/sui/tree/releases/ika-graphql-rpc-v2024.1.0-release/crates/ika-graphql-rpc/examples), grouped into sub-directories. For example, there are directories for [transaction block effects](https://github.com/MystenLabs/sui/tree/releases/ika-graphql-rpc-v2024.1.0-release/crates/ika-graphql-rpc/examples/transaction_block_effects), [protocol configs](https://github.com/MystenLabs/sui/tree/releases/ika-graphql-rpc-v2024.1.0-release/crates/ika-graphql-rpc/examples/protocol_configs), [stake connection](https://github.com/MystenLabs/sui/tree/releases/ika-graphql-rpc-v2024.1.0-release/crates/ika-graphql-rpc/examples/stake_connection), and more.
 
 :::info
-Examples in the repository are designed to work with the version of GraphQL built at the same revision. The links above point to examples intended for [GraphQL v2024.1](https://github.com/MystenLabs/sui/tree/releases/sui-graphql-rpc-v2024.1.0-release), the latest production version at the time of writing.
+Examples in the repository are designed to work with the version of GraphQL built at the same revision. The links above point to examples intended for [GraphQL v2024.1](https://github.com/MystenLabs/sui/tree/releases/ika-graphql-rpc-v2024.1.0-release), the latest production version at the time of writing.
 :::
 
 ## Related links
 
-- [GraphQL migration](../advanced/graphql-migration.mdx): Migrating to GraphQL guides you through migrating Sui RPC projects from JSON-RPC to GraphQL.
-- [GraphQL concepts](../../../concepts/graphql-rpc.mdx): GraphQL for Sui RPC examines the elements of GraphQL that you should know to get the most from the service.
-- [GraphQL reference](../../../references/sui-graphql.mdx): Auto-generated GraphQL reference for Sui RPC.
-- [Sui Testnet GraphiQL](https://sui-testnet.mystenlabs.com/graphql): Sui GraphiQL IDE for the Testnet network.
-- [Sui Mainnet GraphiQL](https://sui-mainnet.mystenlabs.com/graphql): Sui GraphiQL IDE for the Mainnet network.
+- [GraphQL migration](../advanced/graphql-migration.mdx): Migrating to GraphQL guides you through migrating Ika RPC projects from JSON-RPC to GraphQL.
+- [GraphQL concepts](../../../concepts/graphql-rpc.mdx): GraphQL for Ika RPC examines the elements of GraphQL that you should know to get the most from the service.
+- [GraphQL reference](../../../references/ika-graphql.mdx): Auto-generated GraphQL reference for Ika RPC.
+- [Ika Testnet GraphiQL](https://ika-testnet.mystenlabs.com/graphql): Ika GraphiQL IDE for the Testnet network.
+- [Ika Mainnet GraphiQL](https://ika-mainnet.mystenlabs.com/graphql): Ika GraphiQL IDE for the Mainnet network.

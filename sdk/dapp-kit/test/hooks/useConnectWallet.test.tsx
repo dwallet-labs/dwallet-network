@@ -72,7 +72,7 @@ describe('useConnectWallet', () => {
 		});
 	});
 
-	test('only Sui accounts from multi-chain wallets are connected', async () => {
+	test('only Ika accounts from multi-chain wallets are connected', async () => {
 		const { unregister, mockWallet } = registerMockWallet({
 			walletName: 'Mock Wallet 1',
 			accounts: [createMockAccount(), createMockAccount({ chains: ['solana:mainnet'] })],

@@ -11,7 +11,7 @@ import matter from "gray-matter";
 
 const descriptionPlugin = (context, options) => {
   return {
-    name: "sui-description-plugin",
+    name: "ika-description-plugin",
 
     async loadContent() {
       const c = context.siteConfig.presets.filter((s) => s[0] === "classic");
@@ -27,7 +27,7 @@ const descriptionPlugin = (context, options) => {
           if (file.isDirectory()) {
             recurseFiles(fp, files);
           } else if (file.isFile() && path.extname(file.name) === ".mdx") {
-            if (!fp.match(/\/sui-api\/sui-graphql\//) && !fp.match(/snippets/))
+            if (!fp.match(/\/ika-api\/ika-graphql\//) && !fp.match(/snippets/))
               files.push(fp);
           }
         });

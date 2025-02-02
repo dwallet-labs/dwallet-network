@@ -14,12 +14,12 @@ contract BridgeConfigTest is BridgeBaseTest {
         assertTrue(config.tokenAddressOf(2) == wETH);
         assertTrue(config.tokenAddressOf(3) == USDC);
         assertTrue(config.tokenAddressOf(4) == USDT);
-        assertEq(config.tokenSuiDecimalOf(0), 9);
-        assertEq(config.tokenSuiDecimalOf(1), 8);
-        assertEq(config.tokenSuiDecimalOf(2), 8);
-        assertEq(config.tokenSuiDecimalOf(3), 6);
-        assertEq(config.tokenSuiDecimalOf(4), 6);
-        assertEq(config.tokenPriceOf(0), SUI_PRICE);
+        assertEq(config.tokenIkaDecimalOf(0), 9);
+        assertEq(config.tokenIkaDecimalOf(1), 8);
+        assertEq(config.tokenIkaDecimalOf(2), 8);
+        assertEq(config.tokenIkaDecimalOf(3), 6);
+        assertEq(config.tokenIkaDecimalOf(4), 6);
+        assertEq(config.tokenPriceOf(0), IKA_PRICE);
         assertEq(config.tokenPriceOf(1), BTC_PRICE);
         assertEq(config.tokenPriceOf(2), ETH_PRICE);
         assertEq(config.tokenPriceOf(3), USDC_PRICE);
@@ -37,8 +37,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         assertTrue(!config.isTokenSupported(0));
     }
 
-    function testTokenSuiDecimalOf() public {
-        assertEq(config.tokenSuiDecimalOf(1), 8);
+    function testTokenIkaDecimalOf() public {
+        assertEq(config.tokenIkaDecimalOf(1), 8);
     }
 
     function testAddTokensWithSignatures() public {
@@ -50,8 +50,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         uint8 tokenID1 = 10;
         uint8 _numAddresses = 1;
         address address1 = address(_newToken);
-        uint8 _numSuiDecimals = 1;
-        uint8 suiDecimal1 = 6;
+        uint8 _numIkaDecimals = 1;
+        uint8 ikaDecimal1 = 6;
         uint8 _numPrices = 1;
         uint64 price1 = 100_000 * USD_VALUE_MULTIPLIER;
 
@@ -61,8 +61,8 @@ contract BridgeConfigTest is BridgeBaseTest {
             tokenID1,
             _numAddresses,
             address1,
-            _numSuiDecimals,
-            suiDecimal1,
+            _numIkaDecimals,
+            ikaDecimal1,
             _numPrices,
             price1
         );
@@ -92,7 +92,7 @@ contract BridgeConfigTest is BridgeBaseTest {
         config.addTokensWithSignatures(signatures, message);
         assertTrue(config.isTokenSupported(10));
         assertEq(config.tokenAddressOf(10), address1);
-        assertEq(config.tokenSuiDecimalOf(10), 6);
+        assertEq(config.tokenIkaDecimalOf(10), 6);
         assertEq(config.tokenPriceOf(10), 100_000 * USD_VALUE_MULTIPLIER);
     }
 
@@ -105,8 +105,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         uint8 tokenID1 = 10;
         uint8 _numAddresses = 1;
         address address1 = address(0);
-        uint8 _numSuiDecimals = 1;
-        uint8 suiDecimal1 = 6;
+        uint8 _numIkaDecimals = 1;
+        uint8 ikaDecimal1 = 6;
         uint8 _numPrices = 1;
         uint64 price1 = 100_000 * USD_VALUE_MULTIPLIER;
 
@@ -116,8 +116,8 @@ contract BridgeConfigTest is BridgeBaseTest {
             tokenID1,
             _numAddresses,
             address1,
-            _numSuiDecimals,
-            suiDecimal1,
+            _numIkaDecimals,
+            ikaDecimal1,
             _numPrices,
             price1
         );
@@ -147,7 +147,7 @@ contract BridgeConfigTest is BridgeBaseTest {
         config.addTokensWithSignatures(signatures, message);
     }
 
-    function testAddTokensSuiDecimalFailure() public {
+    function testAddTokensIkaDecimalFailure() public {
         MockUSDC _newToken = new MockUSDC();
 
         // Create add tokens payload
@@ -156,8 +156,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         uint8 tokenID1 = 10;
         uint8 _numAddresses = 1;
         address address1 = address(_newToken);
-        uint8 _numSuiDecimals = 1;
-        uint8 suiDecimal1 = 10;
+        uint8 _numIkaDecimals = 1;
+        uint8 ikaDecimal1 = 10;
         uint8 _numPrices = 1;
         uint64 price1 = 100_000 * USD_VALUE_MULTIPLIER;
 
@@ -167,8 +167,8 @@ contract BridgeConfigTest is BridgeBaseTest {
             tokenID1,
             _numAddresses,
             address1,
-            _numSuiDecimals,
-            suiDecimal1,
+            _numIkaDecimals,
+            ikaDecimal1,
             _numPrices,
             price1
         );
@@ -193,8 +193,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         signatures[2] = getSignature(messageHash, committeeMemberPkC);
         signatures[3] = getSignature(messageHash, committeeMemberPkD);
 
-        // add token shoudl fail because the sui decimal is greater than the eth decimal
-        vm.expectRevert(bytes("BridgeConfig: Invalid Sui decimal"));
+        // add token shoudl fail because the ika decimal is greater than the eth decimal
+        vm.expectRevert(bytes("BridgeConfig: Invalid Ika decimal"));
         config.addTokensWithSignatures(signatures, message);
     }
 
@@ -207,8 +207,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         uint8 tokenID1 = 10;
         uint8 _numAddresses = 1;
         address address1 = address(_newToken);
-        uint8 _numSuiDecimals = 1;
-        uint8 suiDecimal1 = 10;
+        uint8 _numIkaDecimals = 1;
+        uint8 ikaDecimal1 = 10;
         uint8 _numPrices = 1;
         uint64 price1 = 0;
 
@@ -218,8 +218,8 @@ contract BridgeConfigTest is BridgeBaseTest {
             tokenID1,
             _numAddresses,
             address1,
-            _numSuiDecimals,
-            suiDecimal1,
+            _numIkaDecimals,
+            ikaDecimal1,
             _numPrices,
             price1
         );
@@ -317,14 +317,14 @@ contract BridgeConfigTest is BridgeBaseTest {
             opts
         );
         limiter = BridgeLimiter(_limiter);
-        address _suiBridge = Upgrades.deployUUPSProxy(
-            "SuiBridge.sol",
+        address _ikaBridge = Upgrades.deployUUPSProxy(
+            "IkaBridge.sol",
             abi.encodeCall(
-                SuiBridge.initialize, (address(committee), address(vault), address(limiter))
+                IkaBridge.initialize, (address(committee), address(vault), address(limiter))
             ),
             opts
         );
-        bridge = SuiBridge(_suiBridge);
+        bridge = IkaBridge(_ikaBridge);
         vault.transferOwnership(address(bridge));
         limiter.transferOwnership(address(bridge));
 
@@ -374,7 +374,7 @@ contract BridgeConfigTest is BridgeBaseTest {
             "BridgeConfig.sol",
             abi.encodeCall(
                 BridgeConfig.initialize,
-                (address(committee), chainID, supportedTokens, tokenPrices, tokenIds, suiDecimals, _supportedDestinationChains)
+                (address(committee), chainID, supportedTokens, tokenPrices, tokenIds, ikaDecimals, _supportedDestinationChains)
             ),
             opts
         );
@@ -397,14 +397,14 @@ contract BridgeConfigTest is BridgeBaseTest {
             opts
         );
         limiter = BridgeLimiter(_limiter);
-        address _suiBridge = Upgrades.deployUUPSProxy(
-            "SuiBridge.sol",
+        address _ikaBridge = Upgrades.deployUUPSProxy(
+            "IkaBridge.sol",
             abi.encodeCall(
-                SuiBridge.initialize, (address(committee), address(vault), address(limiter))
+                IkaBridge.initialize, (address(committee), address(vault), address(limiter))
             ),
             opts
         );
-        bridge = SuiBridge(_suiBridge);
+        bridge = IkaBridge(_ikaBridge);
         vault.transferOwnership(address(bridge));
         limiter.transferOwnership(address(bridge));
 
@@ -463,7 +463,7 @@ contract BridgeConfigTest is BridgeBaseTest {
             "BridgeConfig.sol",
             abi.encodeCall(
                 BridgeConfig.initialize,
-                (address(committee), 12, supportedTokens, tokenPrices, tokenIds, suiDecimals, _supportedDestinationChains)
+                (address(committee), 12, supportedTokens, tokenPrices, tokenIds, ikaDecimals, _supportedDestinationChains)
             ),
             opts
         );
@@ -485,14 +485,14 @@ contract BridgeConfigTest is BridgeBaseTest {
             opts
         );
         limiter = BridgeLimiter(_limiter);
-        address _suiBridge = Upgrades.deployUUPSProxy(
-            "SuiBridge.sol",
+        address _ikaBridge = Upgrades.deployUUPSProxy(
+            "IkaBridge.sol",
             abi.encodeCall(
-                SuiBridge.initialize, (address(committee), address(vault), address(limiter))
+                IkaBridge.initialize, (address(committee), address(vault), address(limiter))
             ),
             opts
         );
-        bridge = SuiBridge(_suiBridge);
+        bridge = IkaBridge(_ikaBridge);
         vault.transferOwnership(address(bridge));
         limiter.transferOwnership(address(bridge));
 
@@ -503,7 +503,7 @@ contract BridgeConfigTest is BridgeBaseTest {
             bool native,
             uint8[] memory tokenIDs,
             address[] memory tokenAddresses,
-            uint8[] memory suiDecimals,
+            uint8[] memory ikaDecimals,
             uint64[] memory tokenPrices
         ) = BridgeUtils.decodeAddTokensPayload(payload);
 
@@ -518,10 +518,10 @@ contract BridgeConfigTest is BridgeBaseTest {
         assertEq(tokenAddresses[1], 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84); // lido
         assertEq(tokenAddresses[2], 0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72); // ENS
 
-        assertEq(suiDecimals.length, 3);
-        assertEq(suiDecimals[0], 5);
-        assertEq(suiDecimals[1], 6);
-        assertEq(suiDecimals[2], 7);
+        assertEq(ikaDecimals.length, 3);
+        assertEq(ikaDecimals[0], 5);
+        assertEq(ikaDecimals[1], 6);
+        assertEq(ikaDecimals[2], 7);
 
         assertEq(tokenPrices.length, 3);
         assertEq(tokenPrices[0], 1_000_000_000);
@@ -555,9 +555,9 @@ contract BridgeConfigTest is BridgeBaseTest {
         assertEq(config.tokenPriceOf(99), 1_000_000_000);
         assertEq(config.tokenPriceOf(100), 2_000_000_000);
         assertEq(config.tokenPriceOf(101), 3_000_000_000);
-        assertEq(config.tokenSuiDecimalOf(99), 5);
-        assertEq(config.tokenSuiDecimalOf(100), 6);
-        assertEq(config.tokenSuiDecimalOf(101), 7);
+        assertEq(config.tokenIkaDecimalOf(99), 5);
+        assertEq(config.tokenIkaDecimalOf(100), 6);
+        assertEq(config.tokenIkaDecimalOf(101), 7);
         assertEq(config.tokenAddressOf(99), 0x6B175474E89094C44Da98b954EedeAC495271d0F);
         assertEq(config.tokenAddressOf(100), 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
         assertEq(config.tokenAddressOf(101), 0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72);

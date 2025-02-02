@@ -21,16 +21,16 @@ pub const IMPLICIT_STD_MEMBERS: &[(Symbol, Symbol, ModuleMemberKind)] = &[(
     ModuleMemberKind::Struct,
 )];
 
-// Implicit aliases for Sui mode:
-// use sui::object::{Self, ID, UID};
-// use sui::transfer;
-// use sui::tx_context::{Self, TxContext};
-pub const IMPLICIT_SUI_MODULES: &[Symbol] = &[
+// Implicit aliases for Ika mode:
+// use ika::object::{Self, ID, UID};
+// use ika::transfer;
+// use ika::tx_context::{Self, TxContext};
+pub const IMPLICIT_IKA_MODULES: &[Symbol] = &[
     symbol!("object"),
     symbol!("transfer"),
     symbol!("tx_context"),
 ];
-pub const IMPLICIT_SUI_MEMBERS: &[(Symbol, Symbol, ModuleMemberKind)] = &[
+pub const IMPLICIT_IKA_MEMBERS: &[(Symbol, Symbol, ModuleMemberKind)] = &[
     (symbol!("object"), symbol!("ID"), ModuleMemberKind::Struct),
     (symbol!("object"), symbol!("UID"), ModuleMemberKind::Struct),
     (

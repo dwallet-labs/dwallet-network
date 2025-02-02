@@ -4,7 +4,7 @@
 import { useCallback } from 'react';
 
 const backendUrl =
-	process.env.NODE_ENV === 'development' ? 'http://localhost:3003' : 'https://apps-backend.sui.io';
+	process.env.NODE_ENV === 'development' ? 'http://localhost:3003' : 'https://apps-backend.ika.io';
 
 export function useAppsBackend() {
 	const request = useCallback(

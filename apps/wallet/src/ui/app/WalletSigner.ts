@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { bcs } from '@mysten/sui/bcs';
+import { bcs } from '@ika-io/ika/bcs';
 import {
 	type DryRunTransactionBlockResponse,
 	type ExecuteTransactionRequestType,
-	type SuiClient,
-	type SuiTransactionBlockResponse,
-	type SuiTransactionBlockResponseOptions,
-} from '@mysten/sui/client';
-import { messageWithIntent } from '@mysten/sui/cryptography';
-import { isTransaction, type Transaction } from '@mysten/sui/transactions';
-import { fromBase64, toBase64 } from '@mysten/sui/utils';
+	type IkaClient,
+	type IkaTransactionBlockResponse,
+	type IkaTransactionBlockResponseOptions,
+} from '@ika-io/ika/client';
+import { messageWithIntent } from '@ika-io/ika/cryptography';
+import { isTransaction, type Transaction } from '@ika-io/ika/transactions';
+import { fromBase64, toBase64 } from '@ika-io/ika/utils';
 
 export type SignedTransaction = {
 	transactionBlockBytes: string;
@@ -24,9 +24,9 @@ export type SignedMessage = {
 };
 
 export abstract class WalletSigner {
-	client: SuiClient;
+	client: IkaClient;
 
-	constructor(client: SuiClient) {
+	constructor(client: IkaClient) {
 		this.client = client;
 	}
 
@@ -86,11 +86,11 @@ export abstract class WalletSigner {
 	async signAndExecuteTransactionBlock(
 		input: {
 			transactionBlock: Uint8Array | Transaction;
-			options?: SuiTransactionBlockResponseOptions;
+			options?: IkaTransactionBlockResponseOptions;
 			requestType?: ExecuteTransactionRequestType;
 		},
 		clientIdentifier?: string,
-	): Promise<SuiTransactionBlockResponse> {
+	): Promise<IkaTransactionBlockResponse> {
 		const bytes = await this.prepareTransactionBlock(input.transactionBlock);
 		const signed = await this.signTransactionBlock({
 			transactionBlock: bytes,

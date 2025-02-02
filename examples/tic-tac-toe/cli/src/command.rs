@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use sui_types::base_types::{ObjectID, SuiAddress};
+use ika_types::base_types::{ObjectID, IkaAddress};
 
 use crate::{
     client::{Client, Connection},
@@ -84,7 +84,7 @@ impl Command {
                 /* shared */
                 {
                     assert!(!multi_sig);
-                    let opponent = SuiAddress::from_str(&opponent)
+                    let opponent = IkaAddress::from_str(&opponent)
                         .with_context(|| format!("Invalid opponent address {opponent}"))?;
 
                     client.new_shared_game(opponent).await.with_context(|| {

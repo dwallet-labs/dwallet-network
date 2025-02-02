@@ -18,7 +18,7 @@ export default function BetaTag(props) {
     <Admonition
       title="Beta Feature"
       icon="⚙️"
-      className={`${props.slim ? "" : "!my-12"} bg-sui-blue-light border-sui-blue-dark dark:bg-sui-blue-dark dark:border-sui-blue-light`}
+      className={`${props.slim ? "" : "!my-12"} bg-ika-blue-light border-ika-blue-dark dark:bg-ika-blue-dark dark:border-ika-blue-light`}
     >
       <p className="pt-2">
         This content describes a beta feature or service. Beta features and

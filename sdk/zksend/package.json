@@ -45,7 +45,7 @@
 		"vitest": "^2.0.1"
 	},
 	"dependencies": {
-		"@mysten/sui": "workspace:*",
+		"@ika-io/ika": "workspace:*",
 		"@mysten/wallet-standard": "workspace:*",
 		"mitt": "^3.0.1",
 		"nanostores": "^0.10.3",

@@ -13,9 +13,9 @@ test('staking', async ({ page, extensionUrl }) => {
 	await createWallet(page, extensionUrl);
 
 	await page.getByTestId('faucet-request-button').click();
-	await expect(page.getByTestId('coin-balance')).not.toHaveText('0SUI');
+	await expect(page.getByTestId('coin-balance')).not.toHaveText('0IKA');
 
-	await page.getByText(/Stake and Earn SUI/).click();
+	await page.getByText(/Stake and Earn IKA/).click();
 	await page.getByTestId('validator-list-item').first().click();
 	await page.getByTestId('select-validator-cta').click();
 	await page.getByTestId('stake-amount-input').fill(STAKE_AMOUNT.toString());
@@ -28,10 +28,10 @@ test('staking', async ({ page, extensionUrl }) => {
 
 	await page.getByTestId('close-icon').click();
 
-	await expect(page.getByTestId(`stake-button-${STAKE_AMOUNT}-SUI`)).toBeVisible({
+	await expect(page.getByTestId(`stake-button-${STAKE_AMOUNT}-IKA`)).toBeVisible({
 		timeout: TEST_TIMEOUT,
 	});
-	await page.getByTestId(`stake-button-${STAKE_AMOUNT}-SUI`).click();
+	await page.getByTestId(`stake-button-${STAKE_AMOUNT}-IKA`).click();
 
 	await expect(page.getByTestId('stake-card')).toBeVisible({ timeout: 3 * TEST_TIMEOUT });
 	await page.getByTestId('stake-card').click();

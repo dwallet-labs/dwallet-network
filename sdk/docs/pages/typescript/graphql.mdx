@@ -1,24 +1,24 @@
-# SuiGraphQLClient
+# IkaGraphQLClient
 
 import { Callout } from 'nextra/components';
 
 <Callout type="warning">
-	SuiGraphQLClient is still in development and may change rapidly as it is being developed.
+	IkaGraphQLClient is still in development and may change rapidly as it is being developed.
 </Callout>
 
-To support GraphQL Queries, the Typescript SDK includes the `SuiGraphQLClient` which can help you
-write and execute GraphQL queries against the Sui GraphQL API that are type-safe and easy to use.
+To support GraphQL Queries, the Typescript SDK includes the `IkaGraphQLClient` which can help you
+write and execute GraphQL queries against the Ika GraphQL API that are type-safe and easy to use.
 
 ## Writing your first query
 
 We'll start by creating our client, and executing a very basic query:
 
 ```typescript
-import { SuiGraphQLClient } from '@mysten/sui/graphql';
-import { graphql } from '@mysten/sui/graphql/schemas/2024.4';
+import { IkaGraphQLClient } from '@ika-io/ika/graphql';
+import { graphql } from '@ika-io/ika/graphql/schemas/2024.4';
 
-const gqlClient = new SuiGraphQLClient({
-	url: 'https://sui-testnet.mystenlabs.com/graphql',
+const gqlClient = new IkaGraphQLClient({
+	url: 'https://ika-testnet.mystenlabs.com/graphql',
 });
 
 const chainIdentifierQuery = graphql(`
@@ -41,7 +41,7 @@ async function getChainIdentifier() {
 You may have noticed the example above does not include any type definitions for the query. The
 `graphql` function used in the example is powered by [`gql.tada`](https://gql-tada.0no.co/) and will
 automatically provide the required type information to ensure that your queries are properly typed
-when executed through `SuiGraphQLClient`.
+when executed through `IkaGraphQLClient`.
 
 The `graphql` function itself is imported from a versioned schema file, and you should ensure that
 you are using the version that corresponds to the latest release of the GraphQL API.
@@ -50,23 +50,23 @@ The `graphql` also detects variables used by your query, and will ensure that th
 to your query are properly typed.
 
 ```typescript
-const getSuinsName = graphql(`
-	query getSuiName($address: SuiAddress!) {
+const getIkansName = graphql(`
+	query getIkaName($address: IkaAddress!) {
 		address(address: $address) {
-			defaultSuinsName
+			defaultIkansName
 		}
 	}
 `);
 
-async function getDefaultSuinsName(address: string) {
+async function getDefaultIkansName(address: string) {
 	const result = await gqlClient.query({
-		query: getSuinsName,
+		query: getIkansName,
 		variables: {
 			address,
 		},
 	});
 
-	return result.data?.address?.defaultSuinsName;
+	return result.data?.address?.defaultIkansName;
 }
 ```
 

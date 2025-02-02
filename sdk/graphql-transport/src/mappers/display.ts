@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { DisplayFieldsResponse } from '@mysten/sui/client';
+import type { DisplayFieldsResponse } from '@ika-io/ika/client';
 
 export function formatDisplay(object: {
 	display?:

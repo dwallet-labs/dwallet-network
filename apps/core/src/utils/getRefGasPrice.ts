@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { SuiValidatorSummary } from '@mysten/sui/client';
+import { IkaValidatorSummary } from '@ika-io/ika/client';
 
 import { calculateStakeShare } from './calculateStakeShare';
 
@@ -13,7 +13,7 @@ const REF_THRESHOLD = 66.67;
  * 2. Add up stake share from low to high, until reaching REF_THRESHOLD
  * 3. Return the gas price of the last validator that was added to the sum
  */
-export function getRefGasPrice(validators?: SuiValidatorSummary[]) {
+export function getRefGasPrice(validators?: IkaValidatorSummary[]) {
 	if (!validators?.length) {
 		return BigInt(0);
 	}
@@ -34,7 +34,7 @@ export function getRefGasPrice(validators?: SuiValidatorSummary[]) {
 	});
 
 	const totalStaked = validators.reduce(
-		(acc, cur) => acc + BigInt(cur.stakingPoolSuiBalance),
+		(acc, cur) => acc + BigInt(cur.stakingPoolIkaBalance),
 		BigInt(0),
 	);
 
@@ -43,7 +43,7 @@ export function getRefGasPrice(validators?: SuiValidatorSummary[]) {
 
 	for (let i = 0; i < sortedByGasPrice.length; i++) {
 		const validator = sortedByGasPrice[i];
-		const stake = BigInt(validator?.stakingPoolSuiBalance);
+		const stake = BigInt(validator?.stakingPoolIkaBalance);
 
 		const stakeShare = calculateStakeShare(stake, totalStaked);
 

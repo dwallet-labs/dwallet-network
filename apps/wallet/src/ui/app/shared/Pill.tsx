@@ -22,7 +22,7 @@ const styles = cva(
 			dark: {
 				true: 'border-gray-60 text-steel-darker hover:border-steel-darker hover:text-steel-darker disabled:bg-gray-40 font-medium',
 				false:
-					'border-sui-light text-hero-dark active:bg-gray-45 active:text-steel-darker active:border-gray-45 disabled:bg-white hover:bg-sui-light focus:bg-sui-light',
+					'border-ika-light text-hero-dark active:bg-gray-45 active:text-steel-darker active:border-gray-45 disabled:bg-white hover:bg-ika-light focus:bg-ika-light',
 			},
 		},
 		defaultVariants: {

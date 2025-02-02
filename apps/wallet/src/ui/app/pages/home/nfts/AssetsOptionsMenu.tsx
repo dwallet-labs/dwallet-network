@@ -27,7 +27,7 @@ const AssetsOptionsMenu = () => {
 								to="/nfts/hidden-assets"
 								className="no-underline text-steel-darker hover:text-steel-darker focus:text-steel-darker disabled:text-steel-darker font-medium text-bodySmall"
 							>
-								<div className="p-3 hover:bg-sui-light bg-opacity-50 rounded-md">
+								<div className="p-3 hover:bg-ika-light bg-opacity-50 rounded-md">
 									View Hidden Assets
 								</div>
 							</Link>

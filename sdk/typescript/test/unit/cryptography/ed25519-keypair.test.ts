@@ -5,7 +5,7 @@ import { fromBase64, toBase58 } from '@mysten/bcs';
 import nacl from 'tweetnacl';
 import { describe, expect, it } from 'vitest';
 
-import { decodeSuiPrivateKey } from '../../../src/cryptography/keypair';
+import { decodeIkaPrivateKey } from '../../../src/cryptography/keypair';
 import { Ed25519Keypair } from '../../../src/keypairs/ed25519';
 import { Transaction } from '../../../src/transactions';
 import { verifyPersonalMessageSignature, verifyTransactionSignature } from '../../../src/verify';
@@ -13,21 +13,21 @@ import { verifyPersonalMessageSignature, verifyTransactionSignature } from '../.
 const VALID_SECRET_KEY = 'mdqVWeFekT7pqy5T49+tV12jO0m+ESW7ki4zSU9JiCg=';
 const PRIVATE_KEY_SIZE = 32;
 
-// Test case generated against rust keytool cli. See https://github.com/MystenLabs/sui/blob/edd2cd31e0b05d336b1b03b6e79a67d8dd00d06b/crates/sui/src/unit_tests/keytool_tests.rs#L165
+// Test case generated against rust keytool cli. See https://github.com/MystenLabs/sui/blob/edd2cd31e0b05d336b1b03b6e79a67d8dd00d06b/crates/ika/src/unit_tests/keytool_tests.rs#L165
 const TEST_CASES = [
 	[
 		'film crazy soon outside stand loop subway crumble thrive popular green nuclear struggle pistol arm wife phrase warfare march wheat nephew ask sunny firm',
-		'suiprivkey1qrwsjvr6gwaxmsvxk4cfun99ra8uwxg3c9pl0nhle7xxpe4s80y05ctazer',
+		'ikaprivkey1qrwsjvr6gwaxmsvxk4cfun99ra8uwxg3c9pl0nhle7xxpe4s80y05ctazer',
 		'0xa2d14fad60c56049ecf75246a481934691214ce413e6a8ae2fe6834c173a6133',
 	],
 	[
 		'require decline left thought grid priority false tiny gasp angle royal system attack beef setup reward aunt skill wasp tray vital bounce inflict level',
-		'suiprivkey1qzdvpa77ct272ultqcy20dkw78dysnfyg90fhcxkdm60el0qht9mvzlsh4j',
+		'ikaprivkey1qzdvpa77ct272ultqcy20dkw78dysnfyg90fhcxkdm60el0qht9mvzlsh4j',
 		'0x1ada6e6f3f3e4055096f606c746690f1108fcc2ca479055cc434a3e1d3f758aa',
 	],
 	[
 		'organ crash swim stick traffic remember army arctic mesh slice swear summer police vast chaos cradle squirrel hood useless evidence pet hub soap lake',
-		'suiprivkey1qqqscjyyr64jea849dfv9cukurqj2swx0m3rr4hr7sw955jy07tzgcde5ut',
+		'ikaprivkey1qqqscjyyr64jea849dfv9cukurqj2swx0m3rr4hr7sw955jy07tzgcde5ut',
 		'0xe69e896ca10f5a77732769803cc2b5707f0ab9d4407afb5e4b4464b89769af14',
 	],
 ];
@@ -51,12 +51,12 @@ describe('ed25519-keypair', () => {
 		for (const t of TEST_CASES) {
 			// Keypair derived from mnemonic.
 			const keypair = Ed25519Keypair.deriveKeypair(t[0]);
-			expect(keypair.getPublicKey().toSuiAddress()).toEqual(t[2]);
+			expect(keypair.getPublicKey().toIkaAddress()).toEqual(t[2]);
 
-			// Decode Sui private key from Bech32 string
-			const parsed = decodeSuiPrivateKey(t[1]);
+			// Decode Ika private key from Bech32 string
+			const parsed = decodeIkaPrivateKey(t[1]);
 			const kp = Ed25519Keypair.fromSecretKey(parsed.secretKey);
-			expect(kp.getPublicKey().toSuiAddress()).toEqual(t[2]);
+			expect(kp.getPublicKey().toIkaAddress()).toEqual(t[2]);
 
 			// Exported keypair matches the Bech32 encoded secret key.
 			const exported = kp.getSecretKey();
@@ -118,7 +118,7 @@ describe('ed25519-keypair', () => {
 	it('signs Transactions', async () => {
 		const keypair = new Ed25519Keypair();
 		const tx = new Transaction();
-		tx.setSender(keypair.getPublicKey().toSuiAddress());
+		tx.setSender(keypair.getPublicKey().toIkaAddress());
 		tx.setGasPrice(5);
 		tx.setGasBudget(100);
 		tx.setGasPayment([

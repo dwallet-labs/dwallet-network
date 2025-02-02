@@ -2,7 +2,7 @@
 title: Plinko
 ---
 
-Plinko is an example implementation of the popular casino game. The Plinko game on Sui incorporates advanced cryptographic techniques to ensure fairness and transparency. Players drop Plinko balls onto a pegged board, where they randomly fall into slots representing different multipliers. This document details the game's mechanics, cryptographic features, and the methodology for calculating trace paths and verifying signatures.
+Plinko is an example implementation of the popular casino game. The Plinko game on Ika incorporates advanced cryptographic techniques to ensure fairness and transparency. Players drop Plinko balls onto a pegged board, where they randomly fall into slots representing different multipliers. This document details the game's mechanics, cryptographic features, and the methodology for calculating trace paths and verifying signatures.
 
 Building an on-chain Plinko game shares a lot of similarities with the [Coin Flip](./coin-flip.mdx) game and [Blackjack](./blackjack.mdx) game. For that reason, this example covers only the smart contracts (Move modules) and frontend logic.
 
@@ -16,7 +16,7 @@ A version of the game is also deployed at [Mysten Plinko](https://plinko-poc.ver
 
 ## Gameplay
 
-The Plinko game, implemented through smart contracts on the Sui blockchain, incorporates cryptographic techniques to ensure fairness and transparency. Utilizing a blend of BLS signatures, hash functions, and verifiable random function (VRF) inputs, the game calculates the trace path for each ball, determining the game's outcome based on the number of Plink balls a player chooses to drop.
+The Plinko game, implemented through smart contracts on the Ika blockchain, incorporates cryptographic techniques to ensure fairness and transparency. Utilizing a blend of BLS signatures, hash functions, and verifiable random function (VRF) inputs, the game calculates the trace path for each ball, determining the game's outcome based on the number of Plink balls a player chooses to drop.
 
 The game mechanics involve a player starting a game by specifying the number of balls and staking a certain amount. The backend generates a BLS signature for the game's randomness source, which is verified on-chain to ensure it's untampered. The game uses a Counter NFT for each round to generate a unique VRF input, ensuring each game's randomness is distinct and cannot be predicted or repeated. The number of Plinko balls, chosen by the player, directly influences the game's complexity and potential payout, as each ball's final position is determined by traversing a cryptographic trace path generated from the hashed BLS signature extended to accommodate the total number of balls.
 
@@ -27,7 +27,7 @@ sequenceDiagram
     participant Player as Player
     participant UI as Next.js Application
     participant API as Backend API
-    participant Blockchain as Sui Blockchain
+    participant Blockchain as Ika Blockchain
 
     Note over Player, Blockchain: Plinko Game Interaction Flow
 
@@ -53,18 +53,18 @@ Follow the comments in each module's code to understand the logic each creates.
 
 ### plinko::plinko
 
-The `plinko::plinko` module combines various Sui blockchain features, such as coin handling, event emissions, and dynamic object fields, to create on-chain Plinko games.
+The `plinko::plinko` module combines various Ika blockchain features, such as coin handling, event emissions, and dynamic object fields, to create on-chain Plinko games.
 
 ```move title="plinko.move"
 module plinko::plinko {
 // === Imports ===
-use sui::coin::{Self, Coin};
-use sui::balance::Balance;
-use sui::sui::SUI;
-use sui::bls12381::bls12381_min_pk_verify;
-use sui::event::emit;
-use sui::hash::{blake2b256};
-use sui::dynamic_object_field::{Self as dof};
+use ika::coin::{Self, Coin};
+use ika::balance::Balance;
+use ika::ika::IKA;
+use ika::bls12381::bls12381_min_pk_verify;
+use ika::event::emit;
+use ika::hash::{blake2b256};
+use ika::dynamic_object_field::{Self as dof};
 
 // Import Counter NFT module
 use plinko::counter_nft::Counter;
@@ -85,7 +85,7 @@ const EGameDoesNotExist: u64 = 6;
 public struct Game has key, store {
     id: UID,
     game_start_epoch: u64,
-    stake: Balance<SUI>,
+    stake: Balance<IKA>,
     player: address,
     // The VRF input used to generate the extended beacon
     vrf_input: vector<u8>,
@@ -115,7 +115,7 @@ public struct Outcome has copy, drop {
 // === Public Functions ===
 
 /// Function used to create a new game. The player must provide a Counter NFT and the number of balls.
-public fun start_game(counter: &mut Counter, num_balls: u64, coin: Coin<SUI>, house_data: &mut HouseData, ctx: &mut TxContext): ID {
+public fun start_game(counter: &mut Counter, num_balls: u64, coin: Coin<IKA>, house_data: &mut HouseData, ctx: &mut TxContext): ID {
     let fee_bp = house_data.base_fee_in_bp();
     let (id, new_game) = internal_start_game(counter, num_balls, coin, house_data, fee_bp, ctx);
     dof::add(house_data.borrow_mut(), id, new_game);
@@ -166,7 +166,7 @@ public fun finish_game(game_id: ID, bls_sig: vector<u8>, house_data: &mut HouseD
     // Initializes variables for calculating game outcome.
     let mut trace = vector[];
     // Calculate the stake amount per ball
-    let stake_per_ball = stake.value<SUI>() / num_balls;
+    let stake_per_ball = stake.value<IKA>() / num_balls;
     let mut total_funds_amount: u64 = 0;
 
     // Calculates outcome for each ball based on the extended beacon.
@@ -195,7 +195,7 @@ public fun finish_game(game_id: ID, bls_sig: vector<u8>, house_data: &mut HouseD
     let result = house_data.multiplier()[multiplier_index];
 
     // Calculate funds amount for this particular ball
-    // Divide by 100 to adjust for multiplier scale and SUI units
+    // Divide by 100 to adjust for multiplier scale and IKA units
     let funds_amount_per_ball = (result * stake_per_ball)/100;
     // Add the funds amount to the total funds amount
     total_funds_amount = total_funds_amount + funds_amount_per_ball;
@@ -204,7 +204,7 @@ public fun finish_game(game_id: ID, bls_sig: vector<u8>, house_data: &mut HouseD
 
 // Processes the payout to the player and returns the game outcome.
 let payout_balance_mut = house_data.borrow_balance_mut();
-let payout_coin: Coin<SUI> = coin::take(payout_balance_mut, total_funds_amount, ctx);
+let payout_coin: Coin<IKA> = coin::take(payout_balance_mut, total_funds_amount, ctx);
 
 payout_balance_mut.join(stake);
 
@@ -268,7 +268,7 @@ public fun borrow_game(game_id: ID, house_data: &HouseData): &Game {
 /// Internal helper function used to create a new game.
 /// The player must provide a guess and a Counter NFT.
 /// Stake is taken from the player's coin and added to the game's stake.
-fun internal_start_game(counter: &mut Counter, num_balls: u64, coin: Coin<SUI>, house_data: &HouseData, fee_bp: u16, ctx: &mut TxContext): (ID, Game) {
+fun internal_start_game(counter: &mut Counter, num_balls: u64, coin: Coin<IKA>, house_data: &HouseData, fee_bp: u16, ctx: &mut TxContext): (ID, Game) {
     let user_stake = coin.value();
     // Ensure that the stake is not higher than the max stake.
     assert!(user_stake <= house_data.max_stake(), EStakeTooHigh);
@@ -287,7 +287,7 @@ fun internal_start_game(counter: &mut Counter, num_balls: u64, coin: Coin<SUI>, 
     let new_game = Game {
         id,
         game_start_epoch: ctx.epoch(),
-        stake: coin.into_balance<SUI>(),
+        stake: coin.into_balance<IKA>(),
         player: ctx.sender(),
         vrf_input,
         fee_bp
@@ -359,10 +359,10 @@ The `plinko::house_data` module in the Plinko game is designed to manage the gam
 ```move title="house_data.move"
 module plinko::house_data {
 // === Imports ===
-use sui::balance::{Self, Balance};
-use sui::sui::SUI;
-use sui::coin::{Self, Coin};
-use sui::package::{Self};
+use ika::balance::{Self, Balance};
+use ika::ika::IKA;
+use ika::coin::{Self, Coin};
+use ika::package::{Self};
 
 // === Errors ===
 const ECallerNotHouse: u64 = 0;
@@ -375,7 +375,7 @@ const EInsufficientBalance: u64 = 1;
 public struct HouseData has key {
     id: UID,
     // House's balance which also contains the accrued winnings of the house.
-    balance: Balance<SUI>,
+    balance: Balance<IKA>,
     // Address of the house or the game operator.
     house: address,
     // Public key used to verify the beacon produced by the back-end.
@@ -385,7 +385,7 @@ public struct HouseData has key {
     // Minimum stake amount required to play the game.
     min_stake: u64,
     // The accrued fees from games played.
-    fees: Balance<SUI>,
+    fees: Balance<IKA>,
     // The default fee in basis points. 1 basis point = 0.01%.
     base_fee_in_bp: u16,
     // Multipliers used to calculate winnings based on the game outcome.
@@ -418,7 +418,7 @@ fun init(otw: HOUSE_DATA, ctx: &mut TxContext) {
 /// It also sets the max and min stake values, that can later on be updated.
 /// Stores the house address and the base fee in basis points.
 /// This object is involved in all games created by the same instance of this package.
-public fun initialize_house_data(house_cap: HouseCap, coin: Coin<SUI>, public_key: vector<u8>, multiplier: vector<u64>, ctx: &mut TxContext) {
+public fun initialize_house_data(house_cap: HouseCap, coin: Coin<IKA>, public_key: vector<u8>, multiplier: vector<u64>, ctx: &mut TxContext) {
     assert!(coin.value() > 0, EInsufficientBalance);
 
     let mut house_data = HouseData {
@@ -426,8 +426,8 @@ public fun initialize_house_data(house_cap: HouseCap, coin: Coin<SUI>, public_ke
         balance: coin.into_balance(),
         house: ctx.sender(),
         public_key,
-        max_stake: 10_000_000_000, // 10 SUI = 10^9.
-        min_stake: 1_000_000_000, // 1 SUI.
+        max_stake: 10_000_000_000, // 10 IKA = 10^9.
+        min_stake: 1_000_000_000, // 1 IKA.
         fees: balance::zero(),
         base_fee_in_bp: 100, // 1% in basis points.
         multiplier: vector[]
@@ -451,7 +451,7 @@ public fun update_multiplier_vector(house_data: &mut HouseData, v: vector<u64>, 
 
 /// Function used to top up the house balance. Can be called by anyone.
 /// House can have multiple accounts so giving the treasury balance is not limited.
-public fun top_up(house_data: &mut HouseData, coin: Coin<SUI>, _: &mut TxContext) {
+public fun top_up(house_data: &mut HouseData, coin: Coin<IKA>, _: &mut TxContext) {
     coin::put(&mut house_data.balance, coin)
 }
 
@@ -542,12 +542,12 @@ public(package) fun borrow(house_data: &HouseData): &UID {
 }
 
     /// Returns a mutable reference to the balance of the house.
-public(package) fun borrow_balance_mut(house_data: &mut HouseData): &mut Balance<SUI> {
+public(package) fun borrow_balance_mut(house_data: &mut HouseData): &mut Balance<IKA> {
     &mut house_data.balance
 }
 
 /// Returns a mutable reference to the fees of the house.
-public(package) fun borrow_fees_mut(house_data: &mut HouseData): &mut Balance<SUI> {
+public(package) fun borrow_fees_mut(house_data: &mut HouseData): &mut Balance<IKA> {
     &mut house_data.fees
 }
 
@@ -627,7 +627,7 @@ Unlike traditional NFTs, the Counter NFT is non-transferable, ensuring it remain
 ```move title="counter_nft.move"
 module plinko::counter_nft {
 // === Imports ===
-use sui::bcs::{Self};
+use ika::bcs::{Self};
 
 // === Structs ===
 
@@ -772,7 +772,7 @@ The [`PlinkoSettings` component](https://github.com/MystenLabs/plinko-poc/blob/m
 
 ## User interaction and feedback
 
-Game Initiation: After selecting the desired number of balls and setting the bet size for each, players can initiate a new game by pressing the **Play** button. This action starts the game, with the button becoming disabled during gameplay to prevent new games from being initiated until the current game concludes and the last ball has reached the end. Links are also provided for players to view game details on a Sui network explorer for transparency and engagement.
+Game Initiation: After selecting the desired number of balls and setting the bet size for each, players can initiate a new game by pressing the **Play** button. This action starts the game, with the button becoming disabled during gameplay to prevent new games from being initiated until the current game concludes and the last ball has reached the end. Links are also provided for players to view game details on a Ika network explorer for transparency and engagement.
 
 ## Related links
 

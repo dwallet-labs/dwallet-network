@@ -18,7 +18,7 @@ type OverlayProps = {
 	closeOverlay?: () => void;
 	closeIcon?: ReactNode | null;
 	setShowModal?: (showModal: boolean) => void;
-	background?: 'bg-sui-lightest';
+	background?: 'bg-ika-lightest';
 };
 
 function Overlay({
@@ -27,7 +27,7 @@ function Overlay({
 	showModal,
 	closeOverlay,
 	setShowModal,
-	closeIcon = <X32 fill="currentColor" className="text-sui-light w-8 h-8" />,
+	closeIcon = <X32 fill="currentColor" className="text-ika-light w-8 h-8" />,
 	background,
 }: OverlayProps) {
 	const closeModal = useCallback(

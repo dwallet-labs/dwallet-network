@@ -3,10 +3,10 @@
 
 module shared_with_tto::shared_cash_register {
     use common::identified_payment::{Self, IdentifiedPayment, EarmarkedPayment};
-    use sui::sui::SUI;
-    use sui::coin::Coin;
-    use sui::transfer::Receiving;
-    use sui::vec_set::{Self, VecSet};
+    use ika::ika::IKA;
+    use ika::coin::Coin;
+    use ika::transfer::Receiving;
+    use ika::vec_set::{Self, VecSet};
     use std::string::String;
 
     const EInvalidOwner: u64 = 0;
@@ -86,7 +86,7 @@ module shared_with_tto::shared_cash_register {
     /// Process a payment that has been made, removing it from the register and
     /// returning the coin that can then be combined or sent elsewhere by the authorized individual.
     /// Payments can only be processed by either an account in the / `authorized_individuals` set or by the owner of the cash register.
-    public fun process_payment(register: &mut CashRegister, payment_ticket: Receiving<IdentifiedPayment>, ctx: &TxContext): Coin<SUI> {
+    public fun process_payment(register: &mut CashRegister, payment_ticket: Receiving<IdentifiedPayment>, ctx: &TxContext): Coin<IKA> {
         let sender = tx_context::sender(ctx);
         assert!(vec_set::contains(&register.authorized_individuals, &sender) || sender == register.register_owner, ENotAuthorized);
         let payment: IdentifiedPayment = transfer::public_receive(&mut register.id, payment_ticket);
@@ -95,7 +95,7 @@ module shared_with_tto::shared_cash_register {
     }
 
     /// Process a tip -- only the person who was tipped can process it despite it being sent to the shared object.
-    public fun process_tip(register: &mut CashRegister, earmarked_ticket: Receiving<EarmarkedPayment>, ctx: &TxContext): Coin<SUI> {
+    public fun process_tip(register: &mut CashRegister, earmarked_ticket: Receiving<EarmarkedPayment>, ctx: &TxContext): Coin<IKA> {
         let payment: IdentifiedPayment = identified_payment::receive(&mut register.id, earmarked_ticket, ctx);
         let (_, coin) = identified_payment::unpack(payment);
         coin

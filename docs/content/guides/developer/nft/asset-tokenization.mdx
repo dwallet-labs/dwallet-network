@@ -1,6 +1,6 @@
 ---
 title: Asset Tokenization
-description: Learn how to tokenize assets on the Sui blockchain. Asset tokenization refers to the process of representing real-world assets, such as real estate, art, commodities, stocks, or other valuable assets, as digital tokens on the blockchain network.
+description: Learn how to tokenize assets on the Ika blockchain. Asset tokenization refers to the process of representing real-world assets, such as real estate, art, commodities, stocks, or other valuable assets, as digital tokens on the blockchain network.
 ---
 
 Asset tokenization refers to the process of representing real-world assets, such as real estate, art, commodities, stocks, or other valuable assets, as digital tokens on the blockchain network. This involves converting the ownership or rights of an asset into digital tokens, which are then recorded and managed on the blockchain.
@@ -11,7 +11,7 @@ The concept is to divide high-value assets into smaller, more affordable units, 
 
 This strategy enables wider participation from investors who might want to mitigate risk by investing in a portion of a digital asset rather than being the sole owner, thereby expanding accessibility to a broader range of investors.
 
-This pattern is similar to the [ERC1155](https://eips.ethereum.org/EIPS/eip-1155) multi-token standard with additional functionality. This makes it a suitable choice for Solidity based use cases that one might want to implement on Sui.
+This pattern is similar to the [ERC1155](https://eips.ethereum.org/EIPS/eip-1155) multi-token standard with additional functionality. This makes it a ikatable choice for Solidity based use cases that one might want to implement on Ika.
 
 - **Asset creation**
 
@@ -37,7 +37,7 @@ This pattern is similar to the [ERC1155](https://eips.ethereum.org/EIPS/eip-1155
 
 ## Move packages
 
-As with all smart contracts on Sui, Move provides the logic that powers asset tokenization.
+As with all smart contracts on Ika, Move provides the logic that powers asset tokenization.
 
 ### asset_tokenization package
 
@@ -57,7 +57,7 @@ Select a module to view its details:
 
 The `tokenized_asset` module operates in a manner similar to the `coin` library.
 
-When it receives a new [one-time witness](concepts/sui-move-concepts/one-time-witness.mdx) type, it creates a unique representation of a fractional asset. This module employs similar implementations to some methods found in the `Coin` module. It encompasses functionalities pertinent to asset tokenization, including new asset creation, minting, splitting, joining, and burning.
+When it receives a new [one-time witness](concepts/ika-move-concepts/one-time-witness.mdx) type, it creates a unique representation of a fractional asset. This module employs similar implementations to some methods found in the `Coin` module. It encompasses functionalities pertinent to asset tokenization, including new asset creation, minting, splitting, joining, and burning.
 
 **Structs**
 
@@ -572,7 +572,7 @@ public fun kiosk_join<T>(
 
 	kiosk::list<TokenizedAsset<T>>(kiosk, kiosk_cap, ta2_id, 0);
 	let (ta1, promise_ta1) = kiosk::borrow_val(kiosk, kiosk_cap, ta1_id);
-	let coin = coin::zero<SUI>(ctx);
+	let coin = coin::zero<IKA>(ctx);
 	let (ta2, request) = kiosk::purchase(kiosk, ta2_id, coin);
 
 	let tp_ref = proxy::transfer_policy(protected_tp);
@@ -651,7 +651,7 @@ public fun burn_with_ticket<T>(
 
 # Deployment
 
-{@include: ../../../snippets/initialize-sui-client-cli.mdx}
+{@include: ../../../snippets/initialize-ika-client-cli.mdx}
 
 ## Publishing
 
@@ -660,7 +660,7 @@ The `.env.template` file denotes variables that the script automatically fills i
 You can see a reference here:
 
 ```
-SUI_NETWORK = rpc endpoint of the network of your choice | auto filled by publish script
+IKA_NETWORK = rpc endpoint of the network of your choice | auto filled by publish script
 ASSET_TOKENIZATION_PACKAGE_ID = Created by publishing `asset_tokenization` package | auto filled by publish script
 REGISTRY = Created by publishing `asset_tokenization` package | auto filled by publish script
 
@@ -700,7 +700,7 @@ Select a package for specific instructions.
 In a terminal or console at the `move/asset_tokenization` directory of the project enter:
 
 ```bash
-sui client publish --gas-budget <GAS-BUDGET>
+ika client publish --gas-budget <GAS-BUDGET>
 ```
 
 For the gas budget, use a standard value such as `20000000`.
@@ -709,7 +709,7 @@ The package should successfully deploy, and you then see:
 
 ```bash
 UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
-INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY Ika
 INCLUDING DEPENDENCY MoveStdlib
 BUILDING asset_tokenization
 Successfully verified dependencies on-chain against source.
@@ -719,11 +719,11 @@ You can also view a multitude of information and transactional effects.
 
 You should choose and store the `package ID` and the `registry ID` from the created objects in the respective fields within your .env file.
 
-Afterward, it's necessary to modify the `Move.toml` file. Under the `[addresses]` section, replace `0x0` with the same `package ID`. Optionally, under the `[package]` section, add `published-at = <package ID>` (this step is not needed if you see a `Move.lock` file after running `sui client publish`).
+Afterward, it's necessary to modify the `Move.toml` file. Under the `[addresses]` section, replace `0x0` with the same `package ID`. Optionally, under the `[package]` section, add `published-at = <package ID>` (this step is not needed if you see a `Move.lock` file after running `ika client publish`).
 
 ### Automatically
 
-The fields that are automatically filled are: `SUI_NETWORK`, `ASSET_TOKENIZATION_PACKAGE_ID` and `REGISTRY`.
+The fields that are automatically filled are: `IKA_NETWORK`, `ASSET_TOKENIZATION_PACKAGE_ID` and `REGISTRY`.
 
 To publish with the bash script run:
 
@@ -744,7 +744,7 @@ For more details regarding this process, please consult the setup folder's [READ
 In a terminal or console at the `move/template` directory of the project enter:
 
 ```bash
-sui client publish --gas-budget <GAS-BUDGET>
+ika client publish --gas-budget <GAS-BUDGET>
 ```
 
 For the gas budget, use a standard value such as `20000000`.
@@ -754,7 +754,7 @@ The package should successfully deploy, and you then see:
 ```bash
 UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
 INCLUDING DEPENDENCY asset_tokenization
-INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY Ika
 INCLUDING DEPENDENCY MoveStdlib
 BUILDING template
 Successfully verified dependencies on-chain against source.
@@ -769,7 +769,7 @@ You should choose and store the `package ID`, asset `metadata ID`, `asset cap ID
 The process of automatic deployment for the template package refers to publishing a new asset via the WASM library. Quick start steps:
 
 - Ensure that the `asset_tokenization` package address is set in the `[addresses]` section of `asset_tokenization/Move.toml`. This address should be the same as the original package deployment.
-- If a `Move.lock` file exists after running`sui client publish`, go on to the next step. If not, ensure that the `asset_tokenization/Move.toml` file has its `published-at` field uncommented and populated with the address of the latest package deployment.
+- If a `Move.lock` file exists after running`ika client publish`, go on to the next step. If not, ensure that the `asset_tokenization/Move.toml` file has its `published-at` field uncommented and populated with the address of the latest package deployment.
 - Make any changes to the template fields by changing the input parameters of the `publishNewAsset` function.
 - Run `npm run publish-template`.
 - You should choose and store the _Template Package ID_, _asset metadata ID_, _asset cap ID_ and the _publisher ID_ from the created objects in the respective fields within your **.env** file.
@@ -784,7 +784,7 @@ For more details regarding this process, please consult the setup folder's [READ
 
 :::tip
 
-You can find a public facing reference to the WASM library in the [move-binary-format-wasm](https://github.com/MystenLabs/sui/tree/main/sdk/move-binary-format-wasm) Sui repo subfolder.
+You can find a public facing reference to the WASM library in the [move-binary-format-wasm](https://github.com/MystenLabs/sui/tree/main/sdk/move-binary-format-wasm) Ika repo subfolder.
 
 :::
 
@@ -910,15 +910,15 @@ const tx = new Transaction();
   const [upgradeCap] = tx.publish({
     modules: [[...fromHex(bytesToPublish)], [...fromHex(genesis_bytecode)]],
     dependencies: [
-      normalizeSuiObjectId("0x1"),
-      normalizeSuiObjectId("0x2"),
-      normalizeSuiObjectId(packageId),
+      normalizeIkaObjectId("0x1"),
+      normalizeIkaObjectId("0x2"),
+      normalizeIkaObjectId(packageId),
     ],
   });
 
   tx.transferObjects(
     [upgradeCap],
-    tx.pure(signer.getPublicKey().toSuiAddress(), "address")
+    tx.pure(signer.getPublicKey().toIkaAddress(), "address")
   );
 ...
 ```
@@ -941,7 +941,7 @@ In a terminal or console within the project's setup directory, utilize the follo
 
   After executing the command, the console displays the effects of the transaction.
 
-  By searching the transaction digest on a Sui network explorer, you can locate the created objects. Subsequently, select and save the `TransferPolicy ID` and the `ProtectedTP ID` from these objects into the respective fields within your .env file.
+  By searching the transaction digest on a Ika network explorer, you can locate the created objects. Subsequently, select and save the `TransferPolicy ID` and the `ProtectedTP ID` from these objects into the respective fields within your .env file.
 
 - **Add Rules**
 

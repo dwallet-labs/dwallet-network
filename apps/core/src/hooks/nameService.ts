@@ -2,40 +2,40 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useFeatureIsOn } from '@growthbook/growthbook-react';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { useIkaClient } from '@mysten/dapp-kit';
 import { useQuery } from '@tanstack/react-query';
 
-const SUI_NS_FEATURE_FLAG = 'suins';
+const IKA_NS_FEATURE_FLAG = 'ikans';
 
 // This should align with whatever names we want to be able to resolve.
 
-export function useSuiNSEnabled() {
-	return useFeatureIsOn(SUI_NS_FEATURE_FLAG);
+export function useIkaNSEnabled() {
+	return useFeatureIsOn(IKA_NS_FEATURE_FLAG);
 }
 
-export function useResolveSuiNSAddress(name?: string | null, enabled?: boolean) {
-	const client = useSuiClient();
-	const enabledSuiNs = useSuiNSEnabled();
+export function useResolveIkaNSAddress(name?: string | null, enabled?: boolean) {
+	const client = useIkaClient();
+	const enabledIkaNs = useIkaNSEnabled();
 
 	return useQuery({
-		queryKey: ['resolve-suins-address', name],
+		queryKey: ['resolve-ikans-address', name],
 		queryFn: async () => {
 			return await client.resolveNameServiceAddress({
 				name: name!,
 			});
 		},
-		enabled: !!name && enabled && enabledSuiNs,
+		enabled: !!name && enabled && enabledIkaNs,
 		refetchOnWindowFocus: false,
 		retry: false,
 	});
 }
 
-export function useResolveSuiNSName(address?: string | null) {
-	const client = useSuiClient();
-	const enabled = useSuiNSEnabled();
+export function useResolveIkaNSName(address?: string | null) {
+	const client = useIkaClient();
+	const enabled = useIkaNSEnabled();
 
 	return useQuery({
-		queryKey: ['resolve-suins-name', address],
+		queryKey: ['resolve-ikans-name', address],
 		queryFn: async () => {
 			// NOTE: We only fetch 1 here because it's the default name.
 			const { data } = await client.resolveNameServiceNames({

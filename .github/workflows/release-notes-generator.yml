@@ -1,4 +1,4 @@
-name: Create Sui Release with Release Notes
+name: Create Ika Release with Release Notes
 run-name: Generate Release Notes for ${{ inputs.release_tag }}
 
 concurrency: ${{ github.workflow }}-${{ inputs.release_tag }}
@@ -7,15 +7,15 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Sui Release Tag'
+        description: 'Ika Release Tag'
         type: string
         required: true
       previous_branch:
-        description: 'Previous Release Branch (Ex: releases/sui-vX.XX.X-release)'
+        description: 'Previous Release Branch (Ex: releases/ika-vX.XX.X-release)'
         type: string
         required: true
       current_branch:
-        description: 'Current Release Branch (Ex: releases/sui-vX.XX.X-release)'
+        description: 'Current Release Branch (Ex: releases/ika-vX.XX.X-release)'
         type: string
         required: true
 
@@ -63,7 +63,7 @@ jobs:
       - name: Create Release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.SUI_CREATE_RELEASE }}
+          GITHUB_TOKEN: ${{ secrets.IKA_CREATE_RELEASE }}
         with:
           tag_name: ${{ inputs.release_tag }}
           release_name: ${{ inputs.release_tag }}

@@ -1,0 +1,20 @@
+{
+  objects {
+    nodes {
+      version
+      digest
+      storageRebate
+      previousTransactionBlock {
+        digest
+        sender { defaultIkansName }
+        gasInput {
+          gasPrice
+          gasBudget
+        }
+      }
+    }
+    pageInfo {
+      endCursor
+    }
+  }
+}

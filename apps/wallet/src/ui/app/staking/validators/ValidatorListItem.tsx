@@ -19,8 +19,8 @@ export function ValidatorListItem({ selected, value, validatorAddress }: Validat
 			<motion.div whileHover={{ scale: 0.98 }} animate={selected ? { scale: 0.98 } : { scale: 1 }}>
 				<div
 					className={cx(
-						selected ? 'bg-sui/10' : '',
-						'flex justify-between w-full hover:bg-sui/10 py-3.5 px-2 rounded-lg group items-center gap-1',
+						selected ? 'bg-ika/10' : '',
+						'flex justify-between w-full hover:bg-ika/10 py-3.5 px-2 rounded-lg group items-center gap-1',
 					)}
 					role="button"
 				>

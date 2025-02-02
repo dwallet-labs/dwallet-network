@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::{cmp::Ordering, collections::BTreeMap, iter};
-use sui_macros::fail_point;
+use ika_macros::fail_point;
 use tap::Tap;
 
 use crate::StoreResult;

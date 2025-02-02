@@ -1,0 +1,16 @@
+processed 4 tasks
+
+task 1, lines 8-19:
+//# publish
+Error: Transaction Effects Status: Ika Move Bytecode Verification Error. Please run the Ika Move Verifier for more information.
+Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: IkaMoveVerificationError, source: Some("one-time witness type candidate _::m::M must have a single ability: drop"), command: Some(0) } }
+
+task 2, lines 21-32:
+//# publish
+Error: Transaction Effects Status: Ika Move Bytecode Verification Error. Please run the Ika Move Verifier for more information.
+Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: IkaMoveVerificationError, source: Some("one-time witness type candidate _::m::M must have a single ability: drop"), command: Some(0) } }
+
+task 3, lines 34-45:
+//# publish
+Error: Transaction Effects Status: Ika Move Bytecode Verification Error. Please run the Ika Move Verifier for more information.
+Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: IkaMoveVerificationError, source: Some("one-time witness type candidate _::m::M must have a single ability: drop"), command: Some(0) } }

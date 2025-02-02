@@ -8,11 +8,11 @@ import {
 	getObjectChangeLabel,
 	type ObjectChangesByOwner,
 	type ObjectChangeSummary,
-	type SuiObjectChangeTypes,
-	type SuiObjectChangeWithDisplay,
+	type IkaObjectChangeTypes,
+	type IkaObjectChangeWithDisplay,
 } from '@mysten/core';
 import { ChevronDown12, ChevronRight12 } from '@mysten/icons';
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@ika-io/ika/utils';
 import cx from 'clsx';
 
 import { ExpandableList } from '../../ExpandableList';
@@ -32,7 +32,7 @@ export function ObjectDetail({
 	change,
 	display,
 }: {
-	change: SuiObjectChangeWithDisplay;
+	change: IkaObjectChangeWithDisplay;
 	ownerKey: string;
 	display?: boolean;
 }) {
@@ -132,7 +132,7 @@ export function ObjectDetail({
 }
 
 interface ObjectChangeEntryProps {
-	type: SuiObjectChangeTypes;
+	type: IkaObjectChangeTypes;
 	changes: ObjectChangesByOwner;
 }
 

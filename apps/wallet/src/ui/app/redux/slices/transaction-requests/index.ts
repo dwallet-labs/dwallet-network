@@ -10,9 +10,9 @@ import {
 	type WalletSigner,
 } from '_src/ui/app/WalletSigner';
 import type { AppThunkConfig } from '_store/thunk-extras';
-import { type SuiTransactionBlockResponse } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
-import { fromBase64 } from '@mysten/sui/utils';
+import { type IkaTransactionBlockResponse } from '@ika-io/ika/client';
+import { Transaction } from '@ika-io/ika/transactions';
+import { fromBase64 } from '@ika-io/ika/utils';
 import { createAsyncThunk, createEntityAdapter, createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
@@ -28,7 +28,7 @@ export const respondToTransactionRequest = createAsyncThunk<
 	{
 		txRequestID: string;
 		approved: boolean;
-		txResponse: SuiTransactionBlockResponse | null;
+		txResponse: IkaTransactionBlockResponse | null;
 	},
 	{
 		txRequestID: string;
@@ -49,7 +49,7 @@ export const respondToTransactionRequest = createAsyncThunk<
 			throw new Error(`TransactionRequest ${txRequestID} not found`);
 		}
 		let txSigned: SignedTransaction | undefined = undefined;
-		let txResult: SuiTransactionBlockResponse | SignedMessage | undefined = undefined;
+		let txResult: IkaTransactionBlockResponse | SignedMessage | undefined = undefined;
 		let txResultError: string | undefined;
 		if (approved) {
 			try {

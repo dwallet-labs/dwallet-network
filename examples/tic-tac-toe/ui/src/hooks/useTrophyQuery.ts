@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useSuiClient } from '@mysten/dapp-kit';
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { useIkaClient } from '@mysten/dapp-kit';
+import { normalizeIkaAddress } from '@ika-io/ika/utils';
 import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { Game } from 'hooks/useGameQuery';
 import { useTransactions } from 'hooks/useTransactions';
@@ -29,7 +29,7 @@ const REFETCH_INTERVAL = 5000;
  * is available).
  */
 export function useTrophyQuery(game?: Game): [UseTrophyQueryResponse, InvalidateTrophyQuery] {
-	const client = useSuiClient();
+	const client = useIkaClient();
 	const queryClient = useQueryClient();
 	const tx = useTransactions()!!;
 
@@ -41,7 +41,7 @@ export function useTrophyQuery(game?: Game): [UseTrophyQueryResponse, Invalidate
 		queryFn: async () => {
 			const { results } = await client.devInspectTransactionBlock({
 				// It doesn't matter who's sending this query.
-				sender: normalizeSuiAddress('0x0'),
+				sender: normalizeIkaAddress('0x0'),
 				transactionBlock: tx.ended(game!!),
 			});
 

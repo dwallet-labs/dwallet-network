@@ -2,18 +2,18 @@
 title: Sponsored Transactions
 ---
 
-A Sui sponsored transaction is one where a Sui address (the sponsor's) pays the gas fees for a transaction that another address (the user's) initializes. You can use sponsored transactions to cover the fees for users on your site or app so that they don't get charged for them. This removes a significant obstacle that web 2.0 users encounter when entering web3, as they often have to purchase tokens to perform a transaction on chain. For example, you could sponsor gamers' early transactions to increase conversion rates.
+A Ika sponsored transaction is one where a Ika address (the sponsor's) pays the gas fees for a transaction that another address (the user's) initializes. You can use sponsored transactions to cover the fees for users on your site or app so that they don't get charged for them. This removes a significant obstacle that web 2.0 users encounter when entering web3, as they often have to purchase tokens to perform a transaction on chain. For example, you could sponsor gamers' early transactions to increase conversion rates.
 
-Sponsored transactions also facilitate asset management as you don't need to maintain multiple accounts with SUI tokens to transfer funds.
+Sponsored transactions also facilitate asset management as you don't need to maintain multiple accounts with IKA tokens to transfer funds.
 
-You can use Sui sponsored transactions to:
+You can use Ika sponsored transactions to:
 - Sponsor (pay gas fees for) a transaction a user initiates.
 - Sponsor transactions you initiate as the sponsor.
 - Provide a wildcard `GasData` object to users. The object covers the gas fees for a user transaction. The `GasData` object covers any fee amount determined for the transaction as long as the budget is sufficient.
 
 ## Potential risks using sponsored transactions
 
-The most significant potential risk when using sponsored transactions is [equivocation](/references/sui-glossary.mdx#equivocation). In some cases under certain conditions, a sponsored transaction can result in all associated owned objects, including gas in a locked state when examined by Sui validators. To avoid double spending, validators lock objects as they validate transactions. An equivocation occurs when an owned object's pair (`ObjectID`, `SequenceNumber`) is concurrently used in multiple non-finalized transactions.
+The most significant potential risk when using sponsored transactions is [equivocation](/references/ika-glossary.mdx#equivocation). In some cases under certain conditions, a sponsored transaction can result in all associated owned objects, including gas in a locked state when examined by Ika validators. To avoid double spending, validators lock objects as they validate transactions. An equivocation occurs when an owned object's pair (`ObjectID`, `SequenceNumber`) is concurrently used in multiple non-finalized transactions.
 
 To equivocate, either the user or the sponsor signs and submits another transaction that attempts to manipulate an owned object in the original transaction. Because only the object owner can use an owned object, only the user and sponsor can cause this condition.
 
@@ -25,18 +25,18 @@ A user-initiated sponsored transaction involves the following steps:
  1. The user sends `GasLessTransactionData` to the sponsor.
  1. The sponsor validates the transaction, constructs `TransactionData` with gas fees, and then signs `TransactionData`.
  1. The sponsor sends the signed `TransactionData` and the sponsor `Signature` back to the user.
- 1. The user verifies and then signs `TransactionData` and sends the dual-signed transaction to Sui network through a Full node or the sponsor.
+ 1. The user verifies and then signs `TransactionData` and sends the dual-signed transaction to Ika network through a Full node or the sponsor.
 
 ### GasLessTransactionData
 
-`GasLessTransactionData` is basically `TransactionData` without `GasData`. It is not a `sui-core` data structure, but it is only an interface between user and sponsor.
+`GasLessTransactionData` is basically `TransactionData` without `GasData`. It is not a `ika-core` data structure, but it is only an interface between user and sponsor.
 
 The following example constructs a `GasLessTransactionData`  object.
 
 ```rust
 pub struct GasLessTransactionData {
     pub kind: TransactionKind,
-    sender: SuiAddress,
+    sender: IkaAddress,
     …
 }
 ```
@@ -46,7 +46,7 @@ pub struct GasLessTransactionData {
 A sponsor-initiated sponsored transaction involves the following steps:
  1. A sponsor constructs a `TransactionData` object that contains the transaction details and associated gas fee data. The sponsor signs it to generate a `Signature` before sending it to a user. You can send the unsigned `TransactionData` via email, SMS, or an application interface.
  1. The user checks the transaction and signs it to generate the second `Signature` for the transaction.
- 1. The user submits the dual-signed transaction to a Sui Full node or sponsor to execute it.
+ 1. The user submits the dual-signed transaction to a Ika Full node or sponsor to execute it.
 
 You can use a sponsor-initiated sponsored transaction as an advertiser, or to incentivize specific user actions without requiring the user to pay for gas fees.
 
@@ -61,9 +61,9 @@ To use a `GasData` object to sponsor the gas fees for a transaction, create a `G
  1. The sponsor confirms the `TransactionData` and then signs it.
  1. The sponsor submits the dual-signed `TransactionData` to a Full node to execute the transaction.
 
-## Create a Sui gas station
+## Create a Ika gas station
 
-On Sui, a gas station is a concept to describe where you set up processes to sponsor user transactions. You can customize a Sui gas station to support the specific user-facing functionality you need. Some example use cases for a Sui gas station include:
+On Ika, a gas station is a concept to describe where you set up processes to sponsor user transactions. You can customize a Ika gas station to support the specific user-facing functionality you need. Some example use cases for a Ika gas station include:
 
 - Monitor real-time gas prices on the network to determine the gas price that the station provides.
 - Track usage of gas provided to users on the network.
@@ -80,9 +80,9 @@ Depending on the nature of your gas station, you can apply different authorizati
 
 For all gas objects that you provide as a sponsor, you should track if users ever try to equivocate and lock objects. If you detect such behavior, block the user or requester accordingly.
 
-## Code examples to create a Sui gas station
+## Code examples to create a Ika gas station
 
-The following Rust SDK code examples demonstrate how to implement a Sui gas station that supports each of the sponsored transaction types described previously.
+The following Rust SDK code examples demonstrate how to implement a Ika gas station that supports each of the sponsored transaction types described previously.
 
 ### User-initiated sponsored transactions
 
@@ -118,14 +118,14 @@ For user and sponsor-initiated transactions, users can submit the dual-signed tr
 
 ## Sponsored transaction data structure
 
-The following code block describes the `TransactionData` structure for sponsored transactions and `GasObject`. You can view the [source code](https://github.com/MystenLabs/sui/blob/224a28ed9dece21a952547896bd5d794bdf8b562/crates/sui-types/src/transaction.rs) in the Sui GitHub repository.
+The following code block describes the `TransactionData` structure for sponsored transactions and `GasObject`. You can view the [source code](https://github.com/MystenLabs/sui/blob/224a28ed9dece21a952547896bd5d794bdf8b562/crates/ika-types/src/transaction.rs) in the Ika GitHub repository.
 
 **`TransactionData` Structure**
 ```rust
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct TransactionDataV1 {
     pub kind: TransactionKind,
-    pub sender: SuiAddress,
+    pub sender: IkaAddress,
     pub gas_data: GasData,
     pub expiration: TransactionExpiration,
 }
@@ -136,10 +136,10 @@ pub struct TransactionDataV1 {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct GasData {
     pub payment: Vec<ObjectRef>,
-    pub owner: SuiAddress,
+    pub owner: IkaAddress,
     pub price: u64,
     pub budget: u64,
 }
 ```
 
-To learn more about transactions in Sui, see [Transactions](../transactions.mdx).
+To learn more about transactions in Ika, see [Transactions](../transactions.mdx).

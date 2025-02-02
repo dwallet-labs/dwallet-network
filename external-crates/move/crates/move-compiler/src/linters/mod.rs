@@ -42,7 +42,7 @@ pub enum LinterDiagnosticCategory {
     Suspicious,
     Deprecated,
     Style,
-    Sui = 99,
+    Ika = 99,
 }
 
 macro_rules! lints {

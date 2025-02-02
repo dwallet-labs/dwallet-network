@@ -32,12 +32,12 @@ export default function Home() {
 
   return (
     <Layout>
-      <div className="bg-sui-black overflow-hidden">
-        <div className="w-full mt-24 mb-12 mx-auto bg-sui-black">
+      <div className="bg-ika-black overflow-hidden">
+        <div className="w-full mt-24 mb-12 mx-auto bg-ika-black">
           <div className={styles.heroText}>
-            <h1 className="h1 center-text text-white">Sui Documentation</h1>
+            <h1 className="h1 center-text text-white">Ika Documentation</h1>
             <h2 className="h2 text-gray center-text h3">
-              Discover the power of Sui through examples, guides, and concepts
+              Discover the power of Ika through examples, guides, and concepts
             </h2>
           </div>
         </div>
@@ -49,10 +49,10 @@ export default function Home() {
             >
               Getting started
             </Link>
-            <Link className={styles.cardLink} to="./guides/developer/sui-101">
-              Sui Developer Basics
+            <Link className={styles.cardLink} to="./guides/developer/ika-101">
+              Ika Developer Basics
             </Link>
-            <Link className={styles.cardLink} to="./concepts/sui-move-concepts">
+            <Link className={styles.cardLink} to="./concepts/ika-move-concepts">
               Move
             </Link>
           </HomeCard>
@@ -65,19 +65,19 @@ export default function Home() {
             </Link>
             <Link
               className={styles.cardLink}
-              to="./guides/operator/sui-full-node"
+              to="./guides/operator/ika-full-node"
             >
-              Run a Sui Full node
+              Run a Ika Full node
               <span className="block bg-auto bg-[url(../static/img/index/right-arrow.svg)]"></span>
             </Link>
             <Link
               className={styles.cardLink}
               to="./guides/operator/bridge-node-configuration"
             >
-              Sui Bridge Node configuration
+              Ika Bridge Node configuration
             </Link>
           </HomeCard>
-          <HomeCard title="About Sui">
+          <HomeCard title="About Ika">
             <Link className={styles.cardLink} to="./concepts/tokenomics">
               Tokenomics
             </Link>
@@ -91,22 +91,22 @@ export default function Home() {
           <HomeCard title="References" aux>
             <Link
               className={styles.cardLink}
-              to="https://sdk.mystenlabs.com/dapp-kit?ref=blog.sui.io"
+              to="https://sdk.mystenlabs.com/dapp-kit?ref=blog.ika.io"
             >
-              Sui dApp Kit
+              Ika dApp Kit
             </Link>
-            <Link className={styles.cardLink} to="/references/sui-api">
-              Sui API
+            <Link className={styles.cardLink} to="/references/ika-api">
+              Ika API
             </Link>
             <Link
               className={styles.cardLink}
-              to="https://github.com/MystenLabs/sui/tree/main/crates/sui-framework/docs"
+              to="https://github.com/MystenLabs/sui/tree/main/crates/ika-framework/docs"
             >
-              Sui framework (GitHub)
+              Ika framework (GitHub)
             </Link>
             <Link
               className={styles.cardLink}
-              to="https://github.com/MystenLabs/sui/tree/main/crates/sui-sdk"
+              to="https://github.com/MystenLabs/sui/tree/main/crates/ika-sdk"
             >
               Rust SDK (GitHub)
             </Link>
@@ -114,18 +114,18 @@ export default function Home() {
           <HomeCard title="Resources" aux>
             <Link
               className={styles.cardLink}
-              to="https://sui.directory/?_project_type=api%2Cdeveloper-tools%2Cinfrastructure%2Csdk"
+              to="https://ika.directory/?_project_type=api%2Cdeveloper-tools%2Cinfrastructure%2Csdk"
             >
-              Sui ecosystem directory
+              Ika ecosystem directory
             </Link>
-            <Link className={styles.cardLink} to="https://blog.sui.io/">
-              Sui blog
+            <Link className={styles.cardLink} to="https://blog.ika.io/">
+              Ika blog
             </Link>
             <Link
               className={styles.cardLink}
               to="guides/developer/dev-cheat-sheet"
             >
-              Sui dev cheat sheet
+              Ika dev cheat sheet
             </Link>
           </HomeCard>
           <HomeCardCTA>
@@ -133,7 +133,7 @@ export default function Home() {
               className={styles.cardCTALink}
               to="/guides/developer/first-app"
             >
-              <span>Build your dApp on Sui</span>
+              <span>Build your dApp on Ika</span>
               <svg
                 width="11"
                 height="11"
@@ -151,9 +151,9 @@ export default function Home() {
         </div>
 
         <div className={styles.sectionHeader}>
-          <h2 className="h1 text-white font-twkeverett">Why Sui?</h2>
+          <h2 className="h1 text-white font-twkeverett">Why Ika?</h2>
           <h3 className="h3 text-gray text-center">
-            Sui is the first internet-scale programmable blockchain platform
+            Ika is the first internet-scale programmable blockchain platform
           </h3>
         </div>
         <div className={styles.why}>
@@ -335,8 +335,8 @@ export default function Home() {
           <div className={styles.TwoColItem}>
             <span>Scalability</span>
             <p>
-              Sui scales horizontally to meet the demands of applications.
-              Network capacity grows in proportion to the increase in Sui
+              Ika scales horizontally to meet the demands of applications.
+              Network capacity grows in proportion to the increase in Ika
               validators' processing power by adding workers, resulting in low
               gas fees even during high network traffic. This scalability
               characteristic is in sharp contrast to other blockchains with
@@ -370,11 +370,11 @@ export default function Home() {
           <div className={styles.TwoColItem}>
             <span>Built for Web3</span>
             <p>
-              Sui aims to be the most accessible smart contract platform,
+              Ika aims to be the most accessible smart contract platform,
               empowering developers to create great user experiences in web3. To
-              usher in the next billion users, Sui empowers developers with
-              various tools to take advantage of the power of the Sui
-              blockchain. The Sui Development Kit (SDK) will enable developers
+              usher in the next billion users, Ika empowers developers with
+              various tools to take advantage of the power of the Ika
+              blockchain. The Ika Development Kit (SDK) will enable developers
               to build without boundaries.
             </p>
           </div>

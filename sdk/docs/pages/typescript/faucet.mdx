@@ -2,20 +2,20 @@
 
 import { Callout } from 'nextra/components';
 
-Devnet, Testnet, and local networks include faucets that mint SUI. You can use the Sui TypeScript
-SDK to call a network's faucet and provide SUI to the address you provide.
+Devnet, Testnet, and local networks include faucets that mint IKA. You can use the Ika TypeScript
+SDK to call a network's faucet and provide IKA to the address you provide.
 
-To request SUI from a faucet, import the `requestSuiFromFaucetV0` function from the
-`@mysten/sui/faucet` package to your project.
+To request IKA from a faucet, import the `requestIkaFromFaucetV0` function from the
+`@ika-io/ika/faucet` package to your project.
 
 ```typescript
-import { getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui/faucet';
+import { getFaucetHost, requestIkaFromFaucetV0 } from '@ika-io/ika/faucet';
 ```
 
-Use `requestSuiFromFaucetV0` in your TypeScript code to request SUI from the network's faucet.
+Use `requestIkaFromFaucetV0` in your TypeScript code to request IKA from the network's faucet.
 
 ```typescript
-await requestSuiFromFaucetV0({
+await requestIkaFromFaucetV0({
 	host: getFaucetHost('testnet'),
 	recipient: <RECIPIENT_ADDRESS>,
 });

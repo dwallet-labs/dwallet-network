@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { DelegatedStake } from '@mysten/sui/client';
+import type { DelegatedStake } from '@ika-io/ika/client';
 
-// Helper function to get the delegation by stakedSuiId
+// Helper function to get the delegation by stakedIkaId
 export const getDelegationDataByStakeId = (
 	delegationsStake: DelegatedStake[],
-	stakeSuiId: string,
+	stakeIkaId: string,
 ) => {
 	let stake = null;
 	for (const { stakes } of delegationsStake) {
-		stake = stakes.find(({ stakedSuiId }) => stakedSuiId === stakeSuiId) || null;
+		stake = stakes.find(({ stakedIkaId }) => stakedIkaId === stakeIkaId) || null;
 		if (stake) return stake;
 	}
 

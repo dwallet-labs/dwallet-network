@@ -82,97 +82,97 @@ members = [
     "crates/prometheus-closure-metric",
     "crates/shared-crypto",
     "crates/simulacrum",
-    "crates/sui",
-    "crates/sui-adapter-transactional-tests",
-    "crates/sui-analytics-indexer",
-    "crates/sui-analytics-indexer-derive",
-    "crates/sui-archival",
-    "crates/sui-authority-aggregation",
-    "crates/sui-aws-orchestrator",
-    "crates/sui-benchmark",
-    "crates/sui-bridge",
-    "crates/sui-bridge-cli",
-    "crates/sui-bridge-indexer",
-    "crates/sui-cluster-test",
-    "crates/sui-config",
-    "crates/sui-core",
-    "crates/sui-cost",
-    "crates/sui-data-ingestion",
-    "crates/sui-data-ingestion-core",
-    "crates/sui-deepbook-indexer",
-    "crates/sui-e2e-tests",
-    "crates/sui-enum-compat-util",
-    "crates/sui-faucet",
-    "crates/sui-field-count",
-    "crates/sui-field-count-derive",
-    "crates/sui-framework",
-    "crates/sui-framework-snapshot",
-    "crates/sui-framework-tests",
-    "crates/sui-genesis-builder",
-    "crates/sui-graphql-config",
-    "crates/sui-graphql-e2e-tests",
-    "crates/sui-graphql-rpc",
-    "crates/sui-graphql-rpc-client",
-    "crates/sui-graphql-rpc-headers",
-    "crates/sui-indexer",
-    "crates/sui-indexer-alt",
-    "crates/sui-indexer-builder",
-    "crates/sui-json",
-    "crates/sui-json-rpc",
-    "crates/sui-json-rpc-api",
-    "crates/sui-json-rpc-tests",
-    "crates/sui-json-rpc-types",
-    "crates/sui-keys",
-    "crates/sui-kvstore",
-    "crates/sui-light-client",
-    "crates/sui-macros",
-    "crates/sui-metric-checker",
-    "crates/sui-move",
-    "crates/sui-move-build",
-    "crates/sui-move-lsp",
-    "crates/sui-mvr-indexer",
-    "crates/sui-network",
-    "crates/sui-node",
-    "crates/sui-open-rpc",
-    "crates/sui-open-rpc-macros",
-    "crates/sui-oracle",
-    "crates/sui-package-dump",
-    "crates/sui-package-management",
-    "crates/sui-package-resolver",
-    "crates/sui-pg-temp-db",
-    "crates/sui-proc-macros",
-    "crates/sui-protocol-config",
-    "crates/sui-protocol-config-macros",
-    "crates/sui-proxy",
-    "crates/sui-replay",
-    "crates/sui-rest-api",
-    "crates/sui-rosetta",
-    "crates/sui-rpc-loadgen",
-    "crates/sui-sdk",
-    "crates/sui-security-watchdog",
-    "crates/sui-simulator",
-    "crates/sui-single-node-benchmark",
-    "crates/sui-snapshot",
-    "crates/sui-source-validation",
-    "crates/sui-source-validation-service",
-    "crates/sui-storage",
-    "crates/sui-surfer",
-    "crates/sui-swarm",
-    "crates/sui-swarm-config",
-    "crates/sui-synthetic-ingestion",
-    "crates/sui-telemetry",
-    "crates/sui-test-transaction-builder",
-    "crates/sui-test-validator",
-    "crates/sui-tls",
-    "crates/sui-tool",
-    "crates/sui-transaction-builder",
-    "crates/sui-transaction-checks",
-    "crates/sui-transactional-test-runner",
-    "crates/sui-types",
-    "crates/sui-upgrade-compatibility-transactional-tests",
-    "crates/sui-verifier-transactional-tests",
-    "crates/suins-indexer",
-    "crates/suiop-cli",
+    "crates/ika",
+    "crates/ika-adapter-transactional-tests",
+    "crates/ika-analytics-indexer",
+    "crates/ika-analytics-indexer-derive",
+    "crates/ika-archival",
+    "crates/ika-authority-aggregation",
+    "crates/ika-aws-orchestrator",
+    "crates/ika-benchmark",
+    "crates/ika-bridge",
+    "crates/ika-bridge-cli",
+    "crates/ika-bridge-indexer",
+    "crates/ika-cluster-test",
+    "crates/ika-config",
+    "crates/ika-core",
+    "crates/ika-cost",
+    "crates/ika-data-ingestion",
+    "crates/ika-data-ingestion-core",
+    "crates/ika-deepbook-indexer",
+    "crates/ika-e2e-tests",
+    "crates/ika-enum-compat-util",
+    "crates/ika-faucet",
+    "crates/ika-field-count",
+    "crates/ika-field-count-derive",
+    "crates/ika-framework",
+    "crates/ika-framework-snapshot",
+    "crates/ika-framework-tests",
+    "crates/ika-genesis-builder",
+    "crates/ika-graphql-config",
+    "crates/ika-graphql-e2e-tests",
+    "crates/ika-graphql-rpc",
+    "crates/ika-graphql-rpc-client",
+    "crates/ika-graphql-rpc-headers",
+    "crates/ika-indexer",
+    "crates/ika-indexer-alt",
+    "crates/ika-indexer-builder",
+    "crates/ika-json",
+    "crates/ika-json-rpc",
+    "crates/ika-json-rpc-api",
+    "crates/ika-json-rpc-tests",
+    "crates/ika-json-rpc-types",
+    "crates/ika-keys",
+    "crates/ika-kvstore",
+    "crates/ika-light-client",
+    "crates/ika-macros",
+    "crates/ika-metric-checker",
+    "crates/ika-move",
+    "crates/ika-move-build",
+    "crates/ika-move-lsp",
+    "crates/ika-mvr-indexer",
+    "crates/ika-network",
+    "crates/ika-node",
+    "crates/ika-open-rpc",
+    "crates/ika-open-rpc-macros",
+    "crates/ika-oracle",
+    "crates/ika-package-dump",
+    "crates/ika-package-management",
+    "crates/ika-package-resolver",
+    "crates/ika-pg-temp-db",
+    "crates/ika-proc-macros",
+    "crates/ika-protocol-config",
+    "crates/ika-protocol-config-macros",
+    "crates/ika-proxy",
+    "crates/ika-replay",
+    "crates/ika-rest-api",
+    "crates/ika-rosetta",
+    "crates/ika-rpc-loadgen",
+    "crates/ika-sdk",
+    "crates/ika-security-watchdog",
+    "crates/ika-simulator",
+    "crates/ika-single-node-benchmark",
+    "crates/ika-snapshot",
+    "crates/ika-source-validation",
+    "crates/ika-source-validation-service",
+    "crates/ika-storage",
+    "crates/ika-surfer",
+    "crates/ika-swarm",
+    "crates/ika-swarm-config",
+    "crates/ika-synthetic-ingestion",
+    "crates/ika-telemetry",
+    "crates/ika-test-transaction-builder",
+    "crates/ika-test-validator",
+    "crates/ika-tls",
+    "crates/ika-tool",
+    "crates/ika-transaction-builder",
+    "crates/ika-transaction-checks",
+    "crates/ika-transactional-test-runner",
+    "crates/ika-types",
+    "crates/ika-upgrade-compatibility-transactional-tests",
+    "crates/ika-verifier-transactional-tests",
+    "crates/ikans-indexer",
+    "crates/ikaop-cli",
     "crates/telemetry-subscribers",
     "crates/test-cluster",
     "crates/transaction-fuzzer",
@@ -191,24 +191,24 @@ members = [
     "narwhal/test-utils",
     "narwhal/types",
     "narwhal/worker",
-    "sui-execution",
-    "sui-execution/cut",
-    "sui-execution/latest/sui-adapter",
-    "sui-execution/latest/sui-move-natives",
-    "sui-execution/latest/sui-verifier",
-    "sui-execution/v0/sui-adapter",
-    "sui-execution/v0/sui-move-natives",
-    "sui-execution/v0/sui-verifier",
-    "sui-execution/v1/sui-adapter",
-    "sui-execution/v1/sui-move-natives",
-    "sui-execution/v1/sui-verifier",
-    "sui-execution/v2/sui-adapter",
-    "sui-execution/v2/sui-move-natives",
-    "sui-execution/v2/sui-verifier",
+    "ika-execution",
+    "ika-execution/cut",
+    "ika-execution/latest/ika-adapter",
+    "ika-execution/latest/ika-move-natives",
+    "ika-execution/latest/ika-verifier",
+    "ika-execution/v0/ika-adapter",
+    "ika-execution/v0/ika-move-natives",
+    "ika-execution/v0/ika-verifier",
+    "ika-execution/v1/ika-adapter",
+    "ika-execution/v1/ika-move-natives",
+    "ika-execution/v1/ika-verifier",
+    "ika-execution/v2/ika-adapter",
+    "ika-execution/v2/ika-move-natives",
+    "ika-execution/v2/ika-verifier",
 ]
 
 [workspace.package]
-# This version string will be inherited by sui-core, sui-faucet, sui-node, sui-tools, sui-sdk, sui-move-build, and sui crates.
+# This version string will be inherited by ika-core, ika-faucet, ika-node, ika-tools, ika-sdk, ika-move-build, and ika crates.
 version = "1.38.3"
 
 [profile.release]
@@ -216,7 +216,7 @@ version = "1.38.3"
 debug = 1
 # Write debug info into a separate file.
 split-debuginfo = 'packed'
-# Without stripping, sui binary size would be > 1GB.
+# Without stripping, ika binary size would be > 1GB.
 strip = 'debuginfo'
 # Exit process with SIGABRT when any thread panics
 panic = 'abort'
@@ -602,7 +602,7 @@ anemo-tower = { git = "https://github.com/mystenlabs/anemo.git", rev = "e609f769
 
 # core-types with json format for REST api
 # sui-sdk-types = { version = "0.0.1", features = ["hash", "serde", "schemars"] }
-sui-sdk-types = { git = "https://github.com/MystenLabs/sui-rust-sdk.git", rev = "31bd9da32a8057edc45da8f5e6a8f25b83919b93", features = ["hash", "serde", "schemars"] }
+ika-sdk-types = { git = "https://github.com/MystenLabs/sui-rust-sdk.git", package = "sui-sdk-types", rev = "31bd9da32a8057edc45da8f5e6a8f25b83919b93", features = ["hash", "serde", "schemars"] }
 
 ### Workspace Members ###
 anemo-benchmark = { path = "crates/anemo-benchmark" }
@@ -616,84 +616,84 @@ mysten-util-mem-derive = { path = "crates/mysten-util-mem-derive" }
 prometheus-closure-metric = { path = "crates/prometheus-closure-metric" }
 shared-crypto = { path = "crates/shared-crypto" }
 simulacrum = { path = "crates/simulacrum" }
-sui = { path = "crates/sui" }
-sui-adapter-transactional-tests = { path = "crates/sui-adapter-transactional-tests" }
-sui-analytics-indexer = { path = "crates/sui-analytics-indexer" }
-sui-analytics-indexer-derive = { path = "crates/sui-analytics-indexer-derive" }
-sui-archival = { path = "crates/sui-archival" }
-sui-authority-aggregation = { path = "crates/sui-authority-aggregation" }
-sui-benchmark = { path = "crates/sui-benchmark" }
-sui-bridge = { path = "crates/sui-bridge" }
-sui-cluster-test = { path = "crates/sui-cluster-test" }
-sui-config = { path = "crates/sui-config" }
-sui-core = { path = "crates/sui-core" }
-sui-cost = { path = "crates/sui-cost" }
-sui-data-ingestion = { path = "crates/sui-data-ingestion" }
-sui-data-ingestion-core = { path = "crates/sui-data-ingestion-core" }
-sui-e2e-tests = { path = "crates/sui-e2e-tests" }
-sui-enum-compat-util = { path = "crates/sui-enum-compat-util" }
-sui-faucet = { path = "crates/sui-faucet" }
-sui-field-count = { path = "crates/sui-field-count" }
-sui-field-count-derive = { path = "crates/sui-field-count-derive" }
-sui-framework = { path = "crates/sui-framework" }
-sui-framework-snapshot = { path = "crates/sui-framework-snapshot" }
-sui-framework-tests = { path = "crates/sui-framework-tests" }
-sui-graphql-config = { path = "crates/sui-graphql-config" }
-sui-graphql-rpc = { path = "crates/sui-graphql-rpc" }
-sui-graphql-rpc-client = { path = "crates/sui-graphql-rpc-client" }
-sui-graphql-rpc-headers = { path = "crates/sui-graphql-rpc-headers" }
-sui-genesis-builder = { path = "crates/sui-genesis-builder" }
-sui-indexer = { path = "crates/sui-indexer" }
-sui-indexer-builder = { path = "crates/sui-indexer-builder" }
-sui-json = { path = "crates/sui-json" }
-sui-json-rpc = { path = "crates/sui-json-rpc" }
-sui-json-rpc-api = { path = "crates/sui-json-rpc-api" }
-sui-json-rpc-types = { path = "crates/sui-json-rpc-types" }
-sui-keys = { path = "crates/sui-keys" }
-sui-kvstore = {path = "crates/sui-kvstore"}
-sui-macros = { path = "crates/sui-macros" }
-sui-metric-checker = { path = "crates/sui-metric-checker" }
-sui-move = { path = "crates/sui-move" }
-sui-move-build = { path = "crates/sui-move-build" }
-sui-move-lsp = { path = "crates/sui-move-lsp" }
-sui-mvr-indexer = { path = "crates/sui-mvr-indexer" }
-sui-network = { path = "crates/sui-network" }
-sui-node = { path = "crates/sui-node" }
-sui-open-rpc = { path = "crates/sui-open-rpc" }
-sui-open-rpc-macros = { path = "crates/sui-open-rpc-macros" }
-sui-package-dump = { path = "crates/sui-package-dump" }
-sui-package-management = { path = "crates/sui-package-management" }
-sui-package-resolver = { path = "crates/sui-package-resolver" }
-sui-pg-temp-db = { path = "crates/sui-pg-temp-db" }
-sui-proc-macros = { path = "crates/sui-proc-macros" }
-sui-protocol-config = { path = "crates/sui-protocol-config" }
-sui-protocol-config-macros = { path = "crates/sui-protocol-config-macros" }
-sui-proxy = { path = "crates/sui-proxy" }
-sui-replay = { path = "crates/sui-replay" }
-sui-rosetta = { path = "crates/sui-rosetta" }
-sui-rpc-loadgen = { path = "crates/sui-rpc-loadgen" }
-sui-sdk = { path = "crates/sui-sdk" }
-sui-simulator = { path = "crates/sui-simulator" }
-sui-snapshot = { path = "crates/sui-snapshot" }
-sui-source-validation = { path = "crates/sui-source-validation" }
-sui-source-validation-service = { path = "crates/sui-source-validation-service" }
-sui-storage = { path = "crates/sui-storage" }
-sui-surfer = { path = "crates/sui-surfer" }
-sui-swarm = { path = "crates/sui-swarm" }
-sui-swarm-config = { path = "crates/sui-swarm-config" }
-sui-synthetic-ingestion = { path = "crates/sui-synthetic-ingestion" }
-sui-telemetry = { path = "crates/sui-telemetry" }
-sui-test-transaction-builder = { path = "crates/sui-test-transaction-builder" }
-sui-test-validator = { path = "crates/sui-test-validator" }
-sui-tls = { path = "crates/sui-tls" }
-sui-rest-api = { path = "crates/sui-rest-api" }
-sui-tool = { path = "crates/sui-tool" }
-sui-transaction-builder = { path = "crates/sui-transaction-builder" }
-sui-transaction-checks = { path = "crates/sui-transaction-checks" }
-sui-transactional-test-runner = { path = "crates/sui-transactional-test-runner" }
-sui-types = { path = "crates/sui-types" }
-sui-upgrade-compatibility-transactional-tests = { path = "crates/sui-upgrade-compatibility-transactional-tests" }
-sui-verifier-transactional-tests = { path = "crates/sui-verifier-transactional-tests" }
+ika = { path = "crates/ika" }
+ika-adapter-transactional-tests = { path = "crates/ika-adapter-transactional-tests" }
+ika-analytics-indexer = { path = "crates/ika-analytics-indexer" }
+ika-analytics-indexer-derive = { path = "crates/ika-analytics-indexer-derive" }
+ika-archival = { path = "crates/ika-archival" }
+ika-authority-aggregation = { path = "crates/ika-authority-aggregation" }
+ika-benchmark = { path = "crates/ika-benchmark" }
+ika-bridge = { path = "crates/ika-bridge" }
+ika-cluster-test = { path = "crates/ika-cluster-test" }
+ika-config = { path = "crates/ika-config" }
+ika-core = { path = "crates/ika-core" }
+ika-cost = { path = "crates/ika-cost" }
+ika-data-ingestion = { path = "crates/ika-data-ingestion" }
+ika-data-ingestion-core = { path = "crates/ika-data-ingestion-core" }
+ika-e2e-tests = { path = "crates/ika-e2e-tests" }
+ika-enum-compat-util = { path = "crates/ika-enum-compat-util" }
+ika-faucet = { path = "crates/ika-faucet" }
+ika-field-count = { path = "crates/ika-field-count" }
+ika-field-count-derive = { path = "crates/ika-field-count-derive" }
+ika-framework = { path = "crates/ika-framework" }
+ika-framework-snapshot = { path = "crates/ika-framework-snapshot" }
+ika-framework-tests = { path = "crates/ika-framework-tests" }
+ika-graphql-config = { path = "crates/ika-graphql-config" }
+ika-graphql-rpc = { path = "crates/ika-graphql-rpc" }
+ika-graphql-rpc-client = { path = "crates/ika-graphql-rpc-client" }
+ika-graphql-rpc-headers = { path = "crates/ika-graphql-rpc-headers" }
+ika-genesis-builder = { path = "crates/ika-genesis-builder" }
+ika-indexer = { path = "crates/ika-indexer" }
+ika-indexer-builder = { path = "crates/ika-indexer-builder" }
+ika-json = { path = "crates/ika-json" }
+ika-json-rpc = { path = "crates/ika-json-rpc" }
+ika-json-rpc-api = { path = "crates/ika-json-rpc-api" }
+ika-json-rpc-types = { path = "crates/ika-json-rpc-types" }
+ika-keys = { path = "crates/ika-keys" }
+ika-kvstore = {path = "crates/ika-kvstore"}
+ika-macros = { path = "crates/ika-macros" }
+ika-metric-checker = { path = "crates/ika-metric-checker" }
+ika-move = { path = "crates/ika-move" }
+ika-move-build = { path = "crates/ika-move-build" }
+ika-move-lsp = { path = "crates/ika-move-lsp" }
+ika-mvr-indexer = { path = "crates/ika-mvr-indexer" }
+ika-network = { path = "crates/ika-network" }
+ika-node = { path = "crates/ika-node" }
+ika-open-rpc = { path = "crates/ika-open-rpc" }
+ika-open-rpc-macros = { path = "crates/ika-open-rpc-macros" }
+ika-package-dump = { path = "crates/ika-package-dump" }
+ika-package-management = { path = "crates/ika-package-management" }
+ika-package-resolver = { path = "crates/ika-package-resolver" }
+ika-pg-temp-db = { path = "crates/ika-pg-temp-db" }
+ika-proc-macros = { path = "crates/ika-proc-macros" }
+ika-protocol-config = { path = "crates/ika-protocol-config" }
+ika-protocol-config-macros = { path = "crates/ika-protocol-config-macros" }
+ika-proxy = { path = "crates/ika-proxy" }
+ika-replay = { path = "crates/ika-replay" }
+ika-rosetta = { path = "crates/ika-rosetta" }
+ika-rpc-loadgen = { path = "crates/ika-rpc-loadgen" }
+ika-sdk = { path = "crates/ika-sdk" }
+ika-simulator = { path = "crates/ika-simulator" }
+ika-snapshot = { path = "crates/ika-snapshot" }
+ika-source-validation = { path = "crates/ika-source-validation" }
+ika-source-validation-service = { path = "crates/ika-source-validation-service" }
+ika-storage = { path = "crates/ika-storage" }
+ika-surfer = { path = "crates/ika-surfer" }
+ika-swarm = { path = "crates/ika-swarm" }
+ika-swarm-config = { path = "crates/ika-swarm-config" }
+ika-synthetic-ingestion = { path = "crates/ika-synthetic-ingestion" }
+ika-telemetry = { path = "crates/ika-telemetry" }
+ika-test-transaction-builder = { path = "crates/ika-test-transaction-builder" }
+ika-test-validator = { path = "crates/ika-test-validator" }
+ika-tls = { path = "crates/ika-tls" }
+ika-rest-api = { path = "crates/ika-rest-api" }
+ika-tool = { path = "crates/ika-tool" }
+ika-transaction-builder = { path = "crates/ika-transaction-builder" }
+ika-transaction-checks = { path = "crates/ika-transaction-checks" }
+ika-transactional-test-runner = { path = "crates/ika-transactional-test-runner" }
+ika-types = { path = "crates/ika-types" }
+ika-upgrade-compatibility-transactional-tests = { path = "crates/ika-upgrade-compatibility-transactional-tests" }
+ika-verifier-transactional-tests = { path = "crates/ika-verifier-transactional-tests" }
 telemetry-subscribers = { path = "crates/telemetry-subscribers" }
 test-cluster = { path = "crates/test-cluster" }
 transaction-fuzzer = { path = "crates/transaction-fuzzer" }
@@ -715,15 +715,15 @@ narwhal-test-utils = { path = "narwhal/test-utils" }
 narwhal-types = { path = "narwhal/types" }
 narwhal-worker = { path = "narwhal/worker" }
 
-sui-execution = { path = "sui-execution" }
-# sui-move-natives = { path = "sui-execution/latest/sui-move-natives", package = "sui-move-natives-latest" }
-# sui-adapter = { path = "sui-execution/latest/sui-adapter", package = "sui-adapter-latest" }
-# sui-verifier = { path = "sui-execution/latest/sui-verifier", package = "sui-verifier-latest" }
+ika-execution = { path = "ika-execution" }
+# ika-move-natives = { path = "ika-execution/latest/ika-move-natives", package = "ika-move-natives-latest" }
+# ika-adapter = { path = "ika-execution/latest/ika-adapter", package = "ika-adapter-latest" }
+# ika-verifier = { path = "ika-execution/latest/ika-verifier", package = "ika-verifier-latest" }
 # move-stdlib = { path = "external-crates/move/move-stdlib" }
 # move-vm-runtime = { path = "external-crates/move/move-vm/runtime" }
 # move-bytecode-verifier = { path = "external-crates/move/move-bytecode-verifier" }
 
-# suiop dependencies
+# ikaop dependencies
 docker-api = "0.12.2"
 field_names = "0.2.0"
 semver = "1.0.16"

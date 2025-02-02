@@ -7,7 +7,7 @@ import Loading from '_components/loading';
 import Overlay from '_components/overlay';
 import { useActiveAddress, useSortedCoinsByCategories } from '_hooks';
 import { TokenRow } from '_pages/home/tokens/TokensDetails';
-import { normalizeStructTag } from '@mysten/sui/utils';
+import { normalizeStructTag } from '@ika-io/ika/utils';
 import { Fragment } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 

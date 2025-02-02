@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-import { coinWithBalance } from '@mysten/sui/transactions';
-import type { Transaction } from '@mysten/sui/transactions';
-import { SUI_CLOCK_OBJECT_ID } from '@mysten/sui/utils';
+import { coinWithBalance } from '@ika-io/ika/transactions';
+import type { Transaction } from '@ika-io/ika/transactions';
+import { IKA_CLOCK_OBJECT_ID } from '@ika-io/ika/utils';
 
 import { OrderType, SelfMatchingOptions } from '../types/index.js';
 import type { PlaceLimitOrderParams, PlaceMarketOrderParams, SwapParams } from '../types/index.js';
@@ -65,7 +65,7 @@ export class DeepBookContract {
 				tx.pure.bool(isBid),
 				tx.pure.bool(payWithDeep),
 				tx.pure.u64(expiration),
-				tx.object(SUI_CLOCK_OBJECT_ID),
+				tx.object(IKA_CLOCK_OBJECT_ID),
 			],
 			typeArguments: [baseCoin.type, quoteCoin.type],
 		});
@@ -106,7 +106,7 @@ export class DeepBookContract {
 				tx.pure.u64(inputQuantity),
 				tx.pure.bool(isBid),
 				tx.pure.bool(payWithDeep),
-				tx.object(SUI_CLOCK_OBJECT_ID),
+				tx.object(IKA_CLOCK_OBJECT_ID),
 			],
 			typeArguments: [baseCoin.type, quoteCoin.type],
 		});
@@ -138,7 +138,7 @@ export class DeepBookContract {
 					tradeProof,
 					tx.pure.u128(orderId),
 					tx.pure.u64(inputQuantity),
-					tx.object(SUI_CLOCK_OBJECT_ID),
+					tx.object(IKA_CLOCK_OBJECT_ID),
 				],
 				typeArguments: [baseCoin.type, quoteCoin.type],
 			});
@@ -167,7 +167,7 @@ export class DeepBookContract {
 					tx.object(balanceManager.address),
 					tradeProof,
 					tx.pure.u128(orderId),
-					tx.object(SUI_CLOCK_OBJECT_ID),
+					tx.object(IKA_CLOCK_OBJECT_ID),
 				],
 				typeArguments: [baseCoin.type, quoteCoin.type],
 			});
@@ -193,7 +193,7 @@ export class DeepBookContract {
 				tx.object(pool.address),
 				tx.object(balanceManager.address),
 				tradeProof,
-				tx.object(SUI_CLOCK_OBJECT_ID),
+				tx.object(IKA_CLOCK_OBJECT_ID),
 			],
 			typeArguments: [baseCoin.type, quoteCoin.type],
 		});
@@ -237,7 +237,7 @@ export class DeepBookContract {
 			arguments: [
 				tx.object(targetPool.address),
 				tx.object(referencePool.address),
-				tx.object(SUI_CLOCK_OBJECT_ID),
+				tx.object(IKA_CLOCK_OBJECT_ID),
 			],
 			typeArguments: [
 				targetBaseCoin.type,
@@ -332,7 +332,7 @@ export class DeepBookContract {
 
 		tx.moveCall({
 			target: `${this.#config.DEEPBOOK_PACKAGE_ID}::pool::mid_price`,
-			arguments: [tx.object(pool.address), tx.object(SUI_CLOCK_OBJECT_ID)],
+			arguments: [tx.object(pool.address), tx.object(IKA_CLOCK_OBJECT_ID)],
 			typeArguments: [baseCoin.type, quoteCoin.type],
 		});
 	};
@@ -369,7 +369,7 @@ export class DeepBookContract {
 			arguments: [
 				tx.object(pool.address),
 				tx.pure.u64(baseQuantity * baseCoin.scalar),
-				tx.object(SUI_CLOCK_OBJECT_ID),
+				tx.object(IKA_CLOCK_OBJECT_ID),
 			],
 			typeArguments: [baseCoin.type, quoteCoin.type],
 		});
@@ -392,7 +392,7 @@ export class DeepBookContract {
 			arguments: [
 				tx.object(pool.address),
 				tx.pure.u64(quoteQuantity * quoteScalar),
-				tx.object(SUI_CLOCK_OBJECT_ID),
+				tx.object(IKA_CLOCK_OBJECT_ID),
 			],
 			typeArguments: [baseCoin.type, quoteCoin.type],
 		});
@@ -418,7 +418,7 @@ export class DeepBookContract {
 					tx.object(pool.address),
 					tx.pure.u64(baseQuantity * baseCoin.scalar),
 					tx.pure.u64(quoteQuantity * quoteScalar),
-					tx.object(SUI_CLOCK_OBJECT_ID),
+					tx.object(IKA_CLOCK_OBJECT_ID),
 				],
 				typeArguments: [baseCoin.type, quoteCoin.type],
 			});
@@ -464,7 +464,7 @@ export class DeepBookContract {
 					tx.pure.u64((priceLow * FLOAT_SCALAR * quoteCoin.scalar) / baseCoin.scalar),
 					tx.pure.u64((priceHigh * FLOAT_SCALAR * quoteCoin.scalar) / baseCoin.scalar),
 					tx.pure.bool(isBid),
-					tx.object(SUI_CLOCK_OBJECT_ID),
+					tx.object(IKA_CLOCK_OBJECT_ID),
 				],
 				typeArguments: [baseCoin.type, quoteCoin.type],
 			});
@@ -486,7 +486,7 @@ export class DeepBookContract {
 			arguments: [
 				tx.object(pool.address),
 				tx.pure.u64(tickFromMid),
-				tx.object(SUI_CLOCK_OBJECT_ID),
+				tx.object(IKA_CLOCK_OBJECT_ID),
 			],
 			typeArguments: [baseCoin.type, quoteCoin.type],
 		});
@@ -559,7 +559,7 @@ export class DeepBookContract {
 				baseCoinInput,
 				deepCoin,
 				tx.pure.u64(minQuoteInput),
-				tx.object(SUI_CLOCK_OBJECT_ID),
+				tx.object(IKA_CLOCK_OBJECT_ID),
 			],
 			typeArguments: [baseCoin.type, quoteCoin.type],
 		});
@@ -606,7 +606,7 @@ export class DeepBookContract {
 				quoteCoinInput,
 				deepCoin,
 				tx.pure.u64(minBaseInput),
-				tx.object(SUI_CLOCK_OBJECT_ID),
+				tx.object(IKA_CLOCK_OBJECT_ID),
 			],
 			typeArguments: [baseCoin.type, quoteCoin.type],
 		});

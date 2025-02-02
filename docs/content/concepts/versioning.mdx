@@ -1,6 +1,6 @@
 ---
 title: Object and Package Versioning
-description: Versioning provides the ability to upgrade packages and objects on the Sui network.
+description: Versioning provides the ability to upgrade packages and objects on the Ika network.
 ---
 
 You reference every object stored on chain by an ID and version. When a transaction modifies an object, it writes the new contents to an on-chain reference with the same ID but a later version. This means that a single object (with ID `I`) might appear in multiple entries in the distributed store:
@@ -17,7 +17,7 @@ Versions are strictly increasing and (ID, version) pairs are never re-used. This
 
 ## Move objects
 
-Sui uses [Lamport timestamps](https://en.wikipedia.org/wiki/Lamport_timestamp) in its versioning algorithm for objects. The use of Lamport timestamps guarantees that versions never get re-used as the new version for objects touched by a transaction is one greater than the latest version among all input objects to the transaction. For example, a transaction transferring an object `O` at version 5 using a gas object `G` at version 3 updates both `O` and `G` versions to `1 + max(5, 3) = 6` (version 6).
+Ika uses [Lamport timestamps](https://en.wikipedia.org/wiki/Lamport_timestamp) in its versioning algorithm for objects. The use of Lamport timestamps guarantees that versions never get re-used as the new version for objects touched by a transaction is one greater than the latest version among all input objects to the transaction. For example, a transaction transferring an object `O` at version 5 using a gas object `G` at version 3 updates both `O` and `G` versions to `1 + max(5, 3) = 6` (version 6).
 
 The following sections detail the relevance of Lamport versions for maintaining the "no (ID, version) re-use" invariant or for accessing an object as a transaction input changes depending on that object's ownership.
 
@@ -49,9 +49,9 @@ You can't access wrapped objects by their ID in the object store, you must acces
 
 ```move
 module example::wrapped {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use ika::object::{Self, UID};
+    use ika::transfer;
+    use ika::tx_context::{Self, TxContext};
 
     struct Inner has key, store {
         id: UID,
@@ -128,9 +128,9 @@ One distinction dynamic fields have to wrapped objects is that if a transaction 
 
 :::
 
-Adding a new dynamic field to a parent object also creates a `Field` object, responsible for associating the field name and value with that parent. Unlike other newly created objects, the ID for the resulting instance of `Field` is not created using `sui::object::new`. Instead, it is computed as a hash of the parent object ID and the type and value of the field name, so that you can use it to look-up the `Field` via its parent and name.
+Adding a new dynamic field to a parent object also creates a `Field` object, responsible for associating the field name and value with that parent. Unlike other newly created objects, the ID for the resulting instance of `Field` is not created using `ika::object::new`. Instead, it is computed as a hash of the parent object ID and the type and value of the field name, so that you can use it to look-up the `Field` via its parent and name.
 
-When you remove a field, Sui deletes its associated `Field`, and if you add a new field with the same name, Sui creates a new instance with the same ID. Versioning using Lamport timestamps, coupled with dynamic fields being only accessible through their parent object, ensures that (ID, version) pairs are not reused in the process:
+When you remove a field, Ika deletes its associated `Field`, and if you add a new field with the same name, Ika creates a new instance with the same ID. Versioning using Lamport timestamps, coupled with dynamic fields being only accessible through their parent object, ensures that (ID, version) pairs are not reused in the process:
 
 - The transaction that deletes the original field increments the parent's version to be greater than the deleted field's version.
 - The transaction that creates the new version of the same field creates the field with a version that is greater than the parent's version.
@@ -143,7 +143,7 @@ Move packages are also versioned and stored on chain, but follow a different ver
 
 ### User packages
 
-Every time you publish or upgrade a package, Sui generates a new ID. A newly published package has its version set to 1, whereas an upgraded package's version is one greater than the package it is upgrading. Unlike objects, older versions of a package remain accessible even after being upgraded. For example, imagine a package `P` that is published and upgraded twice. It might be represented in the store as:
+Every time you publish or upgrade a package, Ika generates a new ID. A newly published package has its version set to 1, whereas an upgraded package's version is one greater than the package it is upgrading. Unlike objects, older versions of a package remain accessible even after being upgraded. For example, imagine a package `P` that is published and upgraded twice. It might be represented in the store as:
 
 ```
 (0x17fb7f87e48622257725f584949beac81539a3f4ff864317ad90357c37d82605, 1) => P v1
@@ -155,7 +155,7 @@ In this example, all three versions of the same package are at different IDs. Th
 
 ### Framework packages
 
-Framework packages (such as the Move standard library at `0x1`,the Sui Framework at `0x2`, Sui System at `0x3` and Deepbook at `0xdee9`) are a special-case because their IDs must remain stable across upgrades. The network can upgrade framework packages while preserving their IDs via a system transaction, but can only perform this operation on epoch boundaries because they are considered immutable like other packages. New versions of framework packages retain the same ID as their predecessor, but increment their version by one:
+Framework packages (such as the Move standard library at `0x1`,the Ika Framework at `0x2`, Ika System at `0x3` and Deepbook at `0xdee9`) are a special-case because their IDs must remain stable across upgrades. The network can upgrade framework packages while preserving their IDs via a system transaction, but can only perform this operation on epoch boundaries because they are considered immutable like other packages. New versions of framework packages retain the same ID as their predecessor, but increment their version by one:
 
 ```
 (0x1, 1) => MoveStdlib v1
@@ -167,7 +167,7 @@ The prior example shows the on-chain representation of the first three versions 
 
 ### Package versions
 
-Sui smart contracts are organized into upgradeable packages and, as a result, multiple versions of any given package can exist on chain. Before someone can use an on-chain package, you must publish its first, original version. When you upgrade a package, you create a new version of that package. Each upgrade of a package is based on the immediately preceding version of that package in the versions history. In other words, you can upgrade the `nth` version of a package from only the `nth - 1` version. For example, you can upgrade a package from version 1 to 2, but afterwards you can upgrade that package only from version 2 to 3; you're not allowed to upgrade from version 1 to 3.
+Ika smart contracts are organized into upgradeable packages and, as a result, multiple versions of any given package can exist on chain. Before someone can use an on-chain package, you must publish its first, original version. When you upgrade a package, you create a new version of that package. Each upgrade of a package is based on the immediately preceding version of that package in the versions history. In other words, you can upgrade the `nth` version of a package from only the `nth - 1` version. For example, you can upgrade a package from version 1 to 2, but afterwards you can upgrade that package only from version 2 to 3; you're not allowed to upgrade from version 1 to 3.
 
 There is a notion of versioning in package manifest files, existing in both the package section and in the dependencies section. For example, consider the manifest code that follows:
 

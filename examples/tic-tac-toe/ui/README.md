@@ -6,7 +6,7 @@ owned objects and multi-sigs functionality.
 
 This part of the demo illustrates how to:
 
-- Set-up an application to interact with a blockchain, using the Sui TypeScript
+- Set-up an application to interact with a blockchain, using the Ika TypeScript
   SDK and dApp-kit, including deploying its Move packages.
 - Build UIs that represent on-chain data, and update in response to running
   transactions.

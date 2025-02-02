@@ -43,7 +43,7 @@ runs:
           - 'crates/**'
           - 'external-crates/**'
           - 'narwhal/**'
-          - 'sui-execution/**'
+          - 'ika-execution/**'
           - '.github/workflows/codecov.yml'
           - '.github/workflows/rust.yml'
           - '.github/workflows/external.yml'
@@ -60,13 +60,13 @@ runs:
           - 'doc/**'
           - '*.md'  
         isMove:
-          - 'crates/sui-framework/**'
-          - 'crates/sui-framework-build/**'
-          - 'crates/sui-framework-tests/**'
-          - 'crates/sui_move/**'
+          - 'crates/ika-framework/**'
+          - 'crates/ika-framework-build/**'
+          - 'crates/ika-framework-tests/**'
+          - 'crates/ika_move/**'
           - 'Cargo.toml'
           - 'examples/**'
-          - 'sui_programmability/**'
+          - 'ika_programmability/**'
         isSolidity:
           - 'bridge/evm/**'
         isReleaseNotesEligible:
@@ -79,7 +79,7 @@ runs:
           - 'kiosk/**'
           - 'narwhal/**'
           - 'nre/**'
-          - 'sui-execution/**'
+          - 'ika-execution/**'
         isMoveAutoFormatter:
           - 'external-crates/move/crates/move-analyzer/prettier-plugin/**'
         isMoveAnalyzerTraceAdapter:

@@ -12,7 +12,7 @@
 //! CommitSyncer achieves efficient synchronization by relying on the following: when blocks
 //! are included in commits with >= 2f+1 certifiers by stake, these blocks must have passed
 //! verifications on some honest validators, so re-verifying them is unnecessary. In fact, the
-//! quorum certified commits themselves can be trusted to be sent to Sui directly, but for
+//! quorum certified commits themselves can be trusted to be sent to Ika directly, but for
 //! simplicity this is not done. Blocks from trusted commits still go through Core and committer.
 //!
 //! Another way CommitSyncer improves the efficiency of synchronization is parallel fetching:

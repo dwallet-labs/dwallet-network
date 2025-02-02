@@ -33,7 +33,7 @@ const ALERT_THRESHOLD: Duration = Duration::from_millis(500);
 //      end
 //
 // Then run gdb with:
-//     gdb -x gdbmcmd -p <pid of sui-node>
+//     gdb -x gdbmcmd -p <pid of ika-node>
 //
 // You will need to type `c` to continue the process after it loads.
 //

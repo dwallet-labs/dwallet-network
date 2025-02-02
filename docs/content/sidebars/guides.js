@@ -25,7 +25,7 @@ const guides = [
 					id: 'guides/developer/getting-started',
 				},
 				items: [
-					'guides/developer/getting-started/sui-install',
+					'guides/developer/getting-started/ika-install',
 					'guides/developer/getting-started/connect',
 					'guides/developer/getting-started/local-network',
 					'guides/developer/getting-started/get-address',
@@ -35,7 +35,7 @@ const guides = [
 			},
 			{
 				type: 'category',
-				label: 'Your First Sui dApp',
+				label: 'Your First Ika dApp',
 				link: {
 					type: 'doc',
 					id: 'guides/developer/first-app',
@@ -50,24 +50,24 @@ const guides = [
 			},
 			{
 				type: 'category',
-				label: 'Sui 101',
+				label: 'Ika 101',
 				link: {
 					type: 'doc',
-					id: 'guides/developer/sui-101',
+					id: 'guides/developer/ika-101',
 				},
 				items: [
-					'guides/developer/sui-101/shared-owned',
-					'guides/developer/sui-101/using-events',
-					'guides/developer/sui-101/access-time',
-					'guides/developer/sui-101/sign-and-send-txn',
-					'guides/developer/sui-101/sponsor-txn',
+					'guides/developer/ika-101/shared-owned',
+					'guides/developer/ika-101/using-events',
+					'guides/developer/ika-101/access-time',
+					'guides/developer/ika-101/sign-and-send-txn',
+					'guides/developer/ika-101/sponsor-txn',
 					{
 						type: 'category',
 						label: 'Working with PTBs',
 						items: [
-							'guides/developer/sui-101/building-ptb',
-							'guides/developer/sui-101/coin-mgt',
-							'guides/developer/sui-101/simulating-refs',
+							'guides/developer/ika-101/building-ptb',
+							'guides/developer/ika-101/coin-mgt',
+							'guides/developer/ika-101/simulating-refs',
 						],
 					},
 				],
@@ -191,7 +191,7 @@ const guides = [
 			id: 'guides/operator',
 		},
 		items: [
-			'guides/operator/sui-full-node',
+			'guides/operator/ika-full-node',
 			'guides/operator/validator-config',
 			'guides/operator/genesis',
 			'guides/operator/monitoring',

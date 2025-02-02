@@ -3,16 +3,16 @@
 
 #[test_only]
 module raffles::tests {
-    use sui::clock;
-    use sui::coin::{Self, Coin};
-    use sui::random::{Self, update_randomness_state_for_testing, Random};
-    use sui::sui::SUI;
-    use sui::test_scenario as ts;
+    use ika::clock;
+    use ika::coin::{Self, Coin};
+    use ika::random::{Self, update_randomness_state_for_testing, Random};
+    use ika::ika::IKA;
+    use ika::test_scenario as ts;
 
     use raffles::{example1, example2};
 
     fun mint(addr: address, amount: u64, scenario: &mut ts::Scenario) {
-        transfer::public_transfer(coin::mint_for_testing<SUI>(amount, scenario.ctx()), addr);
+        transfer::public_transfer(coin::mint_for_testing<IKA>(amount, scenario.ctx()), addr);
         scenario.next_tx(addr);
     }
 
@@ -40,7 +40,7 @@ module raffles::tests {
         example1::create(end_time, 10, ts.ctx());
         ts.next_tx(user1);
         let mut game: example1::Game = ts.take_shared();
-        assert!(game.cost_in_sui() == 10, 1);
+        assert!(game.cost_in_ika() == 10, 1);
         assert!(game.participants() == 0, 1);
         assert!(game.end_time() == end_time, 1);
         assert!(game.winner() == option::none(), 1);
@@ -52,28 +52,28 @@ module raffles::tests {
         // Play with 4 users (everything here is deterministic)
         ts.next_tx(user1);
         mint(user1, 10, &mut ts);
-        let coin: Coin<SUI> = ts.take_from_sender();
+        let coin: Coin<IKA> = ts.take_from_sender();
         let t1 = game.buy_ticket(coin, &clock, ts.ctx());
         assert!(game.participants() == 1, 1);
         t1.destroy(); // loser
 
         ts.next_tx(user2);
         mint(user2, 10, &mut ts);
-        let coin: Coin<SUI> = ts.take_from_sender();
+        let coin: Coin<IKA> = ts.take_from_sender();
         let t2 = game.buy_ticket(coin, &clock, ts.ctx());
         assert!(game.participants() == 2, 1);
         t2.destroy(); // loser
 
         ts.next_tx(user3);
         mint(user3, 10, &mut ts);
-        let coin: Coin<SUI> = ts.take_from_sender();
+        let coin: Coin<IKA> = ts.take_from_sender();
         let t3 = game.buy_ticket(coin, &clock, ts.ctx());
         assert!(game.participants() == 3, 1);
         t3.destroy(); // loser
 
         ts.next_tx(user4);
         mint(user4, 10, &mut ts);
-        let coin: Coin<SUI> = ts.take_from_sender();
+        let coin: Coin<IKA> = ts.take_from_sender();
         let t4 = game.buy_ticket(coin, &clock, ts.ctx());
         assert!(game.participants() == 4, 1);
         // this is the winner
@@ -119,7 +119,7 @@ module raffles::tests {
         example2::create(end_time, 10, ts.ctx());
         ts.next_tx(user1);
         let mut game: example2::Game = ts.take_shared();
-        assert!(game.cost_in_sui() == 10, 1);
+        assert!(game.cost_in_ika() == 10, 1);
         assert!(game.participants() == 0, 1);
         assert!(game.end_time() == end_time, 1);
         assert!(game.balance() == 0, 1);
@@ -130,25 +130,25 @@ module raffles::tests {
         // Play with 4 users (everything here is deterministic)
         ts.next_tx(user1);
         mint(user1, 10, &mut ts);
-        let coin: Coin<SUI> = ts.take_from_sender();
+        let coin: Coin<IKA> = ts.take_from_sender();
         game.play(coin, &clock, ts.ctx());
         assert!(game.participants() == 1, 1);
 
         ts.next_tx(user2);
         mint(user2, 10, &mut ts);
-        let coin: Coin<SUI> = ts.take_from_sender();
+        let coin: Coin<IKA> = ts.take_from_sender();
         game.play(coin, &clock, ts.ctx());
         assert!(game.participants() == 2, 1);
 
         ts.next_tx(user3);
         mint(user3, 10, &mut ts);
-        let coin: Coin<SUI> = ts.take_from_sender();
+        let coin: Coin<IKA> = ts.take_from_sender();
         game.play(coin, &clock, ts.ctx());
         assert!(game.participants() == 3, 1);
 
         ts.next_tx(user4);
         mint(user4, 10, &mut ts);
-        let coin: Coin<SUI> = ts.take_from_sender();
+        let coin: Coin<IKA> = ts.take_from_sender();
         game.play(coin, &clock, ts.ctx());
         assert!(game.participants() == 4, 1);
 
@@ -159,7 +159,7 @@ module raffles::tests {
 
         // Check that received the reward
         ts.next_tx(user4);
-        let coin: Coin<SUI> = ts.take_from_sender();
+        let coin: Coin<IKA> = ts.take_from_sender();
         assert!(coin.value() == 40, 1);
         coin.burn_for_testing();
 

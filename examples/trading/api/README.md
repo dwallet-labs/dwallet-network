@@ -34,7 +34,7 @@ pnpm dev
 
 ## Demo Data<a name="demo-data"></a>
 
-> Make sure you have enough Testnet (or any net) SUI in the active address of the CLI.
+> Make sure you have enough Testnet (or any net) IKA in the active address of the CLI.
 
 There are some helper functions to:
 

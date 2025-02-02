@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-import { useCurrentAccount, useSuiClientQuery } from "@mysten/dapp-kit";
-import { SuiObjectDisplay } from "@/components/SuiObjectDisplay";
+import { useCurrentAccount, useIkaClientQuery } from "@mysten/dapp-kit";
+import { IkaObjectDisplay } from "@/components/IkaObjectDisplay";
 import { Button } from "@radix-ui/themes";
 import {
   ArrowDownIcon,
@@ -32,7 +32,7 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
   const { mutate: cancelEscrowMutation, isPending: pendingCancellation } =
     useCancelEscrowMutation();
 
-  const suiObject = useSuiClientQuery("getObject", {
+  const ikaObject = useIkaClientQuery("getObject", {
     id: escrow?.itemId,
     options: {
       showDisplay: true,
@@ -52,7 +52,7 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
     enabled: !escrow.cancelled,
   });
 
-  const { data: suiLockedObject } = useGetLockedObject({
+  const { data: ikaLockedObject } = useGetLockedObject({
     lockedId: lockedData.data?.objectId,
   });
 
@@ -74,8 +74,8 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
   };
 
   return (
-    <SuiObjectDisplay
-      object={suiObject.data?.data!}
+    <IkaObjectDisplay
+      object={ikaObject.data?.data!}
       label={getLabel()}
       labelClasses={getLabelClasses()}
     >
@@ -102,7 +102,7 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
               onClick={() =>
                 cancelEscrowMutation({
                   escrow,
-                  suiObject: suiObject.data?.data!,
+                  ikaObject: ikaObject.data?.data!,
                 })
               }
             >
@@ -112,9 +112,9 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
           )}
         {isToggled && lockedData.data && (
           <div className="min-w-[340px] w-full justify-self-start text-left">
-            {suiLockedObject?.data && (
+            {ikaLockedObject?.data && (
               <LockedObject
-                object={suiLockedObject.data}
+                object={ikaLockedObject.data}
                 itemId={lockedData.data.itemId}
                 hideControls
               />
@@ -156,6 +156,6 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
           </div>
         )}
       </div>
-    </SuiObjectDisplay>
+    </IkaObjectDisplay>
   );
 }

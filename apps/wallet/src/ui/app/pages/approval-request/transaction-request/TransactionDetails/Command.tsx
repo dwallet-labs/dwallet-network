@@ -3,8 +3,8 @@
 
 import { Text } from '_src/ui/app/shared/text';
 import { ChevronDown12, ChevronRight12 } from '@mysten/icons';
-import { type Argument, type Commands, type TransactionData } from '@mysten/sui/transactions';
-import { toBase64 } from '@mysten/sui/utils';
+import { type Argument, type Commands, type TransactionData } from '@ika-io/ika/transactions';
+import { toBase64 } from '@ika-io/ika/utils';
 import { useState } from 'react';
 
 type TransactionType = TransactionData['commands'][0];

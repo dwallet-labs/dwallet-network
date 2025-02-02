@@ -1,7 +1,7 @@
 # Multi-Signature Transactions
 
-The Sui TypeScript SDK provides a `MultiSigPublicKey` class to support
-[Multi-Signature](https://docs.sui.io/concepts/cryptography/transaction-auth/multisig) (MultiSig)
+The Ika TypeScript SDK provides a `MultiSigPublicKey` class to support
+[Multi-Signature](https://docs.ika.io/concepts/cryptography/transaction-auth/multisig) (MultiSig)
 transaction and personal message signing.
 
 This class implements the same interface as the `PublicKey` classes that [Keypairs](./keypairs) uses
@@ -11,12 +11,12 @@ and you call the same methods to verify signatures for `PersonalMessages` and `T
 
 To create a `MultiSigPublicKey`, you provide a `threshold`(u16) value and an array of objects that
 contain `publicKey` and `weight`(u8) values. If the combined weight of valid signatures for a
-transaction is equal to or greater than the threshold value, then the Sui network considers the
+transaction is equal to or greater than the threshold value, then the Ika network considers the
 transdaction valid.
 
 ```typescript
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { MultiSigPublicKey } from '@mysten/sui/multisig';
+import { Ed25519Keypair } from '@ika-io/ika/keypairs/ed25519';
+import { MultiSigPublicKey } from '@ika-io/ika/multisig';
 
 const kp1 = new Ed25519Keypair();
 const kp2 = new Ed25519Keypair();
@@ -40,7 +40,7 @@ const multiSigPublicKey = MultiSigPublicKey.fromPublicKeys({
 	],
 });
 
-const multisigAddress = multiSigPublicKey.toSuiAddress();
+const multisigAddress = multiSigPublicKey.toIkaAddress();
 ```
 
 The `multiSigPublicKey` in the preceding code enables you to verify that signatures have a combined
@@ -76,8 +76,8 @@ A `MultiSigSigner` is created by providing the underlying Signers to the `getSig
 their combined weight is equal to or greater than the threshold.
 
 ```typescript
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { MultiSigPublicKey } from '@mysten/sui/multisig';
+import { Ed25519Keypair } from '@ika-io/ika/keypairs/ed25519';
+import { MultiSigPublicKey } from '@ika-io/ika/multisig';
 
 const kp1 = new Ed25519Keypair();
 const kp2 = new Ed25519Keypair();
@@ -135,7 +135,7 @@ const multiSigPublicKey = MultiSigPublicKey.fromPublicKeys({
 });
 
 // this is the sender of any transactions from this multisig account.
-const multisigAddress = multiSigPublicKey.toSuiAddress();
+const multisigAddress = multiSigPublicKey.toIkaAddress();
 
 // create a regular zklogin signature from the zkproof and ephemeral signature for zkLogin.
 // see zklogin-integration.mdx for more details.

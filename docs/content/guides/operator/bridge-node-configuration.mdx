@@ -1,19 +1,19 @@
 ---
-title: Sui Bridge Validator Node Configuration
-sidebar_label: Sui Bridge Node Configuration
+title: Ika Bridge Validator Node Configuration
+sidebar_label: Ika Bridge Node Configuration
 ---
 
 Running a Bridge Validator Node (Bridge Node) requires registering your node with the bridge committee. Correct configuration of your node ensures optimal performance and valid metrics data. Follow this topic to make sure your Bridge Node is set up properly.
 
 ## Prerequisites
 
-To set up and run a Bridge Node, you need to install `sui` and `sui-bridge-cli`. You can install them using one of the following options: 
+To set up and run a Bridge Node, you need to install `ika` and `ika-bridge-cli`. You can install them using one of the following options: 
 
 ```sh
 # install from tip of `main`
-$ cargo install --locked --git "https://github.com/MystenLabs/sui.git" sui sui-bridge-cli
+$ cargo install --locked --git "https://github.com/MystenLabs/sui.git" ika ika-bridge-cli
 # install with a commit sha
-$ cargo install --locked --git "https://github.com/MystenLabs/sui.git" --rev {SHA} sui sui-bridge-cli
+$ cargo install --locked --git "https://github.com/MystenLabs/sui.git" --rev {SHA} ika ika-bridge-cli
 ```
 
 ## Committee registration
@@ -25,11 +25,11 @@ To join the network you must first register with the bridge validator committee.
 The required metadata includes two things:
 
 - `BridgeAuthorityKey`, an ECDSA key to sign messages. Because this is a hot key that is kept in memory, it’s fine to use the following tool to generate one and write it to file.
-- A REST API URL where the Bridge Node listens to and serves requests. Example: `https://bridge.example-sui-validator.io:443`. Make sure the port is correct and the URL does not contain any invalid characters, like quotes for example.
+- A REST API URL where the Bridge Node listens to and serves requests. Example: `https://bridge.example-ika-validator.io:443`. Make sure the port is correct and the URL does not contain any invalid characters, like quotes for example.
 
 To create a `BridgeAuthorityKey`, run
 ```sh
-$ sui-bridge-cli create-bridge-validator-key <PATH-TO-WRITE>
+$ ika-bridge-cli create-bridge-validator-key <PATH-TO-WRITE>
 ```
 where `<PATH-TO-WRITE>` is the location to write the key pair to.
 
@@ -41,10 +41,10 @@ It's highly recommended you create a new key pair in a secure environment (for e
 
 ### Registration
 
-After you have both authority key file and REST API URL ready, you can register them by using Sui CLI:
+After you have both authority key file and REST API URL ready, you can register them by using Ika CLI:
 
 ```sh
-$ sui validator register-bridge-committee --bridge-authority-key-path <BRIDGE-AUTHORITY-KEY-PATH> --bridge-authority-url <BRIDGE-AUTHORITY-URL>
+$ ika validator register-bridge-committee --bridge-authority-key-path <BRIDGE-AUTHORITY-KEY-PATH> --bridge-authority-url <BRIDGE-AUTHORITY-URL>
 ```
 
 #### Offline signing {#offline-signing}
@@ -54,26 +54,26 @@ If you keep your validator account key in cold storage or you want to perform of
 Run the following command to execute it:
 
 ```sh
-$ sui client execute-signed-tx
+$ ika client execute-signed-tx
 ```
 
 #### Update metadata (before committee is finalized)
 
-Both key and URL are changeable **before the committee is finalized**. If you wish to update metadata, simply rerun `sui validator register-bridge-committee`.
+Both key and URL are changeable **before the committee is finalized**. If you wish to update metadata, simply rerun `ika validator register-bridge-committee`.
 
 #### View registered metadata
 
 To double check you registered the correct metadata on chain, run
 
 ```sh
-$ sui-bridge-cli view-bridge-registration --sui-rpc-url {SUI-FULLNODE-URL}
+$ ika-bridge-cli view-bridge-registration --ika-rpc-url {IKA-FULLNODE-URL}
 ```
 
 ## Update metadata (after committee is finalized)
 
 Use the following command to update bridge node URL:
 ```sh
-$ sui validator update-bridge-committee-node-url
+$ ika validator update-bridge-committee-node-url
 ```
 Refer to [offline signing section](#offline-signing) in this page for how to sign the transaction offline.
 
@@ -135,11 +135,11 @@ If choosing to use an open source load balancing option, make sure to set up met
 
 ### Bridge Node config
 
-Use `sui-bridge-cli` command to create a template. If you want to run `BridgeClient` (see the following section), pass `--run-client` as a parameter.
+Use `ika-bridge-cli` command to create a template. If you want to run `BridgeClient` (see the following section), pass `--run-client` as a parameter.
 
 ```sh
-$ sui-bridge-cli create-bridge-node-config-template {PATH}
-$ sui-bridge-cli create-bridge-node-config-template --run-client {PATH}
+$ ika-bridge-cli create-bridge-node-config-template {PATH}
+$ ika-bridge-cli create-bridge-node-config-template --run-client {PATH}
 ```
 
 The generated configuration includes the following parameters:
@@ -148,43 +148,43 @@ The generated configuration includes the following parameters:
 | --- | --- |
 | `server-listen-port` | The port that Bridge Node listens to for handling requests. |
 | `metrics-port` | Port to export Prometheus metrics. |
-| `bridge-authority-key-path` | The path to the Bridge Validator key, generated from `sui-bridge-cli create-bridge-validator-key` command referenced previously. |
+| `bridge-authority-key-path` | The path to the Bridge Validator key, generated from `ika-bridge-cli create-bridge-validator-key` command referenced previously. |
 | `run-client` | Whether Bridge Client should be enabled in Bridge Node (more instructions follow). |
 | `approved-governance-actions` | A list of governance actions that you want to support. |
-| `sui:sui-rpc-url` | Sui RPC URL. |
-| `sui:sui-bridge-chain-id` | `0` for Sui Mainnet, `1` for Sui Testnet. |
+| `ika:ika-rpc-url` | Ika RPC URL. |
+| `ika:ika-bridge-chain-id` | `0` for Ika Mainnet, `1` for Ika Testnet. |
 | `eth:eth-rpc-url` | Ethereum RPC URL. |
 | `eth:eth-bridge-proxy-address` | The proxy address for Bridge Solidity contracts on Ethereum. |
 | `eth:eth-bridge-chain-id` | `10` for Ethereum Mainnet, `11` for Sepolia Testnet. |
 | `eth:eth-contracts-start-block-fallback` | The starting block BridgeNodes queries for from Ethereum FullNode. This number should be the block where Solidity contracts are deployed or slightly before. |
-| `metrics:push-url` | The url of the remote Sui metrics pipeline (for example, `https://metrics-proxy.[testnet_OR_mainnet].sui.io:8443/publish/metrics`). See the [metrics push section](#metrics-push) that follows for more details. | 
+| `metrics:push-url` | The url of the remote Ika metrics pipeline (for example, `https://metrics-proxy.[testnet_OR_mainnet].ika.io:8443/publish/metrics`). See the [metrics push section](#metrics-push) that follows for more details. | 
 
 With `run-client: true`, you can find these additional fields in the generated config:
 
 | Parameter | Description |
 | --- | --- |
 | `db-path` | Path of BridgeClient database, for BridgeClient. |
-| `sui:bridge-client-key-path` | The file path of Bridge Client key. This key can be generated with `sui-bridge-cli create-bridge-client-key` as previously shown. When `run-client` is true but you do not provide `sui:bridge-client-key-path`, it defaults to use the Bridge Validator key to submit transactions on Sui. This is not recommended for the sake of key separation. | 
+| `ika:bridge-client-key-path` | The file path of Bridge Client key. This key can be generated with `ika-bridge-cli create-bridge-client-key` as previously shown. When `run-client` is true but you do not provide `ika:bridge-client-key-path`, it defaults to use the Bridge Validator key to submit transactions on Ika. This is not recommended for the sake of key separation. | 
 
 ### Bridge Client
 
-`BridgeClient` orchestrates bridge transfer requests. It is **optional** to run for a `BridgeNode`. `BridgeClient` submits transaction on the Sui network. Thus when it's enabled, you need a Sui account key with enough SUI balance.
+`BridgeClient` orchestrates bridge transfer requests. It is **optional** to run for a `BridgeNode`. `BridgeClient` submits transaction on the Ika network. Thus when it's enabled, you need a Ika account key with enough IKA balance.
 
 To enable `bridge_client` feature on a `BridgeNode`, set the following parameters in `BridgeNodeConfig`:
 
 ```yaml
 run-client: true
 db-path: <PATH-TO-DB>
-sui:
+ika:
     bridge-client-key-path: <PATH-TO-BRIDGE-CLIENT-KEY>
 ```
 
 To create a `BridgeClient` key pair, run
 
 ```sh
-sui-bridge-cli create-bridge-client-key <PATH_TO_BRIDGE_CLIENT_KEY>
+ika-bridge-cli create-bridge-client-key <PATH_TO_BRIDGE_CLIENT_KEY>
 ```
-This prints the newly created Sui Address. Then we need to fund this address with some SUI for operations.
+This prints the newly created Ika Address. Then we need to fund this address with some IKA for operations.
 
 
 ### Build Bridge Node
@@ -193,31 +193,31 @@ Build or install Bridge Node in one of the following ways:
 
 - Use `cargo install`.
     ```sh
-    $ cargo install --locked --git "https://github.com/MystenLabs/sui.git" --branch {BRANCH-NAME} sui-bridge
+    $ cargo install --locked --git "https://github.com/MystenLabs/sui.git" --branch {BRANCH-NAME} ika-bridge
     # OR
-    $ cargo install --locked --git "https://github.com/MystenLabs/sui.git" --rev {SHA-NAME} sui-bridge
+    $ cargo install --locked --git "https://github.com/MystenLabs/sui.git" --rev {SHA-NAME} ika-bridge
     ```
 - Compile from source code
     ```sh
     $ git clone https://github.com/MystenLabs/sui.git
-    $ cd sui
+    $ cd ika
     $ git fetch origin {BRANCH-NAME|SHA}
     $ git checkout {BRANCH-NAME|SHA}
-    $ cargo build --release --bin sui-bridge
+    $ cargo build --release --bin ika-bridge
     ```
 - Use `curl`/`wget` pre-built binaries (for Linux/AMD64 only).
     ```
-    curl https://sui-releases.s3.us-east-1.amazonaws.com/{SHA}/sui-bridge -o sui-bridge
+    curl https://ika-releases.s3.us-east-1.amazonaws.com/{SHA}/ika-bridge -o ika-bridge
     ```
-- Use pre-built Docker image. Pull from Docker Hub: `mysten/sui-tools:{SHA}`
+- Use pre-built Docker image. Pull from Docker Hub: `ika-io/ika-tools:{SHA}`
 
 
 ### Run Bridge Node
 
-Running Bridge Node is similar to running a Sui node using systemd or Ansible. The command to start the Bridge Node is:
+Running Bridge Node is similar to running a Ika node using systemd or Ansible. The command to start the Bridge Node is:
 
 ```sh
-$ RUST_LOG=info,sui_bridge=debug sui-bridge --config-path {BRIDGE-NODE-CONFIG-PATH}
+$ RUST_LOG=info,ika_bridge=debug ika-bridge --config-path {BRIDGE-NODE-CONFIG-PATH}
 ```
 
 ### Ingress
@@ -234,7 +234,7 @@ $ curl -v {YOUR_BRIDGE_URL}
 
 Use `uptime` to check if the node is running.
 
-You can find a full list of Bridge Node metrics and their descriptions in the [`sui-bridge` crate](https://github.com/MystenLabs/sui/blob/main/crates/sui-bridge/src/metrics.rs).
+You can find a full list of Bridge Node metrics and their descriptions in the [`ika-bridge` crate](https://github.com/MystenLabs/sui/blob/main/crates/ika-bridge/src/metrics.rs).
 
 #### When `run-client: false`
 
@@ -248,18 +248,18 @@ In this case Bridge Node runs as a passive observer and does not proactively pol
 - `bridge_eth_rpc_queries_latency`
 - `bridge_signer_with_cache_hit`
 - `bridge_signer_with_cache_miss`
-- `bridge_sui_rpc_errors`
+- `bridge_ika_rpc_errors`
 
 #### When `run-client: true`
 
 In this case, Bridge Client is toggled on and syncs with blockchains proactively. The best metrics to track progress are:
 
-- `bridge_last_synced_sui_checkpoints`
+- `bridge_last_synced_ika_checkpoints`
 - `bridge_last_synced_eth_blocks`
 - `bridge_last_finalized_eth_block`
-- `bridge_sui_watcher_received_events`
+- `bridge_ika_watcher_received_events`
 - `bridge_eth_watcher_received_events`
-- `bridge_sui_watcher_received_actions`
+- `bridge_ika_watcher_received_actions`
 - `bridge_eth_watcher_received_actions`
 
 `bridge_gas_coin_balance` is also a critical metric to track the balance of your client gas coin, and top up after it dips below a certain threshold.
@@ -272,10 +272,10 @@ To enable metrics push, set the following parameters in `BridgeNodeConfig`:
 
 ```yaml
 metrics:
-    push-url: https://metrics-proxy.[testnet|mainnet].sui.io:8443/publish/metrics
+    push-url: https://metrics-proxy.[testnet|mainnet].ika.io:8443/publish/metrics
 ```
 
-The proxy authenticates pushed metrics by using the metrics key pair. It is similar to `sui-node` pushing metrics with `NetworkKey`. Unlike `NetworkKey`, the Bridge Node metrics key is not recorded on chain and can be ephemeral. The metrics key is loaded from the `metrics-key-pair` field in `BridgeNodeConfig` if provided, otherwise a new key pair is generated on the fly. The proxy queries node public keys periodically by hitting the metrics public API key of each node.
+The proxy authenticates pushed metrics by using the metrics key pair. It is similar to `ika-node` pushing metrics with `NetworkKey`. Unlike `NetworkKey`, the Bridge Node metrics key is not recorded on chain and can be ephemeral. The metrics key is loaded from the `metrics-key-pair` field in `BridgeNodeConfig` if provided, otherwise a new key pair is generated on the fly. The proxy queries node public keys periodically by hitting the metrics public API key of each node.
 
 When Bridge Node starts, it might log this line once:
 

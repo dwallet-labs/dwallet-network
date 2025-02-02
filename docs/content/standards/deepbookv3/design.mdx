@@ -109,7 +109,7 @@ Each account has settled and owed balances. Settled balances are what the pool o
 
 Every transaction that a user performs on DeepBook resets their settled and owed balances. The vault then processes these balances for the user, deducting or adding to funds to their `BalanceManager`.
 
-The vault also stores the `DeepPrice` struct. This object holds up to 100 data points representing the conversion rate between the pool's base or quote asset and DEEP. These data points are sourced from a whitelisted pool, DEEP/USDC or DEEP/SUI. This conversion rate is used to determine the quantity of DEEP tokens required to pay for trading fees.
+The vault also stores the `DeepPrice` struct. This object holds up to 100 data points representing the conversion rate between the pool's base or quote asset and DEEP. These data points are sourced from a whitelisted pool, DEEP/USDC or DEEP/IKA. This conversion rate is used to determine the quantity of DEEP tokens required to pay for trading fees.
 
 ### BigVector
 

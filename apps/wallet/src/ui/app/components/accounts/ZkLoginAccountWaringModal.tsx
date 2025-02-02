@@ -54,7 +54,7 @@ export function ZkLoginAccountWarningModal() {
 						</DialogTitle>
 					</DialogHeader>
 					<DialogDescription className="text-center text-steel-darker">
-						Your {providerToName[activeAccount.provider]} Account now gives access to your Sui
+						Your {providerToName[activeAccount.provider]} Account now gives access to your Ika
 						Wallet. To help safeguard your assets, we strongly recommend you enable 2FA.
 						{providerData.mfaLink ? (
 							<>

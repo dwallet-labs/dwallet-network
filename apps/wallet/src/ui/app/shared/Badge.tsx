@@ -11,7 +11,7 @@ const badgeStyle = cva(
 		variants: {
 			variant: {
 				warning: 'bg-issue-light text-issue-dark',
-				success: 'bg-sui/30 text-hero-dark',
+				success: 'bg-ika/30 text-hero-dark',
 			},
 		},
 	},

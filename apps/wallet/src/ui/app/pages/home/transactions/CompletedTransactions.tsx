@@ -24,7 +24,7 @@ export function CompletedTransactions() {
 					</ErrorBoundary>
 				))
 			) : (
-				<NoActivityCard message="When available, your Sui network transactions will show up here." />
+				<NoActivityCard message="When available, your Ika network transactions will show up here." />
 			)}
 		</Loading>
 	);

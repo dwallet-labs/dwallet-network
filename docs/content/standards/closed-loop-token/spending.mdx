@@ -9,7 +9,7 @@ Because `Token` types do not have the `store` ability, it is impossible to store
 Tokens can be spent by calling the `spend` method. It takes the following arguments:
 
 ```move
-// module sui::token
+// module ika::token
 public fun spend<T>(token: Token<T>, ctx: &mut TxContext): ActionRequest<T>;
 ```
 

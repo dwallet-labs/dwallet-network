@@ -5,7 +5,7 @@ module serializer::serializer_tests;
 
 use std::ascii;
 use std::string::String;
-use sui::clock::Clock;
+use ika::clock::Clock;
 
 public struct MutableShared has key {
     id: UID,

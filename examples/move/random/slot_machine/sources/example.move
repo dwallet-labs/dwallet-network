@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-/// A betting game that depends on Sui randomness.
+/// A betting game that depends on Ika randomness.
 ///
-/// Anyone can create a new game for the current epoch by depositing SUI as the initial balance. The creator can
+/// Anyone can create a new game for the current epoch by depositing IKA as the initial balance. The creator can
 /// withdraw the remaining balance after the epoch is over.
 ///
-/// Anyone can play the game by betting on X SUI. They win X with probability 49% and lose the X SUI otherwise.
+/// Anyone can play the game by betting on X IKA. They win X with probability 49% and lose the X IKA otherwise.
 ///
 module slot_machine::example {
-    use sui::balance::Balance;
-    use sui::coin::{Self, Coin};
-    use sui::random::{Random, new_generator};
-    use sui::sui::SUI;
+    use ika::balance::Balance;
+    use ika::coin::{Self, Coin};
+    use ika::random::{Random, new_generator};
+    use ika::ika::IKA;
 
     /// Error codes
     const EInvalidAmount: u64 = 0;
@@ -24,12 +24,12 @@ module slot_machine::example {
         id: UID,
         creator: address,
         epoch: u64,
-        balance: Balance<SUI>,
+        balance: Balance<IKA>,
     }
 
     /// Create a new game with a given initial reward for the current epoch.
     public fun create(
-        reward: Coin<SUI>,
+        reward: Coin<IKA>,
         ctx: &mut TxContext,
     ) {
         let amount = reward.value();
@@ -43,7 +43,7 @@ module slot_machine::example {
     }
 
     /// Creator can withdraw remaining balance if the game is over.
-    public fun close(game: Game, ctx: &mut TxContext): Coin<SUI> {
+    public fun close(game: Game, ctx: &mut TxContext): Coin<IKA> {
         assert!(ctx.epoch() > game.epoch, EInvalidEpoch);
         assert!(ctx.sender() == game.creator, EInvalidSender);
         let Game { id, creator: _, epoch: _, balance } = game;
@@ -54,7 +54,7 @@ module slot_machine::example {
     /// Play one turn of the game.
     ///
     /// The function consumes the same amount of gas independently of the random outcome.
-    entry fun play(game: &mut Game, r: &Random, coin: &mut Coin<SUI>, ctx: &mut TxContext) {
+    entry fun play(game: &mut Game, r: &Random, coin: &mut Coin<IKA>, ctx: &mut TxContext) {
         assert!(ctx.epoch() == game.epoch, EInvalidEpoch);
         assert!(coin.value() > 0, EInvalidAmount);
 

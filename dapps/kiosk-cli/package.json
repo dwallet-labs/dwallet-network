@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@mysten/kiosk": "workspace:*",
-    "@mysten/sui": "workspace:*",
+    "@ika-io/ika": "workspace:*",
     "commander": "^11.0.0"
   }
 }

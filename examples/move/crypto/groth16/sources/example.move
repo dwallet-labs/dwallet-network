@@ -4,8 +4,8 @@
 /// A verifier for the Groth16 zk-SNARK over the BLS12-381 construction.
 /// See https://eprint.iacr.org/2016/260.pdf for details.
 module groth16::example {
-    use sui::bls12381;
-    use sui::group_ops::Element;
+    use ika::bls12381;
+    use ika::group_ops::Element;
 
     // === Types ===
 

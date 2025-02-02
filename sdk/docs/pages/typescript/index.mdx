@@ -1,67 +1,67 @@
 import { Callout } from 'nextra/components';
 
-# Sui TypeScript SDK Quick Start
+# Ika TypeScript SDK Quick Start
 
-The Sui TypeScript SDK is a modular library of tools for interacting with the Sui blockchain. Use it
-to send queries to RPC nodes, build and sign transactions, and interact with a Sui or local network.
+The Ika TypeScript SDK is a modular library of tools for interacting with the Ika blockchain. Use it
+to send queries to RPC nodes, build and sign transactions, and interact with a Ika or local network.
 
 ## Installation
 
 ```sh npm2yarn
-npm i @mysten/sui
+npm i @ika-io/ika
 ```
 
 ## Network locations
 
-The following table lists the locations for Sui networks.
+The following table lists the locations for Ika networks.
 
 | Network | Full node                             | faucet                                |
 | ------- | ------------------------------------- | ------------------------------------- |
 | local   | `http://127.0.0.1:9000` (default)     | `http://127.0.0.1:9123/gas` (default) |
-| Devnet  | `https://fullnode.devnet.sui.io:443`  | `https://faucet.devnet.sui.io/gas`    |
-| Testnet | `https://fullnode.testnet.sui.io:443` | `https://faucet.testnet.sui.io/gas`   |
-| Mainnet | `https://fullnode.mainnet.sui.io:443` | `null`                                |
+| Devnet  | `https://fullnode.devnet.ika.io:443`  | `https://faucet.devnet.ika.io/gas`    |
+| Testnet | `https://fullnode.testnet.ika.io:443` | `https://faucet.testnet.ika.io/gas`   |
+| Mainnet | `https://fullnode.mainnet.ika.io:443` | `null`                                |
 
 <Callout type="warning">
 
 Use dedicated nodes/shared services rather than public endpoints for production apps. The public
-endpoints maintained by Mysten Labs (`fullnode.<NETWORK>.sui.io:443`) are rate-limited, and support
+endpoints maintained by Mysten Labs (`fullnode.<NETWORK>.ika.io:443`) are rate-limited, and support
 only 100 requests per 30 seconds or so. Do not use public endpoints in production applications with
 high traffic volume.
 
 You can either run your own Full nodes, or outsource this to a professional infrastructure provider
 (preferred for apps that have high traffic). You can find a list of reliable RPC endpoint providers
-for Sui on the [Sui Dev Portal](https://sui.io/developers#dev-tools) using the **Node Service** tab.
+for Ika on the [Ika Dev Portal](https://ika.io/developers#dev-tools) using the **Node Service** tab.
 
 </Callout>
 
 ## Migrate to version 0.38.0
 
-The Sui TypeScript SDK was refactored beginning with version 0.38.0. If you are updating from an
+The Ika TypeScript SDK was refactored beginning with version 0.38.0. If you are updating from an
 earlier version of the SDK, there are some changes you should consider when updating your code.
 
 ### Module structure
 
-The Sui TypeScript SDK is now divided into modular components. Before version 0.38.0, you imported
+The Ika TypeScript SDK is now divided into modular components. Before version 0.38.0, you imported
 the complete SDK module. Now, you upload the individual packages of the SDK module instead. See the
 [Module Packages section](#module-packages) for the list of packages.
 
 ### Deprecated classes
 
-The Sui TypeScript SDK deprecates the following classes with version 0.38.0:
+The Ika TypeScript SDK deprecates the following classes with version 0.38.0:
 
-- `JsonRpcProvider` - The `JsonRpcProvider` class is deprecated in favor of the `suiClient` class
-  when creating a client for a Sui network. See
-  [Network Interactions with SuiClient](typescript/sui-client) for more information.
+- `JsonRpcProvider` - The `JsonRpcProvider` class is deprecated in favor of the `ikaClient` class
+  when creating a client for a Ika network. See
+  [Network Interactions with IkaClient](typescript/ika-client) for more information.
 - `SignerWithProver` and `RawSigner` - Key pairs now directly support signing transactions and
   messages without the need of a `Signer` class. See the
   [Key pairs](typescript/cryptography/keypairs) topic for more information.
-- `signAndExecuteTransaction` - This method was not deprecated, but is now part of `SuiClient`.
+- `signAndExecuteTransaction` - This method was not deprecated, but is now part of `IkaClient`.
 - `Connection` classes - The `Connection` classes (`Connection`, `devnetConnection`, and so on) have
-  been deprecated in favor of using `suiClient` for establishing the connection. See
-  [Network Interactions with SuiClient](typescript/sui-client) for more information.
+  been deprecated in favor of using `ikaClient` for establishing the connection. See
+  [Network Interactions with IkaClient](typescript/ika-client) for more information.
 - The `superstruct` type definitions for `JsonRPCProvider` types are replaced with generated types
-  exported from `@mysten/sui/client`. The new type definitions are pure TypeScript types that you
+  exported from `@ika-io/ika/client`. The new type definitions are pure TypeScript types that you
   can't use for runtime validation.
 - A more stable JSON-RPC API has reduced the need for many of the SDK "getter" methods, which are
   now deprecated.
@@ -70,21 +70,21 @@ The Sui TypeScript SDK deprecates the following classes with version 0.38.0:
 
 Signing and sending transactions changes slightly with the deprecation of the `Signer` pattern. For
 an example of transaction signing, see the
-[Sui Programmable Transaction Blocks Basics](typescript/transaction-building/basics) topic.
+[Ika Programmable Transaction Blocks Basics](typescript/transaction-building/basics) topic.
 
 ### Faucet requests
 
-The ability to request SUI from a faucet is not part of `SuiClient` as it was with
-`JsonRpcProvider`. Instead, you must use the `requestSuiFromFaucetV0` method from
-`@mysten/sui/faucet`. The `@mysten/sui/faucet` import also provides a `getFaucetHost` method to
+The ability to request IKA from a faucet is not part of `IkaClient` as it was with
+`JsonRpcProvider`. Instead, you must use the `requestIkaFromFaucetV0` method from
+`@ika-io/ika/faucet`. The `@ika-io/ika/faucet` import also provides a `getFaucetHost` method to
 retrieve the faucet URL for `localnet`, `testnet`, or `devnet` networks.
 
 ```ts
-import { getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui/faucet';
+import { getFaucetHost, requestIkaFromFaucetV0 } from '@ika-io/ika/faucet';
 
-await requestSuiFromFaucetV0({
+await requestIkaFromFaucetV0({
 	host: getFaucetHost('devnet'),
-	recipient: '<SUI_ADDRESS>',
+	recipient: '<IKA_ADDRESS>',
 });
 ```
 
@@ -93,19 +93,19 @@ await requestSuiFromFaucetV0({
 The SDK contains a set of modular packages that you can use independently or together. Import just
 what you need to keep your code light and compact.
 
-- [`@mysten/sui/client`](/typescript/sui-client) - A client for interacting with Sui RPC nodes.
-- [`@mysten/sui/bcs`](/typescript/bcs) - A BCS builder with pre-defined types for Sui.
-- [`@mysten/sui/transactions`](/typescript/transaction-building/basics) - Utilities for building and
+- [`@ika-io/ika/client`](/typescript/ika-client) - A client for interacting with Ika RPC nodes.
+- [`@ika-io/ika/bcs`](/typescript/bcs) - A BCS builder with pre-defined types for Ika.
+- [`@ika-io/ika/transactions`](/typescript/transaction-building/basics) - Utilities for building and
   interacting with transactions.
-- [`@mysten/sui/keypairs/*`](/typescript/cryptography/keypairs) - Modular exports for specific
+- [`@ika-io/ika/keypairs/*`](/typescript/cryptography/keypairs) - Modular exports for specific
   KeyPair implementations.
-- [`@mysten/sui/verify`](/typescript/cryptography/keypairs#verifying-signatures-without-a-key-pair) -
+- [`@ika-io/ika/verify`](/typescript/cryptography/keypairs#verifying-signatures-without-a-key-pair) -
   Methods for verifying transactions and messages.
-- [`@mysten/sui/cryptography`](/typescript/cryptography/keypairs) - Shared types and classes for
+- [`@ika-io/ika/cryptography`](/typescript/cryptography/keypairs) - Shared types and classes for
   cryptography.
-- [`@mysten/sui/multisig`](/typescript/cryptography/multisig) - Utilities for working with multisig
+- [`@ika-io/ika/multisig`](/typescript/cryptography/multisig) - Utilities for working with multisig
   signatures.
-- [`@mysten/sui/utils`](/typescript/utils) - Utilities for formatting and parsing various Sui types.
-- [`@mysten/sui/faucet`](/typescript/faucet) - Methods for requesting SUI from a faucet.
-- [`@mysten/sui/zklogin`](/typescript/zklogin) - Utilities for working with zkLogin. (Note
+- [`@ika-io/ika/utils`](/typescript/utils) - Utilities for formatting and parsing various Ika types.
+- [`@ika-io/ika/faucet`](/typescript/faucet) - Methods for requesting IKA from a faucet.
+- [`@ika-io/ika/zklogin`](/typescript/zklogin) - Utilities for working with zkLogin. (Note
   @mysten/zklogin package also contains zklogin related functionality)

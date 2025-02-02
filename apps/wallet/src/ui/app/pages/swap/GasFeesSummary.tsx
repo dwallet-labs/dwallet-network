@@ -4,8 +4,8 @@
 import { Text } from '_app/shared/text';
 import { DescriptionItem } from '_pages/approval-request/transaction-request/DescriptionList';
 import { getGasSummary, useCoinMetadata, useFormatCoin } from '@mysten/core';
-import { type DryRunTransactionBlockResponse } from '@mysten/sui/client';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { type DryRunTransactionBlockResponse } from '@ika-io/ika/client';
+import { IKA_TYPE_ARG } from '@ika-io/ika/utils';
 import { useMemo } from 'react';
 
 interface GasFeesSummaryProps {
@@ -26,7 +26,7 @@ export function GasFeesSummary({
 		return getGasSummary(transaction);
 	}, [transaction]);
 	const totalGas = gasSummary?.totalGas;
-	const [gasAmount, gasSymbol] = useFormatCoin(totalGas, SUI_TYPE_ARG);
+	const [gasAmount, gasSymbol] = useFormatCoin(totalGas, IKA_TYPE_ARG);
 
 	const { data: accessFeeMetadata } = useCoinMetadata(accessFeeType);
 

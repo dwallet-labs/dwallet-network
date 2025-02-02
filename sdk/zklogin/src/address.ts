@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { computeZkLoginAddressFromSeed } from '@mysten/sui/zklogin';
+import { computeZkLoginAddressFromSeed } from '@ika-io/ika/zklogin';
 import { decodeJwt } from 'jose';
 
 import { genAddressSeed } from './utils.js';

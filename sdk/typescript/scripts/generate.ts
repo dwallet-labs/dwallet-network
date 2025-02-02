@@ -19,7 +19,7 @@ import type {
 const packageRoot = path.resolve(import.meta.url.slice(5), '../..');
 const openRpcSpec: OpenRpcSpec = JSON.parse(
 	await fs.readFile(
-		path.resolve(packageRoot, '../../crates/sui-open-rpc/spec/openrpc.json'),
+		path.resolve(packageRoot, '../../crates/ika-open-rpc/spec/openrpc.json'),
 		'utf-8',
 	),
 );
@@ -33,7 +33,7 @@ export const LICENSE_HEADER = `
  *  ######################################
  *
  * This file is generated from:
- * /crates/sui-open-rpc/spec/openrpc.json
+ * /crates/ika-open-rpc/spec/openrpc.json
  */
 `.trim();
 
@@ -63,30 +63,30 @@ const options: {
 } = {
 	types: {
 		Coin: { alias: 'CoinStruct' },
-		Data: { alias: 'SuiParsedData' },
-		Event: { alias: 'SuiEvent' },
-		EventFilter: { alias: 'SuiEventFilter' },
+		Data: { alias: 'IkaParsedData' },
+		Event: { alias: 'IkaEvent' },
+		EventFilter: { alias: 'IkaEventFilter' },
 		EventID: { alias: 'EventId' },
-		GasData: { alias: 'SuiGasData' },
-		MoveFunctionArgType: { alias: 'SuiMoveFunctionArgType' },
-		ObjectChange: { alias: 'SuiObjectChange' },
-		ObjectData: { alias: 'SuiObjectData' },
-		ObjectDataOptions: { alias: 'SuiObjectDataOptions' },
-		ObjectRef: { alias: 'SuiObjectRef' },
-		ObjectResponseQuery: { alias: 'SuiObjectResponseQuery' },
+		GasData: { alias: 'IkaGasData' },
+		MoveFunctionArgType: { alias: 'IkaMoveFunctionArgType' },
+		ObjectChange: { alias: 'IkaObjectChange' },
+		ObjectData: { alias: 'IkaObjectData' },
+		ObjectDataOptions: { alias: 'IkaObjectDataOptions' },
+		ObjectRef: { alias: 'IkaObjectRef' },
+		ObjectResponseQuery: { alias: 'IkaObjectResponseQuery' },
 		Owner: { alias: 'ObjectOwner' },
-		PaginatedSuiObjectResponse: { alias: 'PaginatedObjectsResponse' },
+		PaginatedIkaObjectResponse: { alias: 'PaginatedObjectsResponse' },
 		PaginatedTransactionBlockResponse: { alias: 'PaginatedTransactionResponse' },
 		Stake: { alias: 'StakeObject' },
-		SuiCoinMetadata: { alias: 'CoinMetadata' },
-		SuiProgrammableMoveCall: { alias: 'MoveCallSuiTransaction' },
+		IkaCoinMetadata: { alias: 'CoinMetadata' },
+		IkaProgrammableMoveCall: { alias: 'MoveCallIkaTransaction' },
 		Supply: { alias: 'CoinSupply' },
-		TransactionBlock: { alias: 'SuiTransactionBlock' },
+		TransactionBlock: { alias: 'IkaTransactionBlock' },
 		TransactionBlockEffects: { alias: 'TransactionEffects' },
-		TransactionBlockKind: { alias: 'SuiTransactionBlockKind' },
-		TransactionBlockResponse: { alias: 'SuiTransactionBlockResponse' },
-		TransactionBlockResponseOptions: { alias: 'SuiTransactionBlockResponseOptions' },
-		TransactionBlockResponseQuery: { alias: 'SuiTransactionBlockResponseQuery' },
+		TransactionBlockKind: { alias: 'IkaTransactionBlockKind' },
+		TransactionBlockResponse: { alias: 'IkaTransactionBlockResponse' },
+		TransactionBlockResponseOptions: { alias: 'IkaTransactionBlockResponseOptions' },
+		TransactionBlockResponseQuery: { alias: 'IkaTransactionBlockResponseQuery' },
 		ValidatorApys: { alias: 'ValidatorsApy' },
 		GenericSignature: {
 			typeAlias: 'string',
@@ -96,14 +96,14 @@ const options: {
 		},
 	},
 	methods: {
-		sui_getNormalizedMoveModule: {
+		ika_getNormalizedMoveModule: {
 			params: {
 				module_name: {
 					alias: 'module',
 				},
 			},
 		},
-		sui_getNormalizedMoveFunction: {
+		ika_getNormalizedMoveFunction: {
 			params: {
 				module_name: {
 					alias: 'module',
@@ -113,7 +113,7 @@ const options: {
 				},
 			},
 		},
-		sui_getNormalizedMoveStruct: {
+		ika_getNormalizedMoveStruct: {
 			params: {
 				module_name: {
 					alias: 'module',
@@ -123,7 +123,7 @@ const options: {
 				},
 			},
 		},
-		suix_getOwnedObjects: {
+		ikax_getOwnedObjects: {
 			flattenParams: ['query'],
 			params: {
 				address: {
@@ -131,14 +131,14 @@ const options: {
 				},
 			},
 		},
-		sui_getObject: {
+		ika_getObject: {
 			params: {
 				object_id: {
 					alias: 'id',
 				},
 			},
 		},
-		sui_tryGetPastObject: {
+		ika_tryGetPastObject: {
 			params: {
 				object_id: {
 					alias: 'id',
@@ -148,14 +148,14 @@ const options: {
 				},
 			},
 		},
-		sui_multiGetObjects: {
+		ika_multiGetObjects: {
 			params: {
 				object_ids: {
 					alias: 'ids',
 				},
 			},
 		},
-		suix_queryTransactionBlocks: {
+		ikax_queryTransactionBlocks: {
 			flattenParams: ['query'],
 			params: {
 				descending_order: {
@@ -164,7 +164,7 @@ const options: {
 				},
 			},
 		},
-		sui_executeTransactionBlock: {
+		ika_executeTransactionBlock: {
 			params: {
 				tx_bytes: {
 					alias: 'transactionBlock',
@@ -179,7 +179,7 @@ const options: {
 				},
 			},
 		},
-		suix_queryEvents: {
+		ikax_queryEvents: {
 			params: {
 				descending_order: {
 					alias: 'order',
@@ -187,7 +187,7 @@ const options: {
 				},
 			},
 		},
-		sui_devInspectTransactionBlock: {
+		ika_devInspectTransactionBlock: {
 			params: {
 				sender_address: {
 					alias: 'sender',
@@ -201,7 +201,7 @@ const options: {
 				},
 			},
 		},
-		sui_dryRunTransactionBlock: {
+		ika_dryRunTransactionBlock: {
 			params: {
 				tx_bytes: {
 					alias: 'transactionBlock',
@@ -209,14 +209,14 @@ const options: {
 				},
 			},
 		},
-		suix_getDynamicFields: {
+		ikax_getDynamicFields: {
 			params: {
 				parent_object_id: {
 					alias: 'parentId',
 				},
 			},
 		},
-		suix_getDynamicFieldObject: {
+		ikax_getDynamicFieldObject: {
 			params: {
 				parent_object_id: {
 					alias: 'parentId',
@@ -771,11 +771,11 @@ function normalizeName(name: string) {
 }
 
 export function normalizeMethodName(name: string): string {
-	if (name.startsWith('sui_')) {
+	if (name.startsWith('ika_')) {
 		return normalizeMethodName(name.slice(4));
 	}
 
-	if (name.startsWith('suix_')) {
+	if (name.startsWith('ikax_')) {
 		return normalizeMethodName(name.slice(5));
 	}
 

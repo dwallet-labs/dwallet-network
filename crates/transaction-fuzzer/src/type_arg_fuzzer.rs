@@ -6,14 +6,14 @@ use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use proptest::arbitrary::*;
 use proptest::prelude::*;
 
-use sui_core::test_utils::send_and_confirm_transaction;
-use sui_types::base_types::ObjectID;
-use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
-use sui_types::error::SuiError;
-use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{ProgrammableTransaction, TransactionData, TransactionKind};
-use sui_types::utils::to_sender_signed_transaction;
-use sui_types::{TypeTag, SUI_FRAMEWORK_PACKAGE_ID};
+use ika_core::test_utils::send_and_confirm_transaction;
+use ika_types::base_types::ObjectID;
+use ika_types::effects::{TransactionEffects, TransactionEffectsAPI};
+use ika_types::error::IkaError;
+use ika_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
+use ika_types::transaction::{ProgrammableTransaction, TransactionData, TransactionKind};
+use ika_types::utils::to_sender_signed_transaction;
+use ika_types::{TypeTag, IKA_FRAMEWORK_PACKAGE_ID};
 
 use crate::account_universe::AccountCurrent;
 use crate::executor::{assert_is_acceptable_result, Executor};
@@ -137,7 +137,7 @@ pub fn pt_for_tags(type_tags: Vec<TypeTag>) -> ProgrammableTransaction {
     let mut builder = ProgrammableTransactionBuilder::new();
     builder
         .move_call(
-            SUI_FRAMEWORK_PACKAGE_ID,
+            IKA_FRAMEWORK_PACKAGE_ID,
             Identifier::new("random_type_tag_fuzzing").unwrap(),
             Identifier::new("random_type_tag_fuzzing_fn").unwrap(),
             type_tags,
@@ -157,7 +157,7 @@ pub fn run_pt_effects(
     account: &mut AccountCurrent,
     exec: &mut Executor,
     pt: ProgrammableTransaction,
-) -> Result<TransactionEffects, SuiError> {
+) -> Result<TransactionEffects, IkaError> {
     let gas_object = account.new_gas_object(exec);
     let gas_object_ref = gas_object.compute_object_reference();
     let kind = TransactionKind::ProgrammableTransaction(pt);

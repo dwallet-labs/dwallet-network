@@ -1,11 +1,11 @@
 # Rpc Hooks
 
-Sui dApp Kit ships with hooks for each of the RPC methods defined in the
-[JSON RPC specification](https://docs.sui.io/sui-api-ref).
+Ika dApp Kit ships with hooks for each of the RPC methods defined in the
+[JSON RPC specification](https://docs.ika.io/ika-api-ref).
 
-## useSuiClientQuery
+## useIkaClientQuery
 
-Load data from the Sui RPC using the `useSuiClientQuery` hook. This hook is a wrapper around the
+Load data from the Ika RPC using the `useIkaClientQuery` hook. This hook is a wrapper around the
 [useQuery](https://tanstack.com/query/latest/docs/react/guides/queries) hook from
 @tanstack/react-query.
 
@@ -15,10 +15,10 @@ You can pass any additional `useQuery` options as the third argument. You can re
 details on the full set of options available.
 
 ```tsx
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { useIkaClientQuery } from '@mysten/dapp-kit';
 
 function MyComponent() {
-	const { data, isPending, isError, error, refetch } = useSuiClientQuery(
+	const { data, isPending, isError, error, refetch } = useIkaClientQuery(
 		'getOwnedObjects',
 		{ owner: '0x123' },
 		{
@@ -38,23 +38,23 @@ function MyComponent() {
 }
 ```
 
-## useSuiClientQueries
+## useIkaClientQueries
 
-You can fetch a variable number of Sui RPC queries using the `useSuiClientQueries` hook. This hook
+You can fetch a variable number of Ika RPC queries using the `useIkaClientQueries` hook. This hook
 is a wrapper around the
 [useQueries](https://tanstack.com/query/latest/docs/react/reference/useQueries) hook from
 @tanstack/react-query.
 
-The `queries` value is an array of query option objects identical to the `useSuiClientQuery` hook.
+The `queries` value is an array of query option objects identical to the `useIkaClientQuery` hook.
 
 The `combine` parameter is optional. Use this parameter to combine the results of the queries into a
 single value. The result is structurally shared to be as referentially stable as possible.
 
 ```tsx
-import { useSuiClientQueries } from '@mysten/dapp-kit';
+import { useIkaClientQueries } from '@mysten/dapp-kit';
 
 function MyComponent() {
-	const { data, isPending, isError } = useSuiClientQueries({
+	const { data, isPending, isError } = useIkaClientQueries({
 		queries: [
 			{
 				method: 'getAllBalances',
@@ -93,18 +93,18 @@ function MyComponent() {
 }
 ```
 
-## useSuiClientInfiniteQuery
+## useIkaClientInfiniteQuery
 
-For RPC methods that support pagination, dApp Kit also implements a `useSuiClientInfiniteQuery`
+For RPC methods that support pagination, dApp Kit also implements a `useIkaClientInfiniteQuery`
 hook. For more details check out out the
 [`useInfiniteQuery` documentation](https://tanstack.com/query/latest/docs/react/guides/infinite-queries).
 
 ```tsx
-import { useSuiClientInfiniteQuery } from '@mysten/dapp-kit';
+import { useIkaClientInfiniteQuery } from '@mysten/dapp-kit';
 
 function MyComponent() {
 	const { data, isPending, isError, error, isFetching, fetchNextPage, hasNextPage } =
-		useSuiClientInfiniteQuery('getOwnedObjects', {
+		useIkaClientInfiniteQuery('getOwnedObjects', {
 			owner: '0x123',
 		});
 
@@ -120,17 +120,17 @@ function MyComponent() {
 }
 ```
 
-## useSuiClientMutation
+## useIkaClientMutation
 
-For RPC methods that mutate state, dApp Kit implements a `useSuiClientMutation` hook. Use this hook
+For RPC methods that mutate state, dApp Kit implements a `useIkaClientMutation` hook. Use this hook
 with any RPC method to imperatively call the RPC method. For more details, check out the
 [`useMutation` documentation](https://tanstack.com/query/latest/docs/react/guides/mutations).
 
 ```tsx
-import { useSuiClientMutation } from '@mysten/dapp-kit';
+import { useIkaClientMutation } from '@mysten/dapp-kit';
 
 function MyComponent() {
-	const { mutate } = useSuiClientMutation('dryRunTransactionBlock');
+	const { mutate } = useIkaClientMutation('dryRunTransactionBlock');
 
 	return (
 		<Button
@@ -146,15 +146,15 @@ function MyComponent() {
 }
 ```
 
-## useResolveSuiNSName
+## useResolveIkaNSName
 
-To get the SuiNS name for a given address, use the `useResolveSuiNSName` hook.
+To get the IkaNS name for a given address, use the `useResolveIkaNSName` hook.
 
 ```tsx
-import { useResolveSuiNSName } from '@mysten/dapp-kit';
+import { useResolveIkaNSName } from '@mysten/dapp-kit';
 
 function MyComponent() {
-	const { data, isPending } = useResolveSuiNSName('0x123');
+	const { data, isPending } = useResolveIkaNSName('0x123');
 
 	if (isPending) {
 		return <div>Loading...</div>;

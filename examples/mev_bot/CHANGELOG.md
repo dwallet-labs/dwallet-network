@@ -5,28 +5,28 @@
 ### Patch Changes
 
 - Updated dependencies [fef99d377f]
-  - @mysten/sui@1.2.0
+  - @ika-io/ika@1.2.0
 
 ## 1.0.9
 
 ### Patch Changes
 
 - Updated dependencies [0dfff33b95]
-  - @mysten/sui@1.1.2
+  - @ika-io/ika@1.1.2
 
 ## 1.0.8
 
 ### Patch Changes
 
 - Updated dependencies [101f1ff4b8]
-  - @mysten/sui@1.1.1
+  - @ika-io/ika@1.1.1
 
 ## 1.0.7
 
 ### Patch Changes
 
 - Updated dependencies [bae8f9683c]
-  - @mysten/sui@1.1.0
+  - @ika-io/ika@1.1.0
 
 ## 1.0.6
 
@@ -35,7 +35,7 @@
 - Updated dependencies [369b924343]
 - Updated dependencies [369b924343]
   - @mysten/bcs@1.0.2
-  - @mysten/sui@1.0.5
+  - @ika-io/ika@1.0.5
 
 ## 1.0.5
 
@@ -43,7 +43,7 @@
 
 - Updated dependencies [f1e828f557]
 - Updated dependencies [f1e828f557]
-  - @mysten/sui@1.0.4
+  - @ika-io/ika@1.0.4
   - @mysten/bcs@1.0.1
 
 ## 1.0.4
@@ -51,21 +51,21 @@
 ### Patch Changes
 
 - Updated dependencies [1f20580841]
-  - @mysten/sui@1.0.3
+  - @ika-io/ika@1.0.3
 
 ## 1.0.3
 
 ### Patch Changes
 
 - Updated dependencies [f0a839f874]
-  - @mysten/sui@1.0.2
+  - @ika-io/ika@1.0.2
 
 ## 1.0.2
 
 ### Patch Changes
 
 - Updated dependencies [6fc6235984]
-  - @mysten/sui@1.0.1
+  - @ika-io/ika@1.0.1
 
 ## 1.0.1
 
@@ -73,5 +73,5 @@
 
 - Updated dependencies [ebdfe7cf21]
 - Updated dependencies [a92b03de42]
-  - @mysten/sui@1.0.0
+  - @ika-io/ika@1.0.0
   - @mysten/bcs@1.0.0

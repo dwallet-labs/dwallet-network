@@ -6,13 +6,13 @@ import { readFile } from 'fs/promises';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-const result = execSync(`git branch --remote --list "origin/releases/sui-graphql-rpc-v*"`)
+const result = execSync(`git branch --remote --list "origin/releases/ika-graphql-rpc-v*"`)
 	.toString()
 	.trim()
 	.split('\n')
 	.map((ref) => {
 		const branch = ref.trim().replace('origin/', '');
-		const match = branch.match(/^releases\/sui-graphql-rpc-v([\d.]+)-release$/);
+		const match = branch.match(/^releases\/ika-graphql-rpc-v([\d.]+)-release$/);
 
 		if (!match) {
 			return null;
@@ -29,7 +29,7 @@ const result = execSync(`git branch --remote --list "origin/releases/sui-graphql
 					minor,
 					patch,
 					branch,
-					schema: `https://raw.githubusercontent.com/MystenLabs/sui/${branch}/crates/sui-graphql-rpc/schema/current_progress_schema.graphql`,
+					schema: `https://raw.githubusercontent.com/MystenLabs/sui/${branch}/crates/ika-graphql-rpc/schema/current_progress_schema.graphql`,
 				}
 			: null;
 	})

@@ -3,7 +3,7 @@
 
 import ExplorerLink from '_components/explorer-link';
 import { ExplorerLinkType } from '_components/explorer-link/ExplorerLinkType';
-import { formatAddress, isValidSuiNSName } from '@mysten/sui/utils';
+import { formatAddress, isValidIkaNSName } from '@ika-io/ika/utils';
 
 type TxnAddressLinkProps = {
 	address: string;
@@ -14,10 +14,10 @@ export function TxnAddressLink({ address }: TxnAddressLinkProps) {
 		<ExplorerLink
 			type={ExplorerLinkType.address}
 			address={address}
-			title="View on Sui Explorer"
+			title="View on Ika Explorer"
 			showIcon={false}
 		>
-			{isValidSuiNSName(address) ? address : formatAddress(address)}
+			{isValidIkaNSName(address) ? address : formatAddress(address)}
 		</ExplorerLink>
 	);
 }

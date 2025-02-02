@@ -16,7 +16,7 @@ test('Apps tab', async ({ page, extensionUrl }) => {
 	await page.getByRole('navigation').getByRole('link', { name: 'Apps' }).click();
 
 	await expect(page.getByRole('main')).toHaveText(
-		/Apps below are actively curated but do not indicate any endorsement or relationship with Sui Wallet. Please DYOR./i,
+		/Apps below are actively curated but do not indicate any endorsement or relationship with Ika Wallet. Please DYOR./i,
 	);
 });
 

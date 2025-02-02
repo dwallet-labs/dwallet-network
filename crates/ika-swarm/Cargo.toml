@@ -1,0 +1,36 @@
+[package]
+name = "ika-swarm"
+version = "0.0.0"
+authors = ["Mysten Labs <build@mystenlabs.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+rand.workspace = true
+tracing.workspace = true
+tokio = { workspace = true, features = ["full"] }
+futures.workspace = true
+tempfile.workspace = true
+tonic-health.workspace = true
+tap.workspace = true
+prometheus.workspace = true
+
+ika-config.workspace = true
+ika-swarm-config.workspace = true
+ika-macros.workspace = true
+ika-node.workspace = true
+ika-protocol-config.workspace = true
+ika-tls.workspace = true
+ika-types.workspace = true
+mysten-metrics.workspace = true
+mysten-network.workspace = true
+telemetry-subscribers.workspace = true
+
+[target.'cfg(msim)'.dependencies]
+ika-simulator.workspace = true
+

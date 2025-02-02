@@ -7,7 +7,7 @@
 /// This is used to commit to swapping a particular object in a
 /// particular, fixed state during escrow.
 module escrow::lock {
-    use sui::{
+    use ika::{
         event,
         dynamic_object_field::{Self as dof}
     };
@@ -95,13 +95,13 @@ module escrow::lock {
     }
 
     // === Tests ===
-    #[test_only] use sui::coin::{Self, Coin};
-    #[test_only] use sui::sui::SUI;
-    #[test_only] use sui::test_scenario::{Self as ts, Scenario};
+    #[test_only] use ika::coin::{Self, Coin};
+    #[test_only] use ika::ika::IKA;
+    #[test_only] use ika::test_scenario::{Self as ts, Scenario};
 
     #[test_only]
-    fun test_coin(ts: &mut Scenario): Coin<SUI> {
-        coin::mint_for_testing<SUI>(42, ts.ctx())
+    fun test_coin(ts: &mut Scenario): Coin<IKA> {
+        coin::mint_for_testing<IKA>(42, ts.ctx())
     }
 
     #[test]

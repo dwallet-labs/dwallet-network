@@ -6,21 +6,21 @@
 
 use std::{fmt::Debug, path::PathBuf, sync::Arc};
 
-use sui_core::authority::test_authority_builder::TestAuthorityBuilder;
-use sui_core::{authority::AuthorityState, test_utils::send_and_confirm_transaction};
-use sui_move_build::BuildConfig;
-use sui_types::base_types::ObjectID;
-use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
-use sui_types::error::SuiError;
-use sui_types::execution_status::{ExecutionFailureStatus, ExecutionStatus};
-use sui_types::object::Object;
-use sui_types::transaction::{Transaction, TransactionData};
-use sui_types::utils::to_sender_signed_transaction;
+use ika_core::authority::test_authority_builder::TestAuthorityBuilder;
+use ika_core::{authority::AuthorityState, test_utils::send_and_confirm_transaction};
+use ika_move_build::BuildConfig;
+use ika_types::base_types::ObjectID;
+use ika_types::effects::{TransactionEffects, TransactionEffectsAPI};
+use ika_types::error::IkaError;
+use ika_types::execution_status::{ExecutionFailureStatus, ExecutionStatus};
+use ika_types::object::Object;
+use ika_types::transaction::{Transaction, TransactionData};
+use ika_types::utils::to_sender_signed_transaction;
 use tokio::runtime::Runtime;
 
 use crate::account_universe::{AccountCurrent, PUBLISH_BUDGET};
 
-pub type ExecutionResult = Result<ExecutionStatus, SuiError>;
+pub type ExecutionResult = Result<ExecutionStatus, IkaError>;
 
 fn build_test_modules(test_dir: &str) -> (Vec<u8>, Vec<Vec<u8>>) {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

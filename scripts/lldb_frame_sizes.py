@@ -11,7 +11,7 @@ import lldb
 #
 # == Usage ==
 #
-#     (lldb) command script import ./sui/scripts/lldb_frame_sizes
+#     (lldb) command script import ./ika/scripts/lldb_frame_sizes
 #     Loaded "frame-sizes" command.
 #     (lldb) ...
 #     

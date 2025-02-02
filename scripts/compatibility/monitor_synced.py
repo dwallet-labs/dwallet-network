@@ -26,9 +26,9 @@ class Metric(Enum):
 
 def get_current_network_epoch(env='testnet'):
     for i in range(NUM_RETRIES):
-        cmd = ['curl', '--location', '--request', 'POST', f'https://explorer-rpc.{env}.sui.io/',
+        cmd = ['curl', '--location', '--request', 'POST', f'https://explorer-rpc.{env}.ika.io/',
                '--header', 'Content-Type: application/json', '--data-raw',
-               '{"jsonrpc":"2.0", "method":"suix_getCurrentEpoch", "params":[], "id":1}']
+               '{"jsonrpc":"2.0", "method":"ikax_getCurrentEpoch", "params":[], "id":1}']
         try:
             result = subprocess.check_output(cmd, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError as e:
@@ -40,12 +40,12 @@ def get_current_network_epoch(env='testnet'):
             result = json.loads(result)
             if 'error' in result:
                 print(
-                    f'suix_getCurrentEpoch rpc request failed: {result["error"]}')
+                    f'ikax_getCurrentEpoch rpc request failed: {result["error"]}')
                 time.sleep(3)
                 continue
             return int(result['result']['epoch'])
         except (KeyError, IndexError, json.JSONDecodeError):
-            print(f'suix_getCurrentEpoch rpc request failed: {result}')
+            print(f'ikax_getCurrentEpoch rpc request failed: {result}')
             time.sleep(RETRY_BASE_TIME_SEC * 2**i)  # exponential backoff
             continue
     print(f"Failed to get current network epoch after {NUM_RETRIES} tries")
@@ -81,11 +81,11 @@ def get_local_metric(metric: Metric):
 def await_started(start_checkpoint):
     for i in range(STARTUP_TIMEOUT_SEC):
         if get_local_metric(Metric.CHECKPOINT) != start_checkpoint:
-            print(f"sui-node started successfully after {i} seconds")
+            print(f"ika-node started successfully after {i} seconds")
             return
-        print("Awaiting sui-node startup...")
+        print("Awaiting ika-node startup...")
         time.sleep(1)
-    print(f"sui-node failed to start after {STARTUP_TIMEOUT_SEC} seconds")
+    print(f"ika-node failed to start after {STARTUP_TIMEOUT_SEC} seconds")
 
 
 def usage():

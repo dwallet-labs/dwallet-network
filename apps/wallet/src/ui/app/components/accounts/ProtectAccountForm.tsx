@@ -124,7 +124,7 @@ export function ProtectAccountForm({
 									<Link
 										href={ToS_LINK}
 										beforeColor="steelDarker"
-										color="suiDark"
+										color="ikaDark"
 										text="Terms of Services"
 									/>
 								</span>

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { SuiObjectResponse } from '@mysten/sui/client';
+import type { IkaObjectResponse } from '@ika-io/ika/client';
 
 import type {
 	MoveValue,
@@ -16,7 +16,7 @@ import { toShortTypeString } from './util.js';
 export function mapGraphQLObjectToRpcObject(
 	object: Rpc_Object_FieldsFragment,
 	options: { showBcs?: boolean | null } = {},
-): NonNullable<SuiObjectResponse['data']> {
+): NonNullable<IkaObjectResponse['data']> {
 	return {
 		bcs: options?.showBcs
 			? {
@@ -54,7 +54,7 @@ export function mapGraphQLObjectToRpcObject(
 export function mapGraphQLMoveObjectToRpcObject(
 	object: Rpc_Move_Object_FieldsFragment,
 	options: { showBcs?: boolean | null } = {},
-): NonNullable<SuiObjectResponse['data']> {
+): NonNullable<IkaObjectResponse['data']> {
 	return {
 		bcs: options?.showBcs
 			? {

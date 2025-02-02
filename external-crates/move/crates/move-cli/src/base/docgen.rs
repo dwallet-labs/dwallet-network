@@ -106,7 +106,7 @@ impl Docgen {
         }
 
         // We are using the full namespace, since we already use `Docgen` here.
-        // Docgen is the most suitable name for both: this Docgen subcommand,
+        // Docgen is the most ikatable name for both: this Docgen subcommand,
         // and the actual move_docgen::Docgen.
         let generator = move_docgen::Docgen::new(&model, &options);
 

@@ -26,7 +26,7 @@ jobs:
   build:
     name: Lint, Build, and Test
     runs-on: ubuntu-latest
-    environment: sui-typescript-aws-kms-test-env
+    environment: ika-typescript-aws-kms-test-env
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
@@ -73,10 +73,10 @@ jobs:
       - name: Wallet Extension Has Changes?
         id: wallet-diff
         continue-on-error: true
-        run: pnpm dlx turbo-ignore sui-wallet
+        run: pnpm dlx turbo-ignore ika-wallet
       - name: Wallet Extension Preview Package
         if: ${{ steps.wallet-diff.outcome == 'failure' }}
-        run: pnpm --filter sui-wallet pack:zip
+        run: pnpm --filter ika-wallet pack:zip
       - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # pin@4.4.3
         if: ${{ steps.wallet-diff.outcome == 'failure' }}
         with:

@@ -1,5 +1,5 @@
 ---
-title: Stablecoins on Sui
+title: Stablecoins on Ika
 sidebar_label: Stablecoins
 description: Stablecoins are a type of cryptocurrency that are designed to maintain a stable value relative to a fiat currency or a basket of assets. 
 ---
@@ -8,13 +8,13 @@ Stablecoins are a type of cryptocurrency that are designed to maintain a stable 
 
 ## Available stablecoins
 
-On Sui, you can interact with various stablecoins such as USDC, USDT, Agora, and Ondo USDY.
+On Ika, you can interact with various stablecoins such as USDC, USDT, Agora, and Ondo USDY.
 
 ### USDC (USD Coin)
 
 USDC is a fully collateralized US dollar stablecoin issued by regulated financial institutions. Each USDC token is backed by one US dollar held in reserve. USDC is widely used for trading, payments, and as a stable store of value.
 
-For more detailed information on how to interact with USDC on Sui, refer to the [USDC guide](#usdc-guide).
+For more detailed information on how to interact with USDC on Ika, refer to the [USDC guide](#usdc-guide).
 
 **Site:** [Circle](https://www.circle.com/en/usdc)
 
@@ -22,7 +22,7 @@ For more detailed information on how to interact with USDC on Sui, refer to the 
 
 USDT, also known as Tether, is one of the oldest and most widely used stablecoins. It is pegged to the US dollar and is backed by a mix of reserves, including cash, cash equivalents, and other assets.
 
-USDT is currently not issued natively on Sui. For more information on bridging USDT to Sui, refer to [SUI Bridging](../../concepts/tokenomics/sui-bridging.mdx).
+USDT is currently not issued natively on Ika. For more information on bridging USDT to Ika, refer to [IKA Bridging](../../concepts/tokenomics/ika-bridging.mdx).
 
 **Site:** [Tether](https://tether.to/)
 
@@ -37,19 +37,19 @@ USDY is a fully collateralized US dollar stablecoin issued by Ondo Finance, allo
 
 **Site:** [Ondo Finance](https://ondo.finance/)
 
-## How to transfer USDC on Sui {#usdc-guide}
+## How to transfer USDC on Ika {#usdc-guide}
 
 USDC provides the ability to transfer dollars over public blockchains using smart contracts. The smart contract allows users to send, receive, and store dollars on chain with a wallet.
 
-Here's a quickstart guide for developers to build an app to perform their first USDC transfer on Sui.
+Here's a quickstart guide for developers to build an app to perform their first USDC transfer on Ika.
 
 ### Contract addresses
 
-- [Testnet](https://suiscan.xyz/testnet/coin/0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC)
+- [Testnet](https://ikascan.xyz/testnet/coin/0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC)
   ```
   0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC
   ```
-- [Mainnet](https://suiscan.xyz/coin/0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC)
+- [Mainnet](https://ikascan.xyz/coin/0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC)
   ```
   0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC
   ```
@@ -59,8 +59,8 @@ Here's a quickstart guide for developers to build an app to perform their first 
 Before you start building the sample app to perform a USDC transfer, ensure you meet the following prerequisites:
 
 - [Node.js](https://nodejs.org/en) and [npm](https://www.npmjs.com/): Ensure that you have Node.js and npm installed on your machine. You can download and install Node.js from [nodejs.org](http://nodejs.org). npm comes with Node.js.
-- [Sui Wallet](https://chromewebstore.google.com/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil): Install the Sui Wallet browser extension, set up your wallet, and connect it to the appropriate network. Ensure that your wallet is funded with:
-  - Some SUI tokens to cover transaction fees. (**Request Testnet SUI Tokens** from the **Wallet Settings** page)
+- [Ika Wallet](https://chromewebstore.google.com/detail/ika-wallet/opcgpfmipidbgpenhmajoajpbobppdil): Install the Ika Wallet browser extension, set up your wallet, and connect it to the appropriate network. Ensure that your wallet is funded with:
+  - Some IKA tokens to cover transaction fees. (**Request Testnet IKA Tokens** from the **Wallet Settings** page)
   - USDC tokens for the transfer. ([USDC Testnet Faucet](https://faucet.circle.com/))
 
 ### Installation
@@ -77,10 +77,10 @@ To keep a small footprint, the instruction uses [Parcel](https://parceljs.org/) 
 pnpm add react react-dom parcel
 ```
 
-Install Sui dependencies next:
+Install Ika dependencies next:
 
 ```bash
-pnpm add @mysten/dapp-kit @mysten/sui @tanstack/react-query
+pnpm add @mysten/dapp-kit @ika-io/ika @tanstack/react-query
 ```
 
 Finally, update your `package.json` to include the following script:
@@ -219,7 +219,7 @@ To connect your wallet:
 Follow these steps to perform a USDC transfer:
 
 1. Ensure you have USDC tokens in your wallet. You can get Testnet tokens from Circle's [faucet](https://faucet.circle.com/) if needed.
-1. Click the **Request Testnet SUI Tokens** button from your Sui Wallet to source gas tokens. The button is visible only when your wallet is connected to Testnet.
+1. Click the **Request Testnet IKA Tokens** button from your Ika Wallet to source gas tokens. The button is visible only when your wallet is connected to Testnet.
 1. In the app, enter the amount of USDC you want to send and the recipient address. 
 1. Click the **Send Tokens** button.
 1. Your wallet prompts you to approve the transaction. Review the details and confirm.

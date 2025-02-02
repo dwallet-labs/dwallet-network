@@ -78,7 +78,7 @@ fn test_flavor() {
         assert_eq!(BinaryFlavor::decode_version(flavored), i);
         assert_eq!(
             BinaryFlavor::decode_flavor(flavored),
-            Some(BinaryFlavor::SUI_FLAVOR)
+            Some(BinaryFlavor::IKA_FLAVOR)
         );
     }
 }

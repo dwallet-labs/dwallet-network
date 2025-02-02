@@ -47,7 +47,7 @@
 		"vitest": "^2.0.1"
 	},
 	"dependencies": {
-		"@mysten/sui": "workspace:*",
+		"@ika-io/ika": "workspace:*",
 		"@noble/curves": "^1.4.2",
 		"@noble/hashes": "^1.4.0",
 		"asn1-ts": "^8.0.2",

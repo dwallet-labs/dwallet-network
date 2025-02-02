@@ -16,10 +16,10 @@ with open(factory_file, 'w') as f:
 
     f.write("module coiner::coin_factory {\n")
     f.write("    use std::option;\n")
-    f.write("    use sui::coin::{Self, Coin, TreasuryCap};\n")
-    f.write("    use sui::transfer;\n")
+    f.write("    use ika::coin::{Self, Coin, TreasuryCap};\n")
+    f.write("    use ika::transfer;\n")
     f.write("    use std::vector;\n");
-    f.write("    use sui::tx_context::{Self, TxContext};\n")
+    f.write("    use ika::tx_context::{Self, TxContext};\n")
     f.write("\n")
     f.write("    struct COIN_FACTORY has drop {}\n")
     f.write("\n")
