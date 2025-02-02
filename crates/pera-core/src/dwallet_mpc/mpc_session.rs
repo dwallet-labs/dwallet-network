@@ -10,7 +10,7 @@ use tokio::runtime::Handle;
 use tracing::error;
 use twopc_mpc::sign::Protocol;
 
-use pera_types::base_types::{EpochId, ObjectID};
+use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::id::ID;
@@ -141,6 +141,13 @@ impl DWalletMPCSession {
                 let output = self.new_dwallet_mpc_output_message(public_output)?;
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
+                if self.is_verifying_sign_ia_report() {
+                    self.send_empty_malicious_report(
+                        tokio_runtime_handle,
+                        &consensus_adapter,
+                        &epoch_store,
+                    )?;
+                }
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![output], &epoch_store)
@@ -149,6 +156,7 @@ impl DWalletMPCSession {
                         error!("failed to submit an MPC message to consensus: {:?}", err);
                     }
                 });
+
                 Ok(())
             }
             Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
@@ -184,6 +192,67 @@ impl DWalletMPCSession {
                 Err(e)
             }
         }
+    }
+
+    /// Returns true if the session is still verifying that a Start Sign Identifiable Report
+    /// message is valid; false otherwise.
+    /// The Sign Identifiable Abort protocol differs from other protocols as,
+    /// besides verifying that the output is valid, we must also verify that the malicious report,
+    /// which caused all other validators to spend extra resources, was honest.
+    pub(crate) fn is_verifying_sign_ia_report(&self) -> bool {
+        let Some(MPCSessionSpecificState::Sign(sign_state)) = &self.session_specific_state else {
+            return false;
+        };
+        sign_state.verified_malicious_report.is_none()
+    }
+
+    /// Starts the Sign Identifiable Abort protocol if needed.
+    ///
+    /// In the aggregated signing protocol, a single malicious report is enough
+    /// to trigger the Sign-Identifiable Abort protocol.
+    /// In the Sign-Identifiable Abort protocol, each validator runs the final step,
+    /// agreeing on the malicious parties in the session and
+    /// removing their messages before the signing session continues as usual.
+    pub(crate) fn check_for_sign_ia_start(
+        &mut self,
+        reporting_authority: AuthorityName,
+        report: MaliciousReport,
+    ) {
+        if matches!(self.session_info.mpc_round, MPCProtocolInitData::Sign(..))
+            && self.status == MPCSessionStatus::Active
+            && self.session_specific_state.is_none()
+        {
+            self.session_specific_state = Some(MPCSessionSpecificState::Sign(SignIASessionState {
+                start_ia_flow_malicious_report: report,
+                initiating_ia_authority: reporting_authority,
+                verified_malicious_report: None,
+            }))
+        }
+    }
+
+    /// In the Sign Identifiable Abort protocol, each validator sends a malicious report, even
+    /// if no malicious actors are found. This is necessary to reach agreement on a malicious report
+    /// and to punish the validator who started the Sign IA report if they sent a faulty report.
+    fn send_empty_malicious_report(
+        &self,
+        tokio_runtime_handle: &Handle,
+        consensus_adapter: &Arc<dyn SubmitToConsensus>,
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+    ) -> DwalletMPCResult<()> {
+        let empty_report = MaliciousReport::new(vec![], self.session_info.session_id.clone());
+        let report_output =
+            self.new_dwallet_report_failed_session_with_malicious_actors(empty_report)?;
+        let epoch_store = epoch_store.clone();
+        let consensus_adapter = consensus_adapter.clone();
+        tokio_runtime_handle.spawn(async move {
+            if let Err(err) = consensus_adapter
+                .submit_to_consensus(&vec![report_output], &epoch_store)
+                .await
+            {
+                error!("failed to submit an MPC message to consensus: {:?}", err);
+            }
+        });
+        Ok(())
     }
 
     fn advance_specific_party(
