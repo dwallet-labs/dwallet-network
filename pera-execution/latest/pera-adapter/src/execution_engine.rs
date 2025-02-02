@@ -1133,17 +1133,6 @@ mod checked {
         let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
         let (move_function_name, args, type_args) = match data.session_info.mpc_round {
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
-                // public(package) fun create_partial_centralized_signed_messages<D: store + drop + copy>(
-                //     messages: vector<vector<u8>>,
-                //     dwallet_id: ID,
-                //     dwallet_decentralized_public_output: vector<u8>,
-                //     dwallet_cap_id: ID,
-                //     dwallet_mpc_network_decryption_key_version: u8,
-                //     signature_algorithm_data: vector<D>,
-                //     session_id: ID,
-                //     initiator: address,
-                //     ctx: &mut TxContext
-                // ) {
                 module_name = DWALLET_MODULE_NAME;
                 (
                     "create_partial_centralized_signed_messages",
