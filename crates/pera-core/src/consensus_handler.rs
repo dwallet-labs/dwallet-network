@@ -468,7 +468,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             &output_verification_result.malicious_actors,
                         );
                         match output_verification_result.result {
-                            OutputResult::FirstQuorumReachedValid => {
+                            OutputResult::FirstQuorumReached => {
                                 self.epoch_store
                                     .save_dwallet_mpc_completed_session(session_info.session_id)
                                     .await;
@@ -809,7 +809,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 Ok(result) => {
                     manager.flag_authorities_as_malicious(&result.malicious_actors);
                     // TODO (#524): Handle malicious behavior.
-                    if result.result == OutputResult::FirstQuorumReachedValid {
+                    if result.result == OutputResult::FirstQuorumReached {
                         if output.session_info.mpc_round.is_part_of_batch() {
                             if let Err(err) = dwallet_mpc_batches_manager.store_verified_output(
                                 output.session_info.clone(),

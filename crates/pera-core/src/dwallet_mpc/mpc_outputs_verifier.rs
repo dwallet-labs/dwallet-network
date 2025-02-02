@@ -69,7 +69,7 @@ pub struct SessionOutputsData {
 /// as the output can be sent twice by honest parties.
 #[derive(PartialOrd, PartialEq, Clone)]
 pub enum OutputResult {
-    FirstQuorumReachedValid,
+    FirstQuorumReached,
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
@@ -184,7 +184,7 @@ impl DWalletMPCOutputsVerifier {
                         }
                     }
                     Ok(OutputVerificationResult {
-                        result: OutputResult::FirstQuorumReachedValid,
+                        result: OutputResult::FirstQuorumReached,
                         malicious_actors: session_malicious_actors,
                     })
                 }
@@ -250,7 +250,7 @@ impl DWalletMPCOutputsVerifier {
                 .collect();
             session_output_data.current_result = OutputResult::AlreadyCommitted;
             return Ok(OutputVerificationResult {
-                result: OutputResult::FirstQuorumReachedValid,
+                result: OutputResult::FirstQuorumReached,
                 malicious_actors: voted_for_other_outputs,
             });
         }
@@ -310,7 +310,7 @@ impl DWalletMPCOutputsVerifier {
             ));
         }
         Ok(OutputVerificationResult {
-            result: OutputResult::FirstQuorumReachedValid,
+            result: OutputResult::FirstQuorumReached,
             malicious_actors: vec![],
         })
     }
