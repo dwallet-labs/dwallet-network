@@ -178,7 +178,7 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 pub fn advance_centralized_sign_party(
     protocol_public_parameters: Vec<u8>,
     key_scheme: u8,
-    centralized_party_dkg_output: Vec<u8>,
+    centralized_party_dkg_public_output: Vec<u8>,
     centralized_party_secret_key_share: Vec<u8>,
     presigns: Vec<Vec<u8>>,
     messages: Vec<Vec<u8>>,
@@ -186,7 +186,7 @@ pub fn advance_centralized_sign_party(
     presign_session_ids: Vec<String>,
 ) -> anyhow::Result<Vec<SignedMessages>> {
     let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
-        bcs::from_bytes(&centralized_party_dkg_output)?;
+        bcs::from_bytes(&centralized_party_dkg_public_output)?;
     let signed_messages: Vec<_> = messages
         .iter()
         .enumerate()
