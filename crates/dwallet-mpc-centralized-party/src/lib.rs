@@ -63,31 +63,6 @@ type Secp256k1EncryptionKey = EncryptionKey<
     secp256k1::GroupElement,
 >;
 
-impl fmt::Display for Hash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let hash_name = match self {
-            Hash::KECCAK256 => "KECCAK256",
-            Hash::SHA256 => "SHA256",
-        };
-        write!(f, "{}", hash_name)
-    }
-}
-
-impl TryFrom<u8> for Hash {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Hash::KECCAK256),
-            1 => Ok(Hash::SHA256),
-            _ => Err(anyhow::Error::msg(format!(
-                "invalid value for Hash enum: {}",
-                value
-            ))),
-        }
-    }
-}
-
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
 ///
 /// This function is invoked by the centralized party to produce:
@@ -373,4 +348,29 @@ fn cg_secp256k1_public_key_share_from_secret_share(
             &public_parameters,
         )?;
     Ok(generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_key_share)))
+}
+
+impl fmt::Display for Hash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let hash_name = match self {
+            Hash::KECCAK256 => "KECCAK256",
+            Hash::SHA256 => "SHA256",
+        };
+        write!(f, "{}", hash_name)
+    }
+}
+
+impl TryFrom<u8> for Hash {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Hash::KECCAK256),
+            1 => Ok(Hash::SHA256),
+            _ => Err(anyhow::Error::msg(format!(
+                "invalid value for Hash enum: {}",
+                value
+            ))),
+        }
+    }
 }

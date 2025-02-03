@@ -13,7 +13,6 @@ use crate::{
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-// use std::hash::Hash;
 use std::{collections::BTreeMap, fmt::Debug};
 use strum_macros::{AsRefStr, IntoStaticStr};
 use thiserror::Error;

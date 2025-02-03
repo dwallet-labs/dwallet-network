@@ -380,7 +380,7 @@ impl DWalletMPCSession {
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
-    /// Returns None only if the epoch switched in the middle and was not available.
+    /// Returns Error only if the epoch switched in the middle and was not available.
     fn new_dwallet_mpc_message(
         &self,
         message: MPCMessage,
@@ -422,7 +422,7 @@ impl DWalletMPCSession {
         )
     }
 
-    /// Stores a message in the pending messages map.
+    /// Stores a message in the serialized messages map.
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {

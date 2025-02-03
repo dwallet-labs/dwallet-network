@@ -405,7 +405,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 DWalletMPCDBMessage::LockNextEpochCommitteeVote(*authority),
                             )
                             .await;
-                        if dwallet_mpc_verifier.should_lock_committee(*authority) {
+                        if let Ok(true) =
+                            dwallet_mpc_verifier.append_vote_and_check_committee_lock(*authority)
+                        {
                             let transaction =
                                 VerifiedTransaction::new_lock_next_committee_system_transaction(
                                     *epoch_id,
@@ -799,7 +801,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             self.epoch_store.get_dwallet_mpc_batches_manager().await;
         for event in self.load_dwallet_mpc_events_from_epoch_start().await? {
             dwallet_mpc_batches_manager.store_new_session(&event.session_info);
-            dwallet_mpc_verifier.store_new_session(&event.session_info);
+            dwallet_mpc_verifier.monitor_new_session_outputs(&event.session_info);
         }
         for output in self.load_dwallet_mpc_outputs_from_epoch_start().await? {
             match dwallet_mpc_verifier
@@ -834,7 +836,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         for message in self.load_dwallet_mpc_messages_from_epoch_start().await? {
             match message {
                 DWalletMPCDBMessage::LockNextEpochCommitteeVote(authority) => {
-                    dwallet_mpc_verifier.should_lock_committee(authority);
+                    dwallet_mpc_verifier.append_vote_and_check_committee_lock(authority)?;
                 }
                 DWalletMPCDBMessage::Message(_)
                 | DWalletMPCDBMessage::EndOfDelivery
