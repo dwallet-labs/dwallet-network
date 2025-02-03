@@ -72,7 +72,8 @@ fn verify_dwallet_public_output_signature(
     if derived_ika_addr != verification_data.initiator {
         return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
     }
-    let signature = <Ed25519Signature as ToFromBytes>::from_bytes(
+    // CODE CRASH
+     let signature = <Ed25519Signature as ToFromBytes>::from_bytes(
         &verification_data.decentralized_public_output_signature,
     )
     .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
