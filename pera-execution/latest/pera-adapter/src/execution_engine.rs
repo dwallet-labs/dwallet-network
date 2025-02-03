@@ -1149,7 +1149,6 @@ mod checked {
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    // decentralized_public_output.
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(event_data.dwallet_cap_id.bytes.to_vec()),
                     CallArg::Pure(bcs_to_bytes(&dwallet_mpc_network_decryption_key_version)?),
@@ -1158,10 +1157,9 @@ mod checked {
                     )?),
                     CallArg::Pure(event_data.encryption_key_id.bytes.to_vec()),
                     CallArg::Pure(bcs_to_bytes(
-                        &event_data.centralized_public_output_signature,
+                        &event_data.decentralized_public_output_signature,
                     )?),
                     CallArg::Pure(bcs_to_bytes(&event_data.initiator_public_key)?),
-                    CallArg::Pure(bcs_to_bytes(&event_data.centralized_public_output)?),
                 ],
             ),
             MPCProtocolInitData::PresignFirst(
@@ -1270,7 +1268,7 @@ mod checked {
                     CallArg::Pure(verification_data.encryption_key_id.bytes.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                     CallArg::Pure(bcs_to_bytes(
-                        &verification_data.centralized_public_output_signature,
+                        &verification_data.decentralized_public_output_signature,
                     )?),
                     CallArg::Pure(bcs_to_bytes(&verification_data.encryptor_ed25519_pubkey)?),
                     CallArg::Pure(verification_data.initiator.to_vec()),

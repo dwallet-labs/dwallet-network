@@ -108,7 +108,7 @@ export async function createDWallet(
 ): Promise<DWalletWithSecretKeyShare> {
 	const dkgFirstRoundResult = await launchDKGFirstRound(c);
 	// centralizedPublicOutput: centralized_public_key_share + public_key + decentralized_party_public_key_share.
-	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
+	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare, serializedPublicKeys] =
 		create_dkg_centralized_output(
 			protocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
@@ -135,6 +135,7 @@ export async function createDWallet(
 		encryptedCentralizedSecretKeyShareAndProofOfEncryption,
 		derivedClassGroupsKeyPair.objectID,
 		centralizedPublicOutput,
+		serializedPublicKeys,
 		c.keypair.getPublicKey(),
 	);
 
@@ -192,12 +193,11 @@ async function launchDKGSecondRound(
 	encryptedCentralizedSecretShareAndProof: Uint8Array,
 	encryptionKeyID: string,
 	centralizedPublicOutput: Uint8Array,
+	public_keys: number[],
 	initiatorPubKey: PublicKey,
 ) {
-	const centralizedPublicOutputSignature = await c.keypair.sign(
-		new Uint8Array(centralizedPublicOutput),
-	);
-	const tx = new Transaction();
+	const signedPublicKeys = await c.keypair.sign(new Uint8Array(public_keys));
+	const tx  = new Transaction();
 
 	tx.moveCall({
 		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_second_round`,
@@ -209,7 +209,7 @@ async function launchDKGSecondRound(
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptedCentralizedSecretShareAndProof)),
 			tx.object(encryptionKeyID),
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutputSignature)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(signedPublicKeys)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(initiatorPubKey.toRawBytes())),
 			tx.sharedObjectRef({
 				objectId: PERA_SYSTEM_STATE_OBJECT_ID,

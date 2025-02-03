@@ -6,6 +6,7 @@ import {
 	decrypt_user_share,
 	encrypt_secret_share,
 	generate_secp_cg_keypair_from_seed,
+	public_keys_from_dkg_output,
 	verify_user_share,
 } from '@dwallet-network/dwallet-mpc-wasm';
 import { toHEX } from '@mysten/bcs';
@@ -102,7 +103,7 @@ interface EncryptedUserSecretKeyShare {
 	dwallet_id: string;
 	encrypted_centralized_secret_share_and_proof: Uint8Array;
 	encryption_key_id: string;
-	centralized_public_output_signature: Uint8Array;
+	decentralized_public_output_signature: Uint8Array;
 	encryptor_ed25519_pubkey: Uint8Array;
 	encryptor_address: string;
 }
@@ -113,7 +114,7 @@ function isEncryptedUserSecretKeyShare(obj: any): obj is EncryptedUserSecretKeyS
 		typeof obj.dwallet_id === 'string' &&
 		'encrypted_centralized_secret_share_and_proof' in obj &&
 		typeof obj.encryption_key_id === 'string' &&
-		'centralized_public_output_signature' in obj &&
+		'decentralized_public_output_signature' in obj &&
 		'encryptor_ed25519_pubkey' in obj &&
 		typeof obj.encryptor_address === 'string'
 	);
@@ -150,7 +151,7 @@ interface CreatedEncryptedSecretShareEvent {
 	encryptor_ed25519_pubkey: Uint8Array;
 
 	// Signed dWallet public centralized output (signed by the `encryptor` entity).
-	centralized_public_output_signature: Uint8Array;
+	decentralized_public_output_signature: Uint8Array;
 }
 
 function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSecretShareEvent {
@@ -163,7 +164,7 @@ function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSe
 		typeof obj.encryption_key_id === 'string' &&
 		typeof obj.encryptor_address === 'string' &&
 		obj.encryptor_ed25519_pubkey instanceof Uint8Array &&
-		obj.centralized_public_output_signature instanceof Uint8Array
+		obj.decentralized_public_output_signature instanceof Uint8Array
 	);
 }
 
@@ -498,12 +499,16 @@ export class EncryptedUserShare {
 				'the source address does not match the address derived from the public key that was stored on the blockchain',
 			);
 		}
+		let dwallet_pubkeys = public_keys_from_dkg_output(
+			new Uint8Array(dwallet.decentralized_public_output),
+		);
+
 		// Make sure that the source entity signed the dWallet public key share.
 		// We do it to make sure this is the key that was stored by us on the chain.
 		if (
 			!(await srcIkaPublicKey.verify(
-				new Uint8Array(dwallet.centralized_public_output),
-				new Uint8Array(encryptedUserSecretKeyShare.centralized_public_output_signature),
+				new Uint8Array(dwallet_pubkeys),
+				new Uint8Array(encryptedUserSecretKeyShare.decentralized_public_output_signature),
 			))
 		) {
 			throw new Error('the desired address did not sign the dWallet public key share');
@@ -521,7 +526,7 @@ export class EncryptedUserShare {
 		// we are making sure it was signed by us.
 		const isValid = verify_user_share(
 			decryptedSecretShare,
-			new Uint8Array(dwallet.centralized_public_output),
+			new Uint8Array(dwallet.decentralized_public_output),
 		);
 		if (!isValid) {
 			throw new Error('the decrypted key share does not match the dWallet public key share');
@@ -545,9 +550,9 @@ export class EncryptedUserShare {
 		const tx = new Transaction();
 		// Sign the DKG Centralized Public output,
 		// in order for the destination party to verify it later.
-		const sourceSignedCentralizedPublicOutput = await sourceKeyPair.sign(
-			new Uint8Array(sourceDwallet.centralized_public_output),
-		);
+		let signedPubkeys = await sourceKeyPair.sign( new Uint8Array(public_keys_from_dkg_output(
+			new Uint8Array(sourceDwallet.decentralized_public_output),
+		)));
 		// todo(zeev): this should transfer the encrypted share to the destination.
 		tx.moveCall({
 			target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::transfer_encrypted_user_share`,
@@ -556,7 +561,7 @@ export class EncryptedUserShare {
 				tx.object(sourceDwallet.id.id),
 				tx.object(destEncryptionKeyObjID),
 				tx.pure(bcs.vector(bcs.u8()).serialize(encryptedUserKeyShareAndProofOfEncryption)),
-				tx.pure(bcs.vector(bcs.u8()).serialize(sourceSignedCentralizedPublicOutput)),
+				tx.pure(bcs.vector(bcs.u8()).serialize(signedPubkeys)),
 				tx.pure(bcs.vector(bcs.u8()).serialize(sourceKeyPair.getPublicKey().toRawBytes())),
 				tx.sharedObjectRef({
 					objectId: PERA_SYSTEM_STATE_OBJECT_ID,

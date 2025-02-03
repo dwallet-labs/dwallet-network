@@ -50,8 +50,6 @@ export interface DWallet {
 	dwallet_cap_id: string;
 	// The Decentralized Public output of the second DKG round.
 	decentralized_public_output: number[];
-	// The Centralized Public output of the centralized (user) DKG round.
-	centralized_public_output: number[];
 	// The MPC network decryption key version that is used to decrypt this dWallet.
 	dwallet_mpc_network_decryption_key_version: number;
 }

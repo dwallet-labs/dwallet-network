@@ -1066,9 +1066,6 @@ get_dwallet_cap_id
 get_dwallet_decentralized_public_output
 	public(package) fun
 	0x3::dwallet
-get_dwallet_centralized_public_output
-	public(package) fun
-	0x3::dwallet
 get_dwallet_mpc_network_decryption_key_version
 	public(package) fun
 	0x3::dwallet

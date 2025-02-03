@@ -27,7 +27,9 @@ use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
-use class_groups_constants::protocol_public_parameters;
+use class_groups_constants::{
+    protocol_public_parameters, public_keys_from_dkg_output, DWalletPublicKeys,
+};
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -115,7 +117,7 @@ pub fn create_dkg_output(
     key_scheme: u8,
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
-) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_public_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
         bcs::from_bytes(&decentralized_first_round_public_output)
             .context("Failed to deserialize decentralized first round output")?;
@@ -144,11 +146,20 @@ pub fn create_dkg_output(
     // The secret (private) key share returned from this function should never be sent,
     // and should always be kept private.
     let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
-
+    let public_keys = bcs::to_bytes(&DWalletPublicKeys {
+        centralized_public_share: bcs::to_bytes(&round_result.public_output.public_key_share)?,
+        decentralized_public_share: bcs::to_bytes(
+            &round_result
+                .public_output
+                .decentralized_party_public_key_share,
+        )?,
+        public_key: bcs::to_bytes(&round_result.public_output.public_key)?,
+    })?;
     Ok((
         public_key_share_and_proof,
         public_output,
         centralized_secret_output,
+        public_keys,
     ))
 }
 
@@ -178,15 +189,22 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 pub fn advance_centralized_sign_party(
     protocol_public_parameters: Vec<u8>,
     key_scheme: u8,
-    centralized_party_dkg_output: Vec<u8>,
+    decentralized_party_dkg_output: Vec<u8>,
     centralized_party_secret_key_share: Vec<u8>,
     presigns: Vec<Vec<u8>>,
     messages: Vec<Vec<u8>>,
     hash_type: u8,
     presign_session_ids: Vec<String>,
 ) -> anyhow::Result<Vec<SignedMessages>> {
-    let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
-        bcs::from_bytes(&centralized_party_dkg_output)?;
+    let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_output)?;
+    let centralized_public_output = twopc_mpc::class_groups::DKGCentralizedPartyOutput::<
+        { secp256k1::SCALAR_LIMBS },
+        secp256k1::GroupElement,
+    > {
+        public_key_share: decentralized_output.centralized_party_public_key_share,
+        public_key: decentralized_output.public_key,
+        decentralized_party_public_key_share: decentralized_output.public_key_share,
+    };
     let signed_messages: Vec<_> = messages
         .iter()
         .enumerate()
@@ -201,7 +219,7 @@ pub fn advance_centralized_sign_party(
                 <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedPartyPublicInput::from(
                     (
                         hashed_message,
-                        centralized_party_dkg_output.clone(),
+                        centralized_public_output.clone(),
                         presign,
                         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
                             protocol_public_parameters.clone(),
@@ -324,9 +342,9 @@ pub fn encrypt_secret_key_share_and_prove(
 /// DKG output centralized_party_public_key_share.
 pub fn verify_secret_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> anyhow::Result<bool> {
     let expected_public_key = cg_secp256k1_public_key_share_from_secret_share(secret_share)?;
-    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
+    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
         bcs::from_bytes(&dkg_output)?;
-    Ok(dkg_output.public_key_share == expected_public_key.value())
+    Ok(dkg_output.centralized_party_public_key_share == expected_public_key.value())
 }
 
 /// Decrypts the given encrypted user share using the given decryption key.
@@ -373,4 +391,9 @@ fn cg_secp256k1_public_key_share_from_secret_share(
             &public_parameters,
         )?;
     Ok(generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_key_share)))
+}
+
+/// Derives [`DWalletPublicKeys`] from the given dwallet DKG output.
+pub fn public_keys_from_dwallet_output(output: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+    bcs::to_bytes(&public_keys_from_dkg_output(bcs::from_bytes(&output)?)?).map_err(Into::into)
 }

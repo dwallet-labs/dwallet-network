@@ -2559,7 +2559,7 @@ checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#ec47d444ca3247aebc85773852658d345860dd36"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=ec47d444ca3247aebc85773852658d345860dd36#ec47d444ca3247aebc85773852658d345860dd36"
 dependencies = [
  "commitment",
  "criterion",
@@ -2590,11 +2590,14 @@ dependencies = [
 name = "class_groups_constants"
 version = "1.32.2"
 dependencies = [
+ "anyhow",
  "base64 0.22.1",
  "bcs",
  "class_groups",
  "group 0.1.0",
  "mpc",
+ "schemars",
+ "serde",
  "twopc_mpc",
 ]
 
@@ -2765,7 +2768,7 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#ec47d444ca3247aebc85773852658d345860dd36"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=ec47d444ca3247aebc85773852658d345860dd36#ec47d444ca3247aebc85773852658d345860dd36"
 dependencies = [
  "crypto-bigint 0.5.5",
  "group 0.1.0",
@@ -4085,7 +4088,6 @@ dependencies = [
  "group 0.1.0",
  "homomorphic_encryption",
  "k256 0.13.3",
- "maurer",
  "mpc",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
@@ -4272,7 +4274,7 @@ checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#ec47d444ca3247aebc85773852658d345860dd36"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=ec47d444ca3247aebc85773852658d345860dd36#ec47d444ca3247aebc85773852658d345860dd36"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
@@ -5421,7 +5423,7 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#ec47d444ca3247aebc85773852658d345860dd36"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=ec47d444ca3247aebc85773852658d345860dd36#ec47d444ca3247aebc85773852658d345860dd36"
 dependencies = [
  "crypto-bigint 0.5.5",
  "curve25519-dalek-ng",
@@ -5779,7 +5781,7 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#ec47d444ca3247aebc85773852658d345860dd36"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=ec47d444ca3247aebc85773852658d345860dd36#ec47d444ca3247aebc85773852658d345860dd36"
 dependencies = [
  "crypto-bigint 0.5.5",
  "getrandom 0.2.15",
@@ -7204,7 +7206,7 @@ checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#ec47d444ca3247aebc85773852658d345860dd36"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=ec47d444ca3247aebc85773852658d345860dd36#ec47d444ca3247aebc85773852658d345860dd36"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
@@ -8211,7 +8213,7 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#ec47d444ca3247aebc85773852658d345860dd36"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=ec47d444ca3247aebc85773852658d345860dd36#ec47d444ca3247aebc85773852658d345860dd36"
 dependencies = [
  "commitment",
  "criterion",
@@ -13277,7 +13279,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#ec47d444ca3247aebc85773852658d345860dd36"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=ec47d444ca3247aebc85773852658d345860dd36#ec47d444ca3247aebc85773852658d345860dd36"
 dependencies = [
  "bulletproofs",
  "commitment",
@@ -16338,7 +16340,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#ec47d444ca3247aebc85773852658d345860dd36"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=ec47d444ca3247aebc85773852658d345860dd36#ec47d444ca3247aebc85773852658d345860dd36"
 dependencies = [
  "crypto-bigint 0.5.5",
  "crypto-primes",
@@ -17078,7 +17080,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-network-dkg#ec47d444ca3247aebc85773852658d345860dd36"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=ec47d444ca3247aebc85773852658d345860dd36#ec47d444ca3247aebc85773852658d345860dd36"
 dependencies = [
  "base64 0.22.1",
  "bcs",

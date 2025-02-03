@@ -137,7 +137,7 @@ describe('Test dWallet MPC', () => {
 		const centralizedSignMsg = create_sign_centralized_output(
 			mockedProtocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
-			Uint8Array.from(dWallet.centralized_public_output),
+			Uint8Array.from(dWallet.decentralized_public_output),
 			Uint8Array.from(dWallet.centralizedSecretKeyShare),
 			serializedPresigns,
 			serializedMsgs,
@@ -229,7 +229,7 @@ describe('Test dWallet MPC', () => {
 			// Todo (#382): Change to real value.
 			mockedProtocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
-			Uint8Array.from(dWallet.centralized_public_output),
+			Uint8Array.from(dWallet.decentralized_public_output),
 			Uint8Array.from(dWallet.centralizedSecretKeyShare),
 			serializedPresigns,
 			serializedMsgs,

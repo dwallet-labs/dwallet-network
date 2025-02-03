@@ -3,6 +3,7 @@ use class_groups::{
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use class_groups_constants::protocol_public_parameters;
+use class_groups_constants::public_keys_from_dkg_output;
 use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use fastcrypto::traits::{ToFromBytes, VerifyingKey};
 use group::GroupElement;
@@ -36,7 +37,7 @@ pub(crate) fn verify_encrypted_share(
     verify_dwallet_public_output_signature(&verification_data)?;
     verify_centralized_secret_key_share_proof(
         &verification_data.encrypted_centralized_secret_share_and_proof,
-        &verification_data.centralized_public_output,
+        &verification_data.decentralized_public_output,
         &verification_data.encryption_key,
     )
     .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
@@ -72,12 +73,18 @@ fn verify_dwallet_public_output_signature(
         return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
     }
     let signature = <Ed25519Signature as ToFromBytes>::from_bytes(
-        &verification_data.centralized_public_output_signature,
+        &verification_data.decentralized_public_output_signature,
     )
     .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
+    let public_keys = &bcs::to_bytes(
+        &public_keys_from_dkg_output(bcs::from_bytes(
+            &verification_data.decentralized_public_output,
+        )?)
+        .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
+    )?;
     public_key
-        .verify(&verification_data.centralized_public_output, &signature)
-        .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
+        .verify(public_keys, &signature)
+        .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?;
     Ok(())
 }
 
@@ -99,7 +106,7 @@ fn verify_centralized_secret_key_share_proof(
         protocol_public_params.group_public_parameters.clone(),
         bcs::from_bytes(encryption_key)?,
     );
-    let centralized_public_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
+    let decentralized_public_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
         bcs::from_bytes(serialized_dkg_public_output)?;
     let (proof, encrypted_centralized_secret_key_share): (
         SecretShareEncryptionProof,
@@ -112,7 +119,7 @@ fn verify_centralized_secret_key_share_proof(
             .ciphertext_space_public_parameters(),
     )?;
     let centralized_public_key_share = secp256k1::GroupElement::new(
-        centralized_public_output.public_key_share,
+        decentralized_public_output.centralized_party_public_key_share,
         &protocol_public_params.group_public_parameters,
     )?;
     let statement = (
