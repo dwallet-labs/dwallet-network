@@ -26,3 +26,4 @@ pub mod storage;
 pub mod quorum_driver_types;
 pub mod sui;
 pub mod supported_protocol_versions;
+pub mod dwallet_mpc_error;
