@@ -64,7 +64,7 @@ pub fn decryption_key_share(party_id: PartyID) -> HashMap<PartyID, SecretKeyShar
     shares.get(&party_id).unwrap().clone()
 }
 
-/// Derived [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
+/// Derives [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
 // Can't use the TryFrom trait as it leads to conflicting implementations
 pub fn public_keys_from_dkg_output(
     value: DKGDecentralizedOutput,
