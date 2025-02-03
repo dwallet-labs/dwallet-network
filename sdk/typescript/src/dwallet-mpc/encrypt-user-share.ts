@@ -550,9 +550,11 @@ export class EncryptedUserShare {
 		const tx = new Transaction();
 		// Sign the DKG Centralized Public output,
 		// in order for the destination party to verify it later.
-		let signedPubkeys = await sourceKeyPair.sign( new Uint8Array(public_keys_from_dkg_output(
-			new Uint8Array(sourceDwallet.decentralized_public_output),
-		)));
+		let signedPubkeys = await sourceKeyPair.sign(
+			new Uint8Array(
+				public_keys_from_dkg_output(new Uint8Array(sourceDwallet.decentralized_public_output)),
+			),
+		);
 		// todo(zeev): this should transfer the encrypted share to the destination.
 		tx.moveCall({
 			target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::transfer_encrypted_user_share`,

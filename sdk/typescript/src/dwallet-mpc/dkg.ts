@@ -108,14 +108,18 @@ export async function createDWallet(
 ): Promise<DWalletWithSecretKeyShare> {
 	const dkgFirstRoundResult = await launchDKGFirstRound(c);
 	// centralizedPublicOutput: centralized_public_key_share + public_key + decentralized_party_public_key_share.
-	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare, serializedPublicKeys] =
-		create_dkg_centralized_output(
-			protocolPublicParameters,
-			MPCKeyScheme.Secp256k1,
-			Uint8Array.from(dkgFirstRoundResult.decentralized_public_output),
-			// Remove the 0x prefix.
-			dkgFirstRoundResult.session_id.slice(2),
-		);
+	const [
+		centralizedPublicKeyShareAndProof,
+		centralizedPublicOutput,
+		centralizedSecretKeyShare,
+		serializedPublicKeys,
+	] = create_dkg_centralized_output(
+		protocolPublicParameters,
+		MPCKeyScheme.Secp256k1,
+		Uint8Array.from(dkgFirstRoundResult.decentralized_public_output),
+		// Remove the 0x prefix.
+		dkgFirstRoundResult.session_id.slice(2),
+	);
 
 	// Encrypt the dWallet secret share to use it later by only
 	// holding our Ika ED25519 keypair (the encryption key is derived from the Ika keypair).
@@ -197,7 +201,7 @@ async function launchDKGSecondRound(
 	initiatorPubKey: PublicKey,
 ) {
 	const signedPublicKeys = await c.keypair.sign(new Uint8Array(public_keys));
-	const tx  = new Transaction();
+	const tx = new Transaction();
 
 	tx.moveCall({
 		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_second_round`,
