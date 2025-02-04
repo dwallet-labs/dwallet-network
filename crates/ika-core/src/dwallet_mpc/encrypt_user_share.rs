@@ -105,7 +105,7 @@ fn verify_centralized_secret_key_share_proof(
         protocol_public_params.group_public_parameters.clone(),
         bcs::from_bytes(encryption_key)?,
     );
-    let centralized_public_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
+    let decentralized_public_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
         bcs::from_bytes(serialized_dkg_public_output)?;
     let (proof, encrypted_centralized_secret_key_share): (
         SecretShareEncryptionProof,
@@ -118,7 +118,7 @@ fn verify_centralized_secret_key_share_proof(
             .ciphertext_space_public_parameters(),
     )?;
     let centralized_public_key_share = secp256k1::GroupElement::new(
-        centralized_public_output.public_key_share,
+        decentralized_public_output.public_key_share,
         &protocol_public_params.group_public_parameters,
     )?;
     let statement = (
