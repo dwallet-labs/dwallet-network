@@ -27,7 +27,7 @@ use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
-use class_groups_constants::{protocol_public_parameters, DWalletPublicKeys};
+use class_groups_constants::{protocol_public_parameters, public_keys_from_dkg_output, DWalletPublicKeys};
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -389,4 +389,9 @@ fn cg_secp256k1_public_key_share_from_secret_share(
             &public_parameters,
         )?;
     Ok(generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_key_share)))
+}
+
+/// Derives [`DWalletPublicKeys`] from the given dwallet DKG output.
+pub fn public_keys_from_dwallet_output(output: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+    bcs::to_bytes(&public_keys_from_dkg_output(bcs::from_bytes(&output)?)?).map_err(Into::into)
 }
