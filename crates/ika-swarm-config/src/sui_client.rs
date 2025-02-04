@@ -810,14 +810,8 @@ pub(crate) async fn create_sui_transaction(
     let client = context.get_client().await?;
 
     //let gas_budget = max_gas_budget(&client).await?;
-    let gas_budget = estimate_gas_budget(
-        context,
-        signer,
-        tx_kind.clone(),
-        gas_price,
-        None,
-        None,
-    ).await?;
+    let gas_budget =
+        estimate_gas_budget(context, signer, tx_kind.clone(), gas_price, None, None).await?;
 
     let tx_data = client
         .transaction_builder()

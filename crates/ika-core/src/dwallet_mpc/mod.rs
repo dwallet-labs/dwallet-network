@@ -20,17 +20,17 @@ use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicOutput,
 };
 use group::PartyID;
-use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use ika_types::crypto::AuthorityName;
-use sui_types::base_types::{EpochId, ObjectID};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use sui_types::event::Event;
 use ika_types::messages_dwallet_mpc::{
     MPCProtocolInitData, SessionInfo, SingleSignSessionData, StartDKGSecondRoundEvent,
     StartEncryptedShareVerificationEvent, StartEncryptionKeyVerificationEvent,
 };
+use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use serde::de::DeserializeOwned;
 use std::collections::{HashMap, HashSet};
+use sui_types::base_types::{EpochId, ObjectID};
+use sui_types::event::Event;
 
 pub mod batches_manager;
 mod cryptographic_computations_orchestrator;
@@ -478,8 +478,8 @@ pub(crate) fn session_input_from_event(
                     deserialized_event,
                     &dwallet_mpc_manager.validators_data_for_network_dkg,
                 )?,
-                Some(bcs::to_bytes(&[1,2]
-                    // &dwallet_mpc_manager.node_config.class_groups_private_key,
+                Some(bcs::to_bytes(
+                    &[1, 2], // &dwallet_mpc_manager.node_config.class_groups_private_key,
                 )?),
             ))
         }

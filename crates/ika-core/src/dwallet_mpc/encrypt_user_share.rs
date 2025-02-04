@@ -7,12 +7,12 @@ use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use fastcrypto::traits::{ToFromBytes, VerifyingKey};
 use group::GroupElement;
 use homomorphic_encryption::GroupsPublicParametersAccessors;
-use sui_types::base_types::SuiAddress;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     StartEncryptedShareVerificationEvent, StartEncryptionKeyVerificationEvent,
 };
 use std::marker::PhantomData;
+use sui_types::base_types::SuiAddress;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };

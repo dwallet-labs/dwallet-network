@@ -61,11 +61,20 @@ use crate::consensus_handler::{
     ConsensusCommitInfo, SequencedConsensusTransaction, SequencedConsensusTransactionKey,
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
+use crate::dwallet_mpc::authority_name_to_party_id;
+use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
+use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
+use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
+use dwallet_classgroups_types::ClassGroupsDecryptionKey;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
+use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
+use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::MessageKind;
 use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
@@ -76,16 +85,16 @@ use ika_types::messages_consensus::{
     ConsensusTransactionKind,
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
+use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCOutputMessage};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use move_bytecode_utils::module_cache::SyncModuleCache;
+use mpc::{Weight, WeightedThresholdAccessStructure};
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
 use std::str::FromStr;
 use std::time::Duration;
-use group::PartyID;
-use mpc::{Weight, WeightedThresholdAccessStructure};
 use sui_macros::fail_point;
 use sui_storage::mutex_table::{MutexGuard, MutexTable};
 use sui_types::effects::TransactionEffects;
@@ -97,15 +106,6 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
-use dwallet_classgroups_types::ClassGroupsDecryptionKey;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
-use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCOutputMessage};
-use crate::dwallet_mpc::authority_name_to_party_id;
-use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
-use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
-use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -744,9 +744,7 @@ impl AuthorityPerEpochStore {
             .committee()
             .voting_rights
             .iter()
-            .map(|(name, weight)| {
-                Ok((authority_name_to_party_id(name, &self)?, *weight as Weight))
-            })
+            .map(|(name, weight)| Ok((authority_name_to_party_id(name, &self)?, *weight as Weight)))
             .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
 
         WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
@@ -1291,9 +1289,9 @@ impl AuthorityPerEpochStore {
         // Signatures are verified as part of the consensus payload verification in IkaTxValidator
         match &transaction.transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::LockNextCommittee(authority, _),
-                                                            ..
-                                                        }) => {
+                kind: ConsensusTransactionKind::LockNextCommittee(authority, _),
+                ..
+            }) => {
                 if transaction.sender_authority() != *authority {
                     warn!(
                         "LockNextCommittee authority {} does not match its author from consensus {}",
@@ -1303,9 +1301,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, ..),
-                                                            ..
-                                                        }) => {
+                kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, ..),
+                ..
+            }) => {
                 // When sending a `DWalletMPCSessionFailedWithMalicious`,
                 // the validator also includes its public key.
                 // Here, we verify that the public key used to sign this transaction matches
@@ -1320,9 +1318,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
-                                                            ..
-                                                        }) => {
+                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
+                ..
+            }) => {
                 // When sending an MPC output, the validator also includes its public key.
                 // Here, we verify that the public key used to sign this transaction matches
                 // the provided public key.
@@ -1336,9 +1334,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::DWalletMPCMessage(message),
-                                                            ..
-                                                        }) => {
+                kind: ConsensusTransactionKind::DWalletMPCMessage(message),
+                ..
+            }) => {
                 // When sending an MPC message, the validator also includes its public key.
                 // Here, we verify that the public key used to sign this transaction matches
                 // the provided public key.
@@ -1886,34 +1884,34 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::LockNextCommittee(..),
-                                                            ..
-                                                        }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+                kind: ConsensusTransactionKind::LockNextCommittee(..),
+                ..
+            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::DWalletMPCOutput(..),
-                                                            ..
-                                                        }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(..),
+                ..
+            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind:
-                                                            ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(
-                                                                authority_name,
-                                                                report,
-                                                            ),
-                                                            ..
-                                                        }) => {
+                kind:
+                    ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(
+                        authority_name,
+                        report,
+                    ),
+                ..
+            }) => {
                 self.save_dwallet_mpc_round_message(
                     DWalletMPCDBMessage::SessionFailedWithMaliciousParties(
                         authority_name.clone(),
                         report.clone(),
                     ),
                 )
-                    .await;
+                .await;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::DWalletMPCMessage(message),
-                                                            ..
-                                                        }) => {
+                kind: ConsensusTransactionKind::DWalletMPCMessage(message),
+                ..
+            }) => {
                 // Filter DWalletMPCMessages from the consensus output and save them in the local
                 // DB.
                 // Those messages will get processed when the dWallet MPC service reads

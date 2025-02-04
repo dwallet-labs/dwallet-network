@@ -16,9 +16,9 @@ use class_groups::{
 };
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
+use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 #[cfg(feature = "mock-class-groups")]
 use mock_class_groups::ClassGroupsProof;
-use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
 

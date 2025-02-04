@@ -3,6 +3,7 @@
 
 use crate::crypto::AuthorityName;
 use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMessage};
+use crate::messages_dwallet_mpc::{DWalletMPCMessage, MaliciousReport, SessionInfo};
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
@@ -18,10 +19,11 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use sui_types::base_types::{ConciseableName, EpochId, ObjectID, ObjectRef, SequenceNumber, SuiAddress, TransactionDigest};
+use sui_types::base_types::{
+    ConciseableName, EpochId, ObjectID, ObjectRef, SequenceNumber, SuiAddress, TransactionDigest,
+};
 use sui_types::digests::ConsensusCommitDigest;
 pub use sui_types::messages_consensus::{AuthorityIndex, TimestampMs, TransactionIndex};
-use crate::messages_dwallet_mpc::{DWalletMPCMessage, MaliciousReport, SessionInfo};
 
 // todo(omersadika): remove that and import from sui_types::messages_consensus once it u64
 /// Consensus round number.
@@ -78,12 +80,7 @@ impl Debug for ConsensusTransactionKey {
             Self::DWalletMPCMessage(message) => {
                 write!(f, "DWalletMPCMessage({:?})", message,)
             }
-            Self::DWalletMPCOutput(
-                value,
-                session_id,
-                sender_address,
-                authority,
-            ) => {
+            Self::DWalletMPCOutput(value, session_id, sender_address, authority) => {
                 write!(
                     f,
                     "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
@@ -331,7 +328,8 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::TestMessage(authority, num) => {
                 ConsensusTransactionKey::TestMessage(*authority, *num)
-            }            ConsensusTransactionKind::DWalletMPCMessage(message) => {
+            }
+            ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(message.clone())
             }
             ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {

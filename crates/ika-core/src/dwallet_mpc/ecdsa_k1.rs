@@ -2,9 +2,9 @@ use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
-use sui_types::id::ID;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use sui_types::id::ID;
 use sui_types::SUI_SYSTEM_ADDRESS;
 
 const SIGN_DATA_STRUCT_NAME: &IdentStr = ident_str!("SignData");

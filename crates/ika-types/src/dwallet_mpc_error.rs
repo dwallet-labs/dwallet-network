@@ -1,6 +1,6 @@
-use sui_types::base_types::{AuthorityName, EpochId, ObjectID};
 use dwallet_mpc_types::dwallet_mpc::DwalletNetworkMPCError;
 use group::PartyID;
+use sui_types::base_types::{EpochId, ObjectID};
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum DwalletMPCError {

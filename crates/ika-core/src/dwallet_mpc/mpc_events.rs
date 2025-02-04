@@ -15,9 +15,9 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::{StructTag, TypeTag};
-use sui_types::{base_types::SuiAddress, id::ID, SUI_SYSTEM_ADDRESS};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use sui_types::{base_types::SuiAddress, id::ID, SUI_SYSTEM_ADDRESS};
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet::StartDKGFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
