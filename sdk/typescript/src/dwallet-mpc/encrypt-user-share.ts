@@ -160,11 +160,11 @@ function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSe
 		typeof obj.session_id === 'string' &&
 		typeof obj.encrypted_share_obj_id === 'string' &&
 		typeof obj.dwallet_id === 'string' &&
-		obj.encrypted_centralized_secret_share_and_proof instanceof Uint8Array &&
+		'encrypted_centralized_secret_share_and_proof' in obj &&
 		typeof obj.encryption_key_id === 'string' &&
 		typeof obj.encryptor_address === 'string' &&
-		obj.encryptor_ed25519_pubkey instanceof Uint8Array &&
-		obj.decentralized_public_output_signature instanceof Uint8Array
+		'encryptor_ed25519_pubkey' in obj &&
+		'decentralized_public_output_signature' in obj
 	);
 }
 
