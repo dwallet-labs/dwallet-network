@@ -16,7 +16,7 @@ use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
-use crate::dwallet_mpc::sign::SignFirstParty;
+use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
@@ -370,6 +370,27 @@ impl DWalletMPCSession {
                         malicious_parties: vec![],
                     })
                     .map_err(|err| err)
+            }
+            MPCProtocolInitData::PartialSignatureVerification(event_data) => {
+                for (signature_data, hashed_message) in event_data
+                    .signature_data
+                    .iter()
+                    .zip(event_data.hashed_messages.iter())
+                {
+                    verify_partial_signature(
+                        hashed_message,
+                        &event_data.dwallet_decentralized_public_output,
+                        &signature_data.presign_output,
+                        &signature_data.message_centralized_signature,
+                        &bcs::from_bytes(&self.public_input)?,
+                        &signature_data.presign_id,
+                    )?;
+                }
+                Ok(AsynchronousRoundResult::Finalize {
+                    public_output: vec![],
+                    private_output: vec![],
+                    malicious_parties: vec![],
+                })
             }
             MPCProtocolInitData::BatchedPresign(..) | MPCProtocolInitData::BatchedSign(..) => {
                 // This case is unreachable because the batched session is handled separately.
