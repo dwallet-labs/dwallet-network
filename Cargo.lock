@@ -1780,6 +1780,7 @@ dependencies = [
  "class_groups",
  "group 0.1.0",
  "mpc",
+ "serde",
  "twopc_mpc",
 ]
 

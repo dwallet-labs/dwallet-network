@@ -10,6 +10,9 @@ mpc.workspace = true
 group.workspace = true
 bcs = "0.1.6"
 base64 = "0.22.1"
+serde.workspace = true
+schemars.workspace = true
+anyhow.workspace = true
 
 [lints]
 workspace = true
