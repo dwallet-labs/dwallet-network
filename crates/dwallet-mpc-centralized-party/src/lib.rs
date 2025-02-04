@@ -27,7 +27,7 @@ use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
-use class_groups_constants::protocol_public_parameters;
+use class_groups_constants::{protocol_public_parameters, DWalletPublicKeys};
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -115,7 +115,7 @@ pub fn create_dkg_output(
     key_scheme: u8,
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
-) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_public_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
         bcs::from_bytes(&decentralized_first_round_public_output)
             .context("Failed to deserialize decentralized first round output")?;
@@ -144,11 +144,20 @@ pub fn create_dkg_output(
     // The secret (private) key share returned from this function should never be sent,
     // and should always be kept private.
     let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
-
+    let public_keys = bcs::to_bytes(&DWalletPublicKeys {
+        centralized_public_share: bcs::to_bytes(&round_result.public_output.public_key_share)?,
+        decentralized_public_share: bcs::to_bytes(
+            &round_result
+                .public_output
+                .decentralized_party_public_key_share,
+        )?,
+        public_key: bcs::to_bytes(&round_result.public_output.public_key)?,
+    })?;
     Ok((
         public_key_share_and_proof,
         public_output,
         centralized_secret_output,
+        public_keys,
     ))
 }
 
