@@ -9,6 +9,8 @@ use crate::crypto::{
 };
 use crate::digests::MessageDigest;
 use crate::messages_consensus::MovePackageDigest;
+use crate::messages_dwallet_mpc::SessionInfo;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use enum_dispatch::enum_dispatch;
 use fastcrypto::{encoding::Base64, hash::HashFunction};
 use ika_protocol_config::ProtocolConfig;
@@ -83,6 +85,8 @@ pub enum MessageKind {
     /// Test message for checkpoints.
     TestMessage(u32, u64),
     // .. more action types go here
+    DwalletMPCOutput(SessionInfo, Vec<u8>),
+    DwalletMPCNetworkDKGOutput(DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares),
 }
 
 impl MessageKind {
@@ -95,6 +99,8 @@ impl MessageKind {
             Self::InitiateProcessMidEpoch => "InitiateProcessMidEpoch",
             Self::EndOfEpoch(_) => "EndOfEpoch",
             Self::TestMessage(_, _) => "TestMessage",
+            MessageKind::DwalletMPCOutput(_, _) => "DwalletMPCOutput",
+            MessageKind::DwalletMPCNetworkDKGOutput(_, _) => "DwalletMPCNetworkDKGOutput",
         }
     }
 
@@ -126,6 +132,16 @@ impl Display for MessageKind {
                     writer,
                     "MessageKind : TestMessage authority: {}, num: {}",
                     authority, num
+                )?;
+            }
+            MessageKind::DwalletMPCOutput(session_info, _) => {
+                writeln!(writer, "MessageKind : DwalletMPCOutput {:?}", session_info)?;
+            }
+            MessageKind::DwalletMPCNetworkDKGOutput(key_scheme, _) => {
+                writeln!(
+                    writer,
+                    "MessageKind : DwalletMPCNetworkDKGOutput {:?}",
+                    key_scheme
                 )?;
             }
         }

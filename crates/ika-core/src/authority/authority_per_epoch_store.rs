@@ -64,7 +64,9 @@ use crate::consensus_handler::{
 use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
-use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use crate::dwallet_mpc::mpc_outputs_verifier::{
+    DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
+};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
@@ -85,7 +87,9 @@ use ika_types::messages_consensus::{
     ConsensusTransactionKind,
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
-use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCOutputMessage};
+use ika_types::messages_dwallet_mpc::{
+    DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
+};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mpc::{Weight, WeightedThresholdAccessStructure};
@@ -1892,9 +1896,16 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(..),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(_, session_info, output),
                 ..
-            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+            }) => {
+                self.process_dwallet_mpc_output(
+                    certificate_author.clone(),
+                    session_info.clone(),
+                    output.clone(),
+                )
+                .await
+            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind:
                     ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(
@@ -1981,6 +1992,87 @@ impl AuthorityPerEpochStore {
             ),
             SequencedConsensusTransactionKind::System(system_transaction) => {
                 Ok(self.process_consensus_system_transaction(system_transaction))
+            }
+        }
+    }
+
+    async fn process_dwallet_mpc_output(
+        &self,
+        origin_authority: AuthorityName,
+        session_info: SessionInfo,
+        output: Vec<u8>,
+    ) -> IkaResult<ConsensusCertificateResult> {
+        self.save_dwallet_mpc_output(DWalletMPCOutputMessage {
+            output: output.clone(),
+            authority: origin_authority.clone(),
+            session_info: session_info.clone(),
+        })
+        .await;
+
+        let authority_index = authority_name_to_party_id(&origin_authority, &self);
+        let mut dwallet_mpc_verifier = self.get_dwallet_mpc_outputs_verifier().await;
+        let output_verification_result = dwallet_mpc_verifier
+            .try_verify_output(&output, &session_info, origin_authority)
+            .await
+            .unwrap_or_else(|e| {
+                error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
+                OutputVerificationResult {
+                    result: OutputResult::Malicious,
+                    malicious_actors: vec![origin_authority],
+                }
+            });
+
+        let mut manager = self.get_dwallet_mpc_manager().await;
+        manager.flag_authorities_as_malicious(&output_verification_result.malicious_actors);
+
+        match output_verification_result.result {
+            OutputResult::FirstQuorumReached => {
+                self.save_dwallet_mpc_completed_session(session_info.session_id)
+                    .await;
+                // Output result of a single Protocol from the batch session.
+                if session_info.mpc_round.is_part_of_batch() {
+                    let mut batches_manager = self.get_dwallet_mpc_batches_manager().await;
+                    batches_manager.store_verified_output(session_info.clone(), output.clone())?;
+                    batches_manager.is_batch_completed(&session_info)?;
+                    // Todo (yael) return ika transaction
+                    Ok(
+                        self.process_consensus_system_transaction(&MessageKind::DwalletMPCOutput(
+                            session_info,
+                            output,
+                        )),
+                    )
+                } else {
+                    // Extract the final network DKG transaction parameters from
+                    // the verified output.
+                    // We can't preform this within the execution engine,
+                    // as it requires the class-groups crate from crypto-private lib.
+                    if let MPCProtocolInitData::NetworkDkg(key_scheme, _) = session_info.mpc_round {
+                        let weighted_threshold_access_structure =
+                            self.get_weighted_threshold_access_structure()?;
+
+                        let key = crate::dwallet_mpc::network_dkg::dwallet_mpc_network_key_from_session_output(
+                            self.epoch(),
+                            key_scheme,
+                            &weighted_threshold_access_structure,
+                            &output,
+                        )?;
+
+                        Ok(self.process_consensus_system_transaction(
+                            &MessageKind::DwalletMPCNetworkDKGOutput(key_scheme, key),
+                        ))
+                    } else {
+                        Ok(self.process_consensus_system_transaction(
+                            &MessageKind::DwalletMPCOutput(session_info, output),
+                        ))
+                    }
+                }
+            }
+            OutputResult::NotEnoughVotes => Ok(ConsensusCertificateResult::ConsensusMessage),
+            OutputResult::AlreadyCommitted | OutputResult::Malicious => {
+                // Ignore this output,
+                // since there is nothing to do with it,
+                // at this stage.
+                Ok(ConsensusCertificateResult::IgnoredSystem)
             }
         }
     }
