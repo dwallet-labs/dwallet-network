@@ -340,9 +340,9 @@ pub fn encrypt_secret_key_share_and_prove(
 /// DKG output centralized_party_public_key_share.
 pub fn verify_secret_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> anyhow::Result<bool> {
     let expected_public_key = cg_secp256k1_public_key_share_from_secret_share(secret_share)?;
-    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
+    let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
         bcs::from_bytes(&dkg_output)?;
-    Ok(dkg_output.public_key_share == expected_public_key.value())
+    Ok(dkg_output.centralized_party_public_key_share == expected_public_key.value())
 }
 
 /// Decrypts the given encrypted user share using the given decryption key.
