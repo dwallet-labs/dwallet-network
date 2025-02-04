@@ -3,7 +3,11 @@
 
 use std::net::{IpAddr, SocketAddr};
 
-use fastcrypto::traits::KeyPair;
+use dwallet_classgroups_types::{
+    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
+    ClassGroupsPublicKeyAndProofBytes,
+};
+use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_config::local_ip_utils;
 use ika_types::crypto::{
     generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,
@@ -21,6 +25,7 @@ pub const DEFAULT_NUMBER_OF_AUTHORITIES: usize = 4;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ValidatorInitializationConfig {
     pub name: Option<String>,
+    pub class_groups_key_pair_and_proof: ClassGroupsKeyPairAndProof,
     #[serde(default = "default_bls12381_key_pair")]
     pub key_pair: AuthorityKeyPair,
     #[serde(default = "default_ed25519_key_pair")]
@@ -44,16 +49,17 @@ pub struct ValidatorInitializationConfig {
 impl ValidatorInitializationConfig {
     pub fn to_validator_initialization_metadata(&self) -> ValidatorInitializationMetadata {
         let name = self.name.clone().unwrap_or("".to_string());
+        let class_groups_public_key_and_proof = self.class_groups_key_pair_and_proof.public_bytes();
         let protocol_public_key: AuthorityPublicKeyBytes = self.key_pair.public().into();
         let account_key: PublicKey = self.account_key_pair.public();
         let network_public_key: NetworkPublicKey = self.network_key_pair.public().clone();
-        // Todo (yael) : add class groups key and change worker (key) name to consensus
         let worker_public_key: NetworkPublicKey = self.worker_key_pair.public().clone();
         let network_address = self.network_address.clone();
         let consensus_address = self.consensus_address.clone();
 
         ValidatorInitializationMetadata {
             name,
+            class_groups_public_key_and_proof,
             protocol_public_key,
             consensus_public_key: worker_public_key,
             network_public_key,
@@ -77,6 +83,7 @@ impl ValidatorInitializationConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ValidatorInitializationMetadata {
     pub name: String,
+    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
     pub account_address: SuiAddress,
     pub protocol_public_key: AuthorityPublicKeyBytes,
     pub consensus_public_key: NetworkPublicKey,
@@ -185,6 +192,15 @@ impl ValidatorInitializationConfigBuilder {
         let computation_price = self
             .computation_price
             .unwrap_or(DEFAULT_VALIDATOR_COMPUTATION_PRICE);
+        // Safe to unwrap because the key is 32 bytes.
+        let class_groups_seed: [u8; 32] = protocol_key_pair
+            .copy()
+            .private()
+            .as_bytes()
+            .try_into()
+            .unwrap();
+        let class_groups_key_pair_and_proof =
+            generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
 
         let (worker_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
             (get_key_pair_from_rng(rng).1, get_key_pair_from_rng(rng).1);
@@ -213,13 +229,13 @@ impl ValidatorInitializationConfigBuilder {
 
         ValidatorInitializationConfig {
             key_pair: protocol_key_pair,
+            class_groups_key_pair_and_proof,
             worker_key_pair,
             account_key_pair: account_key_pair.into(),
             network_key_pair,
             network_address,
             p2p_address,
             p2p_listen_address,
-
             metrics_address: metrics_address.to_socket_addr().unwrap(),
             computation_price,
             commission_rate: DEFAULT_COMMISSION_RATE,

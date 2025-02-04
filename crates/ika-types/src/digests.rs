@@ -643,8 +643,6 @@ impl std::str::FromStr for MessageDigest {
     }
 }
 
-// Todo (Yael): !!!!!Check if we need this!!!!!
-
 /// Representation of a DWalletMPCMessage's digest
 #[derive(
     Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,

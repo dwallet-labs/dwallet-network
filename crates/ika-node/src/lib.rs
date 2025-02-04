@@ -822,8 +822,7 @@ impl IkaNode {
         let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(epoch_store.clone());
 
         // Start the dWallet MPC manager on epoch start.
-        // Todo (yael): add the class class groups key to the config
-        // epoch_store.set_dwallet_mpc_network_keys(config.class_groups_private_key)?;
+        epoch_store.set_dwallet_mpc_network_keys(config.class_groups_private_key)?;
         // This verifier is in sync with the consensus,
         // used to verify outputs before sending a system TX to store them.
         epoch_store

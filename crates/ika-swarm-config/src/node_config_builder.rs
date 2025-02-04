@@ -124,6 +124,7 @@ impl ValidatorConfigBuilder {
             ..Default::default()
         };
         NodeConfig {
+            class_groups_private_key: validator.class_groups_key_pair_and_proof.decryption_key(),
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator.key_pair.copy()),
             network_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
                 validator.network_key_pair.copy(),
@@ -319,6 +320,9 @@ impl FullnodeConfigBuilder {
         let notifier_client_key_pair = notifier_client_key_pair.map(|k| KeyPairWithPath::new(k));
 
         NodeConfig {
+            class_groups_private_key: validator_config
+                .class_groups_key_pair_and_proof
+                .decryption_key(),
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator_config.key_pair),
             account_key_pair: KeyPairWithPath::new(validator_config.account_key_pair),
             worker_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(

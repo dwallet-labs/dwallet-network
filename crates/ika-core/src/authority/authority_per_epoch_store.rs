@@ -2034,7 +2034,6 @@ impl AuthorityPerEpochStore {
                     let mut batches_manager = self.get_dwallet_mpc_batches_manager().await;
                     batches_manager.store_verified_output(session_info.clone(), output.clone())?;
                     batches_manager.is_batch_completed(&session_info)?;
-                    // Todo (yael) return ika transaction
                     Ok(
                         self.process_consensus_system_transaction(&MessageKind::DwalletMPCOutput(
                             session_info,

@@ -30,6 +30,7 @@ pub use sui_config::node::KeyPairWithPath;
 use sui_types::crypto::SuiKeyPair;
 use sui_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
 
+use dwallet_classgroups_types::ClassGroupsDecryptionKey;
 use ika_types::crypto::{
     get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, EncodeDecodeBase64,
 };
@@ -102,6 +103,7 @@ pub struct SuiConnectorConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
+    pub class_groups_private_key: ClassGroupsDecryptionKey,
     #[serde(default = "default_authority_key_pair")]
     pub protocol_key_pair: AuthorityKeyPairWithPath,
     #[serde(default = "default_key_pair")]

@@ -164,18 +164,6 @@ pub struct DWalletMPCMessage {
     pub round_number: usize,
 }
 
-// Todo *Yael): check if we even need this any more, how do we submit transactions?
-// impl Message for DWalletMPCOutput {
-//     type DigestType = DWalletMPCOutputDigest;
-//     // Todo (Yael): Check what value should be here.
-//     const SCOPE: IntentScope = IntentScope::TransactionData;
-//     // const SCOPE: IntentScope = IntentScope::DWalletMPCOutput;
-//
-//     fn digest(&self) -> Self::DigestType {
-//         DWalletMPCOutputDigest::new(default_hash(self))
-//     }
-// }
-
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {

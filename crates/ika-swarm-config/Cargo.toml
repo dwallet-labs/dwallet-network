@@ -10,6 +10,7 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+dwallet-classgroups-types.workspace = true
 anemo.workspace = true
 anyhow.workspace = true
 bcs.workspace = true
