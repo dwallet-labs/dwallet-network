@@ -187,15 +187,22 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 pub fn advance_centralized_sign_party(
     protocol_public_parameters: Vec<u8>,
     key_scheme: u8,
-    centralized_party_dkg_output: Vec<u8>,
+    decentralized_party_dkg_output: Vec<u8>,
     centralized_party_secret_key_share: Vec<u8>,
     presigns: Vec<Vec<u8>>,
     messages: Vec<Vec<u8>>,
     hash_type: u8,
     presign_session_ids: Vec<String>,
 ) -> anyhow::Result<Vec<SignedMessages>> {
-    let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGPublicOutput =
-        bcs::from_bytes(&centralized_party_dkg_output)?;
+    let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_output)?;
+    let centralized_public_output = twopc_mpc::class_groups::DKGCentralizedPartyOutput::<
+        { secp256k1::SCALAR_LIMBS },
+        secp256k1::GroupElement,
+    > {
+        public_key_share: decentralized_output.centralized_party_public_key_share,
+        public_key: decentralized_output.public_key,
+        decentralized_party_public_key_share: decentralized_output.public_key_share,
+    };
     let signed_messages: Vec<_> = messages
         .iter()
         .enumerate()
@@ -210,7 +217,7 @@ pub fn advance_centralized_sign_party(
                 <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedPartyPublicInput::from(
                     (
                         hashed_message,
-                        centralized_party_dkg_output.clone(),
+                        centralized_public_output.clone(),
                         presign,
                         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
                             protocol_public_parameters.clone(),
@@ -226,7 +233,7 @@ pub fn advance_centralized_sign_party(
                 &centralized_party_public_input,
                 &mut OsRng,
             )
-            .context("advance() failed on the SignCentralizedParty")?;
+                .context("advance() failed on the SignCentralizedParty")?;
 
             Ok(bcs::to_bytes(&round_result.outgoing_message)?)
         })
