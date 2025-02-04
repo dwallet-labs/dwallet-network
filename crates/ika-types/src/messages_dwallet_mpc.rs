@@ -191,7 +191,7 @@ pub struct StartEncryptedShareVerificationEvent {
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     /// The public output of the centralized party,
     /// belongs to the dWallet that its centralized secret share is being encrypted.
-    pub centralized_public_output: Vec<u8>,
+    pub decentralized_public_output: Vec<u8>,
     /// The signature of the dWallet `centralized_public_output`,
     /// signed by the secret key that corresponds to `encryptor_ed25519_pubkey`.
     pub centralized_public_output_signature: Vec<u8>,

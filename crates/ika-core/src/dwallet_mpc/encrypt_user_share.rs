@@ -2,7 +2,7 @@ use class_groups::{
     CiphertextSpaceGroupElement, CiphertextSpaceValue, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
-use class_groups_constants::protocol_public_parameters;
+use class_groups_constants::{protocol_public_parameters, public_keys_from_dkg_output};
 use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use fastcrypto::traits::{ToFromBytes, VerifyingKey};
 use group::GroupElement;
@@ -36,7 +36,7 @@ pub(crate) fn verify_encrypted_share(
     verify_dwallet_public_output_signature(&verification_data)?;
     verify_centralized_secret_key_share_proof(
         &verification_data.encrypted_centralized_secret_share_and_proof,
-        &verification_data.centralized_public_output,
+        &verification_data.decentralized_public_output,
         &verification_data.encryption_key,
     )
     .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
@@ -75,8 +75,14 @@ fn verify_dwallet_public_output_signature(
         &verification_data.centralized_public_output_signature,
     )
     .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
+    let public_keys = &bcs::to_bytes(
+        &public_keys_from_dkg_output(bcs::from_bytes(
+            &verification_data.decentralized_public_output,
+        )?)
+            .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
+    )?;
     public_key
-        .verify(&verification_data.centralized_public_output, &signature)
+        .verify(&public_keys, &signature)
         .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     Ok(())
 }
