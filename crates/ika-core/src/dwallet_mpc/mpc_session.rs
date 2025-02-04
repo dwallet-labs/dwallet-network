@@ -279,9 +279,9 @@ impl DWalletMPCSession {
                     public_input,
                     (),
                 )?;
-                if let AsynchronousRoundResult::Finalize { .. } = &result {
+                if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
                     verify_encrypted_share(&StartEncryptedShareVerificationEvent {
-                        decentralized_public_output: event_data.decentralized_public_output.clone(),
+                        decentralized_public_output: public_output.clone(),
                         encrypted_centralized_secret_share_and_proof: event_data
                             .encrypted_centralized_secret_share_and_proof
                             .clone(),
