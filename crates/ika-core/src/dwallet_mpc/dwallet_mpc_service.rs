@@ -45,57 +45,57 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
-        // loop {
-        //     match self.exit.has_changed() {
-        //         Ok(true) | Err(_) => {
-        //             break;
-        //         }
-        //         Ok(false) => (),
-        //     };
-        //     tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MS)).await;
-        //     let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
-        //     let Ok(tables) = self.epoch_store.tables() else {
-        //         error!("Failed to load DB tables from epoch store");
-        //         continue;
-        //     };
-        //     let Ok(completed_sessions) = self
-        //         .epoch_store
-        //         .load_dwallet_mpc_completed_sessions_from_round(self.last_read_consensus_round + 1)
-        //         .await
-        //     else {
-        //         error!("Failed to load DWallet MPC events from the local DB");
-        //         continue;
-        //     };
-        //     for session_id in completed_sessions {
-        //         manager.mpc_sessions.get_mut(&session_id).map(|session| {
-        //             session.status = MPCSessionStatus::Finished;
-        //         });
-        //     }
-        //     let Ok(events) = self
-        //         .epoch_store
-        //         .load_dwallet_mpc_events_from_round(self.last_read_consensus_round + 1)
-        //         .await
-        //     else {
-        //         error!("Failed to load DWallet MPC events from the local DB");
-        //         continue;
-        //     };
-        //     for event in events {
-        //         manager.handle_dwallet_db_event(event).await;
-        //     }
-        //     let new_dwallet_messages_iter = tables
-        //         .dwallet_mpc_messages
-        //         .iter_with_bounds(Some(self.last_read_consensus_round + 1), None);
-        //     let mut new_messages = vec![];
-        //     for (round, messages) in new_dwallet_messages_iter {
-        //         self.last_read_consensus_round = round;
-        //         new_messages.extend(messages);
-        //     }
-        //     for message in new_messages {
-        //         manager.handle_dwallet_db_message(message).await;
-        //     }
-        //     manager
-        //         .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
-        //         .await;
-        // }
+        loop {
+            match self.exit.has_changed() {
+                Ok(true) | Err(_) => {
+                    break;
+                }
+                Ok(false) => (),
+            };
+            tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MS)).await;
+            let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
+            let Ok(tables) = self.epoch_store.tables() else {
+                error!("Failed to load DB tables from epoch store");
+                continue;
+            };
+            let Ok(completed_sessions) = self
+                .epoch_store
+                .load_dwallet_mpc_completed_sessions_from_round(self.last_read_consensus_round + 1)
+                .await
+            else {
+                error!("Failed to load DWallet MPC events from the local DB");
+                continue;
+            };
+            for session_id in completed_sessions {
+                manager.mpc_sessions.get_mut(&session_id).map(|session| {
+                    session.status = MPCSessionStatus::Finished;
+                });
+            }
+            let Ok(events) = self
+                .epoch_store
+                .load_dwallet_mpc_events_from_round(self.last_read_consensus_round + 1)
+                .await
+            else {
+                error!("Failed to load DWallet MPC events from the local DB");
+                continue;
+            };
+            for event in events {
+                manager.handle_dwallet_db_event(event).await;
+            }
+            let new_dwallet_messages_iter = tables
+                .dwallet_mpc_messages
+                .iter_with_bounds(Some(self.last_read_consensus_round + 1), None);
+            let mut new_messages = vec![];
+            for (round, messages) in new_dwallet_messages_iter {
+                self.last_read_consensus_round = round;
+                new_messages.extend(messages);
+            }
+            for message in new_messages {
+                manager.handle_dwallet_db_message(message).await;
+            }
+            manager
+                .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
+                .await;
+        }
     }
 }

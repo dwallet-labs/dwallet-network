@@ -403,12 +403,11 @@ impl DWalletMPCManager {
     /// We parallelize the advances with `Rayon` to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> IkaResult {
         let mpc_network_key_status = DwalletMPCNetworkKeysStatus::Ready(HashSet::new());
-        // self
-        //     .epoch_store()?
-        //     .dwallet_mpc_network_keys
-        //     .get()
-        //     .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-        //     .status()?;
+        self.epoch_store()?
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .status()?;
         let sessions_ready_to_advance: Vec<DWalletMPCSession> = self
             .mpc_sessions
             .iter_mut()
