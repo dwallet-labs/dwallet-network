@@ -72,7 +72,7 @@ fn verify_dwallet_public_output_signature(
         return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
     }
     let signature = <Ed25519Signature as ToFromBytes>::from_bytes(
-        &verification_data.centralized_public_output_signature,
+        &verification_data.decentralized_public_output_signature,
     )
     .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     let public_keys = &bcs::to_bytes(
