@@ -22,5 +22,6 @@ mod stake_aggregator;
 pub mod storage;
 
 pub mod sui_connector;
+pub mod dwallet_mpc;
 
 pub mod runtime;

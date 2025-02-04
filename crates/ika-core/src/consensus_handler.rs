@@ -417,6 +417,12 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::EndOfPublish(_) => "end_of_publish",
         ConsensusTransactionKind::CapabilityNotificationV1(_) => "capability_notification_v1",
         ConsensusTransactionKind::TestMessage(_, _) => "test_message",
+        ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
+        ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
+        ConsensusTransactionKind::LockNextCommittee(..) => "lock_next_committee",
+        ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..) => {
+            "dwallet_mpc_session_failed_with_malicious"
+        }
     }
 }
 

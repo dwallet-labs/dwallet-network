@@ -2861,6 +2861,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 
 [[package]]
+name = "dwallet-classgroups-types"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "class_groups",
+ "crypto-bigint 0.5.5",
+ "fastcrypto",
+ "group 0.1.0",
+ "ika-types",
+ "rand_chacha 0.3.1",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
 name = "dwallet-mpc-centralized-party"
 version = "1.0.0"
 dependencies = [
@@ -4924,6 +4941,7 @@ dependencies = [
  "dashmap",
  "derive_more 1.0.0",
  "diffy",
+ "dwallet-classgroups-types",
  "dwallet-mpc-types",
  "either",
  "enum_dispatch",
@@ -4976,6 +4994,7 @@ dependencies = [
  "reqwest 0.12.12",
  "roaring",
  "rstest 0.16.0",
+ "schemars",
  "scopeguard",
  "serde",
  "serde-reflection",

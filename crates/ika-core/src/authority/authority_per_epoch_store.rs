@@ -83,16 +83,29 @@ use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
 use std::str::FromStr;
+use std::time::Duration;
+use group::PartyID;
+use mpc::{Weight, WeightedThresholdAccessStructure};
 use sui_macros::fail_point;
 use sui_storage::mutex_table::{MutexGuard, MutexTable};
 use sui_types::effects::TransactionEffects;
 use sui_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
 };
+use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemState;
 use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
+use dwallet_classgroups_types::ClassGroupsDecryptionKey;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
+use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCOutputMessage};
+use crate::dwallet_mpc::authority_name_to_party_id;
+use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
+use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
+use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -327,6 +340,18 @@ pub struct AuthorityPerEpochStore {
 
     /// Chain identifier
     chain_identifier: ChainIdentifier,
+
+    /// State machine managing dWallet MPC outputs.
+    /// This state machine is used to store outputs and emit ones
+    /// where the quorum of votes is valid.
+    dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
+    dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
+    pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
+    dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
+    dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
+    dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
+    dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
+    dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -407,6 +432,18 @@ pub struct AuthorityEpochTables {
 
     /// When transaction is executed via checkpoint executor, we store association here
     pub(crate) executed_transactions_to_checkpoint: DBMap<MessageDigest, CheckpointSequenceNumber>,
+
+    /// Holds all the DWallet MPC related messages that have been
+    /// received since the beginning of the epoch.
+    /// The key is the consensus round number,
+    /// the value is the dWallet-mpc messages that have been received in that
+    /// round.
+    pub(crate) dwallet_mpc_messages: DBMap<u64, Vec<DWalletMPCDBMessage>>,
+    pub(crate) dwallet_mpc_outputs: DBMap<u64, Vec<DWalletMPCOutputMessage>>,
+    // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
+    // pub struct SessionID([u8; AccountAddress::LENGTH]);
+    pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<ObjectID>>,
+    pub(crate) dwallet_mpc_events: DBMap<u64, Vec<DWalletMPCEvent>>,
 }
 
 fn signed_transactions_table_default_config() -> DBOptions {
@@ -582,10 +619,262 @@ impl AuthorityPerEpochStore {
             epoch_start_configuration,
             executed_in_epoch_table_enabled: once_cell::sync::OnceCell::new(),
             chain_identifier,
+            dwallet_mpc_outputs_verifier: OnceCell::new(),
+            dwallet_mpc_batches_manager: OnceCell::new(),
+            dwallet_mpc_round_messages: tokio::sync::Mutex::new(Vec::new()),
+            dwallet_mpc_round_outputs: tokio::sync::Mutex::new(Vec::new()),
+            dwallet_mpc_round_events: tokio::sync::Mutex::new(Vec::new()),
+            dwallet_mpc_round_completed_sessions: tokio::sync::Mutex::new(Vec::new()),
+            dwallet_mpc_manager: OnceCell::new(),
+            dwallet_mpc_network_keys: OnceCell::new(),
         });
 
         s.update_buffer_stake_metric();
         s
+    }
+
+    /// Saves a DWallet MPC message in the `round messages`.
+    /// The `round messages` are later being stored to the on-disk DB to allow state sync.
+    pub(crate) async fn save_dwallet_mpc_round_message(&self, message: DWalletMPCDBMessage) {
+        let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
+        dwallet_mpc_round_messages.push(message.clone());
+    }
+
+    /// Saves a DWallet MPC output in the round messages
+    /// The round outputs are later being stored to the on-disk DB to allow state sync.
+    pub(crate) async fn save_dwallet_mpc_output(&self, output: DWalletMPCOutputMessage) {
+        let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_outputs.lock().await;
+        dwallet_mpc_round_outputs.push(output.clone());
+    }
+
+    /// Loads the DWallet MPC events from the given mystecity round.
+    pub(crate) async fn load_dwallet_mpc_events_from_round(
+        &self,
+        round: Round,
+    ) -> IkaResult<Vec<DWalletMPCEvent>> {
+        Ok(self
+            .tables()?
+            .dwallet_mpc_events
+            .iter_with_bounds(Some(round), None)
+            .map(|(_, events)| events)
+            .flatten()
+            .collect())
+    }
+
+    /// Loads the DWallet MPC completed sessions from the given mystecity round.
+    pub(crate) async fn load_dwallet_mpc_completed_sessions_from_round(
+        &self,
+        round: Round,
+    ) -> IkaResult<Vec<ObjectID>> {
+        Ok(self
+            .tables()?
+            .dwallet_mpc_completed_sessions
+            .iter_with_bounds(Some(round), None)
+            .map(|(_, events)| events)
+            .flatten()
+            .collect())
+    }
+
+    /// Saves a DWallet MPC event in the round events
+    /// The round events are later being stored to the on-disk DB to allow state sync.
+    pub(crate) async fn save_dwallet_mpc_event(&self, event: DWalletMPCEvent) {
+        let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_events.lock().await;
+        dwallet_mpc_round_outputs.push(event);
+    }
+
+    /// Saves a DWallet MPC completed session in the round completed sessions
+    /// The round completed sessions are later being stored to the on-disk DB to allow state sync.
+    pub(crate) async fn save_dwallet_mpc_completed_session(&self, session_id: ObjectID) {
+        let mut dwallet_mpc_round_completed_sessions =
+            self.dwallet_mpc_round_completed_sessions.lock().await;
+        dwallet_mpc_round_completed_sessions.push(session_id);
+    }
+
+    /// A function to initiate the [`DWalletMPCManager`] when a new epoch starts.
+    pub fn set_dwallet_mpc_manager(&self, sender: DWalletMPCManager) -> IkaResult<()> {
+        if self
+            .dwallet_mpc_manager
+            .set(tokio::sync::Mutex::new(sender))
+            .is_err()
+        {
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_batches_manager` called more than once; this should never happen");
+        }
+        Ok(())
+    }
+
+    /// A function to initiate the [`DWalletMPCBatchesManager`] when a new epoch starts.
+    pub fn set_dwallet_mpc_batches_manager(
+        &self,
+        batches_manager: DWalletMPCBatchesManager,
+    ) -> IkaResult<()> {
+        if self
+            .dwallet_mpc_batches_manager
+            .set(tokio::sync::Mutex::new(batches_manager))
+            .is_err()
+        {
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_batches_manager` called more than once; this should never happen");
+        }
+        Ok(())
+    }
+
+    /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
+    /// This manager handles storing all the valid outputs of a batched dWallet MPC session,
+    /// and writes them to the chain once all the batch outputs are ready.
+    pub fn set_dwallet_mpc_outputs_verifier(
+        &self,
+        verifier: DWalletMPCOutputsVerifier,
+    ) -> IkaResult<()> {
+        if self
+            .dwallet_mpc_outputs_verifier
+            .set(tokio::sync::Mutex::new(verifier))
+            .is_err()
+        {
+            error!(
+                "AuthorityPerEpochStore: `set_dwallet_mpc_outputs_verifier` called more than once; this should never happen"
+            );
+        }
+        Ok(())
+    }
+
+    pub fn get_weighted_threshold_access_structure(
+        &self,
+    ) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
+        let quorum_threshold = self.committee().quorum_threshold();
+        let weighted_parties: HashMap<PartyID, Weight> = self
+            .committee()
+            .voting_rights
+            .iter()
+            .map(|(name, weight)| {
+                Ok((authority_name_to_party_id(name, &self)?, *weight as Weight))
+            })
+            .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
+
+        WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
+            .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
+    }
+
+    /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
+    pub fn set_dwallet_mpc_network_keys(
+        &self,
+        class_groups_decryption_key: ClassGroupsDecryptionKey,
+    ) -> IkaResult<()> {
+        if self
+            .dwallet_mpc_network_keys
+            .set(DwalletMPCNetworkKeyVersions::new(
+                self,
+                &self.get_weighted_threshold_access_structure()?,
+                class_groups_decryption_key,
+            ))
+            .is_err()
+        {
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
+        }
+        Ok(())
+    }
+
+    /// Retrieves the decryption key shares for the current epoch if they exist in the system state.
+    ///
+    /// The data is sourced from the epoch's initial system state.
+    /// The returned value is a map where:
+    /// - The key represents the key scheme (e.g., Secp256k1, Ristretto, etc.).
+    /// - The value is a vector of [`NetworkDecryptionKeyShares`],
+    ///   which contains all versions of the encrypted decryption key shares.
+    pub(crate) fn load_decryption_key_shares_from_system_state(
+        &self,
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<NetworkDecryptionKeyShares>>>
+    {
+        // let decryption_key_shares = match self.epoch_start_state() {
+        //     EpochStartSystem::V1(data) => data.get_decryption_key_shares(),
+        // }
+        //     .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+        //     .contents
+        //     .into_iter()
+        //     .map(|entry| {
+        //         Ok((
+        //             DWalletMPCNetworkKeyScheme::try_from(entry.key)?,
+        //             entry.value,
+        //         ))
+        //     })
+        //     .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
+        //
+        // Ok(decryption_key_shares)
+        Ok(HashMap::new())
+    }
+
+    /// Retrieves the *running validator's* latest decryption key shares for each key scheme
+    /// if they exist in the system state.
+    ///
+    /// The data is sourced from the epoch's initial system state.
+    /// The returned value is a map where:
+    /// - The key represents the key scheme.
+    /// - The value is a `Vec<u8>`, containing the decryption key shares for the validator.
+    pub(crate) fn load_validator_decryption_key_shares_from_system_state(
+        &self,
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<Vec<u8>>>> {
+        let decryption_key_shares = self.load_decryption_key_shares_from_system_state()?;
+        decryption_key_shares
+            .into_iter()
+            .map(|(key_type, encryption_shares)| {
+                let shares = encryption_shares
+                    .iter()
+                    .map(|share| {
+                        // TODO (#382): Decrypt the decryption key share
+                        Vec::new()
+                    })
+                    .collect();
+                Ok((key_type, shares))
+            })
+            .collect()
+    }
+
+    /// Return the [`DWalletMPCOutputsVerifier`].
+    /// Uses a Mutex because the instance is initialized from a different thread.
+    pub async fn get_dwallet_mpc_outputs_verifier(
+        &self,
+    ) -> tokio::sync::MutexGuard<DWalletMPCOutputsVerifier> {
+        loop {
+            match self.dwallet_mpc_outputs_verifier.get() {
+                Some(dwallet_mpc_outputs_verifier) => {
+                    return dwallet_mpc_outputs_verifier.lock().await
+                }
+                None => {
+                    error!("failed to get the DWalletMPCOutputsVerifier, retrying...");
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+            }
+        }
+    }
+
+    /// Return the current epoch's [`DWalletMPCBatchesManager`].
+    /// This manager handles storing all the valid outputs of a batched dWallet MPC sessions,
+    /// and writes them to the chain at once when all the batch outputs are ready.
+    pub async fn get_dwallet_mpc_batches_manager(
+        &self,
+    ) -> tokio::sync::MutexGuard<DWalletMPCBatchesManager> {
+        loop {
+            match self.dwallet_mpc_batches_manager.get() {
+                Some(dwallet_mpc_batches_manager) => {
+                    return dwallet_mpc_batches_manager.lock().await
+                }
+                None => {
+                    error!("failed to get the DWallet Batches Manager, retrying...");
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+            }
+        }
+    }
+
+    /// Return the current epoch's [`DWalletMPCManager`].
+    pub async fn get_dwallet_mpc_manager(&self) -> tokio::sync::MutexGuard<DWalletMPCManager> {
+        loop {
+            match self.dwallet_mpc_manager.get() {
+                Some(dwallet_mpc_manager) => return dwallet_mpc_manager.lock().await,
+                None => {
+                    error!("failed to get the DWallet MPC Manager, retrying...");
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+            }
+        }
     }
 
     pub fn tables(&self) -> IkaResult<Arc<AuthorityEpochTables>> {
@@ -1001,6 +1290,68 @@ impl AuthorityPerEpochStore {
         }
         // Signatures are verified as part of the consensus payload verification in IkaTxValidator
         match &transaction.transaction {
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                                                            kind: ConsensusTransactionKind::LockNextCommittee(authority, _),
+                                                            ..
+                                                        }) => {
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "LockNextCommittee authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                                                            kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, ..),
+                                                            ..
+                                                        }) => {
+                // When sending a `DWalletMPCSessionFailedWithMalicious`,
+                // the validator also includes its public key.
+                // Here, we verify that the public key used to sign this transaction matches
+                // the provided public key.
+                // This public key is later used to identify the authority that sent the MPC message.
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "DWalletMPCSessionFailedWithMalicious: authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                                                            kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
+                                                            ..
+                                                        }) => {
+                // When sending an MPC output, the validator also includes its public key.
+                // Here, we verify that the public key used to sign this transaction matches
+                // the provided public key.
+                // This public key is later used to identify the authority that sent the MPC message.
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "DWalletMPCOutput authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                                                            kind: ConsensusTransactionKind::DWalletMPCMessage(message),
+                                                            ..
+                                                        }) => {
+                // When sending an MPC message, the validator also includes its public key.
+                // Here, we verify that the public key used to sign this transaction matches
+                // the provided public key.
+                // This public key is later used
+                // to identify the authority that sent the MPC message.
+                if transaction.sender_authority() != message.authority {
+                    warn!(
+                        "DWalletMPCMessage authority {} does not match its author from consensus {}",
+                        message.authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::CheckpointSignature(data),
                 ..
@@ -1535,6 +1886,43 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                                                            kind: ConsensusTransactionKind::LockNextCommittee(..),
+                                                            ..
+                                                        }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                                                            kind: ConsensusTransactionKind::DWalletMPCOutput(..),
+                                                            ..
+                                                        }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                                                            kind:
+                                                            ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(
+                                                                authority_name,
+                                                                report,
+                                                            ),
+                                                            ..
+                                                        }) => {
+                self.save_dwallet_mpc_round_message(
+                    DWalletMPCDBMessage::SessionFailedWithMaliciousParties(
+                        authority_name.clone(),
+                        report.clone(),
+                    ),
+                )
+                    .await;
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                                                            kind: ConsensusTransactionKind::DWalletMPCMessage(message),
+                                                            ..
+                                                        }) => {
+                // Filter DWalletMPCMessages from the consensus output and save them in the local
+                // DB.
+                // Those messages will get processed when the dWallet MPC service reads
+                // them from the DB.
+                self.save_dwallet_mpc_round_message(DWalletMPCDBMessage::Message(message.clone()))
+                    .await;
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::CheckpointSignature(info),
                 ..
             }) => {
@@ -1830,6 +2218,12 @@ pub(crate) struct ConsensusCommitOutput {
     consensus_commit_stats: Option<ExecutionIndicesWithStats>,
 
     pending_checkpoints: Vec<PendingCheckpoint>,
+
+    /// All the dWallet-MPC related TXs that have been received in this round.
+    dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
+    dwallet_mpc_round_outputs: Vec<DWalletMPCOutputMessage>,
+    dwallet_mpc_round_events: Vec<DWalletMPCEvent>,
+    dwallet_mpc_completed_sessions: Vec<ObjectID>,
 }
 
 impl ConsensusCommitOutput {
@@ -1838,6 +2232,25 @@ impl ConsensusCommitOutput {
             consensus_round,
             ..Default::default()
         }
+    }
+
+    pub(crate) fn set_dwallet_mpc_round_messages(&mut self, new_value: Vec<DWalletMPCDBMessage>) {
+        self.dwallet_mpc_round_messages = new_value;
+    }
+
+    pub(crate) fn set_dwallet_mpc_round_outputs(
+        &mut self,
+        new_value: Vec<DWalletMPCOutputMessage>,
+    ) {
+        self.dwallet_mpc_round_outputs = new_value;
+    }
+
+    pub(crate) fn set_dwallet_mpc_round_completed_sessions(&mut self, new_value: Vec<ObjectID>) {
+        self.dwallet_mpc_completed_sessions = new_value;
+    }
+
+    pub(crate) fn set_dwallet_mpc_round_events(&mut self, new_value: Vec<DWalletMPCEvent>) {
+        self.dwallet_mpc_round_events = new_value;
     }
 
     fn insert_initiate_process_mid_epoch(&mut self, authority: AuthorityName) {

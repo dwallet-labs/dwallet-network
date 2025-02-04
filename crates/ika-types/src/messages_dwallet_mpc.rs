@@ -1,6 +1,5 @@
-use sui_types::base_types::{AuthorityName, ObjectID, SuiAddress};
+use sui_types::base_types::{ObjectID, SuiAddress};
 use crate::crypto::default_hash;
-// use ::digests::DWalletMPCOutputDigest;
 use sui_types::event::Event;
 use sui_types::id::ID;
 use sui_types::message_envelope::Message;
@@ -8,7 +7,7 @@ use sui_types::SUI_SYSTEM_ADDRESS;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
-    START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
+    START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME, MPCMessage
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
@@ -16,6 +15,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 use crate::digests::DWalletMPCOutputDigest;
+use crate::crypto::AuthorityName;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
@@ -149,6 +149,19 @@ pub struct DWalletMPCOutput {
     pub session_info: SessionInfo,
     /// The final value of the MPC session.
     pub output: Vec<u8>,
+}
+
+/// The message a Validator can send to the other parties while
+/// running a dWallet MPC session.
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
+pub struct DWalletMPCMessage {
+    /// The serialized message.
+    pub message: MPCMessage,
+    /// The authority (Validator) that sent the message.
+    pub authority: AuthorityName,
+    pub session_id: ObjectID,
+    /// The MPC round number, starts from 0.
+    pub round_number: usize,
 }
 
 // Todo *Yael): check if we even need this any more, how do we submit transactions?

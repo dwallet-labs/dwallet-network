@@ -20,7 +20,7 @@ pub enum DwalletMPCError {
     NonMPCEvent(String),
 
     #[error("authority with a name: `{0}` not found")]
-    AuthorityNameNotFound(AuthorityName),
+    AuthorityNameNotFound(crate::crypto::AuthorityName),
 
     #[error("authority with a name: `{0}` not found")]
     AuthorityIndexNotFound(PartyID),

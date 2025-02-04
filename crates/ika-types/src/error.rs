@@ -33,6 +33,7 @@ pub(crate) use fp_ensure;
 use sui_types::digests::TransactionEventsDigest;
 use sui_types::error::SuiError;
 use sui_types::execution_status::{CommandIndex, ExecutionFailureStatus};
+use crate::dwallet_mpc_error::DwalletMPCError;
 
 #[macro_export]
 macro_rules! exit_main {
@@ -226,9 +227,19 @@ pub enum IkaError {
 
     #[error("Sui Connector internal error")]
     SuiConnectorInternalError(String),
+
+    // This is a string because the encapsulating error has too many derives.
+    #[error("dWallet MPC Error: {0}")]
+    DwalletMPCError(String),
 }
 
 pub type IkaResult<T = ()> = Result<T, IkaError>;
+
+impl From<DwalletMPCError> for IkaError {
+    fn from(error: DwalletMPCError) -> Self {
+        IkaError::DwalletMPCError(error.to_string())
+    }
+}
 
 impl From<ika_protocol_config::Error> for IkaError {
     fn from(error: ika_protocol_config::Error) -> Self {
