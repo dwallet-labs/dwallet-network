@@ -47,6 +47,7 @@ impl ValidatorInitializationConfig {
         let protocol_public_key: AuthorityPublicKeyBytes = self.key_pair.public().into();
         let account_key: PublicKey = self.account_key_pair.public();
         let network_public_key: NetworkPublicKey = self.network_key_pair.public().clone();
+        // Todo (yael) : add class groups key and change worker (key) name to consensus
         let worker_public_key: NetworkPublicKey = self.worker_key_pair.public().clone();
         let network_address = self.network_address.clone();
         let consensus_address = self.consensus_address.clone();

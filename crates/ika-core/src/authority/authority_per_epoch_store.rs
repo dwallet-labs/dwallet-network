@@ -1684,6 +1684,26 @@ impl AuthorityPerEpochStore {
             }
         }
 
+        self.save_dwallet_mpc_round_message(DWalletMPCDBMessage::EndOfDelivery)
+            .await;
+
+        // Save all the dWallet-MPC related DB data to the consensus commit output to
+        // write it to the local DB. After saving the data, clear the data from the epoch store.
+        let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
+        output.set_dwallet_mpc_round_messages(dwallet_mpc_round_messages.clone());
+        dwallet_mpc_round_messages.clear();
+        let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_outputs.lock().await;
+        output.set_dwallet_mpc_round_outputs(dwallet_mpc_round_outputs.clone());
+        dwallet_mpc_round_outputs.clear();
+        let mut dwallet_mpc_round_completed_sessions =
+            self.dwallet_mpc_round_completed_sessions.lock().await;
+        output
+            .set_dwallet_mpc_round_completed_sessions(dwallet_mpc_round_completed_sessions.clone());
+        dwallet_mpc_round_completed_sessions.clear();
+        let mut dwallet_mpc_round_events = self.dwallet_mpc_round_events.lock().await;
+        output.set_dwallet_mpc_round_events(dwallet_mpc_round_events.clone());
+        dwallet_mpc_round_events.clear();
+
         authority_metrics
             .consensus_handler_cancelled_transactions
             .inc_by(cancelled_txns.len() as u64);
@@ -2281,6 +2301,42 @@ impl ConsensusCommitOutput {
         batch: &mut DBBatch,
     ) -> IkaResult {
         let tables = epoch_store.tables()?;
+
+        // Write all the dWallet MPC related messages from this consensus round to the local DB.
+        // The [`DWalletMPCService`] constantly reads and process those messages.
+        if let Some(consensus_commit_stats) = &self.consensus_commit_stats {
+            batch.insert_batch(
+                &tables.dwallet_mpc_messages,
+                [(
+                    consensus_commit_stats.index.sub_dag_index,
+                    self.dwallet_mpc_round_messages,
+                )],
+            )?;
+            batch.insert_batch(
+                &tables.dwallet_mpc_completed_sessions,
+                [(
+                    consensus_commit_stats.index.sub_dag_index,
+                    self.dwallet_mpc_completed_sessions,
+                )],
+            )?;
+            batch.insert_batch(
+                &tables.dwallet_mpc_outputs,
+                [(
+                    consensus_commit_stats.index.sub_dag_index,
+                    self.dwallet_mpc_round_outputs,
+                )],
+            )?;
+            batch.insert_batch(
+                &tables.dwallet_mpc_events,
+                [(
+                    consensus_commit_stats.index.sub_dag_index,
+                    self.dwallet_mpc_round_events,
+                )],
+            )?;
+        } else {
+            error!("failed to retrieve consensus commit statistics when trying to write DWallet MPC messages to local DB");
+        }
+
         batch.insert_batch(
             &tables.consensus_message_processed,
             self.consensus_messages_processed
