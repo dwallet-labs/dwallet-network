@@ -51,7 +51,7 @@ pub const FIRST_EPOCH_ID: EpochId = 0;
 /// Convert a given authority name (address) to it's corresponding [`PartyID`].
 /// The [`PartyID`] is the index of the authority in the committee.
 pub(crate) fn authority_name_to_party_id(
-    authority_name: &ika_types::crypto::AuthorityName,
+    authority_name: &AuthorityName,
     epoch_store: &AuthorityPerEpochStore,
 ) -> DwalletMPCResult<PartyID> {
     epoch_store
@@ -73,6 +73,17 @@ pub(crate) fn party_id_to_authority_name(
         .authority_by_index(party_id as u32 - 1)
         .ok_or(DwalletMPCError::AuthorityIndexNotFound(party_id - 1))?
         .clone())
+}
+
+/// Convert a given [`Vec<PartyID>`] to the corresponding [`Vec<AuthorityName>`].
+pub(crate) fn party_ids_to_authority_names(
+    malicious_parties: &[PartyID],
+    epoch_store: &AuthorityPerEpochStore,
+) -> DwalletMPCResult<Vec<AuthorityName>> {
+    malicious_parties
+        .iter()
+        .map(|party_id| party_id_to_authority_name(*party_id, &epoch_store))
+        .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
 }
 
 /// Parses the session info from the event and returns it.

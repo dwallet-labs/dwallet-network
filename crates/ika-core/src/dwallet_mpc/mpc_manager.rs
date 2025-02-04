@@ -11,11 +11,11 @@ use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
-use crate::dwallet_mpc::session_input_from_event;
 use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
 };
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
+use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
 use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
@@ -35,8 +35,8 @@ use ika_types::digests::Digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCLocalComputationMetadata, DWalletMPCMessage, MPCProtocolInitData,
-    MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
+    AdvanceResult, DWalletMPCEvent, DWalletMPCLocalComputationMetadata, DWalletMPCMessage,
+    MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
 };
 use mpc::WeightedThresholdAccessStructure;
 use rayon::prelude::*;
@@ -145,7 +145,7 @@ impl DWalletMPCManager {
             party_id: authority_name_to_party_id(&epoch_store.name.clone(), &epoch_store.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
             epoch_id,
-            max_active_mpc_sessions: 200, //node_config.max_active_dwallet_mpc_sessions,
+            max_active_mpc_sessions: 200, //todo (yael): Ask sadika what about this . node_config.max_active_dwallet_mpc_sessions,
             node_config,
             weighted_threshold_access_structure,
             validators_data_for_network_dkg: HashMap::new(),
@@ -220,6 +220,10 @@ impl DWalletMPCManager {
             // Quorum reached, remove the malicious parties from the session messages.
             ReportStatus::QuorumReached => {
                 self.check_for_malicious_ia_report(&report)?;
+                if report.advance_result == AdvanceResult::Success {
+                    // No need to re-perform the last step, as the advance was successful.
+                    return Ok(());
+                }
                 if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
                     // For every advance we increase the round number by 1,
                     // so to re-run the same round we decrease it by 1.
@@ -648,17 +652,15 @@ impl DWalletMPCManager {
     /// New messages from these parties will be ignored.
     /// Restarted for each epoch.
     fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID]) -> DwalletMPCResult<()> {
-        let malicious_party_names = malicious_parties
-            .iter()
-            .map(|party_id| party_id_to_authority_name(*party_id, &*self.epoch_store()?))
-            .collect::<DwalletMPCResult<Vec<AuthorityName>>>()?;
+        let malicious_parties_names =
+            party_ids_to_authority_names(malicious_parties, &*self.epoch_store()?)?;
         warn!(
             "dWallet MPC flagged the following parties as malicious: {:?}",
-            malicious_party_names
+            malicious_parties_names
         );
 
         self.malicious_handler
-            .report_malicious_actors(&malicious_party_names);
+            .report_malicious_actors(&malicious_parties_names);
         Ok(())
     }
 

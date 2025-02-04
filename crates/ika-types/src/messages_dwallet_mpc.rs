@@ -316,6 +316,13 @@ impl StartDKGSecondRoundEvent {
     }
 }
 
+/// The possible result of advancing the MPC protocol.
+#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum AdvanceResult {
+    Success,
+    Failure,
+}
+
 /// Represents a report of malicious behavior in the dWallet MPC process.
 ///
 /// This struct is used to record instances where validators identify malicious actors
@@ -325,16 +332,22 @@ impl StartDKGSecondRoundEvent {
 pub struct MaliciousReport {
     /// A list of authority names that have been identified as malicious actors.
     pub malicious_actors: Vec<AuthorityName>,
+    pub advance_result: AdvanceResult,
     /// The unique identifier of the MPC session in which the malicious activity occurred.
     pub session_id: ObjectID,
 }
 
 impl MaliciousReport {
     /// Creates a new instance of a malicious report.
-    pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID) -> Self {
+    pub fn new(
+        malicious_actors: Vec<AuthorityName>,
+        session_id: ObjectID,
+        advance_result: AdvanceResult,
+    ) -> Self {
         Self {
             malicious_actors,
             session_id,
+            advance_result,
         }
     }
 }
