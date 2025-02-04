@@ -294,7 +294,7 @@ pub struct StartDKGSecondRoundEvent {
     /// The unique identifier of the `EncryptionKey` object.
     pub encryption_key_id: ObjectID,
     /// The public output of the centralized party in the DKG process.
-    pub centralized_public_output: Vec<u8>,
+    pub decentralized_public_output: Vec<u8>,
     /// The signature for the public output of the centralized party in the DKG process.
     pub centralized_public_output_signature: Vec<u8>,
     /// The Ed25519 public key of the initiator,
