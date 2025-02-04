@@ -394,7 +394,7 @@ impl DWalletMPCManager {
                     || (is_valid_network_dkg_transaction
                         || matches!(
                             mpc_network_key_status,
-                            // Todo (yael): Check if the current relevant key version exist
+                            // Todo (#394): Check if the current relevant key version exist
                             DwalletMPCNetworkKeysStatus::Ready(_)
                         ));
                 if session.is_ready_to_advance() && is_manager_ready {

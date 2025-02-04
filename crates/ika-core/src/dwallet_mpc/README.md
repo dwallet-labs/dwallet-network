@@ -10,17 +10,16 @@ To run the network DKG protocol,
 you must configure your address as the dWallet admin address and execute the start transaction.
 The dWallet "admin" is the address that can initiate the network DKG.
 
-#### Configuring the dWallet "admin" Address
+#### **OUTDATED** Configuring the dWallet "admin" Address
 
 There are two ways to configure the admin address:
-Todo (Yael): Check how to run this command
+
 1. Run `pera genesis-ceremony init` and modify the admin address.
 2. Update it directly in the code at `crates/pera-config/src/genesis.rs:L463`.
 
-#### Executing the Start Transaction
+#### **OUTDATED** Executing the Start Transaction
 
 Run the following commands:
-Todo (Yael): Check how to run this command
 ```bash
 pera client faucet
 pera client call --package 0x3 --module pera_system --function request_start_network_dkg --args 1 0x5 --gas-budget 1000000000
@@ -46,10 +45,9 @@ However, running the network DKG protocol currently takes a significant amount o
 To bypass this process during development, you can mock the network DKG protocol by disabling the `with-network-dkg`
 feature on the `ika-core` crate.
 
-### Generating the RPC API for TypeScript
-
+### **OUTDATED** Generating the RPC API for TypeScript
+ 
 To generate the RPC schema, follow these steps:
-Todo (Yael): Ask Omer about this one
 1. Run the `main` function from `crates/pera-open-rpc/src/generate_json_rpc_spec.rs`.
 2. Then, run `pnpm tsx scripts/generate.ts` from the `sdk/typescript` directory.
 
@@ -99,8 +97,8 @@ RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis --epoch-d
 RUST_LOG="off,pera_node=info,pera_core=error" RUST_MIN_STACK=16777216 cargo run --bin ika -- start --force-reinitiation
 ```
 
-## Testing the State Sync Mechanism Manually
-Todo (Yael): Fix this one also 
+## **OUTDATED** Testing the State Sync Mechanism Manually
+
 To test the state sync feature, uncomment the code in the `start` function located in
 `crates/pera/src/pera_commands.rs`.
 This code restarts a validator node 10 seconds after the chain starts.
