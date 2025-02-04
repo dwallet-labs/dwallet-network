@@ -99,15 +99,6 @@ pub enum DWalletMPCDBMessage {
     /// Signal delivery of messages has ended,
     /// now the sessions that received a quorum of messages can advance.
     EndOfDelivery,
-    /// Start locking the next epoch committee by sending a [`ConsensusTransactionKind::LockNextCommittee`] message
-    /// to the other validators.
-    /// This starts when the current epoch time has ended, and it's time to start the
-    /// reconfiguration process for the next epoch.
-    StartLockNextEpochCommittee,
-    /// A vote received from another validator to lock the next committee.
-    /// After receiving a quorum of those messages, a system TX
-    /// to lock the next epoch's committee will get created.
-    LockNextEpochCommitteeVote(AuthorityName),
     /// A validator's public key and proof for the network DKG protocol.
     /// Each validator's data is being emitted separately because the proof size is
     /// almost 250 KB, which is the maximum event size in Sui.
@@ -184,14 +175,6 @@ impl DWalletMPCManager {
                     error!("failed to handle the end of delivery with error: {:?}", err);
                 }
             }
-            DWalletMPCDBMessage::StartLockNextEpochCommittee => {
-                if let Err(err) = self.start_lock_next_epoch().await {
-                    error!(
-                        "Failed to start lock next epoch committee with error: {:?}",
-                        err
-                    );
-                }
-            }
             DWalletMPCDBMessage::ValidatorDataForDKG(data) => {
                 if let Err(err) = self.handle_validator_data_for_network_dkg(data) {
                     error!(
@@ -203,7 +186,6 @@ impl DWalletMPCManager {
             DWalletMPCDBMessage::MPCSessionFailed(_session_id) => {
                 // TODO (#524): Handle failed MPC sessions
             }
-            DWalletMPCDBMessage::LockNextEpochCommitteeVote(_) => {}
             DWalletMPCDBMessage::SessionFailedWithMaliciousParties(authority_name, report) => {
                 if let Err(err) = self
                     .handle_session_failed_with_malicious_parties_message(authority_name, report)
@@ -315,23 +297,6 @@ impl DWalletMPCManager {
             self.validators_data_for_network_dkg.insert(party_id, data);
         }
         Ok(())
-    }
-
-    async fn start_lock_next_epoch(&mut self) -> IkaResult {
-        self.consensus_adapter
-            .submit_to_consensus(
-                &vec![self.new_lock_next_committee_message()?],
-                &self.epoch_store()?,
-            )
-            .await?;
-        Ok(())
-    }
-
-    fn new_lock_next_committee_message(&self) -> DwalletMPCResult<ConsensusTransaction> {
-        Ok(ConsensusTransaction::new_lock_next_committee_message(
-            self.epoch_store()?.name,
-            self.epoch_store()?.epoch(),
-        ))
     }
 
     fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {

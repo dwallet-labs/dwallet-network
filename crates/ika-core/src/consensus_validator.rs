@@ -72,8 +72,7 @@ impl IkaTxValidator {
                 | ConsensusTransactionKind::TestMessage(_, _)
                 | ConsensusTransactionKind::DWalletMPCMessage(..)
                 | ConsensusTransactionKind::DWalletMPCOutput(..)
-                | ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..)
-                | ConsensusTransactionKind::LockNextCommittee(..) => {}
+                | ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..) => {}
             }
         }
 

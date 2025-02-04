@@ -55,7 +55,6 @@ pub enum ConsensusTransactionKey {
     /// address of the initiating user.
     DWalletMPCOutput(Vec<u8>, ObjectID, SuiAddress, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
-    LockNextCommittee(AuthorityName, EpochId),
 }
 
 impl Debug for ConsensusTransactionKey {
@@ -85,14 +84,6 @@ impl Debug for ConsensusTransactionKey {
                     f,
                     "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
                     value, session_id, sender_address, authority
-                )
-            }
-            Self::LockNextCommittee(authority, epoch_id) => {
-                write!(
-                    f,
-                    "LockNextCommittee({:?}) for epoch {:?}",
-                    authority.concise(),
-                    epoch_id
                 )
             }
             Self::DWalletMPCSessionFailedWithMalicious(authority, report) => {
@@ -184,7 +175,6 @@ pub enum ConsensusTransactionKind {
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
-    LockNextCommittee(AuthorityName, EpochId),
 }
 
 impl ConsensusTransaction {
@@ -206,17 +196,6 @@ impl ConsensusTransaction {
                 round_number,
                 session_id,
             }),
-        }
-    }
-
-    pub fn new_lock_next_committee_message(authority: AuthorityName, epoch: EpochId) -> Self {
-        let mut hasher = DefaultHasher::new();
-        authority.hash(&mut hasher);
-        epoch.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::LockNextCommittee(authority, epoch),
         }
     }
 
@@ -339,9 +318,6 @@ impl ConsensusTransaction {
                     session_info.initiating_user_address,
                     *authority,
                 )
-            }
-            ConsensusTransactionKind::LockNextCommittee(authority, epoch_id) => {
-                ConsensusTransactionKey::LockNextCommittee(*authority, *epoch_id)
             }
             ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, report) => {
                 ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(
