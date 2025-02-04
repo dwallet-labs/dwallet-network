@@ -62,3 +62,12 @@ Use the following links to learn more about Ika and its ecosystem:
 ## Acknowledgement
 
 As a fork of Sui, much of Ika's code base is heavily based on the code created by [Mysten Labs, Inc.](https://mystenlabs.com) & [Facebook, Inc.](https://facebook.com) and its affiliates, including in this very file. We are grateful for the high quality and serious work that allowed us to build our Ika technology upon this infrastructure.
+
+
+## Code Flow Diagrams
+
+We created a few Figma diagrams to help auditors make sense of our code:
+
+Diagrams of the different dWallet MPC flows can be found here: https://www.figma.com/board/ISrirOSeSr9YyS6U4MTUyT/Flows-Diagrams?node-id=0-1&t=lZ0v3xQtJhWreFuf-1.
+
+Diagrams of our State Sync mechanism can be found here: https://www.figma.com/board/uzpZ7ToOQ8DWcID2vOUlwt/State-Sync-Overview?node-id=0-1&t=fnWiOtTlWT7ZYV93-1.
