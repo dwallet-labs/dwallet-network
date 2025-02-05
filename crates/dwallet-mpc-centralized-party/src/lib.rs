@@ -63,31 +63,6 @@ type Secp256k1EncryptionKey = EncryptionKey<
     secp256k1::GroupElement,
 >;
 
-impl fmt::Display for Hash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let hash_name = match self {
-            Hash::KECCAK256 => "KECCAK256",
-            Hash::SHA256 => "SHA256",
-        };
-        write!(f, "{}", hash_name)
-    }
-}
-
-impl TryFrom<u8> for Hash {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Hash::KECCAK256),
-            1 => Ok(Hash::SHA256),
-            _ => Err(anyhow::Error::msg(format!(
-                "invalid value for Hash enum: {}",
-                value
-            ))),
-        }
-    }
-}
-
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
 ///
 /// This function is invoked by the centralized party to produce:
@@ -187,14 +162,14 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 pub fn advance_centralized_sign_party(
     protocol_public_parameters: Vec<u8>,
     key_scheme: u8,
-    decentralized_party_dkg_output: Vec<u8>,
+    decentralized_party_dkg_public_output: Vec<u8>,
     centralized_party_secret_key_share: Vec<u8>,
     presigns: Vec<Vec<u8>>,
     messages: Vec<Vec<u8>>,
     hash_type: u8,
     presign_session_ids: Vec<String>,
 ) -> anyhow::Result<Vec<SignedMessages>> {
-    let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_output)?;
+    let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_public_output)?;
     let centralized_public_output = twopc_mpc::class_groups::DKGCentralizedPartyOutput::<
         { secp256k1::SCALAR_LIMBS },
         secp256k1::GroupElement,
@@ -343,6 +318,31 @@ pub fn verify_secret_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> anyhow
     let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
         bcs::from_bytes(&dkg_output)?;
     Ok(dkg_output.centralized_party_public_key_share == expected_public_key.value())
+}
+
+impl fmt::Display for Hash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let hash_name = match self {
+            Hash::KECCAK256 => "KECCAK256",
+            Hash::SHA256 => "SHA256",
+        };
+        write!(f, "{}", hash_name)
+    }
+}
+
+impl TryFrom<u8> for Hash {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Hash::KECCAK256),
+            1 => Ok(Hash::SHA256),
+            _ => Err(anyhow::Error::msg(format!(
+                "invalid value for Hash enum: {}",
+                value
+            ))),
+        }
+    }
 }
 
 /// Decrypts the given encrypted user share using the given decryption key.
