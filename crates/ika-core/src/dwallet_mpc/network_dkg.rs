@@ -53,7 +53,7 @@ pub struct DwalletMPCNetworkKeyVersionsInner {
         Vec<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
     >,
     /// The dWallet MPC network decryption key shares (encrypted).
-    /// Map from key type to the encryption of the key version.
+    /// Map from key type to the encryption of the share of the key of that type.
     pub key_shares_versions: HashMap<DWalletMPCNetworkKeyScheme, Vec<NetworkDecryptionKeyShares>>,
     /// The status of the network supported key types for the dWallet MPC sessions.
     pub status: DwalletMPCNetworkKeysStatus,
