@@ -120,7 +120,7 @@ pub(crate) fn session_info_from_event(
         }
         t if t == &StartSignEvent::<SignData>::type_(SignData::type_().into()) => {
             let deserialized_event: StartSignEvent<SignData> = bcs::from_bytes(&event.contents)?;
-            Ok(Some(sign_party_session_info(&deserialized_event, party_id)))
+            Ok(Some(sign_party_session_info(&deserialized_event)))
         }
         t if t
             == &StartPartialSignaturesVerificationEvent::<SignData>::type_(
@@ -318,10 +318,7 @@ fn sign_public_input(
     )
 }
 
-fn sign_party_session_info(
-    deserialized_event: &StartSignEvent<SignData>,
-    _party_id: PartyID,
-) -> SessionInfo {
+fn sign_party_session_info(deserialized_event: &StartSignEvent<SignData>) -> SessionInfo {
     SessionInfo {
         flow_session_id: deserialized_event.signature_algorithm_data.presign_id,
         session_id: deserialized_event.session_id.bytes,
