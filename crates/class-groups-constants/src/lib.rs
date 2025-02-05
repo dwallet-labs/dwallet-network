@@ -48,4 +48,3 @@ pub fn decryption_key_share(party_id: PartyID) -> HashMap<PartyID, SecretKeyShar
         bcs::from_bytes(&bytes).unwrap();
     shares.get(&party_id).unwrap().clone()
 }
-

@@ -3,6 +3,7 @@ use class_groups::{
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use class_groups_constants::protocol_public_parameters;
+use dwallet_classgroups_types::public_keys_from_dkg_output;
 use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use fastcrypto::traits::{ToFromBytes, VerifyingKey};
 use group::GroupElement;
@@ -19,7 +20,6 @@ use twopc_mpc::languages::class_groups::{
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
-use dwallet_classgroups_types::public_keys_from_dkg_output;
 
 type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
     SCALAR_LIMBS,
