@@ -41,7 +41,7 @@ pub struct DWalletMPCOutputsVerifier {
     /// The quorum threshold of the chain.
     pub quorum_threshold: StakeUnit,
     pub completed_locking_next_committee: bool,
-    voted_to_lock_committee: HashSet<AuthorityName>,
+    voted_to_lock_committee: HashSet<PartyID>,
     /// The latest consensus round that was processed.
     /// Used to check if there's a need to perform a state sync —
     /// if the `latest_processed_dwallet_round` is behind
@@ -110,13 +110,20 @@ impl DWalletMPCOutputsVerifier {
     /// If the total weighted stake of the authorities
     /// that have voted exceeds or equals the quorum threshold, it returns `true`.
     /// Otherwise, it returns `false`.
-    pub(crate) fn should_lock_committee(&mut self, authority_name: AuthorityName) -> bool {
-        self.voted_to_lock_committee.insert(authority_name);
+    pub(crate) fn append_vote_and_check_committee_lock(
+        &mut self,
+        authority_name: AuthorityName,
+    ) -> DwalletMPCResult<bool> {
+        let epoch_store = self.epoch_store()?;
         self.voted_to_lock_committee
-            .iter()
-            .map(|voter| self.weighted_parties.get(voter).unwrap_or(&0))
-            .sum::<StakeUnit>()
-            >= self.quorum_threshold
+            .insert(authority_name_to_party_id(
+                &authority_name,
+                &epoch_store.clone(),
+            )?);
+        Ok(epoch_store
+            .get_weighted_threshold_access_structure()?
+            .authorized_subset(&self.voted_to_lock_committee)
+            .is_ok())
     }
 
     /// Stores the given MPC output, and checks if any of the received
