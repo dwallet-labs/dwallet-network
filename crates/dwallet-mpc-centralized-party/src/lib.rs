@@ -27,7 +27,9 @@ use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
-use class_groups_constants::{protocol_public_parameters, public_keys_from_dkg_output, DWalletPublicKeys};
+use class_groups_constants::{
+    protocol_public_parameters, public_keys_from_dkg_output, DWalletPublicKeys,
+};
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -208,7 +210,7 @@ pub fn advance_centralized_sign_party(
                 &centralized_party_public_input,
                 &mut OsRng,
             )
-                .context("advance() failed on the SignCentralizedParty")?;
+            .context("advance() failed on the SignCentralizedParty")?;
 
             Ok(bcs::to_bytes(&round_result.outgoing_message)?)
         })

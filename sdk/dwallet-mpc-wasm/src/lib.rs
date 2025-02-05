@@ -4,7 +4,8 @@
 use dwallet_mpc_centralized_party::{
     advance_centralized_sign_party, centralized_public_share_from_decentralized_output_inner,
     create_dkg_output, decrypt_user_share_inner, encrypt_secret_key_share_and_prove,
-    generate_secp256k1_cg_keypair_from_seed_internal, verify_secret_share, public_keys_from_dwallet_output
+    generate_secp256k1_cg_keypair_from_seed_internal, public_keys_from_dwallet_output,
+    verify_secret_share,
 };
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
