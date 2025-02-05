@@ -1,7 +1,7 @@
 //! A module to verify the dWallet MPC outputs.
 //! The module handles storing the outputs received for each session,
 //! and deciding whether an output is valid
-//! by checking if a validators with quorum of stake voted for it.
+//! by checking if an authorized validator set voted for it.
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
@@ -10,7 +10,7 @@ use crate::dwallet_mpc::dkg::DKGSecondParty;
 use crate::dwallet_mpc::sign::SignFirstParty;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
 use group::{GroupElement, PartyID};
-use mpc::Party;
+use mpc::{Party, WeightedThresholdAccessStructure};
 use narwhal_types::Round;
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use pera_types::committee::StakeUnit;
@@ -34,13 +34,8 @@ use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 pub struct DWalletMPCOutputsVerifier {
     /// The outputs received for each MPC session.
     pub mpc_sessions_outputs: HashMap<ObjectID, SessionOutputsData>,
-    /// A mapping between an authority name to its stake.
-    /// This data exists in the MPCManager, but in a different data structure.
-    pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
-    /// The quorum threshold of the chain.
-    pub quorum_threshold: StakeUnit,
     pub completed_locking_next_committee: bool,
-    voted_to_lock_committee: HashSet<AuthorityName>,
+    voted_to_lock_committee: HashSet<PartyID>,
     /// The latest consensus round that was processed.
     /// Used to check if there's a need to perform a state sync —
     /// if the `latest_processed_dwallet_round` is behind
@@ -66,7 +61,7 @@ pub struct SessionOutputsData {
 
 /// The result of verifying an incoming output for an MPC session.
 /// We need to differentiate between a duplicate and a malicious output,
-/// as the output can be sent twice by honest parties.
+/// as the valid output can be sent after first quorum reached.
 #[derive(PartialOrd, PartialEq, Clone)]
 pub enum OutputResult {
     FirstQuorumReached,
@@ -87,14 +82,7 @@ impl DWalletMPCOutputsVerifier {
     pub fn new(epoch_store: &Arc<AuthorityPerEpochStore>) -> Self {
         DWalletMPCOutputsVerifier {
             epoch_store: Arc::downgrade(&epoch_store),
-            quorum_threshold: epoch_store.committee().quorum_threshold(),
             mpc_sessions_outputs: HashMap::new(),
-            weighted_parties: epoch_store
-                .committee()
-                .voting_rights
-                .iter()
-                .cloned()
-                .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
             last_processed_consensus_round: 0,
@@ -109,13 +97,20 @@ impl DWalletMPCOutputsVerifier {
     /// If the total weighted stake of the authorities
     /// that have voted exceeds or equals the quorum threshold, it returns `true`.
     /// Otherwise, it returns `false`.
-    pub(crate) fn should_lock_committee(&mut self, authority_name: AuthorityName) -> bool {
-        self.voted_to_lock_committee.insert(authority_name);
+    pub(crate) fn append_vote_and_check_committee_lock(
+        &mut self,
+        authority_name: AuthorityName,
+    ) -> DwalletMPCResult<bool> {
+        let epoch_store = self.epoch_store()?;
         self.voted_to_lock_committee
-            .iter()
-            .map(|voter| self.weighted_parties.get(voter).unwrap_or(&0))
-            .sum::<StakeUnit>()
-            >= self.quorum_threshold
+            .insert(authority_name_to_party_id(
+                &authority_name,
+                &epoch_store.clone(),
+            )?);
+        Ok(epoch_store
+            .get_weighted_threshold_access_structure()?
+            .authorized_subset(&self.voted_to_lock_committee)
+            .is_ok())
     }
 
     /// Stores the given MPC output, and checks if any of the received
@@ -287,7 +282,7 @@ impl DWalletMPCOutputsVerifier {
     /// and initializes the output data for it.
     /// Needed, so we'll know when we receive a malicious output
     /// that related to a non-existing session.
-    pub fn store_new_session(&mut self, session_info: &SessionInfo) {
+    pub fn monitor_new_session_outputs(&mut self, session_info: &SessionInfo) {
         self.mpc_sessions_outputs.insert(
             session_info.session_id,
             SessionOutputsData {

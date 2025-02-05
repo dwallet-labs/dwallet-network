@@ -21,9 +21,12 @@ pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
     DKGFirst,
     /// The second round of the DKG protocol.
+    /// Contains the data of the event that triggered the round
+    /// and the network key version of the first round.
     DKGSecond(StartDKGSecondRoundEvent, u8),
     /// This is not a real round, but an indicator the Batches Manager to
     /// register a Presign Batch session.
+    /// Holds the number of messages in the batch.
     BatchedPresign(u64),
     /// The first round of the Presign protocol for each message in the Batch.
     /// Contains the `ObjectId` of the dWallet object,
@@ -36,11 +39,14 @@ pub enum MPCProtocolInitData {
     /// the Presign first round output, and the batch session ID.
     PresignSecond(ObjectID, MPCPublicOutput, ObjectID),
     /// The first and only round of the Sign protocol.
+    /// Contains the all the data needed to sign the message.
     Sign(SingleSignSessionData),
     /// A batched sign session, contains the list of messages that are being signed.
     // TODO (#536): Store batch state and logic on Sui & remove this field.
     BatchedSign(Vec<Vec<u8>>),
     /// The only round of the network DKG protocol.
+    /// Contains the network key scheme
+    /// and at the end of the session holds the new key version.
     NetworkDkg(
         DWalletMPCNetworkKeyScheme,
         Option<NetworkDecryptionKeyShares>,

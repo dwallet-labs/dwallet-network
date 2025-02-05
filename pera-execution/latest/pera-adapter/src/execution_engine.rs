@@ -1118,9 +1118,9 @@ mod checked {
     /// Executes the system transaction to store the final MPC output on-chain,
     /// making it accessible to the initiating user.
     /// Each validator executes this transaction locally,
-    /// and if validators represent more than two-thirds of the voting power,
-    /// "vote" to include this transaction by executing it,
-    /// the transaction is added to the checkpoint.
+    /// only after validators represent more than two-thirds of the voting power,
+    /// "vote" on the MPC session output.
+    /// The transaction is added to the checkpoint.
     fn setup_and_execute_dwallet_mpc_output(
         data: DWalletMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,

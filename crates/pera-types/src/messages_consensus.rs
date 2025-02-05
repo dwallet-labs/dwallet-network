@@ -161,19 +161,14 @@ impl Debug for ConsensusTransactionKey {
             Self::RandomnessDkgConfirmation(name) => {
                 write!(f, "RandomnessDkgConfirmation({:?})", name.concise())
             }
-            ConsensusTransactionKey::DWalletMPCOutput(
-                value,
-                session_id,
-                sender_address,
-                authority,
-            ) => {
+            Self::DWalletMPCOutput(value, session_id, sender_address, authority) => {
                 write!(
                     f,
                     "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
                     value, session_id, sender_address, authority
                 )
             }
-            ConsensusTransactionKey::LockNextCommittee(authority, epoch_id) => {
+            Self::LockNextCommittee(authority, epoch_id) => {
                 write!(
                     f,
                     "LockNextCommittee({:?}) for epoch {:?}",
@@ -181,7 +176,7 @@ impl Debug for ConsensusTransactionKey {
                     epoch_id
                 )
             }
-            ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(authority, report) => {
+            Self::DWalletMPCSessionFailedWithMalicious(authority, report) => {
                 write!(
                     f,
                     "DWalletMPCSessionFailedWithMalicious({:?}, {:?})",
