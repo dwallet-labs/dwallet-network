@@ -79,7 +79,7 @@ fn verify_dwallet_public_output_signature(
         &public_keys_from_dkg_output(bcs::from_bytes(
             &verification_data.decentralized_public_output,
         )?)
-            .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
+        .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
     )?;
     public_key
         .verify(&public_keys, &signature)
