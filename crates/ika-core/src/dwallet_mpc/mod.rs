@@ -188,6 +188,21 @@ fn start_encryption_key_verification_session_info(
     }
 }
 
+fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResult<Vec<u8>> {
+    <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
+        protocol_public_parameters,
+    )
+}
+
+fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
+    SessionInfo {
+        flow_session_id: deserialized_event.session_id.bytes,
+        session_id: deserialized_event.session_id.bytes,
+        initiating_user_address: deserialized_event.initiator,
+        mpc_round: MPCProtocolInitData::DKGFirst,
+    }
+}
+
 fn dkg_second_public_input(
     deserialized_event: StartDKGSecondRoundEvent,
     protocol_public_parameters: Vec<u8>,
@@ -213,21 +228,6 @@ fn dkg_second_party_session_info(
             deserialized_event.clone(),
             dwallet_network_key_version,
         ),
-    }
-}
-
-fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResult<Vec<u8>> {
-    <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
-        protocol_public_parameters,
-    )
-}
-
-fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
-    SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
-        session_id: deserialized_event.session_id.bytes,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::DKGFirst,
     }
 }
 
