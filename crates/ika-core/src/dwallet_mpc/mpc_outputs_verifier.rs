@@ -288,7 +288,7 @@ impl DWalletMPCOutputsVerifier {
     /// and initializes the output data for it.
     /// Needed, so we'll know when we receive a malicious output
     /// that related to a non-existing session.
-    pub fn store_new_session(&mut self, session_info: &SessionInfo) {
+    pub fn monitor_new_session_outputs(&mut self, session_info: &SessionInfo) {
         self.mpc_sessions_outputs.insert(
             session_info.session_id,
             SessionOutputsData {

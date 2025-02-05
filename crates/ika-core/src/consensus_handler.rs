@@ -467,7 +467,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             self.epoch_store.get_dwallet_mpc_batches_manager().await;
         for event in self.load_dwallet_mpc_events_from_epoch_start().await? {
             dwallet_mpc_batches_manager.store_new_session(&event.session_info);
-            dwallet_mpc_verifier.store_new_session(&event.session_info);
+            dwallet_mpc_verifier.monitor_new_session_outputs(&event.session_info);
         }
         for output in self.load_dwallet_mpc_outputs_from_epoch_start().await? {
             match dwallet_mpc_verifier
