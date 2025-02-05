@@ -722,8 +722,8 @@ impl AuthorityPerEpochStore {
     }
 
     /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
-    /// This manager handles storing all the valid outputs of a batched dWallet MPC session,
-    /// and writes them to the chain once all the batch outputs are ready.
+    /// This outputs verifier handles storing all the outputs of dWallet MPC session,
+    /// and writes them to the chain once all the outputs are ready and verified.
     pub fn set_dwallet_mpc_outputs_verifier(
         &self,
         verifier: DWalletMPCOutputsVerifier,
