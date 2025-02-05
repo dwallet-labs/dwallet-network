@@ -195,7 +195,7 @@ pub struct StartEncryptedShareVerificationEvent {
     /// Encrypted centralized secret key share and the associated
     /// cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
-    /// The signature of the dWallet `centralized_public_output`,
+    /// The signature of the dWallet `decentralized_public_output`,
     /// signed by the secret key that corresponds to `encryptor_ed25519_pubkey`.
     pub decentralized_public_output_signature: Vec<u8>,
     /// The public output of the centralized party,
@@ -301,7 +301,7 @@ pub struct StartDKGSecondRoundEvent {
     pub encryption_key_id: ObjectID,
     /// The public output of the centralized party in the DKG process.
     pub decentralized_public_output: Vec<u8>,
-    /// The signature for the public output of the centralized party in the DKG process.
+    /// The signature for the public output of the decentralized party in the DKG process.
     pub decentralized_public_output_signature: Vec<u8>,
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.

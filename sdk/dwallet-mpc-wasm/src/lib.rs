@@ -17,15 +17,19 @@ pub fn create_dkg_centralized_output(
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
 ) -> Result<JsValue, JsError> {
-    serde_wasm_bindgen::to_value(
-        &create_dkg_output(
-            protocol_public_parameters,
-            key_scheme,
-            decentralized_first_round_public_output,
-            session_id,
-        )
-        .map_err(|e| JsError::new(&e.to_string()))?,
+    let dkg_centralized_result = &create_dkg_output(
+        protocol_public_parameters,
+        key_scheme,
+        decentralized_first_round_public_output,
+        session_id,
     )
+    .map_err(|e| JsError::new(&e.to_string()))?;
+    serde_wasm_bindgen::to_value(&(
+        dkg_centralized_result.public_key_share_and_proof.clone(),
+        dkg_centralized_result.public_output.clone(),
+        dkg_centralized_result.centralized_secret_output.clone(),
+        dkg_centralized_result.public_keys.clone(),
+    ))
     .map_err(|e| JsError::new(&e.to_string()))
 }
 
