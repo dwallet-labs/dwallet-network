@@ -208,6 +208,12 @@ pub struct StartEncryptedShareVerificationEvent {
     /// The `EncryptionKey` Move object ID.
     pub encryption_key_id: ObjectID,
     pub session_id: ObjectID,
+    /// The public key of the encryptor.
+    /// Used to verify the signature on the `centralized_public_output`.
+    /// Note that the "encryptor" is the entity that preformed the encryption,
+    /// and the encryption can be done with another public key, so this is NOT
+    /// the public key that was used for encryption.
+    pub encryptor_ed25519_pubkey: Vec<u8>,
     pub initiator: SuiAddress,
 }
 
