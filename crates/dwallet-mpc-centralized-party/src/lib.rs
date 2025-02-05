@@ -65,10 +65,10 @@ type Secp256k1EncryptionKey = EncryptionKey<
 >;
 
 pub struct CentralizedDKGWasmResult {
-    public_key_share_and_proof: Vec<u8>,
-    public_output: Vec<u8>,
-    centralized_secret_output: Vec<u8>,
-    public_keys: Vec<u8>,
+    pub public_key_share_and_proof: Vec<u8>,
+    pub public_output: Vec<u8>,
+    pub centralized_secret_output: Vec<u8>,
+    pub public_keys: Vec<u8>,
 }
 
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
