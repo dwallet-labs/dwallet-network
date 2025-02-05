@@ -27,8 +27,9 @@ use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
-use class_groups_constants::protocol_public_parameters;
-use dwallet_classgroups_types::{public_keys_from_dkg_output, DWalletPublicKeys};
+use class_groups_constants::
+    protocol_public_parameters;
+use dwallet_classgroups_types::{public_keys_from_dkg_output, DWalletPublicKeys, };
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
