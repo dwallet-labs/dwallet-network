@@ -54,6 +54,7 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 ///   The session has been removed from the active instances.
 ///   Incoming messages are no longer forwarded to the session,
 ///   but they are not flagged as malicious.
+///
 /// - `Failed`:
 ///   The session has failed due to an unrecoverable error.
 ///   This status indicates that the session cannot proceed further.
