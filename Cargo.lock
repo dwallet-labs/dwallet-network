@@ -2875,9 +2875,11 @@ dependencies = [
  "group 0.1.0",
  "ika-types",
  "rand_chacha 0.3.1",
+ "schemars",
  "serde",
  "serde_derive",
  "serde_json",
+ "twopc_mpc",
 ]
 
 [[package]]

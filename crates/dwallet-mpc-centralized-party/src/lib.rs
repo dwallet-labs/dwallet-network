@@ -27,11 +27,12 @@ use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
-use class_groups_constants::{protocol_public_parameters, public_keys_from_dkg_output, DWalletPublicKeys};
+use class_groups_constants::protocol_public_parameters;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
+use dwallet_classgroups_types::{public_keys_from_dkg_output, DWalletPublicKeys};
 
 type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
