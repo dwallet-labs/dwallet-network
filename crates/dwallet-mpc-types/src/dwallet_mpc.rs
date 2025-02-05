@@ -107,7 +107,7 @@ pub enum DWalletMPCNetworkKeyScheme {
 }
 
 // We can't import ika-types here since we import this module in there.
-// Therefor we use `thiserror` `#from` to convert this error.
+// Therefore, we use `thiserror` `#from` to convert this error.
 #[derive(Debug, Error, Clone)]
 pub enum DwalletNetworkMPCError {
     #[error("invalid DWalletMPCNetworkKey value: {0}")]
