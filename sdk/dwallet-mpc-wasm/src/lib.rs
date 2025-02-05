@@ -25,7 +25,7 @@ pub fn create_dkg_centralized_output(
     )
     .map_err(|e| JsError::new(&e.to_string()))?;
     serde_wasm_bindgen::to_value((
-        dkg_centralized_result.public_key_share_and_proo,
+        dkg_centralized_result.public_key_share_and_proof,
         dkg_centralized_result.public_output,
         dkg_centralized_result.centralized_secret_output,
         dkg_centralized_result.public_keys,
