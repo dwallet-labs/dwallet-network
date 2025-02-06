@@ -256,12 +256,7 @@ impl StartEncryptionKeyVerificationEvent {
 
 /// Rust representation of the Move `StartPartialSignaturesVerificationEvent` Event.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-// #[serde(bound = "D: Serialize + DeserializeOwned")]
-pub struct StartPartialSignaturesVerificationEvent<D>
-// where
-// D: 'static
-// D: Serialize + DeserializeOwned
-{
+pub struct StartPartialSignaturesVerificationEvent<D> {
     pub session_id: ObjectID,
     pub messages: Vec<Vec<u8>>,
     pub hashed_messages: Vec<Vec<u8>>,
@@ -273,10 +268,7 @@ pub struct StartPartialSignaturesVerificationEvent<D>
     pub initiator: SuiAddress,
 }
 
-impl<D> StartPartialSignaturesVerificationEvent<D>
-// where
-//     D: Serialize + DeserializeOwned
-{
+impl<D> StartPartialSignaturesVerificationEvent<D> {
     pub fn type_(type_param: TypeTag) -> StructTag {
         StructTag {
             address: SUI_SYSTEM_ADDRESS,

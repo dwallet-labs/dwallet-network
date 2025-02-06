@@ -1705,7 +1705,6 @@ impl AuthorityPerEpochStore {
             .set_dwallet_mpc_round_completed_sessions(dwallet_mpc_round_completed_sessions.clone());
         dwallet_mpc_round_completed_sessions.clear();
 
-        // Todo (Yael): Instead of using the self.dwallet_mpc_round_events we should use Sadika's new implementation
         let key_version = self
             .dwallet_mpc_network_keys
             .get()
