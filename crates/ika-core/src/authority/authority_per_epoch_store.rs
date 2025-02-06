@@ -95,7 +95,7 @@ use ika_types::messages_consensus::{
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
+    DWalletMPCEventMessage, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
     StartPresignFirstRoundEvent,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
@@ -363,7 +363,7 @@ pub struct AuthorityPerEpochStore {
     pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
     dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
     dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
-    dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
+    dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEventMessage>>,
     dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
     dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
     perpetual_tables: Arc<AuthorityPerpetualTables>,
@@ -458,7 +458,7 @@ pub struct AuthorityEpochTables {
     // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
     // pub struct SessionID([u8; AccountAddress::LENGTH]);
     pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<ObjectID>>,
-    pub(crate) dwallet_mpc_events: DBMap<u64, Vec<DWalletMPCEvent>>,
+    pub(crate) dwallet_mpc_events: DBMap<u64, Vec<DWalletMPCEventMessage>>,
 }
 
 fn signed_transactions_table_default_config() -> DBOptions {
@@ -668,7 +668,7 @@ impl AuthorityPerEpochStore {
     pub(crate) async fn load_dwallet_mpc_events_from_round(
         &self,
         round: Round,
-    ) -> IkaResult<Vec<DWalletMPCEvent>> {
+    ) -> IkaResult<Vec<DWalletMPCEventMessage>> {
         Ok(self
             .tables()?
             .dwallet_mpc_events
@@ -694,7 +694,7 @@ impl AuthorityPerEpochStore {
 
     /// Saves a DWallet MPC event in the round events
     /// The round events are later being stored to the on-disk DB to allow state sync.
-    pub(crate) async fn save_dwallet_mpc_event(&self, event: DWalletMPCEvent) {
+    pub(crate) async fn save_dwallet_mpc_event(&self, event: DWalletMPCEventMessage) {
         let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_events.lock().await;
         dwallet_mpc_round_outputs.push(event);
     }
@@ -1731,7 +1731,7 @@ impl AuthorityPerEpochStore {
                         .ok_or(DwalletMPCError::NonMPCEvent(
                             "Failed to craete session info from event".to_string(),
                         ))?;
-                Ok(DWalletMPCEvent {
+                Ok(DWalletMPCEventMessage {
                     event: event.clone(),
                     session_info,
                 })
@@ -2365,7 +2365,7 @@ pub(crate) struct ConsensusCommitOutput {
     /// All the dWallet-MPC related TXs that have been received in this round.
     dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
     dwallet_mpc_round_outputs: Vec<DWalletMPCOutputMessage>,
-    dwallet_mpc_round_events: Vec<DWalletMPCEvent>,
+    dwallet_mpc_round_events: Vec<DWalletMPCEventMessage>,
     dwallet_mpc_completed_sessions: Vec<ObjectID>,
 }
 
@@ -2392,7 +2392,7 @@ impl ConsensusCommitOutput {
         self.dwallet_mpc_completed_sessions = new_value;
     }
 
-    pub(crate) fn set_dwallet_mpc_round_events(&mut self, new_value: Vec<DWalletMPCEvent>) {
+    pub(crate) fn set_dwallet_mpc_round_events(&mut self, new_value: Vec<DWalletMPCEventMessage>) {
         self.dwallet_mpc_round_events = new_value;
     }
 

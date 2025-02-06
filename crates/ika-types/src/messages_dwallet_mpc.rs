@@ -1,10 +1,8 @@
+use move_core_types::account_address::AccountAddress;
 use crate::crypto::default_hash;
 use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares,
-    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares, DWALLET_MPC_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME};
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
     START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
@@ -21,6 +19,7 @@ use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::id::ID;
 use sui_types::message_envelope::Message;
 use sui_types::SUI_SYSTEM_ADDRESS;
+use crate::dwallet_mpc_error::DwalletMPCError;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
@@ -128,7 +127,7 @@ impl MPCProtocolInitData {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct DWalletMPCEvent {
+pub struct DWalletMPCEventMessage {
     // TODO: remove event - do all parsing beforehand.
     pub event: SuiEvent,
     pub session_info: SessionInfo,
@@ -190,6 +189,39 @@ pub struct SessionInfo {
     pub mpc_round: MPCProtocolInitData,
 }
 
+/// Represents the Rust version of the Move struct `ika_system::dwallet::DWalletMPCEvent`.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+pub struct DWalletMPCEvent<E: TryInto<SessionInfo>>{
+    epoch: u64,
+    session_id: ObjectID,
+    event_data: E,
+}
+
+impl<E: TryInto<SessionInfo>> TryFrom<DWalletMPCEvent<E>> for SessionInfo {
+    type Error = DwalletMPCError;
+
+    fn try_from(event: DWalletMPCEvent<E>) -> Result<Self, Self::Error> {
+        event.event_data.try_into().map_err(|_| DwalletMPCError::SessionInfoFromMPCEventFail(event.session_id))
+    }
+}
+
+impl<E: TryInto<SessionInfo>> DWalletMPCEvent<E> {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`DWalletMPCEvent`] events from the chain and initiate the MPC session.
+    pub fn type_(package_id: AccountAddress, type_param: TypeTag) -> StructTag {
+        StructTag {
+            address: package_id,
+            name: DWALLET_MPC_EVENT_STRUCT_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
+            type_params: vec![type_param],
+        }
+    }
+
+    pub fn is_dwallet_mpc_event(event: StructTag, package_id: AccountAddress) -> bool {
+        event.address == package_id && event.name == DWALLET_MPC_EVENT_STRUCT_NAME.to_owned() && event.module == DWALLET_MODULE_NAME.to_owned()
+    }
+}
+
 /// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
 /// Defined here so that we can use it in the [`MPCProtocolInitData`] enum,
 /// as the inner data of the [`MPCProtocolInitData::EncryptedShareVerification`].
@@ -220,14 +252,26 @@ pub struct StartEncryptedShareVerificationEvent {
     pub initiator: SuiAddress,
 }
 
+impl From<StartEncryptedShareVerificationEvent> for SessionInfo {
+    fn from(event: StartEncryptedShareVerificationEvent) -> Self {
+        SessionInfo {
+            flow_session_id: event.session_id,
+            session_id: event.session_id,
+            initiating_user_address: Default::default(),
+            mpc_round: MPCProtocolInitData::EncryptedShareVerification(event),
+        }
+    }
+}
+
 impl StartEncryptedShareVerificationEvent {
-    pub fn type_() -> StructTag {
-        StructTag {
-            address: SUI_SYSTEM_ADDRESS,
+    pub fn type_(package_id: AccountAddress) -> StructTag {
+        let event_data_type = StructTag {
+            address: package_id,
             name: ident_str!("StartEncryptedShareVerificationEvent").to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
-        }
+        }.into();
+    DWalletMPCEvent::<Self>::type_(package_id, event_data_type)
     }
 }
 
@@ -245,14 +289,26 @@ pub struct StartEncryptionKeyVerificationEvent {
     pub session_id: ObjectID,
 }
 
+impl From<StartEncryptionKeyVerificationEvent> for SessionInfo {
+    fn from(event: StartEncryptionKeyVerificationEvent) -> Self {
+        SessionInfo {
+            flow_session_id: event.session_id,
+            session_id: event.session_id,
+            initiating_user_address: Default::default(),
+            mpc_round: MPCProtocolInitData::EncryptionKeyVerification(event),
+        }
+    }
+}
+
 impl StartEncryptionKeyVerificationEvent {
-    pub fn type_() -> StructTag {
-        StructTag {
-            address: SUI_SYSTEM_ADDRESS,
+    pub fn type_(package_id: AccountAddress) -> StructTag {
+        let event_data_type = StructTag {
+            address: package_id,
             name: ident_str!("StartEncryptionKeyVerificationEvent").to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
-        }
+        }.into();
+        DWalletMPCEvent::<Self>::type_(package_id, event_data_type)
     }
 }
 
@@ -270,14 +326,26 @@ pub struct StartPartialSignaturesVerificationEvent<D> {
     pub initiator: SuiAddress,
 }
 
-impl<D> StartPartialSignaturesVerificationEvent<D> {
-    pub fn type_(type_param: TypeTag) -> StructTag {
-        StructTag {
-            address: SUI_SYSTEM_ADDRESS,
+impl From<StartPartialSignaturesVerificationEvent<SignData>> for SessionInfo {
+    fn from(event: StartPartialSignaturesVerificationEvent<SignData>) -> Self {
+        SessionInfo {
+            flow_session_id: event.session_id,
+            session_id: event.session_id,
+            initiating_user_address: event.initiator,
+            mpc_round: MPCProtocolInitData::PartialSignatureVerification(event),
+        }
+    }
+}
+
+impl StartPartialSignaturesVerificationEvent<SignData> {
+    pub fn type_(package_id: AccountAddress, type_param: TypeTag) -> StructTag {
+        let event_data_type = StructTag {
+            address: package_id,
             name: ident_str!("StartPartialSignaturesVerificationEvent").to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![type_param],
-        }
+        }.into();
+        DWalletMPCEvent::<Self>::type_(package_id, event_data_type)
     }
 }
 
@@ -311,17 +379,32 @@ pub struct StartDKGSecondRoundEvent {
     pub initiator_public_key: Vec<u8>,
 }
 
+impl From<StartDKGSecondRoundEvent> for SessionInfo {
+    fn from(event: StartDKGSecondRoundEvent) -> Self {
+        SessionInfo {
+            flow_session_id: event.first_round_session_id,
+            session_id: ObjectID::from(event.session_id),
+            initiating_user_address: event.initiator,
+            mpc_round: MPCProtocolInitData::DKGSecond(
+                event.clone(),
+                0, // Todo (Yael): Somehow remove this from the struct and pass data differently in the future.
+            ),
+        }
+    }
+}
+
 impl StartDKGSecondRoundEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`StartDKGSecondRoundEvent`] events from the chain
     /// and initiate the MPC session.
-    pub fn type_() -> StructTag {
-        StructTag {
-            address: SUI_SYSTEM_ADDRESS,
+    pub fn type_(package_id: AccountAddress) -> StructTag {
+        let event_data_type = StructTag {
+            address: package_id,
             name: START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
-        }
+        }.into();
+        DWalletMPCEvent::<Self>::type_(package_id, event_data_type)
     }
 }
 
@@ -378,9 +461,9 @@ pub struct SignData {
 impl SignData {
     /// This function returns the `StructTag` representation of the Move [`SignData`] object,
     /// allowing it to be compared with the corresponding Move object on the chain.
-    pub fn type_() -> StructTag {
+    pub fn type_(package_id: AccountAddress) -> StructTag {
         StructTag {
-            address: SUI_SYSTEM_ADDRESS,
+            address: package_id,
             name: SIGN_DATA_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
@@ -406,16 +489,28 @@ pub struct StartPresignFirstRoundEvent {
     pub dwallet_mpc_network_key_version: u8,
 }
 
+impl From<StartPresignFirstRoundEvent> for SessionInfo {
+    fn from(event: StartPresignFirstRoundEvent) -> Self {
+        SessionInfo {
+            flow_session_id: event.session_id,
+            session_id: event.session_id,
+            initiating_user_address: event.initiator,
+            mpc_round: MPCProtocolInitData::PresignFirst(event),
+        }
+    }
+}
+
 impl StartPresignFirstRoundEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`StartPresignFirstRoundEvent`] events
     /// from the chain and initiate the MPC session.
-    pub fn type_() -> StructTag {
-        StructTag {
-            address: SUI_SYSTEM_ADDRESS,
+    pub fn type_(package_id: AccountAddress) -> StructTag {
+        let event_data_type = StructTag {
+            address: package_id,
             name: START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
-        }
+        }.into();
+        DWalletMPCEvent::<Self>::type_(package_id, event_data_type)
     }
 }

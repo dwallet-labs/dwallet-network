@@ -40,7 +40,7 @@ use ika_types::digests::Digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DWalletMPCEvent, DWalletMPCLocalComputationMetadata, DWalletMPCMessage,
+    AdvanceResult, DWalletMPCEventMessage, DWalletMPCLocalComputationMetadata, DWalletMPCMessage,
     MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
     StartPresignFirstRoundEvent,
 };
@@ -163,7 +163,7 @@ impl DWalletMPCManager {
         })
     }
 
-    pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
+    pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEventMessage) {
         if let Err(err) = self.handle_event(event.event, event.session_info) {
             error!("Failed to handle event with error: {:?}", err);
         }

@@ -95,12 +95,12 @@ pub(crate) fn session_info_from_event(
     dwallet_network_key_version: Option<u8>,
 ) -> anyhow::Result<Option<SessionInfo>> {
     match &event.type_ {
-        t if t == &StartDKGFirstRoundEvent::type_() => {
+        t if t == &StartDKGFirstRoundEvent::type_(*event.package_id) => {
             let deserialized_event: StartDKGFirstRoundEvent =
                 serde_json::from_value(event.parsed_json)?;
             Ok(Some(dkg_first_party_session_info(deserialized_event)))
         }
-        t if t == &StartDKGSecondRoundEvent::type_() => {
+        t if t == &StartDKGSecondRoundEvent::type_(*event.package_id) => {
             let deserialized_event: StartDKGSecondRoundEvent =
                 serde_json::from_value(event.parsed_json)?;
             Ok(Some(dkg_second_party_session_info(
@@ -112,19 +112,20 @@ pub(crate) fn session_info_from_event(
                 },
             )))
         }
-        t if t == &StartPresignFirstRoundEvent::type_() => {
+        t if t == &StartPresignFirstRoundEvent::type_(*event.package_id) => {
             let deserialized_event: StartPresignFirstRoundEvent =
                 serde_json::from_value(event.parsed_json)?;
             Ok(Some(presign_first_party_session_info(deserialized_event)))
         }
-        t if t == &StartSignEvent::<SignData>::type_(SignData::type_().into()) => {
+        t if t == &StartSignEvent::<SignData>::type_(SignData::type_(*event.package_id).into()) => {
             let deserialized_event: StartSignEvent<SignData> =
                 serde_json::from_value(event.parsed_json)?;
             Ok(Some(sign_party_session_info(&deserialized_event)))
         }
         t if t
             == &StartPartialSignaturesVerificationEvent::<SignData>::type_(
-                SignData::type_().into(),
+                *event.package_id,
+                SignData::type_(*event.package_id).into(),
             ) =>
         {
             let deserialized_event: StartPartialSignaturesVerificationEvent<SignData> =
@@ -134,31 +135,31 @@ pub(crate) fn session_info_from_event(
                 party_id,
             )))
         }
-        t if t == &StartBatchedSignEvent::type_() => {
+        t if t == &StartBatchedSignEvent::type_(*event.package_id) => {
             let deserialized_event: StartBatchedSignEvent =
                 serde_json::from_value(event.parsed_json)?;
             Ok(Some(batched_sign_session_info(&deserialized_event)))
         }
-        t if t == &StartBatchedPresignEvent::type_() => {
+        t if t == &StartBatchedPresignEvent::type_(*event.package_id) => {
             let deserialized_event: StartBatchedPresignEvent =
                 serde_json::from_value(event.parsed_json)?;
             Ok(Some(batched_presign_session_info(&deserialized_event)))
         }
-        t if t == &StartNetworkDKGEvent::type_() => {
+        t if t == &StartNetworkDKGEvent::type_(*event.package_id) => {
             let deserialized_event: StartNetworkDKGEvent =
                 serde_json::from_value(event.parsed_json)?;
             Ok(Some(network_dkg::network_dkg_session_info(
                 deserialized_event,
             )?))
         }
-        t if t == &StartEncryptedShareVerificationEvent::type_() => {
+        t if t == &StartEncryptedShareVerificationEvent::type_(*event.package_id) => {
             let deserialized_event: StartEncryptedShareVerificationEvent =
                 serde_json::from_value(event.parsed_json)?;
             Ok(Some(start_encrypted_share_verification_session_info(
                 deserialized_event,
             )))
         }
-        t if t == &StartEncryptionKeyVerificationEvent::type_() => {
+        t if t == &StartEncryptionKeyVerificationEvent::type_(*event.package_id) => {
             let deserialized_event: StartEncryptionKeyVerificationEvent =
                 serde_json::from_value(event.parsed_json)?;
             Ok(Some(start_encryption_key_verification_session_info(
@@ -500,7 +501,7 @@ pub(crate) fn session_input_from_event(
     dwallet_mpc_manager: &DWalletMPCManager,
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
     match &event.type_ {
-        t if t == &StartNetworkDKGEvent::type_() => {
+        t if t == &StartNetworkDKGEvent::type_(*event.package_id) => {
             let deserialized_event: StartNetworkDKGEvent =
                 serde_json::from_value(event.parsed_json)?;
             Ok((
@@ -513,7 +514,7 @@ pub(crate) fn session_input_from_event(
                 )?),
             ))
         }
-        t if t == &StartDKGFirstRoundEvent::type_() => {
+        t if t == &StartDKGFirstRoundEvent::type_(*event.package_id) => {
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
@@ -522,7 +523,7 @@ pub(crate) fn session_input_from_event(
             )?;
             Ok((dkg_first_public_input(protocol_public_parameters)?, None))
         }
-        t if t == &StartDKGSecondRoundEvent::type_() => {
+        t if t == &StartDKGSecondRoundEvent::type_(*event.package_id) => {
             let deserialized_event: StartDKGSecondRoundEvent =
                 serde_json::from_value(event.parsed_json)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
@@ -536,7 +537,7 @@ pub(crate) fn session_input_from_event(
                 None,
             ))
         }
-        t if t == &StartPresignFirstRoundEvent::type_() => {
+        t if t == &StartPresignFirstRoundEvent::type_(*event.package_id) => {
             let deserialized_event: StartPresignFirstRoundEvent =
                 serde_json::from_value(event.parsed_json)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
@@ -550,7 +551,7 @@ pub(crate) fn session_input_from_event(
                 None,
             ))
         }
-        t if t == &StartPresignSecondRoundData::type_() => {
+        t if t == &StartPresignSecondRoundData::type_(*event.package_id) => {
             let deserialized_event: StartPresignSecondRoundData =
                 serde_json::from_value(event.parsed_json)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
@@ -564,7 +565,7 @@ pub(crate) fn session_input_from_event(
                 None,
             ))
         }
-        t if t == &StartSignEvent::<SignData>::type_(SignData::type_().into()) => {
+        t if t == &StartSignEvent::<SignData>::type_(SignData::type_(*event.package_id).into()) => {
             let deserialized_event: StartSignEvent<SignData> =
                 serde_json::from_value(event.parsed_json)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
@@ -582,11 +583,12 @@ pub(crate) fn session_input_from_event(
                 None,
             ))
         }
-        t if t == &StartEncryptedShareVerificationEvent::type_() => Ok((vec![], None)),
-        t if t == &StartEncryptionKeyVerificationEvent::type_() => Ok((vec![], None)),
+        t if t == &StartEncryptedShareVerificationEvent::type_(*event.package_id) => Ok((vec![], None)),
+        t if t == &StartEncryptionKeyVerificationEvent::type_(*event.package_id) => Ok((vec![], None)),
         t if t
             == &StartPartialSignaturesVerificationEvent::<SignData>::type_(
-                SignData::type_().into(),
+                *event.package_id,
+                SignData::type_(*event.package_id).into(),
             ) =>
         {
             let deserialized_event: StartPartialSignaturesVerificationEvent<SignData> =
