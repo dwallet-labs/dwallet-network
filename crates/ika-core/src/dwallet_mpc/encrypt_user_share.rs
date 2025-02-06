@@ -34,7 +34,6 @@ type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
 pub(crate) fn verify_encrypted_share(
     verification_data: &StartEncryptedShareVerificationEvent,
 ) -> DwalletMPCResult<()> {
-    verify_dwallet_public_output_signature(&verification_data)?;
     verify_centralized_secret_key_share_proof(
         &verification_data.encrypted_centralized_secret_share_and_proof,
         &verification_data.decentralized_public_output,
@@ -56,35 +55,6 @@ pub(crate) fn verify_encryption_key(
     if derived_ika_addr != verification_data.initiator {
         return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
     }
-    Ok(())
-}
-
-/// Verify the signature for the public output of the dWallet,
-/// and that the public key that signed the dWallet public output
-/// is matching the address that created and signed this encryption key share.
-fn verify_dwallet_public_output_signature(
-    verification_data: &StartEncryptedShareVerificationEvent,
-) -> DwalletMPCResult<()> {
-    let public_key =
-        <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.encryptor_ed25519_pubkey)
-            .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
-    let derived_ika_addr = SuiAddress::from(&public_key);
-    if derived_ika_addr != verification_data.initiator {
-        return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
-    }
-    let signature = <Ed25519Signature as ToFromBytes>::from_bytes(
-        &verification_data.decentralized_public_output_signature,
-    )
-    .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
-    let public_keys = &bcs::to_bytes(
-        &public_keys_from_dkg_output(bcs::from_bytes(
-            &verification_data.decentralized_public_output,
-        )?)
-        .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
-    )?;
-    public_key
-        .verify(&public_keys, &signature)
-        .map_err(|_e| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     Ok(())
 }
 
