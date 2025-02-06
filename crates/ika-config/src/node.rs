@@ -99,6 +99,7 @@ pub struct SuiConnectorConfig {
     pub sui_ika_system_module_last_processed_event_id_override: Option<EventID>,
 }
 
+#[derive(Debug, Clone)]
 pub struct IkaPackagesConfig {
     /// The move package id of ika (IKA) on sui.
     pub ika_package_id: ObjectID,

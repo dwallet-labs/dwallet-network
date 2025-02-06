@@ -950,6 +950,7 @@ impl AuthorityPerEpochStore {
             epoch_start_configuration,
             chain_identifier,
             perpetual_tables,
+            self.packages_config.clone(),
         )
     }
 
