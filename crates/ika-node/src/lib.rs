@@ -45,7 +45,7 @@ use fastcrypto_zkp::bn254::zk_login::JWK;
 pub use handle::IkaNodeHandle;
 use ika_archival::reader::ArchiveReaderBalancer;
 use ika_archival::writer::ArchiveWriter;
-use ika_config::node::{IkaPackagesConfig, RunWithRange};
+use ika_config::node::RunWithRange;
 use ika_config::node_config_metrics::NodeConfigMetrics;
 use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use ika_config::{ConsensusConfig, NodeConfig};
@@ -185,6 +185,7 @@ use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::SuiClient;
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
 #[cfg(msim)]

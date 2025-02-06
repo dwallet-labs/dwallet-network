@@ -428,7 +428,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// Loads all dWallet MPC events from the epoch start from the epoch tables.
     /// Needed to be a separate function because the DB table does not implement the `Send` trait,
     /// hence async code involving it can cause compilation errors.
-    async fn load_dwallet_mpc_events_from_epoch_start(&self) -> IkaResult<Vec<DWalletMPCEventMessage>> {
+    async fn load_dwallet_mpc_events_from_epoch_start(
+        &self,
+    ) -> IkaResult<Vec<DWalletMPCEventMessage>> {
         Ok(self
             .epoch_store
             .tables()?

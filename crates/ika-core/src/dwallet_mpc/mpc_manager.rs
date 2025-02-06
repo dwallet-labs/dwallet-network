@@ -634,7 +634,7 @@ impl DWalletMPCManager {
 
     /// Returns the epoch store.
     /// Errors if the epoch was switched in the middle.
-    fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
+    pub(crate) fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
         self.epoch_store
             .upgrade()
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))

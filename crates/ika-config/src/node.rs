@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::initiation;
 use crate::object_storage_config::ObjectStoreConfig;
 use crate::p2p::P2pConfig;
 use crate::Config;
@@ -11,33 +10,27 @@ use once_cell::sync::OnceCell;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
-use sui_keys::keypair_file::read_keypair_from_file;
 use sui_types::base_types::{ObjectID, SuiAddress};
 
+use dwallet_classgroups_types::ClassGroupsDecryptionKey;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::crypto::KeypairTraits;
 use ika_types::crypto::NetworkKeyPair;
-use ika_types::messages_checkpoint::CheckpointSequenceNumber;
-use ika_types::supported_protocol_versions::{Chain, SupportedProtocolVersions};
-pub use sui_config::node::KeyPairWithPath;
-use sui_types::crypto::SuiKeyPair;
-use sui_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
-
-use dwallet_classgroups_types::ClassGroupsDecryptionKey;
 use ika_types::crypto::{
     get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, EncodeDecodeBase64,
 };
+use ika_types::messages_checkpoint::CheckpointSequenceNumber;
+use ika_types::supported_protocol_versions::SupportedProtocolVersions;
+pub use sui_config::node::KeyPairWithPath;
+use sui_types::crypto::SuiKeyPair;
 use sui_types::event::EventID;
 use sui_types::multiaddr::Multiaddr;
-use tracing::info;
-
 pub const LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL: &'static str = "http://127.0.0.1:9000";
 pub const LOCAL_DEFAULT_SUI_FAUCET_URL: &'static str = "http://127.0.0.1:9123/gas";
 
@@ -97,16 +90,6 @@ pub struct SuiConnectorConfig {
     /// Otherwise, it will miss one event because of fullnode Event query semantics.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sui_ika_system_module_last_processed_event_id_override: Option<EventID>,
-}
-
-#[derive(Debug, Clone)]
-pub struct IkaPackagesConfig {
-    /// The move package id of ika (IKA) on sui.
-    pub ika_package_id: ObjectID,
-    /// The move package id of ika_system on sui.
-    pub ika_system_package_id: ObjectID,
-    /// The object id of ika_system_state on sui.
-    pub system_id: ObjectID,
 }
 
 #[serde_as]
