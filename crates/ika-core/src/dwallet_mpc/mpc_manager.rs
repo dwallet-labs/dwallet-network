@@ -1,4 +1,6 @@
-use crate::authority::authority_per_epoch_store::{AuthorityPerEpochStore, ConsensusCommitOutput};
+use crate::authority::authority_per_epoch_store::{
+    AuthorityPerEpochStore, ConsensusCertificateResult, ConsensusCommitOutput,
+};
 use crate::consensus_adapter::SubmitToConsensus;
 use ika_types::error::IkaResult;
 use sui_types::base_types::ObjectID;
@@ -7,14 +9,17 @@ use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
     ComputationUpdate, CryptographicComputationsOrchestrator,
 };
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
-use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
+use crate::dwallet_mpc::mpc_events::{StartPresignSecondRoundData, ValidatorDataForNetworkDKG};
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
 };
-use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
+use crate::dwallet_mpc::{
+    authority_name_to_party_id, party_id_to_authority_name, presign_second_party_session_info,
+    presign_second_public_input,
+};
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
 use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -37,6 +42,7 @@ use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DWalletMPCEvent, DWalletMPCLocalComputationMetadata, DWalletMPCMessage,
     MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
+    StartPresignFirstRoundEvent,
 };
 use mpc::WeightedThresholdAccessStructure;
 use rayon::prelude::*;
@@ -44,8 +50,10 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use sui_storage::mutex_table::MutexGuard;
 use sui_types::digests::TransactionDigest;
 use sui_types::event::Event;
+use sui_types::id::ID;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::debug;
@@ -309,7 +317,7 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    pub(super) fn get_protocol_public_parameters(
+    pub(crate) fn get_protocol_public_parameters(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
         key_version: u8,
@@ -320,6 +328,40 @@ impl DWalletMPCManager {
         Err(DwalletMPCError::TwoPCMPCError(
             "Decryption share not found".to_string(),
         ))
+    }
+
+    /// Starts the second cryptographic round of the Presign protocol.
+    pub(crate) fn start_second_presign_round(
+        &mut self,
+        output: &Vec<u8>,
+        init_event: &StartPresignFirstRoundEvent,
+    ) -> DwalletMPCResult<()> {
+        let presign_second_session_id = ObjectID::derive_id(
+            TransactionDigest::new(init_event.session_id.into_bytes()),
+            1,
+        );
+        let protocol_public_parameters = self.get_protocol_public_parameters(
+            // The event is assign with a Secp256k1 dwallet.
+            // Todo (#473): Support generic network key scheme
+            DWalletMPCNetworkKeyScheme::Secp256k1,
+            init_event.dwallet_mpc_network_key_version,
+        )?;
+        let start_presign_second_round_data = StartPresignSecondRoundData {
+            session_id: presign_second_session_id,
+            initiator: init_event.initiator,
+            dwallet_id: init_event.dwallet_id.clone(),
+            dkg_output: init_event.dkg_output.clone(),
+            first_round_output: output.clone(),
+            first_round_session_id: init_event.session_id.clone(),
+            batch_session_id: init_event.batch_session_id.clone(),
+            dwallet_mpc_network_key_version: init_event.dwallet_mpc_network_key_version.clone(),
+        };
+        let session_info = presign_second_party_session_info(&start_presign_second_round_data);
+        let public_input = presign_second_public_input(
+            start_presign_second_round_data.clone(),
+            protocol_public_parameters,
+        )?;
+        self.push_new_mpc_session(public_input, None, session_info)
     }
 
     pub(super) fn get_decryption_key_share_public_parameters(

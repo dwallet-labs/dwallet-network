@@ -61,18 +61,24 @@ use crate::consensus_handler::{
     ConsensusCommitInfo, SequencedConsensusTransaction, SequencedConsensusTransactionKey,
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
-use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
+use crate::dwallet_mpc::mpc_events::StartPresignSecondRoundData;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
 };
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
+use crate::dwallet_mpc::{
+    authority_name_to_party_id, presign_first_public_input, presign_second_party_session_info,
+    presign_second_public_input,
+};
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::ClassGroupsDecryptionKey;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
+};
 use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
@@ -89,6 +95,7 @@ use ika_types::messages_consensus::{
 use ika_types::messages_consensus::{Round, TimestampMs};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
+    StartPresignFirstRoundEvent,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use move_bytecode_utils::module_cache::SyncModuleCache;
@@ -101,10 +108,12 @@ use std::str::FromStr;
 use std::time::Duration;
 use sui_macros::fail_point;
 use sui_storage::mutex_table::{MutexGuard, MutexTable};
+use sui_types::digests::TransactionDigest;
 use sui_types::effects::TransactionEffects;
 use sui_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
 };
+use sui_types::id::ID;
 use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemState;
 use tap::TapOptional;
 use tokio::time::Instant;
@@ -2029,6 +2038,10 @@ impl AuthorityPerEpochStore {
             OutputResult::FirstQuorumReached => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
                     .await;
+                if let MPCProtocolInitData::PresignFirst(init_event) = &session_info.mpc_round {
+                    manager.start_second_presign_round(&output, init_event)?;
+                    return Ok(ConsensusCertificateResult::IgnoredSystem);
+                }
                 // Output result of a single Protocol from the batch session.
                 if session_info.mpc_round.is_part_of_batch() {
                     let mut batches_manager = self.get_dwallet_mpc_batches_manager().await;
