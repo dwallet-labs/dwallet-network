@@ -99,6 +99,15 @@ pub struct SuiConnectorConfig {
     pub sui_ika_system_module_last_processed_event_id_override: Option<EventID>,
 }
 
+pub struct IkaPackagesConfig {
+    /// The move package id of ika (IKA) on sui.
+    pub ika_package_id: ObjectID,
+    /// The move package id of ika_system on sui.
+    pub ika_system_package_id: ObjectID,
+    /// The object id of ika_system_state on sui.
+    pub system_id: ObjectID,
+}
+
 #[serde_as]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]

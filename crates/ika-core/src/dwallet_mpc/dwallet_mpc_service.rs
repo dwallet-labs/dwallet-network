@@ -2,16 +2,22 @@
 //! It is responsible to read DWallet MPC messages from the
 //! local DB every [`READ_INTERVAL_MS`] seconds
 //! and forward them to the [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
+
+use std::collections::HashMap;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
-use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use std::sync::Arc;
 use sui_types::base_types::EpochId;
+use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
 use tracing::error;
 use typed_store::Map;
+use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_dwallet_mpc::DWalletMPCEventMessage;
+use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 
 const READ_INTERVAL_MS: u64 = 100;
 
@@ -71,16 +77,14 @@ impl DWalletMPCService {
                     session.status = MPCSessionStatus::Finished;
                 });
             }
-            let Ok(events) = self
-                .epoch_store
-                .load_dwallet_mpc_events_from_round(self.last_read_consensus_round + 1)
-                .await
+
+            let Ok(events) = self.read_events()
             else {
                 error!("Failed to load DWallet MPC events from the local DB");
                 continue;
             };
-            for event in events {
-                manager.handle_dwallet_db_event(event).await;
+            for (id, event) in events {
+                manager.handle_dwallet_db_event(event);
             }
             let new_dwallet_messages_iter = tables
                 .dwallet_mpc_messages
@@ -97,5 +101,37 @@ impl DWalletMPCService {
                 .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;
         }
+    }
+
+    fn read_events(&self) -> DwalletMPCResult<HashMap<EventID, DWalletMPCEventMessage>> {
+        let key_version = self.epoch_store
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
+            .unwrap_or_default();
+        let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
+        let party_id = authority_name_to_party_id(&self.epoch_store.name, &self.epoch_store)?;
+        let dwallet_mpc_new_events = pending_events
+            .iter()
+            .map(|(id, event)| {
+                let session_info =
+                    session_info_from_event(event.clone(), party_id, Some(key_version))
+                        .map_err(|e| DwalletMPCError::NonMPCEvent(e.to_string()))?
+                        .ok_or(DwalletMPCError::NonMPCEvent(
+                            "Failed to craete session info from event".to_string(),
+                        ))?;
+                Ok((*id, DWalletMPCEventMessage {
+                    event: event.clone(),
+                    session_info,
+                }))
+            })
+            .collect::<DwalletMPCResult<_>>()?;
+        Ok(dwallet_mpc_new_events)
+
+        // output.set_dwallet_mpc_round_events(dwallet_mpc_new_events);
+        // let pending_event_ids = pending_events.keys().cloned().collect::<Vec<_>>();
+        // self.perpetual_tables
+        //     .remove_pending_events(&pending_event_ids)?;
     }
 }

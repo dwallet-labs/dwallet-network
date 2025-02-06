@@ -163,7 +163,7 @@ impl DWalletMPCManager {
         })
     }
 
-    pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEventMessage) {
+    pub(crate) fn handle_dwallet_db_event(&mut self, event: DWalletMPCEventMessage) {
         if let Err(err) = self.handle_event(event.event, event.session_info) {
             error!("Failed to handle event with error: {:?}", err);
         }

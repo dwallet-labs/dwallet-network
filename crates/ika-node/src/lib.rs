@@ -45,7 +45,7 @@ use fastcrypto_zkp::bn254::zk_login::JWK;
 pub use handle::IkaNodeHandle;
 use ika_archival::reader::ArchiveReaderBalancer;
 use ika_archival::writer::ArchiveWriter;
-use ika_config::node::RunWithRange;
+use ika_config::node::{IkaPackagesConfig, RunWithRange};
 use ika_config::node_config_metrics::NodeConfigMetrics;
 use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use ika_config::{ConsensusConfig, NodeConfig};
@@ -318,6 +318,11 @@ impl IkaNode {
         //     .expect("EpochStartConfiguration of the current epoch must exist");
 
         let epoch_options = default_db_options().optimize_db_for_write_throughput(4);
+        let packages_config = IkaPackagesConfig {
+            ika_package_id: config.sui_connector_config.ika_package_id,
+            ika_system_package_id: config.sui_connector_config.ika_system_package_id,
+            system_id: config.sui_connector_config.system_id,
+        };
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
             committee.clone(),
@@ -327,6 +332,7 @@ impl IkaNode {
             epoch_start_configuration,
             chain_identifier.clone(),
             perpetual_tables.clone(),
+            packages_config,
         );
 
         info!("created epoch store");

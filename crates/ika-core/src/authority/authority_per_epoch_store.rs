@@ -120,6 +120,7 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
+use ika_config::node::IkaPackagesConfig;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -366,7 +367,8 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEventMessage>>,
     dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
     dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
-    perpetual_tables: Arc<AuthorityPerpetualTables>,
+    pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
+    packages_config: IkaPackagesConfig,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -577,6 +579,7 @@ impl AuthorityPerEpochStore {
         epoch_start_configuration: EpochStartConfiguration,
         chain_identifier: ChainIdentifier,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
+        packages_config: IkaPackagesConfig,
     ) -> Arc<Self> {
         let current_time = Instant::now();
         let epoch_id = committee.epoch;
@@ -644,6 +647,7 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_manager: OnceCell::new(),
             dwallet_mpc_network_keys: OnceCell::new(),
             perpetual_tables,
+            packages_config,
         });
 
         s.update_buffer_stake_metric();
@@ -1713,34 +1717,6 @@ impl AuthorityPerEpochStore {
         output
             .set_dwallet_mpc_round_completed_sessions(dwallet_mpc_round_completed_sessions.clone());
         dwallet_mpc_round_completed_sessions.clear();
-
-        let key_version = self
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
-            .unwrap_or_default();
-        let pending_events = self.perpetual_tables.get_all_pending_events();
-        let party_id = authority_name_to_party_id(&self.name, &self)?;
-        let dwallet_mpc_new_events = pending_events
-            .iter()
-            .map(|(_, event)| {
-                let session_info =
-                    session_info_from_event(event.clone(), party_id, Some(key_version))
-                        .map_err(|e| DwalletMPCError::NonMPCEvent(e.to_string()))?
-                        .ok_or(DwalletMPCError::NonMPCEvent(
-                            "Failed to craete session info from event".to_string(),
-                        ))?;
-                Ok(DWalletMPCEventMessage {
-                    event: event.clone(),
-                    session_info,
-                })
-            })
-            .collect::<DwalletMPCResult<_>>()?;
-        output.set_dwallet_mpc_round_events(dwallet_mpc_new_events);
-        let pending_event_ids = pending_events.keys().cloned().collect::<Vec<_>>();
-        self.perpetual_tables
-            .remove_pending_events(&pending_event_ids)?;
 
         authority_metrics
             .consensus_handler_cancelled_transactions
