@@ -30,6 +30,9 @@ pub type ClassGroupsEncryptionKeyAndProof = [(
     CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
     ClassGroupsProof,
 ); MAX_PRIMES];
+type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
+pub type DKGDecentralizedOutput =
+    <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClassGroupsKeyPairAndProof {
@@ -136,4 +139,29 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
     let decoded = Base64::decode(contents.as_str())
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
     Ok(bcs::from_bytes(&decoded)?)
+}
+
+/// Contains the public keys of the DWallet.
+///
+/// Being used to sign on with the Sui signature key when encrypting this DWallet to another user. The receiving user
+/// can later verify the signature is valid and know this DWallet decentralized output has been signed by the source
+/// address.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
+pub struct DWalletPublicKeys {
+    pub centralized_public_share: Vec<u8>,
+    pub decentralized_public_share: Vec<u8>,
+    pub public_key: Vec<u8>,
+}
+
+/// Derives [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
+// Can't use the TryFrom trait as it leads to conflicting implementations
+// Must use `anyhow::Result`, because this function is being used also in the centralized party crate.
+pub fn public_keys_from_dkg_output(
+    value: DKGDecentralizedOutput,
+) -> anyhow::Result<DWalletPublicKeys> {
+    Ok(DWalletPublicKeys {
+        centralized_public_share: bcs::to_bytes(&value.centralized_party_public_key_share)?,
+        decentralized_public_share: bcs::to_bytes(&value.public_key_share)?,
+        public_key: bcs::to_bytes(&value.public_key)?,
+    })
 }
