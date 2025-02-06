@@ -91,7 +91,6 @@ pub(crate) fn party_ids_to_authority_names(
 /// Return `None` if the event is not a DWallet MPC event.
 pub(crate) fn session_info_from_event(
     event: SuiEvent,
-    party_id: PartyID,
     dwallet_network_key_version: Option<u8>,
     packages_config: &IkaPackagesConfig,
 ) -> anyhow::Result<Option<SessionInfo>> {
@@ -166,41 +165,10 @@ pub(crate) fn session_info_from_event(
     }
 }
 
-fn start_encrypted_share_verification_session_info(
-    deserialized_event: StartEncryptedShareVerificationEvent,
-) -> SessionInfo {
-    SessionInfo {
-        flow_session_id: deserialized_event.session_id,
-        session_id: deserialized_event.session_id,
-        initiating_user_address: Default::default(),
-        mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
-    }
-}
-
-fn start_encryption_key_verification_session_info(
-    deserialized_event: StartEncryptionKeyVerificationEvent,
-) -> SessionInfo {
-    SessionInfo {
-        flow_session_id: deserialized_event.session_id,
-        session_id: deserialized_event.session_id,
-        initiating_user_address: Default::default(),
-        mpc_round: MPCProtocolInitData::EncryptionKeyVerification(deserialized_event),
-    }
-}
-
 fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
         protocol_public_parameters,
     )
-}
-
-fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
-    SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
-        session_id: deserialized_event.session_id.bytes,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::DKGFirst,
-    }
 }
 
 fn dkg_second_public_input(
@@ -241,17 +209,6 @@ pub(crate) fn presign_first_public_input(
             deserialized_event.dkg_output.clone(),
         )?,
     )
-}
-
-fn presign_first_party_session_info(
-    deserialized_event: StartPresignFirstRoundEvent,
-) -> SessionInfo {
-    SessionInfo {
-        flow_session_id: deserialized_event.session_id,
-        session_id: deserialized_event.session_id,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::PresignFirst(deserialized_event),
-    }
 }
 
 pub(crate) fn presign_second_public_input(
@@ -311,54 +268,6 @@ fn sign_public_input(
             bcs::from_bytes(&decryption_pp)?,
         )?,
     )
-}
-
-fn sign_party_session_info(deserialized_event: &StartSignEvent<SignData>) -> SessionInfo {
-    SessionInfo {
-        flow_session_id: deserialized_event.signature_algorithm_data.presign_id,
-        session_id: deserialized_event.session_id.bytes,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
-            batch_session_id: deserialized_event.batched_session_id.bytes,
-            hashed_message: deserialized_event.hashed_message.clone(),
-            dwallet_id: deserialized_event.dwallet_id.bytes,
-            dwallet_decentralized_public_output: deserialized_event
-                .dwallet_decentralized_public_output
-                .clone(),
-            network_key_version: deserialized_event.dwallet_mpc_network_key_version,
-            is_future_sign: deserialized_event.is_future_sign,
-        }),
-    }
-}
-
-fn get_verify_partial_signatures_session_info(
-    deserialized_event: &StartPartialSignaturesVerificationEvent<SignData>,
-    _party_id: PartyID,
-) -> SessionInfo {
-    SessionInfo {
-        flow_session_id: deserialized_event.session_id,
-        session_id: deserialized_event.session_id,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
-    }
-}
-
-fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> SessionInfo {
-    SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
-        session_id: deserialized_event.session_id.bytes,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::BatchedSign(deserialized_event.hashed_messages.clone()),
-    }
-}
-
-fn batched_presign_session_info(deserialized_event: &StartBatchedPresignEvent) -> SessionInfo {
-    SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
-        session_id: deserialized_event.session_id.bytes,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::BatchedPresign(deserialized_event.batch_size),
-    }
 }
 
 fn calculate_total_voting_weight(
