@@ -265,13 +265,12 @@ impl From<StartEncryptedShareVerificationEvent> for SessionInfo {
 
 impl StartEncryptedShareVerificationEvent {
     pub fn type_(package_id: AccountAddress) -> StructTag {
-        let event_data_type = StructTag {
+        StructTag {
             address: package_id,
             name: ident_str!("StartEncryptedShareVerificationEvent").to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
-        }.into();
-    DWalletMPCEvent::<Self>::type_(package_id, event_data_type)
+        }
     }
 }
 
@@ -302,13 +301,12 @@ impl From<StartEncryptionKeyVerificationEvent> for SessionInfo {
 
 impl StartEncryptionKeyVerificationEvent {
     pub fn type_(package_id: AccountAddress) -> StructTag {
-        let event_data_type = StructTag {
+        StructTag {
             address: package_id,
             name: ident_str!("StartEncryptionKeyVerificationEvent").to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
-        }.into();
-        DWalletMPCEvent::<Self>::type_(package_id, event_data_type)
+        }
     }
 }
 
@@ -339,13 +337,12 @@ impl From<StartPartialSignaturesVerificationEvent<SignData>> for SessionInfo {
 
 impl StartPartialSignaturesVerificationEvent<SignData> {
     pub fn type_(package_id: AccountAddress, type_param: TypeTag) -> StructTag {
-        let event_data_type = StructTag {
+        StructTag {
             address: package_id,
             name: ident_str!("StartPartialSignaturesVerificationEvent").to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![type_param],
-        }.into();
-        DWalletMPCEvent::<Self>::type_(package_id, event_data_type)
+        }
     }
 }
 
@@ -398,13 +395,12 @@ impl StartDKGSecondRoundEvent {
     /// It is used to detect [`StartDKGSecondRoundEvent`] events from the chain
     /// and initiate the MPC session.
     pub fn type_(package_id: AccountAddress) -> StructTag {
-        let event_data_type = StructTag {
+        StructTag {
             address: package_id,
             name: START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
-        }.into();
-        DWalletMPCEvent::<Self>::type_(package_id, event_data_type)
+        }
     }
 }
 
@@ -505,12 +501,11 @@ impl StartPresignFirstRoundEvent {
     /// It is used to detect [`StartPresignFirstRoundEvent`] events
     /// from the chain and initiate the MPC session.
     pub fn type_(package_id: AccountAddress) -> StructTag {
-        let event_data_type = StructTag {
+        StructTag {
             address: package_id,
             name: START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
-        }.into();
-        DWalletMPCEvent::<Self>::type_(package_id, event_data_type)
+        }
     }
 }
