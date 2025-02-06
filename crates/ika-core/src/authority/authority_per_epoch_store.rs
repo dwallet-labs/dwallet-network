@@ -57,6 +57,7 @@ use crate::checkpoints::{
     PendingCheckpoint, PendingCheckpointInfo, PendingCheckpointV1,
 };
 
+use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::consensus_handler::{
     ConsensusCommitInfo, SequencedConsensusTransaction, SequencedConsensusTransactionKey,
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
@@ -70,7 +71,7 @@ use crate::dwallet_mpc::mpc_outputs_verifier::{
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::{
     authority_name_to_party_id, presign_first_public_input, presign_second_party_session_info,
-    presign_second_public_input,
+    presign_second_public_input, session_info_from_event,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
@@ -365,6 +366,7 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
     dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
     dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
+    perpetual_tables: Arc<AuthorityPerpetualTables>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -574,6 +576,7 @@ impl AuthorityPerEpochStore {
         metrics: Arc<EpochMetrics>,
         epoch_start_configuration: EpochStartConfiguration,
         chain_identifier: ChainIdentifier,
+        perpetual_tables: Arc<AuthorityPerpetualTables>,
     ) -> Arc<Self> {
         let current_time = Instant::now();
         let epoch_id = committee.epoch;
@@ -640,6 +643,7 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_round_completed_sessions: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_manager: OnceCell::new(),
             dwallet_mpc_network_keys: OnceCell::new(),
+            perpetual_tables,
         });
 
         s.update_buffer_stake_metric();
@@ -928,6 +932,7 @@ impl AuthorityPerEpochStore {
         new_committee: Committee,
         epoch_start_configuration: EpochStartConfiguration,
         chain_identifier: ChainIdentifier,
+        perpetual_tables: Arc<AuthorityPerpetualTables>,
     ) -> Arc<Self> {
         assert_eq!(self.epoch() + 1, new_committee.epoch);
         self.record_reconfig_halt_duration_metric();
@@ -940,10 +945,16 @@ impl AuthorityPerEpochStore {
             self.metrics.clone(),
             epoch_start_configuration,
             chain_identifier,
+            perpetual_tables,
         )
     }
 
     pub fn new_at_next_epoch_for_testing(&self) -> Arc<Self> {
+        let perpetual_tables_options = default_db_options().optimize_db_for_write_throughput(4);
+        let perpetual_tables = Arc::new(AuthorityPerpetualTables::open(
+            &self.parent_path.join("store"),
+            Some(perpetual_tables_options.options),
+        ));
         let next_epoch = self.epoch() + 1;
         let next_committee = Committee::new(
             next_epoch,
@@ -955,6 +966,7 @@ impl AuthorityPerEpochStore {
             self.epoch_start_configuration
                 .new_at_next_epoch_for_testing(),
             self.chain_identifier,
+            perpetual_tables,
         )
     }
 
@@ -1701,9 +1713,34 @@ impl AuthorityPerEpochStore {
         output
             .set_dwallet_mpc_round_completed_sessions(dwallet_mpc_round_completed_sessions.clone());
         dwallet_mpc_round_completed_sessions.clear();
-        let mut dwallet_mpc_round_events = self.dwallet_mpc_round_events.lock().await;
-        output.set_dwallet_mpc_round_events(dwallet_mpc_round_events.clone());
-        dwallet_mpc_round_events.clear();
+
+        let key_version = self
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
+            .unwrap_or_default();
+        let pending_events = self.perpetual_tables.get_all_pending_events();
+        let party_id = authority_name_to_party_id(&self.name, &self)?;
+        let dwallet_mpc_new_events = pending_events
+            .iter()
+            .map(|(_, event)| {
+                let session_info =
+                    session_info_from_event(event.clone(), party_id, Some(key_version))
+                        .map_err(|e| DwalletMPCError::NonMPCEvent(e.to_string()))?
+                        .ok_or(DwalletMPCError::NonMPCEvent(
+                            "Failed to craete session info from event".to_string(),
+                        ))?;
+                Ok(DWalletMPCEvent {
+                    event: event.clone(),
+                    session_info,
+                })
+            })
+            .collect::<DwalletMPCResult<_>>()?;
+        output.set_dwallet_mpc_round_events(dwallet_mpc_new_events);
+        let pending_event_ids = pending_events.keys().cloned().collect::<Vec<_>>();
+        self.perpetual_tables
+            .remove_pending_events(&pending_event_ids)?;
 
         authority_metrics
             .consensus_handler_cancelled_transactions

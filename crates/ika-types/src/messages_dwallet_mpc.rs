@@ -13,10 +13,11 @@ use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use schemars::JsonSchema;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
+use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{ObjectID, SuiAddress};
-use sui_types::event::Event;
 use sui_types::id::ID;
 use sui_types::message_envelope::Message;
 use sui_types::SUI_SYSTEM_ADDRESS;
@@ -129,7 +130,7 @@ impl MPCProtocolInitData {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DWalletMPCEvent {
     // TODO: remove event - do all parsing beforehand.
-    pub event: Event,
+    pub event: SuiEvent,
     pub session_info: SessionInfo,
 }
 

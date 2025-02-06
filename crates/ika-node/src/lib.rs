@@ -326,6 +326,7 @@ impl IkaNode {
             EpochMetrics::new(&registry_service.default_registry()),
             epoch_start_configuration,
             chain_identifier.clone(),
+            perpetual_tables.clone(),
         );
 
         info!("created epoch store");
@@ -416,7 +417,7 @@ impl IkaNode {
             authority_name,
             secret,
             config.supported_protocol_versions.unwrap(),
-            perpetual_tables,
+            perpetual_tables.clone(),
             epoch_store.clone(),
             committee_store.clone(),
             checkpoint_store.clone(),
@@ -507,8 +508,9 @@ impl IkaNode {
         info!("IkaNode started!");
         let node = Arc::new(node);
         let node_copy = node.clone();
+        let perpetual_tables_copy = perpetual_tables.clone();
         spawn_monitored_task!(async move {
-            let result = Self::monitor_reconfiguration(node_copy).await;
+            let result = Self::monitor_reconfiguration(node_copy, perpetual_tables_copy).await;
             if let Err(error) = result {
                 warn!("Reconfiguration finished with error {:?}", error);
             }
@@ -986,7 +988,10 @@ impl IkaNode {
 
     /// This function awaits the completion of checkpoint execution of the current epoch,
     /// after which it iniitiates reconfiguration of the entire system.
-    pub async fn monitor_reconfiguration(self: Arc<Self>) -> Result<()> {
+    pub async fn monitor_reconfiguration(
+        self: Arc<Self>,
+        perpetual_tables: Arc<AuthorityPerpetualTables>,
+    ) -> Result<()> {
         loop {
             let run_with_range = self.config.run_with_range;
 
@@ -1173,6 +1178,7 @@ impl IkaNode {
                         &cur_epoch_store,
                         next_epoch_committee.clone(),
                         epoch_start_system_state,
+                        perpetual_tables.clone(),
                     )
                     .await;
                 info!("Epoch store finished reconfiguration.");
@@ -1208,6 +1214,7 @@ impl IkaNode {
                         &cur_epoch_store,
                         next_epoch_committee.clone(),
                         epoch_start_system_state,
+                        perpetual_tables.clone(),
                     )
                     .await;
 
@@ -1254,6 +1261,7 @@ impl IkaNode {
         cur_epoch_store: &AuthorityPerEpochStore,
         next_epoch_committee: Committee,
         next_epoch_start_system_state: EpochStartSystem,
+        perpetual_tables: Arc<AuthorityPerpetualTables>,
     ) -> Arc<AuthorityPerEpochStore> {
         let next_epoch = next_epoch_committee.epoch();
 
@@ -1267,6 +1275,7 @@ impl IkaNode {
                 self.config.supported_protocol_versions.unwrap(),
                 next_epoch_committee,
                 epoch_start_configuration,
+                perpetual_tables,
             )
             .await
             .expect("Reconfigure authority state cannot fail");
