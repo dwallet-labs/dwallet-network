@@ -417,7 +417,7 @@ impl IkaNode {
             authority_name,
             secret,
             config.supported_protocol_versions.unwrap(),
-            perpetual_tables,
+            perpetual_tables.clone(),
             epoch_store.clone(),
             committee_store.clone(),
             checkpoint_store.clone(),
@@ -508,8 +508,9 @@ impl IkaNode {
         info!("IkaNode started!");
         let node = Arc::new(node);
         let node_copy = node.clone();
+        let perpetual_tables_copy = perpetual_tables.clone();
         spawn_monitored_task!(async move {
-            let result = Self::monitor_reconfiguration(node_copy, perpetual_tables.clone()).await;
+            let result = Self::monitor_reconfiguration(node_copy, perpetual_tables_copy).await;
             if let Err(error) = result {
                 warn!("Reconfiguration finished with error {:?}", error);
             }
@@ -1177,7 +1178,7 @@ impl IkaNode {
                         &cur_epoch_store,
                         next_epoch_committee.clone(),
                         epoch_start_system_state,
-                        perpetual_tables,
+                        perpetual_tables.clone(),
                     )
                     .await;
                 info!("Epoch store finished reconfiguration.");
@@ -1213,6 +1214,7 @@ impl IkaNode {
                         &cur_epoch_store,
                         next_epoch_committee.clone(),
                         epoch_start_system_state,
+                        perpetual_tables.clone(),
                     )
                     .await;
 

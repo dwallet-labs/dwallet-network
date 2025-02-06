@@ -44,6 +44,7 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use sui_json_rpc_types::SuiEvent;
 use sui_types::digests::TransactionDigest;
 use sui_types::event::Event;
 use tokio::runtime::Handle;
@@ -303,8 +304,8 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {
-        let (public_input, private_input) = session_input_from_event(&event, &self)?;
+    fn handle_event(&mut self, event: SuiEvent, session_info: SessionInfo) -> DwalletMPCResult<()> {
+        let (public_input, private_input) = session_input_from_event(event, &self)?;
         self.push_new_mpc_session(public_input, private_input, session_info)?;
         Ok(())
     }

@@ -10,11 +10,11 @@ use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use schemars::JsonSchema;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{ObjectID, SuiAddress};
-use sui_types::event::Event;
 use sui_types::id::ID;
 use sui_types::message_envelope::Message;
 use sui_types::SUI_SYSTEM_ADDRESS;
@@ -256,7 +256,12 @@ impl StartEncryptionKeyVerificationEvent {
 
 /// Rust representation of the Move `StartPartialSignaturesVerificationEvent` Event.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct StartPartialSignaturesVerificationEvent<D> {
+// #[serde(bound = "D: Serialize + DeserializeOwned")]
+pub struct StartPartialSignaturesVerificationEvent<D>
+// where
+// D: 'static
+// D: Serialize + DeserializeOwned
+{
     pub session_id: ObjectID,
     pub messages: Vec<Vec<u8>>,
     pub hashed_messages: Vec<Vec<u8>>,
@@ -268,7 +273,10 @@ pub struct StartPartialSignaturesVerificationEvent<D> {
     pub initiator: SuiAddress,
 }
 
-impl<D> StartPartialSignaturesVerificationEvent<D> {
+impl<D> StartPartialSignaturesVerificationEvent<D>
+// where
+//     D: Serialize + DeserializeOwned
+{
     pub fn type_(type_param: TypeTag) -> StructTag {
         StructTag {
             address: SUI_SYSTEM_ADDRESS,

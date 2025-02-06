@@ -1713,23 +1713,26 @@ impl AuthorityPerEpochStore {
             .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
             .unwrap_or_default();
         let pending_events = self.perpetual_tables.get_all_pending_events();
+        let party_id = authority_name_to_party_id(&self.name, &self)?;
         let dwallet_mpc_new_events = pending_events
             .iter()
-            .map(|(_, event)| DWalletMPCEvent {
-                event,
-                session_info: session_info_from_event(
-                    event,
-                    authority_name_to_party_id(&self.name, &self)?,
-                    Some(key_version),
-                )?
-                .ok_or(DwalletMPCError::NonMPCEvent(
-                    "Failed to craete session info from event".to_string(),
-                ))?,
+            .map(|(_, event)| {
+                let session_info =
+                    session_info_from_event(event.clone(), party_id, Some(key_version))
+                        .map_err(|e| DwalletMPCError::NonMPCEvent(e.to_string()))?
+                        .ok_or(DwalletMPCError::NonMPCEvent(
+                            "Failed to craete session info from event".to_string(),
+                        ))?;
+                Ok(DWalletMPCEvent {
+                    event: event.clone(),
+                    session_info,
+                })
             })
-            .collect()?;
+            .collect::<DwalletMPCResult<_>>()?;
         output.set_dwallet_mpc_round_events(dwallet_mpc_new_events);
+        let pending_event_ids = pending_events.keys().cloned().collect::<Vec<_>>();
         self.perpetual_tables
-            .remove_pending_events(&pending_events.keys().collect())?;
+            .remove_pending_events(&pending_event_ids)?;
 
         authority_metrics
             .consensus_handler_cancelled_transactions

@@ -116,7 +116,16 @@ pub enum DwalletMPCError {
 
     #[error("the local machine has insufficient CPU cores to run a node")]
     InsufficientCPUCores,
+
+    #[error("failed de/serialize json: {0:?}")]
+    SerdeError(serde_json::error::Category),
 }
 
 /// A wrapper type for the result of a runtime operation.
 pub type DwalletMPCResult<T> = Result<T, DwalletMPCError>;
+
+impl From<serde_json::Error> for DwalletMPCError {
+    fn from(err: serde_json::Error) -> Self {
+        DwalletMPCError::SerdeError(err.classify())
+    }
+}
