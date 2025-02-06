@@ -281,9 +281,8 @@ impl DWalletMPCSession {
     fn advance_specific_party(
         &self,
     ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-        let session_id = CommitmentSizedNumber::from_le_slice(
-            self.session_info.flow_session_id.to_vec().as_slice(),
-        );
+        let session_id =
+            CommitmentSizedNumber::from_le_slice(self.session_info.session_id.to_vec().as_slice());
         match &self.session_info.mpc_round {
             MPCProtocolInitData::DKGFirst => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
@@ -297,9 +296,12 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::DKGSecond(event_data, _) => {
+                let first_round_session_id = CommitmentSizedNumber::from_le_slice(
+                    &event_data.first_round_session_id.into_bytes(),
+                );
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
-                    session_id,
+                    first_round_session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_messages.clone(),

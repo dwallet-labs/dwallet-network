@@ -173,7 +173,6 @@ fn start_encrypted_share_verification_session_info(
     deserialized_event: StartEncryptedShareVerificationEvent,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id,
         session_id: deserialized_event.session_id,
         initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
@@ -184,7 +183,6 @@ fn start_encryption_key_verification_session_info(
     deserialized_event: StartEncryptionKeyVerificationEvent,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id,
         session_id: deserialized_event.session_id,
         initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::EncryptionKeyVerification(deserialized_event),
@@ -199,7 +197,6 @@ fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResu
 
 fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::DKGFirst,
@@ -224,7 +221,6 @@ fn dkg_second_party_session_info(
     dwallet_network_key_version: u8,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.first_round_session_id,
         session_id: ObjectID::from(deserialized_event.session_id),
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::DKGSecond(
@@ -250,7 +246,6 @@ fn presign_first_party_session_info(
     deserialized_event: StartPresignFirstRoundEvent,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id,
         session_id: deserialized_event.session_id,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::Presign(deserialized_event),
@@ -290,7 +285,6 @@ fn sign_public_input(
 
 fn sign_party_session_info(deserialized_event: &StartSignEvent<SignData>) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.signature_algorithm_data.presign_id,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
@@ -311,7 +305,6 @@ fn get_verify_partial_signatures_session_info(
     _party_id: PartyID,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id,
         session_id: deserialized_event.session_id,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
@@ -320,7 +313,6 @@ fn get_verify_partial_signatures_session_info(
 
 fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::BatchedSign(deserialized_event.hashed_messages.clone()),
@@ -329,7 +321,6 @@ fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> Sess
 
 fn batched_presign_session_info(deserialized_event: &StartBatchedPresignEvent) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::BatchedPresign(deserialized_event.batch_size),
