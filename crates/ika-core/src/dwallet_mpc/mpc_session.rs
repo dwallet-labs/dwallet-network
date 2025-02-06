@@ -63,10 +63,6 @@ pub(super) struct DWalletMPCSession {
     private_input: MPCPrivateInput,
 }
 
-// todo remove
-/// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
-unsafe impl Send for DWalletMPCSession {}
-
 impl DWalletMPCSession {
     pub(crate) fn new(
         epoch_store: Weak<AuthorityPerEpochStore>,
