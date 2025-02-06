@@ -551,7 +551,8 @@ pub(crate) fn session_input_from_event(
             ))
         }
         t if t == &StartPresignSecondRoundData::type_() => {
-            let deserialized_event: StartPresignSecondRoundData = serde_json::from_value(event.parsed_json)?;
+            let deserialized_event: StartPresignSecondRoundData =
+                serde_json::from_value(event.parsed_json)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme

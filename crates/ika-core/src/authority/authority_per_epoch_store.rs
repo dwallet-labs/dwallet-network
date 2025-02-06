@@ -71,7 +71,7 @@ use crate::dwallet_mpc::mpc_outputs_verifier::{
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::{
     authority_name_to_party_id, presign_first_public_input, presign_second_party_session_info,
-    presign_second_public_input,
+    presign_second_public_input, session_info_from_event,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
