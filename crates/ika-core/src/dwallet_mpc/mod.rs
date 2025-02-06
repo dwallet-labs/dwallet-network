@@ -5,7 +5,7 @@ use crate::dwallet_mpc::dkg::{
 };
 use crate::dwallet_mpc::mpc_events::{
     StartBatchedPresignEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent, StartNetworkDKGEvent,
-    StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignEvent,
+    StartPresignSecondRoundData, StartSignEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::presign::{
@@ -24,6 +24,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     MPCProtocolInitData, SessionInfo, SingleSignSessionData, StartDKGSecondRoundEvent,
     StartEncryptedShareVerificationEvent, StartEncryptionKeyVerificationEvent,
+    StartPresignFirstRoundEvent,
 };
 use ika_types::messages_dwallet_mpc::{SignData, StartPartialSignaturesVerificationEvent};
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
@@ -115,11 +116,6 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: StartPresignFirstRoundEvent =
                 serde_json::from_value(event.parsed_json)?;
             Ok(Some(presign_first_party_session_info(deserialized_event)))
-        }
-        t if t == &StartPresignSecondRoundEvent::type_() => {
-            let deserialized_event: StartPresignSecondRoundEvent =
-                serde_json::from_value(event.parsed_json)?;
-            Ok(Some(presign_second_party_session_info(&deserialized_event)))
         }
         t if t == &StartSignEvent::<SignData>::type_(SignData::type_().into()) => {
             let deserialized_event: StartSignEvent<SignData> =
@@ -238,7 +234,7 @@ fn dkg_second_party_session_info(
     }
 }
 
-fn presign_first_public_input(
+pub(crate) fn presign_first_public_input(
     deserialized_event: StartPresignFirstRoundEvent,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
@@ -254,20 +250,15 @@ fn presign_first_party_session_info(
     deserialized_event: StartPresignFirstRoundEvent,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
-        session_id: deserialized_event.session_id.bytes,
+        flow_session_id: deserialized_event.session_id,
+        session_id: deserialized_event.session_id,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::PresignFirst(
-            deserialized_event.dwallet_id.bytes,
-            deserialized_event.dkg_output,
-            deserialized_event.batch_session_id.bytes,
-            deserialized_event.dwallet_mpc_network_key_version,
-        ),
+        mpc_round: MPCProtocolInitData::PresignFirst(deserialized_event),
     }
 }
 
-fn presign_second_public_input(
-    deserialized_event: StartPresignSecondRoundEvent,
+pub(crate) fn presign_second_public_input(
+    deserialized_event: StartPresignSecondRoundData,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
     Ok(
@@ -279,17 +270,17 @@ fn presign_second_public_input(
     )
 }
 
-fn presign_second_party_session_info(
-    deserialized_event: &StartPresignSecondRoundEvent,
+pub(crate) fn presign_second_party_session_info(
+    session_init_data: &StartPresignSecondRoundData,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.first_round_session_id.bytes,
-        session_id: deserialized_event.session_id.bytes,
-        initiating_user_address: deserialized_event.initiator,
+        flow_session_id: session_init_data.first_round_session_id,
+        session_id: session_init_data.session_id,
+        initiating_user_address: session_init_data.initiator,
         mpc_round: MPCProtocolInitData::PresignSecond(
-            deserialized_event.dwallet_id.bytes,
-            deserialized_event.first_round_output.clone(),
-            deserialized_event.batch_session_id.bytes,
+            session_init_data.dwallet_id,
+            session_init_data.first_round_output.clone(),
+            session_init_data.batch_session_id,
         ),
     }
 }
@@ -559,9 +550,8 @@ pub(crate) fn session_input_from_event(
                 None,
             ))
         }
-        t if t == &StartPresignSecondRoundEvent::type_() => {
-            let deserialized_event: StartPresignSecondRoundEvent =
-                serde_json::from_value(event.parsed_json)?;
+        t if t == &StartPresignSecondRoundData::type_() => {
+            let deserialized_event: StartPresignSecondRoundData = serde_json::from_value(event.parsed_json)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme

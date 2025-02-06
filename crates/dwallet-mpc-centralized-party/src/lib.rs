@@ -27,8 +27,9 @@ use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
-use class_groups_constants::{
-    protocol_public_parameters, public_keys_from_dkg_output, DWalletPublicKeys,
+use class_groups_constants::
+    protocol_public_parameters;
+use dwallet_classgroups_types::{public_keys_from_dkg_output, DWalletPublicKeys,
 };
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
@@ -65,6 +66,13 @@ type Secp256k1EncryptionKey = EncryptionKey<
     secp256k1::GroupElement,
 >;
 
+pub struct CentralizedDKGWasmResult {
+    pub public_key_share_and_proof: Vec<u8>,
+    pub public_output: Vec<u8>,
+    pub centralized_secret_output: Vec<u8>,
+    pub public_keys: Vec<u8>,
+}
+
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
 ///
 /// This function is invoked by the centralized party to produce:
@@ -92,7 +100,7 @@ pub fn create_dkg_output(
     key_scheme: u8,
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
-) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
+) -> anyhow::Result<CentralizedDKGWasmResult> {
     let decentralized_first_round_public_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
         bcs::from_bytes(&decentralized_first_round_public_output)
             .context("Failed to deserialize decentralized first round output")?;
@@ -130,12 +138,12 @@ pub fn create_dkg_output(
         )?,
         public_key: bcs::to_bytes(&round_result.public_output.public_key)?,
     })?;
-    Ok((
-        public_key_share_and_proof,
+    Ok(CentralizedDKGWasmResult {
         public_output,
+        public_key_share_and_proof,
         centralized_secret_output,
         public_keys,
-    ))
+    })
 }
 
 /// Computes the message digest of a given message using the specified hash function.

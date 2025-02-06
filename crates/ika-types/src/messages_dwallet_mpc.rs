@@ -1,7 +1,10 @@
 use crate::crypto::default_hash;
 use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares,
+    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
+};
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
     START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
@@ -35,8 +38,7 @@ pub enum MPCProtocolInitData {
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID (same for each message in the batch),
     /// and the dWallets' network key version.
-    // TODO (#543): Connect the two presign rounds to one.
-    PresignFirst(ObjectID, MPCPublicOutput, ObjectID, u8),
+    PresignFirst(StartPresignFirstRoundEvent),
     /// The second round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
     /// the Presign first round output, and the batch session ID.
@@ -196,7 +198,7 @@ pub struct StartEncryptedShareVerificationEvent {
     /// Encrypted centralized secret key share and the associated
     /// cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
-    /// The signature of the dWallet `centralized_public_output`,
+    /// The signature of the dWallet `decentralized_public_output`,
     /// signed by the secret key that corresponds to `encryptor_ed25519_pubkey`.
     pub decentralized_public_output_signature: Vec<u8>,
     /// The public output of the centralized party,
@@ -302,7 +304,7 @@ pub struct StartDKGSecondRoundEvent {
     pub encryption_key_id: ObjectID,
     /// The public output of the centralized party in the DKG process.
     pub decentralized_public_output: Vec<u8>,
-    /// The signature for the public output of the centralized party in the DKG process.
+    /// The signature for the public output of the decentralized party in the DKG process.
     pub decentralized_public_output_signature: Vec<u8>,
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
@@ -380,6 +382,38 @@ impl SignData {
         StructTag {
             address: SUI_SYSTEM_ADDRESS,
             name: SIGN_DATA_STRUCT_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignFirstRoundEvent`.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub struct StartPresignFirstRoundEvent {
+    /// Unique identifier for the MPC session.
+    pub session_id: ObjectID,
+    /// The address of the user that initiated this session.
+    pub initiator: SuiAddress,
+    /// The `DWallet` object's ID associated with the DKG output.
+    pub dwallet_id: ObjectID,
+    /// The DKG decentralized final output to use for the presign session.
+    pub dkg_output: Vec<u8>,
+    /// A unique identifier for the entire batch,
+    /// used to collect all the presigns in the batch and complete it.
+    pub batch_session_id: ObjectID,
+    /// The dWallet mpc network key version
+    pub dwallet_mpc_network_key_version: u8,
+}
+
+impl StartPresignFirstRoundEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`StartPresignFirstRoundEvent`] events
+    /// from the chain and initiate the MPC session.
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: SUI_SYSTEM_ADDRESS,
+            name: START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
