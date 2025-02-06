@@ -2,24 +2,21 @@ use crate::authority::authority_per_epoch_store::{
     AuthorityPerEpochStore, ConsensusCertificateResult, ConsensusCommitOutput,
 };
 use crate::consensus_adapter::SubmitToConsensus;
-use ika_types::error::IkaResult;
+use ika_types::error::{IkaError, IkaResult};
 use sui_types::base_types::ObjectID;
 
 use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
     ComputationUpdate, CryptographicComputationsOrchestrator,
 };
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
-use crate::dwallet_mpc::mpc_events::{StartPresignSecondRoundData, ValidatorDataForNetworkDKG};
+use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
 };
-use crate::dwallet_mpc::{
-    authority_name_to_party_id, party_id_to_authority_name, presign_second_party_session_info,
-    presign_second_public_input,
-};
+use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
 use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -331,40 +328,6 @@ impl DWalletMPCManager {
         ))
     }
 
-    /// Starts the second cryptographic round of the Presign protocol.
-    pub(crate) fn start_second_presign_round(
-        &mut self,
-        output: &Vec<u8>,
-        init_event: &StartPresignFirstRoundEvent,
-    ) -> DwalletMPCResult<()> {
-        let presign_second_session_id = ObjectID::derive_id(
-            TransactionDigest::new(init_event.session_id.into_bytes()),
-            1,
-        );
-        let protocol_public_parameters = self.get_protocol_public_parameters(
-            // The event is assign with a Secp256k1 dwallet.
-            // Todo (#473): Support generic network key scheme
-            DWalletMPCNetworkKeyScheme::Secp256k1,
-            init_event.dwallet_mpc_network_key_version,
-        )?;
-        let start_presign_second_round_data = StartPresignSecondRoundData {
-            session_id: presign_second_session_id,
-            initiator: init_event.initiator,
-            dwallet_id: init_event.dwallet_id.clone(),
-            dkg_output: init_event.dkg_output.clone(),
-            first_round_output: output.clone(),
-            first_round_session_id: init_event.session_id.clone(),
-            batch_session_id: init_event.batch_session_id.clone(),
-            dwallet_mpc_network_key_version: init_event.dwallet_mpc_network_key_version.clone(),
-        };
-        let session_info = presign_second_party_session_info(&start_presign_second_round_data);
-        let public_input = presign_second_public_input(
-            start_presign_second_round_data.clone(),
-            protocol_public_parameters,
-        )?;
-        self.push_new_mpc_session(public_input, None, session_info)
-    }
-
     pub(super) fn get_decryption_key_share_public_parameters(
         &self,
         key_scheme: DWalletMPCNetworkKeyScheme,
@@ -420,46 +383,57 @@ impl DWalletMPCManager {
             .get()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .status()?;
-        let sessions_ready_to_advance: Vec<DWalletMPCSession> = self
-            .mpc_sessions
-            .iter_mut()
-            .filter_map(|(_, session)| {
-                let is_valid_network_dkg_transaction =
-                    matches!(
-                        session.session_info.mpc_round,
-                        MPCProtocolInitData::NetworkDkg(..)
-                    ) && self.validators_data_for_network_dkg.len()
-                        == self
-                            .weighted_threshold_access_structure
-                            .party_to_weight
-                            .len();
+        let next_crypto_computation_quorum_check_results: Vec<(DWalletMPCSession, Vec<PartyID>)> =
+            self.mpc_sessions
+                .iter_mut()
+                .filter_map(|(_, session)| {
+                    let is_valid_network_dkg_transaction =
+                        matches!(
+                            session.session_info.mpc_round,
+                            MPCProtocolInitData::NetworkDkg(..)
+                        ) && self.validators_data_for_network_dkg.len()
+                            == self
+                                .weighted_threshold_access_structure
+                                .party_to_weight
+                                .len();
 
-                // The manager must hold a Network key to advance.
-                // The only exception is if this is the DKG session
-                // that creates and initializes this key for the first time.
-                let is_manager_ready = !cfg!(feature = "with-network-dkg")
-                    || (is_valid_network_dkg_transaction
-                        || matches!(
-                            mpc_network_key_status,
-                            // Todo (#394): Check if the current relevant key version exist
-                            DwalletMPCNetworkKeysStatus::Ready(_)
-                        ));
-                if session.is_ready_to_advance() && is_manager_ready {
-                    // We must first clone the session, as we approve to advance the current session
-                    // in the current round and then start waiting for the next round's messages
-                    // until it is ready to advance or finalized.
-                    let session_clone = session.clone();
-                    session.pending_quorum_for_highest_round_number =
-                        session.pending_quorum_for_highest_round_number + 1;
-                    Some(session_clone)
-                } else {
-                    None
-                }
-            })
+                    // The manager must hold a Network key to advance.
+                    // The only exception is if this is the DKG session
+                    // that creates and initializes this key for the first time.
+                    let is_manager_ready = !cfg!(feature = "with-network-dkg")
+                        || (is_valid_network_dkg_transaction
+                            || matches!(
+                                mpc_network_key_status,
+                                // Todo (#394): Check if the current relevant key version exist
+                                DwalletMPCNetworkKeysStatus::Ready(_)
+                            ));
+                    let check_result = session.check_quorum_for_next_crypto_round();
+                    if check_result.is_ready && is_manager_ready {
+                        // We must first clone the session, as we approve to advance the current session
+                        // in the current round and then start waiting for the next round's messages
+                        // until it is ready to advance or finalized.
+                        let session_clone = session.clone();
+                        session.pending_quorum_for_highest_round_number =
+                            session.pending_quorum_for_highest_round_number + 1;
+                        Some((session_clone, check_result.malicious_parties))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+        let malicious_parties: Vec<PartyID> = next_crypto_computation_quorum_check_results
+            .clone()
+            .into_iter()
+            .map(|(_, malicious_parties)| malicious_parties)
+            .flatten()
             .collect();
-
+        self.flag_parties_as_malicious(&malicious_parties)?;
+        let ready_sessions = next_crypto_computation_quorum_check_results
+            .into_iter()
+            .map(|(session, _)| session)
+            .collect();
         self.cryptographic_computations_orchestrator
-            .insert_ready_sessions(sessions_ready_to_advance);
+            .insert_ready_sessions(ready_sessions);
         Ok(())
     }
 

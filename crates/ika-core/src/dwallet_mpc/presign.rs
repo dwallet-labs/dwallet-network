@@ -9,6 +9,9 @@ pub(super) type PresignFirstParty =
     <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShareRoundParty;
 pub(super) type PresignSecondParty = <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceShareRoundParty;
 
+/// The number of cryptographic MPC rounds in the [`PresignFirstParty`] protocol.
+pub(crate) const PRESIGN_FIRST_PARTY_TOTAL_ROUNDS: usize = 2;
+
 /// A trait for generating the public input for the initial round of the Presign protocol.
 ///
 /// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library

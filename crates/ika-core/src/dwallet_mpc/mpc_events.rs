@@ -44,29 +44,6 @@ impl StartDKGFirstRoundEvent {
     }
 }
 
-/// Represents the Rust version of the Move
-/// struct `ika_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignSecondRoundEvent`.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartPresignSecondRoundData {
-    /// Unique identifier for the MPC session.
-    pub session_id: ObjectID,
-    /// The address of the user that initiated this session.
-    pub initiator: SuiAddress,
-    /// The `DWallet` object's ObjectID associated with the DKG output.
-    pub dwallet_id: ObjectID,
-    /// The DKG decentralized final output to use for the presign session.
-    pub dkg_output: Vec<u8>,
-    /// Presign first round output.
-    pub first_round_output: Vec<u8>,
-    /// A unique identifier for the first Presign round session.
-    pub first_round_session_id: ObjectID,
-    /// A unique identifier for the entire batch,
-    /// used to collect all the presigns in the batch and complete it.
-    pub batch_session_id: ObjectID,
-    /// The dWallet mpc network key version
-    pub(crate) dwallet_mpc_network_key_version: u8,
-}
-
 /// An event to start a batched sign session, i.e.,
 /// a sign session that signs on multiple messages simultaneously.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
@@ -84,20 +61,6 @@ pub struct StartBatchedPresignEvent {
     pub session_id: ID,
     pub batch_size: u64,
     pub initiator: SuiAddress,
-}
-
-impl StartPresignSecondRoundData {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartPresignSecondRoundData`]
-    /// events from the chain and initiate the MPC session.
-    pub fn type_() -> StructTag {
-        StructTag {
-            address: SUI_SYSTEM_ADDRESS,
-            name: START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
 }
 
 /// Represents the Rust version of the Move

@@ -5,7 +5,7 @@ use crate::dwallet_mpc::dkg::{
 };
 use crate::dwallet_mpc::mpc_events::{
     StartBatchedPresignEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent, StartNetworkDKGEvent,
-    StartPresignSecondRoundData, StartSignEvent,
+    StartSignEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::presign::{
@@ -253,35 +253,7 @@ fn presign_first_party_session_info(
         flow_session_id: deserialized_event.session_id,
         session_id: deserialized_event.session_id,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::PresignFirst(deserialized_event),
-    }
-}
-
-pub(crate) fn presign_second_public_input(
-    deserialized_event: StartPresignSecondRoundData,
-    protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<Vec<u8>> {
-    Ok(
-        <PresignSecondParty as PresignSecondPartyPublicInputGenerator>::generate_public_input(
-            protocol_public_parameters,
-            deserialized_event.dkg_output.clone(),
-            deserialized_event.first_round_output.clone(),
-        )?,
-    )
-}
-
-pub(crate) fn presign_second_party_session_info(
-    session_init_data: &StartPresignSecondRoundData,
-) -> SessionInfo {
-    SessionInfo {
-        flow_session_id: session_init_data.first_round_session_id,
-        session_id: session_init_data.session_id,
-        initiating_user_address: session_init_data.initiator,
-        mpc_round: MPCProtocolInitData::PresignSecond(
-            session_init_data.dwallet_id,
-            session_init_data.first_round_output.clone(),
-            session_init_data.batch_session_id,
-        ),
+        mpc_round: MPCProtocolInitData::Presign(deserialized_event),
     }
 }
 
@@ -547,20 +519,6 @@ pub(crate) fn session_input_from_event(
             )?;
             Ok((
                 presign_first_public_input(deserialized_event, protocol_public_parameters)?,
-                None,
-            ))
-        }
-        t if t == &StartPresignSecondRoundData::type_() => {
-            let deserialized_event: StartPresignSecondRoundData =
-                serde_json::from_value(event.parsed_json)?;
-            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-                // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-                deserialized_event.dwallet_mpc_network_key_version,
-            )?;
-            Ok((
-                presign_second_public_input(deserialized_event, protocol_public_parameters)?,
                 None,
             ))
         }

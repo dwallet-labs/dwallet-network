@@ -1,8 +1,10 @@
 use commitment::CommitmentSizedNumber;
+use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateInput, MPCPublicInput, MPCSessionStatus,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPublicInput, MPCSessionStatus,
 };
 use group::PartyID;
+use itertools::Itertools;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
@@ -15,7 +17,10 @@ use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
-use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
+use crate::dwallet_mpc::presign::{
+    PresignFirstParty, PresignSecondParty, PresignSecondPartyPublicInputGenerator,
+    PRESIGN_FIRST_PARTY_TOTAL_ROUNDS,
+};
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{
     authority_name_to_party_id, party_id_to_authority_name, party_ids_to_authority_names,
@@ -26,12 +31,25 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MPCSessionSpecificState,
-    MaliciousReport, SessionInfo, SignIASessionState, StartEncryptedShareVerificationEvent,
+    MaliciousReport, PresignSessionState, SessionInfo, SignIASessionState,
+    StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
 
+type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
+<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart;
+
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
+
+/// The result of the check if the session is ready to advance.
+///
+/// Returns whether the session is ready to advance or not, and a list of the malicious parties that were detected
+/// while performing the check.
+pub(crate) struct ReadyToAdvanceCheckResult {
+    pub(crate) is_ready: bool,
+    pub(crate) malicious_parties: Vec<PartyID>,
+}
 
 /// A dWallet MPC session.
 /// It keeps track of the session, the channel to send messages to the session,
@@ -113,12 +131,6 @@ impl DWalletMPCSession {
                 malicious_parties,
                 message,
             }) => {
-                let message = self.new_dwallet_mpc_message(message).map_err(|e| {
-                    DwalletMPCError::MPCSessionError {
-                        session_id: self.session_info.session_id,
-                        error: format!("failed to create a new MPC message on advance(): {:?}", e),
-                    }
-                })?;
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
@@ -128,6 +140,7 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
+                let message = self.new_dwallet_mpc_message(message)?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![message], &epoch_store)
@@ -143,7 +156,6 @@ impl DWalletMPCSession {
                 private_output: _,
                 public_output,
             }) => {
-                let output = self.new_dwallet_mpc_output_message(public_output)?;
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() || self.is_verifying_sign_ia_report() {
@@ -153,9 +165,28 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
+                let mut consensus_message =
+                    self.new_dwallet_mpc_output_message(public_output.clone())?;
+                if matches!(
+                    self.session_info.mpc_round,
+                    MPCProtocolInitData::Presign(..)
+                ) {
+                    if let Some(MPCSessionSpecificState::Presign(presign_state)) =
+                        &self.session_specific_state
+                    {
+                        let presign = parse_presign_from_first_and_second_outputs(
+                            &presign_state.first_presign_party_output,
+                            &public_output,
+                        )?;
+                        consensus_message =
+                            self.new_dwallet_mpc_output_message(bcs::to_bytes(&presign).unwrap())?;
+                    } else {
+                        consensus_message = self.new_dwallet_mpc_message(public_output.clone())?;
+                    }
+                }
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
-                        .submit_to_consensus(&vec![output], &epoch_store)
+                        .submit_to_consensus(&vec![consensus_message], &epoch_store)
                         .await
                     {
                         error!("failed to submit an MPC message to consensus: {:?}", err);
@@ -296,20 +327,13 @@ impl DWalletMPCSession {
                 }
                 Ok(result)
             }
-            MPCProtocolInitData::PresignFirst(..) => {
+            MPCProtocolInitData::Presign(..) => {
+                if self.pending_quorum_for_highest_round_number >= PRESIGN_FIRST_PARTY_TOTAL_ROUNDS
+                {
+                    return self.advance_presign_second_round_party(session_id);
+                }
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<PresignFirstParty>(
-                    session_id,
-                    self.party_id,
-                    &self.weighted_threshold_access_structure,
-                    self.serialized_messages.clone(),
-                    public_input,
-                    (),
-                )
-            }
-            MPCProtocolInitData::PresignSecond(..) => {
-                let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance_and_serialize::<PresignSecondParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -392,6 +416,31 @@ impl DWalletMPCSession {
         }
     }
 
+    fn advance_presign_second_round_party(
+        &self,
+        session_id: CommitmentSizedNumber,
+    ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+        let Some(MPCSessionSpecificState::Presign(presign_state)) = &self.session_specific_state
+        else {
+            return Err(DwalletMPCError::PresignRoundDataNotFound);
+        };
+        let second_presign_party_messages = self
+            .serialized_messages
+            .clone()
+            .into_iter()
+            .skip(PRESIGN_FIRST_PARTY_TOTAL_ROUNDS)
+            .collect();
+        let public_input = bcs::from_bytes(&presign_state.second_party_public_input)?;
+        crate::dwallet_mpc::advance_and_serialize::<PresignSecondParty>(
+            session_id,
+            self.party_id,
+            &self.weighted_threshold_access_structure,
+            second_presign_party_messages,
+            public_input,
+            (),
+        )
+    }
+
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     /// Returns Error only if the epoch switched in the middle and was not available.
     fn new_dwallet_mpc_message(
@@ -471,10 +520,29 @@ impl DWalletMPCSession {
         self.store_message(message)
     }
 
-    pub(crate) fn is_ready_to_advance(&self) -> bool {
+    pub(crate) fn check_quorum_for_next_crypto_round(&mut self) -> ReadyToAdvanceCheckResult {
         match self.status {
             MPCSessionStatus::Active => {
-                self.pending_quorum_for_highest_round_number == 0
+                if matches!(
+                    &self.session_info.mpc_round,
+                    MPCProtocolInitData::Presign(..)
+                ) && self.pending_quorum_for_highest_round_number
+                    == PRESIGN_FIRST_PARTY_TOTAL_ROUNDS
+                {
+                    return self
+                        .check_quorum_for_presign_first_party_output()
+                        .unwrap_or_else(|e| {
+                            error!(
+                                "Failed to check quorum for presign first party output: {:?}",
+                                e
+                            );
+                            ReadyToAdvanceCheckResult {
+                                is_ready: false,
+                                malicious_parties: vec![],
+                            }
+                        });
+                }
+                if self.pending_quorum_for_highest_round_number == 0
                     || self
                         .weighted_threshold_access_structure
                         .authorized_subset(
@@ -488,8 +556,102 @@ impl DWalletMPCSession {
                         )
                         .ok()
                         .is_some()
+                {
+                    ReadyToAdvanceCheckResult {
+                        is_ready: true,
+                        malicious_parties: vec![],
+                    }
+                } else {
+                    ReadyToAdvanceCheckResult {
+                        is_ready: false,
+                        malicious_parties: vec![],
+                    }
+                }
             }
-            _ => false,
+            _ => ReadyToAdvanceCheckResult {
+                is_ready: false,
+                malicious_parties: vec![],
+            },
         }
     }
+
+    fn check_quorum_for_presign_first_party_output(
+        &mut self,
+    ) -> DwalletMPCResult<ReadyToAdvanceCheckResult> {
+        let MPCProtocolInitData::Presign(presign_first_round_event) = &self.session_info.mpc_round
+        else {
+            return Err(DwalletMPCError::PresignRoundDataNotFound);
+        };
+        let messages = &self.serialized_messages[PRESIGN_FIRST_PARTY_TOTAL_ROUNDS];
+        let mut message_to_voting_authorities: HashMap<MPCMessage, HashSet<PartyID>> =
+            HashMap::new();
+        for (party_id, message) in messages.clone().into_iter() {
+            message_to_voting_authorities
+                .entry(message)
+                .or_insert_with(HashSet::new)
+                .insert(party_id);
+        }
+        let agreed_output = message_to_voting_authorities.iter().find(|(_, votes)| {
+            self.weighted_threshold_access_structure
+                .authorized_subset(votes)
+                .is_ok()
+        });
+        if let Some((agreed_output, _)) = agreed_output {
+            let voted_for_other_outputs: Vec<PartyID> = message_to_voting_authorities
+                .iter()
+                .filter(|(output, _)| *output != agreed_output)
+                .flat_map(|(_, voters)| voters)
+                .cloned()
+                .collect();
+            let protocol_public_parameters = self.get_protocol_public_parameters(
+                // Todo (#473): Support generic network key scheme
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+                presign_first_round_event.dwallet_mpc_network_key_version,
+            )?;
+            let presign_second_party_public_input = <PresignSecondParty as PresignSecondPartyPublicInputGenerator>::generate_public_input(
+                protocol_public_parameters,
+                presign_first_round_event.dkg_output.clone(),
+                agreed_output.clone(),
+            )?;
+            self.session_specific_state =
+                Some(MPCSessionSpecificState::Presign(PresignSessionState {
+                    first_presign_party_output: agreed_output.clone(),
+                    second_party_public_input: presign_second_party_public_input,
+                }));
+            return Ok(ReadyToAdvanceCheckResult {
+                is_ready: true,
+                malicious_parties: voted_for_other_outputs,
+            });
+        }
+        Ok(ReadyToAdvanceCheckResult {
+            is_ready: false,
+            malicious_parties: vec![],
+        })
+    }
+
+    fn get_protocol_public_parameters(
+        &self,
+        key_scheme: DWalletMPCNetworkKeyScheme,
+        key_version: u8,
+    ) -> DwalletMPCResult<Vec<u8>> {
+        if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
+            return self_decryption_share.get_protocol_public_parameters(key_scheme, key_version);
+        }
+        Err(DwalletMPCError::TwoPCMPCError(
+            "Decryption share not found".to_string(),
+        ))
+    }
+}
+
+fn parse_presign_from_first_and_second_outputs(
+    first_output: &[u8],
+    second_output: &[u8],
+) -> DwalletMPCResult<<AsyncProtocol as twopc_mpc::presign::Protocol>::Presign> {
+    let first_output: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare =
+        bcs::from_bytes(&first_output)?;
+    let second_output: (
+        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
+        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
+    ) = bcs::from_bytes(&second_output)?;
+    Ok((first_output, second_output).into())
 }
