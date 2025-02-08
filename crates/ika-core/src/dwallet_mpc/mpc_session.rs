@@ -317,9 +317,7 @@ impl DWalletMPCSession {
                         encryption_key: event_data.encryption_key.clone(),
                         encryption_key_id: event_data.encryption_key_id.clone(),
                         initiator: event_data.initiator.clone(),
-                        decentralized_public_output_signature: event_data
-                            .decentralized_public_output_signature
-                            .clone(),
+                        decentralized_public_output_signature: event_data.pubkeys_signature.clone(),
                         encryptor_ed25519_pubkey: event_data.initiator_public_key.clone(),
 
                         // Fields not relevant for verification; passing empty values.
