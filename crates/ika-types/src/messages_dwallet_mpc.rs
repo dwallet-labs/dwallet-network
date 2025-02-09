@@ -398,7 +398,7 @@ impl From<StartDKGSecondRoundEvent> for SessionInfo {
             initiating_user_address: event.initiator,
             mpc_round: MPCProtocolInitData::DKGSecond(
                 event.clone(),
-                0, // Todo (Yael): Somehow remove this from the struct and pass data differently in the future.
+                0, // Todo (#615): Read the network keys in the manager and use the value before writing the DWallet object.
             ),
         }
     }
