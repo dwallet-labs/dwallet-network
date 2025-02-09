@@ -23,7 +23,7 @@ use crate::dwallet_mpc::presign::{
 };
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{
-    authority_name_to_party_id, party_id_to_authority_name, party_ids_to_authority_names,
+    authority_name_to_party_id, party_id_to_authority_name, party_ids_to_authority_names, presign,
 };
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
@@ -36,9 +36,6 @@ use ika_types::messages_dwallet_mpc::{
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
-
-type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
-<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -174,7 +171,7 @@ impl DWalletMPCSession {
                     if let Some(MPCSessionSpecificState::Presign(presign_state)) =
                         &self.session_specific_state
                     {
-                        let presign = parse_presign_from_first_and_second_outputs(
+                        let presign = presign::parse_presign_from_first_and_second_outputs(
                             &presign_state.first_presign_party_output,
                             &public_output,
                         )?;
@@ -641,17 +638,4 @@ impl DWalletMPCSession {
             "Decryption share not found".to_string(),
         ))
     }
-}
-
-fn parse_presign_from_first_and_second_outputs(
-    first_output: &[u8],
-    second_output: &[u8],
-) -> DwalletMPCResult<<AsyncProtocol as twopc_mpc::presign::Protocol>::Presign> {
-    let first_output: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare =
-        bcs::from_bytes(&first_output)?;
-    let second_output: (
-        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
-        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
-    ) = bcs::from_bytes(&second_output)?;
-    Ok((first_output, second_output).into())
 }
