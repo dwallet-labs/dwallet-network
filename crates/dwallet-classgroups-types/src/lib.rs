@@ -149,8 +149,8 @@ pub struct DWalletPublicKeys {
     pub public_key: Vec<u8>,
 }
 
-/// Derives [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
-// Can't use the TryFrom trait as it leads to conflicting implementations
+/// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
+// Can't use the TryFrom trait as it leads to conflicting implementations.
 // Must use `anyhow::Result`, because this function is being used also in the centralized party crate.
 pub fn public_keys_from_dkg_output(
     value: DKGDecentralizedOutput,
