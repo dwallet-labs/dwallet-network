@@ -130,7 +130,6 @@ pub(crate) fn session_info_from_event(
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(get_verify_partial_signatures_session_info(
                 &deserialized_event,
-                party_id,
             )))
         }
         t if t == &StartBatchedSignEvent::type_() => {
@@ -337,7 +336,6 @@ fn sign_party_session_info(deserialized_event: &StartSignEvent<SignData>) -> Ses
 
 fn get_verify_partial_signatures_session_info(
     deserialized_event: &StartPartialSignaturesVerificationEvent<SignData>,
-    _party_id: PartyID,
 ) -> SessionInfo {
     SessionInfo {
         flow_session_id: deserialized_event.session_id.bytes,
