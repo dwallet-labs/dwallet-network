@@ -296,6 +296,7 @@ fn sign_party_session_info(deserialized_event: &StartSignEvent<SignData>) -> Ses
                 .clone(),
             network_key_version: deserialized_event.dwallet_mpc_network_key_version,
             is_future_sign: deserialized_event.is_future_sign,
+            presign_session_id: deserialized_event.signature_algorithm_data.presign_id,
         }),
     }
 }
