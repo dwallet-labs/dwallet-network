@@ -50,6 +50,16 @@ enum Hash {
     SHA256 = 1,
 }
 
+impl From<u8> for Hash {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Hash::KECCAK256,
+            1 => Hash::SHA256,
+            _ => panic!("Unsupported hash function"),
+        }
+    }
+}
+
 type SignedMessages = Vec<u8>;
 type EncryptionOfSecretShareProof = EncryptionOfDiscreteLogProofWithoutCtx<
     SCALAR_LIMBS,
