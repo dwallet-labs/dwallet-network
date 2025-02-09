@@ -1719,36 +1719,6 @@ impl AuthorityPerEpochStore {
             .set_dwallet_mpc_round_completed_sessions(dwallet_mpc_round_completed_sessions.clone());
         dwallet_mpc_round_completed_sessions.clear();
 
-        let key_version = self
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
-            .unwrap_or_default();
-        let pending_events = self.perpetual_tables.get_all_pending_events();
-        let dwallet_mpc_new_events = pending_events
-            .iter()
-            .map(|(_, event)| {
-                let session_info = session_info_from_event(
-                    event.clone(),
-                    Some(key_version),
-                    &self.packages_config,
-                )
-                .map_err(|e| DwalletMPCError::NonMPCEvent(e.to_string()))?
-                .ok_or(DwalletMPCError::NonMPCEvent(
-                    "Failed to craete session info from event".to_string(),
-                ))?;
-                Ok(DWalletMPCEventMessage {
-                    event: event.clone(),
-                    session_info,
-                })
-            })
-            .collect::<DwalletMPCResult<_>>()?;
-        output.set_dwallet_mpc_round_events(dwallet_mpc_new_events);
-        let pending_event_ids = pending_events.keys().cloned().collect::<Vec<_>>();
-        self.perpetual_tables
-            .remove_pending_events(&pending_event_ids)?;
-
         authority_metrics
             .consensus_handler_cancelled_transactions
             .inc_by(cancelled_txns.len() as u64);
