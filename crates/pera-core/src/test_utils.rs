@@ -236,7 +236,7 @@ async fn init_genesis(
         let worker_name = worker_key_pair.public().clone();
         let account_key_pair: PeraKeyPair = get_key_pair::<AccountKeyPair>().1.into();
         let network_key_pair: NetworkKeyPair = get_key_pair().1;
-        let class_groups_seed = key_pair.copy().private().as_bytes().try_into().unwrap();
+        let class_groups_seed: [u8; 32] = key_pair.copy().private().as_bytes().try_into().unwrap();
         let class_groups_key_pair_and_proof =
             generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
         let validator_info = ValidatorInfo {

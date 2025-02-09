@@ -202,7 +202,7 @@ impl ValidatorGenesisConfigBuilder {
 
         // It is safe to unwrap here because the protocol_key_pair is always set before
         // also the validator can not be built without the class groups key.
-        let seed = protocol_key_pair
+        let seed: [u8; 32] = protocol_key_pair
             .copy()
             .private()
             .as_bytes()

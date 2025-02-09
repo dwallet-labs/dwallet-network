@@ -454,13 +454,27 @@ module pera_system::dwallet {
     }
 
     // Todo (#565): Move the hash calculation into the rust code.
-    public(package) fun hash_messages(message_approvals: &vector<MessageApproval>): vector<vector<u8>> {
+    public(package) fun hash_message_approvals(message_approvals: &vector<MessageApproval>): vector<vector<u8>> {
         let mut hashed_messages = vector::empty();
         let messages_length = vector::length(message_approvals);
         let mut i: u64 = 0;
         while (i < messages_length) {
             let message = &message_approvals[i].message;
             let hash_scheme = message_approvals[i].hash_scheme;
+            let hashed_message = hash_message(*message, hash_scheme);
+            vector::push_back(&mut hashed_messages, hashed_message);
+            i = i + 1;
+        };
+        hashed_messages
+    }
+
+    // Todo (#565): Move the hash calculation into the rust code.
+    public(package) fun hash_messages(messages: &vector<vector<u8>>, hash_scheme: u8): vector<vector<u8>> {
+        let mut hashed_messages = vector::empty();
+        let messages_length = vector::length(messages);
+        let mut i: u64 = 0;
+        while (i < messages_length) {
+            let message = &messages[i];
             let hashed_message = hash_message(*message, hash_scheme);
             vector::push_back(&mut hashed_messages, hashed_message);
             i = i + 1;
@@ -625,21 +639,34 @@ module pera_system::dwallet {
     /// T: The eliptic curve type used for the dWallet (for example `Secp256k1`).
     /// D: The type of data that can be stored with the object,
     /// specific to each Digital Signature Algorithm.
-    public(package) fun create_partial_centralized_signed_messages<T: drop, D: store + drop + copy>(
+    #[allow(unused_function)]
+    fun create_partial_centralized_signed_messages<D: store + drop + copy>(
         messages: vector<vector<u8>>,
-        dwallet: &DWallet<T>,
+        dwallet_id: ID,
+        dwallet_decentralized_public_output: vector<u8>,
+        dwallet_cap_id: ID,
+        dwallet_mpc_network_decryption_key_version: u8,
         signature_algorithm_data: vector<D>,
+        session_id: ID,
+        initiator: address,
         ctx: &mut TxContext
-    ): PartialCentralizedSignedMessages<D> {
-        PartialCentralizedSignedMessages<D> {
+    ) {
+        let partial_signatures = PartialCentralizedSignedMessages<D> {
             id: object::new(ctx),
             messages,
-            dwallet_id: object::id(dwallet),
-            dwallet_decentralized_public_output: dwallet.decentralized_public_output,
-            dwallet_cap_id: dwallet.dwallet_cap_id,
-            dwallet_mpc_network_decryption_key_version: dwallet.dwallet_mpc_network_decryption_key_version,
+            dwallet_id,
+            dwallet_decentralized_public_output,
+            dwallet_cap_id,
+            dwallet_mpc_network_decryption_key_version,
             signature_algorithm_data,
-        }
+        };
+
+        event::emit(CreatedPartialCentralizedSignedMessagesEvent {
+            partial_signatures_object_id: object::id(&partial_signatures),
+            session_id,
+        });
+
+        transfer::transfer(partial_signatures, initiator);
     }
 
      // todo(zeev): remove this.
@@ -738,7 +765,7 @@ module pera_system::dwallet {
     ){
         assert!(vector::length(&signature_algorithm_data) == vector::length(&message_approvals), EExtraDataAndMessagesLenMismatch);
         // Todo (#565): Move the hash calculation into the rust code.
-        let hashed_messages = hash_messages(&message_approvals);
+        let hashed_messages = hash_message_approvals(&message_approvals);
 
         let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         event::emit(StartBatchedSignEvent {
@@ -830,6 +857,21 @@ module pera_system::dwallet {
     public struct CreatedPartialCentralizedSignedMessagesEvent has copy, drop {
         /// The unique identifier of the created `PartialCentralizedSignedMessages` object.
         partial_signatures_object_id: ID,
+        session_id: ID,
+    }
+
+    /// An event emitted to start the MPC verification, ensuring that the received partial signature is a valid partial
+    /// signature on the given message by the given dWallet.
+    public struct StartPartialSignaturesVerificationEvent<D: copy + store + drop> has copy, drop {
+        session_id: ID,
+        messages: vector<vector<u8>>,
+        hashed_messages: vector<vector<u8>>,
+        dwallet_id: ID,
+        dwallet_decentralized_public_output: vector<u8>,
+        dwallet_cap_id: ID,
+        dwallet_mpc_network_decryption_key_version: u8,
+        signature_data: vector<D>,
+        initiator: address,
     }
 
     /// A function to publish messages signed by the user on chain with on-chain verification,
@@ -841,6 +883,7 @@ module pera_system::dwallet {
         dwallet: &DWallet<T>,
         messages: vector<vector<u8>>,
         signature_algorithm_data: vector<SignatureAlgorithmData<D>>,
+        hash_scheme: u8,
         _pera_system_state: &PeraSystemState,
         ctx: &mut TxContext
     ) {
@@ -849,21 +892,22 @@ module pera_system::dwallet {
         assert!(messages_len == signature_algorithm_data_len, EExtraDataAndMessagesLenMismatch);
 
         let signature_algorithm_data_unpacked = vector::map!(signature_algorithm_data, |SignatureAlgorithmData { data }| data);
-        let partial_signatures = create_partial_centralized_signed_messages<T, D>(
+        // Todo (#565): Move the hash calculation into the rust code.
+        let hashed_messages = hash_messages(&messages, hash_scheme);
+        event::emit(StartPartialSignaturesVerificationEvent {
+            session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+            dwallet_id: object::id(dwallet),
+            dwallet_decentralized_public_output: dwallet.decentralized_public_output,
+            dwallet_cap_id: dwallet.dwallet_cap_id,
+            dwallet_mpc_network_decryption_key_version: dwallet.dwallet_mpc_network_decryption_key_version,
             messages,
-            dwallet,
-            signature_algorithm_data_unpacked,
-            ctx,
-        );
-
-        event::emit(CreatedPartialCentralizedSignedMessagesEvent {
-            partial_signatures_object_id: object::id(&partial_signatures),
+            hashed_messages,
+            signature_data: signature_algorithm_data_unpacked,
+            initiator: tx_context::sender(ctx),
         });
-
-        // Todo (#415): Add the event for the verify_partially_signed_signatures
-        // Todo (#415): PartialCentralizedSignedMessages will be created & retured to the user only after the verification is done.
-        transfer::transfer(partial_signatures, tx_context::sender(ctx));
     }
+
+
 
     /// A function to create a [`SignatureAlgorithmData`] object.
     /// Extra fields are used to store additional data with the object, specific to every protocol implementation.

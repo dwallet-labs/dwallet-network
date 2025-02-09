@@ -332,9 +332,10 @@ impl DWalletMPCManager {
     }
 
     fn new_lock_next_committee_message(&self) -> DwalletMPCResult<ConsensusTransaction> {
+        let epoch_store = self.epoch_store()?;
         Ok(ConsensusTransaction::new_lock_next_committee_message(
-            self.epoch_store()?.name,
-            self.epoch_store()?.epoch(),
+            epoch_store.name,
+            epoch_store.epoch(),
         ))
     }
 

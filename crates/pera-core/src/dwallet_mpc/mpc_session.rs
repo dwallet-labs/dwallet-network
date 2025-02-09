@@ -1,15 +1,10 @@
+use class_groups_constants::protocol_public_parameters;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPrivateInput, MPCPublicInput, MPCSessionStatus,
 };
 use group::PartyID;
-use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, Weak};
-use tokio::runtime::Handle;
-use tracing::error;
-use twopc_mpc::sign::Protocol;
-
+use mpc::{AsynchronousRoundResult, Party, WeightedThresholdAccessStructure};
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -19,6 +14,13 @@ use pera_types::messages_dwallet_mpc::{
     AdvanceResult, MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo,
     SignIASessionState, StartEncryptedShareVerificationEvent,
 };
+use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, Weak};
+use tokio::runtime::Handle;
+use tracing::error;
+use twopc_mpc::secp256k1;
+use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
+use twopc_mpc::sign::Protocol;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
@@ -26,6 +28,11 @@ use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
+use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
+use crate::dwallet_mpc::{
+    authority_name_to_party_id, get_verify_partial_signatures_session_info,
+    party_id_to_authority_name, sign,
+};
 use crate::dwallet_mpc::sign::SignFirstParty;
 use crate::dwallet_mpc::{
     authority_name_to_party_id, party_id_to_authority_name, party_ids_to_authority_names,
@@ -367,6 +374,27 @@ impl DWalletMPCSession {
                     })
                     .map_err(|err| err)
             }
+            MPCProtocolInitData::PartialSignatureVerification(event_data) => {
+                for (signature_data, hashed_message) in event_data
+                    .signature_data
+                    .iter()
+                    .zip(event_data.hashed_messages.iter())
+                {
+                    verify_partial_signature(
+                        hashed_message,
+                        &event_data.dwallet_decentralized_public_output,
+                        &signature_data.presign_output,
+                        &signature_data.message_centralized_signature,
+                        &bcs::from_bytes(&self.public_input)?,
+                        &signature_data.presign_id.bytes,
+                    )?;
+                }
+                Ok(AsynchronousRoundResult::Finalize {
+                    public_output: vec![],
+                    private_output: vec![],
+                    malicious_parties: vec![],
+                })
+            }
             MPCProtocolInitData::BatchedPresign(..) | MPCProtocolInitData::BatchedSign(..) => {
                 // This case is unreachable because the batched session is handled separately.
                 // The bathed session is only an indicator to expect a batch of messages.
@@ -375,17 +403,8 @@ impl DWalletMPCSession {
         }
     }
 
-    /// A function to restart an MPC session.
-    /// Being called when session advancement has failed due to malicious parties.
-    /// Those parties will be flagged as malicious and ignored,
-    /// the session will be restarted.
-    pub(crate) fn restart(&mut self) {
-        self.status = MPCSessionStatus::Active;
-        self.serialized_messages = vec![HashMap::new()];
-    }
-
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
-    /// Returns None only if the epoch switched in the middle and was not available.
+    /// Returns Error only if the epoch switched in the middle and was not available.
     fn new_dwallet_mpc_message(
         &self,
         message: MPCMessage,
@@ -427,7 +446,7 @@ impl DWalletMPCSession {
         )
     }
 
-    /// Stores a message in the pending messages map.
+    /// Stores a message in the serialized messages map.
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {

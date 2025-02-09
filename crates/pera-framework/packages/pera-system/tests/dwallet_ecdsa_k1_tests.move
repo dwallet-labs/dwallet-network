@@ -285,7 +285,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
         let effects: TransactionEffects = test_scenario::end(scenario);
 
-        // Verify the expected event was emitted
+        // Verify the expected events were emitted
         let events_num = test_scenario::num_user_events(&effects);
         assert!(events_num == 2, EWrongEventNumber);
 
@@ -448,6 +448,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         let effects: TransactionEffects = test_scenario::end(scenario);
 
         let events_num = test_scenario::num_user_events(&effects);
+        // One sign batch event and two sign events
         assert!(events_num == 3, EWrongEventNumber);
     }
 
@@ -510,6 +511,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         let effects: TransactionEffects = test_scenario::end(scenario);
 
         let events_num = test_scenario::num_user_events(&effects);
+        // One sign batch event and two sign events
         assert!(events_num == 3, EWrongEventNumber);
     }
 
@@ -538,9 +540,10 @@ module pera_system::dwallet_ecdsa_k1_tests {
         test_scenario::next_tx(&mut scenario, sender);
         {
             let ctx = test_scenario::ctx(&mut scenario);
-            let mut messages_to_approve: vector<vector<u8>> = vector[std::vector::singleton(
-                0xBB
-            ), std::vector::singleton(0xBB)];
+            let mut messages_to_approve: vector<vector<u8>> = vector[
+                std::vector::singleton(0xBB), 
+                std::vector::singleton(0xBB),
+            ];
             let mut message_approvals = pera_system::dwallet::approve_messages(
                 &dwallet_cap,
                 0,
@@ -583,6 +586,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         let effects: TransactionEffects = test_scenario::end(scenario);
 
         let events_num = test_scenario::num_user_events(&effects);
+        // One sign batch event and two sign events
         assert!(events_num == 3, EWrongEventNumber);
     }
 
@@ -670,6 +674,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         let effects: TransactionEffects = test_scenario::end(scenario);
 
         let events_num = test_scenario::num_user_events(&effects);
+        // One sign batch event and two sign events
         assert!(events_num == 3, EWrongEventNumber);
     }
 

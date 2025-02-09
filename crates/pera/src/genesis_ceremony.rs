@@ -295,7 +295,8 @@ mod test {
                     get_key_pair_from_rng(&mut rand::rngs::OsRng).1;
                 let account_keypair: AccountKeyPair =
                     get_key_pair_from_rng(&mut rand::rngs::OsRng).1;
-                let class_groups_seed = keypair.copy().private().as_bytes().try_into().unwrap();
+                let class_groups_seed: [u8; 32] =
+                    keypair.copy().private().as_bytes().try_into().unwrap();
                 let class_groups_keypair_and_proof =
                     generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
                 let info = ValidatorInfo {
