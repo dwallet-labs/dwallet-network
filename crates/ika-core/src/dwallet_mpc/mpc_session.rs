@@ -162,25 +162,8 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
-                let mut consensus_message =
+                let consensus_message =
                     self.new_dwallet_mpc_output_message(public_output.clone())?;
-                if matches!(
-                    self.session_info.mpc_round,
-                    MPCProtocolInitData::Presign(..)
-                ) {
-                    if let Some(MPCSessionSpecificState::Presign(presign_state)) =
-                        &self.session_specific_state
-                    {
-                        let presign = presign::parse_presign_from_first_and_second_outputs(
-                            &presign_state.first_presign_party_output,
-                            &public_output,
-                        )?;
-                        consensus_message =
-                            self.new_dwallet_mpc_output_message(bcs::to_bytes(&presign).unwrap())?;
-                    } else {
-                        consensus_message = self.new_dwallet_mpc_message(public_output.clone())?;
-                    }
-                }
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
