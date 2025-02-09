@@ -8,6 +8,7 @@ use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -104,7 +105,9 @@ impl DWalletMPCService {
                 .await;
             drop(manager);
 
-            self.handle_events().await.unwrap();
+            if let Err(e) = self.handle_events().await {
+                error!("Failed to handle DWallet MPC events: {}", e);
+            }
         }
     }
 
@@ -118,7 +121,7 @@ impl DWalletMPCService {
             .unwrap_or_default();
 
         let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
-        let events: HashMap<EventID, DWalletMPCEventMessage> = pending_events
+        let events: HashMap<EventID, DWalletMPCEvent> = pending_events
             .iter()
             .map(|(id, event)| {
                 let session_info = match session_info_from_event(
@@ -131,7 +134,7 @@ impl DWalletMPCService {
                     Ok(Some(session_info)) => session_info,
                     _ => return Err(DwalletMPCError::NonMPCEvent("Non-MPC event".to_string())),
                 };
-                let event = DWalletMPCEventMessage {
+                let event = DWalletMPCEvent {
                     event: event.clone(),
                     session_info,
                 };
@@ -145,10 +148,7 @@ impl DWalletMPCService {
             &self.epoch_store.tables()?.dwallet_mpc_events,
             [(
                 self.last_read_consensus_round,
-                events
-                    .values()
-                    .cloned()
-                    .collect::<Vec<DWalletMPCEventMessage>>(),
+                events.values().cloned().collect::<Vec<DWalletMPCEvent>>(),
             )],
         )?;
         self.epoch_store
