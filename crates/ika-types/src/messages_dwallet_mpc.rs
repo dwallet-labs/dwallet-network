@@ -114,6 +114,7 @@ pub struct SingleSignSessionData {
     pub network_key_version: u8,
     /// Indicates whether the future sign feature was used to start the session.
     pub is_future_sign: bool,
+    pub presign_session_id: ObjectID,
 }
 
 impl MPCProtocolInitData {
