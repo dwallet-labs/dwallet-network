@@ -77,7 +77,17 @@ impl DWalletMPCService {
                     session.status = MPCSessionStatus::Finished;
                 });
             }
-
+            let Ok(events) = self
+                .epoch_store
+                .load_dwallet_mpc_events_from_round(self.last_read_consensus_round + 1)
+                .await
+            else {
+                error!("Failed to load DWallet MPC events from the local DB");
+                continue;
+            };
+            for event in events {
+                manager.handle_dwallet_db_event(event);
+            }
             let new_dwallet_messages_iter = tables
                 .dwallet_mpc_messages
                 .iter_with_bounds(Some(self.last_read_consensus_round + 1), None);

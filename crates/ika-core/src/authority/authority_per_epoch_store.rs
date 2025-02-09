@@ -1726,7 +1726,6 @@ impl AuthorityPerEpochStore {
             .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
             .unwrap_or_default();
         let pending_events = self.perpetual_tables.get_all_pending_events();
-        let party_id = authority_name_to_party_id(&self.name, &self)?;
         let dwallet_mpc_new_events = pending_events
             .iter()
             .map(|(_, event)| {

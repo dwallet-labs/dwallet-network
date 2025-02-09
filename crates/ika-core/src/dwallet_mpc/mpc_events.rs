@@ -38,17 +38,6 @@ pub struct StartDKGFirstRoundEvent {
     pub dwallet_cap_id: ID,
 }
 
-impl From<StartDKGFirstRoundEvent> for SessionInfo {
-    fn from(event: StartDKGFirstRoundEvent) -> Self {
-        SessionInfo {
-            flow_session_id: event.session_id.bytes,
-            session_id: event.session_id.bytes,
-            initiating_user_address: event.initiator,
-            mpc_round: MPCProtocolInitData::DKGFirst,
-        }
-    }
-}
-
 impl DWalletMPCEventTrait for StartDKGFirstRoundEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`StartDKGFirstRoundEvent`] events from the chain and initiate the MPC session.
@@ -104,21 +93,6 @@ pub struct StartBatchedPresignEvent {
     pub initiator: SuiAddress,
 }
 
-impl From<StartPresignSecondRoundData> for SessionInfo {
-    fn from(event: StartPresignSecondRoundData) -> Self {
-        SessionInfo {
-            flow_session_id: event.first_round_session_id,
-            session_id: event.session_id,
-            initiating_user_address: event.initiator,
-            mpc_round: MPCProtocolInitData::PresignSecond(
-                event.dwallet_id,
-                event.first_round_output.clone(),
-                event.batch_session_id,
-            ),
-        }
-    }
-}
-
 impl DWalletMPCEventTrait for StartPresignSecondRoundData {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`StartPresignSecondRoundData`]
@@ -160,26 +134,6 @@ pub struct StartSignEvent<D> {
     pub(crate) is_future_sign: bool,
 }
 
-impl From<StartSignEvent<SignData>> for SessionInfo {
-    fn from(event: StartSignEvent<SignData>) -> Self {
-        SessionInfo {
-            flow_session_id: event.signature_algorithm_data.presign_id,
-            session_id: event.session_id.bytes,
-            initiating_user_address: event.initiator,
-            mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
-                batch_session_id: event.batched_session_id.bytes,
-                hashed_message: event.hashed_message.clone(),
-                dwallet_id: event.dwallet_id.bytes,
-                dwallet_decentralized_public_output: event
-                    .dwallet_decentralized_public_output
-                    .clone(),
-                network_key_version: event.dwallet_mpc_network_key_version,
-                is_future_sign: event.is_future_sign,
-            }),
-        }
-    }
-}
-
 impl<D: DWalletMPCEventTrait> DWalletMPCEventTrait for StartSignEvent<D> {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`StartSignEvent`]
@@ -194,17 +148,6 @@ impl<D: DWalletMPCEventTrait> DWalletMPCEventTrait for StartSignEvent<D> {
     }
 }
 
-impl From<StartBatchedSignEvent> for SessionInfo {
-    fn from(event: StartBatchedSignEvent) -> Self {
-        SessionInfo {
-            flow_session_id: event.session_id.bytes,
-            session_id: event.session_id.bytes,
-            initiating_user_address: event.initiator,
-            mpc_round: MPCProtocolInitData::BatchedSign(event.hashed_messages.clone()),
-        }
-    }
-}
-
 impl DWalletMPCEventTrait for StartBatchedSignEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`StartBatchedSignEvent`]
@@ -215,17 +158,6 @@ impl DWalletMPCEventTrait for StartBatchedSignEvent {
             name: START_BATCHED_SIGN_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
-        }
-    }
-}
-
-impl From<StartBatchedPresignEvent> for SessionInfo {
-    fn from(event: StartBatchedPresignEvent) -> Self {
-        SessionInfo {
-            flow_session_id: event.session_id.bytes,
-            session_id: event.session_id.bytes,
-            initiating_user_address: event.initiator,
-            mpc_round: MPCProtocolInitData::BatchedPresign(event.batch_size),
         }
     }
 }

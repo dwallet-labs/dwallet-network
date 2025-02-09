@@ -198,24 +198,13 @@ pub trait DWalletMPCEventTrait {
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet::DWalletMPCEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct DWalletMPCEvent<E: DWalletMPCEventTrait + TryInto<SessionInfo>> {
+pub struct DWalletMPCEvent<E: DWalletMPCEventTrait> {
     pub epoch: u64,
     pub session_id: ObjectID,
     pub event_data: E,
 }
 
-impl<E: DWalletMPCEventTrait + TryInto<SessionInfo>> TryFrom<DWalletMPCEvent<E>> for SessionInfo {
-    type Error = DwalletMPCError;
-
-    fn try_from(event: DWalletMPCEvent<E>) -> Result<Self, Self::Error> {
-        event
-            .event_data
-            .try_into()
-            .map_err(|_| DwalletMPCError::SessionInfoFromMPCEventFail(event.session_id))
-    }
-}
-
-impl<E: DWalletMPCEventTrait + TryInto<SessionInfo>> DWalletMPCEventTrait for DWalletMPCEvent<E> {
+impl<E: DWalletMPCEventTrait> DWalletMPCEventTrait for DWalletMPCEvent<E> {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`DWalletMPCEvent`] events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
@@ -228,7 +217,7 @@ impl<E: DWalletMPCEventTrait + TryInto<SessionInfo>> DWalletMPCEventTrait for DW
     }
 }
 
-impl<E: DWalletMPCEventTrait + TryInto<SessionInfo> + TryInto<SessionInfo>> DWalletMPCEvent<E> {
+impl<E: DWalletMPCEventTrait> DWalletMPCEvent<E> {
     pub fn is_dwallet_mpc_event(event: StructTag, package_id: AccountAddress) -> bool {
         event.address == package_id
             && event.name == DWALLET_MPC_EVENT_STRUCT_NAME.to_owned()
@@ -266,17 +255,6 @@ pub struct StartEncryptedShareVerificationEvent {
     pub initiator: SuiAddress,
 }
 
-impl From<StartEncryptedShareVerificationEvent> for SessionInfo {
-    fn from(event: StartEncryptedShareVerificationEvent) -> Self {
-        SessionInfo {
-            flow_session_id: event.session_id,
-            session_id: event.session_id,
-            initiating_user_address: Default::default(),
-            mpc_round: MPCProtocolInitData::EncryptedShareVerification(event),
-        }
-    }
-}
-
 impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
@@ -302,17 +280,6 @@ pub struct StartEncryptionKeyVerificationEvent {
     pub session_id: ObjectID,
 }
 
-impl From<StartEncryptionKeyVerificationEvent> for SessionInfo {
-    fn from(event: StartEncryptionKeyVerificationEvent) -> Self {
-        SessionInfo {
-            flow_session_id: event.session_id,
-            session_id: event.session_id,
-            initiating_user_address: Default::default(),
-            mpc_round: MPCProtocolInitData::EncryptionKeyVerification(event),
-        }
-    }
-}
-
 impl DWalletMPCEventTrait for StartEncryptionKeyVerificationEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
@@ -336,17 +303,6 @@ pub struct StartPartialSignaturesVerificationEvent<D> {
     pub dwallet_mpc_network_decryption_key_version: u8,
     pub signature_data: Vec<D>,
     pub initiator: SuiAddress,
-}
-
-impl From<StartPartialSignaturesVerificationEvent<SignData>> for SessionInfo {
-    fn from(event: StartPartialSignaturesVerificationEvent<SignData>) -> Self {
-        SessionInfo {
-            flow_session_id: event.session_id,
-            session_id: event.session_id,
-            initiating_user_address: event.initiator,
-            mpc_round: MPCProtocolInitData::PartialSignatureVerification(event),
-        }
-    }
 }
 
 impl DWalletMPCEventTrait for StartPartialSignaturesVerificationEvent<SignData> {
@@ -388,20 +344,6 @@ pub struct StartDKGSecondRoundEvent {
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
     pub initiator_public_key: Vec<u8>,
-}
-
-impl From<StartDKGSecondRoundEvent> for SessionInfo {
-    fn from(event: StartDKGSecondRoundEvent) -> Self {
-        SessionInfo {
-            flow_session_id: event.first_round_session_id,
-            session_id: ObjectID::from(event.session_id),
-            initiating_user_address: event.initiator,
-            mpc_round: MPCProtocolInitData::DKGSecond(
-                event.clone(),
-                0, // Todo (#615): Read the network keys in the manager and use the value before writing the DWallet object.
-            ),
-        }
-    }
 }
 
 impl DWalletMPCEventTrait for StartDKGSecondRoundEvent {
@@ -497,17 +439,6 @@ pub struct StartPresignFirstRoundEvent {
     pub batch_session_id: ObjectID,
     /// The dWallet mpc network key version
     pub dwallet_mpc_network_key_version: u8,
-}
-
-impl From<StartPresignFirstRoundEvent> for SessionInfo {
-    fn from(event: StartPresignFirstRoundEvent) -> Self {
-        SessionInfo {
-            flow_session_id: event.session_id,
-            session_id: event.session_id,
-            initiating_user_address: event.initiator,
-            mpc_round: MPCProtocolInitData::PresignFirst(event),
-        }
-    }
 }
 
 impl DWalletMPCEventTrait for StartPresignFirstRoundEvent {
