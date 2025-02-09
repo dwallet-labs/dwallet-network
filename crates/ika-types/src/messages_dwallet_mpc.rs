@@ -77,7 +77,9 @@ pub enum MPCSessionSpecificState {
     Presign(PresignSessionState),
 }
 
-/// The optional state of the Presign session, in case the first round was completed and agreed on.
+/// The optional state of the Presign session, in case the first round party was completed and agreed on.
+/// If the first presign round was completed and agreed on, the [`DWalletMPCSession`] session_specific_state will hold
+/// this state. If the first round was not completed, the session_specific_state will be None.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct PresignSessionState {
     /// The verified output of the first party of the Presign protocol.
