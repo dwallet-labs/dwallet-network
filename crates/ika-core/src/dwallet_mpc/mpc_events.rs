@@ -230,13 +230,6 @@ pub struct StartNetworkDKGEvent {
     pub(crate) key_scheme: u8,
 }
 
-impl TryFrom<StartNetworkDKGEvent> for SessionInfo {
-    type Error = DwalletMPCError;
-
-    fn try_from(event: StartNetworkDKGEvent) -> Result<Self, Self::Error> {
-        network_dkg_session_info(event)
-    }
-}
 impl DWalletMPCEventTrait for StartNetworkDKGEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`StartNetworkDKGEvent`] events from the chain and initiate the MPC session.
