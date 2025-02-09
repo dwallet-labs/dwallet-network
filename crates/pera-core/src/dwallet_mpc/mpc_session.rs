@@ -28,12 +28,12 @@ use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
+use crate::dwallet_mpc::sign::SignFirstParty;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{
     authority_name_to_party_id, get_verify_partial_signatures_session_info,
     party_id_to_authority_name, sign,
 };
-use crate::dwallet_mpc::sign::SignFirstParty;
 use crate::dwallet_mpc::{
     authority_name_to_party_id, party_id_to_authority_name, party_ids_to_authority_names,
 };
