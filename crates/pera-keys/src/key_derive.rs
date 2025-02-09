@@ -199,7 +199,7 @@ pub fn generate_new_class_groups_keypair_and_proof(
 ) -> anyhow::Result<(PeraAddress, ClassGroupsKeyPairAndProof)> {
     let bls12381 = read_authority_keypair_from_file(path)
         .map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
-    let class_groups_seed = bls12381.copy().private().as_bytes().try_into()?;
+    let class_groups_seed: [u8; 32] = bls12381.copy().private().as_bytes().try_into()?;
     let keypair_and_proof = generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
     Ok((bls12381.public().into(), keypair_and_proof))
 }

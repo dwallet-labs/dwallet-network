@@ -54,6 +54,7 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 ///   The session has been removed from the active instances.
 ///   Incoming messages are no longer forwarded to the session,
 ///   but they are not flagged as malicious.
+///
 /// - `Failed`:
 ///   The session has failed due to an unrecoverable error.
 ///   This status indicates that the session cannot proceed further.
@@ -107,7 +108,7 @@ pub enum DWalletMPCNetworkKeyScheme {
 }
 
 // We can't import pera-types here since we import this module in there.
-// Therefor we use `thiserror` `#from` to convert this error.
+// Therefore we use `thiserror` `#from` to convert this error.
 #[derive(Debug, Error, Clone)]
 pub enum DwalletNetworkMPCError {
     #[error("invalid DWalletMPCNetworkKey value: {0}")]

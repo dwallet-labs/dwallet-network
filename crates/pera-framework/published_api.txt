@@ -1057,6 +1057,9 @@ SignatureAlgorithmData
 CreatedPartialCentralizedSignedMessagesEvent
 	public struct
 	0x3::dwallet
+StartPartialSignaturesVerificationEvent
+	public struct
+	0x3::dwallet
 create_dwallet
 	public(package) fun
 	0x3::dwallet
@@ -1099,6 +1102,9 @@ create_message_approval
 approve_messages
 	public fun
 	0x3::dwallet
+hash_message_approvals
+	public(package) fun
+	0x3::dwallet
 hash_messages
 	public(package) fun
 	0x3::dwallet
@@ -1109,7 +1115,7 @@ is_supported_hash_scheme
 	fun
 	0x3::dwallet
 create_partial_centralized_signed_messages
-	public(package) fun
+	fun
 	0x3::dwallet
 sign
 	public fun

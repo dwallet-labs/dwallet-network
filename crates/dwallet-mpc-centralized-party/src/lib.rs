@@ -37,7 +37,7 @@ use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
 type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
-type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
+pub type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
 type EncryptionOfSecretKeyShareAndPublicKeyShare =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareAndPublicKeyShare;
 pub type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
@@ -64,31 +64,6 @@ type Secp256k1EncryptionKey = EncryptionKey<
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     secp256k1::GroupElement,
 >;
-
-impl fmt::Display for Hash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let hash_name = match self {
-            Hash::KECCAK256 => "KECCAK256",
-            Hash::SHA256 => "SHA256",
-        };
-        write!(f, "{}", hash_name)
-    }
-}
-
-impl TryFrom<u8> for Hash {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Hash::KECCAK256),
-            1 => Ok(Hash::SHA256),
-            _ => Err(anyhow::Error::msg(format!(
-                "invalid value for Hash enum: {}",
-                value
-            ))),
-        }
-    }
-}
 
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
 ///

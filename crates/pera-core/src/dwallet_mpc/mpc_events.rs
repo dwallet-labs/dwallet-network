@@ -54,6 +54,8 @@ pub struct StartPresignFirstRoundEvent {
     pub dwallet_id: ID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
+    /// A unique identifier for the entire batch,
+    /// used to collect all the presigns in the batch and complete it.
     pub batch_session_id: ID,
     /// The dWallet mpc network key version
     pub(super) dwallet_mpc_network_key_version: u8,
@@ -89,6 +91,8 @@ pub struct StartPresignSecondRoundEvent {
     pub first_round_output: Vec<u8>,
     /// A unique identifier for the first Presign round session.
     pub first_round_session_id: ID,
+    /// A unique identifier for the entire batch,
+    /// used to collect all the presigns in the batch and complete it.
     pub batch_session_id: ID,
     /// The dWallet mpc network key version
     pub(super) dwallet_mpc_network_key_version: u8,
@@ -183,6 +187,9 @@ impl StartBatchedSignEvent {
 }
 
 impl StartBatchedPresignEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`StartBatchedPresignEvent`]
+    /// events from the chain and initiate the MPC session.
     pub fn type_() -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,

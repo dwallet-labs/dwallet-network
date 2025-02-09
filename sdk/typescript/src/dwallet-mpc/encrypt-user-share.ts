@@ -18,7 +18,7 @@ import { decodePeraPrivateKey } from '../cryptography/index.js';
 import { Ed25519Keypair, Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import { Transaction } from '../transactions/index.js';
 import { PERA_SYSTEM_STATE_OBJECT_ID } from '../utils/index.js';
-import type { Config, DWallet, DWalletWithSecretKeyShare } from './globals.js';
+import type { Config, DWallet, DWalletWithSecretKeyShare, StartSessionEvent } from './globals.js';
 import {
 	checkpointCreationTime,
 	delay,
@@ -30,6 +30,7 @@ import {
 	fetchObjectWithType,
 	isDWallet,
 	isEqual,
+	isStartSessionEvent,
 } from './globals.js';
 
 const startEncryptedShareVerificationMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartEncryptedShareVerificationEvent`;
@@ -58,20 +59,6 @@ interface ClassGroupsSecpKeyPair {
 	encryptionKey: Uint8Array;
 	decryptionKey: Uint8Array;
 	objectID: string;
-}
-
-/**
- * TS representation of an event to start an MPC session.
- * Usually the only thing needed from this event is the `session_id`,
- * which is used to fetch the
- * completion event.
- */
-interface StartSessionEvent {
-	session_id: string;
-}
-
-function isStartSessionEvent(obj: any): obj is StartSessionEvent {
-	return 'session_id' in obj;
 }
 
 /**
