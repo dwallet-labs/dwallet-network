@@ -68,6 +68,8 @@ pub(super) struct DWalletMPCSession {
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
     pub(super) pending_quorum_for_highest_round_number: usize,
+    /// Contains state that is specific to the session's protocol, i.e. presign specific state in a presign session,
+    /// or sign specific state in a sign session.
     pub(super) session_specific_state: Option<MPCSessionSpecificState>,
     party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
