@@ -3,8 +3,8 @@ use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares, DWALLET_MPC_EVENT_STRUCT_NAME,
-    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
+    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyShares,
+    DWALLET_MPC_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
@@ -40,11 +40,7 @@ pub enum MPCProtocolInitData {
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID (same for each message in the batch),
     /// and the dWallets' network key version.
-    PresignFirst(StartPresignFirstRoundEvent),
-    /// The second round of the Presign protocol.
-    /// Contains the `ObjectId` of the dWallet object,
-    /// the Presign first round output, and the batch session ID.
-    PresignSecond(ObjectID, MPCPublicOutput, ObjectID),
+    Presign(StartPresignFirstRoundEvent),
     /// The first and only round of the Sign protocol.
     /// Contains the all the data needed to sign the message.
     Sign(SingleSignSessionData),
@@ -80,6 +76,21 @@ pub enum MPCProtocolInitData {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCSessionSpecificState {
     Sign(SignIASessionState),
+    Presign(PresignSessionState),
+}
+
+/// The optional state of the Presign session, if the first round party was
+/// completed and agreed on.
+/// If the first presign round was completed and agreed on,
+/// the [`DWalletMPCSession`] `session_specific_state` will hold
+/// this state.
+/// If the first round was not completed, the `session_specific_state` will be `None`.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct PresignSessionState {
+    /// The verified output of the first party of the Presign protocol.
+    pub first_presign_party_output: MPCPublicOutput,
+    /// The public input for the second party of the Presign protocol.
+    pub second_party_public_input: MPCPublicInput,
 }
 
 /// The state of a sign-identifiable abort session.
@@ -110,6 +121,7 @@ pub struct SingleSignSessionData {
     pub network_key_version: u8,
     /// Indicates whether the future sign feature was used to start the session.
     pub is_future_sign: bool,
+    pub presign_session_id: ObjectID,
 }
 
 impl MPCProtocolInitData {
@@ -118,7 +130,7 @@ impl MPCProtocolInitData {
     pub fn is_part_of_batch(&self) -> bool {
         matches!(
             self,
-            MPCProtocolInitData::Sign(..) | MPCProtocolInitData::PresignSecond(..)
+            MPCProtocolInitData::Sign(..) | MPCProtocolInitData::Presign(..)
         )
     }
 
@@ -180,9 +192,6 @@ pub struct DWalletMPCMessage {
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {
-    /// The session ID of the first round in the flow — e.g.,
-    /// in Presign we have two rounds, so the session ID of the first.
-    pub flow_session_id: ObjectID,
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
     /// The address of the user that initiated this session.
@@ -236,7 +245,7 @@ pub struct StartEncryptedShareVerificationEvent {
     /// The signature of the dWallet `decentralized_public_output`,
     /// signed by the secret key that corresponds to `encryptor_ed25519_pubkey`.
     pub decentralized_public_output_signature: Vec<u8>,
-    /// The public output of the centralized party,
+    /// The public output of the decentralized party,
     /// belongs to the dWallet that its centralized secret share is being encrypted.
     pub decentralized_public_output: Vec<u8>,
     /// The ID of the dWallet that this encrypted secret key share belongs to.
@@ -275,7 +284,7 @@ pub struct StartEncryptionKeyVerificationEvent {
     pub encryption_key_scheme: u8,
     pub encryption_key: Vec<u8>,
     pub encryption_key_signature: Vec<u8>,
-    pub key_singer_public_key: Vec<u8>,
+    pub key_signer_public_key: Vec<u8>,
     pub initiator: SuiAddress,
     pub session_id: ObjectID,
 }
@@ -340,7 +349,7 @@ pub struct StartDKGSecondRoundEvent {
     /// The public output of the centralized party in the DKG process.
     pub decentralized_public_output: Vec<u8>,
     /// The signature for the public output of the decentralized party in the DKG process.
-    pub decentralized_public_output_signature: Vec<u8>,
+    pub public_keys_signature: Vec<u8>,
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
     pub initiator_public_key: Vec<u8>,

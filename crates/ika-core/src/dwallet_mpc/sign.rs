@@ -71,8 +71,8 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
     }
 }
 
-/// Verifies that a single partial signature - i.e. a message that has only been signed by the
-/// client side in the 2pc-mpc protocol - is valid with regard to the given dwallet DKG output.
+/// Verifies that a single partial signature — i.e., a message that has only been signed by the
+/// client side in the 2PC-MPC protocol — is valid regarding the given dWallet DKG output.
 /// Returns Ok if the message is valid, Err otherwise.
 pub(crate) fn verify_partial_signature(
     hashed_message: &[u8],

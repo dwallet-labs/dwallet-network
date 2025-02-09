@@ -400,6 +400,6 @@ fn cg_secp256k1_public_key_share_from_secret_share(
 }
 
 /// Derives [`DWalletPublicKeys`] from the given dwallet DKG output.
-pub fn public_keys_from_dwallet_output(output: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+pub fn public_keys_from_dkg_output(output: Vec<u8>) -> anyhow::Result<Vec<u8>> {
     bcs::to_bytes(&public_keys_from_dkg_output(bcs::from_bytes(&output)?)?).map_err(Into::into)
 }

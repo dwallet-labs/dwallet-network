@@ -49,7 +49,7 @@ pub(crate) fn verify_encryption_key(
     verification_data: &StartEncryptionKeyVerificationEvent,
 ) -> DwalletMPCResult<()> {
     let public_key =
-        <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.key_singer_public_key)
+        <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.key_signer_public_key)
             .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
     let derived_ika_addr = SuiAddress::from(&public_key);
     if derived_ika_addr != verification_data.initiator {
