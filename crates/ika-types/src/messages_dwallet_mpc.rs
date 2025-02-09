@@ -2,7 +2,7 @@ use crate::crypto::default_hash;
 use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares,
+    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyShares,
     START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
@@ -38,11 +38,7 @@ pub enum MPCProtocolInitData {
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID (same for each message in the batch),
     /// and the dWallets' network key version.
-    PresignFirst(StartPresignFirstRoundEvent),
-    /// The second round of the Presign protocol.
-    /// Contains the `ObjectId` of the dWallet object,
-    /// the Presign first round output, and the batch session ID.
-    PresignSecond(ObjectID, MPCPublicOutput, ObjectID),
+    Presign(StartPresignFirstRoundEvent),
     /// The first and only round of the Sign protocol.
     /// Contains the all the data needed to sign the message.
     Sign(SingleSignSessionData),
@@ -78,6 +74,21 @@ pub enum MPCProtocolInitData {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCSessionSpecificState {
     Sign(SignIASessionState),
+    Presign(PresignSessionState),
+}
+
+/// The optional state of the Presign session, if the first round party was
+/// completed and agreed on.
+/// If the first presign round was completed and agreed on,
+/// the [`DWalletMPCSession`] `session_specific_state` will hold
+/// this state.
+/// If the first round was not completed, the `session_specific_state` will be `None`.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct PresignSessionState {
+    /// The verified output of the first party of the Presign protocol.
+    pub first_presign_party_output: MPCPublicOutput,
+    /// The public input for the second party of the Presign protocol.
+    pub second_party_public_input: MPCPublicInput,
 }
 
 /// The state of a sign-identifiable abort session.
@@ -116,7 +127,7 @@ impl MPCProtocolInitData {
     pub fn is_part_of_batch(&self) -> bool {
         matches!(
             self,
-            MPCProtocolInitData::Sign(..) | MPCProtocolInitData::PresignSecond(..)
+            MPCProtocolInitData::Sign(..) | MPCProtocolInitData::Presign(..)
         )
     }
 

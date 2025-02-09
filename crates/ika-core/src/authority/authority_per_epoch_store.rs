@@ -63,15 +63,13 @@ use crate::consensus_handler::{
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
 use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
-use crate::dwallet_mpc::mpc_events::StartPresignSecondRoundData;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
 };
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::{
-    authority_name_to_party_id, presign_first_public_input, presign_second_party_session_info,
-    presign_second_public_input, session_info_from_event,
+    authority_name_to_party_id, presign_first_public_input, session_info_from_event,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
@@ -2075,10 +2073,6 @@ impl AuthorityPerEpochStore {
             OutputResult::FirstQuorumReached => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
                     .await;
-                if let MPCProtocolInitData::PresignFirst(init_event) = &session_info.mpc_round {
-                    manager.start_second_presign_round(&output, init_event)?;
-                    return Ok(ConsensusCertificateResult::IgnoredSystem);
-                }
                 // Output result of a single Protocol from the batch session.
                 if session_info.mpc_round.is_part_of_batch() {
                     let mut batches_manager = self.get_dwallet_mpc_batches_manager().await;
