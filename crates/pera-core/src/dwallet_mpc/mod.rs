@@ -75,6 +75,17 @@ pub(crate) fn party_id_to_authority_name(
         .clone())
 }
 
+/// Convert a given [`Vec<PartyID>`] to the corresponding [`Vec<AuthorityName>`].
+pub(crate) fn party_ids_to_authority_names(
+    malicious_parties: &[PartyID],
+    epoch_store: &AuthorityPerEpochStore,
+) -> DwalletMPCResult<Vec<AuthorityName>> {
+    malicious_parties
+        .iter()
+        .map(|party_id| party_id_to_authority_name(*party_id, &epoch_store))
+        .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
+}
+
 /// Parses the session info from the event and returns it.
 /// Return `None` if the event is not a DWallet MPC event.
 pub(crate) fn session_info_from_event(
@@ -119,7 +130,6 @@ pub(crate) fn session_info_from_event(
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(get_verify_partial_signatures_session_info(
                 &deserialized_event,
-                party_id,
             )))
         }
         t if t == &StartBatchedSignEvent::type_() => {
@@ -326,7 +336,6 @@ fn sign_party_session_info(deserialized_event: &StartSignEvent<SignData>) -> Ses
 
 fn get_verify_partial_signatures_session_info(
     deserialized_event: &StartPartialSignaturesVerificationEvent<SignData>,
-    _party_id: PartyID,
 ) -> SessionInfo {
     SessionInfo {
         flow_session_id: deserialized_event.session_id.bytes,
