@@ -390,6 +390,8 @@ impl DWalletMPCManager {
             .clone())
     }
 
+    /// Returns the sessions that can perform the next cryptographic round, and the list of malicious parties that has
+    /// been detected while checking for such sessions.
     fn get_ready_to_advance_sessions(
         &mut self,
     ) -> DwalletMPCResult<(Vec<DWalletMPCSession>, Vec<PartyID>)> {
@@ -402,15 +404,14 @@ impl DWalletMPCManager {
                 // The only exception is if this is the DKG session
                 // that creates and initializes this key for the first time.
                 let is_network_dkg_tx = Self::is_network_dkg_tx(&session);
-                let check_result = session.check_quorum_for_next_crypto_round();
-                let session_clone = session.clone();
-                if check_result.is_ready && (is_manager_ready || is_network_dkg_tx) {
+                let quorum_check_result = session.check_quorum_for_next_crypto_round();
+                if quorum_check_result.is_ready && (is_manager_ready || is_network_dkg_tx) {
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
                     session.pending_quorum_for_highest_round_number =
                         session.pending_quorum_for_highest_round_number + 1;
-                    Some((session_clone, check_result.malicious_parties))
+                    Some((session.clone(), quorum_check_result.malicious_parties))
                 } else {
                     None
                 }
@@ -422,13 +423,11 @@ impl DWalletMPCManager {
             .map(|(_, malicious_parties)| malicious_parties)
             .flatten()
             .collect();
-        Ok((
-            quorum_check_results
-                .into_iter()
-                .map(|(session, _)| session)
-                .collect(),
-            malicious_parties,
-        ))
+        let ready_to_advance_sessions = quorum_check_results
+            .into_iter()
+            .map(|(session, _)| session)
+            .collect();
+        Ok((ready_to_advance_sessions, malicious_parties))
     }
 
     /// Spawns all ready MPC cryptographic computations using Rayon.
