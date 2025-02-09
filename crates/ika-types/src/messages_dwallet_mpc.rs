@@ -249,7 +249,7 @@ pub struct StartEncryptionKeyVerificationEvent {
     pub encryption_key_scheme: u8,
     pub encryption_key: Vec<u8>,
     pub encryption_key_signature: Vec<u8>,
-    pub key_singer_public_key: Vec<u8>,
+    pub key_signer_public_key: Vec<u8>,
     pub initiator: SuiAddress,
     pub session_id: ObjectID,
 }
@@ -314,7 +314,7 @@ pub struct StartDKGSecondRoundEvent {
     /// The public output of the centralized party in the DKG process.
     pub decentralized_public_output: Vec<u8>,
     /// The signature for the public output of the decentralized party in the DKG process.
-    pub decentralized_public_output_signature: Vec<u8>,
+    pub public_keys_signature: Vec<u8>,
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
     pub initiator_public_key: Vec<u8>,

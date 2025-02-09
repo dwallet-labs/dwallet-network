@@ -300,7 +300,7 @@ impl DWalletMPCSession {
                         encryption_key_id: event_data.encryption_key_id.clone(),
                         initiator: event_data.initiator.clone(),
                         decentralized_public_output_signature: event_data
-                            .decentralized_public_output_signature
+                            .public_keys_signature
                             .clone(),
                         encryptor_ed25519_pubkey: event_data.initiator_public_key.clone(),
 
