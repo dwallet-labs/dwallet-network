@@ -8,7 +8,7 @@ use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::DWalletMPCEventMessage;
+use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
 use std::collections::HashMap;
 use std::sync::Arc;
 use sui_types::base_types::EpochId;

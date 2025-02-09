@@ -130,7 +130,7 @@ impl MPCProtocolInitData {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct DWalletMPCEventMessage {
+pub struct DWalletMPCEvent {
     // TODO: remove event - do all parsing beforehand.
     pub event: SuiEvent,
     pub session_info: SessionInfo,
@@ -198,15 +198,15 @@ pub trait DWalletMPCEventTrait {
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet::DWalletMPCEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct DWalletMPCEvent<E: DWalletMPCEventTrait> {
+pub struct DWalletMPCSuiEvent<E: DWalletMPCEventTrait> {
     pub epoch: u64,
     pub session_id: ObjectID,
     pub event_data: E,
 }
 
-impl<E: DWalletMPCEventTrait> DWalletMPCEventTrait for DWalletMPCEvent<E> {
+impl<E: DWalletMPCEventTrait> DWalletMPCEventTrait for DWalletMPCSuiEvent<E> {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`DWalletMPCEvent`] events from the chain and initiate the MPC session.
+    /// It is used to detect [`DWalletMPCSuiEvent`] events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_package_id,
@@ -217,7 +217,7 @@ impl<E: DWalletMPCEventTrait> DWalletMPCEventTrait for DWalletMPCEvent<E> {
     }
 }
 
-impl<E: DWalletMPCEventTrait> DWalletMPCEvent<E> {
+impl<E: DWalletMPCEventTrait> DWalletMPCSuiEvent<E> {
     pub fn is_dwallet_mpc_event(event: StructTag, package_id: AccountAddress) -> bool {
         event.address == package_id
             && event.name == DWALLET_MPC_EVENT_STRUCT_NAME.to_owned()

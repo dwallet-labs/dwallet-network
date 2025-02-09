@@ -52,7 +52,7 @@ use crate::{
     scoring_decision::update_low_scoring_authorities,
 };
 use ika_types::error::IkaResult;
-use ika_types::messages_dwallet_mpc::{DWalletMPCEventMessage, DWalletMPCOutputMessage};
+use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCOutputMessage};
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, instrument, trace_span, warn};
 use typed_store::Map;
@@ -430,7 +430,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// hence async code involving it can cause compilation errors.
     async fn load_dwallet_mpc_events_from_epoch_start(
         &self,
-    ) -> IkaResult<Vec<DWalletMPCEventMessage>> {
+    ) -> IkaResult<Vec<DWalletMPCEvent>> {
         Ok(self
             .epoch_store
             .tables()?

@@ -16,7 +16,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use ika_types::dwallet_mpc_error::DwalletMPCError;
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCEventTrait, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
+    DWalletMPCSuiEvent, DWalletMPCEventTrait, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
     SignData, SingleSignSessionData,
 };
 use move_core_types::account_address::AccountAddress;
