@@ -142,10 +142,6 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
 }
 
 /// Contains the public keys of the DWallet.
-///
-/// Being used to sign on with the Sui signature key when encrypting this DWallet to another user. The receiving user
-/// can later verify the signature is valid and know this DWallet decentralized output has been signed by the source
-/// address.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
 pub struct DWalletPublicKeys {
     pub centralized_public_share: Vec<u8>,
@@ -153,8 +149,8 @@ pub struct DWalletPublicKeys {
     pub public_key: Vec<u8>,
 }
 
-/// Derives [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
-// Can't use the TryFrom trait as it leads to conflicting implementations
+/// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
+// Can't use the TryFrom trait as it leads to conflicting implementations.
 // Must use `anyhow::Result`, because this function is being used also in the centralized party crate.
 pub fn public_keys_from_dkg_output(
     value: DKGDecentralizedOutput,

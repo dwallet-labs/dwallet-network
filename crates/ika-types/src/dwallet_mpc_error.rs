@@ -120,8 +120,8 @@ pub enum DwalletMPCError {
     #[error("failed de/serialize json: {0:?}")]
     SerdeError(serde_json::error::Category),
 
-    #[error("failed to create session info from event: {0}")]
-    SessionInfoFromMPCEventFail(ObjectID),
+    #[error("failed to find the presign round data")]
+    PresignRoundDataNotFound,
 }
 
 /// A wrapper type for the result of a runtime operation.

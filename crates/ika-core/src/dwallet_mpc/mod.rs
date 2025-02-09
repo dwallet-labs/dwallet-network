@@ -5,7 +5,7 @@ use crate::dwallet_mpc::dkg::{
 };
 use crate::dwallet_mpc::mpc_events::{
     StartBatchedPresignEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent, StartNetworkDKGEvent,
-    StartPresignSecondRoundData, StartSignEvent,
+    StartSignEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::presign::{
@@ -191,7 +191,6 @@ fn start_encrypted_share_verification_session_info(
     deserialized_event: StartEncryptedShareVerificationEvent,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id,
         session_id: deserialized_event.session_id,
         initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
@@ -202,7 +201,6 @@ fn start_encryption_key_verification_session_info(
     deserialized_event: StartEncryptionKeyVerificationEvent,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id,
         session_id: deserialized_event.session_id,
         initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::EncryptionKeyVerification(deserialized_event),
@@ -217,7 +215,6 @@ fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResu
 
 fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::DKGFirst,
@@ -242,7 +239,6 @@ fn dkg_second_party_session_info(
     dwallet_network_key_version: u8,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.first_round_session_id,
         session_id: ObjectID::from(deserialized_event.session_id),
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::DKGSecond(
@@ -268,38 +264,9 @@ fn presign_first_party_session_info(
     deserialized_event: StartPresignFirstRoundEvent,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id,
         session_id: deserialized_event.session_id,
         initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::PresignFirst(deserialized_event),
-    }
-}
-
-pub(crate) fn presign_second_public_input(
-    deserialized_event: StartPresignSecondRoundData,
-    protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<Vec<u8>> {
-    Ok(
-        <PresignSecondParty as PresignSecondPartyPublicInputGenerator>::generate_public_input(
-            protocol_public_parameters,
-            deserialized_event.dkg_output.clone(),
-            deserialized_event.first_round_output.clone(),
-        )?,
-    )
-}
-
-pub(crate) fn presign_second_party_session_info(
-    session_init_data: &StartPresignSecondRoundData,
-) -> SessionInfo {
-    SessionInfo {
-        flow_session_id: session_init_data.first_round_session_id,
-        session_id: session_init_data.session_id,
-        initiating_user_address: session_init_data.initiator,
-        mpc_round: MPCProtocolInitData::PresignSecond(
-            session_init_data.dwallet_id,
-            session_init_data.first_round_output.clone(),
-            session_init_data.batch_session_id,
-        ),
+        mpc_round: MPCProtocolInitData::Presign(deserialized_event),
     }
 }
 
@@ -336,7 +303,6 @@ fn sign_public_input(
 
 fn sign_party_session_info(deserialized_event: &StartSignEvent<SignData>) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.signature_algorithm_data.presign_id,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
@@ -348,6 +314,7 @@ fn sign_party_session_info(deserialized_event: &StartSignEvent<SignData>) -> Ses
                 .clone(),
             network_key_version: deserialized_event.dwallet_mpc_network_key_version,
             is_future_sign: deserialized_event.is_future_sign,
+            presign_session_id: deserialized_event.signature_algorithm_data.presign_id,
         }),
     }
 }
@@ -356,7 +323,6 @@ fn get_verify_partial_signatures_session_info(
     deserialized_event: &StartPartialSignaturesVerificationEvent<SignData>,
 ) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id,
         session_id: deserialized_event.session_id,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
@@ -365,7 +331,6 @@ fn get_verify_partial_signatures_session_info(
 
 fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::BatchedSign(deserialized_event.hashed_messages.clone()),
@@ -374,7 +339,6 @@ fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> Sess
 
 fn batched_presign_session_info(deserialized_event: &StartBatchedPresignEvent) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::BatchedPresign(deserialized_event.batch_size),
@@ -567,25 +531,6 @@ pub(crate) fn session_input_from_event(
             )?;
             Ok((
                 presign_first_public_input(
-                    deserialized_event.event_data,
-                    protocol_public_parameters,
-                )?,
-                None,
-            ))
-        }
-        t if t == &DWalletMPCSuiEvent::<StartPresignSecondRoundData>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartPresignSecondRoundData> =
-                serde_json::from_value(event.parsed_json)?;
-            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-                // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-                deserialized_event
-                    .event_data
-                    .dwallet_mpc_network_key_version,
-            )?;
-            Ok((
-                presign_second_public_input(
                     deserialized_event.event_data,
                     protocol_public_parameters,
                 )?,

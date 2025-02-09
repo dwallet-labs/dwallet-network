@@ -63,15 +63,13 @@ use crate::consensus_handler::{
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
 use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
-use crate::dwallet_mpc::mpc_events::StartPresignSecondRoundData;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
 };
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::{
-    authority_name_to_party_id, presign_first_public_input, presign_second_party_session_info,
-    presign_second_public_input, session_info_from_event,
+    authority_name_to_party_id, presign_first_public_input, session_info_from_event,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
@@ -84,7 +82,11 @@ use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::message::MessageKind;
+use ika_types::message::{
+    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput,
+    EncryptionKeyVerificationOutput, MessageKind, PartialSignatureVerificationOutput,
+    PresignOutput, SignOutput,
+};
 use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
     CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage,
@@ -112,6 +114,7 @@ use sui_macros::fail_point;
 use sui_storage::mutex_table::{MutexGuard, MutexTable};
 use sui_types::digests::TransactionDigest;
 use sui_types::effects::TransactionEffects;
+use sui_types::error::ExecutionError;
 use sui_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
 };
@@ -2082,21 +2085,13 @@ impl AuthorityPerEpochStore {
             OutputResult::FirstQuorumReached => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
                     .await;
-                if let MPCProtocolInitData::PresignFirst(init_event) = &session_info.mpc_round {
-                    manager.start_second_presign_round(&output, init_event)?;
-                    return Ok(ConsensusCertificateResult::IgnoredSystem);
-                }
                 // Output result of a single Protocol from the batch session.
                 if session_info.mpc_round.is_part_of_batch() {
                     let mut batches_manager = self.get_dwallet_mpc_batches_manager().await;
                     batches_manager.store_verified_output(session_info.clone(), output.clone())?;
                     batches_manager.is_batch_completed(&session_info)?;
-                    Ok(
-                        self.process_consensus_system_transaction(&MessageKind::DwalletMPCOutput(
-                            session_info,
-                            output,
-                        )),
-                    )
+                    self.process_dwallet_transaction(output, session_info)
+                        .map_err(|e| IkaError::from(e))
                 } else {
                     // Extract the final network DKG transaction parameters from
                     // the verified output.
@@ -2117,9 +2112,8 @@ impl AuthorityPerEpochStore {
                             &MessageKind::DwalletMPCNetworkDKGOutput(key_scheme, key),
                         ))
                     } else {
-                        Ok(self.process_consensus_system_transaction(
-                            &MessageKind::DwalletMPCOutput(session_info, output),
-                        ))
+                        self.process_dwallet_transaction(output, session_info)
+                            .map_err(|e| IkaError::from(e))
                     }
                 }
             }
@@ -2146,6 +2140,122 @@ impl AuthorityPerEpochStore {
         }
 
         ConsensusCertificateResult::IkaTransaction(system_transaction.clone())
+    }
+
+    fn process_dwallet_transaction(
+        &self,
+        output: Vec<u8>,
+        session_info: SessionInfo,
+    ) -> DwalletMPCResult<ConsensusCertificateResult> {
+        match &session_info.mpc_round {
+            MPCProtocolInitData::DKGFirst => {
+                let tx = MessageKind::DwalletDKGFirstRoundOutput(DKGFirstRoundOutput {
+                    session_id: session_info.session_id.to_vec(),
+                    output,
+                    initiating_user_address: session_info.initiating_user_address.to_vec(),
+                });
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
+            }
+            MPCProtocolInitData::DKGSecond(init_event_data, network_key_version) => {
+                let tx = MessageKind::DwalletDKGSecondRoundOutput(DKGSecondRoundOutput {
+                    session_id: session_info.session_id.to_vec(),
+                    output,
+                    dwallet_cap_id: init_event_data.dwallet_cap_id.to_vec(),
+                    dwallet_mpc_network_decryption_key_version: bcs::to_bytes(network_key_version)?,
+                    encrypted_centralized_secret_share_and_proof: bcs::to_bytes(
+                        &init_event_data.encrypted_centralized_secret_share_and_proof,
+                    )?,
+                    encryption_key_id: init_event_data.encryption_key_id.to_vec(),
+                    pubkeys_signature: bcs::to_bytes(&init_event_data.public_keys_signature)?,
+                    initiating_user_address: session_info.initiating_user_address.to_vec(),
+                    initiator_public_key: bcs::to_bytes(&init_event_data.initiator_public_key)?,
+                });
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
+            }
+
+            MPCProtocolInitData::BatchedPresign(_) => Ok(ConsensusCertificateResult::Ignored),
+            MPCProtocolInitData::Presign(init_event_data) => {
+                let presigns: Vec<(ObjectID, MPCPublicOutput)> =
+                    bcs::from_bytes(&output).map_err(|e| DwalletMPCError::BcsError(e))?;
+                let session_ids: Vec<ObjectID> = presigns.iter().map(|(k, _)| *k).collect();
+                let presigns: Vec<MPCPublicOutput> = presigns.into_iter().map(|(_, v)| v).collect();
+                let tx = MessageKind::DwalletPresign(PresignOutput {
+                    batch_session_id: init_event_data.batch_session_id.to_vec(),
+                    presigns: bcs::to_bytes(&presigns)?,
+                    session_ids: bcs::to_bytes(&session_ids)?,
+                    dwallet_id: init_event_data.dwallet_id.to_vec(),
+                    initiating_user_address: session_info.initiating_user_address.to_vec(),
+                });
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
+            }
+            MPCProtocolInitData::Sign(init_event) => {
+                let tx = MessageKind::DwalletSign(SignOutput {
+                    batch_session_id: init_event.batch_session_id.to_vec(),
+                    signatures: output,
+                    dwallet_id: init_event.dwallet_id.to_vec(),
+                    initiating_user_address: session_info.initiating_user_address.to_vec(),
+                    is_future_sign: bcs::to_bytes(&init_event.is_future_sign)?,
+                });
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
+            }
+            MPCProtocolInitData::EncryptedShareVerification(init_event_data) => {
+                let tx = MessageKind::DwalletEncryptedUserShare(EncryptedUserShareOutput {
+                    dwallet_id: init_event_data.dwallet_id.to_vec(),
+                    encrypted_centralized_secret_share_and_proof: output,
+                    encryption_key_id: init_event_data.encryption_key_id.to_vec(),
+                    session_id: session_info.session_id.to_vec(),
+                    pubkeys_signature: bcs::to_bytes(
+                        &init_event_data.decentralized_public_output_signature,
+                    )?,
+                    initiating_user_address: session_info.initiating_user_address.to_vec(),
+                    encryptor_ed25519_pubkey: bcs::to_bytes(
+                        &init_event_data.encryptor_ed25519_pubkey,
+                    )?,
+                });
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
+            }
+            MPCProtocolInitData::EncryptionKeyVerification(init_event_data) => {
+                let tx = MessageKind::DwalletEncryptionKeyVerification(
+                    EncryptionKeyVerificationOutput {
+                        encryption_key: bcs::to_bytes(&init_event_data.encryption_key)?,
+                        encryption_key_signature: bcs::to_bytes(
+                            &init_event_data.encryption_key_signature,
+                        )?,
+                        encryption_key_scheme: bcs::to_bytes(
+                            &init_event_data.encryption_key_scheme,
+                        )?,
+                        session_id: session_info.session_id.to_vec(),
+                        initiating_user_address: session_info.initiating_user_address.to_vec(),
+                        key_signer_public_key: bcs::to_bytes(
+                            &init_event_data.key_signer_public_key,
+                        )?,
+                    },
+                );
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
+            }
+            MPCProtocolInitData::PartialSignatureVerification(init_event_data) => {
+                let tx = MessageKind::DwalletPartialSignatureVerificationOutput(
+                    PartialSignatureVerificationOutput {
+                        dwallet_id: init_event_data.dwallet_id.to_vec(),
+                        session_id: session_info.session_id.to_vec(),
+                        initiating_user_address: session_info.initiating_user_address.to_vec(),
+                        signature_data: bcs::to_bytes(&init_event_data.signature_data)?,
+                        dwallet_cap_id: init_event_data.dwallet_cap_id.to_vec(),
+                        dwallet_mpc_network_decryption_key_version: bcs::to_bytes(
+                            &init_event_data.dwallet_mpc_network_decryption_key_version,
+                        )?,
+                        messages: bcs::to_bytes(&init_event_data.messages)?,
+                        dwallet_decentralized_public_output: bcs::to_bytes(
+                            &init_event_data.dwallet_decentralized_public_output,
+                        )?,
+                    },
+                );
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
+            }
+            MPCProtocolInitData::BatchedSign(_) | MPCProtocolInitData::NetworkDkg(_, _) => {
+                Ok(ConsensusCertificateResult::Ignored)
+            }
+        }
     }
 
     pub(crate) fn write_pending_checkpoint(
