@@ -1581,9 +1581,7 @@ impl AuthorityState {
                 .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
                 .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
                 .unwrap_or_default();
-            let Ok(Some(session_info)) =
-                session_info_from_event(event, party_id, Some(key_version))
-            else {
+            let Ok(Some(session_info)) = session_info_from_event(event, Some(key_version)) else {
                 continue;
             };
             // This function is being executed for all events, some events are
@@ -1594,8 +1592,8 @@ impl AuthorityState {
                 // Mark a new batch event as received.
                 dwallet_mpc_batches_manager.store_new_session(&session_info);
             } else {
+                dwallet_mpc_outputs_verifier.monitor_new_session_outputs(&session_info);
                 // Send the event to the dWallet MPC manager.
-                dwallet_mpc_outputs_verifier.store_new_session(&session_info);
                 epoch_store
                     .save_dwallet_mpc_event(DWalletMPCEvent {
                         event: event.clone(),

@@ -313,7 +313,7 @@ impl PeraValidatorCommand {
                 let keypair: AuthorityKeyPair =
                     read_authority_keypair_from_file(protocol_key_file_name)?;
 
-                let private_key_seed = keypair.copy().private().as_bytes().try_into()?;
+                let private_key_seed: [u8; 32] = keypair.copy().private().as_bytes().try_into()?;
                 make_key_files(
                     class_groups_key_file_name.clone(),
                     false,
