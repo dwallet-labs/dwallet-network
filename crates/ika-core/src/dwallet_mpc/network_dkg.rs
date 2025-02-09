@@ -533,7 +533,6 @@ pub(super) fn network_dkg_session_info(
 
 fn dkg_secp256k1_session_info(deserialized_event: StartNetworkDKGEvent) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::NetworkDkg(DWalletMPCNetworkKeyScheme::Secp256k1, None),
@@ -542,7 +541,6 @@ fn dkg_secp256k1_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
 
 fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> SessionInfo {
     SessionInfo {
-        flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::NetworkDkg(DWalletMPCNetworkKeyScheme::Ristretto, None),

@@ -119,6 +119,7 @@ pub struct SingleSignSessionData {
     pub network_key_version: u8,
     /// Indicates whether the future sign feature was used to start the session.
     pub is_future_sign: bool,
+    pub presign_session_id: ObjectID,
 }
 
 impl MPCProtocolInitData {
@@ -189,9 +190,6 @@ pub struct DWalletMPCMessage {
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {
-    /// The session ID of the first round in the flow — e.g.,
-    /// in Presign we have two rounds, so the session ID of the first.
-    pub flow_session_id: ObjectID,
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
     /// The address of the user that initiated this session.
