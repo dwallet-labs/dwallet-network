@@ -205,6 +205,23 @@ impl DWalletMPCManager {
         }
     }
 
+    /// Advance all the MPC sessions that either received enough messages
+    /// or perform the first step of the flow.
+    /// We parallelize the advances with `Rayon` to speed up the process.
+    pub async fn handle_end_of_delivery(&mut self) -> IkaResult {
+        self.epoch_store()?
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .status()?;
+
+        let (ready_to_advance, malicious_parties) = self.get_ready_to_advance_sessions()?;
+        self.flag_parties_as_malicious(&malicious_parties)?;
+        self.cryptographic_computations_orchestrator
+            .insert_ready_sessions(ready_to_advance);
+        Ok(())
+    }
+
     fn handle_session_failed_with_malicious_parties_message(
         &mut self,
         reporting_authority: AuthorityName,
@@ -373,68 +390,44 @@ impl DWalletMPCManager {
             .clone())
     }
 
-    /// Advance all the MPC sessions that either received enough messages
-    /// or perform the first step of the flow.
-    /// We parallelize the advances with `Rayon` to speed up the process.
-    pub async fn handle_end_of_delivery(&mut self) -> IkaResult {
-        let mpc_network_key_status = DwalletMPCNetworkKeysStatus::Ready(HashSet::new());
-        self.epoch_store()?
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .status()?;
-        let next_crypto_computation_quorum_check_results: Vec<(DWalletMPCSession, Vec<PartyID>)> =
-            self.mpc_sessions
-                .iter_mut()
-                .filter_map(|(_, session)| {
-                    let is_valid_network_dkg_transaction =
-                        matches!(
-                            session.session_info.mpc_round,
-                            MPCProtocolInitData::NetworkDkg(..)
-                        ) && self.validators_data_for_network_dkg.len()
-                            == self
-                                .weighted_threshold_access_structure
-                                .party_to_weight
-                                .len();
-
-                    // The manager must hold a Network key to advance.
-                    // The only exception is if this is the DKG session
-                    // that creates and initializes this key for the first time.
-                    let is_manager_ready = !cfg!(feature = "with-network-dkg")
-                        || (is_valid_network_dkg_transaction
-                            || matches!(
-                                mpc_network_key_status,
-                                // Todo (#394): Check if the current relevant key version exist
-                                DwalletMPCNetworkKeysStatus::Ready(_)
-                            ));
-                    let check_result = session.check_quorum_for_next_crypto_round();
-                    if check_result.is_ready && is_manager_ready {
-                        // We must first clone the session, as we approve to advance the current session
-                        // in the current round and then start waiting for the next round's messages
-                        // until it is ready to advance or finalized.
-                        let session_clone = session.clone();
-                        session.pending_quorum_for_highest_round_number =
-                            session.pending_quorum_for_highest_round_number + 1;
-                        Some((session_clone, check_result.malicious_parties))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-        let malicious_parties: Vec<PartyID> = next_crypto_computation_quorum_check_results
+    /// Returns the sessions that can perform the next cryptographic round, and the list of malicious parties that has
+    /// been detected while checking for such sessions.
+    fn get_ready_to_advance_sessions(
+        &mut self,
+    ) -> DwalletMPCResult<(Vec<DWalletMPCSession>, Vec<PartyID>)> {
+        let is_manager_ready = self.is_manager_ready();
+        let quorum_check_results: Vec<(DWalletMPCSession, Vec<PartyID>)> = self
+            .mpc_sessions
+            .iter_mut()
+            .filter_map(|(_, ref mut session)| {
+                // The manager must hold a Network key to advance.
+                // The only exception is if this is the DKG session
+                // that creates and initializes this key for the first time.
+                let is_network_dkg_tx = Self::is_network_dkg_tx(&session);
+                let quorum_check_result = session.check_quorum_for_next_crypto_round();
+                if quorum_check_result.is_ready && (is_manager_ready || is_network_dkg_tx) {
+                    // We must first clone the session, as we approve to advance the current session
+                    // in the current round and then start waiting for the next round's messages
+                    // until it is ready to advance or finalized.
+                    session.pending_quorum_for_highest_round_number =
+                        session.pending_quorum_for_highest_round_number + 1;
+                    Some((session.clone(), quorum_check_result.malicious_parties))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let malicious_parties: Vec<PartyID> = quorum_check_results
             .clone()
             .into_iter()
             .map(|(_, malicious_parties)| malicious_parties)
             .flatten()
             .collect();
-        self.flag_parties_as_malicious(&malicious_parties)?;
-        let ready_sessions = next_crypto_computation_quorum_check_results
+        let ready_to_advance_sessions = quorum_check_results
             .into_iter()
             .map(|(session, _)| session)
             .collect();
-        self.cryptographic_computations_orchestrator
-            .insert_ready_sessions(ready_sessions);
-        Ok(())
+        Ok((ready_to_advance_sessions, malicious_parties))
     }
 
     /// Spawns all ready MPC cryptographic computations using Rayon.
@@ -604,6 +597,23 @@ impl DWalletMPCManager {
             )?;
         }
         Ok(())
+    }
+
+    fn is_manager_ready(&self) -> bool {
+        let mpc_network_key_status = DwalletMPCNetworkKeysStatus::Ready(HashSet::new());
+        !cfg!(feature = "with-network-dkg")
+            || matches!(
+                mpc_network_key_status,
+                // Todo (#394): Check if the current relevant key version exist
+                DwalletMPCNetworkKeysStatus::Ready(_)
+            )
+    }
+
+    fn is_network_dkg_tx(session: &DWalletMPCSession) -> bool {
+        matches!(
+            session.session_info.mpc_round,
+            MPCProtocolInitData::NetworkDkg(..)
+        )
     }
 
     /// Returns the epoch store.

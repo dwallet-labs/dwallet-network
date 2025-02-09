@@ -8,6 +8,8 @@ use ika_types::dwallet_mpc_error::DwalletMPCResult;
 pub(super) type PresignFirstParty =
     <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShareRoundParty;
 pub(super) type PresignSecondParty = <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceShareRoundParty;
+type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
+<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart;
 
 /// The number of cryptographic MPC rounds in the [`PresignFirstParty`] protocol.
 pub(crate) const PRESIGN_FIRST_PARTY_TOTAL_ROUNDS: usize = 2;
@@ -67,4 +69,17 @@ impl PresignSecondPartyPublicInputGenerator for PresignSecondParty {
             (first_round_public_input, first_round_output.clone()).into();
         Ok(bcs::to_bytes(&input)?)
     }
+}
+
+pub fn parse_presign_from_first_and_second_outputs(
+    first_output: &[u8],
+    second_output: &[u8],
+) -> DwalletMPCResult<<AsyncProtocol as twopc_mpc::presign::Protocol>::Presign> {
+    let first_output: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare =
+        bcs::from_bytes(&first_output)?;
+    let second_output: (
+        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
+        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
+    ) = bcs::from_bytes(&second_output)?;
+    Ok((first_output, second_output).into())
 }
