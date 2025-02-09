@@ -8,8 +8,14 @@ import { bcs } from '../bcs/index.js';
 import type { TransactionArgument } from '../transactions/index.js';
 import { Transaction } from '../transactions/index.js';
 import { PERA_SYSTEM_STATE_OBJECT_ID } from '../utils/index.js';
-import type { Config, DWallet, DWalletWithSecretKeyShare } from './globals.js';
-import { dWalletModuleName, dWalletPackageID, fetchCompletedEvent } from './globals.js';
+import type { Config, DWallet, DWalletWithSecretKeyShare, StartSessionEvent } from './globals.js';
+import {
+	dWallet2PCMPCECDSAK1ModuleName,
+	dWalletModuleName,
+	dWalletPackageID,
+	fetchCompletedEvent,
+	isStartSessionEvent,
+} from './globals.js';
 
 const signMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::sign`;
 const requestFutureSignMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::request_future_sign`;
@@ -31,7 +37,8 @@ export interface StartBatchedSignEvent {
 	initiating_user: string;
 }
 
-export interface CreatedPartiallySignedMessagesEvent {
+export interface CreatedPartialCentralizedSignedMessagesEvent {
+	session_id: string;
 	partial_signatures_object_id: string;
 }
 
@@ -121,9 +128,11 @@ export function isStartBatchedSignEvent(obj: any): obj is StartBatchedSignEvent 
 
 export function isCreatedPartiallySignedMessagesEvent(
 	obj: any,
-): obj is CreatedPartiallySignedMessagesEvent {
-	return obj && 'partial_signatures_object_id' in obj;
+): obj is CreatedPartialCentralizedSignedMessagesEvent {
+	return obj && 'partial_signatures_object_id' in obj && 'session_id' in obj;
 }
+
+let startPartialSignatureVerificationEventMoveType = `${dWalletPackageID}::${dWalletModuleName}::StartPartialSignaturesVerificationEvent<${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::SignData>`;
 
 export async function partiallySignMessageTransactionCall(
 	c: Config,
@@ -134,7 +143,8 @@ export async function partiallySignMessageTransactionCall(
 	createSignatureAlgorithmDataMoveFunc: string,
 	dWalletMoveType: string,
 	signatureDataMoveType: string,
-) {
+	hash: Hash,
+): Promise<CreatedPartialCentralizedSignedMessagesEvent> {
 	const [signData] = tx.moveCall({
 		target: createSignatureAlgorithmDataMoveFunc,
 		arguments: signatureAlgorithmData,
@@ -146,6 +156,7 @@ export async function partiallySignMessageTransactionCall(
 			tx.object(dWalletID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 			signData,
+			tx.pure(bcs.u8().serialize(hash.valueOf())),
 			tx.sharedObjectRef({
 				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
 				initialSharedVersion: 1,
@@ -163,17 +174,20 @@ export async function partiallySignMessageTransactionCall(
 		},
 	});
 
-	const createdPartiallySignedMessagesEvent = isCreatedPartiallySignedMessagesEvent(
-		res.events?.at(0)?.parsedJson,
-	)
-		? (res.events?.at(0)?.parsedJson as CreatedPartiallySignedMessagesEvent)
-		: null;
+	const sessionID = (
+		res.events?.find(
+			(event) =>
+				event.type === startPartialSignatureVerificationEventMoveType &&
+				isStartSessionEvent(event.parsedJson),
+		)?.parsedJson as StartSessionEvent
+	).session_id;
 
-	if (!createdPartiallySignedMessagesEvent) {
-		throw new Error(`${requestFutureSignMoveFunc} failed: ${res.errors}`);
-	}
-
-	return createdPartiallySignedMessagesEvent;
+	return await fetchCompletedEvent<CreatedPartialCentralizedSignedMessagesEvent>(
+		c,
+		sessionID,
+		`${dWalletPackageID}::${dWalletModuleName}::CreatedPartialCentralizedSignedMessagesEvent`,
+		isCreatedPartiallySignedMessagesEvent,
+	);
 }
 
 export async function completeFutureSignTransactionCall(

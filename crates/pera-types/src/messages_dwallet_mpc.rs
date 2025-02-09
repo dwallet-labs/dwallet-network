@@ -11,10 +11,13 @@ use dwallet_mpc_types::dwallet_mpc::{
     START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
 };
 use move_core_types::ident_str;
-use move_core_types::language_storage::StructTag;
+use move_core_types::identifier::IdentStr;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
+
+const SIGN_DATA_STRUCT_NAME: &IdentStr = ident_str!("SignData");
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
@@ -64,6 +67,7 @@ pub enum MPCProtocolInitData {
     /// but we use it to start the verification process using the same events mechanism
     /// because the system does not support native functions.
     EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
+    PartialSignatureVerification(StartPartialSignaturesVerificationEvent<SignData>),
 }
 
 /// The session-specific state of the MPC session.
@@ -246,6 +250,31 @@ impl StartEncryptionKeyVerificationEvent {
     }
 }
 
+/// Rust representation of the Move `StartPartialSignaturesVerificationEvent` Event.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub struct StartPartialSignaturesVerificationEvent<D> {
+    pub session_id: ID,
+    pub messages: Vec<Vec<u8>>,
+    pub hashed_messages: Vec<Vec<u8>>,
+    pub dwallet_id: ID,
+    pub dwallet_decentralized_public_output: Vec<u8>,
+    pub dwallet_cap_id: ID,
+    pub dwallet_mpc_network_decryption_key_version: u8,
+    pub signature_data: Vec<D>,
+    pub initiator: PeraAddress,
+}
+
+impl<D> StartPartialSignaturesVerificationEvent<D> {
+    pub fn type_(type_param: TypeTag) -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: ident_str!("StartPartialSignaturesVerificationEvent").to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
+            type_params: vec![type_param],
+        }
+    }
+}
+
 /// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGSecondRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartDKGSecondRoundEvent {
@@ -309,6 +338,33 @@ impl MaliciousReport {
         Self {
             malicious_actors,
             session_id,
+        }
+    }
+}
+
+/// The Secp256k1 SignData.
+///
+/// A representation of the Move object [`SignData`], which stores data specific to the
+/// signing algorithm used in the MPC protocol.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub struct SignData {
+    /// The presign object ID, which will be used as the sign MPC protocol ID.
+    pub presign_id: ID,
+    /// The presign protocol output, serialized as bytes.
+    pub presign_output: Vec<u8>,
+    /// The centralized signature of a message.
+    pub message_centralized_signature: Vec<u8>,
+}
+
+impl SignData {
+    /// This function returns the `StructTag` representation of the Move [`SignData`] object,
+    /// allowing it to be compared with the corresponding Move object on the chain.
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: SIGN_DATA_STRUCT_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            type_params: vec![],
         }
     }
 }

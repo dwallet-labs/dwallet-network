@@ -61,7 +61,7 @@ mod checked {
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
     use pera_types::messages_dwallet_mpc::{
-        DWalletMPCOutput, MPCProtocolInitData, SingleSignSessionData,
+        DWalletMPCOutput, MPCProtocolInitData, SignData, SingleSignSessionData,
     };
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
@@ -1131,8 +1131,28 @@ mod checked {
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
         let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
-
-        let (move_function_name, args) = match data.session_info.mpc_round {
+        let (move_function_name, args, type_args) = match data.session_info.mpc_round {
+            MPCProtocolInitData::PartialSignatureVerification(event_data) => {
+                module_name = DWALLET_MODULE_NAME;
+                (
+                    "create_partial_centralized_signed_messages",
+                    vec![
+                        CallArg::Pure(bcs_to_bytes(&event_data.messages)?),
+                        CallArg::Pure(event_data.dwallet_id.bytes.to_vec()),
+                        CallArg::Pure(bcs_to_bytes(
+                            &event_data.dwallet_decentralized_public_output,
+                        )?),
+                        CallArg::Pure(event_data.dwallet_cap_id.bytes.to_vec()),
+                        CallArg::Pure(bcs_to_bytes(
+                            &event_data.dwallet_mpc_network_decryption_key_version,
+                        )?),
+                        CallArg::Pure(bcs_to_bytes(&event_data.signature_data)?),
+                        CallArg::Pure(data.session_info.session_id.to_vec()),
+                        CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    ],
+                    vec![SignData::type_().into()],
+                )
+            }
             MPCProtocolInitData::DKGFirst => (
                 "create_dkg_first_round_output",
                 vec![
@@ -1140,6 +1160,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&data.output)?),
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                 ],
+                vec![],
             ),
             MPCProtocolInitData::DKGSecond(
                 event_data,
@@ -1163,6 +1184,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&event_data.initiator_public_key)?),
                     CallArg::Pure(bcs_to_bytes(&event_data.centralized_public_output)?),
                 ],
+                vec![],
             ),
             MPCProtocolInitData::PresignFirst(
                 dwallet_id,
@@ -1180,6 +1202,7 @@ mod checked {
                     CallArg::Pure(batch_session_id.to_vec()),
                     CallArg::Pure(bcs_to_bytes(&network_key_version)?),
                 ],
+                vec![],
             ),
             MPCProtocolInitData::PresignSecond(
                 dwallet_id,
@@ -1212,6 +1235,7 @@ mod checked {
                         })?),
                         CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
                     ],
+                    vec![],
                 )
             }
             MPCProtocolInitData::Sign(SingleSignSessionData {
@@ -1232,6 +1256,7 @@ mod checked {
                         CallArg::Pure(bcs_to_bytes(&dwallet_id)?),
                         CallArg::Pure(bcs_to_bytes(&is_future_sign)?),
                     ],
+                    vec![],
                 )
             }
             MPCProtocolInitData::NetworkDkg(key_type, new_key) => {
@@ -1258,6 +1283,7 @@ mod checked {
                         CallArg::Pure(bcs_to_bytes(&new_key.reconstructed_commitments_to_sharing)?),
                         CallArg::Pure(bcs_to_bytes(&(key_type as u8))?),
                     ],
+                    vec![],
                 )
             }
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => (
@@ -1275,6 +1301,7 @@ mod checked {
                     CallArg::Pure(bcs_to_bytes(&verification_data.encryptor_ed25519_pubkey)?),
                     CallArg::Pure(verification_data.initiator.to_vec()),
                 ],
+                vec![],
             ),
             MPCProtocolInitData::EncryptionKeyVerification(verification_data) => {
                 module_name = DWALLET_MODULE_NAME;
@@ -1288,6 +1315,7 @@ mod checked {
                         CallArg::Pure(verification_data.initiator.to_vec()),
                         CallArg::Pure(data.session_info.session_id.to_vec()),
                     ],
+                    vec![],
                 )
             }
             _ => {
@@ -1304,7 +1332,7 @@ mod checked {
                 PERA_SYSTEM_PACKAGE_ID.into(),
                 module_name.to_owned(),
                 ident_str!(move_function_name).to_owned(),
-                vec![],
+                type_args,
                 args,
             );
             assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");

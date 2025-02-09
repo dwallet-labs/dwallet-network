@@ -211,3 +211,17 @@ export function delay(ms: number) {
 export function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
 	return arr1.length === arr2.length && arr1.every((value, index) => value === arr2[index]);
 }
+
+/**
+ * TS representation of an event to start an MPC session.
+ * Usually the only thing needed from this event is the `session_id`,
+ * which is used to fetch the
+ * completion event.
+ */
+export interface StartSessionEvent {
+	session_id: string;
+}
+
+export function isStartSessionEvent(obj: any): obj is StartSessionEvent {
+	return 'session_id' in obj;
+}
