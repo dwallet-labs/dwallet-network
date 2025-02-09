@@ -390,6 +390,7 @@ impl Consensus {
         }
     }
 
+    // Note(zeev): This is where the Consensus handles the certificates and processes them.
     async fn run_inner(mut self) -> Result<(), ConsensusError> {
         // Listen to incoming certificates.
         'main: loop {

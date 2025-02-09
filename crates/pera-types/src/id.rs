@@ -28,7 +28,7 @@ pub struct UID {
 }
 
 /// Rust version of the Move pera::object::ID type
-#[derive(Debug, Serialize, Deserialize, JsonSchema, Clone, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Clone, Eq, PartialEq, Hash)]
 #[serde(transparent)]
 pub struct ID {
     pub bytes: ObjectID,

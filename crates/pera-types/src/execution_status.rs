@@ -218,6 +218,11 @@ pub enum ExecutionFailureStatus {
     ExecutionCancelledDueToRandomnessUnavailable,
     // NOTE: if you want to add a new enum,
     // please add it at the end for Rust SDK backward compatibility.
+    #[error("failed to serialize data")]
+    SerializationFailed,
+
+    #[error("failed to deserialize data")]
+    DeserializationFailed,
 }
 
 #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, Hash)]

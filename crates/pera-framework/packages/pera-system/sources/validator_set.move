@@ -5,7 +5,13 @@ module pera_system::validator_set {
 
     use pera::balance::Balance;
     use pera::pera::PERA;
-    use pera_system::validator::{Validator, staking_pool_id, pera_address, get_val_class_groups_public_key_and_proof_bytes, get_validator_protocol_pubkey_bytes};
+    use pera_system::validator::{
+        Validator,
+        staking_pool_id,
+        pera_address,
+        get_class_group_pubkey_and_proof,
+        get_validator_protocol_pubkey
+    };
     use pera_system::validator_cap::{Self, UnverifiedValidatorOperationCap, ValidatorOperationCap};
     use pera_system::staking_pool::{PoolTokenExchangeRate, StakedPera, pool_id};
     use pera::priority_queue as pq;
@@ -93,16 +99,15 @@ module pera_system::validator_set {
     }
 
     /// The data we need to know about a validator in order to re-share the DWallet secret to it.
-    public struct ValidatorDataForDWalletSecretReShare has copy, drop, store {
+    public struct ValidatorDataForDWalletSecretShare has copy, drop, store {
         /// The class groups encryption key of the validator, used to encrypt the validator secret share to it.
-        class_groups_public_key_and_proof_bytes: vector<u8>,
+        cg_pubkey_and_proof: vector<u8>,
         /// The Ika public key of the validator, used as an identifier for the validator.
         protocol_pubkey_bytes: vector<u8>,
     }
 
     /// V2 of ValidatorEpochInfoEvent containing more information about the validator.
     public struct LockedNextEpochCommitteeEvent has copy, drop {
-        next_committee_validators: vector<ValidatorDataForDWalletSecretReShare>,
         epoch: u64
     }
 
@@ -348,29 +353,50 @@ module pera_system::validator_set {
 
     public(package) fun lock_next_epoch_committee(self: &mut ValidatorSet, epoch: u64) {
         let mut next_epoch_vals = vector::empty();
+        // TODO (#439): Emit each validator's Re-share data separately.
         let mut active_val_index = 0;
         while (active_val_index < self.active_validators.length()) {
             if (!self.pending_removals.contains(&active_val_index)) {
                 let validator = &self.active_validators[active_val_index];
-                next_epoch_vals.push_back(ValidatorDataForDWalletSecretReShare {
-                    class_groups_public_key_and_proof_bytes: get_val_class_groups_public_key_and_proof_bytes(validator),
-                    protocol_pubkey_bytes: get_validator_protocol_pubkey_bytes(validator),
+                next_epoch_vals.push_back(ValidatorDataForDWalletSecretShare {
+                    cg_pubkey_and_proof: get_class_group_pubkey_and_proof(validator),
+                    protocol_pubkey_bytes: get_validator_protocol_pubkey(validator),
                 });
             };
             active_val_index = active_val_index + 1;
         };
-
         let mut pending_val_index = 0;
         while (pending_val_index < self.pending_active_validators.length()) {
             let validator = &self.pending_active_validators[pending_val_index];
-            next_epoch_vals.push_back(ValidatorDataForDWalletSecretReShare {
-                class_groups_public_key_and_proof_bytes: get_val_class_groups_public_key_and_proof_bytes(validator),
-                protocol_pubkey_bytes: get_validator_protocol_pubkey_bytes(validator),
+            next_epoch_vals.push_back(ValidatorDataForDWalletSecretShare {
+                cg_pubkey_and_proof: get_class_group_pubkey_and_proof(validator),
+                protocol_pubkey_bytes: get_validator_protocol_pubkey(validator),
             });
             pending_val_index = pending_val_index + 1;
         };
-        event::emit(LockedNextEpochCommitteeEvent { next_committee_validators: next_epoch_vals, epoch });
+        event::emit(LockedNextEpochCommitteeEvent { epoch });
         self.locked = true;
+    }
+
+    public(package) fun emit_validator_data_for_secret_share(data: ValidatorDataForDWalletSecretShare) {
+        event::emit(data);
+    }
+
+    /// Maps the given `Validator` objects to the corresponding `ValidatorDataForDWalletSecretShare` objects.
+    public(package) fun get_active_validators_data(
+        validators: &vector<Validator>
+    ): vector<ValidatorDataForDWalletSecretShare> {
+        let mut validators_data: vector<ValidatorDataForDWalletSecretShare> = vector[];
+        let mut i = 0;
+        while (i < validators.length()) {
+            let validator = &validators[i];
+            validators_data.push_back(ValidatorDataForDWalletSecretShare {
+                cg_pubkey_and_proof: get_class_group_pubkey_and_proof(validator),
+                protocol_pubkey_bytes: get_validator_protocol_pubkey(validator),
+            });
+            i = i + 1;
+        };
+        validators_data
     }
 
     /// Update the validator set at the end of epoch.

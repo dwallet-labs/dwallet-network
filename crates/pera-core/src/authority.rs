@@ -61,7 +61,7 @@ use self::authority_store_pruner::AuthorityStorePruningMetrics;
 pub use authority_store::{AuthorityStore, ResolverWrapper, UpdateType};
 use mysten_metrics::{monitored_scope, spawn_monitored_task};
 
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKey;
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use once_cell::sync::OnceCell;
 use pera_archival::reader::ArchiveReaderBalancer;
 use pera_config::genesis::Genesis;
@@ -144,8 +144,8 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc::mpc_events::LockedNextEpochCommitteeEvent;
-use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
+use crate::dwallet_mpc::mpc_events::{LockedNextEpochCommitteeEvent, ValidatorDataForNetworkDKG};
+use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
@@ -166,8 +166,9 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
-use pera_types::dwallet_mpc_error::DwalletMPCError;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::execution_config_utils::to_binary_config;
+use pera_types::messages_dwallet_mpc::DWalletMPCEvent;
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1496,7 +1497,7 @@ impl AuthorityState {
         // Filter the MPC events here because there is access to the
         // event, as the transaction has been just executed.
         if let Err(err) = self
-            .filter_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store)
+            .filter_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store, certificate)
             .await
         {
             error!("failed to handle MPC events with error: {:?}", err);
@@ -1535,16 +1536,22 @@ impl AuthorityState {
         Ok(())
     }
 
-    /// Filters the MPC signature events emitted from the transaction, if any.
-    /// Filtering to handle only DWallet-MPC related events happen within
-    /// [`DWalletMPCManager::handle_event`] function.
+    /// Filters the dWallet MPC events emitted from the transaction, if any.
     async fn filter_dwallet_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,
         effects: &TransactionEffects,
         epoch_store: &Arc<AuthorityPerEpochStore>,
+        certificate: &VerifiedExecutableTransaction,
     ) -> PeraResult {
-        if !self.is_validator(epoch_store) {
+        // The dWallet MPC components are not yet initialized in the genesis TXs.
+        // None of them should start the dWallet-MPC flows.
+        // Transactions that don't contain shared objects cannot trigger dwallet MPC flows,
+        // as they are not being ordered through the consensus engine.
+        if certificate.transaction_data().is_genesis_tx()
+            || !self.is_validator(epoch_store)
+            || !certificate.transaction_data().contains_shared_object()
+        {
             return Ok(());
         }
 
@@ -1556,8 +1563,7 @@ impl AuthorityState {
         }
 
         let party_id = authority_name_to_party_id(&epoch_store.name, epoch_store)?;
-        let mut dwallet_mpc_outputs_verifier =
-            epoch_store.get_dwallet_mpc_outputs_verifier().await?;
+        let mut dwallet_mpc_outputs_verifier = epoch_store.get_dwallet_mpc_outputs_verifier().await;
 
         for event in &inner_temporary_store.events.data {
             if LockedNextEpochCommitteeEvent::type_() == event.type_ {
@@ -1565,36 +1571,50 @@ impl AuthorityState {
                 dwallet_mpc_outputs_verifier.completed_locking_next_committee = true;
                 continue;
             }
-            // Todo (#427): Receive the key version
-            // Todo (#427): from the MPC event and check its validity.
+            if ValidatorDataForNetworkDKG::type_() == event.type_ {
+                Self::handle_validator_data_for_network_dkg_event(epoch_store, event).await?;
+                continue;
+            }
             let key_version = epoch_store
                 .dwallet_mpc_network_keys
                 .get()
                 .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-                .key_version(DWalletMPCNetworkKey::Secp256k1)
+                .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
                 .unwrap_or_default();
-            let Ok(Some(session_info)) =
-                session_info_from_event(event, party_id, Some(key_version))
-            else {
+            let Ok(Some(session_info)) = session_info_from_event(event, Some(key_version)) else {
                 continue;
             };
-            if session_info.mpc_round.is_part_of_batch() {
-                let mut dwallet_mpc_batches_manager =
-                    epoch_store.get_dwallet_mpc_batches_manager().await?;
-                dwallet_mpc_batches_manager.handle_new_event(&session_info);
-            }
             // This function is being executed for all events, some events are
             // being emitted before the MPC outputs manager is initialized.
-            dwallet_mpc_outputs_verifier.handle_new_event(&session_info);
-            let dwallet_mpc_sender = epoch_store
-                .dwallet_mpc_sender
-                .get()
-                .ok_or_else(|| DwalletMPCError::MissingDWalletMPCSender)?;
-            dwallet_mpc_sender
-                .send(DWalletMPCChannelMessage::Event(event.clone(), session_info))
-                .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
+            if session_info.mpc_round.is_a_new_batch_session() {
+                let mut dwallet_mpc_batches_manager =
+                    epoch_store.get_dwallet_mpc_batches_manager().await;
+                // Mark a new batch event as received.
+                dwallet_mpc_batches_manager.store_new_session(&session_info);
+            } else {
+                dwallet_mpc_outputs_verifier.monitor_new_session_outputs(&session_info);
+                // Send the event to the dWallet MPC manager.
+                epoch_store
+                    .save_dwallet_mpc_event(DWalletMPCEvent {
+                        event: event.clone(),
+                        session_info,
+                    })
+                    .await;
+            }
         }
+        Ok(())
+    }
 
+    async fn handle_validator_data_for_network_dkg_event(
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+        event: &Event,
+    ) -> DwalletMPCResult<()> {
+        let deserialized_event: ValidatorDataForNetworkDKG = bcs::from_bytes(&event.contents)?;
+        epoch_store
+            .save_dwallet_mpc_round_message(DWalletMPCDBMessage::ValidatorDataForDKG(
+                deserialized_event,
+            ))
+            .await;
         Ok(())
     }
 
@@ -2781,6 +2801,7 @@ impl AuthorityState {
         });
 
         // Start a task to execute ready certificates.
+        // Note(zeev): This is where all ready certificates are actually REALLY executed.
         let authority_state = Arc::downgrade(&state);
         spawn_monitored_task!(execution_process(
             authority_state,

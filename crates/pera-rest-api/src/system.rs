@@ -11,6 +11,7 @@ use axum::{
     extract::{Path, State},
     Json,
 };
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 use pera_protocol_config::{ProtocolConfig, ProtocolConfigValue, ProtocolVersion};
 use pera_sdk2::types::{Address, ObjectId};
 use schemars::JsonSchema;
@@ -227,6 +228,8 @@ pub struct SystemStateSummary {
     pub at_risk_validators: Vec<(Address, u64)>,
     /// A map storing the records of validator reporting each other.
     pub validator_report_records: Vec<(Address, Vec<Address>)>,
+    /// dWallet MPC network keys, KeyScheme -> NetworkDecryptionKeyShares
+    pub network_mpc_keys: Vec<(u8, NetworkDecryptionKeyShares)>,
 }
 
 /// This is the REST type for the pera validator. It flattens all inner structures
@@ -239,7 +242,6 @@ pub struct ValidatorSummary {
     pub protocol_public_key: pera_sdk2::types::Bls12381PublicKey,
     pub network_public_key: pera_sdk2::types::Ed25519PublicKey,
     pub worker_public_key: pera_sdk2::types::Ed25519PublicKey,
-    pub class_groups_public_key_and_proof: Vec<u8>,
     #[serde_as(as = "fastcrypto::encoding::Base64")]
     #[schemars(with = "String")]
     pub proof_of_possession_bytes: Vec<u8>,
@@ -336,7 +338,6 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraValidato
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
-            class_groups_public_key_and_proof,
             proof_of_possession_bytes,
             name,
             description,
@@ -386,7 +387,6 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraValidato
             .unwrap(),
             worker_public_key: pera_sdk2::types::Ed25519PublicKey::from_bytes(worker_pubkey_bytes)
                 .unwrap(),
-            class_groups_public_key_and_proof,
             proof_of_possession_bytes,
             name,
             description,
@@ -473,6 +473,7 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraSystemSt
             validator_candidates_size,
             at_risk_validators,
             validator_report_records,
+            network_mpc_keys,
         } = value;
 
         Self {
@@ -524,6 +525,7 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraSystemSt
                     )
                 })
                 .collect(),
+            network_mpc_keys,
         }
     }
 }

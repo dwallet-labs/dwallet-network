@@ -1,14 +1,14 @@
 //! A module with logic to manage the batched sessions.
 //! The struct, [`DWalletMPCBatchesManager`] stores all the batched
 //! sessions that are currently being processed, and decides whether a batch is
-//! completed by checking if it received all the expected batch outputs.
+//! completed by checking if it received all the expected VERIFIED batch outputs.
 //! When a batch is completed, it returns the output of the entire batch,
 //! which can be written to the chain through a system transaction.
-use crate::dwallet_mpc::mpc_party::AsyncProtocol;
+use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicOutput};
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
+use pera_types::messages_dwallet_mpc::{MPCProtocolInitData, SessionInfo, SingleSignSessionData};
 use std::collections::{HashMap, HashSet};
 
 /// Structs to hold the batches sign session data.
@@ -37,7 +37,7 @@ pub struct BatchedPresignSession {
     batch_size: u64,
     /// A map between the first presign session ID to the verified, serialized presign object.
     /// The first round's session ID is needed for the centralized sign flow.
-    verified_presigns: Vec<(ObjectID, Vec<u8>)>,
+    verified_presigns: Vec<(ObjectID, MPCPublicOutput)>,
 }
 
 /// A struct to manage the batched sign sessions.
@@ -62,11 +62,12 @@ impl DWalletMPCBatchesManager {
 
     /// Handle a new event by initializing a new batched session
     /// if the event is a start batch event.
-    pub(crate) fn handle_new_event(&mut self, session_info: &SessionInfo) {
+    /// Clears duplicate messages if the user/fullnode sends the same message twice.
+    pub(crate) fn store_new_session(&mut self, session_info: &SessionInfo) {
         match &session_info.mpc_round {
-            MPCRound::BatchedSign(hashed_messages) => {
+            MPCProtocolInitData::BatchedSign(hashed_messages) => {
                 let mut seen = HashSet::new();
-                let messages_without_duplicates = hashed_messages
+                let unique_messages = hashed_messages
                     .clone()
                     .into_iter()
                     .filter(|x| seen.insert(x.clone()))
@@ -75,11 +76,11 @@ impl DWalletMPCBatchesManager {
                     session_info.session_id,
                     BatchedSignSession {
                         hashed_msg_to_signature: HashMap::new(),
-                        ordered_messages: messages_without_duplicates,
+                        ordered_messages: unique_messages,
                     },
                 );
             }
-            MPCRound::BatchedPresign(batch_size) => {
+            MPCProtocolInitData::BatchedPresign(batch_size) => {
                 self.batched_presign_sessions.insert(
                     session_info.session_id,
                     BatchedPresignSession {
@@ -96,13 +97,17 @@ impl DWalletMPCBatchesManager {
     pub(crate) fn store_verified_output(
         &mut self,
         session_info: SessionInfo,
-        output: Vec<u8>,
+        output: MPCPublicOutput,
     ) -> DwalletMPCResult<()> {
         match session_info.mpc_round {
-            MPCRound::Sign(batch_session_id, ref hashed_message) => {
-                self.store_verified_sign_output(batch_session_id, hashed_message.clone(), output)?;
+            MPCProtocolInitData::Sign(SingleSignSessionData {
+                batch_session_id,
+                hashed_message: message,
+                ..
+            }) => {
+                self.store_verified_sign_output(batch_session_id, message.clone(), output)?;
             }
-            MPCRound::PresignSecond(_, ref first_round_output, batch_session_id) => {
+            MPCProtocolInitData::PresignSecond(_, ref first_round_output, batch_session_id) => {
                 let presign =
                     parse_presign_from_first_and_second_outputs(first_round_output, &output)?;
                 self.store_verified_presign_output(
@@ -123,8 +128,10 @@ impl DWalletMPCBatchesManager {
         session_info: &SessionInfo,
     ) -> DwalletMPCResult<Option<Vec<u8>>> {
         match session_info.mpc_round {
-            MPCRound::Sign(batch_session_id, _) => self.is_sign_batch_completed(batch_session_id),
-            MPCRound::PresignSecond(_, _, batch_session_id) => {
+            MPCProtocolInitData::Sign(SingleSignSessionData {
+                batch_session_id, ..
+            }) => self.is_sign_batch_completed(batch_session_id),
+            MPCProtocolInitData::PresignSecond(_, _, batch_session_id) => {
                 self.is_presign_batch_completed(batch_session_id)
             }
             _ => Ok(None),

@@ -236,7 +236,7 @@ async fn init_genesis(
         let worker_name = worker_key_pair.public().clone();
         let account_key_pair: PeraKeyPair = get_key_pair::<AccountKeyPair>().1.into();
         let network_key_pair: NetworkKeyPair = get_key_pair().1;
-        let class_groups_seed = key_pair.copy().private().as_bytes().try_into().unwrap();
+        let class_groups_seed: [u8; 32] = key_pair.copy().private().as_bytes().try_into().unwrap();
         let class_groups_key_pair_and_proof =
             generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
         let validator_info = ValidatorInfo {
@@ -245,9 +245,7 @@ async fn init_genesis(
             worker_key: worker_name,
             account_address: PeraAddress::from(&account_key_pair.public()),
             network_key: network_key_pair.public().clone(),
-            class_groups_public_key_and_proof: class_groups_key_pair_and_proof
-                .public_bytes()
-                .unwrap(),
+            class_groups_public_key_and_proof: class_groups_key_pair_and_proof.public_bytes(),
             gas_price: 1,
             commission_rate: 0,
             network_address: local_ip_utils::new_local_tcp_address_for_testing(),

@@ -420,6 +420,7 @@ pub enum OperationType {
     RandomnessStateUpdate,
     EndOfEpochTransaction,
     DWalletMPCOutput,
+    LockNextCommittee,
 }
 
 impl From<&PeraTransactionBlockKind> for OperationType {
@@ -445,7 +446,7 @@ impl From<&PeraTransactionBlockKind> for OperationType {
                 OperationType::EndOfEpochTransaction
             }
             PeraTransactionBlockKind::DWalletMPCOutput(_) => OperationType::DWalletMPCOutput,
-            PeraTransactionBlockKind::LockNextCommittee => todo!(),
+            PeraTransactionBlockKind::LockNextCommittee => OperationType::LockNextCommittee,
         }
     }
 }

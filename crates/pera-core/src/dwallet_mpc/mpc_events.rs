@@ -5,14 +5,16 @@
 //! They include utility functions for detecting and comparing the event types.
 
 use dwallet_mpc_types::dwallet_mpc::{
-    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME,
-    START_BATCHED_PRESIGN_EVENT_STRUCT_NAME, START_BATCHED_SIGN_EVENT_STRUCT_NAME,
-    START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
-    START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
+    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
+    LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME, START_BATCHED_PRESIGN_EVENT_STRUCT_NAME,
+    START_BATCHED_SIGN_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
+    START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
+    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME,
+    START_SIGN_ROUND_EVENT_STRUCT_NAME, VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME,
+    VALIDATOR_SET_MODULE_NAME,
 };
 use move_core_types::ident_str;
-use move_core_types::language_storage::StructTag;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use pera_types::{base_types::PeraAddress, id::ID, PERA_SYSTEM_ADDRESS};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -41,38 +43,7 @@ impl StartDKGFirstRoundEvent {
     }
 }
 
-/// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGSecondRoundEvent`.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartDKGSecondRoundEvent {
-    /// Unique identifier for the MPC session.
-    pub session_id: PeraAddress,
-    /// The address of the user that initiated this session.
-    pub initiator: PeraAddress,
-    /// The DKG first decentralized round output.
-    pub first_round_output: Vec<u8>,
-    /// The DKG centralized round output.
-    pub public_key_share_and_proof: Vec<u8>,
-    /// The `DWalletCap` object's ID associated with the `DWallet`.
-    pub dwallet_cap_id: ID,
-    /// The unique identifier for the first DKG round session.
-    pub first_round_session_id: ID,
-}
-
-impl StartDKGSecondRoundEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartDKGSecondRoundEvent`] events from the chain
-    /// and initiate the MPC session.
-    pub fn type_() -> StructTag {
-        StructTag {
-            address: PERA_SYSTEM_ADDRESS,
-            name: START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
-/// Represents the Rust version of the Move struct `pera_system::dwallet::StartPresignFirstRoundEvent`.
+/// Represents the Rust version of the Move struct `pera_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartPresignFirstRoundEvent {
     /// Unique identifier for the MPC session.
@@ -83,7 +54,11 @@ pub struct StartPresignFirstRoundEvent {
     pub dwallet_id: ID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
+    /// A unique identifier for the entire batch,
+    /// used to collect all the presigns in the batch and complete it.
     pub batch_session_id: ID,
+    /// The dWallet mpc network key version
+    pub(super) dwallet_mpc_network_key_version: u8,
 }
 
 impl StartPresignFirstRoundEvent {
@@ -101,7 +76,7 @@ impl StartPresignFirstRoundEvent {
 }
 
 /// Represents the Rust version of the Move
-/// struct `pera_system::dwallet::StartPresignSecondRoundEvent`.
+/// struct `pera_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignSecondRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartPresignSecondRoundEvent {
     /// Unique identifier for the MPC session.
@@ -116,7 +91,11 @@ pub struct StartPresignSecondRoundEvent {
     pub first_round_output: Vec<u8>,
     /// A unique identifier for the first Presign round session.
     pub first_round_session_id: ID,
+    /// A unique identifier for the entire batch,
+    /// used to collect all the presigns in the batch and complete it.
     pub batch_session_id: ID,
+    /// The dWallet mpc network key version
+    pub(super) dwallet_mpc_network_key_version: u8,
 }
 
 /// An event to start a batched sign session, i.e.,
@@ -153,13 +132,11 @@ impl StartPresignSecondRoundEvent {
 }
 
 /// Represents the Rust version of the Move
-/// struct `pera_system::dwallet::StartSignRoundEvent`.
+/// struct `pera_system::dwallet::StartSignEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartSignRoundEvent {
+pub struct StartSignEvent<D> {
     /// Unique identifier for the MPC session.
     pub(super) session_id: ID,
-    /// Unique identifier for the MPC session.
-    pub(super) presign_session_id: ID,
     /// The address of the user that initiated this session.
     pub(super) initiator: PeraAddress,
     /// The ID of the batch sign session that contains this sign session.
@@ -168,27 +145,29 @@ pub struct StartSignRoundEvent {
     pub(super) batched_session_id: ID,
     /// The `DWallet` object's ID associated with the DKG output.
     pub(super) dwallet_id: ID,
-    /// The DKG decentralized final output to use for the presign session.
-    pub(super) dkg_output: Vec<u8>,
+    /// The public output of the decentralized party in the dWallet DKG process.
+    pub(super) dwallet_decentralized_public_output: Vec<u8>,
     /// Hashed messages to Sign.
     pub(super) hashed_message: Vec<u8>,
-    /// The serialized final presign output, constructed from the outputs of
-    /// both the first and second presign MPC rounds.
-    pub(super) presign: Vec<u8>,
-    /// Centralized signed message
-    pub(super) centralized_signed_message: Vec<u8>,
+    /// The dWallet mpc network key version
+    pub(super) dwallet_mpc_network_key_version: u8,
+    /// The type of data that can be stored with the object.
+    /// Specific to each Digital Signature Algorithm.
+    pub(crate) signature_algorithm_data: D,
+    /// Indicates whether the future sign feature was used to start the session.
+    pub(crate) is_future_sign: bool,
 }
 
-impl StartSignRoundEvent {
+impl<D> StartSignEvent<D> {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartSignRoundEvent`]
+    /// It is used to detect [`StartSignEvent`]
     /// events from the chain and initiate the MPC session.
-    pub fn type_() -> StructTag {
+    pub fn type_(type_param: TypeTag) -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: START_SIGN_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-            type_params: vec![],
+            module: DWALLET_MODULE_NAME.to_owned(),
+            type_params: vec![type_param],
         }
     }
 }
@@ -201,13 +180,16 @@ impl StartBatchedSignEvent {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: START_BATCHED_SIGN_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
 }
 
 impl StartBatchedPresignEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`StartBatchedPresignEvent`]
+    /// events from the chain and initiate the MPC session.
     pub fn type_() -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
@@ -220,13 +202,34 @@ impl StartBatchedPresignEvent {
 
 /// Rust version of the Move [`pera_system::validator_set::LockedNextEpochCommitteeEvent`] type.
 pub struct LockedNextEpochCommitteeEvent {
-    _next_committee_validators: Vec<ValidatorDataForDWalletSecretReShare>,
-    _epoch: u64,
+    epoch: u64,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 struct ValidatorDataForDWalletSecretReShare {
-    _class_groups_public_key_and_proof_bytes: Vec<u8>,
-    _protocol_pubkey_bytes: Vec<u8>,
+    cg_pubkey_and_proof: Vec<u8>,
+    protocol_pubkey_bytes: Vec<u8>,
+}
+
+/// The data we need to know about a validator to run a re-share/network-dkg flow with it.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+pub struct ValidatorDataForNetworkDKG {
+    /// The class groups encryption key of the validator,
+    /// used to encrypt the validator's secret share to it.
+    pub(crate) cg_pubkey_and_proof: Vec<u8>,
+    /// The Ika public key of the validator, used as an identifier for the validator.
+    pub(crate) protocol_pubkey_bytes: Vec<u8>,
+}
+
+impl ValidatorDataForNetworkDKG {
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME.to_owned(),
+            module: VALIDATOR_SET_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }
 
 impl LockedNextEpochCommitteeEvent {
@@ -237,7 +240,7 @@ impl LockedNextEpochCommitteeEvent {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME.to_owned(),
-            module: ident_str!("validator_set").to_owned(),
+            module: VALIDATOR_SET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

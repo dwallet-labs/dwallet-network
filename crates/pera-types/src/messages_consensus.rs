@@ -7,16 +7,18 @@ use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
     CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointTimestamp,
 };
-use crate::messages_dwallet_mpc::SessionInfo;
+use crate::messages_dwallet_mpc::{MaliciousReport, SessionInfo};
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
 use crate::transaction::CertifiedTransaction;
 use byteorder::{BigEndian, ReadBytesExt};
+use dwallet_mpc_types::dwallet_mpc::MPCMessage;
 use fastcrypto::error::FastCryptoResult;
 use fastcrypto::groups::bls12381;
 use fastcrypto_tbls::{dkg, dkg_v1};
 use fastcrypto_zkp::bn254::zk_login::{JwkId, JWK};
+use group::PartyID;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
@@ -90,6 +92,19 @@ pub struct ConsensusTransaction {
     pub kind: ConsensusTransactionKind,
 }
 
+/// The message a Validator can send to the other parties while
+/// running a dWallet MPC session.
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
+pub struct DWalletMPCMessage {
+    /// The serialized message.
+    pub message: MPCMessage,
+    /// The authority (Validator) that sent the message.
+    pub authority: AuthorityName,
+    pub session_id: ObjectID,
+    /// The MPC round number, starts from 0.
+    pub round_number: usize,
+}
+
 #[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
@@ -97,11 +112,12 @@ pub enum ConsensusTransactionKey {
     /// The message sent between MPC parties in a dwallet MPC session.
     /// The [`Vec<u8>`] is the message, the [`AuthorityName`] is the sending authority, and the
     /// [`ObjectID`] is the session ID.
-    DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    DWalletMPCMessage(DWalletMPCMessage),
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
     DWalletMPCOutput(Vec<u8>, ObjectID, PeraAddress, AuthorityName),
+    DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
     LockNextCommittee(AuthorityName, EpochId),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
@@ -119,8 +135,8 @@ impl Debug for ConsensusTransactionKey {
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
             }
-            Self::DWalletMPCMessage(name, _, _) => {
-                write!(f, "DWalletMPCMessage({:?})", name.concise(),)
+            Self::DWalletMPCMessage(message) => {
+                write!(f, "DWalletMPCMessage({:?})", message,)
             }
             Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
             Self::CapabilityNotification(name, generation) => write!(
@@ -145,24 +161,27 @@ impl Debug for ConsensusTransactionKey {
             Self::RandomnessDkgConfirmation(name) => {
                 write!(f, "RandomnessDkgConfirmation({:?})", name.concise())
             }
-            ConsensusTransactionKey::DWalletMPCOutput(
-                value,
-                session_id,
-                sender_address,
-                authority,
-            ) => {
+            Self::DWalletMPCOutput(value, session_id, sender_address, authority) => {
                 write!(
                     f,
                     "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
                     value, session_id, sender_address, authority
                 )
             }
-            ConsensusTransactionKey::LockNextCommittee(authority, epoch_id) => {
+            Self::LockNextCommittee(authority, epoch_id) => {
                 write!(
                     f,
                     "LockNextCommittee({:?}) for epoch {:?}",
                     authority.concise(),
                     epoch_id
+                )
+            }
+            Self::DWalletMPCSessionFailedWithMalicious(authority, report) => {
+                write!(
+                    f,
+                    "DWalletMPCSessionFailedWithMalicious({:?}, {:?})",
+                    authority.concise(),
+                    report,
                 )
             }
         }
@@ -295,8 +314,10 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilitiesV1),
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
-    DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
+    /// Sending Authority and its MaliciousReport.
+    DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
     LockNextCommittee(AuthorityName, EpochId),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
@@ -497,13 +518,19 @@ impl ConsensusTransaction {
         authority: AuthorityName,
         message: Vec<u8>,
         session_id: ObjectID,
+        round_number: usize,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         session_id.into_bytes().hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
+            kind: ConsensusTransactionKind::DWalletMPCMessage(DWalletMPCMessage {
+                message,
+                authority,
+                round_number,
+                session_id,
+            }),
         }
     }
 
@@ -530,6 +557,20 @@ impl ConsensusTransaction {
         Self {
             tracking_id,
             kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
+        }
+    }
+
+    /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
+    pub fn new_dwallet_mpc_session_failed_with_malicious(
+        authority: AuthorityName,
+        report: MaliciousReport,
+    ) -> Self {
+        let mut hasher = DefaultHasher::new();
+        report.session_id.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, report),
         }
     }
 
@@ -604,12 +645,8 @@ impl ConsensusTransaction {
             ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _) => {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
             }
-            ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id) => {
-                ConsensusTransactionKey::DWalletMPCMessage(
-                    *authority,
-                    message.clone(),
-                    session_id.clone(),
-                )
+            ConsensusTransactionKind::DWalletMPCMessage(message) => {
+                ConsensusTransactionKey::DWalletMPCMessage(message.clone())
             }
             ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {
                 ConsensusTransactionKey::DWalletMPCOutput(
@@ -621,6 +658,12 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::LockNextCommittee(authority, epoch_id) => {
                 ConsensusTransactionKey::LockNextCommittee(*authority, *epoch_id)
+            }
+            ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, report) => {
+                ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(
+                    *authority,
+                    report.clone(),
+                )
             }
         }
     }

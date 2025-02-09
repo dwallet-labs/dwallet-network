@@ -92,9 +92,10 @@ impl PeraTxValidator {
                 | ConsensusTransactionKind::NewJWKFetched(_, _, _)
                 | ConsensusTransactionKind::CapabilityNotificationV2(_)
                 | ConsensusTransactionKind::RandomnessStateUpdate(_, _)
-                | ConsensusTransactionKind::DWalletMPCMessage(_, _, _)
-                | ConsensusTransactionKind::DWalletMPCOutput(..) => {}
-                ConsensusTransactionKind::LockNextCommittee(..) => {}
+                | ConsensusTransactionKind::DWalletMPCMessage(..)
+                | ConsensusTransactionKind::DWalletMPCOutput(..)
+                | ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..)
+                | ConsensusTransactionKind::LockNextCommittee(..) => {}
             }
         }
 

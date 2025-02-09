@@ -295,6 +295,7 @@ where
         let auth_agg = self.validators.load();
         let _tx_guard = GaugeGuard::acquire(&auth_agg.metrics.inflight_transactions);
         let tx_digest = *transaction.digest();
+        // Note(zeev): sends the TX to the validators and handle the result.
         let result = auth_agg.process_transaction(transaction, client_addr).await;
 
         self.process_transaction_result(result, tx_digest, client_addr)
@@ -767,11 +768,15 @@ where
             client_addr,
             ..
         } = task;
+        // Note(zeev): in here after tons of channels and async calls,
+        // we are finally processing the transaction.
         let transaction = &request.transaction;
         let tx_digest = *transaction.digest();
+        // Note(zeev): fast path or not.
         let is_single_writer_tx = !transaction.contains_shared_object();
 
         let timer = Instant::now();
+        // Note(zeev): Send the TX and handle the result.
         let (tx_cert, newly_formed) = match tx_cert {
             None => match quorum_driver
                 .process_transaction(transaction.clone(), client_addr)
@@ -815,6 +820,7 @@ where
             Some(tx_cert) => (tx_cert, false),
         };
 
+        // Note(zeev): Now Certify the TX.
         let response = match quorum_driver
             .process_certificate(
                 HandleCertificateRequestV3 {

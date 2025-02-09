@@ -14,7 +14,10 @@ module pera_system::validator {
     use pera::url;
     use pera::event;
     use pera::bag::Bag;
+    use pera::object_bag::{Self, ObjectBag};
     use pera::bag;
+
+    const CG_PUBKEY_AND_PROOF_BAG_KEY: vector<u8> = b"classgroups";
 
     /// Invalid proof_of_possession field in ValidatorMetadata
     const EInvalidProofOfPossession: u64 = 0;
@@ -85,8 +88,6 @@ module pera_system::validator {
         network_pubkey_bytes: vector<u8>,
         /// The public key bytes correstponding to the Narwhal Worker
         worker_pubkey_bytes: vector<u8>,
-        /// The public key and proof bytes for the network dkg protocol
-        class_groups_public_key_and_proof_bytes: vector<u8>,
         /// This is a proof that the validator has ownership of the private key
         proof_of_possession: vector<u8>,
         /// A unique human-readable name of this validator.
@@ -116,6 +117,8 @@ module pera_system::validator {
 
         /// Any extra fields that's not defined statically.
         extra_fields: Bag,
+        /// A persistent, i.e. that persist the data across different transactions, version of the extra_fields field.
+        persistent_extra_fields: ObjectBag,
     }
 
     public struct Validator has store {
@@ -162,12 +165,24 @@ module pera_system::validator {
         reward_amount: u64,
     }
 
-    public(package) fun get_validator_protocol_pubkey_bytes(validator: &Validator): vector<u8> {
+    public(package) fun get_validator_protocol_pubkey(validator: &Validator): vector<u8> {
         validator.metadata.protocol_pubkey_bytes
     }
 
-    public(package) fun get_val_class_groups_public_key_and_proof_bytes(val: &Validator): vector<u8> {
-        val.metadata.class_groups_public_key_and_proof_bytes
+    /// Retrieves the validator's class groups public key and proof.
+    public(package) fun get_class_group_pubkey_and_proof(val: &Validator): vector<u8> {
+        let cg_pubkey_and_proof: &PersistentCGPubKeyAndProof = val.metadata.persistent_extra_fields.borrow(
+            CG_PUBKEY_AND_PROOF_BAG_KEY
+        );
+        cg_pubkey_and_proof.data
+    }
+
+    /// A struct to store persistently the class groups public key and proof bytes.
+    /// We need to use this struct and an ObjectBag to store this field because it's very big (almost 250KB),
+    /// and storing it directly within the validator's object would exceed the object size limit.
+    public struct PersistentCGPubKeyAndProof has key, store{
+        id: UID,
+        data: vector<u8>
     }
 
     public(package) fun new_metadata(
@@ -175,7 +190,7 @@ module pera_system::validator {
         protocol_pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
-        class_groups_public_key_and_proof_bytes: vector<u8>,
+        cg_pubkey_and_proof: vector<u8>,
         proof_of_possession: vector<u8>,
         name: String,
         description: String,
@@ -186,13 +201,19 @@ module pera_system::validator {
         primary_address: String,
         worker_address: String,
         extra_fields: Bag,
+        ctx: &mut TxContext
     ): ValidatorMetadata {
+        let class_groups_pubkey_and_proof = PersistentCGPubKeyAndProof {
+            id: object::new(ctx),
+            data: cg_pubkey_and_proof
+        };
+        let mut persistent_extra_fields = object_bag::new(ctx);
+        persistent_extra_fields.add(CG_PUBKEY_AND_PROOF_BAG_KEY, class_groups_pubkey_and_proof);
         let metadata = ValidatorMetadata {
             pera_address,
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
-            class_groups_public_key_and_proof_bytes,
             proof_of_possession,
             name,
             description,
@@ -211,6 +232,7 @@ module pera_system::validator {
             next_epoch_primary_address: option::none(),
             next_epoch_worker_address: option::none(),
             extra_fields,
+            persistent_extra_fields,
         };
         metadata
     }
@@ -220,7 +242,7 @@ module pera_system::validator {
         protocol_pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
-        class_groups_public_key_and_proof_bytes: vector<u8>,
+        cg_pubkey_and_proof: vector<u8>,
         proof_of_possession: vector<u8>,
         name: vector<u8>,
         description: vector<u8>,
@@ -253,7 +275,7 @@ module pera_system::validator {
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
-            class_groups_public_key_and_proof_bytes,
+            cg_pubkey_and_proof,
             proof_of_possession,
             name.to_ascii_string().to_string(),
             description.to_ascii_string().to_string(),
@@ -264,6 +286,7 @@ module pera_system::validator {
             primary_address.to_ascii_string().to_string(),
             worker_address.to_ascii_string().to_string(),
             bag::new(ctx),
+            ctx
         );
 
         // Checks that the keys & addresses & PoP are valid.
@@ -931,6 +954,7 @@ module pera_system::validator {
                 primary_address.to_ascii_string().to_string(),
                 worker_address.to_ascii_string().to_string(),
                 bag::new(ctx),
+                ctx
             ),
             gas_price,
             commission_rate,

@@ -360,6 +360,7 @@ impl ValidatorService {
         self.transaction(request).await
     }
 
+    // Note(zeev): Actually handle the TX request from the validator side.
     async fn handle_transaction(
         &self,
         request: tonic::Request<Transaction>,

@@ -2,16 +2,26 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 // noinspection ES6PreferShortImport
 
-import { bcs } from '../bcs/index.js';
-import { Transaction } from '../transactions/index.js';
-import type { Config } from './globals.js';
-import { dWallet2PCMPCECDSAK1ModuleName, fetchCompletedEvent, packageId } from './globals.js';
+import type { SerializedBcs } from '@mysten/bcs';
 
-const signMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`;
-const partiallySignMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::publish_partially_signed_messages`;
-const futureSignMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::future_sign`;
-const approveMessagesMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::approve_messages`;
-const completedSignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`;
+import { bcs } from '../bcs/index.js';
+import type { TransactionArgument } from '../transactions/index.js';
+import { Transaction } from '../transactions/index.js';
+import { PERA_SYSTEM_STATE_OBJECT_ID } from '../utils/index.js';
+import type { Config, DWallet, DWalletWithSecretKeyShare, StartSessionEvent } from './globals.js';
+import {
+	dWallet2PCMPCECDSAK1ModuleName,
+	dWalletModuleName,
+	dWalletPackageID,
+	fetchCompletedEvent,
+	isStartSessionEvent,
+} from './globals.js';
+
+const signMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::sign`;
+const requestFutureSignMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::request_future_sign`;
+const completeFutureSignMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::sign_with_partial_centralized_message_signatures`;
+const approveMessagesMoveFunc = `${dWalletPackageID}::${dWalletModuleName}::approve_messages`;
+const completedSignMoveEvent = `${dWalletPackageID}::${dWalletModuleName}::CompletedSignEvent`;
 
 export enum Hash {
 	KECCAK256 = 0,
@@ -27,46 +37,66 @@ export interface StartBatchedSignEvent {
 	initiating_user: string;
 }
 
-export interface CreatedPartiallySignedMessagesEvent {
+export interface CreatedPartialCentralizedSignedMessagesEvent {
+	session_id: string;
 	partial_signatures_object_id: string;
 }
 
 export interface CompletedSignEvent {
 	session_id: string;
-	signed_messages: Array<Array<number>>;
+	output_object_id: Array<Array<number>>;
+	signatures: Array<Array<number>>;
+	is_future_sign: boolean;
 }
 
 export function isCompletedSignEvent(obj: any): obj is CompletedSignEvent {
-	return obj && 'session_id' in obj && 'signed_messages' in obj;
+	return (
+		obj &&
+		'session_id' in obj &&
+		'output_object_id' in obj &&
+		'signatures' in obj &&
+		'is_future_sign' in obj
+	);
 }
 
 export async function signMessageTransactionCall(
 	c: Config,
-	dwalletCapID: string,
-	hashedMessages: Uint8Array[],
-	dWalletID: string,
-	presignIDs: string[],
-	centralizedSignedMessages: Uint8Array[],
+	tx: Transaction,
+	dWallet: DWallet | DWalletWithSecretKeyShare,
+	messages: Uint8Array[],
+	hash: Hash,
+	createSignDataArgs: (TransactionArgument | SerializedBcs<any>)[],
+	createSignDataMoveFuncName: string,
+	dWalletCurveMoveType: string,
+	signDataMoveType: string,
 ): Promise<CompletedSignEvent> {
-	const tx = new Transaction();
-
 	const [messageApprovals] = tx.moveCall({
 		target: approveMessagesMoveFunc,
 		arguments: [
-			tx.object(dwalletCapID),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
+			tx.object(dWallet.dwallet_cap_id),
+			tx.pure(bcs.u8().serialize(hash.valueOf())),
+			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 		],
+	});
+
+	const [signData] = tx.moveCall({
+		target: createSignDataMoveFuncName,
+		arguments: createSignDataArgs,
 	});
 
 	tx.moveCall({
 		target: signMoveFunc,
 		arguments: [
+			tx.object(dWallet.id.id),
 			messageApprovals,
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
-			tx.makeMoveVec({ elements: presignIDs.map((presignID) => tx.object(presignID)) }),
-			tx.object(dWalletID),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
+			signData,
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: false,
+			}),
 		],
+		typeArguments: [dWalletCurveMoveType, signDataMoveType],
 	});
 
 	let res = await c.client.signAndExecuteTransaction({
@@ -98,27 +128,42 @@ export function isStartBatchedSignEvent(obj: any): obj is StartBatchedSignEvent 
 
 export function isCreatedPartiallySignedMessagesEvent(
 	obj: any,
-): obj is CreatedPartiallySignedMessagesEvent {
-	return obj && 'partial_signatures_object_id' in obj;
+): obj is CreatedPartialCentralizedSignedMessagesEvent {
+	return obj && 'partial_signatures_object_id' in obj && 'session_id' in obj;
 }
+
+let startPartialSignatureVerificationEventMoveType = `${dWalletPackageID}::${dWalletModuleName}::StartPartialSignaturesVerificationEvent<${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::SignData>`;
 
 export async function partiallySignMessageTransactionCall(
 	c: Config,
-	hashedMessages: Uint8Array[],
+	tx: Transaction,
+	messages: Uint8Array[],
 	dWalletID: string,
-	presignIDs: string[],
-	centralizedSignedMessages: Uint8Array[],
-) {
-	const tx = new Transaction();
+	signatureAlgorithmData: (TransactionArgument | SerializedBcs<any>)[],
+	createSignatureAlgorithmDataMoveFunc: string,
+	dWalletMoveType: string,
+	signatureDataMoveType: string,
+	hash: Hash,
+): Promise<CreatedPartialCentralizedSignedMessagesEvent> {
+	const [signData] = tx.moveCall({
+		target: createSignatureAlgorithmDataMoveFunc,
+		arguments: signatureAlgorithmData,
+	});
 
 	tx.moveCall({
-		target: partiallySignMoveFunc,
+		target: requestFutureSignMoveFunc,
 		arguments: [
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
-			tx.makeMoveVec({ elements: presignIDs.map((presignID) => tx.object(presignID)) }),
 			tx.object(dWalletID),
+			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
+			signData,
+			tx.pure(bcs.u8().serialize(hash.valueOf())),
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: false,
+			}),
 		],
+		typeArguments: [dWalletMoveType, signatureDataMoveType],
 	});
 
 	let res = await c.client.signAndExecuteTransaction({
@@ -129,36 +174,51 @@ export async function partiallySignMessageTransactionCall(
 		},
 	});
 
-	const createdPartiallySignedMessagesEvent = isCreatedPartiallySignedMessagesEvent(
-		res.events?.at(0)?.parsedJson,
-	)
-		? (res.events?.at(0)?.parsedJson as CreatedPartiallySignedMessagesEvent)
-		: null;
+	const sessionID = (
+		res.events?.find(
+			(event) =>
+				event.type === startPartialSignatureVerificationEventMoveType &&
+				isStartSessionEvent(event.parsedJson),
+		)?.parsedJson as StartSessionEvent
+	).session_id;
 
-	if (!createdPartiallySignedMessagesEvent) {
-		throw new Error(`${partiallySignMoveFunc} failed: ${res.errors}`);
-	}
-
-	return createdPartiallySignedMessagesEvent;
+	return await fetchCompletedEvent<CreatedPartialCentralizedSignedMessagesEvent>(
+		c,
+		sessionID,
+		`${dWalletPackageID}::${dWalletModuleName}::CreatedPartialCentralizedSignedMessagesEvent`,
+		isCreatedPartiallySignedMessagesEvent,
+	);
 }
 
-export async function futureSignTransactionCall(
+export async function completeFutureSignTransactionCall(
 	c: Config,
-	hashedMessages: Uint8Array[],
+	messages: Uint8Array[],
+	hash: Hash,
 	dWalletCapID: string,
 	partialSignaturesObjectID: string,
+	signDataMoveType: string,
 ): Promise<CompletedSignEvent> {
 	const tx = new Transaction();
 	const [messageApprovals] = tx.moveCall({
 		target: approveMessagesMoveFunc,
 		arguments: [
 			tx.object(dWalletCapID),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
+			tx.pure(bcs.u8().serialize(hash.valueOf())),
+			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 		],
 	});
 	tx.moveCall({
-		target: futureSignMoveFunc,
-		arguments: [tx.object(partialSignaturesObjectID), messageApprovals],
+		target: completeFutureSignMoveFunc,
+		arguments: [
+			tx.object(partialSignaturesObjectID),
+			messageApprovals,
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: false,
+			}),
+		],
+		typeArguments: [signDataMoveType],
 	});
 
 	let res = await c.client.signAndExecuteTransaction({

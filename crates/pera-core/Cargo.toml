@@ -103,9 +103,9 @@ nonempty.workspace = true
 group.workspace = true
 mpc.workspace = true
 twopc_mpc.workspace = true
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "new-pera-api" }
+homomorphic_encryption.workspace = true
 class_groups.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "new-pera-api" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", rev = "ec47d444ca3247aebc85773852658d345860dd36" }
 class_groups_constants = { path = "../class-groups-constants" }
 rand_core = "0.6.4"
 crypto-bigint = { version = "0.5.5", features = ["rand_core", "serde"], default-features = false }
@@ -166,3 +166,5 @@ test-utils = []
 # The network DKG pauses the manager from advancing any MPC sessions if the network key is not initialized.
 # This feature allows bypassing this restriction, enabling development without relying on the network DKG.
 with-network-dkg = []
+mock-class-groups = ["dwallet-classgroups-types/mock-class-groups"]
+

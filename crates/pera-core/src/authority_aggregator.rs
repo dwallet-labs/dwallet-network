@@ -641,6 +641,7 @@ fn create_safe_clients<A: Clone>(
     )
 }
 
+// Note(zeev): this is where the committee data is initialized.
 impl AuthorityAggregator<NetworkAuthorityClient> {
     /// Create a new network authority aggregator by reading the committee and network addresses
     /// information from the given epoch start system state.
@@ -1013,6 +1014,8 @@ where
     }
 
     /// Submits the transaction to a quorum of validators to make a certificate.
+    // Note(zeev):
+    // this is the main func that sends the TX to a quorum of validators from a full node.
     #[instrument(level = "trace", skip_all)]
     pub async fn process_transaction(
         &self,

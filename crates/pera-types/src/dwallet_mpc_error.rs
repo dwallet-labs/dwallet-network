@@ -2,10 +2,13 @@ use crate::base_types::{AuthorityName, EpochId, ObjectID};
 use dwallet_mpc_types::dwallet_mpc::DwalletNetworkMPCError;
 use group::PartyID;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum DwalletMPCError {
     #[error("mpc session with ID `{session_id:?}` was not found")]
     MPCSessionNotFound { session_id: ObjectID },
+
+    #[error("sign state for the session with ID `{session_id:?}` was not found")]
+    AggregatedSignStateNotFound { session_id: ObjectID },
 
     #[error("mpc session with ID `{session_id:?}`, failed: {error}")]
     MPCSessionError { session_id: ObjectID, error: String },
@@ -13,8 +16,8 @@ pub enum DwalletMPCError {
     #[error("Operations for the epoch {0} have ended")]
     EpochEnded(EpochId),
 
-    #[error("non MPC event")]
-    NonMPCEvent,
+    #[error("non MPC event {0}")]
+    NonMPCEvent(String),
 
     #[error("authority with a name: `{0}` not found")]
     AuthorityNameNotFound(AuthorityName),
@@ -30,6 +33,9 @@ pub enum DwalletMPCError {
 
     #[error("malicious parties have been detected: {0:?}")]
     MaliciousParties(Vec<PartyID>),
+
+    #[error("session failed with malicious parties: {0:?}")]
+    SessionFailedWithMaliciousParties(Vec<PartyID>),
 
     #[error("dWallet MPC Manager error: {0}")]
     MPCManagerError(String),
@@ -49,7 +55,7 @@ pub enum DwalletMPCError {
     #[error("dwallet MPC Sender failed: {0}")]
     DWalletMPCSenderSendFailed(String),
 
-    #[error("MPC class groups decryption share missing for the party ID: {0}")]
+    #[error("the MPC class groups decryption share missing for the party ID: {0}")]
     DwalletMPCClassGroupsDecryptionShareMissing(PartyID),
 
     #[error("missing MPC public parameters in config")]
@@ -75,8 +81,41 @@ pub enum DwalletMPCError {
     #[error("failed to lock the mutex")]
     LockError,
 
+    #[error("verification of the encrypted user share failed")]
+    EncryptedUserShareVerificationFailed,
+
+    #[error("the sent public key does not match the sender's address")]
+    EncryptedUserSharePublicKeyDoesNotMatchAddress,
+
     #[error(transparent)]
     DwalletNetworkMPCError(#[from] DwalletNetworkMPCError),
+
+    #[error("error in Class Groups: {0}")]
+    ClassGroupsError(String),
+
+    #[error("failed to read Class Groups key: {0}")]
+    FailedToReadCGKey(String),
+
+    #[error("failed to write Class Groups key: {0}")]
+    FailedToWriteCGKey(String),
+
+    #[error("missing MPC private session input")]
+    MissingMPCPrivateInput,
+
+    #[error("failed to deserialize party public key: {0}")]
+    InvalidPartyPublicKey(#[from] fastcrypto::error::FastCryptoError),
+
+    #[error("failed to read the network decryption key shares")]
+    DwalletMPCNetworkKeysNotFound,
+
+    #[error("failed to verify signature: {0}")]
+    SignatureVerificationFailed(String),
+
+    #[error("failed to get available parallelism: {0}")]
+    FailedToGetAvailableParallelism(String),
+
+    #[error("the local machine has insufficient CPU cores to run a node")]
+    InsufficientCPUCores,
 }
 
 /// A wrapper type for the result of a runtime operation.

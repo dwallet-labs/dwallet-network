@@ -1,10 +1,26 @@
 //! This module provides a wrapper around the Sign protocol from the 2PC-MPC library.
 //!
 //! It integrates the Sign party (representing a round in the protocol).
-use crate::dwallet_mpc::mpc_party::AsyncProtocol;
+use crate::dwallet_mpc::dkg::DKGSecondParty;
+use crate::dwallet_mpc::mpc_session::AsyncProtocol;
+use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
-use pera_types::dwallet_mpc_error::DwalletMPCResult;
+use mpc::Party;
+use pera_types::base_types::ObjectID;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use twopc_mpc::dkg::Protocol;
+use twopc_mpc::secp256k1;
+use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
+
+/// The index of the last sign cryptographic round.
+/// Needed to be known in advance as this cryptographic step should ideally get computed only once
+/// by the `sign aggregation` protocol.
+pub(crate) const LAST_SIGN_ROUND_INDEX: usize = 1;
+/// The time a validator waits for each other validator to produce the result of the last sign
+/// computation round.
+/// Used to determine how long a validator should wait before running the final step of the sign
+/// MPC flow.
+pub(crate) const SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS: usize = 15;
 
 pub(super) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
@@ -17,6 +33,7 @@ pub(super) type SignPublicInput =
 /// when accessing [`mpc::Party::PublicInput`].
 pub(super) trait SignPartyPublicInputGenerator: mpc::Party {
     fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
         dkg_output: MPCPublicOutput,
         hashed_message: Vec<u8>,
         presign: MPCPublicOutput,
@@ -27,24 +44,22 @@ pub(super) trait SignPartyPublicInputGenerator: mpc::Party {
 
 impl SignPartyPublicInputGenerator for SignFirstParty {
     fn generate_public_input(
+        protocol_public_parameters: Vec<u8>,
         dkg_output: MPCPublicOutput,
         hashed_message: Vec<u8>,
         presign: MPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
     ) -> DwalletMPCResult<MPCPublicInput> {
-        let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
-            bcs::from_bytes(&presign)?;
-
         let auxiliary = SignPublicInput::from((
-            class_groups_constants::protocol_public_parameters(),
+            bcs::from_bytes(&protocol_public_parameters)?,
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::Message>(
                 &hashed_message,
             )?,
             bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(
                 &dkg_output,
             )?,
-            presign,
+            bcs::from_bytes::<<AsyncProtocol as twopc_mpc::presign::Protocol>::Presign>(&presign)?,
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage>(
                 &centralized_signed_message,
             )?,
@@ -53,4 +68,36 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
 
         Ok(bcs::to_bytes(&auxiliary)?)
     }
+}
+
+/// Verifies that a single partial signature - i.e. a message that has only been signed by the
+/// client side in the 2pc-mpc protocol - is valid with regard to the given dwallet DKG output.
+/// Returns Ok if the message is valid, Err otherwise.
+pub(crate) fn verify_partial_signature(
+    hashed_message: &[u8],
+    dwallet_decentralized_output: &[u8],
+    presign: &[u8],
+    partially_signed_message: &[u8],
+    protocol_public_parameters: &ProtocolPublicParameters,
+    session_id: &ObjectID,
+) -> DwalletMPCResult<()> {
+    let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
+    let dkg_output =
+        bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(&dwallet_decentralized_output)?;
+    let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
+        bcs::from_bytes(presign)?;
+    let partial: <AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage =
+        bcs::from_bytes(partially_signed_message)?;
+    twopc_mpc::sign::decentralized_party::signature_partial_decryption_round::Party::verify_encryption_of_signature_parts_prehash_class_groups(
+        message,
+        dkg_output,
+        presign,
+        partial,
+        protocol_public_parameters,
+        CommitmentSizedNumber::from_le_slice(
+            session_id.to_vec().as_slice(),
+        ),
+    ).map_err(|err| {
+        DwalletMPCError::TwoPCMPCError(format!("{:?}", err))
+    })
 }

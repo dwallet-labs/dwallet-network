@@ -9,6 +9,7 @@ publish = false
 
 [dependencies]
 dwallet-mpc = { path = "../../crates/dwallet-mpc-centralized-party" }
+anyhow = "1.0.95"
 
 wasm-bindgen = "0.2.92"
 bcs = "0.1.6"

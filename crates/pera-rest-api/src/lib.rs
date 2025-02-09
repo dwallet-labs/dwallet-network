@@ -140,6 +140,7 @@ impl RestService {
         self.software_version
     }
 
+    /// Convert the RestService into an axum Router.
     pub fn into_router(self) -> Router {
         let metrics = self.metrics.clone();
 

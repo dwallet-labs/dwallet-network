@@ -515,6 +515,7 @@ fn setup_telemetry(
 //     Ok(())
 // }
 
+// Note(zeev):
 // Runs either a worker or a primary.
 async fn run(
     node_type: &NodeType,
@@ -564,6 +565,7 @@ async fn run(
 
     // Check whether to run a primary, a worker, or an entire benchmark cluster.
     let (primary, worker, client) = match node_type {
+        // Note(zeev): in here we spawn the different types of Nodes: Primary and Workers Pool.
         NodeType::Primary => {
             let primary = PrimaryNode::new(parameters.clone(), registry_service.clone());
 
