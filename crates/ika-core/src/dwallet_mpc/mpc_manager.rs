@@ -209,6 +209,16 @@ impl DWalletMPCManager {
     /// or perform the first step of the flow.
     /// We parallelize the advances with `Rayon` to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> IkaResult {
+        while self.active_sessions_counter < self.max_active_mpc_sessions {
+            if let Some(mut session) = self.pending_sessions_queue.pop_front() {
+                session.status = MPCSessionStatus::Active;
+                self.mpc_sessions
+                    .insert(session.session_info.session_id, session);
+                self.active_sessions_counter += 1;
+            } else {
+                break;
+            }
+        }
         self.epoch_store()?
             .dwallet_mpc_network_keys
             .get()
