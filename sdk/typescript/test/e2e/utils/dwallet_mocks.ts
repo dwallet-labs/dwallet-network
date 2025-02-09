@@ -48,7 +48,6 @@ export async function mockCreateDwallet(c: Config): Promise<DWalletWithSecretKey
 		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::create_mock_dwallet`,
 		arguments: [
 			tx.pure(bcs.vector(bcs.u8()).serialize(mockedDWallet.decentralizedDKGPublicOutput)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(mockedDWallet.centralizedDKGPublicOutput)),
 		],
 	});
 

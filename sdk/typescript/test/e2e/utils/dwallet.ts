@@ -47,7 +47,7 @@ export async function fullMPCUserSessionsECDSAK1(
 	const centralizedMessageSignature = create_sign_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
-		Uint8Array.from(dWallet.centralized_public_output),
+		Uint8Array.from(dWallet.decentralized_public_output),
 		Uint8Array.from(dWallet.centralizedSecretKeyShare),
 		serializedPresigns,
 		serializedMsgs,

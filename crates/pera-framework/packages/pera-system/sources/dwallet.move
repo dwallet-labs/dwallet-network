@@ -57,9 +57,6 @@ module pera_system::dwallet {
         /// The decentralized party public output in the DKG process.
         decentralized_public_output: vector<u8>,
 
-        /// The centralized party public output in the DKG process.
-        centralized_public_output: vector<u8>,
-
         /// The MPC network decryption key version that is used to decrypt this dWallet.
         dwallet_mpc_network_decryption_key_version: u8,
     }
@@ -85,7 +82,6 @@ module pera_system::dwallet {
         dwallet_cap_id: ID,
         decentralized_public_output: vector<u8>,
         dwallet_mpc_network_decryption_key_version: u8,
-        centralized_public_output: vector<u8>,
         ctx: &mut TxContext
     ): DWallet<T> {
         DWallet<T> {
@@ -94,7 +90,6 @@ module pera_system::dwallet {
             dwallet_cap_id,
             decentralized_public_output,
             dwallet_mpc_network_decryption_key_version,
-            centralized_public_output,
         }
     }
 
@@ -106,11 +101,6 @@ module pera_system::dwallet {
     /// Retrieves the decentralized public output of the second DKG round for a given dWallet..
     public(package) fun get_dwallet_decentralized_public_output<T: drop>(dwallet: &DWallet<T>): vector<u8> {
         dwallet.decentralized_public_output
-    }
-
-    /// Retrieves the centralized public output for a given dWallet.
-    public(package) fun get_dwallet_centralized_public_output<T: drop>(dwallet: &DWallet<T>): vector<u8> {
-        dwallet.centralized_public_output
     }
 
     /// Retrieves the MPC network decryption key version for a given dWallet.

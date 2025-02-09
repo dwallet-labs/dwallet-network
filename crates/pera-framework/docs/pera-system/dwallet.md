@@ -47,7 +47,6 @@ It encapsulates the session ID, capability ID, and the outputs from the DKG roun
 -  [Function `create_dwallet`](#0x3_dwallet_create_dwallet)
 -  [Function `get_dwallet_cap_id`](#0x3_dwallet_get_dwallet_cap_id)
 -  [Function `get_dwallet_decentralized_public_output`](#0x3_dwallet_get_dwallet_decentralized_public_output)
--  [Function `get_dwallet_centralized_public_output`](#0x3_dwallet_get_dwallet_centralized_public_output)
 -  [Function `get_dwallet_mpc_network_decryption_key_version`](#0x3_dwallet_get_dwallet_mpc_network_decryption_key_version)
 -  [Function `create_dwallet_cap`](#0x3_dwallet_create_dwallet_cap)
 -  [Function `get_encryption_key`](#0x3_dwallet_get_encryption_key)
@@ -137,12 +136,6 @@ created after the Distributed key generation (DKG) process.
 </dt>
 <dd>
  The decentralized party public output in the DKG process.
-</dd>
-<dt>
-<code>centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
- The centralized party public output in the DKG process.
 </dd>
 <dt>
 <code>dwallet_mpc_network_decryption_key_version: u8</code>
@@ -1023,7 +1016,7 @@ used for this dWallet.
 A new [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>] object of type <code>T</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet">create_dwallet</a>&lt;T: drop&gt;(session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_mpc_network_decryption_key_version: u8, centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet">create_dwallet</a>&lt;T: drop&gt;(session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_mpc_network_decryption_key_version: u8, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;
 </code></pre>
 
 
@@ -1037,7 +1030,6 @@ A new [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>] object
     dwallet_cap_id: ID,
     decentralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     dwallet_mpc_network_decryption_key_version: u8,
-    centralized_public_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext
 ): <a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt; {
     <a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt; {
@@ -1046,7 +1038,6 @@ A new [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>] object
         dwallet_cap_id,
         decentralized_public_output,
         dwallet_mpc_network_decryption_key_version,
-        centralized_public_output,
     }
 }
 </code></pre>
@@ -1098,31 +1089,6 @@ Retrieves the decentralized public output of the second DKG round for a given dW
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_dwallet_decentralized_public_output">get_dwallet_decentralized_public_output</a>&lt;T: drop&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
     <a href="dwallet.md#0x3_dwallet">dwallet</a>.decentralized_public_output
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_dwallet_get_dwallet_centralized_public_output"></a>
-
-## Function `get_dwallet_centralized_public_output`
-
-Retrieves the centralized public output for a given dWallet.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_dwallet_centralized_public_output">get_dwallet_centralized_public_output</a>&lt;T: drop&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_dwallet_centralized_public_output">get_dwallet_centralized_public_output</a>&lt;T: drop&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
-    <a href="dwallet.md#0x3_dwallet">dwallet</a>.centralized_public_output
 }
 </code></pre>
 
