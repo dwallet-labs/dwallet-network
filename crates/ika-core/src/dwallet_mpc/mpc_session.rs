@@ -329,15 +329,7 @@ impl DWalletMPCSession {
                 {
                     return self.advance_presign_second_round_party(session_id);
                 }
-                let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance_and_serialize::<PresignFirstParty>(
-                    session_id,
-                    self.party_id,
-                    &self.weighted_threshold_access_structure,
-                    self.serialized_messages.clone(),
-                    public_input,
-                    (),
-                )
+                self.advance_presign_first_round_party(session_id)
             }
             MPCProtocolInitData::Sign(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
@@ -410,6 +402,34 @@ impl DWalletMPCSession {
                 // The bathed session is only an indicator to expect a batch of messages.
                 unreachable!("advance should never be called on a batched session")
             }
+        }
+    }
+
+    fn advance_presign_first_round_party(
+        &self,
+        session_id: CommitmentSizedNumber,
+    ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+        let public_input = bcs::from_bytes(&self.public_input)?;
+        match crate::dwallet_mpc::advance_and_serialize::<PresignFirstParty>(
+            session_id,
+            self.party_id,
+            &self.weighted_threshold_access_structure,
+            self.serialized_messages.clone(),
+            public_input,
+            (),
+        ) {
+            Ok(advance_result) => match advance_result {
+                AsynchronousRoundResult::Finalize {
+                    public_output,
+                    private_output: _,
+                    malicious_parties,
+                } => Ok(AsynchronousRoundResult::Advance {
+                    malicious_parties,
+                    message: public_output,
+                }),
+                _ => Ok(advance_result),
+            },
+            Err(err) => Err(err),
         }
     }
 
