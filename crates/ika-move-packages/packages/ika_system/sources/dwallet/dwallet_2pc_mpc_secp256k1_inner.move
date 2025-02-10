@@ -1716,7 +1716,7 @@ public(package) fun process_checkpoint_message(
                 let session_id = object::id_from_address(bcs_body.peel_address());
                 let presign = bcs_body.peel_vec_u8();
                 self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx)
-            }
+            };
         i = i + 1;
     };
     self.total_messages_processed = self.total_messages_processed + i;
