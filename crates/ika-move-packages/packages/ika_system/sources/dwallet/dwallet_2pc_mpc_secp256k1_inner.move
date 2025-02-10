@@ -113,6 +113,8 @@ public struct EncryptedUserSecretKeyShare has key, store {
     /// The ID of the `EncryptionKey` object used to encrypt the secret share.
     encryption_key_id: ID,
 
+    encryption_key_address: address,
+
     /// The ID of the `EncryptedUserSecretKeyShare` the secret was re-encrypted from (None if created during dkg).
     source_encrypted_user_secret_key_share_id: Option<ID>,
 
@@ -120,8 +122,10 @@ public struct EncryptedUserSecretKeyShare has key, store {
 }
 
 public enum EncryptedUserSecretKeyShareState has copy, drop, store {
-    ReEncrypted,
-    SigedByDestination {
+    AwaitingNetworkVerification,
+    NetworkVerificationCompleted,
+    NetworkVerificationRejected,
+    KeyHolderSiged {
         /// The signed public share corresponding to the encrypted secret key share,
         /// used to verify its authenticity.
         user_output_signature: vector<u8>,
@@ -174,6 +178,14 @@ public struct ECDSAPartialUserSignature has key, store {
 
     /// The centralized party signature of a message.
     message_centralized_signature: vector<u8>,
+
+    state: ECDSAPartialUserSignatureState,
+}
+
+public enum ECDSAPartialUserSignatureState has copy, drop, store {
+    AwaitingNetworkVerification,
+    NetworkVerificationCompleted,
+    NetworkVerificationRejected
 }
 
 /// `DWallet` represents a decentralized wallet (dWallet) that is
@@ -204,6 +216,7 @@ public enum DWalletState has copy, drop, store {
         first_round_output: vector<u8>,
     },
     AwaitingNetworkVerification,
+    NetworkRejectedSecondRound,
     Active {
         /// The output of the DKG process.
         public_output: vector<u8>,
@@ -239,6 +252,7 @@ public struct ECDSASign has key, store {
 
 public enum ECDSASignState has copy, drop, store {
     Requested,
+    NetworkRejected,
     Completed {
         signature: vector<u8>,
     }
@@ -318,11 +332,10 @@ public struct DKGSecondRoundRequestEvent has copy, drop {
     /// The unique identifier of the `EncryptionKey` object.
     encryption_key_id: ID,
 
+    encryption_key_address: address,
+
     /// The public output of the centralized party in the DKG process.
     user_public_output: vector<u8>,
-
-    /// The signature for the public output of the decentralized party in the DKG process.
-    user_output_signature: vector<u8>,
 
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
@@ -336,6 +349,14 @@ public struct DKGSecondRoundRequestEvent has copy, drop {
 /// round of the DKG process.
 /// Emitted to notify the centralized party.
 public struct CompletedDKGSecondRoundEvent has copy, drop {
+    /// The identifier of the dWallet created as a result of the DKG process.
+    dwallet_id: ID,
+
+    /// The public output for the second round of the DKG process.
+    public_output: vector<u8>,
+}
+
+public struct RejectedDKGSecondRoundEvent has copy, drop {
     /// The identifier of the dWallet created as a result of the DKG process.
     dwallet_id: ID,
 
@@ -374,27 +395,40 @@ public struct EncryptedShareVerificationRequestEvent has copy, drop {
     /// The `EncryptionKey` Move object ID.
     encryption_key_id: ID,
 
+    encrypted_user_secret_key_share_id: ID,
+
     source_encrypted_user_secret_key_share_id: ID,
 }
 
-/// Emitted when an encrypted share is created by the system transaction.
 public struct CompletedEncryptedShareVerificationRequestEvent has copy, drop {
     /// The ID of the `EncryptedUserSecretKeyShare` Move object.
     encrypted_user_secret_key_share_id: ID,
 
     /// The ID of the dWallet associated with this encrypted secret share.
     dwallet_id: ID,
-
-    /// The encrypted centralized secret key share along with a cryptographic proof
-    /// that the encryption corresponds to the dWallet's secret key share.
-    encrypted_centralized_secret_share_and_proof: vector<u8>,
-
-    /// The `EncryptionKey` Move object ID that was used to encrypt the secret key share.
-    encryption_key_id: ID,
-
-    source_encrypted_user_secret_key_share_id: ID,
 }
 
+public struct RejectedEncryptedShareVerificationRequestEvent has copy, drop {
+    /// The ID of the `EncryptedUserSecretKeyShare` Move object.
+    encrypted_user_secret_key_share_id: ID,
+
+    /// The ID of the dWallet associated with this encrypted secret share.
+    dwallet_id: ID,
+}
+
+public struct AcceptReEncryptedUserShareEvent has copy, drop {
+    /// The ID of the `EncryptedUserSecretKeyShare` Move object.
+    encrypted_user_secret_key_share_id: ID,
+
+    /// The ID of the dWallet associated with this encrypted secret share.
+    dwallet_id: ID,
+
+    user_output_signature: vector<u8>,
+
+    encryption_key_id: ID,
+
+    encryption_key_address: address,
+}
 // END OF ENCRYPTED USER SHARE TYPES
 
 // PRESIGN TYPES
@@ -481,6 +515,16 @@ public struct ECDSAFutureSignRequestEvent has copy, drop {
     message_centralized_signature: vector<u8>,
 }
 
+public struct CompletedECDSAFutureSignRequestEvent has copy, drop {
+    dwallet_id: ID,
+    partial_centralized_signed_message_id: ID,
+}
+
+public struct RejectedECDSAFutureSignRequestEvent has copy, drop {
+    dwallet_id: ID,
+    partial_centralized_signed_message_id: ID,
+}
+
 /// Event emitted to signal the completion of a Sign process.
 ///
 /// This event contains signatures for all signed messages in the batch.
@@ -497,22 +541,30 @@ public struct CompletedECDSASignEvent has copy, drop {
     is_future_sign: bool,
 }
 
+public struct RejectedECDSASignEvent has copy, drop {
+    sign_id: ID,
+
+    /// The session identifier for the signing process.
+    session_id: ID,
+
+    /// Indicates whether the future sign feature was used to start the session.
+    is_future_sign: bool,
+}
+
 // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
-const EDwalletMismatch: u64 = 2;
-const EDwalletInactive: u64 = 3;
-const EDwalletNotExists: u64 = 4;
-const EDwalletWrongState: u64 = 5;
-const EDwalletNetworkDecryptionKeyNotExists: u64 = 6;
-const EInvalidEncryptionKeySignature: u64 = 1;
-//const EInvalidEncryptionKeyOwner: u64 = 7;
-const EMessageApprovalMismatch: u64 = 8;
-//const EMissingApprovalOrWrongApprovalOrder: u64 = 9;
-const EInvalidHashScheme: u64 = 10;
-//const EExtraDataAndMessagesLenMismatch: u64 = 11;
-//const EInvalidDecentralizedPublicOutput: u64 = 12;
-const ESignWrongState: u64 = 13;
-const EPresignNotExist: u64 = 14;
-const EIncorrectCap: u64 = 15;
+const EDwalletMismatch: u64 = 1;
+const EDwalletInactive: u64 = 2;
+const EDwalletNotExists: u64 = 3;
+const EWrongState: u64 = 4;
+const EDwalletNetworkDecryptionKeyNotExist: u64 = 5;
+const EInvalidEncryptionKeySignature: u64 = 6;
+const EMessageApprovalMismatch: u64 = 7;
+const EInvalidHashScheme: u64 = 8;
+const ESignWrongState: u64 = 9;
+const EPresignNotExist: u64 = 10;
+const EIncorrectCap: u64 = 11;
+const EUnverifiedCap: u64 = 12;
+const EInvalidSource: u64 =13;
 // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
 fun get_dwallet(
@@ -540,7 +592,7 @@ fun validate_active_and_get_public_output(
         } => {
             public_output
         },
-        DWalletState::Requested | DWalletState::AwaitingUser { .. } | DWalletState::AwaitingNetworkVerification => abort EDwalletInactive,
+        DWalletState::Requested | DWalletState::AwaitingUser { .. } | DWalletState::AwaitingNetworkVerification | DWalletState::NetworkRejectedSecondRound => abort EDwalletInactive,
     }
 }
 
@@ -736,7 +788,7 @@ public(package) fun request_dkg_first_round(
     self.computation_fee_charged_ika.join(payment_ika.split(self.pricing.computation_ika_price_per_dkg(), ctx).into_balance());
     self.computation_fee_charged_sui.join(payment_sui.split(self.pricing.computation_sui_price_per_dkg(), ctx).into_balance());
 
-    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDwalletNetworkDecryptionKeyNotExists);
+    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDwalletNetworkDecryptionKeyNotExist);
     let id = object::new(ctx);
     let dwallet_id = id.to_inner();
     let dwallet_cap = DWalletCap {
@@ -795,7 +847,7 @@ public(package) fun respond_dkg_first_round_output(
         DWalletState::Requested => DWalletState::AwaitingUser {
             first_round_output
         },
-        _ => abort EDwalletWrongState
+        _ => abort EWrongState
     };
 
     event::emit(DKGFirstRoundOutputEvent {
@@ -826,7 +878,6 @@ public(package) fun request_dkg_second_round(
     encrypted_centralized_secret_share_and_proof: vector<u8>,
     encryption_key_address: address,
     user_public_output: vector<u8>,
-    user_output_signature: vector<u8>,
     singer_public_key: vector<u8>,
     ctx: &mut TxContext
 ) {
@@ -841,7 +892,7 @@ public(package) fun request_dkg_second_round(
         } => {
             *first_round_output
         },
-        _ => abort EDwalletWrongState
+        _ => abort EWrongState
     };
 
     let emit_event = self.create_current_epoch_dwallet_event(
@@ -853,8 +904,8 @@ public(package) fun request_dkg_second_round(
             encrypted_centralized_secret_share_and_proof,
             encryption_key,
             encryption_key_id,
+            encryption_key_address,
             user_public_output,
-            user_output_signature,
             singer_public_key,
         },
         ctx,
@@ -896,36 +947,45 @@ public(package) fun respond_dkg_second_round_output(
     dwallet_id: ID,
     public_output: vector<u8>,
     encrypted_centralized_secret_share_and_proof: vector<u8>,
-    encryption_key_id: ID,
-    user_output_signature: vector<u8>,
+    encryption_key_address: address,
+    rejected: bool,
     ctx: &mut TxContext
 ) {
+    let encryption_key = self.encryption_keys.borrow(encryption_key_address);
+    let encryption_key_id = encryption_key.id.to_inner();
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
-    
-    match (&dwallet.state) {
+    dwallet.state = match (&dwallet.state) {
         DWalletState::AwaitingNetworkVerification => {
-            let encrypted_user_share = EncryptedUserSecretKeyShare {
-                id: object::new(ctx),
-                dwallet_id,
-                encrypted_centralized_secret_share_and_proof,
-                encryption_key_id,
-                source_encrypted_user_secret_key_share_id: option::none(),
-                state: EncryptedUserSecretKeyShareState::SigedByDestination { user_output_signature }
-            };
-            let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
+            if (rejected) {
+                event::emit(RejectedDKGSecondRoundEvent {
+                    dwallet_id,
+                    public_output,
+                });
+                DWalletState::NetworkRejectedSecondRound
+            } else {
+                let encrypted_user_share = EncryptedUserSecretKeyShare {
+                    id: object::new(ctx),
+                    dwallet_id,
+                    encrypted_centralized_secret_share_and_proof,
+                    encryption_key_id,
+                    encryption_key_address,
+                    source_encrypted_user_secret_key_share_id: option::none(),
+                    state: EncryptedUserSecretKeyShareState::NetworkVerificationCompleted
+                };
+                let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
+                dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
 
-            dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
+                event::emit(CompletedDKGSecondRoundEvent {
+                    dwallet_id,
+                    public_output,
+                });
+                DWalletState::Active {
+                    public_output
+                }
+            }
 
-            dwallet.state = DWalletState::Active {
-                public_output
-            };
-
-            event::emit(CompletedDKGSecondRoundEvent {
-                dwallet_id,
-                public_output,
-            });
         },
-        _ => abort EDwalletWrongState
+        _ => abort EWrongState
     };
 
 }
@@ -960,18 +1020,37 @@ public(package) fun request_re_encrypt_user_share_for(
     self.computation_fee_charged_ika.join(payment_ika.split(self.pricing.computation_ika_price_per_re_encrypt_user_share(), ctx).into_balance());
     self.computation_fee_charged_sui.join(payment_sui.split(self.pricing.computation_sui_price_per_re_encrypt_user_share(), ctx).into_balance());
 
-    let dwallet = self.get_dwallet(dwallet_id);
-    let public_output = *dwallet.validate_active_and_get_public_output();
+
     let destination_encryption_key = self.encryption_keys.borrow(destination_encryption_key_address);
+    let destination_encryption_key_id = destination_encryption_key.id.to_inner();
+    let destination_encryption_key = destination_encryption_key.encryption_key;
+
+    let dwallet = self.get_dwallet_mut(dwallet_id);
+    let public_output = *dwallet.validate_active_and_get_public_output();
+
+    assert!(dwallet.encrypted_user_secret_key_shares.contains(source_encrypted_user_secret_key_share_id), EInvalidSource);
+
+    let encrypted_user_share = EncryptedUserSecretKeyShare {
+        id: object::new(ctx),
+        dwallet_id,
+        encrypted_centralized_secret_share_and_proof,
+        encryption_key_id: destination_encryption_key_id,
+        encryption_key_address: destination_encryption_key_address,
+        source_encrypted_user_secret_key_share_id: option::some(source_encrypted_user_secret_key_share_id),
+        state: EncryptedUserSecretKeyShareState::AwaitingNetworkVerification
+    };
+    let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
+    dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
 
     event::emit(
-    self.create_current_epoch_dwallet_event(
-        EncryptedShareVerificationRequestEvent {
+        self.create_current_epoch_dwallet_event(
+            EncryptedShareVerificationRequestEvent {
                 encrypted_centralized_secret_share_and_proof,
                 public_output,
                 dwallet_id,
-                encryption_key: destination_encryption_key.encryption_key,
-                encryption_key_id: object::id(destination_encryption_key),
+                encryption_key: destination_encryption_key,
+                encryption_key_id: destination_encryption_key_id,
+                encrypted_user_secret_key_share_id,
                 source_encrypted_user_secret_key_share_id,
             },
             ctx,
@@ -995,32 +1074,69 @@ public(package) fun request_re_encrypt_user_share_for(
 public(package) fun respond_re_encrypt_user_share_for(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     dwallet_id: ID,
-    encrypted_centralized_secret_share_and_proof: vector<u8>,
-    encryption_key_id: ID,
-    source_encrypted_user_secret_key_share_id: ID,
-    ctx: &mut TxContext
+    encrypted_user_secret_key_share_id: ID,
+    rejected: bool,
 ) {
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
-    let encrypted_user_share = EncryptedUserSecretKeyShare {
-        id: object::new(ctx),
-        dwallet_id,
-        encrypted_centralized_secret_share_and_proof,
-        encryption_key_id,
-        source_encrypted_user_secret_key_share_id: option::some(source_encrypted_user_secret_key_share_id),
-        state: EncryptedUserSecretKeyShareState::ReEncrypted
+    let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
+
+    encrypted_user_secret_key_share.state = match(encrypted_user_secret_key_share.state) {
+        EncryptedUserSecretKeyShareState::AwaitingNetworkVerification => {
+            if(rejected) {
+                event::emit(
+                    RejectedEncryptedShareVerificationRequestEvent {
+                        encrypted_user_secret_key_share_id,
+                        dwallet_id,
+                    }
+                );
+                EncryptedUserSecretKeyShareState::NetworkVerificationRejected
+            } else {
+                event::emit(
+                    CompletedEncryptedShareVerificationRequestEvent {
+                        encrypted_user_secret_key_share_id,
+                        dwallet_id,
+                    }
+                );
+                EncryptedUserSecretKeyShareState::NetworkVerificationCompleted
+            }
+        },
+        _ => abort EWrongState
     };
-    let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
+}
+
+public(package) fun accept_re_encrypted_user_share(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1,
+    dwallet_id: ID,
+    encrypted_user_secret_key_share_id: ID,
+    user_output_signature: vector<u8>,
+) {
+    let (dwallet, public_output) = self.get_active_dwallet_and_public_output(dwallet_id);
+    let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow(encrypted_user_secret_key_share_id);
+    let encryption_key = self.encryption_keys.borrow(encrypted_user_secret_key_share.encryption_key_address);
+    let encryption_key_id = encrypted_user_secret_key_share.encryption_key_id;
+    let encryption_key_address = encrypted_user_secret_key_share.encryption_key_address;
+    assert!(
+        ed25519_verify(&user_output_signature, &encryption_key.signer_public_key, &public_output),
+        EInvalidEncryptionKeySignature
+    );
+    let dwallet = self.get_dwallet_mut(dwallet_id);
+    let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
+    encrypted_user_secret_key_share.state = match (encrypted_user_secret_key_share.state) {
+        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted => EncryptedUserSecretKeyShareState::KeyHolderSiged {
+            user_output_signature
+        },
+        _ => abort EWrongState
+    };
     event::emit(
-        CompletedEncryptedShareVerificationRequestEvent {
+        AcceptReEncryptedUserShareEvent {
             encrypted_user_secret_key_share_id,
             dwallet_id,
-            encrypted_centralized_secret_share_and_proof,
+            user_output_signature,
             encryption_key_id,
-            source_encrypted_user_secret_key_share_id
+            encryption_key_address,
         }
     );
-    dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
 }
 
 /// Starts a batched presign session.
@@ -1290,11 +1406,61 @@ public(package) fun request_ecdsa_future_sign(
         message,
         presign,
         message_centralized_signature,
+        state: ECDSAPartialUserSignatureState::AwaitingNetworkVerification,
     });
-
 
     event::emit(emit_event);
 
+    cap
+}
+
+public(package) fun respond_ecdsa_future_sign(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1,
+    dwallet_id: ID,
+    partial_centralized_signed_message_id: ID,
+    rejected: bool,
+) {
+    let partial_centralized_signed_message = self.ecdsa_partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
+    assert!(partial_centralized_signed_message.dwallet_id == dwallet_id, EDwalletMismatch);
+    partial_centralized_signed_message.state = match(partial_centralized_signed_message.state) {
+        ECDSAPartialUserSignatureState::AwaitingNetworkVerification => {
+            if(rejected) {
+                event::emit(RejectedECDSAFutureSignRequestEvent {
+                    dwallet_id,
+                    partial_centralized_signed_message_id
+                });
+                ECDSAPartialUserSignatureState::NetworkVerificationRejected
+            } else {
+                event::emit(CompletedECDSAFutureSignRequestEvent {
+                    dwallet_id,
+                    partial_centralized_signed_message_id
+                });
+                ECDSAPartialUserSignatureState::NetworkVerificationCompleted
+            }
+        },
+        _ => abort EWrongState
+    }
+}
+
+public(package) fun verifiy_ecdsa_partial_user_signature_cap(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1,
+    cap: UnverifiedECDSAPartialUserSignatureCap,
+    ctx: &mut TxContext
+): VerifiedECDSAPartialUserSignatureCap {
+    let UnverifiedECDSAPartialUserSignatureCap {
+        id,
+        partial_centralized_signed_message_id
+    } = cap;
+    let cap_id = id.to_inner();
+    id.delete();
+    let partial_centralized_signed_message = self.ecdsa_partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
+    assert!(partial_centralized_signed_message.cap_id == cap_id, EIncorrectCap);
+    assert!(partial_centralized_signed_message.state == ECDSAPartialUserSignatureState::NetworkVerificationCompleted, EUnverifiedCap);
+    let cap = VerifiedECDSAPartialUserSignatureCap {
+        id: object::new(ctx),
+        partial_centralized_signed_message_id,
+    };
+    partial_centralized_signed_message.cap_id = cap.id.to_inner();
     cap
 }
 
@@ -1346,9 +1512,10 @@ public(package) fun request_ecdsa_sign_with_partial_user_signatures(
         message: _,
         presign,
         message_centralized_signature,
+        state
     } = self.ecdsa_partial_centralized_signed_messages.remove(partial_centralized_signed_message_id);
     id.delete();
-    assert!(cap_id == verified_cap_id, EIncorrectCap);
+    assert!(cap_id == verified_cap_id && state == ECDSAPartialUserSignatureState::NetworkVerificationCompleted, EIncorrectCap);
     assert!(partial_centralized_signed_messages_dwallet_id == dwallet_id, EDwalletMismatch);
     assert!(presign.dwallet_id == dwallet_id, EDwalletMismatch);
 
@@ -1405,6 +1572,7 @@ public(package) fun respond_ecdsa_sign(
     session_id: ID,
     signature: vector<u8>,
     is_future_sign: bool,
+    rejected: bool,
 ) {
 
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
@@ -1412,16 +1580,24 @@ public(package) fun respond_ecdsa_sign(
     let sign = dwallet.ecdsa_signs.borrow_mut(sign_id);
 
     sign.state = match(sign.state) {
-        ECDSASignState::Requested => ECDSASignState::Completed { signature },
+        ECDSASignState::Requested => {
+            if(rejected) {
+                event::emit(RejectedECDSASignEvent {
+                    sign_id,
+                    session_id,
+                    is_future_sign,
+                });
+                ECDSASignState::NetworkRejected
+            } else {
+                event::emit(CompletedECDSASignEvent {
+                    sign_id,
+                    session_id,
+                    signature,
+                    is_future_sign,
+                });
+                ECDSASignState::Completed { signature }
+            }
+        },
         _ => abort ESignWrongState
     };
-
-    // Emit the CompletedSignEvent with session ID and signed messages.
-    // This is only used to notify the user that the signing process is complete.
-    event::emit(CompletedECDSASignEvent {
-        sign_id,
-        session_id,
-        signature,
-        is_future_sign,
-    });
 }
