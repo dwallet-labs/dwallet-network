@@ -96,6 +96,7 @@ use ika_types::messages_consensus::{
     ConsensusTransactionKind,
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
     StartPresignFirstRoundEvent,
@@ -369,7 +370,8 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
     dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
     dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
-    perpetual_tables: Arc<AuthorityPerpetualTables>,
+    pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
+    pub(crate) packages_config: IkaPackagesConfig,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -580,6 +582,7 @@ impl AuthorityPerEpochStore {
         epoch_start_configuration: EpochStartConfiguration,
         chain_identifier: ChainIdentifier,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
+        packages_config: IkaPackagesConfig,
     ) -> Arc<Self> {
         let current_time = Instant::now();
         let epoch_id = committee.epoch;
@@ -647,6 +650,7 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_manager: OnceCell::new(),
             dwallet_mpc_network_keys: OnceCell::new(),
             perpetual_tables,
+            packages_config,
         });
 
         s.update_buffer_stake_metric();
@@ -949,6 +953,7 @@ impl AuthorityPerEpochStore {
             epoch_start_configuration,
             chain_identifier,
             perpetual_tables,
+            self.packages_config.clone(),
         )
     }
 
@@ -1724,16 +1729,18 @@ impl AuthorityPerEpochStore {
             .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
             .unwrap_or_default();
         let pending_events = self.perpetual_tables.get_all_pending_events();
-        let party_id = authority_name_to_party_id(&self.name, &self)?;
         let dwallet_mpc_new_events = pending_events
             .iter()
             .map(|(_, event)| {
-                let session_info =
-                    session_info_from_event(event.clone(), party_id, Some(key_version))
-                        .map_err(|e| DwalletMPCError::NonMPCEvent(e.to_string()))?
-                        .ok_or(DwalletMPCError::NonMPCEvent(
-                            "Failed to craete session info from event".to_string(),
-                        ))?;
+                let session_info = session_info_from_event(
+                    event.clone(),
+                    Some(key_version),
+                    &self.packages_config,
+                )
+                .map_err(|e| DwalletMPCError::NonMPCEvent(e.to_string()))?
+                .ok_or(DwalletMPCError::NonMPCEvent(
+                    "Failed to craete session info from event".to_string(),
+                ))?;
                 Ok(DWalletMPCEvent {
                     event: event.clone(),
                     session_info,

@@ -185,6 +185,7 @@ use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::SuiClient;
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
 #[cfg(msim)]
@@ -318,6 +319,11 @@ impl IkaNode {
         //     .expect("EpochStartConfiguration of the current epoch must exist");
 
         let epoch_options = default_db_options().optimize_db_for_write_throughput(4);
+        let packages_config = IkaPackagesConfig {
+            ika_package_id: config.sui_connector_config.ika_package_id,
+            ika_system_package_id: config.sui_connector_config.ika_system_package_id,
+            system_id: config.sui_connector_config.system_id,
+        };
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
             committee.clone(),
@@ -327,6 +333,7 @@ impl IkaNode {
             epoch_start_configuration,
             chain_identifier.clone(),
             perpetual_tables.clone(),
+            packages_config,
         );
 
         info!("created epoch store");

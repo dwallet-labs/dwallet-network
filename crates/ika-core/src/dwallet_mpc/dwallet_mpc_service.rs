@@ -2,11 +2,17 @@
 //! It is responsible to read DWallet MPC messages from the
 //! local DB every [`READ_INTERVAL_MS`] seconds
 //! and forward them to the [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
+
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
-use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
+use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
+use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
+use std::collections::HashMap;
 use std::sync::Arc;
 use sui_types::base_types::EpochId;
+use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
@@ -80,7 +86,7 @@ impl DWalletMPCService {
                 continue;
             };
             for event in events {
-                manager.handle_dwallet_db_event(event).await;
+                manager.handle_dwallet_db_event(event);
             }
             let new_dwallet_messages_iter = tables
                 .dwallet_mpc_messages
