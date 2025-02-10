@@ -71,15 +71,27 @@ public struct DWalletNetworkrkDecryptionKeyCap has key, store {
     dwallet_network_decryption_key_id: ID,
 }
 
-/// `DWalletDecryptionKey` represents a network decryption key of
+/// `DWalletNetworkDecryptionKey` represents a network decryption key of
 /// the homomorphiclly encrypted netowrk share.
 public struct DWalletNetworkDecryptionKey has key, store {
     id: UID,
     epoch: u64,
-    current_epoch_shares: vector<u8>,
+    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+    active_epoch_shares: vector<u8>,
+    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+    next_epoch_shares: vector<u8>,
+    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
     previous_epoch_shares: vector<u8>,
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
     public_output: vector<u8>,
+    state: DWalletNetworkDecryptionKeyState,
+}
+
+public enum DWalletNetworkDecryptionKeyState has copy, drop, store {
+    AwaitingNetworkDKG,
+    NetworkDKGCompleted,
+    AwaitingNetworkReconfiguration,
+    NetworkReconfigurationCompleted,
 }
 
 /// Represents an encryption key used to encrypt a dWallet centralized (user) secret key share.
@@ -608,6 +620,7 @@ const EActiveCommitteeMustInitialize: vector<u8> = b"Fitst active committee must
 
 public(package) fun create(
     epoch: u64,
+    active_committee: Committee,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
 ): DWallet2PcMpcSecp256K1InnerV1 {
@@ -620,7 +633,7 @@ public(package) fun create(
         pricing,
         computation_fee_charged_ika: balance::zero(),
         computation_fee_charged_sui: balance::zero(),
-        active_committee: committee::empty(),
+        active_committee,
         previous_committee: committee::empty(),
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: option::none(),
@@ -638,14 +651,24 @@ public(package) fun create_dwallet_network_decryption_key(
     self.dwallet_network_decryption_keys.add(dwallet_network_decryption_key_id, DWalletNetworkDecryptionKey {
         id,
         epoch: self.epoch,
-        current_epoch_shares: vector[],
+        active_epoch_shares: vector[],
+        next_epoch_shares: vector[],
         previous_epoch_shares: vector[],
         public_output: vector[],
+        state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
     DWalletNetworkrkDecryptionKeyCap {
         id: object::new(ctx),
         dwallet_network_decryption_key_id,
     }
+}
+
+public(package) fun set_active_committee(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1,
+    active_committee: Committee,
+) {
+    self.previous_committee = self.active_committee;
+    self.active_committee = active_committee;
 }
 
 fun get_dwallet(

@@ -231,7 +231,7 @@ public(package) fun initialize(
     assert!(self.active_committee().members().is_empty(), ECannotInitialize);
     self.validators.initialize();
     let pricing = ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
-    let (dwallet_2pc_mpc_secp256k1_id, cap) = dwallet_2pc_mpc_secp256k1::create(package_id, self.epoch, pricing, ctx);
+    let (dwallet_2pc_mpc_secp256k1_id, cap) = dwallet_2pc_mpc_secp256k1::create(package_id, self.epoch, self.active_committee(), pricing, ctx);
     self.dwallet_2pc_mpc_secp256k1_id.fill(dwallet_2pc_mpc_secp256k1_id);
     self.dwallet_network_decryption_key.fill(cap);
 }

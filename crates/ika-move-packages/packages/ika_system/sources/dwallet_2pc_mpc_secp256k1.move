@@ -15,7 +15,7 @@ use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
     UnverifiedECDSAPartialUserSignatureCap,
     VerifiedECDSAPartialUserSignatureCap
 };
-
+use ika_system::committee::Committee;
 
 public struct DWallet2PcMpcSecp256K1 has key {
     id: UID,
@@ -37,11 +37,13 @@ const VERSION: u64 = 1;
 public(package) fun create(
     package_id: ID,
     epoch: u64,
+    active_committee: Committee,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
 ): (ID, DWalletNetworkrkDecryptionKeyCap) {
     let mut dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1_inner::create(
         epoch,
+        active_committee,
         pricing,
         ctx,
     );
@@ -57,6 +59,13 @@ public(package) fun create(
     dynamic_field::add(&mut self.id, VERSION, dwallet_2pc_mpc_secp256k1);
     transfer::share_object(self);
     (self_id, cap)
+}
+
+public(package) fun set_active_committee(
+    self: &mut DWallet2PcMpcSecp256K1,
+    committee: Committee,
+) {
+    self.set_active_committee(committee);
 }
 
 public fun get_active_encryption_key(
