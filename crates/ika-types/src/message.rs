@@ -156,7 +156,6 @@ pub enum MessageKind {
     /// Test message for checkpoints.
     TestMessage(u32, u64),
     // .. more action types go here
-    DwalletMPCOutput(SessionInfo, Vec<u8>),
     DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
     DwalletPresign(PresignOutput),
@@ -177,7 +176,6 @@ impl MessageKind {
             Self::InitiateProcessMidEpoch => "InitiateProcessMidEpoch",
             Self::EndOfEpoch(_) => "EndOfEpoch",
             Self::TestMessage(_, _) => "TestMessage",
-            MessageKind::DwalletMPCOutput(_, _) => "DwalletMPCOutput",
             MessageKind::DwalletMPCNetworkDKGOutput(_, _) => "DwalletMPCNetworkDKGOutput",
             MessageKind::DwalletDKGFirstRoundOutput(_) => "DwalletDKGFirstRoundOutput",
             MessageKind::DwalletDKGSecondRoundOutput(_) => "DwalletDKGSecondRoundOutput",
@@ -220,9 +218,6 @@ impl Display for MessageKind {
                     "MessageKind : TestMessage authority: {}, num: {}",
                     authority, num
                 )?;
-            }
-            MessageKind::DwalletMPCOutput(session_info, _) => {
-                writeln!(writer, "MessageKind : DwalletMPCOutput {:?}", session_info)?;
             }
             MessageKind::DwalletMPCNetworkDKGOutput(key_scheme, _) => {
                 writeln!(
