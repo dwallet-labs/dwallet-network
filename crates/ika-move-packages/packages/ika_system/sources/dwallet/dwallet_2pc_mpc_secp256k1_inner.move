@@ -1713,13 +1713,10 @@ public(package) fun process_checkpoint_message(
                 );
             } else if (message_data_type == 5) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
-                let encrypted_user_secret_key_share_id = object::id_from_address(bcs_body.peel_address());
-                let user_output_signature = bcs_body.peel_vec_u8();
-                self.accept_re_encrypted_user_share(
-                    dwallet_id,
-                    encrypted_user_secret_key_share_id,
-                    user_output_signature,
-                );
+                let session_id = object::id_from_address(bcs_body.peel_address());
+                let presign = bcs_body.peel_vec_u8();
+                self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx)
+            }
         i = i + 1;
     };
     self.total_messages_processed = self.total_messages_processed + i;
