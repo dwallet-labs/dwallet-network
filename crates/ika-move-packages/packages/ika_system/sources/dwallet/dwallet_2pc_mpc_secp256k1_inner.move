@@ -11,10 +11,10 @@ module ika_system::dwallet_2pc_mpc_secp256k1_inner;
 use ika::ika::IKA;
 use sui::sui::SUI;
 use sui::object_table::{Self, ObjectTable};
-use sui::balance::{Balance};
+use sui::balance::{Self, Balance};
 use sui::bcs;
 use sui::coin::{Coin};
-use sui::bag::{Bag};
+use sui::bag::{Self, Bag};
 use sui::event;
 use sui::ed25519::ed25519_verify;
 use ika_system::address;
@@ -591,6 +591,24 @@ const EWrongCheckpointSequenceNumber: vector<u8> = b"The checkpoint sequence num
 const EActiveCommitteeMustInitialize: vector<u8> = b"Fitst active committee must initialize.";
 // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
+public(package) fun create(
+    epoch: u64,
+    pricing: DWalletPricing2PcMpcSecp256K1,
+    ctx: &mut TxContext
+): DWallet2PcMpcSecp256K1InnerV1 {
+    DWallet2PcMpcSecp256K1InnerV1 {
+        epoch,
+        dwallets: object_table::new(ctx),
+        dwallet_network_decryption_keys: object_table::new(ctx),
+        encryption_keys: object_table::new(ctx),
+        ecdsa_partial_centralized_signed_messages: object_table::new(ctx),
+        pricing,
+        computation_fee_charged_ika: balance::zero(),
+        computation_fee_charged_sui: balance::zero(),
+        extra_fields: bag::new(ctx),
+    }
+}
+
 fun get_dwallet(
     self: &DWallet2PcMpcSecp256K1InnerV1,
     dwallet_id: ID,
@@ -1129,7 +1147,7 @@ public(package) fun respond_re_encrypt_user_share_for(
     };
 }
 
-public(package) fun accept_re_encrypted_user_share(
+public(package) fun accept_encrypted_user_share(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     dwallet_id: ID,
     encrypted_user_secret_key_share_id: ID,
@@ -1632,7 +1650,7 @@ public(package) fun process_checkpoint_message(
     ctx: &mut TxContext,
 ) {
     assert!(!self.active_committee.members().is_empty(), EActiveCommitteeMustInitialize);
-    
+
     let mut bcs_body = bcs::new(copy message);
 
     let epoch = bcs_body.peel_u64();
