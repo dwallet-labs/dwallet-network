@@ -1632,8 +1632,7 @@ public(package) fun process_checkpoint_message(
     ctx: &mut TxContext,
 ) {
     assert!(!self.active_committee.members().is_empty(), EActiveCommitteeMustInitialize);
-
-    // first let's make sure it's the correct checkpoint message
+    
     let mut bcs_body = bcs::new(copy message);
 
     let epoch = bcs_body.peel_u64();
@@ -1649,8 +1648,6 @@ public(package) fun process_checkpoint_message(
         self.last_processed_checkpoint_sequence_number.swap(sequence_number);
     };
 
-    //let network_total_messages = bcs_body.peel_u64();
-    //let previous_digest = bcs_body.peel_option!(|previous_digest| previous_digest.peel_vec_u8() );
     let timestamp_ms = bcs_body.peel_u64();
 
     event::emit(SystemCheckpointInfoEvent {
@@ -1658,10 +1655,6 @@ public(package) fun process_checkpoint_message(
         sequence_number,
         timestamp_ms,
     });
-
-    // now let's process message
-
-    //assert!(false, 456);
 
     let len = bcs_body.peel_vec_length();
     let mut i = 0;
