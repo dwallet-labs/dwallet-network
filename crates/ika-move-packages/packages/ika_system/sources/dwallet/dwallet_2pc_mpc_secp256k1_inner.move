@@ -1695,14 +1695,14 @@ public(package) fun process_checkpoint_message(
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
-                let encryption_key_id = object::id_from_address(bcs_body.peel_address());
-                let user_output_signature = bcs_body.peel_vec_u8();
+                let encryption_key_id = bcs_body.peel_address();
+                let rejected = bcs_body.peel_bool();
                 self.respond_dkg_second_round_output(
                     dwallet_id,
                     public_output,
                     encrypted_centralized_secret_share_and_proof,
                     encryption_key_id,
-                    user_output_signature,
+                    rejected,
                     ctx,
                 );
             };
