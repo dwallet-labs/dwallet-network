@@ -11,13 +11,15 @@ module ika_system::dwallet_2pc_mpc_secp256k1_inner;
 use ika::ika::IKA;
 use sui::sui::SUI;
 use sui::object_table::{Self, ObjectTable};
-use sui::balance::{Balance};
+use sui::balance::{Self, Balance};
+use sui::bcs;
 use sui::coin::{Coin};
-use sui::bag::{Bag};
+use sui::bag::{Self, Bag};
 use sui::event;
 use sui::ed25519::ed25519_verify;
 use ika_system::address;
 use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
+use ika_system::committee::{Self, Committee};
 
 /// Supported hash schemes for message signing.
 const KECCAK256: u8 = 0;
@@ -42,6 +44,15 @@ public struct DWallet2PcMpcSecp256K1InnerV1 has store {
     computation_fee_charged_ika: Balance<IKA>,
     /// The fees paid for computation in SUI.
     computation_fee_charged_sui: Balance<SUI>,
+    /// The active committees.
+    active_committee: Committee,
+    /// The previous committee.
+    previous_committee: Committee,
+    /// The total messages processed.
+    total_messages_processed: u64,
+    /// The last checkpoint sequence number processed.
+    last_processed_checkpoint_sequence_number: Option<u64>,
+
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -497,6 +508,14 @@ public struct CompletedECDSASignEvent has copy, drop {
     is_future_sign: bool,
 }
 
+/// Event containing system-level checkpoint information, emitted during
+/// the checkpoint submmision message.
+public struct SystemCheckpointInfoEvent has copy, drop {
+    epoch: u64,
+    sequence_number: u64,
+    timestamp_ms: u64,
+}
+
 // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 const EDwalletMismatch: u64 = 2;
 const EDwalletInactive: u64 = 3;
@@ -513,7 +532,38 @@ const EInvalidHashScheme: u64 = 10;
 const ESignWrongState: u64 = 13;
 const EPresignNotExist: u64 = 14;
 const EIncorrectCap: u64 = 15;
+
+#[error]
+const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
+
+#[error]
+const EWrongCheckpointSequenceNumber: vector<u8> = b"The checkpoint sequence number should be the expected next one.";
+
+#[error]
+const EActiveCommitteeMustInitialize: vector<u8> = b"Fitst active committee must initialize.";
 // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
+
+public(package) fun create(
+    epoch: u64,
+    pricing: DWalletPricing2PcMpcSecp256K1,
+    ctx: &mut TxContext
+): DWallet2PcMpcSecp256K1InnerV1 {
+    DWallet2PcMpcSecp256K1InnerV1 {
+        epoch,
+        dwallets: object_table::new(ctx),
+        dwallet_network_decryption_keys: object_table::new(ctx),
+        encryption_keys: object_table::new(ctx),
+        ecdsa_partial_centralized_signed_messages: object_table::new(ctx),
+        pricing,
+        computation_fee_charged_ika: balance::zero(),
+        computation_fee_charged_sui: balance::zero(),
+        active_committee: committee::empty(),
+        previous_committee: committee::empty(),
+        total_messages_processed: 0,
+        last_processed_checkpoint_sequence_number: option::none(),
+        extra_fields: bag::new(ctx),
+    }
+}
 
 fun get_dwallet(
     self: &DWallet2PcMpcSecp256K1InnerV1,
@@ -901,7 +951,7 @@ public(package) fun respond_dkg_second_round_output(
     ctx: &mut TxContext
 ) {
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
-    
+
     match (&dwallet.state) {
         DWalletState::AwaitingNetworkVerification => {
             let encrypted_user_share = EncryptedUserSecretKeyShare {
@@ -1424,4 +1474,62 @@ public(package) fun respond_ecdsa_sign(
         signature,
         is_future_sign,
     });
+}
+
+public(package) fun process_checkpoint_message(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1,
+    message: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    assert!(!self.active_committee.members().is_empty(), EActiveCommitteeMustInitialize);
+
+    let mut bcs_body = bcs::new(copy message);
+
+    let epoch = bcs_body.peel_u64();
+    assert!(epoch == self.epoch, EIncorrectEpochInCheckpoint);
+
+    let sequence_number = bcs_body.peel_u64();
+
+    if(self.last_processed_checkpoint_sequence_number.is_none()) {
+        assert!(sequence_number == 0, EWrongCheckpointSequenceNumber);
+        self.last_processed_checkpoint_sequence_number.fill(sequence_number);
+    } else {
+        assert!(sequence_number > 0 && *self.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongCheckpointSequenceNumber);
+        self.last_processed_checkpoint_sequence_number.swap(sequence_number);
+    };
+
+    let timestamp_ms = bcs_body.peel_u64();
+
+    event::emit(SystemCheckpointInfoEvent {
+        epoch,
+        sequence_number,
+        timestamp_ms,
+    });
+
+    let len = bcs_body.peel_vec_length();
+    let mut i = 0;
+    while (i < len) {
+        let message_data_type = bcs_body.peel_vec_length();
+            if (message_data_type == 0) {
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let first_round_output = bcs_body.peel_vec_u8();
+                self.respond_dkg_first_round_output(dwallet_id, first_round_output);
+            } else if (message_data_type == 1) {
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let public_output = bcs_body.peel_vec_u8();
+                let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
+                let encryption_key_id = object::id_from_address(bcs_body.peel_address());
+                let user_output_signature = bcs_body.peel_vec_u8();
+                self.respond_dkg_second_round_output(
+                    dwallet_id,
+                    public_output,
+                    encrypted_centralized_secret_share_and_proof,
+                    encryption_key_id,
+                    user_output_signature,
+                    ctx,
+                );
+            };
+        i = i + 1;
+    };
+    self.total_messages_processed = self.total_messages_processed + i;
 }
