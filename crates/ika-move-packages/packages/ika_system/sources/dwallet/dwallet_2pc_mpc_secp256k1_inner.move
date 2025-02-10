@@ -12,12 +12,14 @@ use ika::ika::IKA;
 use sui::sui::SUI;
 use sui::object_table::{Self, ObjectTable};
 use sui::balance::{Balance};
+use sui::bcs;
 use sui::coin::{Coin};
 use sui::bag::{Bag};
 use sui::event;
 use sui::ed25519::ed25519_verify;
 use ika_system::address;
 use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
+use ika_system::committee::{Committee};
 
 /// Supported hash schemes for message signing.
 const KECCAK256: u8 = 0;
@@ -42,6 +44,11 @@ public struct DWallet2PcMpcSecp256K1InnerV1 has store {
     computation_fee_charged_ika: Balance<IKA>,
     /// The fees paid for computation in SUI.
     computation_fee_charged_sui: Balance<SUI>,
+    active_committee: Committee,
+    previous_committee: Committee,
+    last_processed_checkpoint_sequence_number: Option<u64>,
+    total_messages_processed: u64,
+
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -551,6 +558,14 @@ public struct RejectedECDSASignEvent has copy, drop {
     is_future_sign: bool,
 }
 
+/// Event containing system-level checkpoint information, emitted during
+/// the checkpoint submmision message.
+public struct SystemCheckpointInfoEvent has copy, drop {
+    epoch: u64,
+    sequence_number: u64,
+    timestamp_ms: u64,
+}
+
 // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 const EDwalletMismatch: u64 = 1;
 const EDwalletInactive: u64 = 2;
@@ -565,6 +580,15 @@ const EPresignNotExist: u64 = 10;
 const EIncorrectCap: u64 = 11;
 const EUnverifiedCap: u64 = 12;
 const EInvalidSource: u64 =13;
+
+#[error]
+const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
+
+#[error]
+const EWrongCheckpointSequenceNumber: vector<u8> = b"The checkpoint sequence number should be the expected next one.";
+
+#[error]
+const EActiveCommitteeMustInitialize: vector<u8> = b"Fitst active committee must initialize.";
 // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
 fun get_dwallet(
@@ -1600,4 +1624,62 @@ public(package) fun respond_ecdsa_sign(
         },
         _ => abort ESignWrongState
     };
+}
+
+public(package) fun process_checkpoint_message(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1,
+    message: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    assert!(!self.active_committee.members().is_empty(), EActiveCommitteeMustInitialize);
+    
+    let mut bcs_body = bcs::new(copy message);
+
+    let epoch = bcs_body.peel_u64();
+    assert!(epoch == self.epoch, EIncorrectEpochInCheckpoint);
+
+    let sequence_number = bcs_body.peel_u64();
+
+    if(self.last_processed_checkpoint_sequence_number.is_none()) {
+        assert!(sequence_number == 0, EWrongCheckpointSequenceNumber);
+        self.last_processed_checkpoint_sequence_number.fill(sequence_number);
+    } else {
+        assert!(sequence_number > 0 && *self.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongCheckpointSequenceNumber);
+        self.last_processed_checkpoint_sequence_number.swap(sequence_number);
+    };
+
+    let timestamp_ms = bcs_body.peel_u64();
+
+    event::emit(SystemCheckpointInfoEvent {
+        epoch,
+        sequence_number,
+        timestamp_ms,
+    });
+
+    let len = bcs_body.peel_vec_length();
+    let mut i = 0;
+    while (i < len) {
+        let message_data_type = bcs_body.peel_vec_length();
+            if (message_data_type == 0) {
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let first_round_output = bcs_body.peel_vec_u8();
+                self.respond_dkg_first_round_output(dwallet_id, first_round_output);
+            } else if (message_data_type == 1) {
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let public_output = bcs_body.peel_vec_u8();
+                let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
+                let encryption_key_address = bcs_body.peel_address();
+                let rejected = bcs_body.peel_bool();
+                self.respond_dkg_second_round_output(
+                    dwallet_id,
+                    public_output,
+                    encrypted_centralized_secret_share_and_proof,
+                    encryption_key_address,
+                    rejected,
+                    ctx,
+                );
+            };
+        i = i + 1;
+    };
+    self.total_messages_processed = self.total_messages_processed + i;
 }
