@@ -25,6 +25,8 @@ use ika_system::committee::{Self, Committee};
 const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
 
+const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
+
 public struct DWallet2PcMpcSecp256K1InnerV1 has store {
     epoch: u64,
     // TODO: change it to versioned
@@ -561,6 +563,13 @@ public struct RejectedECDSASignEvent has copy, drop {
     /// Indicates whether the future sign feature was used to start the session.
     is_future_sign: bool,
 }
+
+/// Event emitted after verifing quorum of signature.
+public struct SystemQuorumVerifiedEvent has copy, drop {
+    epoch: u64,
+    total_signers_stake: u64,
+}
+
 
 /// Event containing system-level checkpoint information, emitted during
 /// the checkpoint submmision message.
@@ -1653,7 +1662,29 @@ public(package) fun respond_ecdsa_sign(
     };
 }
 
-public(package) fun process_checkpoint_message(
+public(package) fun process_checkpoint_message_by_quorum(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1,
+    signature: vector<u8>,
+    signers_bitmap: vector<u8>,
+    message: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
+    intent_bytes.append(message);
+    intent_bytes.append(bcs::to_bytes(&self.epoch));
+
+    let total_signers_stake = self.active_committee.verify_certificate(&signature, &signers_bitmap, &intent_bytes);
+
+    // TODO: move it to verify_certificate
+    event::emit(SystemQuorumVerifiedEvent {
+        epoch: self.epoch,
+        total_signers_stake,
+    });
+
+    self.process_checkpoint_message(message, ctx);
+}
+
+fun process_checkpoint_message(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     message: vector<u8>,
     ctx: &mut TxContext,
