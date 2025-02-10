@@ -19,7 +19,7 @@ use sui::event;
 use sui::ed25519::ed25519_verify;
 use ika_system::address;
 use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
-use ika_system::committee::{Committee};
+use ika_system::committee::{Self, Committee};
 
 /// Supported hash schemes for message signing.
 const KECCAK256: u8 = 0;
@@ -44,10 +44,14 @@ public struct DWallet2PcMpcSecp256K1InnerV1 has store {
     computation_fee_charged_ika: Balance<IKA>,
     /// The fees paid for computation in SUI.
     computation_fee_charged_sui: Balance<SUI>,
+    /// The active committees.
     active_committee: Committee,
+    /// The previous committee.
     previous_committee: Committee,
-    last_processed_checkpoint_sequence_number: Option<u64>,
+    /// The total messages processed.
     total_messages_processed: u64,
+    /// The last checkpoint sequence number processed.
+    last_processed_checkpoint_sequence_number: Option<u64>,
 
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
@@ -605,6 +609,10 @@ public(package) fun create(
         pricing,
         computation_fee_charged_ika: balance::zero(),
         computation_fee_charged_sui: balance::zero(),
+        active_committee: committee::empty(),
+        previous_committee: committee::empty(),
+        total_messages_processed: 0,
+        last_processed_checkpoint_sequence_number: option::none(),
         extra_fields: bag::new(ctx),
     }
 }
