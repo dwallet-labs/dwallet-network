@@ -105,13 +105,13 @@ impl DWalletMPCService {
                 .await;
             drop(manager);
 
-            if let Err(e) = self.handle_events().await {
+            if let Err(e) = self.read_events().await {
                 error!("Failed to handle DWallet MPC events: {}", e);
             }
         }
     }
 
-    async fn handle_events(&mut self) -> IkaResult<()> {
+    async fn read_events(&mut self) -> IkaResult<()> {
         let key_version = self
             .epoch_store
             .dwallet_mpc_network_keys
