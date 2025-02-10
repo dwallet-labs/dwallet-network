@@ -38,7 +38,6 @@ use sui_sdk::rpc_types::{ObjectChange, SuiObjectDataOptions, SuiTransactionBlock
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::SuiClient;
 
-use sui_sdk::wallet_context::WalletContext;
 use ika_move_packages::IkaMovePackage;
 use ika_swarm::memory::Swarm;
 use ika_swarm_config::network_config::NetworkConfig;
@@ -54,6 +53,7 @@ use ika_types::governance::{
 use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
 use ika_types::sui::System;
 use sui_keys::keystore::AccountKeystore;
+use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, SequenceNumber, SuiAddress};
 use sui_types::coin::{TreasuryCap, COIN_MODULE_NAME};
 use sui_types::crypto::{SignatureScheme, SuiKeyPair, ToFromBytes};

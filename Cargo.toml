@@ -2,10 +2,15 @@
 resolver = "2"
 
 exclude = [
-    "sdk/move-bytecode-template"
+    "sdk/move-bytecode-template",
+    "sdk/dwallet-mpc-wasm",
 ]
 
 members = [
+    "crates/dwallet-mpc-centralized-party",
+    "crates/dwallet-mpc-types",
+    "crates/class-groups-constants",
+    "crates/dwallet-classgroups-types",
     "crates/ika",
     "crates/ika-config",
     "crates/ika-core",
@@ -69,6 +74,11 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], branch = "pera-network-dkg" }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-network-dkg", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], branch = "pera-network-dkg" }
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", branch = "pera-network-dkg" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "pera-network-dkg" }
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
@@ -515,9 +525,12 @@ consensus-config = { git = "https://github.com/MystenLabs/sui", rev = "5612ba300
 consensus-core = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
 
 ### Workspace Members ###
+dwallet-mpc-centralized-party = { path = "crates/dwallet-mpc-centralized-party" }
+dwallet-mpc-types = { path = "crates/dwallet-mpc-types"}
+dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types" , features = ["mock-class-groups"]}
 ika = { path = "crates/ika" }
 ika-config = { path = "crates/ika-config" }
-ika-core = { path = "crates/ika-core" }
+ika-core = { path = "crates/ika-core" , features = ["mock-class-groups"]}
 ika-node = { path = "crates/ika-node" }
 ika-sui-client = { path = "crates/ika-sui-client" }
 ika-protocol-config = { path = "crates/ika-protocol-config" }

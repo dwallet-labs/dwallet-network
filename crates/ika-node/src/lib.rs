@@ -112,6 +112,8 @@ pub struct ValidatorComponents {
     checkpoint_service_tasks: JoinSet<()>,
     checkpoint_metrics: Arc<CheckpointMetrics>,
     ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
+
+    dwallet_mpc_service_exit: watch::Sender<()>,
 }
 pub struct P2pComponents {
     p2p_network: Network,
@@ -174,6 +176,10 @@ mod simulator {
 
 use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use ika_core::consensus_handler::ConsensusHandlerInitializer;
+use ika_core::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
+use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
+use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
+use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
@@ -320,6 +326,7 @@ impl IkaNode {
             EpochMetrics::new(&registry_service.default_registry()),
             epoch_start_configuration,
             chain_identifier.clone(),
+            perpetual_tables.clone(),
         );
 
         info!("created epoch store");
@@ -410,7 +417,7 @@ impl IkaNode {
             authority_name,
             secret,
             config.supported_protocol_versions.unwrap(),
-            perpetual_tables,
+            perpetual_tables.clone(),
             epoch_store.clone(),
             committee_store.clone(),
             checkpoint_store.clone(),
@@ -501,8 +508,9 @@ impl IkaNode {
         info!("IkaNode started!");
         let node = Arc::new(node);
         let node_copy = node.clone();
+        let perpetual_tables_copy = perpetual_tables.clone();
         spawn_monitored_task!(async move {
-            let result = Self::monitor_reconfiguration(node_copy).await;
+            let result = Self::monitor_reconfiguration(node_copy, perpetual_tables_copy).await;
             if let Err(error) = result {
                 warn!("Reconfiguration finished with error {:?}", error);
             }
@@ -813,6 +821,23 @@ impl IkaNode {
             previous_epoch_last_checkpoint_sequence_number,
         );
 
+        let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(epoch_store.clone());
+
+        // Start the dWallet MPC manager on epoch start.
+        epoch_store.set_dwallet_mpc_network_keys(config.class_groups_private_key)?;
+        // This verifier is in sync with the consensus,
+        // used to verify outputs before sending a system TX to store them.
+        epoch_store
+            .set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(&epoch_store))?;
+        epoch_store.set_dwallet_mpc_batches_manager(DWalletMPCBatchesManager::new())?;
+
+        epoch_store.set_dwallet_mpc_manager(DWalletMPCManager::try_new(
+            Arc::new(consensus_adapter.clone()),
+            Arc::clone(&epoch_store),
+            epoch_store.epoch(),
+            config.clone(),
+        )?)?;
+
         // create a new map that gets injected into both the consensus handler and the consensus adapter
         // the consensus handler will write values forwarded from consensus, and the consensus adapter
         // will read the values to make decisions about which validator submits a transaction to consensus
@@ -864,6 +889,7 @@ impl IkaNode {
             checkpoint_service_tasks,
             checkpoint_metrics,
             ika_tx_validator_metrics,
+            dwallet_mpc_service_exit,
         })
     }
 
@@ -962,7 +988,10 @@ impl IkaNode {
 
     /// This function awaits the completion of checkpoint execution of the current epoch,
     /// after which it iniitiates reconfiguration of the entire system.
-    pub async fn monitor_reconfiguration(self: Arc<Self>) -> Result<()> {
+    pub async fn monitor_reconfiguration(
+        self: Arc<Self>,
+        perpetual_tables: Arc<AuthorityPerpetualTables>,
+    ) -> Result<()> {
         loop {
             let run_with_range = self.config.run_with_range;
 
@@ -1122,6 +1151,7 @@ impl IkaNode {
                 mut checkpoint_service_tasks,
                 checkpoint_metrics,
                 ika_tx_validator_metrics,
+                dwallet_mpc_service_exit,
             }) = self.validator_components.lock().await.take()
             {
                 info!("Reconfiguring the validator.");
@@ -1129,6 +1159,7 @@ impl IkaNode {
                 // Waiting for checkpoint builder to finish gracefully is not possible, because it
                 // may wait on transactions while consensus on peers have already shut down.
                 checkpoint_service_tasks.abort_all();
+                drop(dwallet_mpc_service_exit);
                 while let Some(result) = checkpoint_service_tasks.join_next().await {
                     if let Err(err) = result {
                         if err.is_panic() {
@@ -1147,6 +1178,7 @@ impl IkaNode {
                         &cur_epoch_store,
                         next_epoch_committee.clone(),
                         epoch_start_system_state,
+                        perpetual_tables.clone(),
                     )
                     .await;
                 info!("Epoch store finished reconfiguration.");
@@ -1182,6 +1214,7 @@ impl IkaNode {
                         &cur_epoch_store,
                         next_epoch_committee.clone(),
                         epoch_start_system_state,
+                        perpetual_tables.clone(),
                     )
                     .await;
 
@@ -1228,6 +1261,7 @@ impl IkaNode {
         cur_epoch_store: &AuthorityPerEpochStore,
         next_epoch_committee: Committee,
         next_epoch_start_system_state: EpochStartSystem,
+        perpetual_tables: Arc<AuthorityPerpetualTables>,
     ) -> Arc<AuthorityPerEpochStore> {
         let next_epoch = next_epoch_committee.epoch();
 
@@ -1241,6 +1275,7 @@ impl IkaNode {
                 self.config.supported_protocol_versions.unwrap(),
                 next_epoch_committee,
                 epoch_start_configuration,
+                perpetual_tables,
             )
             .await
             .expect("Reconfigure authority state cannot fail");
@@ -1252,6 +1287,14 @@ impl IkaNode {
 
     pub fn get_config(&self) -> &NodeConfig {
         &self.config
+    }
+
+    fn start_dwallet_mpc_service(epoch_store: Arc<AuthorityPerEpochStore>) -> watch::Sender<()> {
+        let (exit_sender, exit_receiver) = watch::channel(());
+        let mut service = DWalletMPCService::new(epoch_store.clone(), exit_receiver);
+        spawn_monitored_task!(service.spawn());
+
+        exit_sender
     }
 }
 

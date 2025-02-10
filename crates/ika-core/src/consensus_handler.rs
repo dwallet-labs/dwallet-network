@@ -20,6 +20,7 @@ use ika_types::messages_consensus::{
 };
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use lru::LruCache;
+use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::{
     monitored_future,
     monitored_mpsc::{self, UnboundedReceiver},
@@ -34,9 +35,8 @@ use sui_types::{
     transaction::{SenderSignedData, VerifiedTransaction},
 };
 
-use tokio::task::JoinSet;
-use tracing::{debug, error, info, instrument, trace_span, warn};
-
+use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
+use crate::dwallet_mpc::mpc_outputs_verifier::OutputResult;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -51,6 +51,11 @@ use crate::{
     consensus_types::consensus_output_api::{parse_block_transactions, ConsensusCommitAPI},
     scoring_decision::update_low_scoring_authorities,
 };
+use ika_types::error::IkaResult;
+use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCOutputMessage};
+use tokio::task::JoinSet;
+use tracing::{debug, error, info, instrument, trace_span, warn};
+use typed_store::Map;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -178,8 +183,23 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
 
-        let last_committed_round = self.last_consensus_stats.index.last_committed_round;
+        let last_committed_round = self.last_consensus_stats.index.sub_dag_index;
 
+        if self.should_perform_dwallet_mpc_state_sync().await {
+            if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
+                error!(
+                    "epoch switched while performing dwallet mpc state sync: {:?}",
+                    err
+                );
+                return;
+            }
+        }
+        let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
+        dwallet_mpc_verifier.last_processed_consensus_round = last_committed_round;
+        // Need to drop the verifier, as `self` is being used mutably later in this function.
+        drop(dwallet_mpc_verifier);
+
+        let last_committed_round = self.last_consensus_stats.index.last_committed_round;
         let round = consensus_commit.leader_round();
 
         // TODO: Remove this once narwhal is deprecated. For now mysticeti will not return
@@ -372,6 +392,125 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     // self.transaction_manager_sender
                                     //     .send(executable_transactions);
     }
+
+    /// Loads all dWallet MPC messages from the epoch start from the epoch tables.
+    /// Needs to be a separate function because the DB table does not implement the `Send` trait,
+    /// hence async code involving it can cause compilation errors.
+    async fn load_dwallet_mpc_messages_from_epoch_start(
+        &self,
+    ) -> IkaResult<Vec<DWalletMPCDBMessage>> {
+        Ok(self
+            .epoch_store
+            .tables()?
+            .dwallet_mpc_messages
+            .unbounded_iter()
+            .map(|(_, messages)| messages)
+            .flatten()
+            .collect())
+    }
+
+    /// Loads all dWallet MPC outputs from the epoch start from the epoch tables.
+    /// Needs to be a separate function because the DB table does not implement the `Send` trait,
+    /// hence async code involving it can cause compilation errors.
+    async fn load_dwallet_mpc_outputs_from_epoch_start(
+        &self,
+    ) -> IkaResult<Vec<DWalletMPCOutputMessage>> {
+        Ok(self
+            .epoch_store
+            .tables()?
+            .dwallet_mpc_outputs
+            .unbounded_iter()
+            .map(|(_, messages)| messages)
+            .flatten()
+            .collect())
+    }
+
+    /// Loads all dWallet MPC events from the epoch start from the epoch tables.
+    /// Needed to be a separate function because the DB table does not implement the `Send` trait,
+    /// hence async code involving it can cause compilation errors.
+    async fn load_dwallet_mpc_events_from_epoch_start(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
+        Ok(self
+            .epoch_store
+            .tables()?
+            .dwallet_mpc_events
+            .unbounded_iter()
+            .map(|(_, messages)| messages)
+            .flatten()
+            .collect())
+    }
+
+    /// Check if the dWallet MPC manager should perform a state sync.
+    /// If so, block consensus and load all messages.
+    /// This condition is only true if we process a round
+    /// before we processed the previous round,
+    /// which can only happen if we restart the node.
+    async fn should_perform_dwallet_mpc_state_sync(&self) -> bool {
+        let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
+        // Check if the dwallet mpc manager should perform a state sync, and if so block consensus and load all messages
+        // This condition is only true if we process a round before we processed the previous round,
+        // which can only happen if we restart the node.
+        self.last_consensus_stats.index.sub_dag_index
+            > dwallet_mpc_verifier.last_processed_consensus_round + 1
+    }
+
+    /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
+    /// Needs to be performed here,
+    /// so system transactions will get created when they should, and a fork in the
+    /// chain will be prevented.
+    /// Fails only if the epoch switched in the middle of the state sync.
+    async fn perform_dwallet_mpc_state_sync(&self) -> IkaResult {
+        info!("Performing a state sync for the dWallet MPC node");
+        let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
+
+        let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
+        let mut dwallet_mpc_batches_manager =
+            self.epoch_store.get_dwallet_mpc_batches_manager().await;
+        for event in self.load_dwallet_mpc_events_from_epoch_start().await? {
+            dwallet_mpc_batches_manager.store_new_session(&event.session_info);
+            dwallet_mpc_verifier.monitor_new_session_outputs(&event.session_info);
+        }
+        for output in self.load_dwallet_mpc_outputs_from_epoch_start().await? {
+            match dwallet_mpc_verifier
+                .try_verify_output(&output.output, &output.session_info, output.authority)
+                .await
+            {
+                Ok(result) => {
+                    manager.flag_authorities_as_malicious(&result.malicious_actors);
+                    // TODO (#524): Handle malicious behavior.
+                    if result.result == OutputResult::FirstQuorumReached {
+                        if output.session_info.mpc_round.is_part_of_batch() {
+                            if let Err(err) = dwallet_mpc_batches_manager.store_verified_output(
+                                output.session_info.clone(),
+                                output.output.clone(),
+                            ) {
+                                error!(
+                                    "error storing verified output in batch for session {:?}: {:?}",
+                                    output.session_info.session_id, err
+                                );
+                            }
+                        }
+                    }
+                }
+                Err(err) => {
+                    error!(
+                        "failed to verify output from session {:?} and party {:?}: {:?}",
+                        output.session_info.session_id, output.authority, err
+                    );
+                }
+            }
+        }
+        for message in self.load_dwallet_mpc_messages_from_epoch_start().await? {
+            match message {
+                DWalletMPCDBMessage::Message(_)
+                | DWalletMPCDBMessage::EndOfDelivery
+                | DWalletMPCDBMessage::ValidatorDataForDKG(_)
+                | DWalletMPCDBMessage::MPCSessionFailed(_)
+                | DWalletMPCDBMessage::SessionFailedWithMaliciousParties(..)
+                | DWalletMPCDBMessage::PerformCryptographicComputations => {}
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Manages the lifetime of tasks handling the commits and transactions output by consensus.
@@ -417,6 +556,11 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::EndOfPublish(_) => "end_of_publish",
         ConsensusTransactionKind::CapabilityNotificationV1(_) => "capability_notification_v1",
         ConsensusTransactionKind::TestMessage(_, _) => "test_message",
+        ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
+        ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
+        ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..) => {
+            "dwallet_mpc_session_failed_with_malicious"
+        }
     }
 }
 
