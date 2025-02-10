@@ -1678,7 +1678,48 @@ public(package) fun process_checkpoint_message(
                     rejected,
                     ctx,
                 );
-            };
+            } else if (message_data_type == 2) {
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let encrypted_user_secret_key_share_id = object::id_from_address(bcs_body.peel_address());
+                let rejected = bcs_body.peel_bool();
+                self.respond_re_encrypt_user_share_for(
+                    dwallet_id,
+                    encrypted_user_secret_key_share_id,
+                    rejected,
+                );
+            } else if (message_data_type == 3) {
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let sign_id = object::id_from_address(bcs_body.peel_address());
+                let session_id = object::id_from_address(bcs_body.peel_address());
+                let signature = bcs_body.peel_vec_u8();
+                let is_future_sign = bcs_body.peel_bool();
+                let rejected = bcs_body.peel_bool();
+                self.respond_ecdsa_sign(
+                    dwallet_id,
+                    sign_id,
+                    session_id,
+                    signature,
+                    is_future_sign,
+                    rejected,
+                );
+            } else if (message_data_type == 4) {
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
+                let rejected = bcs_body.peel_bool();
+                self.respond_ecdsa_future_sign(
+                    dwallet_id,
+                    partial_centralized_signed_message_id,
+                    rejected,
+                );
+            } else if (message_data_type == 5) {
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let encrypted_user_secret_key_share_id = object::id_from_address(bcs_body.peel_address());
+                let user_output_signature = bcs_body.peel_vec_u8();
+                self.accept_re_encrypted_user_share(
+                    dwallet_id,
+                    encrypted_user_secret_key_share_id,
+                    user_output_signature,
+                );
         i = i + 1;
     };
     self.total_messages_processed = self.total_messages_processed + i;
