@@ -8,6 +8,7 @@ use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
 use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
     Self,
     DWallet2PcMpcSecp256K1InnerV1,
+    DWalletNetworkrkDecryptionKeyCap,
     EncryptionKey,
     DWalletCap,
     MessageApproval,
@@ -38,12 +39,14 @@ public(package) fun create(
     epoch: u64,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
-): ID {
-    let dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1_inner::create(
+): (ID, DWalletNetworkrkDecryptionKeyCap) {
+    let mut dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1_inner::create(
         epoch,
         pricing,
         ctx,
     );
+        // TODO: remove this code!
+    let cap = dwallet_2pc_mpc_secp256k1.create_dwallet_network_decryption_key(ctx);
     let mut self = DWallet2PcMpcSecp256K1 {
         id: object::new(ctx),
         version: VERSION,
@@ -53,7 +56,7 @@ public(package) fun create(
     let self_id = object::id(&self);
     dynamic_field::add(&mut self.id, VERSION, dwallet_2pc_mpc_secp256k1);
     transfer::share_object(self);
-    self_id
+    (self_id, cap)
 }
 
 public fun get_active_encryption_key(

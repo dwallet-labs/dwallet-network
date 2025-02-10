@@ -78,6 +78,7 @@ public struct DWalletNetworkDecryptionKey has key, store {
     epoch: u64,
     current_epoch_shares: vector<u8>,
     previous_epoch_shares: vector<u8>,
+    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
     public_output: vector<u8>,
 }
 
@@ -93,6 +94,7 @@ public struct EncryptionKey has key, store {
     /// Unique identifier for the `EncryptionKey`.
     id: UID,
 
+    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
     /// Serialized encryption key.
     encryption_key: vector<u8>,
 
@@ -623,6 +625,26 @@ public(package) fun create(
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: option::none(),
         extra_fields: bag::new(ctx),
+    }
+}
+
+// TODO: this is a dummy code, need to change it to a full network dkg
+public(package) fun create_dwallet_network_decryption_key(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1,
+    ctx: &mut TxContext
+): DWalletNetworkrkDecryptionKeyCap {
+    let id = object::new(ctx);
+    let dwallet_network_decryption_key_id = id.to_inner();
+    self.dwallet_network_decryption_keys.add(dwallet_network_decryption_key_id, DWalletNetworkDecryptionKey {
+        id,
+        epoch: self.epoch,
+        current_epoch_shares: vector[],
+        previous_epoch_shares: vector[],
+        public_output: vector[],
+    });
+    DWalletNetworkrkDecryptionKeyCap {
+        id: object::new(ctx),
+        dwallet_network_decryption_key_id,
     }
 }
 
