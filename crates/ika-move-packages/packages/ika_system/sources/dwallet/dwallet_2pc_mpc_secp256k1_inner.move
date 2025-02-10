@@ -25,6 +25,8 @@ use ika_system::committee::{Self, Committee};
 const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
 
+const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
+
 public struct DWallet2PcMpcSecp256K1InnerV1 has store {
     epoch: u64,
     // TODO: change it to versioned
@@ -76,6 +78,7 @@ public struct DWalletNetworkDecryptionKey has key, store {
     epoch: u64,
     current_epoch_shares: vector<u8>,
     previous_epoch_shares: vector<u8>,
+    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
     public_output: vector<u8>,
 }
 
@@ -91,6 +94,7 @@ public struct EncryptionKey has key, store {
     /// Unique identifier for the `EncryptionKey`.
     id: UID,
 
+    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
     /// Serialized encryption key.
     encryption_key: vector<u8>,
 
@@ -562,6 +566,13 @@ public struct RejectedECDSASignEvent has copy, drop {
     is_future_sign: bool,
 }
 
+/// Event emitted after verifing quorum of signature.
+public struct SystemQuorumVerifiedEvent has copy, drop {
+    epoch: u64,
+    total_signers_stake: u64,
+}
+
+
 /// Event containing system-level checkpoint information, emitted during
 /// the checkpoint submmision message.
 public struct SystemCheckpointInfoEvent has copy, drop {
@@ -614,6 +625,26 @@ public(package) fun create(
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: option::none(),
         extra_fields: bag::new(ctx),
+    }
+}
+
+// TODO: this is a dummy code, need to change it to a full network dkg
+public(package) fun create_dwallet_network_decryption_key(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1,
+    ctx: &mut TxContext
+): DWalletNetworkrkDecryptionKeyCap {
+    let id = object::new(ctx);
+    let dwallet_network_decryption_key_id = id.to_inner();
+    self.dwallet_network_decryption_keys.add(dwallet_network_decryption_key_id, DWalletNetworkDecryptionKey {
+        id,
+        epoch: self.epoch,
+        current_epoch_shares: vector[],
+        previous_epoch_shares: vector[],
+        public_output: vector[],
+    });
+    DWalletNetworkrkDecryptionKeyCap {
+        id: object::new(ctx),
+        dwallet_network_decryption_key_id,
     }
 }
 
@@ -1004,7 +1035,8 @@ public(package) fun respond_dkg_second_round_output(
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
     let encryption_key_id = encryption_key.id.to_inner();
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
-    dwallet.state = match (&dwallet.state) {
+
+   dwallet.state = match (&dwallet.state) {
         DWalletState::AwaitingNetworkVerification => {
             if (rejected) {
                 event::emit(RejectedDKGSecondRoundEvent {
@@ -1652,7 +1684,29 @@ public(package) fun respond_ecdsa_sign(
     };
 }
 
-public(package) fun process_checkpoint_message(
+public(package) fun process_checkpoint_message_by_quorum(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1,
+    signature: vector<u8>,
+    signers_bitmap: vector<u8>,
+    message: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
+    intent_bytes.append(message);
+    intent_bytes.append(bcs::to_bytes(&self.epoch));
+
+    let total_signers_stake = self.active_committee.verify_certificate(&signature, &signers_bitmap, &intent_bytes);
+
+    // TODO: move it to verify_certificate
+    event::emit(SystemQuorumVerifiedEvent {
+        epoch: self.epoch,
+        total_signers_stake,
+    });
+
+    self.process_checkpoint_message(message, ctx);
+}
+
+fun process_checkpoint_message(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     message: vector<u8>,
     ctx: &mut TxContext,

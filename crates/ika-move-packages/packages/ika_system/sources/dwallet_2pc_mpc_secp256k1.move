@@ -8,6 +8,7 @@ use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
 use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
     Self,
     DWallet2PcMpcSecp256K1InnerV1,
+    DWalletNetworkrkDecryptionKeyCap,
     EncryptionKey,
     DWalletCap,
     MessageApproval,
@@ -38,20 +39,24 @@ public(package) fun create(
     epoch: u64,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
-) {
-    let dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1_inner::create(
+): (ID, DWalletNetworkrkDecryptionKeyCap) {
+    let mut dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1_inner::create(
         epoch,
         pricing,
         ctx,
     );
+        // TODO: remove this code!
+    let cap = dwallet_2pc_mpc_secp256k1.create_dwallet_network_decryption_key(ctx);
     let mut self = DWallet2PcMpcSecp256K1 {
         id: object::new(ctx),
         version: VERSION,
         package_id,
         new_package_id: option::none(),
     };
+    let self_id = object::id(&self);
     dynamic_field::add(&mut self.id, VERSION, dwallet_2pc_mpc_secp256k1);
     transfer::share_object(self);
+    (self_id, cap)
 }
 
 public fun get_active_encryption_key(
@@ -244,6 +249,17 @@ public fun compare_ecdsa_partial_user_signatures_with_approvals(
         partial_user_signature_cap,
         message_approval,
     )
+}
+
+public(package) fun process_checkpoint_message_by_quorum(
+    self: &mut DWallet2PcMpcSecp256K1,
+    signature: vector<u8>,
+    signers_bitmap: vector<u8>,
+    message: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    let self = self.inner_mut();
+    self.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
 }
 
 /// Migrate the dwallet_2pc_mpc_secp256k1 object to the new package id.
