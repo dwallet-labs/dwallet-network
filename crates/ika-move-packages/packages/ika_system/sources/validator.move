@@ -6,6 +6,7 @@ module ika_system::validator;
 use ika_system::validator_inner_v1::{Self, ValidatorInnerV1};
 use ika_system::validator_cap::{Self, ValidatorCap, ValidatorOperationCap};
 use sui::versioned::{Self, Versioned};
+use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 
 const EInvalidVersion: u64 = 0;
 
@@ -23,7 +24,7 @@ public(package) fun create(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    class_groups_pubkey_and_proof_bytes: vector<u8>,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
     name: vector<u8>,
     description: vector<u8>,

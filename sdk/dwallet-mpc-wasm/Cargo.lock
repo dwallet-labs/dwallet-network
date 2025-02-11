@@ -1741,6 +1741,7 @@ dependencies = [
  "class_groups",
  "crypto-bigint",
  "fastcrypto",
+ "flate2",
  "group 0.1.0",
  "ika-types",
  "rand_chacha 0.3.1",
