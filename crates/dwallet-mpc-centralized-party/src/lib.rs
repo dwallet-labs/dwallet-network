@@ -28,11 +28,11 @@ use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
+use serde::{Deserialize, Serialize};
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
-use serde::{Deserialize, Serialize};
 
 type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
@@ -50,7 +50,7 @@ pub struct DWalletPublicKeys {
     pub public_key: Vec<u8>,
 }
 pub type DKGDecentralizedOutput =
-<AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput;
+    <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput;
 
 /// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
 // Can't use the TryFrom trait as it leads to conflicting implementations.
@@ -64,7 +64,6 @@ pub fn public_keys_from_dkg_output(
         public_key: bcs::to_bytes(&value.public_key)?,
     })
 }
-
 
 /// Supported hash functions for message digest.
 #[derive(Clone, Debug)]
