@@ -575,6 +575,10 @@ async fn request_add_validator_candidate(
             )?),
             CallArg::Pure(bcs::to_bytes(
                 &validator_initialization_metadata
+                    .class_groups_public_key_and_proof
+            )?),
+            CallArg::Pure(bcs::to_bytes(
+                &validator_initialization_metadata
                     .proof_of_possession
                     .as_ref()
                     .to_vec(),

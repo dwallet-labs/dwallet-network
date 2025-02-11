@@ -86,7 +86,7 @@ const DEFAULT_EPOCH_ID: u64 = 0;
 
 const BLS_KEY_LEN: u64 = 48;
 const ED25519_KEY_LEN: u64 = 32;
-const CLASS_GROUPS_BYTES_LEN: u64 = 96; // TODO (Yael): change this to the correct value
+const CLASS_GROUPS_BYTES_LEN: u64 = 241722; // Todo (#): change the way we implement this.
 
 public struct ValidatorMetadata has store {
     /// The address to receive the payments

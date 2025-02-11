@@ -12,7 +12,7 @@ pub type ClassGroupsProof = [u8; 5];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CGKeyPairAndProofForMockFromFile {
-    decryption_key: ClassGroupsDecryptionKey,
+    pub(crate) decryption_key: ClassGroupsDecryptionKey,
     pub encryption_key_and_proof: [(
         CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
         KnowledgeOfDiscreteLogUCProof,

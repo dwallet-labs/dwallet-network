@@ -43,6 +43,7 @@ title: Module `(ika_system=0x0)::validator_inner_v1`
 -  [Function `proof_of_possession_bytes`](#(ika_system=0x0)_validator_inner_v1_proof_of_possession_bytes)
 -  [Function `network_pubkey_bytes`](#(ika_system=0x0)_validator_inner_v1_network_pubkey_bytes)
 -  [Function `consensus_pubkey_bytes`](#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes)
+-  [Function `class_groups_pubkey_and_proof_bytes`](#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes)
 -  [Function `next_epoch_network_address`](#(ika_system=0x0)_validator_inner_v1_next_epoch_network_address)
 -  [Function `next_epoch_p2p_address`](#(ika_system=0x0)_validator_inner_v1_next_epoch_p2p_address)
 -  [Function `next_epoch_consensus_address`](#(ika_system=0x0)_validator_inner_v1_next_epoch_consensus_address)
@@ -50,6 +51,7 @@ title: Module `(ika_system=0x0)::validator_inner_v1`
 -  [Function `next_epoch_proof_of_possession_bytes`](#(ika_system=0x0)_validator_inner_v1_next_epoch_proof_of_possession_bytes)
 -  [Function `next_epoch_network_pubkey_bytes`](#(ika_system=0x0)_validator_inner_v1_next_epoch_network_pubkey_bytes)
 -  [Function `next_epoch_consensus_pubkey_bytes`](#(ika_system=0x0)_validator_inner_v1_next_epoch_consensus_pubkey_bytes)
+-  [Function `next_epoch_class_groups_pubkey_and_proof_bytes`](#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes)
 -  [Function `operation_cap_id`](#(ika_system=0x0)_validator_inner_v1_operation_cap_id)
 -  [Function `next_epoch_computation_price`](#(ika_system=0x0)_validator_inner_v1_next_epoch_computation_price)
 -  [Function `total_stake_amount`](#(ika_system=0x0)_validator_inner_v1_total_stake_amount)
@@ -78,7 +80,9 @@ title: Module `(ika_system=0x0)::validator_inner_v1`
 -  [Function `update_next_epoch_network_pubkey_bytes`](#(ika_system=0x0)_validator_inner_v1_update_next_epoch_network_pubkey_bytes)
 -  [Function `update_candidate_network_pubkey_bytes`](#(ika_system=0x0)_validator_inner_v1_update_candidate_network_pubkey_bytes)
 -  [Function `update_next_epoch_consensus_pubkey_bytes`](#(ika_system=0x0)_validator_inner_v1_update_next_epoch_consensus_pubkey_bytes)
+-  [Function `update_next_epoch_class_groups_pubkey_and_proof_bytes`](#(ika_system=0x0)_validator_inner_v1_update_next_epoch_class_groups_pubkey_and_proof_bytes)
 -  [Function `update_candidate_consensus_pubkey_bytes`](#(ika_system=0x0)_validator_inner_v1_update_candidate_consensus_pubkey_bytes)
+-  [Function `update_candidate_class_groups_pubkey_and_proof_bytes`](#(ika_system=0x0)_validator_inner_v1_update_candidate_class_groups_pubkey_and_proof_bytes)
 -  [Function `effectuate_staged_metadata`](#(ika_system=0x0)_validator_inner_v1_effectuate_staged_metadata)
 -  [Function `verify_proof_of_possession`](#(ika_system=0x0)_validator_inner_v1_verify_proof_of_possession)
 -  [Function `validate_metadata`](#(ika_system=0x0)_validator_inner_v1_validate_metadata)
@@ -182,6 +186,13 @@ title: Module `(ika_system=0x0)::validator_inner_v1`
  The public key bytes correstponding to the consensus
 </dd>
 <dt>
+<code><a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+ The validator's Class Groups public key and its associated proof.
+ This key is used for the network DKG process and for resharing the network MPC key.
+</dd>
+<dt>
 <code><a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_name">name</a>: <a href="../../std/string.md#std_string_String">std::string::String</a></code>
 </dt>
 <dd>
@@ -239,6 +250,11 @@ title: Module `(ika_system=0x0)::validator_inner_v1`
 </dd>
 <dt>
 <code><a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_consensus_pubkey_bytes">next_epoch_consensus_pubkey_bytes</a>: <a href="../../std/option.md#std_option_Option">std::option::Option</a>&lt;vector&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code><a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>: <a href="../../std/option.md#std_option_Option">std::option::Option</a>&lt;vector&lt;u8&gt;&gt;</code>
 </dt>
 <dd>
 </dd>
@@ -541,6 +557,15 @@ Event emitted when a fungible staked IKA is redeemed.
 
 
 
+<a name="(ika_system=0x0)_validator_inner_v1_CLASS_GROUPS_BYTES_LEN"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_CLASS_GROUPS_BYTES_LEN">CLASS_GROUPS_BYTES_LEN</a>: u64 = 241722;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_validator_inner_v1_DEFAULT_EPOCH_ID"></a>
 
 
@@ -615,6 +640,16 @@ Event emitted when a fungible staked IKA is redeemed.
 
 <pre><code>#[error]
 <b>const</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_EInvalidStakeAmount">EInvalidStakeAmount</a>: vector&lt;u8&gt; = b"Stake amount is invalid or wrong.";
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_inner_v1_EMetadataInvalidClassGroupsPubkey"></a>
+
+
+
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_EMetadataInvalidClassGroupsPubkey">EMetadataInvalidClassGroupsPubkey</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a> field in <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorMetadata">ValidatorMetadata</a>.";
 </code></pre>
 
 
@@ -752,7 +787,7 @@ Max computation price a validator can set is 100K NIKA.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_create_metadata">create_metadata</a>(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_payment_address">payment_address</a>: <b>address</b>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_protocol_pubkey_bytes">protocol_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_pubkey_bytes">network_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_proof_of_possession_bytes">proof_of_possession_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_name">name</a>: <a href="../../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_description">description</a>: <a href="../../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_image_url">image_url</a>: <a href="../../sui/url.md#sui_url_Url">sui::url::Url</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_project_url">project_url</a>: <a href="../../sui/url.md#sui_url_Url">sui::url::Url</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_address">network_address</a>: <a href="../../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_p2p_address">p2p_address</a>: <a href="../../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_address">consensus_address</a>: <a href="../../std/string.md#std_string_String">std::string::String</a>, extra_fields: <a href="../../sui/bag.md#sui_bag_Bag">sui::bag::Bag</a>, ctx: &<a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorMetadata">validator_inner_v1::ValidatorMetadata</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_create_metadata">create_metadata</a>(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_payment_address">payment_address</a>: <b>address</b>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_protocol_pubkey_bytes">protocol_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_pubkey_bytes">network_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_proof_of_possession_bytes">proof_of_possession_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_name">name</a>: <a href="../../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_description">description</a>: <a href="../../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_image_url">image_url</a>: <a href="../../sui/url.md#sui_url_Url">sui::url::Url</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_project_url">project_url</a>: <a href="../../sui/url.md#sui_url_Url">sui::url::Url</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_address">network_address</a>: <a href="../../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_p2p_address">p2p_address</a>: <a href="../../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_address">consensus_address</a>: <a href="../../std/string.md#std_string_String">std::string::String</a>, extra_fields: <a href="../../sui/bag.md#sui_bag_Bag">sui::bag::Bag</a>, ctx: &<a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorMetadata">validator_inner_v1::ValidatorMetadata</a>
 </code></pre>
 
 
@@ -766,6 +801,7 @@ Max computation price a validator can set is 100K NIKA.
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_protocol_pubkey_bytes">protocol_pubkey_bytes</a>: vector&lt;u8&gt;,
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_pubkey_bytes">network_pubkey_bytes</a>: vector&lt;u8&gt;,
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>: vector&lt;u8&gt;,
+    <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: vector&lt;u8&gt;,
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_proof_of_possession_bytes">proof_of_possession_bytes</a>: vector&lt;u8&gt;,
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_name">name</a>: String,
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_description">description</a>: String,
@@ -785,6 +821,7 @@ Max computation price a validator can set is 100K NIKA.
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_protocol_pubkey">protocol_pubkey</a>,
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_pubkey_bytes">network_pubkey_bytes</a>,
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>,
+        <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>,
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_proof_of_possession_bytes">proof_of_possession_bytes</a>,
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_name">name</a>,
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_description">description</a>,
@@ -796,6 +833,7 @@ Max computation price a validator can set is 100K NIKA.
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_protocol_pubkey_bytes">next_epoch_protocol_pubkey_bytes</a>: option::none(),
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_network_pubkey_bytes">next_epoch_network_pubkey_bytes</a>: option::none(),
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_consensus_pubkey_bytes">next_epoch_consensus_pubkey_bytes</a>: option::none(),
+        <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>: option::none(),
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_proof_of_possession_bytes">next_epoch_proof_of_possession_bytes</a>: option::none(),
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_network_address">next_epoch_network_address</a>: option::none(),
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_p2p_address">next_epoch_p2p_address</a>: option::none(),
@@ -816,7 +854,7 @@ Max computation price a validator can set is 100K NIKA.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_create">create</a>(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_validator_id">validator_id</a>: <a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>, cap_id: <a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_operation_cap_id">operation_cap_id</a>: <a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_payment_address">payment_address</a>: <b>address</b>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_protocol_pubkey_bytes">protocol_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_pubkey_bytes">network_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_proof_of_possession_bytes">proof_of_possession_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_name">name</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_description">description</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_image_url">image_url</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_project_url">project_url</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_address">network_address</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_p2p_address">p2p_address</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_address">consensus_address</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_computation_price">computation_price</a>: u64, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_commission_rate">commission_rate</a>: u16, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_create">create</a>(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_validator_id">validator_id</a>: <a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>, cap_id: <a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_operation_cap_id">operation_cap_id</a>: <a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_payment_address">payment_address</a>: <b>address</b>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_protocol_pubkey_bytes">protocol_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_pubkey_bytes">network_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_proof_of_possession_bytes">proof_of_possession_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_name">name</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_description">description</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_image_url">image_url</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_project_url">project_url</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_address">network_address</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_p2p_address">p2p_address</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_address">consensus_address</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_computation_price">computation_price</a>: u64, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_commission_rate">commission_rate</a>: u16, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>
 </code></pre>
 
 
@@ -833,6 +871,7 @@ Max computation price a validator can set is 100K NIKA.
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_protocol_pubkey_bytes">protocol_pubkey_bytes</a>: vector&lt;u8&gt;,
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_pubkey_bytes">network_pubkey_bytes</a>: vector&lt;u8&gt;,
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>: vector&lt;u8&gt;,
+    <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: vector&lt;u8&gt;,
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_proof_of_possession_bytes">proof_of_possession_bytes</a>: vector&lt;u8&gt;,
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_name">name</a>: vector&lt;u8&gt;,
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_description">description</a>: vector&lt;u8&gt;,
@@ -852,6 +891,7 @@ Max computation price a validator can set is 100K NIKA.
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_protocol_pubkey_bytes">protocol_pubkey_bytes</a>,
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_pubkey_bytes">network_pubkey_bytes</a>,
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>,
+        <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>,
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_proof_of_possession_bytes">proof_of_possession_bytes</a>,
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_name">name</a>.to_ascii_string().to_string(),
         <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_description">description</a>.to_ascii_string().to_string(),
@@ -1708,6 +1748,30 @@ Returns true if the validator is inactive.
 
 </details>
 
+<a name="(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes"></a>
+
+## Function `class_groups_pubkey_and_proof_bytes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>): &vector&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>(self: &<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">ValidatorInnerV1</a>): &vector&lt;u8&gt; {
+    &self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="(ika_system=0x0)_validator_inner_v1_next_epoch_network_address"></a>
 
 ## Function `next_epoch_network_address`
@@ -1869,6 +1933,30 @@ Returns true if the validator is inactive.
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_consensus_pubkey_bytes">next_epoch_consensus_pubkey_bytes</a>(self: &<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">ValidatorInnerV1</a>): &Option&lt;vector&lt;u8&gt;&gt; {
     &self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_consensus_pubkey_bytes">next_epoch_consensus_pubkey_bytes</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes"></a>
+
+## Function `next_epoch_class_groups_pubkey_and_proof_bytes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>): &<a href="../../std/option.md#std_option_Option">std::option::Option</a>&lt;vector&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>(self: &<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">ValidatorInnerV1</a>): &Option&lt;vector&lt;u8&gt;&gt; {
+    &self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>
 }
 </code></pre>
 
@@ -2093,6 +2181,7 @@ Return the total amount staked with this validator
             || self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_pubkey_bytes">network_pubkey_bytes</a> == other.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>
             || self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a> == other.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>
             || self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a> == other.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_network_pubkey_bytes">network_pubkey_bytes</a>
+            || self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a> == other.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>
             // All next epoch parameters.
             || <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_is_equal_some">is_equal_some</a>(&self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_network_address">next_epoch_network_address</a>, &other.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_network_address">next_epoch_network_address</a>)
             || <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_is_equal_some">is_equal_some</a>(&self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_p2p_address">next_epoch_p2p_address</a>, &other.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_p2p_address">next_epoch_p2p_address</a>)
@@ -2682,6 +2771,36 @@ Update consensus public key of this validator, taking effects from next epoch
 
 </details>
 
+<a name="(ika_system=0x0)_validator_inner_v1_update_next_epoch_class_groups_pubkey_and_proof_bytes"></a>
+
+## Function `update_next_epoch_class_groups_pubkey_and_proof_bytes`
+
+Update class groups public key and its associated proof of this validator, taking effects from next epoch
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_update_next_epoch_class_groups_pubkey_and_proof_bytes">update_next_epoch_class_groups_pubkey_and_proof_bytes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_update_next_epoch_class_groups_pubkey_and_proof_bytes">update_next_epoch_class_groups_pubkey_and_proof_bytes</a>(
+    self: &<b>mut</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">ValidatorInnerV1</a>,
+    <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: vector&lt;u8&gt;,
+) {
+    <b>assert</b>!(!<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_is_inactive">is_inactive</a>(self), <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_EInactiveValidator">EInactiveValidator</a>);
+    self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a> = option::some(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>);
+    <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_validate_metadata">validate_metadata</a>(&self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>);
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="(ika_system=0x0)_validator_inner_v1_update_candidate_consensus_pubkey_bytes"></a>
 
 ## Function `update_candidate_consensus_pubkey_bytes`
@@ -2704,6 +2823,36 @@ Update consensus public key of this candidate validator
 ) {
     <b>assert</b>!(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_is_candidate">is_candidate</a>(self), <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ENotValidatorCandidate">ENotValidatorCandidate</a>);
     self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a> = <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>;
+    <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_validate_metadata">validate_metadata</a>(&self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_inner_v1_update_candidate_class_groups_pubkey_and_proof_bytes"></a>
+
+## Function `update_candidate_class_groups_pubkey_and_proof_bytes`
+
+Update class groups public key and its associated proof of this candidate validator
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_update_candidate_class_groups_pubkey_and_proof_bytes">update_candidate_class_groups_pubkey_and_proof_bytes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_update_candidate_class_groups_pubkey_and_proof_bytes">update_candidate_class_groups_pubkey_and_proof_bytes</a>(
+    self: &<b>mut</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">ValidatorInnerV1</a>,
+    <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: vector&lt;u8&gt;,
+) {
+    <b>assert</b>!(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_is_candidate">is_candidate</a>(self), <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ENotValidatorCandidate">ENotValidatorCandidate</a>);
+    self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a> = <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>;
     <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_validate_metadata">validate_metadata</a>(&self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>);
 }
 </code></pre>
@@ -2759,6 +2908,10 @@ advancing an epoch.
     <b>if</b> (<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_consensus_pubkey_bytes">next_epoch_consensus_pubkey_bytes</a>(self).is_some()) {
         self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a> = self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_consensus_pubkey_bytes">next_epoch_consensus_pubkey_bytes</a>.extract();
         self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_consensus_pubkey_bytes">next_epoch_consensus_pubkey_bytes</a> = option::none();
+    };
+    <b>if</b> (<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>(self).is_some()) {
+        self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a> = self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>.extract();
+        self.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a> = option::none();
     };
 }
 </code></pre>
@@ -2851,6 +3004,10 @@ Aborts if validator metadata is invalid
     <b>assert</b>!(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_consensus_pubkey_bytes">consensus_pubkey_bytes</a>.length() == <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ED25519_KEY_LEN">ED25519_KEY_LEN</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_EMetadataInvalidConsensusPubkey">EMetadataInvalidConsensusPubkey</a>);
     <b>if</b> (<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_consensus_pubkey_bytes">next_epoch_consensus_pubkey_bytes</a>.is_some()) {
         <b>assert</b>!(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_consensus_pubkey_bytes">next_epoch_consensus_pubkey_bytes</a>.borrow().length() == <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ED25519_KEY_LEN">ED25519_KEY_LEN</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_EMetadataInvalidConsensusPubkey">EMetadataInvalidConsensusPubkey</a>);
+    };
+    <b>assert</b>!(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>.length() == <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_CLASS_GROUPS_BYTES_LEN">CLASS_GROUPS_BYTES_LEN</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_EMetadataInvalidClassGroupsPubkey">EMetadataInvalidClassGroupsPubkey</a>);
+    <b>if</b> (<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>.is_some()) {
+        <b>assert</b>!(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>.borrow().length() == <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_CLASS_GROUPS_BYTES_LEN">CLASS_GROUPS_BYTES_LEN</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_EMetadataInvalidClassGroupsPubkey">EMetadataInvalidClassGroupsPubkey</a>);
     };
     <b>assert</b>!(<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_metadata">metadata</a>.<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_protocol_pubkey_bytes">protocol_pubkey_bytes</a>.length() == <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_BLS_KEY_LEN">BLS_KEY_LEN</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_EMetadataInvalidProtocolPubkey">EMetadataInvalidProtocolPubkey</a>);
     <b>assert</b>!(

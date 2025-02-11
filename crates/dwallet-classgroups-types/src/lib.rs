@@ -9,20 +9,22 @@ use class_groups::{
     KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
 };
-
+#[cfg(feature = "mock-class-groups")]
 use class_groups::{
     CompactIbqf, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     MAX_PRIMES,
 };
+use class_groups::KnowledgeOfDiscreteLogUCProof;
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-#[cfg(feature = "mock-class-groups")]
-use mock_class_groups::ClassGroupsProof;
+// #[cfg(feature = "mock-class-groups")]
+// use mock_class_groups::ClassGroupsProof;
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
+use crate::mock_class_groups::CGKeyPairAndProofForMockFromFile;
 
-#[cfg(not(feature = "mock-class-groups"))]
+// #[cfg(not(feature = "mock-class-groups"))]
 pub type ClassGroupsProof = KnowledgeOfDiscreteLogUCProof;
 pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
 pub type ClassGroupsDecryptionKey = [Uint<{ CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS }>; MAX_PRIMES];
@@ -75,20 +77,14 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
 ) -> ClassGroupsKeyPairAndProof {
     #[cfg(feature = "mock-class-groups")]
     {
-        let decryption_key: [Uint<CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS>; 13] =
-            std::array::from_fn(|_| Uint::<CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS>::default());
 
-        let encryption_key_and_proof: [(
-            CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
-            [u8; 5],
-        ); 13] = std::array::from_fn(|_| {
-            (
-                CompactIbqf::<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>::default(),
-                [1, 2, 3, 4, 5],
-            )
-        });
+        let contents = std::fs::read_to_string("class-groups-mock-key")
+            .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string())).unwrap();
+        let decoded = Base64::decode(contents.as_str())
+            .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string())).unwrap();
+        let keypair: CGKeyPairAndProofForMockFromFile = bcs::from_bytes(&decoded).unwrap();
 
-        return ClassGroupsKeyPairAndProof::new(decryption_key, encryption_key_and_proof);
+        return ClassGroupsKeyPairAndProof::new(keypair.decryption_key, keypair.encryption_key_and_proof);
     }
 
     #[cfg(not(feature = "mock-class-groups"))]
