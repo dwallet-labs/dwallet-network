@@ -4,10 +4,11 @@
 //! and forward them to the [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
+use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -102,6 +103,57 @@ impl DWalletMPCService {
             manager
                 .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;
+            drop(manager);
+
+            if let Err(e) = self.read_events().await {
+                error!("failed to handle dWallet MPC events: {}", e);
+            }
         }
+    }
+
+    async fn read_events(&mut self) -> IkaResult<()> {
+        let key_version = self
+            .epoch_store
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
+            .unwrap_or_default();
+
+        let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
+        let events: HashMap<EventID, DWalletMPCEvent> = pending_events
+            .iter()
+            .map(|(id, event)| {
+                let session_info = match session_info_from_event(
+                    event.clone(),
+                    Some(key_version),
+                    &self.epoch_store.packages_config,
+                )
+                .map_err(|e| DwalletMPCError::NonMPCEvent(e.to_string()))
+                {
+                    Ok(Some(session_info)) => session_info,
+                    _ => return Err(DwalletMPCError::NonMPCEvent("Non-MPC event".to_string())),
+                };
+                let event = DWalletMPCEvent {
+                    event: event.clone(),
+                    session_info,
+                };
+
+                Ok((*id, event))
+            })
+            .collect::<DwalletMPCResult<_>>()?;
+
+        let mut events_table = self.epoch_store.tables()?.dwallet_mpc_events.batch();
+        events_table.insert_batch(
+            &self.epoch_store.tables()?.dwallet_mpc_events,
+            [(
+                self.last_read_consensus_round,
+                events.values().cloned().collect::<Vec<DWalletMPCEvent>>(),
+            )],
+        )?;
+        self.epoch_store
+            .perpetual_tables
+            .remove_pending_events(&events.keys().cloned().collect::<Vec<EventID>>())?;
+        Ok(())
     }
 }
