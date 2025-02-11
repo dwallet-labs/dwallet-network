@@ -45,6 +45,9 @@ use sui_types::transaction::{
 use sui_types::{
     Identifier, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION, SUI_FRAMEWORK_PACKAGE_ID,
 };
+use std::io::prelude::*;
+use flate2::Compression;
+use flate2::write::ZlibEncoder;
 
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
@@ -544,6 +547,11 @@ async fn request_add_validator_candidate(
 ) -> Result<(ObjectID, ObjectID), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
+    let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
+    e.write(&validator_initialization_metadata
+        .class_groups_public_key_and_proof)?;
+    let compressed_bytes_class_groups_public_key_and_proof = e.finish()?;
+
     ptb.move_call(
         ika_system_package_id,
         SYSTEM_MODULE_NAME.into(),
@@ -574,8 +582,7 @@ async fn request_add_validator_candidate(
                     .to_vec(),
             )?),
             CallArg::Pure(bcs::to_bytes(
-                &validator_initialization_metadata
-                    .class_groups_public_key_and_proof
+                &compressed_bytes_class_groups_public_key_and_proof,
             )?),
             CallArg::Pure(bcs::to_bytes(
                 &validator_initialization_metadata

@@ -620,10 +620,11 @@ public(package) fun update_candidate_validator_consensus_pubkey_bytes(
 public(package) fun update_validator_next_epoch_class_groups_pubkey_and_proof_bytes(
     self: &mut SystemInnerV1,
     class_groups_pubkey_and_proof_bytes: vector<u8>,
-    cap: &ValidatorCap
+    cap: &ValidatorCap,
+    ctx: &mut TxContext,
 ) {
     let validator = self.validators.get_validator_mut_with_cap(cap);
-    validator.update_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes);
+    validator.update_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes, ctx);
     self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
 }
 

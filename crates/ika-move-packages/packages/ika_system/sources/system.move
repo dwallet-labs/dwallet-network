@@ -164,6 +164,10 @@ public entry fun request_add_validator_candidate(
     transfer::public_transfer(operation_cap, ctx.sender());
 }
 
+public fun set_key() {
+    table<u8, vector<u8>>
+}
+
 public fun request_add_validator_candidate_non_entry(
     self: &mut System,
     payment_address: address,
@@ -559,9 +563,10 @@ public entry fun update_validator_next_epoch_class_groups_pubkey_and_proof_bytes
     self: &mut System,
     class_groups_pubkey_and_proof_bytes: vector<u8>,
     cap: &ValidatorCap,
+    ctx: &mut TxContext,
 ) {
     let self = self.inner_mut();
-    self.update_validator_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes, cap)
+    self.update_validator_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes, cap, ctx)
 }
 
 /// Update candidate validator's public key of class groups key and its associated proof. 

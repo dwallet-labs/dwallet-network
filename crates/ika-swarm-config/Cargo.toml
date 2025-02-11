@@ -46,6 +46,7 @@ sui-types.workspace = true
 ika-move-packages.workspace = true
 move-binary-format.workspace = true
 move-core-types.workspace = true
+flate2 = "1.0.35"
 
 [target.'cfg(msim)'.dependencies]
 sui-simulator.workspace = true

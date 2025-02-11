@@ -15,6 +15,8 @@ use ika_system::staked_ika::{
     FungibleStakedIka
 };
 use ika_system::validator_cap::{Self, ValidatorCap, ValidatorOperationCap };
+use ika_system::extended_field;
+use ika_system::extended_field::ExtendedField;
 use std::string::String;
 use sui::bag::{Self, Bag};
 use sui::balance::Balance;
@@ -106,7 +108,7 @@ public struct ValidatorMetadata has store {
     consensus_pubkey_bytes: vector<u8>,
     /// The validator's Class Groups public key and its associated proof.  
     /// This key is used for the network DKG process and for resharing the network MPC key.
-    class_groups_pubkey_and_proof_bytes: vector<u8>,
+    class_groups_pubkey_and_proof_bytes: ExtendedField<vector<u8>>,
 
     /// A unique human-readable name of this validator.
     name: String,
@@ -125,7 +127,7 @@ public struct ValidatorMetadata has store {
     next_epoch_proof_of_possession_bytes: Option<vector<u8>>,
     next_epoch_network_pubkey_bytes: Option<vector<u8>>,
     next_epoch_consensus_pubkey_bytes: Option<vector<u8>>,
-    next_epoch_class_groups_pubkey_and_proof_bytes: Option<vector<u8>>,
+    next_epoch_class_groups_pubkey_and_proof_bytes: Option<ExtendedField<vector<u8>>>,
     next_epoch_network_address: Option<String>,
     next_epoch_p2p_address: Option<String>,
     next_epoch_consensus_address: Option<String>,
@@ -205,7 +207,7 @@ public(package) fun create_metadata(
     p2p_address: String,
     consensus_address: String,
     extra_fields: Bag,
-    ctx: &TxContext,
+    ctx: &mut TxContext,
 ): ValidatorMetadata {
     let protocol_pubkey = g1_to_uncompressed_g1(&g1_from_bytes(&protocol_pubkey_bytes));
     let metadata = ValidatorMetadata {
@@ -215,7 +217,7 @@ public(package) fun create_metadata(
         protocol_pubkey,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
-        class_groups_pubkey_and_proof_bytes,
+        class_groups_pubkey_and_proof_bytes: extended_field::new(class_groups_pubkey_and_proof_bytes, ctx),
         proof_of_possession_bytes,
         name,
         description,
@@ -528,7 +530,7 @@ public fun consensus_pubkey_bytes(self: &ValidatorInnerV1): &vector<u8> {
 }
 
 public fun class_groups_pubkey_and_proof_bytes(self: &ValidatorInnerV1): &vector<u8> {
-    &self.metadata.class_groups_pubkey_and_proof_bytes
+    self.metadata.class_groups_pubkey_and_proof_bytes.borrow()
 }
 
 public fun next_epoch_network_address(self: &ValidatorInnerV1): &Option<String> {
@@ -559,7 +561,7 @@ public fun next_epoch_consensus_pubkey_bytes(self: &ValidatorInnerV1): &Option<v
     &self.metadata.next_epoch_consensus_pubkey_bytes
 }
 
-public fun next_epoch_class_groups_pubkey_and_proof_bytes(self: &ValidatorInnerV1): &Option<vector<u8>> {
+public fun next_epoch_class_groups_pubkey_and_proof_bytes(self: &ValidatorInnerV1): &Option<ExtendedField<vector<u8>>> {
     &self.metadata.next_epoch_class_groups_pubkey_and_proof_bytes
 }
 
@@ -607,7 +609,7 @@ public fun is_duplicate(self: &ValidatorInnerV1, other: &ValidatorInnerV1): bool
             || self.metadata.network_pubkey_bytes == other.metadata.consensus_pubkey_bytes
             || self.metadata.consensus_pubkey_bytes == other.metadata.consensus_pubkey_bytes
             || self.metadata.consensus_pubkey_bytes == other.metadata.network_pubkey_bytes
-            || self.metadata.class_groups_pubkey_and_proof_bytes == other.metadata.class_groups_pubkey_and_proof_bytes
+            // || self.metadata.class_groups_pubkey_and_proof_bytes == other.metadata.class_groups_pubkey_and_proof_bytes
             // All next epoch parameters.
             || is_equal_some(&self.metadata.next_epoch_network_address, &other.metadata.next_epoch_network_address)
             || is_equal_some(&self.metadata.next_epoch_p2p_address, &other.metadata.next_epoch_p2p_address)
@@ -818,9 +820,12 @@ public(package) fun update_next_epoch_consensus_pubkey_bytes(
 public(package) fun update_next_epoch_class_groups_pubkey_and_proof_bytes(
     self: &mut ValidatorInnerV1,
     class_groups_pubkey_and_proof_bytes: vector<u8>,
+    ctx: &mut TxContext,
 ) {
     assert!(!is_inactive(self), EInactiveValidator);
-    self.metadata.next_epoch_class_groups_pubkey_and_proof_bytes = option::some(class_groups_pubkey_and_proof_bytes);
+    let class_groups_pubkey_and_proof_bytes = extended_field::new(class_groups_pubkey_and_proof_bytes, ctx);
+    let old_class_groups_pubkey_and_proof  = self.metadata.next_epoch_class_groups_pubkey_and_proof_bytes.swap(class_groups_pubkey_and_proof_bytes);
+    extended_field::destroy(old_class_groups_pubkey_and_proof);
     validate_metadata(&self.metadata);
 }
 
@@ -840,7 +845,7 @@ public(package) fun update_candidate_class_groups_pubkey_and_proof_bytes(
     class_groups_pubkey_and_proof_bytes: vector<u8>,
 ) {
     assert!(is_candidate(self), ENotValidatorCandidate);
-    self.metadata.class_groups_pubkey_and_proof_bytes = class_groups_pubkey_and_proof_bytes;
+    extended_field::swap(&mut self.metadata.class_groups_pubkey_and_proof_bytes, class_groups_pubkey_and_proof_bytes);
     validate_metadata(&self.metadata);
 }
 
@@ -884,8 +889,8 @@ public(package) fun effectuate_staged_metadata(self: &mut ValidatorInnerV1) {
     };
 
     if (next_epoch_class_groups_pubkey_and_proof_bytes(self).is_some()) {
-        self.metadata.class_groups_pubkey_and_proof_bytes = self.metadata.next_epoch_class_groups_pubkey_and_proof_bytes.extract();
-        self.metadata.next_epoch_class_groups_pubkey_and_proof_bytes = option::none();
+        let next_epoch_class_groups_pubkey_and_proof_bytes = extended_field::destroy(self.metadata.next_epoch_class_groups_pubkey_and_proof_bytes.extract());
+        extended_field::swap(& mut self.metadata.class_groups_pubkey_and_proof_bytes, next_epoch_class_groups_pubkey_and_proof_bytes);
     };
 }
 
@@ -941,10 +946,10 @@ public fun validate_metadata(metadata: &ValidatorMetadata) {
         assert!(metadata.next_epoch_consensus_pubkey_bytes.borrow().length() == ED25519_KEY_LEN, EMetadataInvalidConsensusPubkey);
     };
 
-    assert!(metadata.class_groups_pubkey_and_proof_bytes.length() == CLASS_GROUPS_BYTES_LEN, EMetadataInvalidClassGroupsPubkey);
-    if (metadata.next_epoch_class_groups_pubkey_and_proof_bytes.is_some()) {
-        assert!(metadata.next_epoch_class_groups_pubkey_and_proof_bytes.borrow().length() == CLASS_GROUPS_BYTES_LEN, EMetadataInvalidClassGroupsPubkey);
-    };
+    // assert!(metadata.class_groups_pubkey_and_proof_bytes.length() == CLASS_GROUPS_BYTES_LEN, EMetadataInvalidClassGroupsPubkey);
+    // if (metadata.next_epoch_class_groups_pubkey_and_proof_bytes.is_some()) {
+    //     assert!(metadata.next_epoch_class_groups_pubkey_and_proof_bytes.borrow().length() == CLASS_GROUPS_BYTES_LEN, EMetadataInvalidClassGroupsPubkey);
+    // };
 
     assert!(metadata.protocol_pubkey_bytes.length() == BLS_KEY_LEN, EMetadataInvalidProtocolPubkey);
     assert!(
