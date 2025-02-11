@@ -106,7 +106,7 @@ impl DWalletMPCService {
             drop(manager);
 
             if let Err(e) = self.read_events().await {
-                error!("Failed to handle DWallet MPC events: {}", e);
+                error!("failed to handle dWallet MPC events: {}", e);
             }
         }
     }
