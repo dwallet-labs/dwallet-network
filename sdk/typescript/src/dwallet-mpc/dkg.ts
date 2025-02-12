@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config, StartSessionEvent } from './globals.js';
-
-const IKA_PACKAGE_ID = '0x66dca2cee84af8b507879dd7745672bdaa089fa98e5cb98165e657ec466b908e';
-const IKA_SYSTEM_PACKAGE_ID = '0x9b4ad924399f991023b9d053d4a81d880973d51c3e08bfa0c1ffb03e8f9d8436';
-const DWALLET_ECDSAK1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
-const IKA_SYSTEM_OBJ_ID = '0x3eff62e4dfcbca5f92e5f7241041db2bfc0a0a64e15f047238805e3e9c15debe';
-const DWALLET_NETWORK_VERSION = 0;
-const SUI_PACKAGE_ID = '0x2';
-const IKA_COIN_OBJECT_PATH = `${IKA_PACKAGE_ID}::ika::IKA`;
+import {
+	Config,
+	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	DWALLET_NETWORK_VERSION,
+	IKA_COIN_OBJECT_PATH,
+	IKA_SYSTEM_OBJ_ID,
+	IKA_SYSTEM_PACKAGE_ID,
+	StartSessionEvent,
+	SUI_PACKAGE_ID,
+} from './globals.js';
 
 /**
  * Starts the first round of the DKG protocol to create a new dWallet.
