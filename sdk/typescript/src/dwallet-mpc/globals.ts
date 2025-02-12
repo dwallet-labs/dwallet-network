@@ -12,10 +12,17 @@ export const mockedProtocolPublicParameters = Uint8Array.from(
 	),
 );
 
+interface IkaConfig {
+	ika_package_id: string;
+	ika_system_package_id: string;
+	ika_system_obj_id: string;
+}
+
 export interface Config {
 	keypair: Ed25519Keypair;
 	client: SuiClient;
 	timeout: number;
+	ikaConfig: IkaConfig;
 }
 
 /**
@@ -46,3 +53,5 @@ export const IKA_COIN_OBJECT_PATH = `${IKA_PACKAGE_ID}::ika::IKA`;
 export const DWALLET_NETWORK_VERSION = 0;
 
 export const SUI_PACKAGE_ID = '0x2';
+
+export const IKA_CONFIG_FILE_PATH = '../../../../ika_config.json';
