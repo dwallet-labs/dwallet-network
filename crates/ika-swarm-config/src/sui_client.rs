@@ -16,11 +16,11 @@ use ika_types::sui::{
     VALIDATOR_CAP_STRUCT_NAME,
 };
 use move_core_types::language_storage::StructTag;
+use serde::Serialize;
 use shared_crypto::intent::Intent;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
-use serde::Serialize;
 use sui::client_commands::{
     estimate_gas_budget_from_gas_cost, execute_dry_run, max_gas_budget, request_tokens_from_faucet,
     SuiClientCommandResult,
