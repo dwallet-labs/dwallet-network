@@ -13,6 +13,36 @@ import {
 } from './globals.js';
 
 /**
+ * Represents the Move `SystemInnerV1` struct.
+ */
+interface IKASystemStateInner {
+	fields: {
+		value: {
+			fields: {
+				dwallet_2pc_mpc_secp256k1_id: string;
+				dwallet_network_decryption_key: {
+					fields: {
+						dwallet_network_decryption_key_id: string;
+					};
+				};
+			};
+		};
+	};
+}
+
+/**
+ * Represents a Move shared object owner.
+ */
+interface SharedObjectOwner {
+	Shared: {
+		/**
+		 * The object version at the time it became shared.
+		 */
+		initial_shared_version: number;
+	};
+}
+
+/**
  * Starts the first round of the DKG protocol to create a new dWallet.
  * The output of this function is being used to generate the input for the second round,
  * and as input for the centralized party round.
@@ -58,6 +88,10 @@ export async function launchDKGFirstRound(c: Config) {
 	// TODO (#631): Use the session ID to fetch the DKG first round completion event.
 }
 
+function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
+	return obj?.fields?.value?.fields?.dwallet_network_decryption_key !== undefined;
+}
+
 async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 	const dynamicFields = await c.client.getDynamicFields({
 		parentId: IKA_SYSTEM_OBJ_ID,
@@ -66,8 +100,10 @@ async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 		parentId: IKA_SYSTEM_OBJ_ID,
 		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
 	});
-	// @ts-ignore
-	return innerSystemState.data.content.fields.value.fields.dwallet_2pc_mpc_secp256k1_id;
+	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
+		throw new Error('Invalid inner system state');
+	}
+	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_secp256k1_id;
 }
 
 async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
@@ -78,9 +114,16 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		parentId: IKA_SYSTEM_OBJ_ID,
 		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
 	});
-	// @ts-ignore
+	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
+		throw new Error('Invalid inner system state');
+	}
+
 	return innerSystemState.data.content.fields.value.fields.dwallet_network_decryption_key.fields
 		.dwallet_network_decryption_key_id;
+}
+
+function isSharedObjectOwner(obj: any): obj is SharedObjectOwner {
+	return obj?.Shared?.initial_shared_version !== undefined;
 }
 
 async function getInitialSharedVersion(c: Config, objectID: string): Promise<number> {
@@ -90,6 +133,9 @@ async function getInitialSharedVersion(c: Config, objectID: string): Promise<num
 			showOwner: true,
 		},
 	});
-	// @ts-ignore
-	return obj.data.owner.Shared.initial_shared_version;
+	let owner = obj.data?.owner;
+	if (!owner || !isSharedObjectOwner(owner)) {
+		throw new Error('Object is not shared');
+	}
+	return owner.Shared?.initial_shared_version;
 }
