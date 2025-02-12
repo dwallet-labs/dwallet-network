@@ -37,6 +37,4 @@ describe('Test dWallet MPC', () => {
 	it('should create a dWallet (DKG)', async () => {
 		await launchDKGFirstRound(conf);
 	});
-
-
 });
