@@ -159,6 +159,12 @@ title: Module `(ika_system=0x0)::validator_set`
  It will become the active_committee at the end of the epoch.
 </dd>
 <dt>
+<code>previous_committee: (ika_system=0x0)::<a href="../ika_system/committee.md#(ika_system=0x0)_committee_Committee">committee::Committee</a></code>
+</dt>
+<dd>
+ The current list of previous committee of validators.
+</dd>
+<dt>
 <code>pending_active_validators: vector&lt;<a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;</code>
 </dt>
 <dd>
@@ -559,6 +565,7 @@ The epoch value corresponds to the first epoch this change takes place.
         validators: object_table::new(ctx),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>: <a href="../ika_system/committee.md#(ika_system=0x0)_committee_empty">committee::empty</a>(),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>: option::none(),
+        previous_committee: <a href="../ika_system/committee.md#(ika_system=0x0)_committee_empty">committee::empty</a>(),
         pending_active_validators: vector[],
         at_risk_validators: vec_map::empty(),
         validator_report_records: vec_map::empty(),
@@ -1113,6 +1120,7 @@ It does the following things:
     );
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_adjust_stake_and_computation_price">adjust_stake_and_computation_price</a>();
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_pending_stakes_and_withdraws">process_pending_stakes_and_withdraws</a>(new_epoch);
+    self.previous_committee = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>;
     // Change to the next <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> <a href="../ika_system/committee.md#(ika_system=0x0)_committee">committee</a>
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.extract();
     // Activate validators that were added during `<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_mid_epoch">process_mid_epoch</a>`

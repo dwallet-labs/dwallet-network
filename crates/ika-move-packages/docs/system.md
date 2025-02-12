@@ -93,7 +93,11 @@ the SystemInnerVX version, or vice versa.
 
 
 <pre><code><b>use</b> (ika=0x0)::ika;
+<b>use</b> (ika_system=0x0)::<b>address</b>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/committee.md#(ika_system=0x0)_committee">committee</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner">dwallet_2pc_mpc_secp256k1_inner</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing">dwallet_pricing</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>;
@@ -122,14 +126,17 @@ the SystemInnerVX version, or vice versa.
 <b>use</b> <a href="../../sui/deny_list.md#sui_deny_list">sui::deny_list</a>;
 <b>use</b> <a href="../../sui/dynamic_field.md#sui_dynamic_field">sui::dynamic_field</a>;
 <b>use</b> <a href="../../sui/dynamic_object_field.md#sui_dynamic_object_field">sui::dynamic_object_field</a>;
+<b>use</b> <a href="../../sui/ed25519.md#sui_ed25519">sui::ed25519</a>;
 <b>use</b> <a href="../../sui/event.md#sui_event">sui::event</a>;
 <b>use</b> <a href="../../sui/group_ops.md#sui_group_ops">sui::group_ops</a>;
+<b>use</b> <a href="../../sui/hash.md#sui_hash">sui::hash</a>;
 <b>use</b> <a href="../../sui/hex.md#sui_hex">sui::hex</a>;
 <b>use</b> <a href="../../sui/object.md#sui_object">sui::object</a>;
 <b>use</b> <a href="../../sui/object_table.md#sui_object_table">sui::object_table</a>;
 <b>use</b> <a href="../../sui/package.md#sui_package">sui::package</a>;
 <b>use</b> <a href="../../sui/pay.md#sui_pay">sui::pay</a>;
 <b>use</b> <a href="../../sui/priority_queue.md#sui_priority_queue">sui::priority_queue</a>;
+<b>use</b> <a href="../../sui/sui.md#sui_sui">sui::sui</a>;
 <b>use</b> <a href="../../sui/table.md#sui_table">sui::table</a>;
 <b>use</b> <a href="../../sui/transfer.md#sui_transfer">sui::transfer</a>;
 <b>use</b> <a href="../../sui/tx_context.md#sui_tx_context">sui::tx_context</a>;
@@ -275,7 +282,7 @@ This function will be called only once in init.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, clock: &<a href="../../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, clock: &<a href="../../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -287,9 +294,11 @@ This function will be called only once in init.
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(
     self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
     clock: &Clock,
+    ctx: &<b>mut</b> TxContext,
 ) {
+    <b>let</b> package_id = self.package_id;
     <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(clock);
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(clock, package_id, ctx);
 }
 </code></pre>
 
@@ -1578,7 +1587,7 @@ Getter returning ids of the currently active validators.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWallet2PcMpcSecp256K1">dwallet_2pc_mpc_secp256k1::DWallet2PcMpcSecp256K1</a>, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1589,6 +1598,7 @@ Getter returning ids of the currently active validators.
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(
     self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
+    <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> DWallet2PcMpcSecp256K1,
     signature: vector&lt;u8&gt;,
     signers_bitmap: vector&lt;u8&gt;,
     message: vector&lt;u8&gt;,
@@ -1596,6 +1606,8 @@ Getter returning ids of the currently active validators.
 ) {
     <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
     self.<a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(signature, signers_bitmap, message, ctx);
+    <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.<a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(signature, signers_bitmap, message, ctx);
+    <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.set_active_committee(self.<a href="../ika_system/system.md#(ika_system=0x0)_system_active_committee">active_committee</a>());
 }
 </code></pre>
 
