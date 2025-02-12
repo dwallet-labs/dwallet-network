@@ -5,7 +5,6 @@ use clap::*;
 use colored::Colorize;
 use ika::ika_commands::IkaCommand;
 use ika_types::exit_main;
-use tokio::runtime::Builder;
 use tracing::debug;
 
 // Define the `GIT_REVISION` and `VERSION` consts

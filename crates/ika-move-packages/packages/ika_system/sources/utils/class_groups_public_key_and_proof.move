@@ -1,7 +1,7 @@
 module ika_system::class_groups_public_key_and_proof;
 
 use sui::table_vec;
-use sui::transfer;
+// use sui::transfer;
 
 const NUMBER_OF_KEYS: u64 = 13;
 

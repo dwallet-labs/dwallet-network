@@ -7,6 +7,27 @@ init
 ed25519_address
 	public fun
 	0x0::address
+ClassGroupsPublicKeyAndProofBuilder
+	public struct
+	0x0::class_groups_public_key_and_proof
+ClassGroupsPublicKeyAndProof
+	public struct
+	0x0::class_groups_public_key_and_proof
+empty
+	public fun
+	0x0::class_groups_public_key_and_proof
+add_public_key_and_proof
+	public fun
+	0x0::class_groups_public_key_and_proof
+finish
+	public fun
+	0x0::class_groups_public_key_and_proof
+drop
+	public fun
+	0x0::class_groups_public_key_and_proof
+destroy
+	public fun
+	0x0::class_groups_public_key_and_proof
 CommitteeMember
 	public struct
 	0x0::committee
@@ -196,11 +217,17 @@ CompletedECDSASignEvent
 RejectedECDSASignEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+SystemQuorumVerifiedEvent
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 SystemCheckpointInfoEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 MessageApproval
 	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+DWalletNetworkDecryptionKeyState
+	public enum
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 EncryptedUserSecretKeyShareState
 	public enum
@@ -215,6 +242,12 @@ ECDSASignState
 	public enum
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 create
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+create_dwallet_network_decryption_key
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+set_active_committee
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 get_dwallet
@@ -301,13 +334,19 @@ compare_ecdsa_partial_user_signatures_with_approvals
 respond_ecdsa_sign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-process_checkpoint_message
+process_checkpoint_message_by_quorum
 	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+process_checkpoint_message
+	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 DWallet2PcMpcSecp256K1
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1
 create
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1
+set_active_committee
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
 get_active_encryption_key
@@ -345,6 +384,9 @@ request_ecdsa_sign_with_partial_user_signatures
 	0x0::dwallet_2pc_mpc_secp256k1
 compare_ecdsa_partial_user_signatures_with_approvals
 	public fun
+	0x0::dwallet_2pc_mpc_secp256k1
+process_checkpoint_message_by_quorum
+	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
 migrate
 	public fun
@@ -771,6 +813,9 @@ update_candidate_class_groups_pubkey_and_proof_bytes
 	0x0::validator_inner_v1
 effectuate_staged_metadata
 	public(package) fun
+	0x0::validator_inner_v1
+update_class_groups_key_and_proof
+	fun
 	0x0::validator_inner_v1
 verify_proof_of_possession
 	public(package) fun

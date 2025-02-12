@@ -75,8 +75,8 @@ title: Module `(ika_system=0x0)::validator_set`
 
 
 <pre><code><b>use</b> (ika=0x0)::ika;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof">class_groups_public_key_and_proof</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/committee.md#(ika_system=0x0)_committee">committee</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field">extended_field</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool">staking_pool</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>;
@@ -107,6 +107,7 @@ title: Module `(ika_system=0x0)::validator_set`
 <b>use</b> <a href="../../sui/object_table.md#sui_object_table">sui::object_table</a>;
 <b>use</b> <a href="../../sui/priority_queue.md#sui_priority_queue">sui::priority_queue</a>;
 <b>use</b> <a href="../../sui/table.md#sui_table">sui::table</a>;
+<b>use</b> <a href="../../sui/table_vec.md#sui_table_vec">sui::table_vec</a>;
 <b>use</b> <a href="../../sui/transfer.md#sui_transfer">sui::transfer</a>;
 <b>use</b> <a href="../../sui/tx_context.md#sui_tx_context">sui::tx_context</a>;
 <b>use</b> <a href="../../sui/types.md#sui_types">sui::types</a>;
@@ -158,6 +159,12 @@ title: Module `(ika_system=0x0)::validator_set`
 <dd>
  The next list of active committee of validators.
  It will become the active_committee at the end of the epoch.
+</dd>
+<dt>
+<code>previous_committee: (ika_system=0x0)::<a href="../ika_system/committee.md#(ika_system=0x0)_committee_Committee">committee::Committee</a></code>
+</dt>
+<dd>
+ The current list of previous committee of validators.
 </dd>
 <dt>
 <code>pending_active_validators: vector&lt;<a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;</code>
@@ -560,6 +567,7 @@ The epoch value corresponds to the first epoch this change takes place.
         validators: object_table::new(ctx),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>: <a href="../ika_system/committee.md#(ika_system=0x0)_committee_empty">committee::empty</a>(),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>: option::none(),
+        previous_committee: <a href="../ika_system/committee.md#(ika_system=0x0)_committee_empty">committee::empty</a>(),
         pending_active_validators: vector[],
         at_risk_validators: vec_map::empty(),
         validator_report_records: vec_map::empty(),
@@ -609,7 +617,7 @@ The epoch value corresponds to the first epoch this change takes place.
 Called by <code>ika_system</code> to add a new validator candidate.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_request_add_validator_candidate">request_add_validator_candidate</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, payment_address: <b>address</b>, protocol_pubkey_bytes: vector&lt;u8&gt;, network_pubkey_bytes: vector&lt;u8&gt;, consensus_pubkey_bytes: vector&lt;u8&gt;, class_groups_pubkey_and_proof_bytes: vector&lt;u8&gt;, proof_of_possession_bytes: vector&lt;u8&gt;, name: vector&lt;u8&gt;, description: vector&lt;u8&gt;, image_url: vector&lt;u8&gt;, project_url: vector&lt;u8&gt;, network_address: vector&lt;u8&gt;, p2p_address: vector&lt;u8&gt;, consensus_address: vector&lt;u8&gt;, computation_price: u64, commission_rate: u16, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): ((ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_request_add_validator_candidate">request_add_validator_candidate</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, payment_address: <b>address</b>, protocol_pubkey_bytes: vector&lt;u8&gt;, network_pubkey_bytes: vector&lt;u8&gt;, consensus_pubkey_bytes: vector&lt;u8&gt;, class_groups_pubkey_and_proof_bytes: (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>, proof_of_possession_bytes: vector&lt;u8&gt;, name: vector&lt;u8&gt;, description: vector&lt;u8&gt;, image_url: vector&lt;u8&gt;, project_url: vector&lt;u8&gt;, network_address: vector&lt;u8&gt;, p2p_address: vector&lt;u8&gt;, consensus_address: vector&lt;u8&gt;, computation_price: u64, commission_rate: u16, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): ((ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
 </code></pre>
 
 
@@ -624,7 +632,7 @@ Called by <code>ika_system</code> to add a new validator candidate.
     protocol_pubkey_bytes: vector&lt;u8&gt;,
     network_pubkey_bytes: vector&lt;u8&gt;,
     consensus_pubkey_bytes: vector&lt;u8&gt;,
-    class_groups_pubkey_and_proof_bytes: vector&lt;u8&gt;,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector&lt;u8&gt;,
     name: vector&lt;u8&gt;,
     description: vector&lt;u8&gt;,
@@ -1116,6 +1124,7 @@ It does the following things:
     );
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_adjust_stake_and_computation_price">adjust_stake_and_computation_price</a>();
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_pending_stakes_and_withdraws">process_pending_stakes_and_withdraws</a>(new_epoch);
+    self.previous_committee = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>;
     // Change to the next <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> <a href="../ika_system/committee.md#(ika_system=0x0)_committee">committee</a>
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.extract();
     // Activate validators that were added during `<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_mid_epoch">process_mid_epoch</a>`
