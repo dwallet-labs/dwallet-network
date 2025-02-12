@@ -168,3 +168,31 @@ pub struct Validator {
     pub id: ObjectID,
     pub inner: Versioned,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct ClassGroupsPublicKeyAndProofBuilder;
+
+impl ClassGroupsPublicKeyAndProofBuilder {
+    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
+        StructTag {
+            address: ika_system_package_address,
+            name: ident_str!("ClassGroupsPublicKeyAndProofBuilder").to_owned(),
+            module: ident_str!("class_groups_public_key_and_proof").to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct ClassGroupsPublicKeyAndProof;
+
+impl ClassGroupsPublicKeyAndProof {
+    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
+        StructTag {
+            address: ika_system_package_address,
+            name: ident_str!("ClassGroupsPublicKeyAndProof").to_owned(),
+            module: ident_str!("class_groups_public_key_and_proof").to_owned(),
+            type_params: vec![],
+        }
+    }
+}

@@ -1,6 +1,7 @@
 module ika_system::class_groups_public_key_and_proof;
 
 use sui::table_vec;
+use sui::transfer;
 
 const NUMBER_OF_KEYS: u64 = 13;
 
@@ -17,10 +18,12 @@ public struct ClassGroupsPublicKeyAndProof has key, store {
 public fun empty(
     ctx: &mut TxContext,
 ): ClassGroupsPublicKeyAndProofBuilder {
-    ClassGroupsPublicKeyAndProofBuilder { 
+    let builder = ClassGroupsPublicKeyAndProofBuilder { 
         id: object::new(ctx),
         public_keys_and_proofs:  table_vec::empty(ctx),
-    }
+    };
+    // transfer::transfer(builder, ctx.sender());
+    builder 
 }
 
 public fun add_public_key_and_proof(
