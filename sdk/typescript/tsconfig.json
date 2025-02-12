@@ -29,8 +29,8 @@
 		"resolveJsonModule": true,
 		"composite": true,
 		"module": "CommonJS",
-		"outDir": "dist/cjs",
+		"outDir": "./dist",
 		"rootDir": "src",
-		"isolatedModules": true
+		"isolatedModules": true,
 	}
 }
