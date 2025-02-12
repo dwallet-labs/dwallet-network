@@ -132,6 +132,7 @@ impl ValidatorInitializationMetadata {
 pub struct ValidatorInitializationConfigBuilder {
     protocol_key_pair: Option<AuthorityKeyPair>,
     account_key_pair: Option<AccountKeyPair>,
+    class_groups_key_pair_and_proof: Option<ClassGroupsKeyPairAndProof>,
     ip: Option<String>,
     computation_price: Option<u64>,
     /// If set, the validator will use deterministic addresses based on the port offset.
@@ -153,6 +154,14 @@ impl ValidatorInitializationConfigBuilder {
 
     pub fn with_account_key_pair(mut self, key_pair: AccountKeyPair) -> Self {
         self.account_key_pair = Some(key_pair);
+        self
+    }
+
+    pub fn with_class_groups_key_pair_and_proof(
+        mut self,
+        key_pair: ClassGroupsKeyPairAndProof,
+    ) -> Self {
+        self.class_groups_key_pair_and_proof = Some(key_pair);
         self
     }
 
@@ -192,15 +201,20 @@ impl ValidatorInitializationConfigBuilder {
         let computation_price = self
             .computation_price
             .unwrap_or(DEFAULT_VALIDATOR_COMPUTATION_PRICE);
-        // Safe to unwrap because the key is 32 bytes.
-        let class_groups_seed: [u8; 32] = protocol_key_pair
-            .copy()
-            .private()
-            .as_bytes()
-            .try_into()
-            .unwrap();
-        let class_groups_key_pair_and_proof =
-            generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
+        let class_groups_key_pair_and_proof = self
+            .class_groups_key_pair_and_proof
+            .clone()
+            .unwrap_or_else(|| {
+                generate_class_groups_keypair_and_proof_from_seed(
+                    protocol_key_pair
+                        .copy()
+                        .private()
+                        .as_bytes()
+                        .try_into()
+                        // Safe to unwrap because the key is 32 bytes.
+                        .unwrap(),
+                )
+            });
 
         let (worker_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
             (get_key_pair_from_rng(rng).1, get_key_pair_from_rng(rng).1);

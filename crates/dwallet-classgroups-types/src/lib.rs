@@ -1,28 +1,17 @@
-#[cfg(feature = "mock-class-groups")]
-pub mod mock_class_groups;
-
-#[cfg(not(feature = "mock-class-groups"))]
+use class_groups::KnowledgeOfDiscreteLogUCProof;
 use class_groups::{
     construct_knowledge_of_decryption_key_public_parameters_per_crt_prime,
     construct_setup_parameters_per_crt_prime, generate_keypairs_per_crt_prime,
     generate_knowledge_of_decryption_key_proofs_per_crt_prime, CompactIbqf,
-    KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
-};
-
-use class_groups::{
-    CompactIbqf, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    MAX_PRIMES,
+    CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
 };
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-#[cfg(feature = "mock-class-groups")]
-use mock_class_groups::ClassGroupsProof;
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
 
-#[cfg(not(feature = "mock-class-groups"))]
 pub type ClassGroupsProof = KnowledgeOfDiscreteLogUCProof;
 pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
 pub type ClassGroupsDecryptionKey = [Uint<{ CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS }>; MAX_PRIMES];
@@ -34,6 +23,7 @@ type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 pub type DKGDecentralizedOutput =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput;
 
+pub const NUM_OF_CLASS_GROUPS_KEYS: usize = MAX_PRIMES;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClassGroupsKeyPairAndProof {
     #[serde(with = "group::helpers::const_generic_array_serialization")]
@@ -73,48 +63,25 @@ impl ClassGroupsKeyPairAndProof {
 pub fn generate_class_groups_keypair_and_proof_from_seed(
     seed: [u8; 32],
 ) -> ClassGroupsKeyPairAndProof {
-    #[cfg(feature = "mock-class-groups")]
-    {
-        let decryption_key: [Uint<CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS>; 13] =
-            std::array::from_fn(|_| Uint::<CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS>::default());
-
-        let encryption_key_and_proof: [(
-            CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
-            [u8; 5],
-        ); 13] = std::array::from_fn(|_| {
-            (
-                CompactIbqf::<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>::default(),
-                [1, 2, 3, 4, 5],
-            )
-        });
-
-        return ClassGroupsKeyPairAndProof::new(decryption_key, encryption_key_and_proof);
-    }
-
-    #[cfg(not(feature = "mock-class-groups"))]
-    {
-        let setup_parameters_per_crt_prime =
-            construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER)
-                .unwrap();
-        let language_public_parameters_per_crt_prime =
-            construct_knowledge_of_decryption_key_public_parameters_per_crt_prime(
-                setup_parameters_per_crt_prime.each_ref(),
-            )
-            .unwrap();
-
-        let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
-        let decryption_key =
-            generate_keypairs_per_crt_prime(setup_parameters_per_crt_prime.clone(), &mut rng)
-                .unwrap();
-
-        let encryption_key_and_proof = generate_knowledge_of_decryption_key_proofs_per_crt_prime(
-            language_public_parameters_per_crt_prime.clone(),
-            decryption_key,
+    let setup_parameters_per_crt_prime =
+        construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER).unwrap();
+    let language_public_parameters_per_crt_prime =
+        construct_knowledge_of_decryption_key_public_parameters_per_crt_prime(
+            setup_parameters_per_crt_prime.each_ref(),
         )
         .unwrap();
 
-        ClassGroupsKeyPairAndProof::new(decryption_key, encryption_key_and_proof)
-    }
+    let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
+    let decryption_key =
+        generate_keypairs_per_crt_prime(setup_parameters_per_crt_prime.clone(), &mut rng).unwrap();
+
+    let encryption_key_and_proof = generate_knowledge_of_decryption_key_proofs_per_crt_prime(
+        language_public_parameters_per_crt_prime.clone(),
+        decryption_key,
+    )
+    .unwrap();
+
+    ClassGroupsKeyPairAndProof::new(decryption_key, encryption_key_and_proof)
 }
 
 /// Writes a class group key pair and proof, encoded in Base64,
@@ -160,4 +127,13 @@ pub fn public_keys_from_dkg_output(
         decentralized_public_share: bcs::to_bytes(&value.public_key_share)?,
         public_key: bcs::to_bytes(&value.public_key)?,
     })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SingleClassGroupsKeyPairAndPRoof {
+    pub encryption_key_and_proof: (
+        CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
+        KnowledgeOfDiscreteLogUCProof,
+    ),
+    pub decryption_key: Uint<{ CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
 }
