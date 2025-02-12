@@ -13,7 +13,11 @@ title: Module `(ika_system=0x0)::init`
 
 
 <pre><code><b>use</b> (ika=0x0)::ika;
+<b>use</b> (ika_system=0x0)::<b>address</b>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/committee.md#(ika_system=0x0)_committee">committee</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner">dwallet_2pc_mpc_secp256k1_inner</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing">dwallet_pricing</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>;
@@ -43,14 +47,17 @@ title: Module `(ika_system=0x0)::init`
 <b>use</b> <a href="../../sui/deny_list.md#sui_deny_list">sui::deny_list</a>;
 <b>use</b> <a href="../../sui/dynamic_field.md#sui_dynamic_field">sui::dynamic_field</a>;
 <b>use</b> <a href="../../sui/dynamic_object_field.md#sui_dynamic_object_field">sui::dynamic_object_field</a>;
+<b>use</b> <a href="../../sui/ed25519.md#sui_ed25519">sui::ed25519</a>;
 <b>use</b> <a href="../../sui/event.md#sui_event">sui::event</a>;
 <b>use</b> <a href="../../sui/group_ops.md#sui_group_ops">sui::group_ops</a>;
+<b>use</b> <a href="../../sui/hash.md#sui_hash">sui::hash</a>;
 <b>use</b> <a href="../../sui/hex.md#sui_hex">sui::hex</a>;
 <b>use</b> <a href="../../sui/object.md#sui_object">sui::object</a>;
 <b>use</b> <a href="../../sui/object_table.md#sui_object_table">sui::object_table</a>;
 <b>use</b> <a href="../../sui/package.md#sui_package">sui::package</a>;
 <b>use</b> <a href="../../sui/pay.md#sui_pay">sui::pay</a>;
 <b>use</b> <a href="../../sui/priority_queue.md#sui_priority_queue">sui::priority_queue</a>;
+<b>use</b> <a href="../../sui/sui.md#sui_sui">sui::sui</a>;
 <b>use</b> <a href="../../sui/table.md#sui_table">sui::table</a>;
 <b>use</b> <a href="../../sui/transfer.md#sui_transfer">sui::transfer</a>;
 <b>use</b> <a href="../../sui/tx_context.md#sui_tx_context">sui::tx_context</a>;
