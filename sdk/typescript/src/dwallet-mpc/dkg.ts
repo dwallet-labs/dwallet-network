@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Transaction } from '@mysten/sui/transactions';
 
-import {Config, StartSessionEvent} from './globals.js';
 import {
+	Config,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
+	StartSessionEvent,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 
