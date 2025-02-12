@@ -36,9 +36,7 @@ interface IKASystemStateInner {
  */
 interface SharedObjectOwner {
 	Shared: {
-		/**
-		 * The object version at the time it became shared.
-		 */
+		// The object version when it became shared.
 		initial_shared_version: number;
 	};
 }
