@@ -13,20 +13,14 @@ import {
 	SUI_PACKAGE_ID,
 } from './globals.js';
 
-interface SuiInnerSystemState {
-	fields: {
-		value: {
-			fields: {
-				dwallet_2pc_mpc_secp256k1_id: string;
-			};
-		};
-	}
-}
-
+/**
+ * Represents the Move `SystemInnerV1` struct.
+ */
 interface IKASystemStateInner {
 	fields: {
 		value: {
 			fields: {
+				dwallet_2pc_mpc_secp256k1_id: string;
 				dwallet_network_decryption_key: {
 					fields: {
 						dwallet_network_decryption_key_id: string;
@@ -37,8 +31,14 @@ interface IKASystemStateInner {
 	};
 }
 
+/**
+ * Represents a Move shared object owner.
+ */
 interface SharedObjectOwner {
 	Shared: {
+		/**
+		 * The object version at the time it became shared.
+		 */
 		initial_shared_version: number;
 	};
 }
@@ -89,8 +89,8 @@ export async function launchDKGFirstRound(c: Config) {
 	// TODO (#631): Use the session ID to fetch the DKG first round completion event.
 }
 
-function isSuiInnerSystemState(obj: any): obj is SuiInnerSystemState {
-	return obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_id !== undefined;
+function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
+	return obj?.fields?.value?.fields?.dwallet_network_decryption_key !== undefined;
 }
 
 async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
@@ -101,14 +101,10 @@ async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 		parentId: IKA_SYSTEM_OBJ_ID,
 		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
 	});
-	if (!isSuiInnerSystemState(innerSystemState.data?.content)) {
+	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
 		throw new Error('Invalid inner system state');
 	}
 	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_secp256k1_id;
-}
-
-function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
-	return obj?.fields?.value?.fields?.dwallet_network_decryption_key !== undefined;
 }
 
 async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
