@@ -1,6 +1,5 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';

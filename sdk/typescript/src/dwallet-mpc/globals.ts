@@ -1,8 +1,14 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Buffer } from 'buffer';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+
+// This data changes every time the IKA contracts are being redeployed.
+export const DWALLET_ECDSAK1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
+export const DWALLET_NETWORK_VERSION = 0;
+
+export const SUI_PACKAGE_ID = '0x2';
 
 // Mocked protocol parameters used for testing purposes in non-production environments.
 export const mockedProtocolPublicParameters = Uint8Array.from(
@@ -41,9 +47,3 @@ export function delay(ms: number) {
 export interface StartSessionEvent {
 	session_id: string;
 }
-
-// This data changes every time the IKA contracts are being redeployed.
-export const DWALLET_ECDSAK1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
-export const DWALLET_NETWORK_VERSION = 0;
-
-export const SUI_PACKAGE_ID = '0x2';
