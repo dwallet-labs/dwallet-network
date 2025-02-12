@@ -59,6 +59,20 @@ export async function launchDKGFirstRound(c: Config) {
 	// TODO (#631): Use the session ID to fetch the DKG first round completion event.
 }
 
+interface SuiMoveInnerDWalletNetworkState {
+	fields: {
+		value: {
+			fields: {
+				dwallet_2pc_mpc_secp256k1_id: string;
+			};
+		};
+	}
+}
+
+function isSuiMoveInnerDWalletNetworkState(obj: any): obj is SuiMoveInnerDWalletNetworkState {
+	return obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_id !== undefined;
+}
+
 async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 	const dynamicFields = await c.client.getDynamicFields({
 		parentId: IKA_SYSTEM_OBJ_ID,
@@ -67,8 +81,10 @@ async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 		parentId: IKA_SYSTEM_OBJ_ID,
 		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
 	});
-	// @ts-ignore
-	return innerSystemState.data.content.fields.value.fields.dwallet_2pc_mpc_secp256k1_id;
+	if (!isSuiMoveInnerDWalletNetworkState(innerSystemState.data?.content)) {
+		throw new Error('Invalid inner system state');
+	}
+	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_secp256k1_id;
 }
 
 async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
@@ -105,5 +121,5 @@ async function getInitialSharedVersion(c: Config, objectID: string): Promise<num
 	if (!owner || !isSharedObjectOwner(owner)) {
 		throw new Error('Object is not shared');
 	}
-	return owner.Shared?.initial_shared_version
+	return owner.Shared?.initial_shared_version;
 }
