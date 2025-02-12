@@ -1,8 +1,8 @@
-// Copyright (c) dWallet Labs, Inc.
+// Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Transaction } from '@mysten/sui/transactions';
 
-import {Config, StartSessionEvent} from './globals.js';
+import type { Config, StartSessionEvent } from './globals.js';
 import {
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,

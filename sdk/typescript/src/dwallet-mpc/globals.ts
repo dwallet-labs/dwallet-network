@@ -47,5 +47,3 @@ export const DWALLET_ECDSAK1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
 export const DWALLET_NETWORK_VERSION = 0;
 
 export const SUI_PACKAGE_ID = '0x2';
-
-export const IKA_CONFIG_FILE_PATH: string = ;
