@@ -6,5 +6,4 @@
 		"rootDir": "src",
 		"isolatedModules": true
 	},
-	"references": [{ "path": "../bcs" }]
 }
