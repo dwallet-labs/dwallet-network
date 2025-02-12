@@ -17,11 +17,9 @@ serde_json.workspace = true
 serde_derive = "1.0.217"
 ika-types.workspace = true
 twopc_mpc.workspace = true
+flate2 = "1.0.35"
 
 
 
 [lints]
 workspace = true
-
-[features]
-mock-class-groups = []
