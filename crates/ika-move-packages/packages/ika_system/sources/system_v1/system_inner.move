@@ -12,6 +12,8 @@ use ika_system::validator_set::{ValidatorSet};
 use ika_system::committee::{Committee};
 use ika_system::protocol_cap::ProtocolCap;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
+use ika_system::dwallet_2pc_mpc_secp256k1;
+use ika_system::dwallet_2pc_mpc_secp256k1_inner::{DWalletNetworkrkDecryptionKeyCap};
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::coin::Coin;
@@ -85,6 +87,10 @@ public struct SystemInnerV1 has store {
     computation_reward: Balance<IKA>,
     /// List of authorized protocol cap ids.
     authorized_protocol_cap_ids: vector<ID>, 
+    // TODO: maybe change that later
+    dwallet_2pc_mpc_secp256k1_id: Option<ID>,
+    // TODO: dummy code, change that later
+    dwallet_network_decryption_key: Option<DWalletNetworkrkDecryptionKeyCap>,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -172,6 +178,8 @@ public(package) fun create(
         previous_epoch_last_checkpoint_sequence_number: 0,
         computation_reward: balance::zero(),
         authorized_protocol_cap_ids,
+        dwallet_2pc_mpc_secp256k1_id: option::none(),
+        dwallet_network_decryption_key: option::none(),
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -216,11 +224,17 @@ public(package) fun create_system_parameters(
 public(package) fun initialize(
     self: &mut SystemInnerV1,    
     clock: &Clock,
+    package_id: ID,
+    ctx: &mut TxContext,
 ) {
     let now = clock.timestamp_ms();
     assert!(self.epoch == 0 && now >= self.epoch_start_timestamp_ms, ECannotInitialize);
     assert!(self.active_committee().members().is_empty(), ECannotInitialize);
     self.validators.initialize();
+    let pricing = ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
+    let (dwallet_2pc_mpc_secp256k1_id, cap) = dwallet_2pc_mpc_secp256k1::create(package_id, self.epoch, self.active_committee(), pricing, ctx);
+    self.dwallet_2pc_mpc_secp256k1_id.fill(dwallet_2pc_mpc_secp256k1_id);
+    self.dwallet_network_decryption_key.fill(cap);
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated

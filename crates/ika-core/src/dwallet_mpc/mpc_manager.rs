@@ -226,7 +226,9 @@ impl DWalletMPCManager {
             .status()?;
 
         let (ready_to_advance, malicious_parties) = self.get_ready_to_advance_sessions()?;
-        self.flag_parties_as_malicious(&malicious_parties)?;
+        if !malicious_parties.is_empty() {
+            self.flag_parties_as_malicious(&malicious_parties)?;
+        }
         self.cryptographic_computations_orchestrator
             .insert_ready_sessions(ready_to_advance);
         Ok(())

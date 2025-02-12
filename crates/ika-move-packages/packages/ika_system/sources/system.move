@@ -54,6 +54,7 @@ use ika_system::validator_set::ValidatorSet;
 use ika_system::committee::Committee;
 use ika_system::protocol_cap::ProtocolCap;
 use ika_system::class_groups_public_key_and_proof::{ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder};
+use ika_system::dwallet_2pc_mpc_secp256k1::{DWallet2PcMpcSecp256K1};
 use sui::balance::Balance;
 use sui::coin::Coin;
 use sui::dynamic_field;
@@ -114,9 +115,11 @@ public(package) fun create(
 public fun initialize(
     self: &mut System,
     clock: &Clock,
+    ctx: &mut TxContext,
 ) {
+    let package_id = self.package_id;
     let self = self.inner_mut();
-    self.initialize(clock);
+    self.initialize(clock, package_id, ctx);
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accruing delegated
@@ -567,7 +570,7 @@ public entry fun update_validator_next_epoch_class_groups_pubkey_and_proof_bytes
     self.update_validator_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
 }
 
-/// Update candidate validator's public key of class groups key and its associated proof. 
+/// Update candidate validator's public key of class groups key and its associated proof.
 public entry fun update_candidate_validator_class_groups_pubkey_and_proof_bytes(
     self: &mut System,
     class_groups_pubkey_and_proof_builder: ClassGroupsPublicKeyAndProofBuilder,
@@ -624,8 +627,10 @@ public fun process_checkpoint_message_by_cap(
     self.process_checkpoint_message_by_cap(cap, message, ctx);
 }
 
+// TODO: split dwallet_2pc_mpc_secp256k1 to its own checkpoint
 public fun process_checkpoint_message_by_quorum(
     self: &mut System,
+    dwallet_2pc_mpc_secp256k1: &mut DWallet2PcMpcSecp256K1,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
@@ -633,6 +638,8 @@ public fun process_checkpoint_message_by_quorum(
 ) {
     let self = self.inner_mut();
     self.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+    dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+    dwallet_2pc_mpc_secp256k1.set_active_committee(self.active_committee());
 }
 
 // === Upgrades ===

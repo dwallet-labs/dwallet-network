@@ -36,6 +36,8 @@ public struct ValidatorSet has store {
     /// The next list of active committee of validators.
     /// It will become the active_committee at the end of the epoch.
     next_epoch_active_committee: Option<Committee>,
+    /// The current list of previous committee of validators.
+    previous_committee: Committee,
     /// The next list of peding active validators to be next_epoch_active_committee.
     /// It will start from the last next_epoch_active_committee and will be
     /// process between middle of the epochs and will be finlize
@@ -135,6 +137,7 @@ public(package) fun new(ctx: &mut TxContext): ValidatorSet {
         validators: object_table::new(ctx),
         active_committee: committee::empty(),
         next_epoch_active_committee: option::none(),
+        previous_committee: committee::empty(),
         pending_active_validators: vector[],
         at_risk_validators: vec_map::empty(),
         validator_report_records: vec_map::empty(),
@@ -468,6 +471,8 @@ public(package) fun advance_epoch(
 
     self.process_pending_stakes_and_withdraws(new_epoch);
 
+    self.previous_committee = self.active_committee;
+    
     // Change to the next validator committee
     self.active_committee = self.next_epoch_active_committee.extract();
 
