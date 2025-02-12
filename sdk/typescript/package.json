@@ -29,7 +29,7 @@
 		"eslint:check": "eslint --max-warnings=0 .",
 		"eslint:fix": "pnpm run eslint:check --fix",
 		"lint": "pnpm run eslint:check && pnpm run prettier:check",
-		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix",
+		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
 	},
 	"bugs": {
 		"url": "https://github.com/MystenLabs/sui/issues/new"
@@ -51,5 +51,6 @@
 	},
 	"dependencies": {
 		"@mysten/sui": "^1.21.2",
+		"svelte": "^5.19.10"
 	}
 }

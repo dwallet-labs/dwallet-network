@@ -1,5 +1,4 @@
 {
-	"extends": "../build-scripts/tsconfig.shared.json",
 	"include": ["src", "types"],
 	"compilerOptions": {
 		"module": "CommonJS",
