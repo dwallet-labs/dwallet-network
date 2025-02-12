@@ -28,7 +28,7 @@ use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
-use dwallet_classgroups_types::{public_keys_from_dkg_output, DWalletPublicKeys};
+use serde::{Deserialize, Serialize};
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -41,6 +41,29 @@ type EncryptionOfSecretKeyShareAndPublicKeyShare =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareAndPublicKeyShare;
 pub type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
 <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart;
+
+/// Contains the public keys of the DWallet.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
+pub struct DWalletPublicKeys {
+    pub centralized_public_share: Vec<u8>,
+    pub decentralized_public_share: Vec<u8>,
+    pub public_key: Vec<u8>,
+}
+pub type DKGDecentralizedOutput =
+    <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput;
+
+/// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
+// Can't use the TryFrom trait as it leads to conflicting implementations.
+// Must use `anyhow::Result`, because this function is being used also in the centralized party crate.
+pub fn public_keys_from_dkg_output(
+    value: DKGDecentralizedOutput,
+) -> anyhow::Result<DWalletPublicKeys> {
+    Ok(DWalletPublicKeys {
+        centralized_public_share: bcs::to_bytes(&value.centralized_party_public_key_share)?,
+        decentralized_public_share: bcs::to_bytes(&value.public_key_share)?,
+        public_key: bcs::to_bytes(&value.public_key)?,
+    })
+}
 
 /// Supported hash functions for message digest.
 #[derive(Clone, Debug)]
@@ -400,6 +423,6 @@ fn cg_secp256k1_public_key_share_from_secret_share(
 }
 
 /// Derives [`DWalletPublicKeys`] from the given dwallet DKG output.
-pub fn public_keys_from_dkg_output(output: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+pub fn public_keys_from_dwallet_output(output: Vec<u8>) -> anyhow::Result<Vec<u8>> {
     bcs::to_bytes(&public_keys_from_dkg_output(bcs::from_bytes(&output)?)?).map_err(Into::into)
 }
