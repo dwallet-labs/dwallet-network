@@ -84,6 +84,16 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		.dwallet_network_decryption_key_id;
 }
 
+interface SharedObjectOwner {
+	Shared: {
+		initial_shared_version: number;
+	};
+}
+
+function isSharedObjectOwner(obj: any): obj is SharedObjectOwner {
+	return obj?.Shared?.initial_shared_version !== undefined;
+}
+
 async function getInitialSharedVersion(c: Config, objectID: string): Promise<number> {
 	let obj = await c.client.getObject({
 		id: objectID,
@@ -91,6 +101,9 @@ async function getInitialSharedVersion(c: Config, objectID: string): Promise<num
 			showOwner: true,
 		},
 	});
-	// @ts-ignore
-	return obj.data.owner.Shared.initial_shared_version;
+	let owner = obj.data?.owner;
+	if (!owner || !isSharedObjectOwner(owner)) {
+		throw new Error('Object is not shared');
+	}
+	return owner.Shared?.initial_shared_version
 }
