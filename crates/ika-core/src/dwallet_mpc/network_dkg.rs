@@ -78,11 +78,6 @@ impl DwalletMPCNetworkKeyVersions {
             );
         }
 
-        #[cfg(feature = "mock-class-groups")]
-        // This is used only for development purposes, the key is valid, so it is safe to unwrap.
-        let class_groups_decryption_key =
-            dwallet_classgroups_types::mock_class_groups::mock_cg_private_key().unwrap();
-
         let network_mpc_keys = epoch_store
             .load_decryption_key_shares_from_system_state()
             .unwrap_or(HashMap::new());
@@ -547,19 +542,6 @@ fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
     }
 }
 
-#[cfg(feature = "mock-class-groups")]
-fn encryption_keys_and_proofs_from_validator_data(
-    _: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
-) -> DwalletMPCResult<
-    HashMap<
-        PartyID,
-        dwallet_classgroups_types::mock_class_groups::CGEncryptionKeyAndProofForMockFromFile,
-    >,
-> {
-    dwallet_classgroups_types::mock_class_groups::mock_cg_encryption_keys_and_proofs()
-}
-
-#[cfg(not(feature = "mock-class-groups"))]
 fn encryption_keys_and_proofs_from_validator_data(
     encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
 ) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {

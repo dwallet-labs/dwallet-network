@@ -45,9 +45,6 @@ use sui_types::transaction::{
 use sui_types::{
     Identifier, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION, SUI_FRAMEWORK_PACKAGE_ID,
 };
-use std::io::prelude::*;
-use flate2::Compression;
-use flate2::write::ZlibEncoder;
 
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
@@ -547,10 +544,26 @@ async fn request_add_validator_candidate(
 ) -> Result<(ObjectID, ObjectID), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
-    let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
-    e.write(&validator_initialization_metadata
-        .class_groups_public_key_and_proof)?;
-    let compressed_bytes_class_groups_public_key_and_proof = e.finish()?;
+    // let class_groups_builder = ptb.programmable_move_call(
+    //     ika_system_package_id,
+    //     ident_str!("class_groups_public_key_and_proof").into(),
+    //     ident_str!("empty").into(),
+    //     vec![],
+    //     vec![],
+    // );
+    // // let _ = validator_initialization_metadata.class_groups_public_key_and_proof.iter().map( |key_proof_pair| {
+    // // let key_proof_pair_bytes = bcs::to_bytes(&key_proof_pair)?;
+    // ptb.move_call(
+    //     ika_system_package_id,
+    //     ident_str!("class_groups_public_key_and_proof").into(),
+    //     ident_str!("add_public_key_and_proof").into(),
+    //     vec![],
+    //     vec![
+    //         // CallArg::Object(ObjectArg::ImmOrOwnedObject(class_groups_builder.)),
+    //         // CallArg::Pure(key_proof_pair_bytes),
+    //     ],
+    // );
+    // // }).collect();
 
     ptb.move_call(
         ika_system_package_id,
@@ -581,9 +594,9 @@ async fn request_add_validator_candidate(
                     .as_bytes()
                     .to_vec(),
             )?),
-            CallArg::Pure(bcs::to_bytes(
-                &compressed_bytes_class_groups_public_key_and_proof,
-            )?),
+            // CallArg::Pure(bcs::to_bytes(
+            //     &compressed_bytes_class_groups_public_key_and_proof,
+            // )?),
             CallArg::Pure(bcs::to_bytes(
                 &validator_initialization_metadata
                     .proof_of_possession
