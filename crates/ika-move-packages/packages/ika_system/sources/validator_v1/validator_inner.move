@@ -15,6 +15,7 @@ use ika_system::staked_ika::{
     FungibleStakedIka
 };
 use ika_system::validator_cap::{Self, ValidatorCap, ValidatorOperationCap };
+use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use std::string::String;
 use sui::bag::{Self, Bag};
 use sui::balance::Balance;
@@ -22,6 +23,7 @@ use sui::event;
 use sui::url::{Self, Url};
 use sui::{bls12381::{UncompressedG1, g1_from_bytes, g1_to_uncompressed_g1, bls12381_min_pk_verify}, group_ops::Element};
 use sui::bcs;
+use sui::table_vec::TableVec;
 
 #[error]
 const EInvalidProofOfPossession: vector<u8> = b"Invalid proof_of_possession_bytes field in ValidatorMetadata.";
@@ -34,6 +36,9 @@ const EMetadataInvalidNetworkPubkey: vector<u8> = b"Invalid network_pubkey_bytes
 
 #[error]
 const EMetadataInvalidConsensusPubkey: vector<u8> = b"Invalid consensus_pubkey_bytes field in ValidatorMetadata.";
+
+#[error]
+const EMetadataInvalidClassGroupsPubkey: vector<u8> = b"Invalid class_groups_pubkey_and_proof_bytes field in ValidatorMetadata.";
 
 #[error]
 const EMetadataInvalidNetworkAddress: vector<u8> = b"Invalid network_address field in ValidatorMetadata.";
@@ -83,6 +88,7 @@ const DEFAULT_EPOCH_ID: u64 = 0;
 
 const BLS_KEY_LEN: u64 = 48;
 const ED25519_KEY_LEN: u64 = 32;
+const CLASS_GROUPS_BYTES_LEN: u64 = 241722; // Todo (#): change the way we implement this.
 
 public struct ValidatorMetadata has store {
     /// The address to receive the payments
@@ -100,6 +106,9 @@ public struct ValidatorMetadata has store {
     network_pubkey_bytes: vector<u8>,
     /// The public key bytes correstponding to the consensus
     consensus_pubkey_bytes: vector<u8>,
+    /// The validator's Class Groups public key and its associated proof.  
+    /// This key is used for the network DKG process and for resharing the network MPC key.
+    class_groups_pubkey_and_proof_bytes: TableVec<vector<u8>>,
 
     /// A unique human-readable name of this validator.
     name: String,
@@ -118,6 +127,7 @@ public struct ValidatorMetadata has store {
     next_epoch_proof_of_possession_bytes: Option<vector<u8>>,
     next_epoch_network_pubkey_bytes: Option<vector<u8>>,
     next_epoch_consensus_pubkey_bytes: Option<vector<u8>>,
+    next_epoch_class_groups_pubkey_and_proof_bytes: Option<ClassGroupsPublicKeyAndProof>,
     next_epoch_network_address: Option<String>,
     next_epoch_p2p_address: Option<String>,
     next_epoch_consensus_address: Option<String>,
@@ -187,6 +197,7 @@ public(package) fun create_metadata(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
     name: String,
     description: String,
@@ -199,6 +210,7 @@ public(package) fun create_metadata(
     ctx: &TxContext,
 ): ValidatorMetadata {
     let protocol_pubkey = g1_to_uncompressed_g1(&g1_from_bytes(&protocol_pubkey_bytes));
+    let class_groups_pubkey_and_proof_bytes = class_groups_pubkey_and_proof_bytes.destroy();
     let metadata = ValidatorMetadata {
         payment_address,
         proof_of_possession_sender: ctx.sender(),
@@ -206,6 +218,7 @@ public(package) fun create_metadata(
         protocol_pubkey,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
+        class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
         name,
         description,
@@ -217,6 +230,7 @@ public(package) fun create_metadata(
         next_epoch_protocol_pubkey_bytes: option::none(),
         next_epoch_network_pubkey_bytes: option::none(),
         next_epoch_consensus_pubkey_bytes: option::none(),
+        next_epoch_class_groups_pubkey_and_proof_bytes: option::none(),
         next_epoch_proof_of_possession_bytes: option::none(),
         next_epoch_network_address: option::none(),
         next_epoch_p2p_address: option::none(),
@@ -234,6 +248,7 @@ public(package) fun create(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
     name: vector<u8>,
     description: vector<u8>,
@@ -254,6 +269,7 @@ public(package) fun create(
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
+        class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
         name.to_ascii_string().to_string(),
         description.to_ascii_string().to_string(),
@@ -514,6 +530,10 @@ public fun consensus_pubkey_bytes(self: &ValidatorInnerV1): &vector<u8> {
     &self.metadata.consensus_pubkey_bytes
 }
 
+public fun class_groups_pubkey_and_proof_bytes(self: &ValidatorInnerV1): &TableVec<vector<u8>> {
+    &self.metadata.class_groups_pubkey_and_proof_bytes
+}
+
 public fun next_epoch_network_address(self: &ValidatorInnerV1): &Option<String> {
     &self.metadata.next_epoch_network_address
 }
@@ -540,6 +560,10 @@ public fun next_epoch_network_pubkey_bytes(self: &ValidatorInnerV1): &Option<vec
 
 public fun next_epoch_consensus_pubkey_bytes(self: &ValidatorInnerV1): &Option<vector<u8>> {
     &self.metadata.next_epoch_consensus_pubkey_bytes
+}
+
+public fun next_epoch_class_groups_pubkey_and_proof_bytes(self: &ValidatorInnerV1): &Option<ClassGroupsPublicKeyAndProof> {
+    &self.metadata.next_epoch_class_groups_pubkey_and_proof_bytes
 }
 
 public fun operation_cap_id(self: &ValidatorInnerV1): &ID {
@@ -586,6 +610,7 @@ public fun is_duplicate(self: &ValidatorInnerV1, other: &ValidatorInnerV1): bool
             || self.metadata.network_pubkey_bytes == other.metadata.consensus_pubkey_bytes
             || self.metadata.consensus_pubkey_bytes == other.metadata.consensus_pubkey_bytes
             || self.metadata.consensus_pubkey_bytes == other.metadata.network_pubkey_bytes
+            // || self.metadata.class_groups_pubkey_and_proof_bytes == other.metadata.class_groups_pubkey_and_proof_bytes
             // All next epoch parameters.
             || is_equal_some(&self.metadata.next_epoch_network_address, &other.metadata.next_epoch_network_address)
             || is_equal_some(&self.metadata.next_epoch_p2p_address, &other.metadata.next_epoch_p2p_address)
@@ -792,6 +817,20 @@ public(package) fun update_next_epoch_consensus_pubkey_bytes(
     validate_metadata(&self.metadata);
 }
 
+/// Update class groups public key and its associated proof of this validator, taking effects from next epoch
+public(package) fun update_next_epoch_class_groups_pubkey_and_proof_bytes(
+    self: &mut ValidatorInnerV1,
+    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof
+) {
+    assert!(!is_inactive(self), EInactiveValidator);
+
+    let old_value = self.metadata.next_epoch_class_groups_pubkey_and_proof_bytes.swap_or_fill(class_groups_pubkey_and_proof);
+    old_value.destroy!(|v| {
+        v.drop();
+    });
+    validate_metadata(&self.metadata);
+}
+
 /// Update consensus public key of this candidate validator
 public(package) fun update_candidate_consensus_pubkey_bytes(
     self: &mut ValidatorInnerV1,
@@ -799,6 +838,16 @@ public(package) fun update_candidate_consensus_pubkey_bytes(
 ) {
     assert!(is_candidate(self), ENotValidatorCandidate);
     self.metadata.consensus_pubkey_bytes = consensus_pubkey_bytes;
+    validate_metadata(&self.metadata);
+}
+
+/// Update class groups public key and its associated proof of this candidate validator
+public(package) fun update_candidate_class_groups_pubkey_and_proof_bytes(
+    self: &mut ValidatorInnerV1,
+    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
+) {
+    assert!(is_candidate(self), ENotValidatorCandidate);
+    update_class_groups_key_and_proof(&mut self.metadata.class_groups_pubkey_and_proof_bytes, class_groups_pubkey_and_proof);
     validate_metadata(&self.metadata);
 }
 
@@ -840,6 +889,24 @@ public(package) fun effectuate_staged_metadata(self: &mut ValidatorInnerV1) {
         self.metadata.consensus_pubkey_bytes = self.metadata.next_epoch_consensus_pubkey_bytes.extract();
         self.metadata.next_epoch_consensus_pubkey_bytes = option::none();
     };
+
+    if (next_epoch_class_groups_pubkey_and_proof_bytes(self).is_some()) {
+        let next_epoch_class_groups_pubkey_and_proof_bytes = self.metadata.next_epoch_class_groups_pubkey_and_proof_bytes.extract();
+        update_class_groups_key_and_proof(&mut self.metadata.class_groups_pubkey_and_proof_bytes, next_epoch_class_groups_pubkey_and_proof_bytes);
+    };
+}
+
+fun update_class_groups_key_and_proof (
+    class_groups_pubkey_and_proof: &mut TableVec<vector<u8>>,
+    new_class_groups_key_and_proof: ClassGroupsPublicKeyAndProof,
+) {
+    let mut new_class_groups_key_and_proof = new_class_groups_key_and_proof.destroy();
+    let mut i = class_groups_pubkey_and_proof.length() - 1; 
+    while (!new_class_groups_key_and_proof.is_empty()) {
+        *class_groups_pubkey_and_proof.borrow_mut(i) = new_class_groups_key_and_proof.pop_back();
+        i = i  - 1;
+    };
+    new_class_groups_key_and_proof.destroy_empty();
 }
 
 /// Verify the provided proof of possession using the contained public key and the provided
@@ -966,6 +1033,7 @@ public(package) fun create_for_testing(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
     name: vector<u8>,
     description: vector<u8>,
@@ -986,6 +1054,7 @@ public(package) fun create_for_testing(
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             consensus_pubkey_bytes,
+            class_groups_pubkey_and_proof_bytes,
             proof_of_possession_bytes,
             name.to_ascii_string().to_string(),
             description.to_ascii_string().to_string(),

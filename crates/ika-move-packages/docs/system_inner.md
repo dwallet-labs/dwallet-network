@@ -46,6 +46,8 @@ title: Module `(ika_system=0x0)::system_inner_v1`
 -  [Function `update_candidate_validator_protocol_pubkey_bytes`](#(ika_system=0x0)_system_inner_v1_update_candidate_validator_protocol_pubkey_bytes)
 -  [Function `update_validator_next_epoch_consensus_pubkey_bytes`](#(ika_system=0x0)_system_inner_v1_update_validator_next_epoch_consensus_pubkey_bytes)
 -  [Function `update_candidate_validator_consensus_pubkey_bytes`](#(ika_system=0x0)_system_inner_v1_update_candidate_validator_consensus_pubkey_bytes)
+-  [Function `update_validator_next_epoch_class_groups_pubkey_and_proof_bytes`](#(ika_system=0x0)_system_inner_v1_update_validator_next_epoch_class_groups_pubkey_and_proof_bytes)
+-  [Function `update_candidate_validator_class_groups_pubkey_and_proof_bytes`](#(ika_system=0x0)_system_inner_v1_update_candidate_validator_class_groups_pubkey_and_proof_bytes)
 -  [Function `update_validator_next_epoch_network_pubkey_bytes`](#(ika_system=0x0)_system_inner_v1_update_validator_next_epoch_network_pubkey_bytes)
 -  [Function `update_candidate_validator_network_pubkey_bytes`](#(ika_system=0x0)_system_inner_v1_update_candidate_validator_network_pubkey_bytes)
 -  [Function `advance_epoch`](#(ika_system=0x0)_system_inner_v1_advance_epoch)
@@ -68,7 +70,12 @@ title: Module `(ika_system=0x0)::system_inner_v1`
 
 
 <pre><code><b>use</b> (ika=0x0)::ika;
+<b>use</b> (ika_system=0x0)::<b>address</b>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof">class_groups_public_key_and_proof</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/committee.md#(ika_system=0x0)_committee">committee</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner">dwallet_2pc_mpc_secp256k1_inner</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing">dwallet_pricing</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>;
@@ -96,15 +103,19 @@ title: Module `(ika_system=0x0)::system_inner_v1`
 <b>use</b> <a href="../../sui/deny_list.md#sui_deny_list">sui::deny_list</a>;
 <b>use</b> <a href="../../sui/dynamic_field.md#sui_dynamic_field">sui::dynamic_field</a>;
 <b>use</b> <a href="../../sui/dynamic_object_field.md#sui_dynamic_object_field">sui::dynamic_object_field</a>;
+<b>use</b> <a href="../../sui/ed25519.md#sui_ed25519">sui::ed25519</a>;
 <b>use</b> <a href="../../sui/event.md#sui_event">sui::event</a>;
 <b>use</b> <a href="../../sui/group_ops.md#sui_group_ops">sui::group_ops</a>;
+<b>use</b> <a href="../../sui/hash.md#sui_hash">sui::hash</a>;
 <b>use</b> <a href="../../sui/hex.md#sui_hex">sui::hex</a>;
 <b>use</b> <a href="../../sui/object.md#sui_object">sui::object</a>;
 <b>use</b> <a href="../../sui/object_table.md#sui_object_table">sui::object_table</a>;
 <b>use</b> <a href="../../sui/package.md#sui_package">sui::package</a>;
 <b>use</b> <a href="../../sui/pay.md#sui_pay">sui::pay</a>;
 <b>use</b> <a href="../../sui/priority_queue.md#sui_priority_queue">sui::priority_queue</a>;
+<b>use</b> <a href="../../sui/sui.md#sui_sui">sui::sui</a>;
 <b>use</b> <a href="../../sui/table.md#sui_table">sui::table</a>;
+<b>use</b> <a href="../../sui/table_vec.md#sui_table_vec">sui::table_vec</a>;
 <b>use</b> <a href="../../sui/transfer.md#sui_transfer">sui::transfer</a>;
 <b>use</b> <a href="../../sui/tx_context.md#sui_tx_context">sui::tx_context</a>;
 <b>use</b> <a href="../../sui/types.md#sui_types">sui::types</a>;
@@ -303,6 +314,16 @@ Uses SystemParametersV1 as the parameters.
 </dt>
 <dd>
  List of authorized protocol cap ids.
+</dd>
+<dt>
+<code>dwallet_2pc_mpc_secp256k1_id: <a href="../../std/option.md#std_option_Option">std::option::Option</a>&lt;<a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>dwallet_network_decryption_key: <a href="../../std/option.md#std_option_Option">std::option::Option</a>&lt;(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletNetworkrkDecryptionKeyCap">dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkrkDecryptionKeyCap</a>&gt;</code>
+</dt>
+<dd>
 </dd>
 <dt>
 <code>extra_fields: <a href="../../sui/bag.md#sui_bag_Bag">sui::bag::Bag</a></code>
@@ -663,6 +684,8 @@ This function will be called only once in init.
         previous_epoch_last_checkpoint_sequence_number: 0,
         computation_reward: balance::zero(),
         authorized_protocol_cap_ids,
+        dwallet_2pc_mpc_secp256k1_id: option::none(),
+        dwallet_network_decryption_key: option::none(),
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -733,7 +756,7 @@ This function will be called only once in init.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, clock: &<a href="../../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, clock: &<a href="../../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, package_id: <a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -745,11 +768,17 @@ This function will be called only once in init.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_initialize">initialize</a>(
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>,
     clock: &Clock,
+    package_id: ID,
+    ctx: &<b>mut</b> TxContext,
 ) {
     <b>let</b> now = clock.timestamp_ms();
     <b>assert</b>!(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> == 0 && now &gt;= self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_ECannotInitialize">ECannotInitialize</a>);
     <b>assert</b>!(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>().members().is_empty(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_ECannotInitialize">ECannotInitialize</a>);
     self.validators.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_initialize">initialize</a>();
+    <b>let</b> pricing = <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_create_dwallet_pricing_2pc_mpc_secp256k1">ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1</a>(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
+    <b>let</b> (dwallet_2pc_mpc_secp256k1_id, cap) = <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_create">dwallet_2pc_mpc_secp256k1::create</a>(package_id, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>(), pricing, ctx);
+    self.dwallet_2pc_mpc_secp256k1_id.fill(dwallet_2pc_mpc_secp256k1_id);
+    self.dwallet_network_decryption_key.fill(cap);
 }
 </code></pre>
 
@@ -769,7 +798,7 @@ Note: <code>proof_of_possession_bytes</code> MUST be a valid signature using pro
 To produce a valid PoP, run [fn test_proof_of_possession_bytes].
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_request_add_validator_candidate">request_add_validator_candidate</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, payment_address: <b>address</b>, protocol_pubkey_bytes: vector&lt;u8&gt;, network_pubkey_bytes: vector&lt;u8&gt;, consensus_pubkey_bytes: vector&lt;u8&gt;, proof_of_possession_bytes: vector&lt;u8&gt;, name: vector&lt;u8&gt;, description: vector&lt;u8&gt;, image_url: vector&lt;u8&gt;, project_url: vector&lt;u8&gt;, network_address: vector&lt;u8&gt;, p2p_address: vector&lt;u8&gt;, consensus_address: vector&lt;u8&gt;, computation_price: u64, commission_rate: u16, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): ((ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_request_add_validator_candidate">request_add_validator_candidate</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, payment_address: <b>address</b>, protocol_pubkey_bytes: vector&lt;u8&gt;, network_pubkey_bytes: vector&lt;u8&gt;, consensus_pubkey_bytes: vector&lt;u8&gt;, class_groups_pubkey_and_proof_bytes: (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>, proof_of_possession_bytes: vector&lt;u8&gt;, name: vector&lt;u8&gt;, description: vector&lt;u8&gt;, image_url: vector&lt;u8&gt;, project_url: vector&lt;u8&gt;, network_address: vector&lt;u8&gt;, p2p_address: vector&lt;u8&gt;, consensus_address: vector&lt;u8&gt;, computation_price: u64, commission_rate: u16, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): ((ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
 </code></pre>
 
 
@@ -784,6 +813,7 @@ To produce a valid PoP, run [fn test_proof_of_possession_bytes].
     protocol_pubkey_bytes: vector&lt;u8&gt;,
     network_pubkey_bytes: vector&lt;u8&gt;,
     consensus_pubkey_bytes: vector&lt;u8&gt;,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector&lt;u8&gt;,
     name: vector&lt;u8&gt;,
     description: vector&lt;u8&gt;,
@@ -801,6 +831,7 @@ To produce a valid PoP, run [fn test_proof_of_possession_bytes].
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
+        class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
         name,
         description,
@@ -1753,6 +1784,69 @@ Update candidate validator's public key of worker key.
 ) {
     <b>let</b> candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
     candidate.update_candidate_consensus_pubkey_bytes(consensus_pubkey_bytes);
+    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_v1_update_validator_next_epoch_class_groups_pubkey_and_proof_bytes"></a>
+
+## Function `update_validator_next_epoch_class_groups_pubkey_and_proof_bytes`
+
+Update a validator's public key and its associated proof of class groups key.
+The change will only take effects starting from the next epoch.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_update_validator_next_epoch_class_groups_pubkey_and_proof_bytes">update_validator_next_epoch_class_groups_pubkey_and_proof_bytes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, class_groups_pubkey_and_proof: (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_update_validator_next_epoch_class_groups_pubkey_and_proof_bytes">update_validator_next_epoch_class_groups_pubkey_and_proof_bytes</a>(
+    self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>,
+    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
+    cap: &ValidatorCap,
+) {
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.validators.get_validator_mut_with_cap(cap);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.update_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof);
+    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_v1_update_candidate_validator_class_groups_pubkey_and_proof_bytes"></a>
+
+## Function `update_candidate_validator_class_groups_pubkey_and_proof_bytes`
+
+Update candidate validator's public key and its associated proof of class groups key.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_update_candidate_validator_class_groups_pubkey_and_proof_bytes">update_candidate_validator_class_groups_pubkey_and_proof_bytes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, class_groups_pubkey_and_proof: (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_update_candidate_validator_class_groups_pubkey_and_proof_bytes">update_candidate_validator_class_groups_pubkey_and_proof_bytes</a>(
+    self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>,
+    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
+    cap: &ValidatorCap
+) {
+    <b>let</b> candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
+    candidate.update_candidate_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof);
     self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
 }
 </code></pre>

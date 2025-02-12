@@ -53,6 +53,7 @@ use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap};
 use ika_system::validator_set::ValidatorSet;
 use ika_system::committee::Committee;
 use ika_system::protocol_cap::ProtocolCap;
+use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::dwallet_2pc_mpc_secp256k1::{DWallet2PcMpcSecp256K1};
 use sui::balance::Balance;
 use sui::coin::Coin;
@@ -132,6 +133,7 @@ public entry fun request_add_validator_candidate(
     pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
     name: vector<u8>,
     description: vector<u8>,
@@ -149,6 +151,7 @@ public entry fun request_add_validator_candidate(
         pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
+        class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
         name,
         description,
@@ -171,6 +174,7 @@ public fun request_add_validator_candidate_non_entry(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
     name: vector<u8>,
     description: vector<u8>,
@@ -189,6 +193,7 @@ public fun request_add_validator_candidate_non_entry(
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
+        class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
         name,
         description,
@@ -552,6 +557,27 @@ public entry fun update_candidate_validator_consensus_pubkey_bytes(
     self.update_candidate_validator_consensus_pubkey_bytes(consensus_pubkey_bytes, cap)
 }
 
+/// Update a validator's public key of class groups key and its associated proof.
+/// The change will only take effects starting from the next epoch.
+public entry fun update_validator_next_epoch_class_groups_pubkey_and_proof_bytes(
+    self: &mut System,
+    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
+    cap: &ValidatorCap,
+) {
+    let self = self.inner_mut();
+    self.update_validator_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
+}
+
+/// Update candidate validator's public key of class groups key and its associated proof.
+public entry fun update_candidate_validator_class_groups_pubkey_and_proof_bytes(
+    self: &mut System,
+    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
+    cap: &ValidatorCap,
+) {
+    let self = self.inner_mut();
+    self.update_candidate_validator_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
+}
+
 /// Update a validator's public key of network key.
 /// The change will only take effects starting from the next epoch.
 public entry fun update_validator_next_epoch_network_pubkey_bytes(
@@ -748,6 +774,7 @@ public fun request_add_validator_candidate_for_testing(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes_bytes: vector<u8>,
+    class_groups_pubkey_and_proof_bytes: vector<u8>,
     proof_of_possession_bytes: vector<u8>,
     name: vector<u8>,
     description: vector<u8>,
@@ -765,6 +792,7 @@ public fun request_add_validator_candidate_for_testing(
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes_bytes,
+        class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
         name,
         description,

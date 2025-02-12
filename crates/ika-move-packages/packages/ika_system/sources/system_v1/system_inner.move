@@ -11,6 +11,7 @@ use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap};
 use ika_system::validator_set::{ValidatorSet};
 use ika_system::committee::{Committee};
 use ika_system::protocol_cap::ProtocolCap;
+use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::dwallet_2pc_mpc_secp256k1;
 use ika_system::dwallet_2pc_mpc_secp256k1_inner::{DWalletNetworkrkDecryptionKeyCap};
 use sui::bag::{Self, Bag};
@@ -248,6 +249,7 @@ public(package) fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
     name: vector<u8>,
     description: vector<u8>,
@@ -265,6 +267,7 @@ public(package) fun request_add_validator_candidate(
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
+        class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
         name,
         description,
@@ -624,6 +627,29 @@ public(package) fun update_candidate_validator_consensus_pubkey_bytes(
 ) {
     let candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
     candidate.update_candidate_consensus_pubkey_bytes(consensus_pubkey_bytes);
+    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
+}
+
+/// Update a validator's public key and its associated proof of class groups key.
+/// The change will only take effects starting from the next epoch.
+public(package) fun update_validator_next_epoch_class_groups_pubkey_and_proof_bytes(
+    self: &mut SystemInnerV1,
+    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
+    cap: &ValidatorCap,
+) {
+    let validator = self.validators.get_validator_mut_with_cap(cap);
+    validator.update_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof);
+    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
+}
+
+/// Update candidate validator's public key and its associated proof of class groups key.
+public(package) fun update_candidate_validator_class_groups_pubkey_and_proof_bytes(
+    self: &mut SystemInnerV1,
+    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
+    cap: &ValidatorCap
+) {
+    let candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
+    candidate.update_candidate_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof);
     self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
 }
 
@@ -1040,6 +1066,7 @@ public(package) fun request_add_validator_candidate_for_testing(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes_bytes: vector<u8>,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
     name: vector<u8>,
     description: vector<u8>,
@@ -1057,6 +1084,7 @@ public(package) fun request_add_validator_candidate_for_testing(
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes_bytes,
+        class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
         name,
         description,
