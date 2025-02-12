@@ -18,7 +18,6 @@ use sui_types::base_types::ObjectID;
 
 use ika_config::p2p::{P2pConfig, SeedPeer, StateSyncConfig};
 
-use crate::class_groups_mock_builder::create_full_class_groups_mock;
 use ika_config::{
     local_ip_utils, ConsensusConfig, NodeConfig, AUTHORITIES_DB_NAME, CONSENSUS_DB_NAME,
     FULL_NODE_DB_PATH,
@@ -279,9 +278,12 @@ impl FullnodeConfigBuilder {
         // even though this is a fullnode.
         let mut validator_config_builder = ValidatorInitializationConfigBuilder::new();
 
-        if cfg!(feature = "mock-class-groups") {
+        #[cfg(feature = "mock-class-groups")]
+        {
             validator_config_builder = validator_config_builder
-                .with_class_groups_key_pair_and_proof(create_full_class_groups_mock());
+                .with_class_groups_key_pair_and_proof(
+                    crate::class_groups_mock_builder::create_full_class_groups_mock(),
+                );
         }
 
         let validator_config = validator_config_builder.build(rng);

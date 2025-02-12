@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::class_groups_mock_builder::create_full_class_groups_mock;
 use crate::network_config::NetworkConfig;
 use crate::node_config_builder::{FullnodeConfigBuilder, ValidatorConfigBuilder};
 use crate::validator_initialization_config::ValidatorInitializationConfig;
@@ -266,11 +265,13 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                         if let Some(rgp) = self.computation_price_per_unit_size {
                             builder = builder.with_computation_price(rgp);
                         }
-                        if cfg!(feature = "mock-class-groups") {
+                        #[cfg(feature = "mock-class-groups")]
+                        {
                             builder = builder.with_class_groups_key_pair_and_proof(
-                                create_full_class_groups_mock(),
+                                crate::class_groups_mock_builder::create_full_class_groups_mock(),
                             );
                         }
+
                         builder.build(&mut rng)
                     })
                     .collect::<Vec<_>>()
