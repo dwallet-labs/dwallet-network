@@ -1,4 +1,3 @@
-;
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
@@ -7,11 +6,8 @@ import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
-
-
 import { launchDKGFirstRound } from '../../src/dwallet-mpc/dkg';
-import {Config, delay, IKA_CONFIG_FILE_PATH} from '../../src/dwallet-mpc/globals';
-
+import { Config, delay, IKA_CONFIG_FILE_PATH } from '../../src/dwallet-mpc/globals';
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -29,7 +25,7 @@ describe('Test dWallet MPC', () => {
 			keypair,
 			client: suiClient,
 			timeout: fiveMinutes,
-			ikaConfig: require(IKA_CONFIG_FILE_PATH),
+			ikaConfig: require('../../../../ika_config.json'),
 		};
 		await delay(2000);
 	});

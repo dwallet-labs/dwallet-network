@@ -48,4 +48,4 @@ export const DWALLET_NETWORK_VERSION = 0;
 
 export const SUI_PACKAGE_ID = '0x2';
 
-export const IKA_CONFIG_FILE_PATH = '../../../../ika_config.json';
+export const IKA_CONFIG_FILE_PATH: string = ;
