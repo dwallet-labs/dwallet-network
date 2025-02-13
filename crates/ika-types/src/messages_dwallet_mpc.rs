@@ -218,7 +218,7 @@ impl<E: DWalletMPCEventTrait> DWalletMPCEventTrait for DWalletMPCSuiEvent<E> {
     /// It is used to detect [`DWalletMPCSuiEvent`] events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_package_id,
+            address: *packages_config.ika_system_package_id,
             name: DWALLET_MPC_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![<E as DWalletMPCEventTrait>::type_(packages_config).into()],
