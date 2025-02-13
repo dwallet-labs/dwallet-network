@@ -124,7 +124,7 @@ impl DWalletMPCService {
             .unwrap_or_default();
 
         let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
-        let events: HashMap<EventID, DWalletMPCEvent> = pending_events
+        let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
             .map(|(id, event)| {
                 let event: DBSuiEvent = bcs::from_bytes(event)?;
@@ -142,8 +142,7 @@ impl DWalletMPCService {
                     event,
                     session_info,
                 };
-
-                Ok((*id, event))
+                Ok(event)
             })
             .collect::<DwalletMPCResult<_>>()?;
 
@@ -151,7 +150,7 @@ impl DWalletMPCService {
         round_events.extend(events.clone());
         self.epoch_store
             .perpetual_tables
-            .remove_pending_events(&events.keys().cloned().collect::<Vec<EventID>>())?;
+            .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
         Ok(())
     }
 }
