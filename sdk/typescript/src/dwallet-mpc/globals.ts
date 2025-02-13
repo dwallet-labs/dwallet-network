@@ -1,8 +1,8 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiClient } from '@mysten/sui/client';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import type { SuiClient } from '@mysten/sui/client';
+import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
 // This data changes every time the IKA contracts are being redeployed.
 export const IKA_PACKAGE_ID = '0x66dca2cee84af8b507879dd7745672bdaa089fa98e5cb98165e657ec466b908e';
