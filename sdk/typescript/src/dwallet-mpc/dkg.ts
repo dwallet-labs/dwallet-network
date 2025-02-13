@@ -87,8 +87,10 @@ export async function launchDKGFirstRound(c: Config) {
 }
 
 function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
-	return obj?.fields?.value?.fields?.dwallet_network_decryption_key !== undefined &&
-		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_id !== undefined;
+	return (
+		obj?.fields?.value?.fields?.dwallet_network_decryption_key !== undefined &&
+		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_id !== undefined
+	);
 }
 
 async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
