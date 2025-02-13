@@ -225,7 +225,7 @@ fn dkg_first_party_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: SuiAddress::generate(&OsRng),
+        initiating_user_address: SuiAddress::generate(&mut OsRng),
         mpc_round: MPCProtocolInitData::DKGFirst,
     }
 }
