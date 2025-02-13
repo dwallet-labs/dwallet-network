@@ -10,6 +10,7 @@ use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::error::IkaResult;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
+use rayon::yield_now;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
@@ -115,6 +116,9 @@ where
             };
 
             let len = events.data.len();
+            perpetual_tables
+                .insert_test()
+                .expect("Failed to insert pending events");
             if len != 0 {
                 if !events.has_next_page {
                     // If this is the last page, it means we have processed all events up to the latest checkpoint
@@ -129,6 +133,15 @@ where
                 }
                 tracing::info!(?module, ?cursor, "Observed {len} new Sui events");
             }
+            let events = perpetual_tables.get_all_pending_events();
+            if !events.is_empty() {
+                tracing::warn!("dfvzdfzdsf");
+            }
+            let events = perpetual_tables.get_all_test();
+            if !events.is_empty() {
+                tracing::warn!("dfvzdfzdsf");
+            }
+            tokio::task::yield_now().await;
         }
     }
 }

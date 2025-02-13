@@ -299,7 +299,7 @@ impl IkaNode {
             &committee,
             None,
         ));
-        let perpetual_tables_options = default_db_options().optimize_db_for_write_throughput(4);
+        let perpetual_tables_options = default_db_options();
         let perpetual_tables = Arc::new(AuthorityPerpetualTables::open(
             &config.db_path().join("store"),
             Some(perpetual_tables_options.options),

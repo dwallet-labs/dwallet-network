@@ -4,6 +4,7 @@
 use super::*;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use serde_json::Value;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::Identifier;
 use typed_store::metrics::SamplingInterval;
@@ -27,23 +28,23 @@ pub struct AuthorityPerpetualTables {
     /// A singleton table that stores latest pruned checkpoint. Used to keep objects pruner progress
     pub(crate) pruned_checkpoint: DBMap<(), CheckpointSequenceNumber>,
 
-    /// pending events from sui received but not yet executed
-    pub(crate) pending_events: DBMap<EventID, SuiEvent>,
-
     /// module identifier to the last processed EventID
     pub(crate) sui_syncer_cursors: DBMap<Identifier, EventID>,
+
+    /// pending events from sui received but not yet executed
+    pending_events: DBMap<EventID, Vec<u8>>,
+    test: DBMap<usize, usize>,
 }
 
 impl AuthorityPerpetualTables {
     pub fn path(parent_path: &Path) -> PathBuf {
-        parent_path.join("perpetual")
+        parent_path.join("perpetual_2")
     }
 
     pub fn open(parent_path: &Path, db_options: Option<Options>) -> Self {
-        Self::open_tables_read_write(
+        Self::open_tables_transactional(
             Self::path(parent_path),
-            MetricConf::new("perpetual")
-                .with_sampling(SamplingInterval::new(Duration::from_secs(60), 0)),
+            MetricConf::new("perpetual"),
             db_options,
             None,
         )
@@ -95,25 +96,46 @@ impl AuthorityPerpetualTables {
     }
 
     pub fn insert_pending_events(&self, module: Identifier, events: &[SuiEvent]) -> IkaResult {
-        let cursor = events.last().map(|e| e.id);
-        if let Some(cursor) = cursor {
-            let mut batch = self.pending_events.batch();
-            batch.insert_batch(&self.sui_syncer_cursors, [(module, cursor)])?;
-            batch.insert_batch(&self.pending_events, events.iter().map(|e| (e.id, e)))?;
+        // let cursor = events.last().map(|e| e.id);
+        // if let Some(cursor) = cursor {
+            let mut batch = self.epoch_start_configuration.batch();
+           // let mut batch = self.pending_events.batch();
+            // batch.insert_batch(&self.sui_syncer_cursors, [(module, cursor)])?;
+            // batch.insert_batch(&self.pending_events, events.iter().map(|e| (e.id, e)))?;
+            batch.insert_batch(&self.pending_events, events.iter().map(|e| (e.id, e.bcs.clone().into_bytes())))?;
             batch.write()?;
-        }
+        // }
+        // self.pending_events.rocksdb.flush()?;
         Ok(())
     }
 
-    pub(crate) fn remove_pending_events(&self, events: &[EventID]) -> IkaResult {
-        let mut batch = self.pending_events.batch();
-        batch.delete_batch(&self.pending_events, events)?;
-        batch.write()?;
+    pub fn insert_test(&self) -> IkaResult {
+        // let cursor = events.last().map(|e| e.id);
+        // if let Some(cursor) = cursor {
+            let mut batch = self.epoch_start_configuration.batch();
+           // let mut batch = self.pending_events.batch();
+            // batch.insert_batch(&self.sui_syncer_cursors, [(module, cursor)])?;
+            // batch.insert_batch(&self.pending_events, events.iter().map(|e| (e.id, e)))?;
+            batch.insert_batch(&self.test, vec![(1, 2)])?;
+            batch.write()?;
+        // }
+        // self.pending_events.rocksdb.flush()?;
         Ok(())
     }
 
-    pub fn get_all_pending_events(&self) -> HashMap<EventID, SuiEvent> {
+    // pub(crate) fn remove_pending_events(&self, events: &[EventID]) -> IkaResult {
+    //     let mut batch = self.pending_events.batch();
+    //     batch.delete_batch(&self.pending_events, events)?;
+    //     batch.write()?;
+    //     Ok(())
+    // }
+
+    pub fn get_all_pending_events(&self) -> HashMap<EventID, Vec<u8>> {
         self.pending_events.unbounded_iter().collect()
+    }
+
+    pub fn get_all_test(&self) -> HashMap<usize, usize> {
+        self.test.unbounded_iter().collect()
     }
 
     pub fn get_sui_event_cursors(

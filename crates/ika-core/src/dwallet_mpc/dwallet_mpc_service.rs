@@ -17,6 +17,7 @@ use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
+use tokio::task::yield_now;
 use tracing::{error, warn};
 use typed_store::Map;
 
@@ -105,60 +106,57 @@ impl DWalletMPCService {
                 .await;
             drop(manager);
 
-            if let Err(e) = self.read_events().await {
-                error!("failed to handle dWallet MPC events: {}", e);
-            }
+            // if let Err(e) = self.read_events().await {
+            //     error!("failed to handle dWallet MPC events: {}", e);
+            // }
         }
     }
 
-    async fn read_events(&mut self) -> IkaResult<()> {
-        let key_version = self
-            .epoch_store
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
-            .unwrap_or_default();
-
-        let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
-        if !pending_events.is_empty() {
-            warn!(
-                "Found pending events in the DWallet MPC service",
-            );
-        }
-        let events: HashMap<EventID, DWalletMPCEvent> = pending_events
-            .iter()
-            .map(|(id, event)| {
-                let session_info = match session_info_from_event(
-                    event.clone(),
-                    Some(key_version),
-                    &self.epoch_store.packages_config,
-                )
-                .map_err(|e| DwalletMPCError::NonMPCEvent(e.to_string()))
-                {
-                    Ok(Some(session_info)) => session_info,
-                    _ => return Err(DwalletMPCError::NonMPCEvent("Non-MPC event".to_string())),
-                };
-                let event = DWalletMPCEvent {
-                    event: event.clone(),
-                    session_info,
-                };
-
-                Ok((*id, event))
-            })
-            .collect::<DwalletMPCResult<_>>()?;
-
-        let mut events_table = self.epoch_store.tables()?.dwallet_mpc_events.batch();
-        events_table.insert_batch(
-            &self.epoch_store.tables()?.dwallet_mpc_events,
-            [(
-                self.last_read_consensus_round,
-                events.values().cloned().collect::<Vec<DWalletMPCEvent>>(),
-            )],
-        )?;
-        self.epoch_store
-            .perpetual_tables
-            .remove_pending_events(&events.keys().cloned().collect::<Vec<EventID>>())?;
-        Ok(())
-    }
+    // async fn read_events(&mut self) -> IkaResult<()> {
+    //     let key_version = self
+    //         .epoch_store
+    //         .dwallet_mpc_network_keys
+    //         .get()
+    //         .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+    //         .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
+    //         .unwrap_or_default();
+    //
+    //     let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
+    //     if !pending_events.is_empty() {
+    //         warn!(
+    //             "Found pending events in the DWallet MPC service",
+    //         );
+    //     }
+    //     let events: HashMap<EventID, DWalletMPCEvent> = pending_events
+    //         .iter()
+    //         .map(|(id, event)| {
+    //             let session_info = match session_info_from_event(
+    //                 event.clone(),
+    //                 Some(key_version),
+    //                 &self.epoch_store.packages_config,
+    //             )
+    //             .map_err(|e| DwalletMPCError::NonMPCEvent(e.to_string()))
+    //             {
+    //                 Ok(Some(session_info)) => session_info,
+    //                 _ => return Err(DwalletMPCError::NonMPCEvent("Non-MPC event".to_string())),
+    //             };
+    //             let event = DWalletMPCEvent {
+    //                 event: event.clone(),
+    //                 session_info,
+    //             };
+    //
+    //             Ok((*id, event))
+    //         })
+    //         .collect::<DwalletMPCResult<_>>()?;
+    //
+    //     let mut events_table = self.epoch_store.tables()?.dwallet_mpc_events.batch();
+    //     events_table.insert_batch(
+    //         &self.epoch_store.tables()?.dwallet_mpc_events,
+    //         [(
+    //             self.last_read_consensus_round,
+    //             events.values().cloned().collect::<Vec<DWalletMPCEvent>>(),
+    //         )],
+    //     )?;
+    //     Ok(())
+    // }
 }
