@@ -17,7 +17,7 @@ use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
-use tracing::error;
+use tracing::{error, warn};
 use typed_store::Map;
 
 const READ_INTERVAL_MS: u64 = 100;
@@ -121,6 +121,11 @@ impl DWalletMPCService {
             .unwrap_or_default();
 
         let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
+        if !pending_events.is_empty() {
+            warn!(
+                "Found pending events in the DWallet MPC service",
+            );
+        }
         let events: HashMap<EventID, DWalletMPCEvent> = pending_events
             .iter()
             .map(|(id, event)| {
