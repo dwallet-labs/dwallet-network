@@ -66,8 +66,6 @@ pub struct Committee {
     pub total_aggregated_key: Element,
 }
 
-
-
 /// Rust version of the Move ika_system::validator_set::ValidatorSet type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ValidatorSetV1 {
