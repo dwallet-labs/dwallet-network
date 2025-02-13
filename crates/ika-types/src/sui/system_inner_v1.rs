@@ -92,9 +92,10 @@ pub struct UpgradeCap {
 }
 
 /// Represents a capability granting control over a specific dWallet network decryption key.
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct DWalletNetworkDecryptionKeyCap {
-id: ObjectID,
-dwallet_network_decryption_key_id: ID,
+    pub id: ID,
+    pub dwallet_network_decryption_key_id: ID,
 }
 
 /// Rust version of the Move ika_system::ika_system::IkaSystemStateInner type
