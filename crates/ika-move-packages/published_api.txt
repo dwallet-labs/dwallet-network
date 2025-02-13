@@ -109,7 +109,7 @@ DWallet2PcMpcSecp256K1InnerV1
 DWalletCap
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-DWalletNetworkrkDecryptionKeyCap
+DWalletNetworkDecryptionKeyCap
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 DWalletNetworkDecryptionKey

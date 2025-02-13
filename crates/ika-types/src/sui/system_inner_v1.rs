@@ -91,6 +91,12 @@ pub struct UpgradeCap {
     pub policy: u8,
 }
 
+/// Represents a capability granting control over a specific dWallet network decryption key.
+pub struct DWalletNetworkDecryptionKeyCap {
+id: ObjectID,
+dwallet_network_decryption_key_id: ID,
+}
+
 /// Rust version of the Move ika_system::ika_system::IkaSystemStateInner type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct SystemInnerV1 {
@@ -107,6 +113,7 @@ pub struct SystemInnerV1 {
     pub previous_epoch_last_checkpoint_sequence_number: u64,
     pub computation_reward: Balance,
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
+    pub dwallet_network_decryption_key: Option<DWalletNetworkDecryptionKeyCap>,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }

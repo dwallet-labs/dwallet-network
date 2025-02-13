@@ -12,7 +12,7 @@ use ika_system::validator_set::{ValidatorSet};
 use ika_system::committee::{Committee};
 use ika_system::protocol_cap::ProtocolCap;
 use ika_system::dwallet_2pc_mpc_secp256k1;
-use ika_system::dwallet_2pc_mpc_secp256k1_inner::{DWalletNetworkrkDecryptionKeyCap};
+use ika_system::dwallet_2pc_mpc_secp256k1_inner::{DWalletNetworkDecryptionKeyCap};
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::coin::Coin;
@@ -89,7 +89,7 @@ public struct SystemInnerV1 has store {
     // TODO: maybe change that later
     dwallet_2pc_mpc_secp256k1_id: Option<ID>,
     // TODO: dummy code, change that later
-    dwallet_network_decryption_key: Option<DWalletNetworkrkDecryptionKeyCap>,
+    dwallet_network_decryption_key: Option<DWalletNetworkDecryptionKeyCap>,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
