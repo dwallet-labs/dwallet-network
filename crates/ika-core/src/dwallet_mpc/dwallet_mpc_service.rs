@@ -147,14 +147,8 @@ impl DWalletMPCService {
             })
             .collect::<DwalletMPCResult<_>>()?;
 
-        let mut events_table = self.epoch_store.tables()?.dwallet_mpc_events.batch();
-        events_table.insert_batch(
-            &self.epoch_store.tables()?.dwallet_mpc_events,
-            [(
-                self.last_read_consensus_round,
-                events.values().cloned().collect::<Vec<DWalletMPCEvent>>(),
-            )],
-        )?;
+        let mut round_events = self.epoch_store.dwallet_mpc_round_events.lock().await;
+        round_events.extend(events.clone());
         self.epoch_store
             .perpetual_tables
             .remove_pending_events(&events.keys().cloned().collect::<Vec<EventID>>())?;
