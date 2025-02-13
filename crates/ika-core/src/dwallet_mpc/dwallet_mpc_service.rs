@@ -155,6 +155,9 @@ impl DWalletMPCService {
                 events.values().cloned().collect::<Vec<DWalletMPCEvent>>(),
             )],
         )?;
+        self.epoch_store
+            .perpetual_tables
+            .remove_pending_events(&events.keys().cloned().collect::<Vec<EventID>>())?;
         Ok(())
     }
 }

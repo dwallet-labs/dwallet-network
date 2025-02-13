@@ -33,6 +33,7 @@ use serde::de::DeserializeOwned;
 use std::collections::{HashMap, HashSet};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{EpochId, ObjectID};
+use tracing::warn;
 
 pub mod batches_manager;
 mod cryptographic_computations_orchestrator;
@@ -95,6 +96,12 @@ pub(crate) fn session_info_from_event(
     dwallet_network_key_version: Option<u8>,
     packages_config: &IkaPackagesConfig,
 ) -> anyhow::Result<Option<SessionInfo>> {
+    warn!("Event type: {:?}", event.type_.to_canonical_string(false));
+    warn!(
+        "real Event type: {:?}",
+        DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config)
+            .to_canonical_string(false)
+    );
     match &event.type_ {
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =

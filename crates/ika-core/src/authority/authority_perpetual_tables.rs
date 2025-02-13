@@ -125,12 +125,12 @@ impl AuthorityPerpetualTables {
         Ok(())
     }
 
-    // pub(crate) fn remove_pending_events(&self, events: &[EventID]) -> IkaResult {
-    //     let mut batch = self.pending_events.batch();
-    //     batch.delete_batch(&self.pending_events, events)?;
-    //     batch.write()?;
-    //     Ok(())
-    // }
+    pub(crate) fn remove_pending_events(&self, events: &[EventID]) -> IkaResult {
+        let mut batch = self.pending_events.batch();
+        batch.delete_batch(&self.pending_events, events)?;
+        batch.write()?;
+        Ok(())
+    }
 
     pub fn get_all_pending_events(&self) -> HashMap<EventID, Vec<u8>> {
         self.pending_events.unbounded_iter().collect()
