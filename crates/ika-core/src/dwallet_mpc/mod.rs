@@ -29,10 +29,11 @@ use ika_types::messages_dwallet_mpc::{
 };
 use ika_types::messages_dwallet_mpc::{SignData, StartPartialSignaturesVerificationEvent};
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
+use rand_core::OsRng;
 use serde::de::DeserializeOwned;
 use std::collections::{HashMap, HashSet};
 use sui_json_rpc_types::SuiEvent;
-use sui_types::base_types::{EpochId, ObjectID};
+use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
 use tracing::warn;
 
 pub mod batches_manager;
@@ -106,9 +107,7 @@ pub(crate) fn session_info_from_event(
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =
                 bcs::from_bytes(&event.contents)?;
-            Ok(Some(dkg_first_party_session_info(
-                deserialized_event.event_data,
-            )))
+            Ok(Some(dkg_first_party_session_info(deserialized_event)))
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGSecondRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent> =
@@ -221,10 +220,12 @@ fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResu
     )
 }
 
-fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
+fn dkg_first_party_session_info(
+    deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent>,
+) -> SessionInfo {
     SessionInfo {
-        session_id: deserialized_event.session_id.bytes,
-        initiating_user_address: deserialized_event.initiator,
+        session_id: deserialized_event.session_id,
+        initiating_user_address: SuiAddress::generate(&OsRng),
         mpc_round: MPCProtocolInitData::DKGFirst,
     }
 }
