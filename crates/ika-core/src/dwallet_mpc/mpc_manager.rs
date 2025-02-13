@@ -37,9 +37,9 @@ use ika_types::digests::Digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DWalletMPCEvent, DWalletMPCLocalComputationMetadata, DWalletMPCMessage,
-    MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
-    StartPresignFirstRoundEvent,
+    AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCLocalComputationMetadata,
+    DWalletMPCMessage, MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo,
+    SignIASessionState, StartPresignFirstRoundEvent,
 };
 use mpc::WeightedThresholdAccessStructure;
 use rayon::prelude::*;
@@ -338,7 +338,11 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn handle_event(&mut self, event: SuiEvent, session_info: SessionInfo) -> DwalletMPCResult<()> {
+    fn handle_event(
+        &mut self,
+        event: DBSuiEvent,
+        session_info: SessionInfo,
+    ) -> DwalletMPCResult<()> {
         let (public_input, private_input) = session_input_from_event(event, &self)?;
         self.push_new_mpc_session(public_input, private_input, session_info)?;
         Ok(())

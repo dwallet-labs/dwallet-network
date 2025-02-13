@@ -9,6 +9,7 @@ use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
+use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -21,7 +22,6 @@ use tokio::sync::{watch, Notify};
 use tokio::task::yield_now;
 use tracing::{error, warn};
 use typed_store::Map;
-use ika_types::messages_dwallet_mpc::DBSuiEvent;
 
 const READ_INTERVAL_MS: u64 = 100;
 

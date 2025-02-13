@@ -5,16 +5,13 @@ use super::*;
 use std::path::Path;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::Identifier;
-use typed_store::rocks::{
-    DBBatch, DBMap,
-    MetricConf,
-};
+use typed_store::rocks::{DBBatch, DBMap, MetricConf};
 use typed_store::traits::{Map, TableSummary, TypedStoreDebug};
 
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
+use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use typed_store::rocksdb::Options;
 use typed_store::DBMapUtils;
-use ika_types::messages_dwallet_mpc::DBSuiEvent;
 
 /// AuthorityPerpetualTables contains data that must be preserved from one epoch to the next.
 #[derive(DBMapUtils)]
