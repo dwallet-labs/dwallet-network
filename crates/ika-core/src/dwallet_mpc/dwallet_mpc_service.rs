@@ -21,6 +21,7 @@ use tokio::sync::{watch, Notify};
 use tokio::task::yield_now;
 use tracing::{error, warn};
 use typed_store::Map;
+use ika_types::messages_dwallet_mpc::DBSuiEvent;
 
 const READ_INTERVAL_MS: u64 = 100;
 
@@ -126,7 +127,7 @@ impl DWalletMPCService {
         let events: HashMap<EventID, DWalletMPCEvent> = pending_events
             .iter()
             .map(|(id, event)| {
-                let event: SuiEvent = bcs::from_bytes(event)?;
+                let event: DBSuiEvent = bcs::from_bytes(event)?;
                 let session_info = match session_info_from_event(
                     event.clone(),
                     Some(key_version),

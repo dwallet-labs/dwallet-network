@@ -144,7 +144,7 @@ impl MPCProtocolInitData {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DWalletMPCEvent {
     // TODO: remove event - do all parsing beforehand.
-    pub event: SuiEvent,
+    pub event: DBSuiEvent,
     pub session_info: SessionInfo,
 }
 
@@ -472,4 +472,10 @@ pub struct IkaPackagesConfig {
     pub ika_system_package_id: ObjectID,
     /// The object id of ika_system_state on sui.
     pub system_id: ObjectID,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DBSuiEvent {
+    pub type_: StructTag,
+    pub contents: Vec<u8>,
 }
