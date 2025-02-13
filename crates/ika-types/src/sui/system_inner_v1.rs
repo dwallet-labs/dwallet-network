@@ -66,6 +66,8 @@ pub struct Committee {
     pub total_aggregated_key: Element,
 }
 
+
+
 /// Rust version of the Move ika_system::validator_set::ValidatorSet type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ValidatorSetV1 {
@@ -73,6 +75,7 @@ pub struct ValidatorSetV1 {
     pub validators: Table, //ObjectTable
     pub active_committee: Committee,
     pub next_epoch_active_committee: Option<Committee>,
+    pub previous_committee: Committee,
     pub pending_active_validators: Vec<ObjectID>,
     pub at_risk_validators: VecMap<ID, u64>,
     pub validator_report_records: VecMap<ObjectID, VecSet<ObjectID>>,
