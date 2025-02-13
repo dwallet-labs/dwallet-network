@@ -4,6 +4,7 @@
 use super::*;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use move_core_types::language_storage::StructTag;
 use serde_json::Value;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::Identifier;
@@ -34,6 +35,12 @@ pub struct AuthorityPerpetualTables {
     /// pending events from sui received but not yet executed
     pending_events: DBMap<EventID, Vec<u8>>,
     test: DBMap<usize, usize>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DBSuiEvent {
+    type_: StructTag,
+    contents: Vec<u8>
 }
 
 impl AuthorityPerpetualTables {
@@ -99,10 +106,14 @@ impl AuthorityPerpetualTables {
         // let cursor = events.last().map(|e| e.id);
         // if let Some(cursor) = cursor {
             let mut batch = self.epoch_start_configuration.batch();
-           // let mut batch = self.pending_events.batch();
-            // batch.insert_batch(&self.sui_syncer_cursors, [(module, cursor)])?;
-            // batch.insert_batch(&self.pending_events, events.iter().map(|e| (e.id, e)))?;
-            batch.insert_batch(&self.pending_events, events.iter().map(|e| (e.id, e.bcs.clone().into_bytes())))?;
+        batch.insert_batch(&self.pending_events, events.iter().map(|e| {
+            let bytes = bcs::to_bytes(&DBSuiEvent {
+                type_: e.type_.clone(),
+                contents: e.bcs.clone().into_bytes(),
+            }).unwrap();
+            let deser: DBSuiEvent = bcs::from_bytes(&bytes).unwrap();
+            (e.id, bytes)
+        }))?;
             batch.write()?;
         // }
         // self.pending_events.rocksdb.flush()?;
