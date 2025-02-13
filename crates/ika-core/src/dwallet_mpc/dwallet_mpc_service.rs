@@ -63,6 +63,9 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MS)).await;
+            if let Err(e) = self.read_events().await {
+                error!("failed to handle dWallet MPC events: {}", e);
+            }
             let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
             let Ok(tables) = self.epoch_store.tables() else {
                 error!("Failed to load DB tables from epoch store");
@@ -108,9 +111,6 @@ impl DWalletMPCService {
                 .await;
             drop(manager);
 
-            if let Err(e) = self.read_events().await {
-                error!("failed to handle dWallet MPC events: {}", e);
-            }
         }
     }
 
