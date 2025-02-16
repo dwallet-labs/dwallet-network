@@ -527,17 +527,17 @@ consensus-core = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e
 ### Workspace Members ###
 dwallet-mpc-centralized-party = { path = "crates/dwallet-mpc-centralized-party" }
 dwallet-mpc-types = { path = "crates/dwallet-mpc-types"}
-dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types" , features = ["mock-class-groups"]}
+dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types"}
 ika = { path = "crates/ika" }
 ika-config = { path = "crates/ika-config" }
-ika-core = { path = "crates/ika-core" , features = ["mock-class-groups"]}
+ika-core = { path = "crates/ika-core"}
 ika-node = { path = "crates/ika-node" }
 ika-sui-client = { path = "crates/ika-sui-client" }
 ika-protocol-config = { path = "crates/ika-protocol-config" }
 ika-protocol-config-macros = { path = "crates/ika-protocol-config-macros" }
 #ika-sdk = { path = "crates/ika-sdk" }
 ika-swarm = { path = "crates/ika-swarm" }
-ika-swarm-config = { path = "crates/ika-swarm-config" }
+ika-swarm-config = { path = "crates/ika-swarm-config", features = ["mock-class-groups"] }
 ika-telemetry = { path = "crates/ika-telemetry" }
 ika-types = { path = "crates/ika-types" }
 ika-move-packages = { path = "crates/ika-move-packages" }
