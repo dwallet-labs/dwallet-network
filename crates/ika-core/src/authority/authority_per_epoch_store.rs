@@ -699,13 +699,6 @@ impl AuthorityPerEpochStore {
             .collect())
     }
 
-    /// Saves a DWallet MPC event in the round events
-    /// The round events are later being stored to the on-disk DB to allow state sync.
-    pub(crate) async fn save_dwallet_mpc_event(&self, event: DWalletMPCEvent) {
-        let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_events.lock().await;
-        dwallet_mpc_round_outputs.push(event);
-    }
-
     /// Saves a DWallet MPC completed session in the round completed sessions
     /// The round completed sessions are later being stored to the on-disk DB to allow state sync.
     pub(crate) async fn save_dwallet_mpc_completed_session(&self, session_id: ObjectID) {
@@ -1716,10 +1709,14 @@ impl AuthorityPerEpochStore {
         let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_outputs.lock().await;
         output.set_dwallet_mpc_round_outputs(dwallet_mpc_round_outputs.clone());
         dwallet_mpc_round_outputs.clear();
+        let mut dwallet_mpc_round_events = self.dwallet_mpc_round_events.lock().await;
+        output.set_dwallet_mpc_round_events(dwallet_mpc_round_events.clone());
+        dwallet_mpc_round_events.clear();
         let mut dwallet_mpc_round_completed_sessions =
             self.dwallet_mpc_round_completed_sessions.lock().await;
         output
             .set_dwallet_mpc_round_completed_sessions(dwallet_mpc_round_completed_sessions.clone());
+
         dwallet_mpc_round_completed_sessions.clear();
 
         authority_metrics
@@ -2580,6 +2577,7 @@ impl ConsensusCommitOutput {
                 &tables.last_consensus_stats,
                 [(LAST_CONSENSUS_STATS_ADDR, consensus_commit_stats)],
             )?;
+
         }
 
         batch.insert_batch(
