@@ -520,12 +520,6 @@ impl DWalletMPCSession {
         Ok(())
     }
 
-    /// Handles a message by either forwarding it to the session
-    /// or ignoring it if the session is not active.
-    pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        self.store_message(message)
-    }
-
     pub(crate) fn check_quorum_for_next_crypto_round(&mut self) -> ReadyToAdvanceCheckResult {
         match self.status {
             MPCSessionStatus::Active => {
