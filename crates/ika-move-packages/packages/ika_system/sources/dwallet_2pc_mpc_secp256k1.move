@@ -8,7 +8,7 @@ use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
 use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
     Self,
     DWallet2PcMpcSecp256K1InnerV1,
-    DWalletNetworkrkDecryptionKeyCap,
+    DWalletNetworkDecryptionKeyCap,
     EncryptionKey,
     DWalletCap,
     MessageApproval,
@@ -40,7 +40,7 @@ public(package) fun create(
     active_committee: Committee,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
-): (ID, DWalletNetworkrkDecryptionKeyCap) {
+): (ID, DWalletNetworkDecryptionKeyCap) {
     let mut dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1_inner::create(
         epoch,
         active_committee,
