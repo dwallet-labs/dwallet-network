@@ -25,6 +25,7 @@ describe('Test dWallet MPC', () => {
 			keypair,
 			client: suiClient,
 			timeout: fiveMinutes,
+			ikaConfig: require('../../../../ika_config.json'),
 		};
 		await delay(2000);
 	});
