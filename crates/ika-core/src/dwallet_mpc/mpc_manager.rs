@@ -681,7 +681,7 @@ impl DWalletMPCManager {
                 return Ok(());
             }
         };
-        match session.handle_message(&message) {
+        match session.store_message(&message) {
             Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
                 self.flag_parties_as_malicious(&malicious_parties)?;
                 Ok(())

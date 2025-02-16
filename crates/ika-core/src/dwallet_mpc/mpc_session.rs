@@ -9,7 +9,7 @@ use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
-use tracing::error;
+use tracing::{error, warn};
 use twopc_mpc::sign::Protocol;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
@@ -493,7 +493,7 @@ impl DWalletMPCSession {
     /// Stores a message in the serialized messages map.
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
-    fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+    pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         let source_party_id =
             authority_name_to_party_id(&message.authority, &*self.epoch_store()?)?;
 
@@ -513,6 +513,8 @@ impl DWalletMPCSession {
                 self.serialized_messages.push(map);
             }
             None => {
+                warn!("received message for round {} when current round is {}", message.round_number, current_round);
+                warn!("marking party {} as malicious", source_party_id);
                 // Unexpected round number; rounds should grow sequentially.
                 return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
             }
