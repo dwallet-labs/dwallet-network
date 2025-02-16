@@ -493,10 +493,11 @@ impl DWalletMPCSession {
     /// Stores a message in the serialized messages map.
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
-    pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+    fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         let source_party_id =
             authority_name_to_party_id(&message.authority, &*self.epoch_store()?)?;
 
+        let current_round = self.serialized_messages.len();
         match self.serialized_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
                 if party_to_msg.contains_key(&source_party_id) {
@@ -505,14 +506,15 @@ impl DWalletMPCSession {
                 }
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
+            // If next round.
+            None if message.round_number == current_round => {
+                let mut map = HashMap::new();
+                map.insert(source_party_id, message.message.clone());
+                self.serialized_messages.push(map);
+            }
             None => {
-                for round in self.serialized_messages.len()..=message.round_number {
-                    let mut map = HashMap::new();
-                    if round == message.round_number {
-                        map.insert(source_party_id, message.message.clone());
-                    }
-                    self.serialized_messages.push(map);
-                }
+                // Unexpected round number; rounds should grow sequentially.
+                return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
             }
         }
         Ok(())
