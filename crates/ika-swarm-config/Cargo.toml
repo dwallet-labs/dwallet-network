@@ -46,6 +46,7 @@ sui-types.workspace = true
 ika-move-packages.workspace = true
 move-binary-format.workspace = true
 move-core-types.workspace = true
+flate2 = "1.0.35"
 serde_json.workspace = true
 
 [target.'cfg(msim)'.dependencies]
@@ -56,3 +57,6 @@ insta.workspace = true
 tempfile.workspace = true
 
 sui-execution.workspace = true
+
+[features]
+mock-class-groups = []

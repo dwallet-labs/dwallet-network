@@ -276,7 +276,17 @@ impl FullnodeConfigBuilder {
     ) -> NodeConfig {
         // Take advantage of ValidatorGenesisConfigBuilder to build the keypairs and addresses,
         // even though this is a fullnode.
-        let validator_config = ValidatorInitializationConfigBuilder::new().build(rng);
+        let mut validator_config_builder = ValidatorInitializationConfigBuilder::new();
+
+        #[cfg(feature = "mock-class-groups")]
+        {
+            validator_config_builder = validator_config_builder
+                .with_class_groups_key_pair_and_proof(
+                    crate::class_groups_mock_builder::create_full_class_groups_mock(),
+                );
+        }
+
+        let validator_config = validator_config_builder.build(rng);
 
         let key_path = get_key_path(&validator_config.key_pair);
         let config_directory = self
