@@ -1729,7 +1729,7 @@ public(package) fun process_checkpoint_message_by_quorum(
     self.process_checkpoint_message(message, ctx);
 }
 
-#[allow(dead_code, unused_field)]
+#[allow(dead_code, unused_field, unused_mut_parameter)]
 fun process_checkpoint_message(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     message: vector<u8>,
