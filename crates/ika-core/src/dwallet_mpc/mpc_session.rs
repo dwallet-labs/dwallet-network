@@ -497,7 +497,6 @@ impl DWalletMPCSession {
         let source_party_id =
             authority_name_to_party_id(&message.authority, &*self.epoch_store()?)?;
 
-        let current_round = self.serialized_messages.len();
         match self.serialized_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
                 if party_to_msg.contains_key(&source_party_id) {
@@ -506,17 +505,14 @@ impl DWalletMPCSession {
                 }
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
-            // If next round.
-            None if message.round_number == current_round => {
-                let mut map = HashMap::new();
-                map.insert(source_party_id, message.message.clone());
-                self.serialized_messages.push(map);
-            }
             None => {
-                warn!("received message for round {} when current round is {}", message.round_number, current_round);
-                warn!("marking party {} as malicious", source_party_id);
-                // Unexpected round number; rounds should grow sequentially.
-                return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+                for round in self.serialized_messages.len()..=message.round_number {
+                    let mut map = HashMap::new();
+                    if round == message.round_number {
+                        map.insert(source_party_id, message.message.clone());
+                    }
+                    self.serialized_messages.push(map);
+                }
             }
         }
         Ok(())
