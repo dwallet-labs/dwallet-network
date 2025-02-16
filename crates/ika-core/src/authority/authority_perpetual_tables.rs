@@ -91,7 +91,7 @@ impl AuthorityPerpetualTables {
     pub fn insert_pending_events(&self, module: Identifier, events: &[SuiEvent]) -> IkaResult {
         let cursor = events.last().map(|e| e.id);
         if let Some(cursor) = cursor {
-            let mut batch = self.epoch_start_configuration.batch();
+            let mut batch = self.pending_events.batch();
             batch.insert_batch(&self.sui_syncer_cursors, [(module, cursor)])?;
             batch.insert_batch(
                 &self.pending_events,
