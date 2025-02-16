@@ -93,6 +93,14 @@ pub struct PresignSessionState {
     pub second_party_public_input: MPCPublicInput,
 }
 
+/// This is a wrapper type for the [`SuiEvent`] type that is being used to write it to the local RocksDB.
+/// This is needed because the [`SuiEvent`] cannot be directly written to the RocksDB.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DBSuiEvent {
+    pub type_: StructTag,
+    pub contents: Vec<u8>,
+}
+
 /// The state of a sign-identifiable abort session.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SignIASessionState {
@@ -472,10 +480,4 @@ pub struct IkaPackagesConfig {
     pub ika_system_package_id: ObjectID,
     /// The object id of ika_system_state on sui.
     pub system_id: ObjectID,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DBSuiEvent {
-    pub type_: StructTag,
-    pub contents: Vec<u8>,
 }
