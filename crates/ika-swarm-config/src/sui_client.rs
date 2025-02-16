@@ -3,6 +3,7 @@ use anyhow::bail;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::initiation::InitiationParameters;
+use ika_config::validator_info::ValidatorInfo;
 use ika_config::Config;
 use ika_move_packages::IkaMovePackage;
 use ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA;
@@ -27,8 +28,7 @@ use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
 use sui_sdk::rpc_types::SuiTransactionBlockEffectsAPI;
 use sui_sdk::rpc_types::{
-    ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse
-    ,
+    ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
 };
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
@@ -46,7 +46,6 @@ use sui_types::transaction::{
 use sui_types::{
     Identifier, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION, SUI_FRAMEWORK_PACKAGE_ID,
 };
-use ika_config::validator_info::ValidatorInfo;
 
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
@@ -178,8 +177,7 @@ pub async fn init_ika_on_sui(
         let validator_address: SuiAddress =
             (&validator_initialization_config.account_key_pair.public()).into();
 
-        let validator_initialization_metadata =
-            validator_initialization_config.to_validator_info();
+        let validator_initialization_metadata = validator_initialization_config.to_validator_info();
         let (validator_id, validator_cap_id) = request_add_validator_candidate(
             validator_address,
             &mut context,

@@ -4,21 +4,22 @@
 use std::net::{IpAddr, SocketAddr};
 
 use dwallet_classgroups_types::{
-    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof
-    ,
+    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
 };
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_config::local_ip_utils;
-use ika_types::crypto::{generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, AuthorityPublicKeyBytes, NetworkKeyPair, NetworkPublicKey};
+use ika_config::validator_info::ValidatorInfo;
+use ika_types::crypto::{
+    generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,
+    AuthorityPublicKeyBytes, NetworkKeyPair, NetworkPublicKey,
+};
 use ika_types::sui::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_COMPUTATION_PRICE};
+use serde::{Deserialize, Serialize};
+use sui_types::base_types::SuiAddress;
 use sui_types::crypto::{PublicKey, SuiKeyPair};
 use sui_types::multiaddr::Multiaddr;
-use serde::{Deserialize, Serialize};
-use ika_config::validator_info::ValidatorInfo;
-use sui_types::base_types::SuiAddress;
 
 pub const DEFAULT_NUMBER_OF_AUTHORITIES: usize = 4;
-
 
 // All information needed to build a NodeConfig for a validator.
 #[derive(Debug, Serialize, Deserialize)]
