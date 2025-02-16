@@ -31,7 +31,7 @@ pub struct AuthorityPerpetualTables {
 
 impl AuthorityPerpetualTables {
     pub fn path(parent_path: &Path) -> PathBuf {
-        parent_path.join("perpetual_2")
+        parent_path.join("perpetual")
     }
 
     pub fn open(parent_path: &Path, db_options: Option<Options>) -> Self {
