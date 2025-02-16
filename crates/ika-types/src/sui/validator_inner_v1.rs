@@ -1,4 +1,4 @@
-use super::Element;
+use super::{ClassGroupsPublicKeyAndProof, Element};
 use crate::crypto::{
     verify_proof_of_possession, AuthorityPublicKey, AuthorityPublicKeyBytes, AuthoritySignature,
     NetworkPublicKey,
@@ -9,7 +9,7 @@ use once_cell::sync::OnceCell;
 use serde::Deserialize;
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
-use sui_types::collection_types::{Bag, Table};
+use sui_types::collection_types::{Bag, Table, TableVec};
 use sui_types::crypto::ToFromBytes;
 
 const E_METADATA_INVALID_POP: u64 = 0;
@@ -30,6 +30,7 @@ pub struct ValidatorMetadataV1 {
     pub proof_of_possession_bytes: Vec<u8>,
     pub network_pubkey_bytes: Vec<u8>,
     pub consensus_pubkey_bytes: Vec<u8>,
+    pub class_groups_public_key_and_proof: TableVec,
     pub name: String,
     pub description: String,
     pub image_url: String,
@@ -42,6 +43,7 @@ pub struct ValidatorMetadataV1 {
     pub next_epoch_network_pubkey_bytes: Option<Vec<u8>>,
     pub next_epoch_consensus_pubkey_bytes: Option<Vec<u8>>,
     pub next_epoch_network_address: Option<String>,
+    pub next_epoch_class_groups_public_key_and_proof: Option<ClassGroupsPublicKeyAndProof>,
     pub next_epoch_p2p_address: Option<String>,
     pub next_epoch_consensus_address: Option<String>,
     pub extra_fields: Bag,
@@ -53,6 +55,7 @@ pub struct VerifiedValidatorMetadataV1 {
     pub protocol_pubkey: AuthorityPublicKey,
     pub network_pubkey: NetworkPublicKey,
     pub consensus_pubkey: NetworkPublicKey,
+    pub class_groups_public_key_and_proof: TableVec,
     #[debug(ignore)]
     pub proof_of_possession_bytes: Vec<u8>,
     pub name: String,
@@ -67,6 +70,7 @@ pub struct VerifiedValidatorMetadataV1 {
     pub next_epoch_network_pubkey: Option<NetworkPublicKey>,
     pub next_epoch_consensus_pubkey: Option<NetworkPublicKey>,
     pub next_epoch_network_address: Option<Multiaddr>,
+    pub next_epoch_class_groups_public_key_and_proof: Option<ClassGroupsPublicKeyAndProof>,
     pub next_epoch_p2p_address: Option<Multiaddr>,
     pub next_epoch_consensus_address: Option<Multiaddr>,
 }
@@ -205,6 +209,7 @@ impl ValidatorMetadataV1 {
             protocol_pubkey,
             network_pubkey,
             consensus_pubkey,
+            class_groups_public_key_and_proof: self.class_groups_public_key_and_proof.clone(),
             proof_of_possession_bytes: self.proof_of_possession_bytes.clone(),
             name: self.name.clone(),
             description: self.description.clone(),
@@ -218,6 +223,9 @@ impl ValidatorMetadataV1 {
             next_epoch_network_pubkey,
             next_epoch_consensus_pubkey,
             next_epoch_network_address,
+            next_epoch_class_groups_public_key_and_proof: self
+                .next_epoch_class_groups_public_key_and_proof
+                .clone(),
             next_epoch_p2p_address,
             next_epoch_consensus_address,
         })

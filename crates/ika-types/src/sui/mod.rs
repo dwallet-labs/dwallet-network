@@ -13,6 +13,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use sui_types::base_types::ObjectID;
+use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::{
     get_dynamic_field_from_store, get_dynamic_field_object_from_store, Field,
 };
@@ -184,7 +185,10 @@ impl ClassGroupsPublicKeyAndProofBuilder {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct ClassGroupsPublicKeyAndProof;
+pub struct ClassGroupsPublicKeyAndProof {
+    pub id: ObjectID,
+    pub public_keys_and_proofs: TableVec,
+}
 
 impl ClassGroupsPublicKeyAndProof {
     pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
