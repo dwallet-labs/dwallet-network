@@ -322,8 +322,10 @@ where
                     if let Some(id) = dwallet_id {
                         self.inner.get_mutable_shared_arg(id)
                     } else {
-                    Err(anyhow!("Dwallet id is not found"))
-                }
+                        Err(IkaError::SuiClientSerializationError(format!(
+                            "Can't serialize ValidatorInnerV1"
+                        )))
+                    }
                 },
                 Duration::from_secs(30)
             ) else {
