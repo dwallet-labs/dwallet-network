@@ -122,6 +122,7 @@ where
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
                 {
+                    let dwallet_id = ika_system_state_inner.get_dwallet_id().unwrap();
                     let auth_sig = checkpoint_message.auth_sig();
                     let signature = auth_sig.signature.as_bytes().to_vec();
                     let signers_bitmap = Self::calculate_signers_bitmap(auth_sig);
@@ -133,6 +134,7 @@ where
 
                     let task = Self::handle_execution_task(
                         self.ika_system_package_id,
+                        dwallet_id,
                         signature,
                         signers_bitmap,
                         message,
@@ -164,6 +166,7 @@ where
 
     async fn handle_execution_task(
         ika_system_package_id: ObjectID,
+        dwallet_id: ObjectID,
         signature: Vec<u8>,
         signers_bitmap: Vec<u8>,
         message: Vec<u8>,
@@ -178,7 +181,7 @@ where
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
-        let ika_dwallet_system_state_arg = sui_client.get_mutable_dwallet_system_arg_must_succeed().await;
+        let ika_dwallet_system_state_arg = sui_client.get_mutable_dwallet_system_arg_must_succeed(dwallet_id).await;
 
         ptb.move_call(
             ika_system_package_id,

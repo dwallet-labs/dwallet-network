@@ -312,21 +312,11 @@ where
     // We retry a few times in case of errors. If it fails eventually, we panic.
     // In general it's safe to call in the beginning of the program.
     // After the first call, the result is cached since the value should never change.
-    pub async fn get_mutable_dwallet_system_arg_must_succeed(&self) -> ObjectArg {
+    pub async fn get_mutable_dwallet_system_arg_must_succeed(&self, id: ObjectID) -> ObjectArg {
         static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
         *ARG.get_or_init(|| async move {
             let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
-                {
-                    let inner = self.get_system_inner_until_success().await;
-                    let dwallet_id = inner.get_dwallet_id();
-                    if let Some(id) = dwallet_id {
-                        self.inner.get_mutable_shared_arg(id)
-                    } else {
-                        Err(IkaError::SuiClientSerializationError(format!(
-                            "Can't serialize ValidatorInnerV1"
-                        )))
-                    }
-                },
+                self.inner.get_mutable_shared_arg(id).await,
                 Duration::from_secs(30)
             ) else {
                 panic!("Failed to get system object arg after retries");
