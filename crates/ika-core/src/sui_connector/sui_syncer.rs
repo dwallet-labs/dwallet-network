@@ -116,9 +116,6 @@ where
             };
 
             let len = events.data.len();
-            perpetual_tables
-                .insert_test()
-                .expect("Failed to insert pending events");
             if len != 0 {
                 if !events.has_next_page {
                     // If this is the last page, it means we have processed all events up to the latest checkpoint
@@ -132,14 +129,6 @@ where
                     cursor = Some(next);
                 }
                 tracing::info!(?module, ?cursor, "Observed {len} new Sui events");
-            }
-            let events = perpetual_tables.get_all_pending_events();
-            if !events.is_empty() {
-                tracing::warn!("dfvzdfzdsf");
-            }
-            let events = perpetual_tables.get_all_test();
-            if !events.is_empty() {
-                tracing::warn!("dfvzdfzdsf");
             }
             tokio::task::yield_now().await;
         }

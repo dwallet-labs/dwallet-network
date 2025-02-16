@@ -22,11 +22,11 @@ pub struct AuthorityPerpetualTables {
     /// A singleton table that stores latest pruned checkpoint. Used to keep objects pruner progress
     pub(crate) pruned_checkpoint: DBMap<(), CheckpointSequenceNumber>,
 
-    /// module identifier to the last processed EventID
-    pub(crate) sui_syncer_cursors: DBMap<Identifier, EventID>,
-
     /// pending events from sui received but not yet executed
     pending_events: DBMap<EventID, Vec<u8>>,
+
+    /// module identifier to the last processed EventID
+    pub(crate) sui_syncer_cursors: DBMap<Identifier, EventID>,
     test: DBMap<usize, usize>,
 }
 

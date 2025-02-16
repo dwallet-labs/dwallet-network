@@ -110,7 +110,6 @@ impl DWalletMPCService {
                 .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;
             drop(manager);
-
         }
     }
 
