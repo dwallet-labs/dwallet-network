@@ -6,9 +6,6 @@ import type { Config, StartSessionEvent } from './globals.js';
 import {
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
-	IKA_COIN_OBJECT_PATH,
-	IKA_SYSTEM_OBJ_ID,
-	IKA_SYSTEM_PACKAGE_ID,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 
@@ -50,12 +47,12 @@ export async function launchDKGFirstRound(c: Config) {
 	let emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
 		arguments: [],
-		typeArguments: [IKA_COIN_OBJECT_PATH],
+		typeArguments: [`${c.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 	let networkDecryptionKeyID = await getNetworkDecryptionKeyID(c);
 	let dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(c);
 	let dwalletCap = tx.moveCall({
-		target: `${IKA_SYSTEM_PACKAGE_ID}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dkg_first_round`,
+		target: `${c.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dkg_first_round`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletSecp256k1ID,
@@ -71,7 +68,7 @@ export async function launchDKGFirstRound(c: Config) {
 	tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
 		arguments: [emptyIKACoin],
-		typeArguments: [IKA_COIN_OBJECT_PATH],
+		typeArguments: [`${c.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 	const result = await c.client.signAndExecuteTransaction({
 		signer: c.keypair,
@@ -95,10 +92,10 @@ function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 
 async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 	const dynamicFields = await c.client.getDynamicFields({
-		parentId: IKA_SYSTEM_OBJ_ID,
+		parentId: c.ikaConfig.ika_system_obj_id,
 	});
 	let innerSystemState = await c.client.getDynamicFieldObject({
-		parentId: IKA_SYSTEM_OBJ_ID,
+		parentId: c.ikaConfig.ika_system_obj_id,
 		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
 	});
 	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
@@ -109,10 +106,10 @@ async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 
 async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	const dynamicFields = await c.client.getDynamicFields({
-		parentId: IKA_SYSTEM_OBJ_ID,
+		parentId: c.ikaConfig.ika_system_obj_id,
 	});
 	let innerSystemState = await c.client.getDynamicFieldObject({
-		parentId: IKA_SYSTEM_OBJ_ID,
+		parentId: c.ikaConfig.ika_system_obj_id,
 		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
 	});
 	if (!isIKASystemStateInner(innerSystemState.data?.content)) {

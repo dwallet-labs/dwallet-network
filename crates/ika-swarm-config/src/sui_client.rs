@@ -16,8 +16,11 @@ use ika_types::sui::{
     VALIDATOR_CAP_STRUCT_NAME,
 };
 use move_core_types::language_storage::StructTag;
+use serde::Serialize;
 use shared_crypto::intent::Intent;
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
 use sui::client_commands::{
     estimate_gas_budget_from_gas_cost, execute_dry_run, max_gas_budget, request_tokens_from_faucet,
     SuiClientCommandResult,
@@ -45,6 +48,13 @@ use sui_types::transaction::{
 use sui_types::{
     Identifier, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION, SUI_FRAMEWORK_PACKAGE_ID,
 };
+
+#[derive(Serialize)]
+struct IkaConfig {
+    pub ika_package_id: ObjectID,
+    pub ika_system_package_id: ObjectID,
+    pub ika_system_obj_id: ObjectID,
+}
 
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
@@ -169,6 +179,14 @@ pub async fn init_ika_on_sui(
     .await?;
 
     println!("Running `init::initialize` done: system_id: {system_id}");
+    let ika_config = IkaConfig {
+        ika_package_id,
+        ika_system_package_id,
+        ika_system_obj_id: system_id,
+    };
+    let mut file = File::create("ika_config.json")?;
+    let json = serde_json::to_string_pretty(&ika_config)?;
+    file.write_all(json.as_bytes())?;
 
     let mut validator_ids = Vec::new();
     let mut validator_cap_ids = Vec::new();
