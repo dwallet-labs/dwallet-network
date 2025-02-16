@@ -35,7 +35,7 @@ impl AuthorityPerpetualTables {
     }
 
     pub fn open(parent_path: &Path, db_options: Option<Options>) -> Self {
-        Self::open_tables_transactional(
+        Self::open_tables_read_write(
             Self::path(parent_path),
             MetricConf::new("perpetual"),
             db_options,
