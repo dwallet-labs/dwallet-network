@@ -7,8 +7,8 @@ use thiserror::Error;
 pub const DWALLET_MPC_EVENT_STRUCT_NAME: &IdentStr = ident_str!("DWalletEvent");
 pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
 pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
-/// The inner module name is used because of using the wrapper upgradable contracts pattern.
-/// To get further info, visit https://docs.sui.io/concepts/sui-move-concepts/packages/upgrade.
+/// There's a wrapper and inner struct to support Move upgradable contracts. Read this doc for further explanations:
+/// https://docs.sui.io/concepts/sui-move-concepts/packages/upgrade.
 pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1_inner");
 pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DKGFirstRoundRequestEvent");
