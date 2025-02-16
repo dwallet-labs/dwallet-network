@@ -101,7 +101,7 @@ pub(crate) fn session_info_from_event(
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =
                 bcs::from_bytes(&event.contents)?;
-            Ok(Some(dkg_first_party_session_info(deserialized_event)))
+            Ok(Some(dkg_first_party_session_info(deserialized_event)?))
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGSecondRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent> =
@@ -216,12 +216,15 @@ fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResu
 
 fn dkg_first_party_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> anyhow::Result<SessionInfo> {
+    Ok(SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: SuiAddress::generate(&mut OsRng),
+        // TODO (#642): Remove the redundant initiating user address field
+        initiating_user_address: SuiAddress::from_bytes(
+            deserialized_event.session_id.into_bytes(),
+        )?,
         mpc_round: MPCProtocolInitData::DKGFirst,
-    }
+    })
 }
 
 fn dkg_second_public_input(
