@@ -1,6 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use crate::network_config::NetworkConfig;
+use crate::node_config_builder::{FullnodeConfigBuilder, ValidatorConfigBuilder};
+use crate::validator_initialization_config::ValidatorInitializationConfig;
+use crate::validator_initialization_config::ValidatorInitializationConfigBuilder;
 use ika_config::initiation::InitiationParameters;
 use ika_config::node::{
     AuthorityOverloadConfig, RunWithRange, LOCAL_DEFAULT_SUI_FAUCET_URL,
@@ -15,11 +19,6 @@ use rand::rngs::OsRng;
 use std::path::PathBuf;
 use std::{num::NonZeroUsize, path::Path, sync::Arc};
 use sui_macros::nondeterministic;
-
-use crate::network_config::NetworkConfig;
-use crate::node_config_builder::{FullnodeConfigBuilder, ValidatorConfigBuilder};
-use crate::validator_initialization_config::ValidatorInitializationConfig;
-use crate::validator_initialization_config::ValidatorInitializationConfigBuilder;
 
 pub enum CommitteeConfig {
     Size(NonZeroUsize),
@@ -266,6 +265,13 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                         if let Some(rgp) = self.computation_price_per_unit_size {
                             builder = builder.with_computation_price(rgp);
                         }
+                        #[cfg(feature = "mock-class-groups")]
+                        {
+                            builder = builder.with_class_groups_key_pair_and_proof(
+                                crate::class_groups_mock_builder::create_full_class_groups_mock(),
+                            );
+                        }
+
                         builder.build(&mut rng)
                     })
                     .collect::<Vec<_>>()
