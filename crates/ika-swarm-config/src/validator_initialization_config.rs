@@ -159,9 +159,9 @@ impl ValidatorInitializationConfigBuilder {
 
     pub fn with_class_groups_key_pair_and_proof(
         mut self,
-        key_pair: ClassGroupsKeyPairAndProof,
+        key_pair: Box<ClassGroupsKeyPairAndProof>,
     ) -> Self {
-        self.class_groups_key_pair_and_proof = Some(Box::new(key_pair));
+        self.class_groups_key_pair_and_proof = Some(key_pair);
         self
     }
 
