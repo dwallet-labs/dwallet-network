@@ -64,6 +64,7 @@ use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
 use tempfile::tempdir;
 use tracing;
 use tracing::{debug, info};
+use crate::validator_commands::IkaValidatorCommand;
 
 const DEFAULT_EPOCH_DURATION_MS: u64 = 60_000;
 
@@ -142,6 +143,21 @@ pub enum IkaCommand {
         #[clap(short, long, help = "Dump the public keys of all authorities")]
         dump_addresses: bool,
     },
+
+    /// A tool for validators and validator candidates.
+    #[clap(name = "validator")]
+    Validator {
+        /// Sets the file storing the state of our user accounts (an empty one will be created if missing)
+        #[clap(long = "client.config")]
+        config: Option<PathBuf>,
+        #[clap(subcommand)]
+        cmd: Option<IkaValidatorCommand>,
+        /// Return command outputs in json format.
+        #[clap(long, global = true)]
+        json: bool,
+        #[clap(short = 'y', long = "yes")]
+        accept_defaults: bool,
+    },
 }
 
 impl IkaCommand {
@@ -198,6 +214,30 @@ impl IkaCommand {
                 )
                 .await?;
 
+                Ok(())
+            }
+            IkaCommand::Validator {
+                config,
+                cmd,
+                json,
+                accept_defaults,
+            } => {
+                let config_path = config.unwrap_or(sui_config_dir()?.join(SUI_CLIENT_CONFIG));
+                // prompt_if_no_config(&config_path, accept_defaults).await?;
+                let mut context = WalletContext::new(&config_path, None, None)?;
+                if let Some(cmd) = cmd {
+                    if let Ok(client) = context.get_client().await {
+                        if let Err(e) = client.check_api_version() {
+                            eprintln!("{}", format!("[warning] {e}").yellow().bold());
+                        }
+                    }
+                    cmd.execute(&mut context).await?.print(!json);
+                } else {
+                    // Print help
+                    let mut app: Command = IkaCommand::command();
+                    app.build();
+                    app.find_subcommand_mut("validator").unwrap().print_help()?;
+                }
                 Ok(())
             }
         }
