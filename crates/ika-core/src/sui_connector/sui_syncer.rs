@@ -130,7 +130,6 @@ where
                 }
                 tracing::info!(?module, ?cursor, "Observed {len} new Sui events");
             }
-            tokio::task::yield_now().await;
         }
     }
 }
