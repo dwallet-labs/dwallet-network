@@ -610,7 +610,6 @@ public fun is_duplicate(self: &ValidatorInnerV1, other: &ValidatorInnerV1): bool
             || self.metadata.network_pubkey_bytes == other.metadata.consensus_pubkey_bytes
             || self.metadata.consensus_pubkey_bytes == other.metadata.consensus_pubkey_bytes
             || self.metadata.consensus_pubkey_bytes == other.metadata.network_pubkey_bytes
-            // || self.metadata.class_groups_pubkey_and_proof_bytes == other.metadata.class_groups_pubkey_and_proof_bytes
             // All next epoch parameters.
             || is_equal_some(&self.metadata.next_epoch_network_address, &other.metadata.next_epoch_network_address)
             || is_equal_some(&self.metadata.next_epoch_p2p_address, &other.metadata.next_epoch_p2p_address)
