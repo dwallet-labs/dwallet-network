@@ -66,7 +66,7 @@ public struct DWalletCap has key, store {
 }
 
 /// Represents a capability granting control over a specific dWallet network decryption key.
-public struct DWalletNetworkrkDecryptionKeyCap has key, store {
+public struct DWalletNetworkDecryptionKeyCap has key, store {
     id: UID,
     dwallet_network_decryption_key_id: ID,
 }
@@ -645,7 +645,7 @@ public(package) fun create(
 public(package) fun create_dwallet_network_decryption_key(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     ctx: &mut TxContext
-): DWalletNetworkrkDecryptionKeyCap {
+): DWalletNetworkDecryptionKeyCap {
     let id = object::new(ctx);
     let dwallet_network_decryption_key_id = id.to_inner();
     self.dwallet_network_decryption_keys.add(dwallet_network_decryption_key_id, DWalletNetworkDecryptionKey {
@@ -657,7 +657,7 @@ public(package) fun create_dwallet_network_decryption_key(
         public_output: vector[],
         state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
-    DWalletNetworkrkDecryptionKeyCap {
+    DWalletNetworkDecryptionKeyCap {
         id: object::new(ctx),
         dwallet_network_decryption_key_id,
     }

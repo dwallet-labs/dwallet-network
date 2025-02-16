@@ -13,9 +13,4 @@ export default defineConfig({
 			NODE_ENV: 'test',
 		},
 	},
-	resolve: {
-		alias: {
-			'@mysten/bcs': new URL('../bcs/src', import.meta.url).pathname,
-		},
-	},
 });

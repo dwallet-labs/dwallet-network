@@ -7,27 +7,6 @@ init
 ed25519_address
 	public fun
 	0x0::address
-ClassGroupsPublicKeyAndProofBuilder
-	public struct
-	0x0::class_groups_public_key_and_proof
-ClassGroupsPublicKeyAndProof
-	public struct
-	0x0::class_groups_public_key_and_proof
-empty
-	public fun
-	0x0::class_groups_public_key_and_proof
-add_public_key_and_proof
-	public fun
-	0x0::class_groups_public_key_and_proof
-finish
-	public fun
-	0x0::class_groups_public_key_and_proof
-drop
-	public fun
-	0x0::class_groups_public_key_and_proof
-destroy
-	public fun
-	0x0::class_groups_public_key_and_proof
 CommitteeMember
 	public struct
 	0x0::committee
@@ -130,7 +109,7 @@ DWallet2PcMpcSecp256K1InnerV1
 DWalletCap
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-DWalletNetworkrkDecryptionKeyCap
+DWalletNetworkDecryptionKeyCap
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 DWalletNetworkDecryptionKey
@@ -397,27 +376,6 @@ inner_mut
 inner
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1
-ExtendedField
-	public struct
-	0x0::extended_field
-Key
-	public struct
-	0x0::extended_field
-new
-	public fun
-	0x0::extended_field
-borrow
-	public fun
-	0x0::extended_field
-borrow_mut
-	public fun
-	0x0::extended_field
-swap
-	public fun
-	0x0::extended_field
-destroy
-	public fun
-	0x0::extended_field
 ValidatorCap
 	public struct
 	0x0::validator_cap
@@ -691,9 +649,6 @@ network_pubkey_bytes
 consensus_pubkey_bytes
 	public fun
 	0x0::validator_inner_v1
-class_groups_pubkey_and_proof_bytes
-	public fun
-	0x0::validator_inner_v1
 next_epoch_network_address
 	public fun
 	0x0::validator_inner_v1
@@ -713,9 +668,6 @@ next_epoch_network_pubkey_bytes
 	public fun
 	0x0::validator_inner_v1
 next_epoch_consensus_pubkey_bytes
-	public fun
-	0x0::validator_inner_v1
-next_epoch_class_groups_pubkey_and_proof_bytes
 	public fun
 	0x0::validator_inner_v1
 operation_cap_id
@@ -802,20 +754,11 @@ update_candidate_network_pubkey_bytes
 update_next_epoch_consensus_pubkey_bytes
 	public(package) fun
 	0x0::validator_inner_v1
-update_next_epoch_class_groups_pubkey_and_proof_bytes
-	public(package) fun
-	0x0::validator_inner_v1
 update_candidate_consensus_pubkey_bytes
-	public(package) fun
-	0x0::validator_inner_v1
-update_candidate_class_groups_pubkey_and_proof_bytes
 	public(package) fun
 	0x0::validator_inner_v1
 effectuate_staged_metadata
 	public(package) fun
-	0x0::validator_inner_v1
-update_class_groups_key_and_proof
-	fun
 	0x0::validator_inner_v1
 verify_proof_of_possession
 	public(package) fun
@@ -1198,12 +1141,6 @@ update_validator_next_epoch_consensus_pubkey_bytes
 update_candidate_validator_consensus_pubkey_bytes
 	public(package) fun
 	0x0::system_inner_v1
-update_validator_next_epoch_class_groups_pubkey_and_proof_bytes
-	public(package) fun
-	0x0::system_inner_v1
-update_candidate_validator_class_groups_pubkey_and_proof_bytes
-	public(package) fun
-	0x0::system_inner_v1
 update_validator_next_epoch_network_pubkey_bytes
 	public(package) fun
 	0x0::system_inner_v1
@@ -1373,12 +1310,6 @@ update_validator_next_epoch_consensus_pubkey_bytes
 	public entry fun
 	0x0::system
 update_candidate_validator_consensus_pubkey_bytes
-	public entry fun
-	0x0::system
-update_validator_next_epoch_class_groups_pubkey_and_proof_bytes
-	public entry fun
-	0x0::system
-update_candidate_validator_class_groups_pubkey_and_proof_bytes
 	public entry fun
 	0x0::system
 update_validator_next_epoch_network_pubkey_bytes
