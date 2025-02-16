@@ -2577,7 +2577,6 @@ impl ConsensusCommitOutput {
                 &tables.last_consensus_stats,
                 [(LAST_CONSENSUS_STATS_ADDR, consensus_commit_stats)],
             )?;
-
         }
 
         batch.insert_batch(
