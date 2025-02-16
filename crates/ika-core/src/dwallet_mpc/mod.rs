@@ -223,7 +223,7 @@ fn dkg_first_party_session_info(
         initiating_user_address: SuiAddress::from_bytes(
             deserialized_event.session_id.into_bytes(),
         )?,
-        mpc_round: MPCProtocolInitData::DKGFirst,
+        mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event.event_data),
     })
 }
 

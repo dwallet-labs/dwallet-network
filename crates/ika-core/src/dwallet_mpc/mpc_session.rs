@@ -266,7 +266,7 @@ impl DWalletMPCSession {
         let session_id =
             CommitmentSizedNumber::from_le_slice(self.session_info.session_id.to_vec().as_slice());
         match &self.session_info.mpc_round {
-            MPCProtocolInitData::DKGFirst => {
+            MPCProtocolInitData::DKGFirst(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
                     session_id,
