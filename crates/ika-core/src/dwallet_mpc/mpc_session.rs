@@ -493,7 +493,7 @@ impl DWalletMPCSession {
     /// Stores a message in the serialized messages map.
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
-    fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+    pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         let source_party_id =
             authority_name_to_party_id(&message.authority, &*self.epoch_store()?)?;
 
