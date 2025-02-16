@@ -178,6 +178,7 @@ where
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
+        let ika_dwallet_system_state_arg = sui_client.get_mutable_dwallet_system_arg_must_succeed().await;
 
         ptb.move_call(
             ika_system_package_id,
@@ -186,7 +187,7 @@ where
             vec![],
             vec![
                 CallArg::Object(ika_system_state_arg),
-                CallArg::Object(ika_system_state_arg),
+                CallArg::Object(ika_dwallet_system_state_arg),
                 CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                     IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
                 })?),
