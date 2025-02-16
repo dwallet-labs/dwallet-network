@@ -1,7 +1,6 @@
 module ika_system::class_groups_public_key_and_proof;
 
 use sui::table_vec;
-// use sui::transfer;
 
 const NUMBER_OF_KEYS: u64 = 13;
 
@@ -22,15 +21,18 @@ public fun empty(
         id: object::new(ctx),
         public_keys_and_proofs:  table_vec::empty(ctx),
     };
-    // transfer::transfer(builder, ctx.sender());
     builder 
 }
 
 public fun add_public_key_and_proof(
     self: &mut ClassGroupsPublicKeyAndProofBuilder,
-    public_key_and_proof: vector<u8>,
+    public_key_and_proof_first_part: vector<u8>,
+    public_key_and_proof_second_part: vector<u8>,
 ) {
-    self.public_keys_and_proofs.push_back(public_key_and_proof);
+    let mut full_public_key_and_proof = vector::empty();
+    full_public_key_and_proof.append(public_key_and_proof_first_part);
+    full_public_key_and_proof.append(public_key_and_proof_second_part);
+    self.public_keys_and_proofs.push_back(full_public_key_and_proof);
 }
 
 public fun finish(

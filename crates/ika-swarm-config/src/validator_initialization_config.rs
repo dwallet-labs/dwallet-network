@@ -25,7 +25,7 @@ pub const DEFAULT_NUMBER_OF_AUTHORITIES: usize = 4;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ValidatorInitializationConfig {
     pub name: Option<String>,
-    pub class_groups_key_pair_and_proof: ClassGroupsKeyPairAndProof,
+    pub class_groups_key_pair_and_proof: Box<ClassGroupsKeyPairAndProof>,
     #[serde(default = "default_bls12381_key_pair")]
     pub key_pair: AuthorityKeyPair,
     #[serde(default = "default_ed25519_key_pair")]
@@ -132,7 +132,7 @@ impl ValidatorInitializationMetadata {
 pub struct ValidatorInitializationConfigBuilder {
     protocol_key_pair: Option<AuthorityKeyPair>,
     account_key_pair: Option<AccountKeyPair>,
-    class_groups_key_pair_and_proof: Option<ClassGroupsKeyPairAndProof>,
+    class_groups_key_pair_and_proof: Option<Box<ClassGroupsKeyPairAndProof>>,
     ip: Option<String>,
     computation_price: Option<u64>,
     /// If set, the validator will use deterministic addresses based on the port offset.
@@ -161,7 +161,7 @@ impl ValidatorInitializationConfigBuilder {
         mut self,
         key_pair: ClassGroupsKeyPairAndProof,
     ) -> Self {
-        self.class_groups_key_pair_and_proof = Some(key_pair);
+        self.class_groups_key_pair_and_proof = Some(Box::new(key_pair));
         self
     }
 
@@ -205,7 +205,7 @@ impl ValidatorInitializationConfigBuilder {
             .class_groups_key_pair_and_proof
             .clone()
             .unwrap_or_else(|| {
-                generate_class_groups_keypair_and_proof_from_seed(
+                Box::new(generate_class_groups_keypair_and_proof_from_seed(
                     protocol_key_pair
                         .copy()
                         .private()
@@ -213,7 +213,7 @@ impl ValidatorInitializationConfigBuilder {
                         .try_into()
                         // Safe to unwrap because the key is 32 bytes.
                         .unwrap(),
-                )
+                ))
             });
 
         let (worker_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =

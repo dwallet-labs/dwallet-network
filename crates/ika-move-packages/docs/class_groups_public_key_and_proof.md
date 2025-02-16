@@ -128,7 +128,6 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
         id: object::new(ctx),
         public_keys_and_proofs:  table_vec::empty(ctx),
     };
-    // transfer::transfer(builder, ctx.sender());
     builder
 }
 </code></pre>
@@ -143,7 +142,7 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_add_public_key_and_proof">add_public_key_and_proof</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProofBuilder</a>, public_key_and_proof: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_add_public_key_and_proof">add_public_key_and_proof</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProofBuilder</a>, public_key_and_proof_first_part: vector&lt;u8&gt;, public_key_and_proof_second_part: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -154,9 +153,13 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_add_public_key_and_proof">add_public_key_and_proof</a>(
     self: &<b>mut</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a>,
-    public_key_and_proof: vector&lt;u8&gt;,
+    public_key_and_proof_first_part: vector&lt;u8&gt;,
+    public_key_and_proof_second_part: vector&lt;u8&gt;,
 ) {
-    self.public_keys_and_proofs.push_back(public_key_and_proof);
+    <b>let</b> <b>mut</b> full_public_key_and_proof = vector::empty();
+    full_public_key_and_proof.append(public_key_and_proof_first_part);
+    full_public_key_and_proof.append(public_key_and_proof_second_part);
+    self.public_keys_and_proofs.push_back(full_public_key_and_proof);
 }
 </code></pre>
 

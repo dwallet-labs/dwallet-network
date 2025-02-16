@@ -548,16 +548,16 @@ async fn request_add_validator_candidate(
 ) -> Result<(ObjectID, ObjectID), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
-    // let class_groups_pubkey_abd_proof_obj_ref = create_class_groups_public_key_and_proof_object(
-    //     validator_address,
-    //     context,
-    //     &client,
-    //     ika_system_package_id,
-    //     validator_initialization_metadata
-    //         .class_groups_public_key_and_proof
-    //         .clone(),
-    // )
-    // .await?;
+    let class_groups_pubkey_and_proof_obj_ref = create_class_groups_public_key_and_proof_object(
+        validator_address,
+        context,
+        &client,
+        ika_system_package_id,
+        validator_initialization_metadata
+            .class_groups_public_key_and_proof
+            .clone(),
+    )
+    .await?;
 
     ptb.move_call(
         ika_system_package_id,
@@ -588,7 +588,9 @@ async fn request_add_validator_candidate(
                     .as_bytes()
                     .to_vec(),
             )?),
-            // CallArg::Object(ObjectArg::Receiving(class_groups_pubkey_abd_proof_obj_ref)),
+            CallArg::Object(ObjectArg::ImmOrOwnedObject(
+                class_groups_pubkey_and_proof_obj_ref,
+            )),
             CallArg::Pure(bcs::to_bytes(
                 &validator_initialization_metadata
                     .proof_of_possession
@@ -746,10 +748,11 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     ptb.move_call(
         ika_system_package_id,
         ident_str!("class_groups_public_key_and_proof").into(),
-        ident_str!("add_public_key_and_proof").into(),
+        ident_str!("empty").into(),
         vec![],
         vec![],
     )?;
+    ptb.transfer_arg(publisher_address, Argument::Result(0));
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
     let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
@@ -775,20 +778,12 @@ async fn create_class_groups_public_key_and_proof_builder_object(
         .unwrap()
         .clone();
 
-    let response = client
-        .read_api()
-        .get_object_with_options(builder_id, SuiObjectDataOptions::new())
+    let builder_ref = client
+        .transaction_builder()
+        .get_object_ref(builder_id)
         .await?;
 
-    if let Some(builder_obj) = response.data {
-        return Ok(builder_obj.object_ref());
-    };
-
-    if let Some(e) = response.error {
-        return Err(e.into());
-    };
-
-    Err(anyhow::Error::msg("Failed to get object"))
+    Ok(builder_ref)
 }
 
 async fn create_class_groups_public_key_and_proof_object(
@@ -798,7 +793,7 @@ async fn create_class_groups_public_key_and_proof_object(
     ika_system_package_id: ObjectID,
     class_groups_public_key_and_proof_bytes: Vec<u8>,
 ) -> anyhow::Result<ObjectRef> {
-    let builder_object_ref = create_class_groups_public_key_and_proof_builder_object(
+    let mut builder_object_ref = create_class_groups_public_key_and_proof_builder_object(
         publisher_address,
         context,
         client,
@@ -806,23 +801,53 @@ async fn create_class_groups_public_key_and_proof_object(
     )
     .await?;
 
-    let class_groups_public_key_and_proof: ClassGroupsEncryptionKeyAndProof =
-        bcs::from_bytes(&class_groups_public_key_and_proof_bytes)?;
+    let class_groups_public_key_and_proof: Box<ClassGroupsEncryptionKeyAndProof> =
+        Box::new(bcs::from_bytes(&class_groups_public_key_and_proof_bytes)?);
     for pubkey_and_proof in class_groups_public_key_and_proof.iter() {
         let mut ptb = ProgrammableTransactionBuilder::new();
+        let pubkey_and_proof = bcs::to_bytes(pubkey_and_proof)?;
         ptb.move_call(
             ika_system_package_id,
             ident_str!("class_groups_public_key_and_proof").into(),
             ident_str!("add_public_key_and_proof").into(),
             vec![],
             vec![
-                CallArg::Object(ObjectArg::Receiving(builder_object_ref)),
-                CallArg::Pure(bcs::to_bytes(&pubkey_and_proof)?),
+                CallArg::Object(ObjectArg::ImmOrOwnedObject(builder_object_ref)),
+                /// Sui limits the size of a single call argument to 16KB.
+                CallArg::Pure(bcs::to_bytes(&pubkey_and_proof[0..10_000])?),
+                CallArg::Pure(bcs::to_bytes(&pubkey_and_proof[10_000..])?),
             ],
         )?;
         let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
-        execute_sui_transaction(publisher_address, tx_kind, context).await?;
+        let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
+        let object_changes = response
+            .object_changes
+            .clone()
+            .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
+        let builder_id = object_changes
+            .iter()
+            .filter_map(|o| match o {
+                ObjectChange::Mutated {
+                    object_id,
+                    object_type,
+                    ..
+                } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_system_package_id.into())
+                    == *object_type =>
+                {
+                    Some(*object_id)
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .first()
+            .unwrap()
+            .clone();
+
+        builder_object_ref = client
+            .transaction_builder()
+            .get_object_ref(builder_id)
+            .await?;
     }
 
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -831,13 +856,18 @@ async fn create_class_groups_public_key_and_proof_object(
         ident_str!("class_groups_public_key_and_proof").into(),
         ident_str!("finish").into(),
         vec![],
-        vec![CallArg::Object(ObjectArg::Receiving(builder_object_ref))],
+        vec![CallArg::Object(ObjectArg::ImmOrOwnedObject(
+            builder_object_ref,
+        ))],
     )?;
+    ptb.transfer_arg(publisher_address, Argument::Result(0));
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
     let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
 
-    let object_changes = response.object_changes.unwrap();
+    let object_changes = response
+        .object_changes
+        .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
 
     let obj_id = object_changes
         .iter()
@@ -858,20 +888,9 @@ async fn create_class_groups_public_key_and_proof_object(
         .unwrap()
         .clone();
 
-    let response = client
-        .read_api()
-        .get_object_with_options(obj_id, SuiObjectDataOptions::new())
-        .await?;
+    let pubkey_and_proof_obj_ref = client.transaction_builder().get_object_ref(obj_id).await?;
 
-    if let Some(builder_obj) = response.data {
-        return Ok(builder_obj.object_ref());
-    };
-
-    if let Some(e) = response.error {
-        return Err(e.into());
-    };
-
-    Err(anyhow::Error::msg("Failed to get object"))
+    Ok(pubkey_and_proof_obj_ref)
 }
 
 async fn publish_ika_package_to_sui(
