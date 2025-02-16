@@ -27,7 +27,6 @@ pub struct AuthorityPerpetualTables {
 
     /// module identifier to the last processed EventID
     pub(crate) sui_syncer_cursors: DBMap<Identifier, EventID>,
-    test: DBMap<usize, usize>,
 }
 
 impl AuthorityPerpetualTables {
@@ -111,20 +110,6 @@ impl AuthorityPerpetualTables {
         Ok(())
     }
 
-    pub fn insert_test(&self) -> IkaResult {
-        // let cursor = events.last().map(|e| e.id);
-        // if let Some(cursor) = cursor {
-        let mut batch = self.epoch_start_configuration.batch();
-        // let mut batch = self.pending_events.batch();
-        // batch.insert_batch(&self.sui_syncer_cursors, [(module, cursor)])?;
-        // batch.insert_batch(&self.pending_events, events.iter().map(|e| (e.id, e)))?;
-        batch.insert_batch(&self.test, vec![(1, 2)])?;
-        batch.write()?;
-        // }
-        // self.pending_events.rocksdb.flush()?;
-        Ok(())
-    }
-
     pub(crate) fn remove_pending_events(&self, events: &[EventID]) -> IkaResult {
         let mut batch = self.pending_events.batch();
         batch.delete_batch(&self.pending_events, events)?;
@@ -134,10 +119,6 @@ impl AuthorityPerpetualTables {
 
     pub fn get_all_pending_events(&self) -> HashMap<EventID, Vec<u8>> {
         self.pending_events.unbounded_iter().collect()
-    }
-
-    pub fn get_all_test(&self) -> HashMap<usize, usize> {
-        self.test.unbounded_iter().collect()
     }
 
     pub fn get_sui_event_cursors(
