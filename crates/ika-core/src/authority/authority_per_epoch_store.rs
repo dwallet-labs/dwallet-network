@@ -2117,9 +2117,8 @@ impl AuthorityPerEpochStore {
         match &session_info.mpc_round {
             MPCProtocolInitData::DKGFirst => {
                 let tx = MessageKind::DwalletDKGFirstRoundOutput(DKGFirstRoundOutput {
-                    session_id: session_info.session_id.to_vec(),
                     output,
-                    initiating_user_address: session_info.initiating_user_address.to_vec(),
+                    dwallet_id:
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }

@@ -1763,7 +1763,7 @@ fun process_checkpoint_message(
     let mut i = 0;
     while (i < len) {
         let message_data_type = bcs_body.peel_vec_length();
-            if (message_data_type == 0) {
+            if (message_data_type == 3) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dkg_first_round_output(dwallet_id, first_round_output);

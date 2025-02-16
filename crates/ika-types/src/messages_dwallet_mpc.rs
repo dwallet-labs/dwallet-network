@@ -2,10 +2,7 @@ use crate::crypto::default_hash;
 use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyShares,
-    DWALLET_MPC_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyShares, DWALLET_MPC_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME};
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
     START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
@@ -27,7 +24,7 @@ use sui_types::SUI_SYSTEM_ADDRESS;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
-    DKGFirst,
+    DKGFirst(StartDKGFirstRoundEvent),
     /// The second round of the DKG protocol.
     /// Contains the data of the event that triggered the round
     /// and the network key version of the first round.
@@ -480,4 +477,26 @@ pub struct IkaPackagesConfig {
     pub ika_system_package_id: ObjectID,
     /// The object id of ika_system_state on sui.
     pub system_id: ObjectID,
+}
+
+/// Represents the Rust version of the Move struct `ika_system::dwallet::StartDKGFirstRoundEvent`.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub struct StartDKGFirstRoundEvent {
+    /// The `DWalletCap` object's ID associated with the `DWallet`.
+    pub dwallet_cap_id: ObjectID,
+    pub dwallet_id: ObjectID,
+    pub dwallet_network_decryption_key_id: ObjectID,
+}
+
+impl DWalletMPCEventTrait for StartDKGFirstRoundEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`StartDKGFirstRoundEvent`] events from the chain and initiate the MPC session.
+    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
+        StructTag {
+            address: *packages_config.ika_system_package_id,
+            name: START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }

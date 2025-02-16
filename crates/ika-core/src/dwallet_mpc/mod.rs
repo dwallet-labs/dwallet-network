@@ -4,7 +4,7 @@ use crate::dwallet_mpc::dkg::{
     DKGSecondPartyPublicInputGenerator,
 };
 use crate::dwallet_mpc::mpc_events::{
-    StartBatchedPresignEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent, StartNetworkDKGEvent,
+    StartBatchedPresignEvent, StartBatchedSignEvent, StartNetworkDKGEvent,
     StartSignEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
@@ -21,7 +21,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::PartyID;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::DBSuiEvent;
+use ika_types::messages_dwallet_mpc::{DBSuiEvent, StartDKGFirstRoundEvent};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEventTrait, DWalletMPCSuiEvent, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
     SingleSignSessionData, StartDKGSecondRoundEvent, StartEncryptedShareVerificationEvent,
