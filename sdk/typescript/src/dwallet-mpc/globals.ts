@@ -3,6 +3,9 @@
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
+export const DWALLET_ECDSAK1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
+export const DWALLET_NETWORK_VERSION = 0;
+
 export const SUI_PACKAGE_ID = '0x2';
 
 interface IkaConfig {
