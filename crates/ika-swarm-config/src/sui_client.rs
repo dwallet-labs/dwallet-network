@@ -185,7 +185,7 @@ pub async fn init_ika_on_sui(
         ika_system_obj_id: system_id,
     };
     let mut file = File::create("ika_config.json")?;
-    let json = serde_json::to_string_pretty(&ika_config).unwrap();
+    let json = serde_json::to_string_pretty(&ika_config)?;
     file.write_all(json.as_bytes())?;
 
     let mut validator_ids = Vec::new();
