@@ -4039,10 +4039,12 @@ the function will abort with this error.
     <b>while</b> (i &lt; len) {
         <b>let</b> message_data_type = bcs_body.peel_vec_length();
             <b>if</b> (message_data_type == 3) {
+                <b>abort</b> 333;
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> first_round_output = bcs_body.peel_vec_u8();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dkg_first_round_output">respond_dkg_first_round_output</a>(dwallet_id, first_round_output);
             } <b>else</b> <b>if</b> (message_data_type == 4) {
+                <b>abort</b> 444;
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> public_output = bcs_body.peel_vec_u8();
                 <b>let</b> encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
@@ -4057,6 +4059,7 @@ the function will abort with this error.
                     ctx,
                 );
             } <b>else</b> <b>if</b> (message_data_type == 5) {
+                <b>abort</b> 555;
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> encrypted_user_secret_key_share_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> rejected = bcs_body.peel_bool();
@@ -4066,6 +4069,7 @@ the function will abort with this error.
                     rejected,
                 );
             } <b>else</b> <b>if</b> (message_data_type == 6) {
+                <b>abort</b> 666;
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> sign_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> session_id = object::id_from_address(bcs_body.peel_address());
@@ -4081,6 +4085,7 @@ the function will abort with this error.
                     rejected,
                 );
             } <b>else</b> <b>if</b> (message_data_type == 7) {
+                <b>abort</b> 777;
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> rejected = bcs_body.peel_bool();
@@ -4090,6 +4095,7 @@ the function will abort with this error.
                     rejected,
                 );
             } <b>else</b> <b>if</b> (message_data_type == 8) {
+                <b>abort</b> 888;
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> session_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> presign = bcs_body.peel_vec_u8();
