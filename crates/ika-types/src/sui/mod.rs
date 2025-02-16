@@ -103,6 +103,7 @@ pub trait SystemInnerTrait {
     fn last_processed_checkpoint_sequence_number(&self) -> Option<u64>;
     fn previous_epoch_last_checkpoint_sequence_number(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
+    fn get_dwallet_id(&self) -> Option<ObjectID>;
     // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata;
     // fn into_epoch_start_state(self) -> EpochStartSystemState;
 }

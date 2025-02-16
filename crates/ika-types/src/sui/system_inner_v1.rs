@@ -172,6 +172,10 @@ impl SystemInnerTrait for SystemInnerV1 {
     fn epoch_duration_ms(&self) -> u64 {
         self.parameters.epoch_duration_ms
     }
+
+    fn get_dwallet_id(&self) -> Option<ObjectID> {
+        self.dwallet_2pc_mpc_secp256k1_id
+    }
     //
     // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata {
     //     let validators = self

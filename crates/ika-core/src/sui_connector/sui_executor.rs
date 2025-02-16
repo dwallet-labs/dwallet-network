@@ -186,6 +186,7 @@ where
             vec![],
             vec![
                 CallArg::Object(ika_system_state_arg),
+                CallArg::Object(ika_system_state_arg),
                 CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                     IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
                 })?),
