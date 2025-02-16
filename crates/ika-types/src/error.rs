@@ -233,7 +233,7 @@ pub enum IkaError {
     DwalletMPCError(String),
 
     #[error("BCS serialization error: {0}")]
-    BCSError(bcs::Error),
+    BCSError(String),
 }
 
 pub type IkaResult<T = ()> = Result<T, IkaError>;
