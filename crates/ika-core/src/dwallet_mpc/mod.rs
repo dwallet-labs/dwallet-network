@@ -97,12 +97,6 @@ pub(crate) fn session_info_from_event(
     dwallet_network_key_version: Option<u8>,
     packages_config: &IkaPackagesConfig,
 ) -> anyhow::Result<Option<SessionInfo>> {
-    warn!("Event type: {:?}", event.type_.to_canonical_string(false));
-    warn!(
-        "real Event type: {:?}",
-        DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config)
-            .to_canonical_string(false)
-    );
     match &event.type_ {
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =
