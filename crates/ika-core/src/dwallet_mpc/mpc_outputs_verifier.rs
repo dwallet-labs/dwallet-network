@@ -139,15 +139,14 @@ impl DWalletMPCOutputsVerifier {
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<OutputVerificationResult> {
         let epoch_store = self.epoch_store()?;
-        let Some(ref mut session_output_data) =
-            self.mpc_sessions_outputs.get_mut(&session_info.session_id)
-        else {
-            // Report validators sending outputs for invalid sessions as malicious.
-            return Ok(OutputVerificationResult {
-                result: OutputResult::Malicious,
-                malicious_actors: vec![origin_authority],
+        let ref mut session_output_data = self
+            .mpc_sessions_outputs
+            .entry(session_info.session_id)
+            .or_insert(SessionOutputsData {
+                session_output_to_voting_authorities: HashMap::new(),
+                authorities_that_sent_output: HashSet::new(),
+                current_result: OutputResult::NotEnoughVotes,
             });
-        };
         if session_output_data.current_result == OutputResult::AlreadyCommitted {
             return Ok(OutputVerificationResult {
                 result: OutputResult::AlreadyCommitted,

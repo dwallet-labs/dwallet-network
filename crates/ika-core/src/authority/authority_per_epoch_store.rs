@@ -367,7 +367,7 @@ pub struct AuthorityPerEpochStore {
     pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
     dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
     dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
-    dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
+    pub(crate) dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
     dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
     dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
@@ -697,13 +697,6 @@ impl AuthorityPerEpochStore {
             .map(|(_, events)| events)
             .flatten()
             .collect())
-    }
-
-    /// Saves a DWallet MPC event in the round events
-    /// The round events are later being stored to the on-disk DB to allow state sync.
-    pub(crate) async fn save_dwallet_mpc_event(&self, event: DWalletMPCEvent) {
-        let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_events.lock().await;
-        dwallet_mpc_round_outputs.push(event);
     }
 
     /// Saves a DWallet MPC completed session in the round completed sessions
@@ -1716,10 +1709,14 @@ impl AuthorityPerEpochStore {
         let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_outputs.lock().await;
         output.set_dwallet_mpc_round_outputs(dwallet_mpc_round_outputs.clone());
         dwallet_mpc_round_outputs.clear();
+        let mut dwallet_mpc_round_events = self.dwallet_mpc_round_events.lock().await;
+        output.set_dwallet_mpc_round_events(dwallet_mpc_round_events.clone());
+        dwallet_mpc_round_events.clear();
         let mut dwallet_mpc_round_completed_sessions =
             self.dwallet_mpc_round_completed_sessions.lock().await;
         output
             .set_dwallet_mpc_round_completed_sessions(dwallet_mpc_round_completed_sessions.clone());
+
         dwallet_mpc_round_completed_sessions.clear();
 
         authority_metrics
