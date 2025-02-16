@@ -93,17 +93,18 @@ impl AuthorityPerpetualTables {
         if let Some(cursor) = cursor {
             let mut batch = self.pending_events.batch();
             batch.insert_batch(&self.sui_syncer_cursors, [(module, cursor)])?;
-            let serialized_events: Vec<Vec<u8>> = events
+            let serialized_events: IkaResult<Vec<(EventID, Vec<u8>)>> = events
                 .iter()
                 .map(|e| {
                     let serialized_event = bcs::to_bytes(&DBSuiEvent {
                         type_: e.type_.clone(),
                         contents: e.bcs.clone().into_bytes(),
-                    })?;
+                    })
+                    .map_err(|e| IkaError::DwalletMPCError(e.to_string()))?;
                     Ok((e.id, serialized_event))
                 })
-                .collect()?;
-            batch.insert_batch(&self.pending_events, serialized_events)?;
+                .collect();
+            batch.insert_batch(&self.pending_events, serialized_events?)?;
             batch.write()?;
         }
         self.pending_events.rocksdb.flush()?;
