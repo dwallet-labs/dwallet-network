@@ -3988,7 +3988,7 @@ the function will abort with this error.
         epoch: self.epoch,
         total_signers_stake,
     });
-    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message">process_checkpoint_message</a>(message, ctx);
+    // self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message">process_checkpoint_message</a>(message, ctx);
 }
 </code></pre>
 
