@@ -14,6 +14,7 @@ pub mod local_ip_utils;
 pub mod node;
 pub mod node_config_metrics;
 pub mod p2p;
+pub mod validator_info;
 
 pub use node::{ConsensusConfig, NodeConfig};
 pub use sui_config::object_storage_config;

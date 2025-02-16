@@ -4838,10 +4838,12 @@ version = "1.0.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
+ "bcs",
  "bin-version",
  "clap",
  "colored",
  "datatest-stable",
+ "dwallet-classgroups-types",
  "expect-test",
  "fastcrypto",
  "fs_extra",

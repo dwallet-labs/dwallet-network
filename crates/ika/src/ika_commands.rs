@@ -44,7 +44,7 @@ use ika_swarm_config::network_config::NetworkConfig;
 use ika_swarm_config::network_config_builder::ConfigBuilder;
 use ika_swarm_config::node_config_builder::FullnodeConfigBuilder;
 use ika_swarm_config::validator_initialization_config::{
-    ValidatorInitializationConfig, ValidatorInitializationMetadata, DEFAULT_NUMBER_OF_AUTHORITIES,
+    ValidatorInitializationConfig, DEFAULT_NUMBER_OF_AUTHORITIES,
 };
 use ika_types::governance::{
     MIN_VALIDATOR_JOINING_STAKE_NIKA, VALIDATOR_LOW_STAKE_GRACE_PERIOD,

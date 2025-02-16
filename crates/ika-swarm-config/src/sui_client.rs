@@ -1,13 +1,10 @@
-use crate::validator_initialization_config::{
-    ValidatorInitializationConfig, ValidatorInitializationMetadata,
-};
+use crate::validator_initialization_config::ValidatorInitializationConfig;
 use anyhow::bail;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::initiation::InitiationParameters;
 use ika_config::Config;
 use ika_move_packages::IkaMovePackage;
-use ika_types::error::IkaResult;
 use ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA;
 use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
@@ -23,15 +20,15 @@ use move_core_types::language_storage::StructTag;
 use shared_crypto::intent::Intent;
 use std::collections::HashMap;
 use sui::client_commands::{
-    estimate_gas_budget_from_gas_cost, execute_dry_run, max_gas_budget, request_tokens_from_faucet,
+    estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet,
     SuiClientCommandResult,
 };
-use sui_config::{sui_config_dir, SUI_CLIENT_CONFIG};
+use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
 use sui_sdk::rpc_types::SuiTransactionBlockEffectsAPI;
 use sui_sdk::rpc_types::{
-    ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
-    SuiTransactionBlockResponseOptions,
+    ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse
+    ,
 };
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
@@ -49,6 +46,7 @@ use sui_types::transaction::{
 use sui_types::{
     Identifier, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION, SUI_FRAMEWORK_PACKAGE_ID,
 };
+use ika_config::validator_info::ValidatorInfo;
 
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
@@ -181,7 +179,7 @@ pub async fn init_ika_on_sui(
             (&validator_initialization_config.account_key_pair.public()).into();
 
         let validator_initialization_metadata =
-            validator_initialization_config.to_validator_initialization_metadata();
+            validator_initialization_config.to_validator_info();
         let (validator_id, validator_cap_id) = request_add_validator_candidate(
             validator_address,
             &mut context,
@@ -541,7 +539,7 @@ async fn request_add_validator_candidate(
     validator_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
-    validator_initialization_metadata: &ValidatorInitializationMetadata,
+    validator_initialization_metadata: &ValidatorInfo,
     ika_system_package_id: ObjectID,
     system_id: ObjectID,
     init_system_shared_version: SequenceNumber,

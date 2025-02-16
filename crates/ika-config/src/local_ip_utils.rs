@@ -146,7 +146,7 @@ pub fn new_local_udp_address_for_testing() -> Multiaddr {
     new_udp_address_for_testing(&localhost_for_testing())
 }
 
-pub fn new_deterministic_tcp_address_for_testing(host: &str, port: u16) -> Multiaddr {
+pub fn    new_deterministic_tcp_address_for_testing(host: &str, port: u16) -> Multiaddr {
     format!("/ip4/{host}/tcp/{port}/http").parse().unwrap()
 }
 
