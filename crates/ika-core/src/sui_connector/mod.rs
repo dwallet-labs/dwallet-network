@@ -65,7 +65,6 @@ impl SuiConnectorService {
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
     ) -> anyhow::Result<Self> {
-
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
             sui_client.clone(),

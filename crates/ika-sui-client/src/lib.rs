@@ -316,7 +316,7 @@ where
         static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
         *ARG.get_or_init(|| async move {
             let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
-                self.inner.get_mutable_shared_arg(id).await,
+                self.inner.get_mutable_shared_arg(id),
                 Duration::from_secs(30)
             ) else {
                 panic!("Failed to get system object arg after retries");

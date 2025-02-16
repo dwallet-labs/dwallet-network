@@ -4,8 +4,7 @@ use crate::dwallet_mpc::dkg::{
     DKGSecondPartyPublicInputGenerator,
 };
 use crate::dwallet_mpc::mpc_events::{
-    StartBatchedPresignEvent, StartBatchedSignEvent, StartNetworkDKGEvent,
-    StartSignEvent,
+    StartBatchedPresignEvent, StartBatchedSignEvent, StartNetworkDKGEvent, StartSignEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::presign::{
