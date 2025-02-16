@@ -457,7 +457,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             message,
             self.session_info.session_id.clone(),
-            self.pending_quorum_for_highest_round_number + 1,
+            self.pending_quorum_for_highest_round_number,
         ))
     }
 
