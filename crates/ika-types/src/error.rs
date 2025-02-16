@@ -231,6 +231,9 @@ pub enum IkaError {
     // This is a string because the encapsulating error has too many derives.
     #[error("dWallet MPC Error: {0}")]
     DwalletMPCError(String),
+
+    #[error("BCS serialization error: {0}")]
+    BCSError(bcs::Error),
 }
 
 pub type IkaResult<T = ()> = Result<T, IkaError>;

@@ -100,7 +100,7 @@ impl AuthorityPerpetualTables {
                         type_: e.type_.clone(),
                         contents: e.bcs.clone().into_bytes(),
                     })
-                    .map_err(|e| IkaError::DwalletMPCError(e.to_string()))?;
+                    .map_err(|e| IkaError::BCSError(e))?;
                     Ok((e.id, serialized_event))
                 })
                 .collect();
