@@ -32,6 +32,14 @@ pub struct ClassGroupsKeyPairAndProof {
     encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
 }
 
+/// Contains the public keys of the DWallet.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
+pub struct DWalletPublicKeys {
+    pub centralized_public_share: Vec<u8>,
+    pub decentralized_public_share: Vec<u8>,
+    pub public_key: Vec<u8>,
+}
+
 impl ClassGroupsKeyPairAndProof {
     pub fn new(
         decryption_key: ClassGroupsDecryptionKey,
@@ -107,14 +115,6 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
     Ok(keypair)
 }
 
-/// Contains the public keys of the DWallet.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
-pub struct DWalletPublicKeys {
-    pub centralized_public_share: Vec<u8>,
-    pub decentralized_public_share: Vec<u8>,
-    pub public_key: Vec<u8>,
-}
-
 /// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
 // Can't use the TryFrom trait as it leads to conflicting implementations.
 // Must use `anyhow::Result`, because this function is being used also in the centralized party crate.
@@ -126,13 +126,4 @@ pub fn public_keys_from_dkg_output(
         decentralized_public_share: bcs::to_bytes(&value.public_key_share)?,
         public_key: bcs::to_bytes(&value.public_key)?,
     })
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SingleClassGroupsKeyPairAndProof {
-    pub encryption_key_and_proof: (
-        CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
-        KnowledgeOfDiscreteLogUCProof,
-    ),
-    pub decryption_key: Uint<{ CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
 }

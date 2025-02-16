@@ -170,10 +170,12 @@ pub struct Validator {
     pub inner: Versioned,
 }
 
+/// Rust representation of the Move ika::class_groups::ClassGroupsPublicKeyAndProofBuilder type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ClassGroupsPublicKeyAndProofBuilder;
 
 impl ClassGroupsPublicKeyAndProofBuilder {
+    /// Return the Move struct tag for this type
     pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {
             address: ika_system_package_address,
@@ -184,6 +186,7 @@ impl ClassGroupsPublicKeyAndProofBuilder {
     }
 }
 
+/// Rust version of the Move ika::class_groups::ClassGroupsPublicKeyAndProof type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ClassGroupsPublicKeyAndProof {
     pub id: ObjectID,
@@ -191,6 +194,7 @@ pub struct ClassGroupsPublicKeyAndProof {
 }
 
 impl ClassGroupsPublicKeyAndProof {
+    /// Return the Move struct tag for this type
     pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {
             address: ika_system_package_address,
