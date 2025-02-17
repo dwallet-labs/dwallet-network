@@ -78,8 +78,9 @@ export async function launchDKGFirstRound(c: Config) {
 			showEvents: true,
 		},
 	});
-	let sessionID = (result.events?.at(0)?.parsedJson as StartSessionEvent).session_id;
-	console.log(`Session ID: ${sessionID}`);
+	// @ts-ignore
+	let dwalletID = result.events?.at(0)?.parsedJson.event_data.dwallet_id
+	console.log(`dwallet ID: ${dwalletID}`);
 	// TODO (#631): Use the session ID to fetch the DKG first round completion event.
 }
 
