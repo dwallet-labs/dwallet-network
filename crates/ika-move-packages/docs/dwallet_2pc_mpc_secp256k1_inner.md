@@ -4019,7 +4019,26 @@ the function will abort with this error.
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; len) {
         <b>let</b> message_data_type = bcs_body.peel_vec_length();
-            <b>if</b> (message_data_type == 3) {
+        <b>if</b> (message_data_type == 0) {
+        } <b>else</b> <b>if</b> (message_data_type == 1) {
+            // EndOfEpochMessage
+            <b>let</b> len = bcs_body.peel_vec_length();
+            <b>let</b> <b>mut</b> i = 0;
+            <b>while</b> (i &lt; len) {
+                <b>let</b> end_of_epch_message_type = bcs_body.peel_vec_length();
+            // AdvanceEpoch
+                <b>if</b>(end_of_epch_message_type == 0) {
+                    <b>let</b> new_epoch = bcs_body.peel_u64();
+                    <b>let</b> next_protocol_version = bcs_body.peel_u64();
+                    <b>let</b> epoch_start_timestamp_ms = bcs_body.peel_u64();
+                };
+                i = i + 1;
+            };
+        } <b>else</b> <b>if</b> (message_data_type == 2) {
+                //TestMessage
+                <b>let</b> authority = bcs_body.peel_u32();
+                <b>let</b> num = bcs_body.peel_u64();
+            } <b>else</b> <b>if</b> (message_data_type == 3) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _first_round_output = bcs_body.peel_vec_u8();
                 <b>abort</b> 999
