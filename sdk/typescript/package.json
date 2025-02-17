@@ -94,7 +94,7 @@
 	"scripts": {
 		"clean": "rm -rf tsconfig.tsbuildinfo ./dist",
 		"codegen:version": "node genversion.mjs",
-		"build": "node genversion.mjs && pnpm build:package",
+		"build": "tsc",
 		"build:package": "build-package",
 		"vitest": "vitest",
 		"test": "pnpm test:typecheck && pnpm test:unit",
