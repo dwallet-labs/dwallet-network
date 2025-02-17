@@ -941,6 +941,7 @@ public(package) fun request_dkg_first_round(
 ///
 /// ### Panics
 /// - Panics with `ENotSystemAddress` if the sender is not the system address.
+#[allow(dead_code, unused_field, unused_mut_parameter, unused_function)]
 public(package) fun respond_dkg_first_round_output(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     dwallet_id: ID,
@@ -1729,7 +1730,7 @@ public(package) fun process_checkpoint_message_by_quorum(
     self.process_checkpoint_message(message, ctx);
 }
 
-#[allow(dead_code, unused_field, unused_mut_parameter, unused_function)]
+#[allow(dead_code, unused_field, unused_mut_parameter, unused_function, unused_variable, unused_const)]
 fun process_checkpoint_message(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     message: vector<u8>,
@@ -1765,8 +1766,9 @@ fun process_checkpoint_message(
     while (i < len) {
         let message_data_type = bcs_body.peel_vec_length();
             if (message_data_type == 3) {
-                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                let first_round_output = bcs_body.peel_vec_u8();
+                let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let _first_round_output = bcs_body.peel_vec_u8();
+                abort 999;
                 self.respond_dkg_first_round_output(dwallet_id, first_round_output);
             } else if (message_data_type == 4) {
                 abort 444;
