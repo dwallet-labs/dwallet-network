@@ -5,13 +5,13 @@ use std::net::{IpAddr, SocketAddr};
 
 use dwallet_classgroups_types::{
     generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
-    ClassGroupsPublicKeyAndProofBytes,
 };
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_config::local_ip_utils;
+use ika_config::validator_info::ValidatorInfo;
 use ika_types::crypto::{
     generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,
-    AuthorityPublicKeyBytes, AuthoritySignature, NetworkKeyPair, NetworkPublicKey,
+    AuthorityPublicKeyBytes, NetworkKeyPair, NetworkPublicKey,
 };
 use ika_types::sui::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_COMPUTATION_PRICE};
 use serde::{Deserialize, Serialize};
@@ -47,7 +47,7 @@ pub struct ValidatorInitializationConfig {
 }
 
 impl ValidatorInitializationConfig {
-    pub fn to_validator_initialization_metadata(&self) -> ValidatorInitializationMetadata {
+    pub fn to_validator_info(&self) -> ValidatorInfo {
         let name = self.name.clone().unwrap_or("".to_string());
         let class_groups_public_key_and_proof = self.class_groups_key_pair_and_proof.public_bytes();
         let protocol_public_key: AuthorityPublicKeyBytes = self.key_pair.public().into();
@@ -57,7 +57,7 @@ impl ValidatorInitializationConfig {
         let network_address = self.network_address.clone();
         let consensus_address = self.consensus_address.clone();
 
-        ValidatorInitializationMetadata {
+        ValidatorInfo {
             name,
             class_groups_public_key_and_proof,
             protocol_public_key,
@@ -77,54 +77,6 @@ impl ValidatorInitializationConfig {
                 (&self.account_key_pair.public()).into(),
             ),
         }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ValidatorInitializationMetadata {
-    pub name: String,
-    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
-    pub account_address: SuiAddress,
-    pub protocol_public_key: AuthorityPublicKeyBytes,
-    pub consensus_public_key: NetworkPublicKey,
-    pub network_public_key: NetworkPublicKey,
-    pub network_address: Multiaddr,
-    pub computation_price: u64,
-    pub commission_rate: u16,
-    pub p2p_address: Multiaddr,
-    pub consensus_address: Multiaddr,
-    pub description: String,
-    pub image_url: String,
-    pub project_url: String,
-    pub proof_of_possession: AuthoritySignature,
-}
-
-impl ValidatorInitializationMetadata {
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn sui_address(&self) -> SuiAddress {
-        self.account_address
-    }
-
-    pub fn protocol_public_key(&self) -> AuthorityPublicKeyBytes {
-        self.protocol_public_key
-    }
-
-    pub fn worker_public_key(&self) -> &NetworkPublicKey {
-        &self.consensus_public_key
-    }
-
-    pub fn network_public_key(&self) -> &NetworkPublicKey {
-        &self.network_public_key
-    }
-
-    pub fn network_address(&self) -> &Multiaddr {
-        &self.network_address
-    }
-    pub fn proof_of_possession(&self) -> &AuthoritySignature {
-        &self.proof_of_possession
     }
 }
 

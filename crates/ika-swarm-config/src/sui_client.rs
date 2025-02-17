@@ -1,10 +1,9 @@
-use crate::validator_initialization_config::{
-    ValidatorInitializationConfig, ValidatorInitializationMetadata,
-};
+use crate::validator_initialization_config::ValidatorInitializationConfig;
 use anyhow::bail;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::initiation::InitiationParameters;
+use ika_config::validator_info::ValidatorInfo;
 use ika_config::Config;
 use ika_move_packages::IkaMovePackage;
 use ika_types::error::IkaResult;
@@ -26,15 +25,14 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use sui::client_commands::{
-    estimate_gas_budget_from_gas_cost, execute_dry_run, max_gas_budget, request_tokens_from_faucet,
+    estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet,
     SuiClientCommandResult,
 };
-use sui_config::{sui_config_dir, SUI_CLIENT_CONFIG};
+use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
 use sui_sdk::rpc_types::SuiTransactionBlockEffectsAPI;
 use sui_sdk::rpc_types::{
     ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
-    SuiTransactionBlockResponseOptions,
 };
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
@@ -198,8 +196,7 @@ pub async fn init_ika_on_sui(
         let validator_address: SuiAddress =
             (&validator_initialization_config.account_key_pair.public()).into();
 
-        let validator_initialization_metadata =
-            validator_initialization_config.to_validator_initialization_metadata();
+        let validator_initialization_metadata = validator_initialization_config.to_validator_info();
         let (validator_id, validator_cap_id) = request_add_validator_candidate(
             validator_address,
             &mut context,
@@ -559,7 +556,7 @@ async fn request_add_validator_candidate(
     validator_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
-    validator_initialization_metadata: &ValidatorInitializationMetadata,
+    validator_initialization_metadata: &ValidatorInfo,
     ika_system_package_id: ObjectID,
     system_id: ObjectID,
     init_system_shared_version: SequenceNumber,
