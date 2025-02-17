@@ -13,6 +13,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use sui_types::base_types::ObjectID;
+use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::{
     get_dynamic_field_from_store, get_dynamic_field_object_from_store, Field,
 };
@@ -168,4 +169,39 @@ impl PoolTokenExchangeRate {
 pub struct Validator {
     pub id: ObjectID,
     pub inner: Versioned,
+}
+
+/// Rust representation of the Move ika::class_groups::ClassGroupsPublicKeyAndProofBuilder type.
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct ClassGroupsPublicKeyAndProofBuilder;
+
+impl ClassGroupsPublicKeyAndProofBuilder {
+    /// Return the Move struct tag for this type.
+    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
+        StructTag {
+            address: ika_system_package_address,
+            name: ident_str!("ClassGroupsPublicKeyAndProofBuilder").to_owned(),
+            module: ident_str!("class_groups_public_key_and_proof").to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+/// Rust version of the Move ika::class_groups::ClassGroupsPublicKeyAndProof type.
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct ClassGroupsPublicKeyAndProof {
+    pub id: ObjectID,
+    pub public_keys_and_proofs: TableVec,
+}
+
+impl ClassGroupsPublicKeyAndProof {
+    /// Return the Move struct tag for this type.
+    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
+        StructTag {
+            address: ika_system_package_address,
+            name: ident_str!("ClassGroupsPublicKeyAndProof").to_owned(),
+            module: ident_str!("class_groups_public_key_and_proof").to_owned(),
+            type_params: vec![],
+        }
+    }
 }
