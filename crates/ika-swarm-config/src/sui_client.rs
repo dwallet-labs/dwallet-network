@@ -4,7 +4,6 @@ use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::initiation::InitiationParameters;
 use ika_config::validator_info::ValidatorInfo;
-use ika_config::validator_info::ValidatorInfo;
 use ika_config::{write_system_config_to_yaml, Config, IKA_SYSTEM_CONFIG};
 use ika_move_packages::IkaMovePackage;
 use ika_types::error::IkaResult;
@@ -21,11 +20,8 @@ use ika_types::sui::{
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
-use serde::Serialize;
 use shared_crypto::intent::Intent;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::Write;
 use sui::client_commands::{
     estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet,
     SuiClientCommandResult,

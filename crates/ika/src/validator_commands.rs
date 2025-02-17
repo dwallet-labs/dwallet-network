@@ -153,7 +153,7 @@ impl Debug for IkaValidatorCommandResponse {
 impl IkaValidatorCommandResponse {
     pub fn print(&self, pretty: bool) {
         match self {
-            IkaValidatorCommandResponse::MakeValidatorInfo => {},
+            IkaValidatorCommandResponse::MakeValidatorInfo => {}
             other => {
                 let line = if pretty {
                     format!("{other}")
