@@ -1726,8 +1726,7 @@ public(package) fun process_checkpoint_message_by_quorum(
         total_signers_stake,
     });
 
-    // TODO (#648): Fix DWallet checkpoint processing for the different MPC flows
-    // self.process_checkpoint_message(message, ctx);
+    self.process_checkpoint_message(message, ctx);
 }
 
 fun process_checkpoint_message(
