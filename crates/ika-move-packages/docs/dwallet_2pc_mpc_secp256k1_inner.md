@@ -1997,6 +1997,25 @@ Variant <code>Requested</code>
 ## Constants
 
 
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CHECKPOINT_MESSAGE_INTENT"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CHECKPOINT_MESSAGE_INTENT">CHECKPOINT_MESSAGE_INTENT</a>: vector&lt;u8&gt; = vector[1, 0, 0];
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EActiveCommitteeMustInitialize"></a>
+
+
+
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EActiveCommitteeMustInitialize">EActiveCommitteeMustInitialize</a>: vector&lt;u8&gt; = b"Fitst active <a href="../ika_system/committee.md#(ika_system=0x0)_committee">committee</a> must initialize.";
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EDwalletInactive"></a>
 
 
@@ -3944,7 +3963,7 @@ the function will abort with this error.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet2PcMpcSecp256K1InnerV1">dwallet_2pc_mpc_secp256k1_inner::DWallet2PcMpcSecp256K1InnerV1</a>, _signature: vector&lt;u8&gt;, _signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet2PcMpcSecp256K1InnerV1">dwallet_2pc_mpc_secp256k1_inner::DWallet2PcMpcSecp256K1InnerV1</a>, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -3955,20 +3974,20 @@ the function will abort with this error.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet2PcMpcSecp256K1InnerV1">DWallet2PcMpcSecp256K1InnerV1</a>,
-    _signature: vector&lt;u8&gt;,
-    _signers_bitmap: vector&lt;u8&gt;,
+    signature: vector&lt;u8&gt;,
+    signers_bitmap: vector&lt;u8&gt;,
     message: vector&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext,
 ) {
-    // <b>let</b> <b>mut</b> intent_bytes = CHECKPOINT_MESSAGE_INTENT;
-    // intent_bytes.append(message);
-    // intent_bytes.append(bcs::to_bytes(&self.epoch));
-    // <b>let</b> total_signers_stake = self.active_committee.verify_certificate(&signature, &signers_bitmap, &intent_bytes);
-    // // TODO: <b>move</b> it to verify_certificate
-    // event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SystemQuorumVerifiedEvent">SystemQuorumVerifiedEvent</a> {
-    //     epoch: self.epoch,
-    //     total_signers_stake,
-    // });
+    <b>let</b> <b>mut</b> intent_bytes = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CHECKPOINT_MESSAGE_INTENT">CHECKPOINT_MESSAGE_INTENT</a>;
+    intent_bytes.append(message);
+    intent_bytes.append(bcs::to_bytes(&self.epoch));
+    <b>let</b> total_signers_stake = self.active_committee.verify_certificate(&signature, &signers_bitmap, &intent_bytes);
+    // TODO: <b>move</b> it to verify_certificate
+    event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SystemQuorumVerifiedEvent">SystemQuorumVerifiedEvent</a> {
+        epoch: self.epoch,
+        total_signers_stake,
+    });
     self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message">process_checkpoint_message</a>(message, ctx);
 }
 </code></pre>
@@ -3997,7 +4016,7 @@ the function will abort with this error.
     message: vector&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext,
 ) {
-    // <b>assert</b>!(!self.active_committee.members().is_empty(), EActiveCommitteeMustInitialize);
+    <b>assert</b>!(!self.active_committee.members().is_empty(), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EActiveCommitteeMustInitialize">EActiveCommitteeMustInitialize</a>);
     <b>let</b> <b>mut</b> bcs_body = bcs::new(<b>copy</b> message);
     <b>let</b> epoch = bcs_body.peel_u64();
     <b>assert</b>!(epoch == self.epoch, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EIncorrectEpochInCheckpoint">EIncorrectEpochInCheckpoint</a>);
@@ -4010,11 +4029,11 @@ the function will abort with this error.
         self.last_processed_checkpoint_sequence_number.swap(sequence_number);
     };
     <b>let</b> timestamp_ms = bcs_body.peel_u64();
-    // event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SystemCheckpointInfoEvent">SystemCheckpointInfoEvent</a> {
-    //     epoch,
-    //     sequence_number,
-    //     timestamp_ms,
-    // });
+    event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SystemCheckpointInfoEvent">SystemCheckpointInfoEvent</a> {
+        epoch,
+        sequence_number,
+        timestamp_ms,
+    });
     <b>let</b> len = bcs_body.peel_vec_length();
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; len) {
@@ -4028,22 +4047,21 @@ the function will abort with this error.
                 <b>let</b> end_of_epch_message_type = bcs_body.peel_vec_length();
             // AdvanceEpoch
                 <b>if</b>(end_of_epch_message_type == 0) {
-                    <b>let</b> new_epoch = bcs_body.peel_u64();
-                    <b>let</b> next_protocol_version = bcs_body.peel_u64();
-                    <b>let</b> epoch_start_timestamp_ms = bcs_body.peel_u64();
+                    <b>let</b> _new_epoch = bcs_body.peel_u64();
+                    <b>let</b> _next_protocol_version = bcs_body.peel_u64();
+                    <b>let</b> _epoch_start_timestamp_ms = bcs_body.peel_u64();
                 };
                 i = i + 1;
             };
         } <b>else</b> <b>if</b> (message_data_type == 2) {
                 //TestMessage
-                <b>let</b> authority = bcs_body.peel_u32();
-                <b>let</b> num = bcs_body.peel_u64();
+                <b>let</b> _authority = bcs_body.peel_u32();
+                <b>let</b> _num = bcs_body.peel_u64();
             } <b>else</b> <b>if</b> (message_data_type == 3) {
-                <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> _first_round_output = bcs_body.peel_vec_u8();
-                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dkg_first_round_output">respond_dkg_first_round_output</a>(_dwallet_id, _first_round_output);
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> first_round_output = bcs_body.peel_vec_u8();
+                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dkg_first_round_output">respond_dkg_first_round_output</a>(dwallet_id, first_round_output);
             } <b>else</b> <b>if</b> (message_data_type == 4) {
-                <b>abort</b> 444;
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> public_output = bcs_body.peel_vec_u8();
                 <b>let</b> encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
@@ -4058,7 +4076,6 @@ the function will abort with this error.
                     ctx,
                 );
             } <b>else</b> <b>if</b> (message_data_type == 5) {
-                <b>abort</b> 555;
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> encrypted_user_secret_key_share_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> rejected = bcs_body.peel_bool();
@@ -4068,7 +4085,6 @@ the function will abort with this error.
                     rejected,
                 );
             } <b>else</b> <b>if</b> (message_data_type == 6) {
-                <b>abort</b> 666;
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> sign_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> session_id = object::id_from_address(bcs_body.peel_address());
@@ -4084,7 +4100,6 @@ the function will abort with this error.
                     rejected,
                 );
             } <b>else</b> <b>if</b> (message_data_type == 7) {
-                <b>abort</b> 777;
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> rejected = bcs_body.peel_bool();
@@ -4094,7 +4109,6 @@ the function will abort with this error.
                     rejected,
                 );
             } <b>else</b> <b>if</b> (message_data_type == 8) {
-                <b>abort</b> 888;
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> session_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> presign = bcs_body.peel_vec_u8();
