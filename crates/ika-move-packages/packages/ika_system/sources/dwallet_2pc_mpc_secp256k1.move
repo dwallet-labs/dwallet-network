@@ -65,7 +65,7 @@ public(package) fun set_active_committee(
     self: &mut DWallet2PcMpcSecp256K1,
     committee: Committee,
 ) {
-    self.set_active_committee(committee);
+    self.inner_mut().set_active_committee(committee);
 }
 
 public fun get_active_encryption_key(

@@ -122,6 +122,10 @@ where
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
                 {
+                    // Safe to expect here as this code is only executed after the Ika state is initialized
+                    let dwallet_id = ika_system_state_inner.get_dwallet_state_obj_id().expect(
+                        "tried to start the Sui Ika executor before initializing the Ika state, aborting",
+                    );
                     let auth_sig = checkpoint_message.auth_sig();
                     let signature = auth_sig.signature.as_bytes().to_vec();
                     let signers_bitmap = Self::calculate_signers_bitmap(auth_sig);
@@ -133,6 +137,7 @@ where
 
                     let task = Self::handle_execution_task(
                         self.ika_system_package_id,
+                        dwallet_id,
                         signature,
                         signers_bitmap,
                         message,
@@ -164,6 +169,7 @@ where
 
     async fn handle_execution_task(
         ika_system_package_id: ObjectID,
+        dwallet_id: ObjectID,
         signature: Vec<u8>,
         signers_bitmap: Vec<u8>,
         message: Vec<u8>,
@@ -177,7 +183,8 @@ where
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
+        let (ika_system_state_arg, ika_dwallet_system_state_arg) =
+            sui_client.get_ika_system_shared_objects(dwallet_id).await;
 
         ptb.move_call(
             ika_system_package_id,
@@ -186,6 +193,7 @@ where
             vec![],
             vec![
                 CallArg::Object(ika_system_state_arg),
+                CallArg::Object(ika_dwallet_system_state_arg),
                 CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                     IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
                 })?),

@@ -209,7 +209,7 @@ This function will be called only once in init.
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWallet2PcMpcSecp256K1">DWallet2PcMpcSecp256K1</a>,
     <a href="../ika_system/committee.md#(ika_system=0x0)_committee">committee</a>: Committee,
 ) {
-    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_set_active_committee">set_active_committee</a>(<a href="../ika_system/committee.md#(ika_system=0x0)_committee">committee</a>);
+    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_set_active_committee">set_active_committee</a>(<a href="../ika_system/committee.md#(ika_system=0x0)_committee">committee</a>);
 }
 </code></pre>
 
