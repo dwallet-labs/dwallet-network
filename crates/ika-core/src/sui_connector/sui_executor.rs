@@ -220,7 +220,6 @@ where
         )
         .await;
 
-        error!("submitted ts successfully digest: {}", transaction.digest().to_string());
         sui_client
             .execute_transaction_block_with_effects(transaction)
             .await?;
