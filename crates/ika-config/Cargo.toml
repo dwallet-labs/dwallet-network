@@ -28,6 +28,7 @@ ika-types.workspace = true
 
 sui-types.workspace = true
 sui-config.workspace = true
+serde_yaml = "0.8.26"
 
 [dev-dependencies]
 sui-types = { workspace = true }

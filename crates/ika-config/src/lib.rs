@@ -16,6 +16,7 @@ pub mod node_config_metrics;
 pub mod p2p;
 pub mod validator_info;
 
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 pub use node::{ConsensusConfig, NodeConfig};
 pub use sui_config::object_storage_config;
 pub use sui_config::{Config, PersistedConfig};
@@ -23,6 +24,7 @@ use sui_types::multiaddr::Multiaddr;
 
 const IKA_DIR: &str = ".ika";
 pub const IKA_CONFIG_DIR: &str = "ika_config";
+pub const IKA_SYSTEM_CONFIG: &str = "system.yaml";
 pub const IKA_NETWORK_CONFIG: &str = "network.yaml";
 pub const IKA_FULLNODE_CONFIG: &str = "fullnode.yaml";
 pub const IKA_CLIENT_CONFIG: &str = "client.yaml";
@@ -50,6 +52,44 @@ pub fn ika_config_dir() -> Result<PathBuf, anyhow::Error> {
         }
         Ok(dir)
     })
+}
+
+/// Check if the system config blob exists in the given directory or the default directory.
+pub fn system_config_exists(config_dir: Option<PathBuf>) -> bool {
+    if let Some(dir) = config_dir {
+        dir.join(IKA_SYSTEM_CONFIG).exists()
+    } else if let Some(config_env) = std::env::var_os("IKA_SYSTEM_CONFIG") {
+        Path::new(&config_env).join(IKA_SYSTEM_CONFIG).exists()
+    } else if let Some(home) = dirs::home_dir() {
+        let mut config = PathBuf::new();
+        config.push(&home);
+        config.extend([IKA_DIR, IKA_CONFIG_DIR, IKA_SYSTEM_CONFIG]);
+        config.exists()
+    } else {
+        false
+    }
+}
+
+/// Writes the `IkaPackagesConfig` to `system.yaml`, creating or overwriting the file.
+///
+/// - If a config path is provided, it is used.
+/// - If not, the default system.yaml path is used.
+pub fn write_system_config_to_yaml(
+    config_path: Option<PathBuf>,
+    config: &IkaPackagesConfig,
+) -> anyhow::Result<()> {
+    let config_path = config_path.unwrap_or_else(|| {
+        ika_config_dir()
+            .expect("Failed to get Ika config directory")
+            .join(IKA_SYSTEM_CONFIG)
+    });
+
+    let yaml =
+        serde_yaml::to_string(config).context("Failed to serialize IkaPackagesConfig to YAML")?;
+
+    fs::write(&config_path, yaml)
+        .context(format!("Failed to write system.yaml at {:?}", config_path))?;
+    Ok(())
 }
 
 /// Check if the network config blob exists in the given directory or the default directory.

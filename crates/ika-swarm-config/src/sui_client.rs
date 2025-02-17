@@ -4,10 +4,11 @@ use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::initiation::InitiationParameters;
 use ika_config::validator_info::ValidatorInfo;
-use ika_config::Config;
+use ika_config::{write_system_config_to_yaml, Config, IKA_SYSTEM_CONFIG};
 use ika_move_packages::IkaMovePackage;
 use ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA;
 use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
     ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System,
@@ -49,13 +50,6 @@ use sui_types::transaction::{
 use sui_types::{
     Identifier, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION, SUI_FRAMEWORK_PACKAGE_ID,
 };
-
-#[derive(Serialize)]
-struct IkaConfig {
-    pub ika_package_id: ObjectID,
-    pub ika_system_package_id: ObjectID,
-    pub ika_system_obj_id: ObjectID,
-}
 
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
@@ -180,14 +174,14 @@ pub async fn init_ika_on_sui(
     .await?;
 
     println!("Running `init::initialize` done: system_id: {system_id}");
-    let ika_config = IkaConfig {
+    let ika_config = IkaPackagesConfig {
         ika_package_id,
         ika_system_package_id,
-        ika_system_obj_id: system_id,
+        system_id,
     };
-    let mut file = File::create("ika_config.json")?;
-    let json = serde_json::to_string_pretty(&ika_config)?;
-    file.write_all(json.as_bytes())?;
+    write_system_config_to_yaml(None, &ika_config)?;
+    let full_config_dir = config_dir.join(IKA_SYSTEM_CONFIG);
+    println!("Ika system config written to {:?}", full_config_dir);
 
     let mut validator_ids = Vec::new();
     let mut validator_cap_ids = Vec::new();
