@@ -1731,6 +1731,9 @@ fun process_checkpoint_message(
         self.last_processed_checkpoint_sequence_number.swap(sequence_number);
     };
 
+
+    // TODO (#655): Create a separate checkpoint only with the data needed for the DWallet system.
+    // Right now this function need to peel irrelevant data to deserialize the BCS message correctly.
     let _timestamp_ms = bcs_body.peel_u64();
 
     let len = bcs_body.peel_vec_length();
