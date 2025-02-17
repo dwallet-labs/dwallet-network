@@ -27,7 +27,9 @@ use sui_keys::{
         read_network_keypair_from_file, write_authority_keypair_to_file, write_keypair_to_file,
     },
 };
+use sui_sdk::rpc_types::SuiTransactionBlockResponse;
 use sui_sdk::wallet_context::WalletContext;
+use sui_types::base_types::ObjectID;
 use sui_types::crypto::get_authority_key_pair;
 use sui_types::crypto::{NetworkKeyPair, SignatureScheme, SuiKeyPair};
 
@@ -46,12 +48,22 @@ pub enum IkaValidatorCommand {
         gas_price: u64,
         sender_sui_address: SuiAddress,
     },
+    #[clap(name = "become-candidate")]
+    BecomeCandidate {
+        #[clap(name = "validator-info-path")]
+        file: PathBuf,
+        #[clap(name = "gas-budget", long)]
+        gas_budget: Option<u64>,
+        #[clap(name = "ika-system-package-id", long)]
+        ika_system_package_id: ObjectID,
+    },
 }
 
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum IkaValidatorCommandResponse {
     MakeValidatorInfo,
+    BecomeCandidate(SuiTransactionBlockResponse)
 }
 
 impl IkaValidatorCommand {
@@ -123,6 +135,30 @@ impl IkaValidatorCommand {
                     validator_info_file_name
                 );
                 IkaValidatorCommandResponse::MakeValidatorInfo
+            }
+            IkaValidatorCommand::BecomeCandidate { file, gas_budget, ika_system_package_id } => {
+                let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
+                let validator_info_bytes = fs::read(file)?;
+                let validator_info: ValidatorInfo =
+                    serde_yaml::from_slice(&validator_info_bytes)?;
+
+                let class_groups_keypair_and_proof_obj_ref = ika_sui_client::temp_file_name::create_class_groups_public_key_and_proof_object(
+                    context.active_address()?,
+                    context,
+                    ika_system_package_id,
+                    validator_info.class_groups_public_key_and_proof,
+                ).await?;
+
+                let res  = ika_sui_client::temp_file_name::request_add_validator_candidate(
+                    context.active_address()?,
+                    context,
+                    &validator_info,
+                    ika_system_package_id,
+                    init_system_shared_version,
+                    system_obj_id,
+                    class_groups_keypair_and_proof_obj_ref,
+                ).await?;
+                IkaValidatorCommandResponse::BecomeCandidate(res)
             }
         });
         ret
