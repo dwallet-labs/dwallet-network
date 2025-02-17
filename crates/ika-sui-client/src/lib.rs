@@ -290,7 +290,7 @@ where
         }
     }
 
-    /// Retrieves the Ika System state and the dwallet state shared objects from the Sui chain.
+    /// Retrieves the Ika System state and the dWallet state shared objects from the Sui chain.
     pub async fn get_ika_system_shared_objects(
         &self,
         dwallet_id: ObjectID,
