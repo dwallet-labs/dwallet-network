@@ -1707,6 +1707,7 @@ public(package) fun respond_ecdsa_sign(
     };
 }
 
+#[allow(unused_mut_parameter, unused_variable)]
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     signature: vector<u8>,
@@ -1726,9 +1727,11 @@ public(package) fun process_checkpoint_message_by_quorum(
         total_signers_stake,
     });
 
-    self.process_checkpoint_message(message, ctx);
+    // TODO (#648): Fix DWallet checkpoint processing for the different MPC flows
+    // self.process_checkpoint_message(message, ctx);
 }
 
+#[allow(unused_function)]
 fun process_checkpoint_message(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     message: vector<u8>,
