@@ -4922,6 +4922,7 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_with",
+ "serde_yaml",
  "sui-config",
  "sui-keys",
  "sui-types",
