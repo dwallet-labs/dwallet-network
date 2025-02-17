@@ -6,6 +6,7 @@ use ika_config::initiation::InitiationParameters;
 use ika_config::validator_info::ValidatorInfo;
 use ika_config::Config;
 use ika_move_packages::IkaMovePackage;
+use ika_types::error::IkaResult;
 use ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA;
 use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
 use ika_types::sui::system_inner_v1::ValidatorCapV1;

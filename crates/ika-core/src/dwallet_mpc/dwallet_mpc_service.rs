@@ -125,25 +125,24 @@ impl DWalletMPCService {
         let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
-            .map(|(id, event)| {
-                let event: DBSuiEvent = bcs::from_bytes(event)?;
-                let session_info = match session_info_from_event(
+            .filter_map(|(id, event)| {
+                let Ok(event) = bcs::from_bytes::<DBSuiEvent>(event) else {
+                    return None;
+                };
+                let Ok(Some(session_info)) = session_info_from_event(
                     event.clone(),
                     Some(key_version),
                     &self.epoch_store.packages_config,
-                )
-                .map_err(|e| DwalletMPCError::NonMPCEvent(e.to_string()))
-                {
-                    Ok(Some(session_info)) => session_info,
-                    _ => return Err(DwalletMPCError::NonMPCEvent("Non-MPC event".to_string())),
+                ) else {
+                    return None;
                 };
                 let event = DWalletMPCEvent {
                     event,
                     session_info,
                 };
-                Ok(event)
+                Some(event)
             })
-            .collect::<DwalletMPCResult<_>>()?;
+            .collect();
 
         let mut round_events = self.epoch_store.dwallet_mpc_round_events.lock().await;
         round_events.extend(events.clone());
