@@ -30,12 +30,10 @@ use sui_types::{base_types::SuiAddress, id::ID, SUI_SYSTEM_ADDRESS};
 /// Represents the Rust version of the Move struct `ika_system::dwallet::StartDKGFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartDKGFirstRoundEvent {
-    /// Unique identifier for the MPC session.
-    pub session_id: ID,
-    /// The address of the user that initiated this session.
-    pub initiator: SuiAddress,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ID,
+    pub dwallet_id: ID,
+    pub dwallet_network_decryption_key_id: ID,
 }
 
 impl DWalletMPCEventTrait for StartDKGFirstRoundEvent {
@@ -43,7 +41,7 @@ impl DWalletMPCEventTrait for StartDKGFirstRoundEvent {
     /// It is used to detect [`StartDKGFirstRoundEvent`] events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_package_id,
+            address: *packages_config.ika_system_package_id,
             name: START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
