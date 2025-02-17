@@ -937,7 +937,6 @@ public(package) fun request_dkg_first_round(
 ///
 /// ### Panics
 /// - Panics with `ENotSystemAddress` if the sender is not the system address.
-#[allow(dead_code, unused_field, unused_mut_parameter, unused_function)]
 public(package) fun respond_dkg_first_round_output(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     dwallet_id: ID,
