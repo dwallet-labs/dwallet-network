@@ -267,11 +267,6 @@ impl DWalletMPCSession {
             CommitmentSizedNumber::from_le_slice(self.session_info.session_id.to_vec().as_slice());
         match &self.session_info.mpc_round {
             MPCProtocolInitData::DKGFirst(..) => {
-                return Ok(AsynchronousRoundResult::Finalize {
-                    public_output: vec![1, 2],
-                    private_output: vec![],
-                    malicious_parties: vec![],
-                });
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
                     session_id,
