@@ -1731,7 +1731,7 @@ fun process_checkpoint_message(
         self.last_processed_checkpoint_sequence_number.swap(sequence_number);
     };
 
-    let timestamp_ms = bcs_body.peel_u64();
+    let _timestamp_ms = bcs_body.peel_u64();
 
     let len = bcs_body.peel_vec_length();
     let mut i = 0;
@@ -1747,20 +1747,20 @@ fun process_checkpoint_message(
                 let end_of_epch_message_type = bcs_body.peel_vec_length();
             // AdvanceEpoch
                 if(end_of_epch_message_type == 0) {
-                    let new_epoch = bcs_body.peel_u64();
-                    let next_protocol_version = bcs_body.peel_u64();
-                    let epoch_start_timestamp_ms = bcs_body.peel_u64();
+                    let _new_epoch = bcs_body.peel_u64();
+                    let _next_protocol_version = bcs_body.peel_u64();
+                    let _epoch_start_timestamp_ms = bcs_body.peel_u64();
                 };
                 i = i + 1;
             };
         } else if (message_data_type == 2) {
                 //TestMessage
-                let authority = bcs_body.peel_u32();
-                let num = bcs_body.peel_u64();
+                let _authority = bcs_body.peel_u32();
+                let _num = bcs_body.peel_u64();
             } else if (message_data_type == 3) {
-                let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                let _first_round_output = bcs_body.peel_vec_u8();
-                self.respond_dkg_first_round_output(_dwallet_id, _first_round_output);
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let first_round_output = bcs_body.peel_vec_u8();
+                self.respond_dkg_first_round_output(dwallet_id, first_round_output);
             } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let public_output = bcs_body.peel_vec_u8();
