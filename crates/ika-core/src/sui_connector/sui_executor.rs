@@ -147,7 +147,8 @@ where
                     )
                     .await;
                     match task {
-                        Ok(_) => {
+                        Ok(result) => {
+
                             info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
                         }
                         Err(err) => {
@@ -220,6 +221,7 @@ where
         )
         .await;
 
+        error!("submitted ts successfully digest: {}", transaction.digest().to_string());
         sui_client
             .execute_transaction_block_with_effects(transaction)
             .await?;
