@@ -28,7 +28,7 @@ use std::sync::Arc;
 use sui_macros::fail_point_arg;
 use sui_types::accumulator::Accumulator;
 use sui_types::authenticator_state::{get_authenticator_state, ActiveJwk};
-use sui_types::base_types::{ConciseableName, ObjectRef};
+use sui_types::base_types::{ConciseableName, ObjectRef, SuiAddress};
 use sui_types::base_types::{EpochId, ObjectID, SequenceNumber};
 use sui_types::crypto::RandomnessRound;
 use sui_types::signature::GenericSignature;
@@ -2118,7 +2118,7 @@ impl AuthorityPerEpochStore {
             MPCProtocolInitData::DKGFirst(event_data) => {
                 let tx = MessageKind::DwalletDKGFirstRoundOutput(DKGFirstRoundOutput {
                     output,
-                    dwallet_id: event_data.dwallet_id.to_vec(),
+                    dwallet_id: SuiAddress::from(event_data.dwallet_id).to_vec(),
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
