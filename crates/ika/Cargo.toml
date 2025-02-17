@@ -51,7 +51,7 @@ sui-keys.workspace = true
 sui-sdk.workspace = true
 sui-types.workspace = true
 ika-move-packages.workspace = true
-serde_yaml = "0.8.26"
+serde_yaml.workspace = true
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemalloc-ctl.workspace = true
