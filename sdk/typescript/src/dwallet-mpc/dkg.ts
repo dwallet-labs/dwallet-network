@@ -37,6 +37,16 @@ interface SharedObjectOwner {
 	};
 }
 
+interface StartDKGFirstRoundEvent {
+	event_data: {
+		dwallet_id: string;
+	};
+}
+
+function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
+	return obj?.event_data?.dwallet_id !== undefined;
+}
+
 /**
  * Starts the first round of the DKG protocol to create a new dWallet.
  * The output of this function is being used to generate the input for the second round,
@@ -78,11 +88,15 @@ export async function launchDKGFirstRound(c: Config) {
 			showEvents: true,
 		},
 	});
-	// @ts-ignore
-	let dwalletID = result.events?.at(0)?.parsedJson.event_data.dwallet_id
+	let startDKGEvent = result.events?.at(0)?.parsedJson;
+	if (!isStartDKGFirstRoundEvent(startDKGEvent)) {
+		throw new Error('invalid start DKG first round event');
+	}
+	let dwalletID = startDKGEvent.event_data.dwallet_id
 	console.log(`dwallet ID: ${dwalletID}`);
 	// TODO (#631): Use the session ID to fetch the DKG first round completion event.
 }
+
 
 function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (
