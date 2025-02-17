@@ -1707,7 +1707,7 @@ public(package) fun respond_ecdsa_sign(
     };
 }
 
-#[allow(dead_code, unused_field, unused_mut_parameter, unused_variable, unused_function)]
+#[allow(unused_mut_parameter, unused_variable)]
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     signature: vector<u8>,

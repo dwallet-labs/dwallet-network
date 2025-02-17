@@ -122,7 +122,10 @@ where
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
                 {
-                    let dwallet_id = ika_system_state_inner.get_dwallet_id().unwrap();
+                    // Safe to expect here as this code is only executed after the Ika state is initialized
+                    let dwallet_id = ika_system_state_inner.get_dwallet_state_obj_id().expect(
+                        "tried to start the Sui Ika executor before initializing the Ika state, aborting",
+                    );
                     let auth_sig = checkpoint_message.auth_sig();
                     let signature = auth_sig.signature.as_bytes().to_vec();
                     let signers_bitmap = Self::calculate_signers_bitmap(auth_sig);
@@ -180,12 +183,8 @@ where
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let (ika_system_state_arg, ika_dwallet_system_state_arg) = sui_client
-            .get_system_shared_objects(dwallet_id)
-            .await;
-        // let ika_dwallet_system_state_arg = sui_client
-        //     .get_mutable_dwallet_system_arg_must_succeed(dwallet_id)
-        //     .await;
+        let (ika_system_state_arg, ika_dwallet_system_state_arg) =
+            sui_client.get_ika_system_shared_objects(dwallet_id).await;
 
         ptb.move_call(
             ika_system_package_id,
