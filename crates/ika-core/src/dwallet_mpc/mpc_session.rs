@@ -9,7 +9,7 @@ use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
-use tracing::error;
+use tracing::{error, warn};
 use twopc_mpc::sign::Protocol;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
@@ -457,7 +457,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             message,
             self.session_info.session_id.clone(),
-            self.pending_quorum_for_highest_round_number + 1,
+            self.pending_quorum_for_highest_round_number,
         ))
     }
 
@@ -493,7 +493,7 @@ impl DWalletMPCSession {
     /// Stores a message in the serialized messages map.
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
-    fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+    pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         let source_party_id =
             authority_name_to_party_id(&message.authority, &*self.epoch_store()?)?;
 
@@ -518,12 +518,6 @@ impl DWalletMPCSession {
             }
         }
         Ok(())
-    }
-
-    /// Handles a message by either forwarding it to the session
-    /// or ignoring it if the session is not active.
-    pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        self.store_message(message)
     }
 
     pub(crate) fn check_quorum_for_next_crypto_round(&mut self) -> ReadyToAdvanceCheckResult {

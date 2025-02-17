@@ -1,7 +1,7 @@
 //! This module contains the DWalletMPCService struct.
 //! It is responsible to read DWallet MPC messages from the
 //! local DB every [`READ_INTERVAL_MS`] seconds
-//! and forward them to the [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`].
+//! and forward them to the [`DWalletMPCManager`].
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
@@ -9,15 +9,18 @@ use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
+use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
 use std::collections::HashMap;
 use std::sync::Arc;
+use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::EpochId;
 use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
-use tracing::error;
+use tokio::task::yield_now;
+use tracing::{error, warn};
 use typed_store::Map;
 
 const READ_INTERVAL_MS: u64 = 100;
@@ -48,7 +51,7 @@ impl DWalletMPCService {
     /// This service periodically reads DWallet MPC messages from the local database
     /// at intervals defined by [`READ_INTERVAL_SECS`] seconds.
     /// The messages are then forwarded to the
-    /// [`crate::dwallet_mpc::mpc_manager::DWalletMPCManager`] for processing.
+    /// [`DWalletMPCManager`] for processing.
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
@@ -60,6 +63,9 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MS)).await;
+            if let Err(e) = self.read_events().await {
+                error!("failed to handle dWallet MPC events: {}", e);
+            }
             let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
             let Ok(tables) = self.epoch_store.tables() else {
                 error!("Failed to load DB tables from epoch store");
@@ -104,10 +110,6 @@ impl DWalletMPCService {
                 .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;
             drop(manager);
-
-            if let Err(e) = self.read_events().await {
-                error!("failed to handle dWallet MPC events: {}", e);
-            }
         }
     }
 
@@ -121,9 +123,10 @@ impl DWalletMPCService {
             .unwrap_or_default();
 
         let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
-        let events: HashMap<EventID, DWalletMPCEvent> = pending_events
+        let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
             .map(|(id, event)| {
+                let event: DBSuiEvent = bcs::from_bytes(event)?;
                 let session_info = match session_info_from_event(
                     event.clone(),
                     Some(key_version),
@@ -135,25 +138,18 @@ impl DWalletMPCService {
                     _ => return Err(DwalletMPCError::NonMPCEvent("Non-MPC event".to_string())),
                 };
                 let event = DWalletMPCEvent {
-                    event: event.clone(),
+                    event,
                     session_info,
                 };
-
-                Ok((*id, event))
+                Ok(event)
             })
             .collect::<DwalletMPCResult<_>>()?;
 
-        let mut events_table = self.epoch_store.tables()?.dwallet_mpc_events.batch();
-        events_table.insert_batch(
-            &self.epoch_store.tables()?.dwallet_mpc_events,
-            [(
-                self.last_read_consensus_round,
-                events.values().cloned().collect::<Vec<DWalletMPCEvent>>(),
-            )],
-        )?;
+        let mut round_events = self.epoch_store.dwallet_mpc_round_events.lock().await;
+        round_events.extend(events.clone());
         self.epoch_store
             .perpetual_tables
-            .remove_pending_events(&events.keys().cloned().collect::<Vec<EventID>>())?;
+            .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
         Ok(())
     }
 }
