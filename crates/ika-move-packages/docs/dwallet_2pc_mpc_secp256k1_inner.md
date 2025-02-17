@@ -1997,25 +1997,6 @@ Variant <code>Requested</code>
 ## Constants
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CHECKPOINT_MESSAGE_INTENT"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CHECKPOINT_MESSAGE_INTENT">CHECKPOINT_MESSAGE_INTENT</a>: vector&lt;u8&gt; = vector[1, 0, 0];
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EActiveCommitteeMustInitialize"></a>
-
-
-
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EActiveCommitteeMustInitialize">EActiveCommitteeMustInitialize</a>: vector&lt;u8&gt; = b"Fitst active <a href="../ika_system/committee.md#(ika_system=0x0)_committee">committee</a> must initialize.";
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EDwalletInactive"></a>
 
 
@@ -3963,7 +3944,7 @@ the function will abort with this error.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet2PcMpcSecp256K1InnerV1">dwallet_2pc_mpc_secp256k1_inner::DWallet2PcMpcSecp256K1InnerV1</a>, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet2PcMpcSecp256K1InnerV1">dwallet_2pc_mpc_secp256k1_inner::DWallet2PcMpcSecp256K1InnerV1</a>, _signature: vector&lt;u8&gt;, _signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -3974,20 +3955,20 @@ the function will abort with this error.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet2PcMpcSecp256K1InnerV1">DWallet2PcMpcSecp256K1InnerV1</a>,
-    signature: vector&lt;u8&gt;,
-    signers_bitmap: vector&lt;u8&gt;,
+    _signature: vector&lt;u8&gt;,
+    _signers_bitmap: vector&lt;u8&gt;,
     message: vector&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext,
 ) {
-    <b>let</b> <b>mut</b> intent_bytes = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CHECKPOINT_MESSAGE_INTENT">CHECKPOINT_MESSAGE_INTENT</a>;
-    intent_bytes.append(message);
-    intent_bytes.append(bcs::to_bytes(&self.epoch));
-    <b>let</b> total_signers_stake = self.active_committee.verify_certificate(&signature, &signers_bitmap, &intent_bytes);
-    // TODO: <b>move</b> it to verify_certificate
-    event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SystemQuorumVerifiedEvent">SystemQuorumVerifiedEvent</a> {
-        epoch: self.epoch,
-        total_signers_stake,
-    });
+    // <b>let</b> <b>mut</b> intent_bytes = CHECKPOINT_MESSAGE_INTENT;
+    // intent_bytes.append(message);
+    // intent_bytes.append(bcs::to_bytes(&self.epoch));
+    // <b>let</b> total_signers_stake = self.active_committee.verify_certificate(&signature, &signers_bitmap, &intent_bytes);
+    // // TODO: <b>move</b> it to verify_certificate
+    // event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SystemQuorumVerifiedEvent">SystemQuorumVerifiedEvent</a> {
+    //     epoch: self.epoch,
+    //     total_signers_stake,
+    // });
     self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message">process_checkpoint_message</a>(message, ctx);
 }
 </code></pre>
@@ -4016,7 +3997,7 @@ the function will abort with this error.
     message: vector&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext,
 ) {
-    <b>assert</b>!(!self.active_committee.members().is_empty(), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EActiveCommitteeMustInitialize">EActiveCommitteeMustInitialize</a>);
+    // <b>assert</b>!(!self.active_committee.members().is_empty(), EActiveCommitteeMustInitialize);
     <b>let</b> <b>mut</b> bcs_body = bcs::new(<b>copy</b> message);
     <b>let</b> epoch = bcs_body.peel_u64();
     <b>assert</b>!(epoch == self.epoch, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EIncorrectEpochInCheckpoint">EIncorrectEpochInCheckpoint</a>);
@@ -4029,11 +4010,11 @@ the function will abort with this error.
         self.last_processed_checkpoint_sequence_number.swap(sequence_number);
     };
     <b>let</b> timestamp_ms = bcs_body.peel_u64();
-    event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SystemCheckpointInfoEvent">SystemCheckpointInfoEvent</a> {
-        epoch,
-        sequence_number,
-        timestamp_ms,
-    });
+    // event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SystemCheckpointInfoEvent">SystemCheckpointInfoEvent</a> {
+    //     epoch,
+    //     sequence_number,
+    //     timestamp_ms,
+    // });
     <b>let</b> len = bcs_body.peel_vec_length();
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; len) {
