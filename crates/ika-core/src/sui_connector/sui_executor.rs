@@ -147,8 +147,7 @@ where
                     )
                     .await;
                     match task {
-                        Ok(result) => {
-
+                        Ok(_) => {
                             info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
                         }
                         Err(err) => {
