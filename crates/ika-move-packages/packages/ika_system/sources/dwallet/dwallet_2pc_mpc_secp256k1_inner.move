@@ -1704,26 +1704,11 @@ public(package) fun respond_ecdsa_sign(
     };
 }
 
-#[allow(dead_code, unused_field, unused_mut_parameter, unused_function)]
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
-    _signature: vector<u8>,
-    _signers_bitmap: vector<u8>,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    // let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
-    // intent_bytes.append(message);
-    // intent_bytes.append(bcs::to_bytes(&self.epoch));
-
-    // let total_signers_stake = self.active_committee.verify_certificate(&signature, &signers_bitmap, &intent_bytes);
-
-    // // TODO: move it to verify_certificate
-    // event::emit(SystemQuorumVerifiedEvent {
-    //     epoch: self.epoch,
-    //     total_signers_stake,
-    // });
-
     self.process_checkpoint_message(message, ctx);
 }
 
@@ -1733,8 +1718,6 @@ fun process_checkpoint_message(
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    // assert!(!self.active_committee.members().is_empty(), EActiveCommitteeMustInitialize);
-
     let mut bcs_body = bcs::new(copy message);
 
     let epoch = bcs_body.peel_u64();
@@ -1751,12 +1734,6 @@ fun process_checkpoint_message(
     };
 
     let timestamp_ms = bcs_body.peel_u64();
-
-    // event::emit(SystemCheckpointInfoEvent {
-    //     epoch,
-    //     sequence_number,
-    //     timestamp_ms,
-    // });
 
     let len = bcs_body.peel_vec_length();
     let mut i = 0;
