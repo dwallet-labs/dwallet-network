@@ -1392,7 +1392,7 @@ fun emit_ecdsa_sign_event(
         session_id,
         state: ECDSASignState::Requested,
     });
-    
+
     event::emit(emit_event);
 }
 
@@ -1762,7 +1762,27 @@ fun process_checkpoint_message(
     let mut i = 0;
     while (i < len) {
         let message_data_type = bcs_body.peel_vec_length();
-            if (message_data_type == 3) {
+        if (message_data_type == 0) {
+
+        } else if (message_data_type == 1) {
+            // EndOfEpochMessage
+            let len = bcs_body.peel_vec_length();
+            let mut i = 0;
+            while (i < len) {
+                let end_of_epch_message_type = bcs_body.peel_vec_length();
+            // AdvanceEpoch
+                if(end_of_epch_message_type == 0) {
+                    let new_epoch = bcs_body.peel_u64();
+                    let next_protocol_version = bcs_body.peel_u64();
+                    let epoch_start_timestamp_ms = bcs_body.peel_u64();
+                };
+                i = i + 1;
+            };
+        } else if (message_data_type == 2) {
+                //TestMessage
+                let authority = bcs_body.peel_u32();
+                let num = bcs_body.peel_u64();
+            } else if (message_data_type == 3) {
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _first_round_output = bcs_body.peel_vec_u8();
                 abort 999
