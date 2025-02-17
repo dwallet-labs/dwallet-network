@@ -1727,7 +1727,7 @@ public(package) fun process_checkpoint_message_by_quorum(
         total_signers_stake,
     });
 
-    // self.process_checkpoint_message(message, ctx);
+    self.process_checkpoint_message(message, ctx);
 }
 
 #[allow(dead_code, unused_field, unused_mut_parameter, unused_function)]
