@@ -486,9 +486,9 @@ pub struct IkaPackagesConfig {
 /// Represents the Rust version of the Move struct `ika_system::dwallet::StartDKGFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartDKGFirstRoundEvent {
+    pub dwallet_id: ObjectID,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ObjectID,
-    pub dwallet_id: ObjectID,
     pub dwallet_network_decryption_key_id: ObjectID,
 }
 
