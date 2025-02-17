@@ -12,6 +12,8 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 bin-version.workspace = true
+bcs.workspace = true
+dwallet-classgroups-types.workspace = true
 clap.workspace = true
 datatest-stable.workspace = true
 http.workspace = true
@@ -49,6 +51,7 @@ sui-keys.workspace = true
 sui-sdk.workspace = true
 sui-types.workspace = true
 ika-move-packages.workspace = true
+serde_yaml.workspace = true
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemalloc-ctl.workspace = true

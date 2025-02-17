@@ -1,5 +1,5 @@
-use dwallet_classgroups_types::{read_class_groups_from_file, SingleClassGroupsKeyPairAndProof};
-use dwallet_classgroups_types::{ClassGroupsKeyPairAndProof, NUM_OF_CLASS_GROUPS_KEYS};
+use dwallet_classgroups_types::read_class_groups_from_file;
+use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 
 pub fn create_full_class_groups_mock() -> Box<ClassGroupsKeyPairAndProof> {
     include_str!("../../../class-groups-keys-mock-files/class-groups-mock-key-full");

@@ -473,7 +473,7 @@ impl DWalletMPCEventTrait for StartPresignFirstRoundEvent {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IkaPackagesConfig {
     /// The move package id of ika (IKA) on sui.
     pub ika_package_id: ObjectID,

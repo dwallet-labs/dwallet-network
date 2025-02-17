@@ -1,14 +1,15 @@
 // Copyright (c) dWallet Labs Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use anyhow::{anyhow, bail, ensure, Context};
+use anyhow::{anyhow, bail, ensure};
 use clap::*;
 use colored::Colorize;
 use fastcrypto::traits::KeyPair;
 use ika_config::p2p::SeedPeer;
 use ika_config::{
-    ika_config_dir, network_config_exists, Config, PersistedConfig, FULL_NODE_DB_PATH,
-    IKA_CLIENT_CONFIG, IKA_FULLNODE_CONFIG, IKA_NETWORK_CONFIG,
+    ika_config_dir, network_config_exists, system_config_exists, write_system_config_to_yaml,
+    Config, PersistedConfig, FULL_NODE_DB_PATH, IKA_CLIENT_CONFIG, IKA_FULLNODE_CONFIG,
+    IKA_NETWORK_CONFIG, IKA_SYSTEM_CONFIG,
 };
 use ika_config::{
     IKA_BENCHMARK_GENESIS_GAS_KEYSTORE_FILENAME, IKA_GENESIS_FILENAME, IKA_KEYSTORE_FILENAME,
@@ -38,19 +39,21 @@ use sui_sdk::rpc_types::{ObjectChange, SuiObjectDataOptions, SuiTransactionBlock
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::SuiClient;
 
+use crate::validator_commands::IkaValidatorCommand;
 use ika_move_packages::IkaMovePackage;
 use ika_swarm::memory::Swarm;
 use ika_swarm_config::network_config::NetworkConfig;
 use ika_swarm_config::network_config_builder::ConfigBuilder;
 use ika_swarm_config::node_config_builder::FullnodeConfigBuilder;
 use ika_swarm_config::validator_initialization_config::{
-    ValidatorInitializationConfig, ValidatorInitializationMetadata, DEFAULT_NUMBER_OF_AUTHORITIES,
+    ValidatorInitializationConfig, DEFAULT_NUMBER_OF_AUTHORITIES,
 };
 use ika_types::governance::{
     MIN_VALIDATOR_JOINING_STAKE_NIKA, VALIDATOR_LOW_STAKE_GRACE_PERIOD,
     VALIDATOR_LOW_STAKE_THRESHOLD_NIKA, VALIDATOR_VERY_LOW_STAKE_THRESHOLD_NIKA,
 };
 use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::System;
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
@@ -142,6 +145,38 @@ pub enum IkaCommand {
         #[clap(short, long, help = "Dump the public keys of all authorities")]
         dump_addresses: bool,
     },
+
+    /// Configures the system state for the Ika network.
+    #[clap(name = "config-system")]
+    ConfigSystem {
+        /// Path to the system configuration file (system.yaml).
+        #[clap(long = "config", default_value = IKA_SYSTEM_CONFIG)]
+        config_path: PathBuf,
+        /// The move package ID of ika (IKA) on Sui.
+        #[clap(long)]
+        ika_package_id: ObjectID,
+        /// The move package ID of ika_system on Sui.
+        #[clap(long)]
+        ika_system_package_id: ObjectID,
+        /// The object ID of ika_system_state on Sui.
+        #[clap(long)]
+        system_id: ObjectID,
+    },
+
+    /// A tool for validators and validator candidates.
+    #[clap(name = "validator")]
+    Validator {
+        /// Sets the file storing the state of our user accounts (an empty one will be created if missing)
+        #[clap(long = "client.config")]
+        config: Option<PathBuf>,
+        #[clap(subcommand)]
+        cmd: Option<IkaValidatorCommand>,
+        /// Return command outputs in json format.
+        #[clap(long, global = true)]
+        json: bool,
+        #[clap(short = 'y', long = "yes")]
+        accept_defaults: bool,
+    },
 }
 
 impl IkaCommand {
@@ -198,6 +233,41 @@ impl IkaCommand {
                 )
                 .await?;
 
+                Ok(())
+            }
+            IkaCommand::ConfigSystem {
+                config_path,
+                ika_package_id,
+                ika_system_package_id,
+                system_id,
+            } => {
+                let config = IkaPackagesConfig {
+                    ika_package_id,
+                    ika_system_package_id,
+                    system_id,
+                };
+                write_system_config_to_yaml(Some(config_path), &config)
+            }
+            IkaCommand::Validator {
+                config,
+                cmd,
+                json,
+                accept_defaults,
+            } => {
+                let config_path = config.unwrap_or(sui_config_dir()?.join(SUI_CLIENT_CONFIG));
+                let mut context = WalletContext::new(&config_path, None, None)?;
+                if let Some(cmd) = cmd {
+                    if let Ok(client) = context.get_client().await {
+                        if let Err(e) = client.check_api_version() {
+                            eprintln!("{}", format!("[warning] {e}").yellow().bold());
+                        }
+                    }
+                    cmd.execute(&mut context).await?.print(!json);
+                } else {
+                    let mut app: Command = IkaCommand::command();
+                    app.build();
+                    app.find_subcommand_mut("validator").unwrap().print_help()?;
+                }
                 Ok(())
             }
         }
@@ -357,13 +427,6 @@ async fn initiation(
     Ok(())
 }
 
-fn read_line() -> Result<String, anyhow::Error> {
-    let mut s = String::new();
-    let _ = stdout().flush();
-    io::stdin().read_line(&mut s)?;
-    Ok(s.trim_end().to_string())
-}
-
 /// Parse the input string into a SocketAddr, with a default port if none is provided.
 pub fn parse_host_port(
     input: String,
@@ -385,4 +448,19 @@ pub fn parse_host_port(
     } else {
         format!("{default_host}:{default_port_if_missing}").parse::<SocketAddr>()
     }
+}
+
+/// Checks if the system configuration exists and prints usage instructions if missing.
+pub fn ensure_system_config_exists(config_path: Option<PathBuf>) -> Result<(), anyhow::Error> {
+    if !system_config_exists(config_path) {
+        println!(
+            "{}\n\nRun the following command to configure the system before using other commands:\n",
+            "Error: system.yaml is missing!".red().bold()
+        );
+        println!(
+            "Usage: ika config-system --ika-package-id <IKA_PACKAGE_ID> --ika-system-package-id <IKA_SYSTEM_PACKAGE_ID> --system-id <SYSTEM_ID>"
+        );
+        bail!("Missing system configuration file");
+    }
+    Ok(())
 }
