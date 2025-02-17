@@ -11,13 +11,14 @@ use clap::*;
 use colored::Colorize;
 use dwallet_classgroups_types::{
     generate_class_groups_keypair_and_proof_from_seed, read_class_groups_from_file,
-    write_class_groups_keypair_and_proof_to_file,
+    write_class_groups_keypair_and_proof_to_file, ClassGroupsKeyPairAndProof,
 };
 use fastcrypto::traits::KeyPair;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
-use ika_types::crypto::generate_proof_of_possession;
+use ika_types::crypto::{generate_proof_of_possession, AuthorityKeyPair};
+use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::sui::DEFAULT_COMMISSION_RATE;
 use serde::Serialize;
 use sui_keys::{
@@ -51,38 +52,6 @@ pub enum IkaValidatorCommand {
 #[serde(untagged)]
 pub enum IkaValidatorCommandResponse {
     MakeValidatorInfo,
-}
-
-fn make_key_files(
-    file_name: PathBuf,
-    is_protocol_key: bool,
-    key: Option<SuiKeyPair>,
-) -> Result<()> {
-    if file_name.exists() {
-        println!("Use existing {:?} key file.", file_name);
-        return Ok(());
-    } else if is_protocol_key {
-        let (_, keypair) = get_authority_key_pair();
-        write_authority_keypair_to_file(&keypair, file_name.clone())?;
-        println!("Generated new key file: {:?}.", file_name);
-    } else {
-        let kp = match key {
-            Some(key) => {
-                println!(
-                    "Generated new key file {:?} based on sui.keystore file.",
-                    file_name
-                );
-                key
-            }
-            None => {
-                let (_, kp, _, _) = generate_new_key(SignatureScheme::ED25519, None, None)?;
-                println!("Generated new key file: {:?}.", file_name);
-                kp
-            }
-        };
-        write_keypair_to_file(&kp, &file_name)?;
-    }
-    Ok(())
 }
 
 impl IkaValidatorCommand {
@@ -119,26 +88,10 @@ impl IkaValidatorCommand {
                 let pop = generate_proof_of_possession(&keypair, sender_sui_address);
 
                 let class_groups_public_key_and_proof =
-                    read_class_groups_from_file("class-groups.key")
-                        .ok()
-                        .unwrap_or_else(|| {
-                            let class_groups_key =
-                                Box::new(generate_class_groups_keypair_and_proof_from_seed(
-                                    keypair
-                                        .copy()
-                                        .private()
-                                        .as_bytes()
-                                        .try_into()
-                                        // Safe to unwrap because the key is 32 bytes.
-                                        .unwrap(),
-                                ));
-                            write_class_groups_keypair_and_proof_to_file(
-                                &class_groups_key,
-                                "class-groups.key",
-                            )
-                            .unwrap();
-                            class_groups_key
-                        });
+                    read_or_generate_from_seed_class_groups_key(
+                        dir.join("class-groups.key"),
+                        &keypair,
+                    )?;
 
                 let validator_info = ValidatorInfo {
                     name,
@@ -161,7 +114,7 @@ impl IkaValidatorCommand {
                     p2p_address: Multiaddr::try_from(format!("/dns/{}/udp/8084", host_name))?,
                     proof_of_possession: pop,
                 };
-                // TODO set key files permission
+
                 let validator_info_file_name = dir.join("validator.info");
                 let validator_info_bytes = serde_yaml::to_string(&validator_info)?;
                 fs::write(validator_info_file_name.clone(), validator_info_bytes)?;
@@ -200,7 +153,6 @@ impl Debug for IkaValidatorCommandResponse {
 impl IkaValidatorCommandResponse {
     pub fn print(&self, pretty: bool) {
         match self {
-            // Don't print empty responses
             IkaValidatorCommandResponse::MakeValidatorInfo => {}
             other => {
                 let line = if pretty {
@@ -208,11 +160,71 @@ impl IkaValidatorCommandResponse {
                 } else {
                     format!("{:?}", other)
                 };
-                // Log line by line
                 for line in line.lines() {
                     println!("{line}");
                 }
             }
+        }
+    }
+}
+
+fn make_key_files(
+    file_name: PathBuf,
+    is_protocol_key: bool,
+    key: Option<SuiKeyPair>,
+) -> Result<()> {
+    if file_name.exists() {
+        println!("Use existing {:?} key file.", file_name);
+        return Ok(());
+    } else if is_protocol_key {
+        let (_, keypair) = get_authority_key_pair();
+        write_authority_keypair_to_file(&keypair, file_name.clone())?;
+        println!("Generated new key file: {:?}.", file_name);
+    } else {
+        let kp = match key {
+            Some(key) => {
+                println!(
+                    "Generated new key file {:?} based on sui.keystore file.",
+                    file_name
+                );
+                key
+            }
+            None => {
+                let (_, kp, _, _) = generate_new_key(SignatureScheme::ED25519, None, None)?;
+                println!("Generated new key file: {:?}.", file_name);
+                kp
+            }
+        };
+        write_keypair_to_file(&kp, &file_name)?;
+    }
+    Ok(())
+}
+
+/// Reads the class groups key pair and proof from a file if it exists, otherwise generates it from the seed.
+/// The seed is the private key of the authority key pair.
+fn read_or_generate_from_seed_class_groups_key(
+    file_path: PathBuf,
+    seed: &AuthorityKeyPair,
+) -> Result<Box<ClassGroupsKeyPairAndProof>> {
+    match read_class_groups_from_file(file_path.clone()) {
+        Ok(class_groups_public_key_and_proof) => {
+            println!("Use existing: {:?}.", file_path,);
+            Ok(class_groups_public_key_and_proof)
+        }
+        Err(_) => {
+            let class_groups_public_key_and_proof =
+                Box::new(generate_class_groups_keypair_and_proof_from_seed(
+                    seed.copy().private().as_bytes().try_into()?,
+                ));
+            write_class_groups_keypair_and_proof_to_file(
+                &class_groups_public_key_and_proof,
+                file_path.clone(),
+            )?;
+            println!(
+                "Generated class groups key pair info file: {:?}.",
+                file_path,
+            );
+            Ok(class_groups_public_key_and_proof)
         }
     }
 }

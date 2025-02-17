@@ -38,6 +38,7 @@ use sui_sdk::rpc_types::{ObjectChange, SuiObjectDataOptions, SuiTransactionBlock
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::SuiClient;
 
+use crate::validator_commands::IkaValidatorCommand;
 use ika_move_packages::IkaMovePackage;
 use ika_swarm::memory::Swarm;
 use ika_swarm_config::network_config::NetworkConfig;
@@ -64,7 +65,6 @@ use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
 use tempfile::tempdir;
 use tracing;
 use tracing::{debug, info};
-use crate::validator_commands::IkaValidatorCommand;
 
 const DEFAULT_EPOCH_DURATION_MS: u64 = 60_000;
 
