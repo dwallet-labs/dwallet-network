@@ -1768,8 +1768,8 @@ fun process_checkpoint_message(
             if (message_data_type == 3) {
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _first_round_output = bcs_body.peel_vec_u8();
-                abort 999;
-                self.respond_dkg_first_round_output(dwallet_id, first_round_output);
+                abort 999
+                // self.respond_dkg_first_round_output(dwallet_id, first_round_output);
             } else if (message_data_type == 4) {
                 abort 444;
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
