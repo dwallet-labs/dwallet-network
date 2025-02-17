@@ -180,10 +180,12 @@ where
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
-        let ika_dwallet_system_state_arg = sui_client
-            .get_mutable_dwallet_system_arg_must_succeed(dwallet_id)
+        let (ika_system_state_arg, ika_dwallet_system_state_arg) = sui_client
+            .get_system_shared_objects(dwallet_id)
             .await;
+        // let ika_dwallet_system_state_arg = sui_client
+        //     .get_mutable_dwallet_system_arg_must_succeed(dwallet_id)
+        //     .await;
 
         ptb.move_call(
             ika_system_package_id,

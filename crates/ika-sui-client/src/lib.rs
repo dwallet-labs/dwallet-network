@@ -294,18 +294,32 @@ where
     // We retry a few times in case of errors. If it fails eventually, we panic.
     // In general it's safe to call in the beginning of the program.
     // After the first call, the result is cached since the value should never change.
-    pub async fn get_mutable_system_arg_must_succeed(&self) -> ObjectArg {
-        static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
-        *ARG.get_or_init(|| async move {
-            let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
-                self.inner.get_mutable_shared_arg(self.system_id),
-                Duration::from_secs(30)
-            ) else {
-                panic!("Failed to get system object arg after retries");
-            };
-            system_arg
-        })
-        .await
+    // pub async fn get_mutable_system_arg_must_succeed(
+    //     &self,
+    //     dwallet_id: ObjectID,
+    // ) -> (ObjectArg, ObjectArg) {
+    //     static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
+    //     let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
+    //         self.get_system_shared_objects(dwallet_id),
+    //         Duration::from_secs(30)
+    //     ) else {
+    //         panic!("Failed to get system object arg after retries");
+    //     };
+    //     system_arg
+    // }
+
+    pub async fn get_system_shared_objects(
+        &self,
+        dwallet_id: ObjectID,
+    ) -> (ObjectArg, ObjectArg) {
+        loop {
+            let a = self.inner.get_mutable_shared_arg(self.system_id).await;
+            let b = self.inner.get_mutable_shared_arg(dwallet_id).await;
+            if a.is_ok() && b.is_ok() {
+                return (a.unwrap(), b.unwrap());
+            }
+            tokio::time::sleep(Duration::from_secs(30)).await;
+        }
     }
 
     /// Get the mutable system object arg on chain.
