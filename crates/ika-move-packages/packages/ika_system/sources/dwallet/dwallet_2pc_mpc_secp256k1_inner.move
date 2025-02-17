@@ -1762,7 +1762,6 @@ fun process_checkpoint_message(
                 let _first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dkg_first_round_output(_dwallet_id, _first_round_output);
             } else if (message_data_type == 4) {
-                abort 444;
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
@@ -1777,7 +1776,6 @@ fun process_checkpoint_message(
                     ctx,
                 );
             } else if (message_data_type == 5) {
-                abort 555;
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let encrypted_user_secret_key_share_id = object::id_from_address(bcs_body.peel_address());
                 let rejected = bcs_body.peel_bool();
@@ -1787,7 +1785,6 @@ fun process_checkpoint_message(
                     rejected,
                 );
             } else if (message_data_type == 6) {
-                abort 666;
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let sign_id = object::id_from_address(bcs_body.peel_address());
                 let session_id = object::id_from_address(bcs_body.peel_address());
@@ -1803,7 +1800,6 @@ fun process_checkpoint_message(
                     rejected,
                 );
             } else if (message_data_type == 7) {
-                abort 777;
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
                 let rejected = bcs_body.peel_bool();
@@ -1813,7 +1809,6 @@ fun process_checkpoint_message(
                     rejected,
                 );
             } else if (message_data_type == 8) {
-                abort 888;
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let session_id = object::id_from_address(bcs_body.peel_address());
                 let presign = bcs_body.peel_vec_u8();
