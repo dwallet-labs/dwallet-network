@@ -609,7 +609,7 @@ public fun process_checkpoint_message_by_quorum(
 ) {
     let self = self.inner_mut();
     self.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
-    // dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+    dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
     dwallet_2pc_mpc_secp256k1.set_active_committee(self.active_committee());
 }
 
