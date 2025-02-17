@@ -263,11 +263,13 @@ public fun compare_ecdsa_partial_user_signatures_with_approvals(
 #[allow(unused_function)]
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWallet2PcMpcSecp256K1,
+    signature: vector<u8>,
+    signers_bitmap: vector<u8>,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
     let self = self.inner_mut();
-    self.process_checkpoint_message_by_quorum(message, ctx);
+    self.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
 }
 
 /// Migrate the dwallet_2pc_mpc_secp256k1 object to the new package id.

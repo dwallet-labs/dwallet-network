@@ -25,6 +25,8 @@ use ika_system::committee::{Self, Committee};
 const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
 
+const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
+
 public struct DWallet2PcMpcSecp256K1InnerV1 has store {
     epoch: u64,
     // TODO: change it to versioned
@@ -612,6 +614,8 @@ const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorr
 #[error]
 const EWrongCheckpointSequenceNumber: vector<u8> = b"The checkpoint sequence number should be the expected next one.";
 
+#[error]
+const EActiveCommitteeMustInitialize: vector<u8> = b"Fitst active committee must initialize.";
 // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
 public(package) fun create(
@@ -1705,10 +1709,25 @@ public(package) fun respond_ecdsa_sign(
 
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
+    signature: vector<u8>,
+    signers_bitmap: vector<u8>,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    self.process_checkpoint_message(message, ctx);
+    let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
+    intent_bytes.append(message);
+    intent_bytes.append(bcs::to_bytes(&self.epoch));
+
+    let total_signers_stake = self.active_committee.verify_certificate(&signature, &signers_bitmap, &intent_bytes);
+
+    // TODO: move it to verify_certificate
+    event::emit(SystemQuorumVerifiedEvent {
+        epoch: self.epoch,
+        total_signers_stake,
+    });
+
+    // TODO (#648): Fix DWallet checkpoint processing for the different MPC flows
+    // self.process_checkpoint_message(message, ctx);
 }
 
 fun process_checkpoint_message(
@@ -1716,6 +1735,8 @@ fun process_checkpoint_message(
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
+    assert!(!self.active_committee.members().is_empty(), EActiveCommitteeMustInitialize);
+
     let mut bcs_body = bcs::new(copy message);
 
     let epoch = bcs_body.peel_u64();
@@ -1731,10 +1752,13 @@ fun process_checkpoint_message(
         self.last_processed_checkpoint_sequence_number.swap(sequence_number);
     };
 
+    let timestamp_ms = bcs_body.peel_u64();
 
-    // TODO (#655): Create a separate checkpoint only with the data needed for the DWallet system.
-    // Right now this function need to peel irrelevant data to deserialize the BCS message correctly.
-    let _timestamp_ms = bcs_body.peel_u64();
+    event::emit(SystemCheckpointInfoEvent {
+        epoch,
+        sequence_number,
+        timestamp_ms,
+    });
 
     let len = bcs_body.peel_vec_length();
     let mut i = 0;
