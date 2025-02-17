@@ -2,6 +2,11 @@
 title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 ---
 
+This module defines the data structures for the Class Groups public key and proof.
+
+The full Class Groups public key consists of 13 public keys, each with a corresponding proof.
+Due to Sui's limitations on object size (≤ 250KB) and transaction size (≤ 128KB),
+the full key must be split into parts and stored dynamically using <code>table_vec</code>.
 
 
 -  [Struct `ClassGroupsPublicKeyAndProofBuilder`](#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder)
@@ -34,6 +39,7 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 
 ## Struct `ClassGroupsPublicKeyAndProofBuilder`
 
+<code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a></code> is used to construct a <code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">ClassGroupsPublicKeyAndProof</a></code> object.
 
 
 <pre><code><b>public</b> <b>struct</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a> <b>has</b> key, store
@@ -55,6 +61,7 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 <code>public_keys_and_proofs: <a href="../../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;</code>
 </dt>
 <dd>
+ A <code>TableVec</code> that dynamically stores public keys and their corresponding proofs.
 </dd>
 </dl>
 
@@ -65,6 +72,8 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 
 ## Struct `ClassGroupsPublicKeyAndProof`
 
+<code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">ClassGroupsPublicKeyAndProof</a></code> stores the full Class Groups public key and proof.
+This object can only be created using <code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a></code>.
 
 
 <pre><code><b>public</b> <b>struct</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">ClassGroupsPublicKeyAndProof</a> <b>has</b> key, store
@@ -86,6 +95,7 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 <code>public_keys_and_proofs: <a href="../../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;</code>
 </dt>
 <dd>
+ A <code>TableVec</code> that dynamically stores public keys and their corresponding proofs.
 </dd>
 </dl>
 
@@ -99,6 +109,7 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 
 <a name="(ika_system=0x0)_class_groups_public_key_and_proof_NUMBER_OF_KEYS"></a>
 
+The total number of keys in a full Class Groups public key and proof set.
 
 
 <pre><code><b>const</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_NUMBER_OF_KEYS">NUMBER_OF_KEYS</a>: u64 = 13;
@@ -110,6 +121,7 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 
 ## Function `empty`
 
+Creates a new <code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a></code> instance.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_empty">empty</a>(ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProofBuilder</a>
@@ -126,7 +138,7 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 ): <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a> {
     <b>let</b> builder = <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a> {
         id: object::new(ctx),
-        public_keys_and_proofs:  table_vec::empty(ctx),
+        public_keys_and_proofs: table_vec::empty(ctx),
     };
     builder
 }
@@ -140,6 +152,10 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 
 ## Function `add_public_key_and_proof`
 
+Adds a public key and its corresponding proof to the <code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a></code>.
+
+Due to Sui's transaction argument size limit (≤ 16KB), each public key-proof pair
+must be split into two parts before being stored.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_add_public_key_and_proof">add_public_key_and_proof</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProofBuilder</a>, public_key_and_proof_first_part: vector&lt;u8&gt;, public_key_and_proof_second_part: vector&lt;u8&gt;)
@@ -171,6 +187,9 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 
 ## Function `finish`
 
+Finalizes the construction of a <code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">ClassGroupsPublicKeyAndProof</a></code> object.
+
+This function fails if the number of stored public keys and proofs does not equal <code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_NUMBER_OF_KEYS">NUMBER_OF_KEYS</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_finish">finish</a>(self: (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProofBuilder</a>, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>
@@ -187,7 +206,7 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
     ctx: &<b>mut</b> TxContext,
 ): <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">ClassGroupsPublicKeyAndProof</a> {
     <b>assert</b>!(self.public_keys_and_proofs.length() == <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_NUMBER_OF_KEYS">NUMBER_OF_KEYS</a>, 0);
-    <b>let</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a> {id, public_keys_and_proofs} = self;
+    <b>let</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a> { id, public_keys_and_proofs } = self;
     id.delete();
     <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">ClassGroupsPublicKeyAndProof</a> {
         id: object::new(ctx),
@@ -204,6 +223,7 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 
 ## Function `drop`
 
+Drops the <code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">ClassGroupsPublicKeyAndProof</a></code> object, removing all public keys and proofs before deletion.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_drop">drop</a>(self: (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>)
@@ -233,6 +253,10 @@ title: Module `(ika_system=0x0)::class_groups_public_key_and_proof`
 
 ## Function `destroy`
 
+Destroys the <code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">ClassGroupsPublicKeyAndProof</a></code> object, returning the stored public keys and proofs.
+
+This function removes the object from storage and returns the <code>TableVec</code> containing
+the public keys and their corresponding proofs.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_destroy">destroy</a>(self: (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>): <a href="../../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;
