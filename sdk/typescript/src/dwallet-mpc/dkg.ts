@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config, StartSessionEvent } from './globals.js';
+import type { Config } from './globals.js';
 import {
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
@@ -92,11 +92,10 @@ export async function launchDKGFirstRound(c: Config) {
 	if (!isStartDKGFirstRoundEvent(startDKGEvent)) {
 		throw new Error('invalid start DKG first round event');
 	}
-	let dwalletID = startDKGEvent.event_data.dwallet_id
+	let dwalletID = startDKGEvent.event_data.dwallet_id;
 	console.log(`dwallet ID: ${dwalletID}`);
 	// TODO (#631): Use the session ID to fetch the DKG first round completion event.
 }
-
 
 function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (

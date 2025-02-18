@@ -27,13 +27,3 @@ export interface Config {
 export function delay(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-/**
- * TS representation of an event to start an MPC session.
- * Usually the only thing needed from this event is the `session_id`,
- * which is used to fetch the
- * completion event.
- */
-export interface StartSessionEvent {
-	session_id: string;
-}
