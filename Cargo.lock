@@ -5319,6 +5319,7 @@ dependencies = [
  "fastcrypto",
  "flate2",
  "futures",
+ "hex",
  "ika-config",
  "ika-move-packages",
  "ika-protocol-config",

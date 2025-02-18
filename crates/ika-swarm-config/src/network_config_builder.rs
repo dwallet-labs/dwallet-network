@@ -17,7 +17,9 @@ use ika_types::crypto::{get_key_pair_from_rng, AccountKeyPair, KeypairTraits};
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use rand::rngs::OsRng;
 use std::path::PathBuf;
-use std::{num::NonZeroUsize, path::Path, sync::Arc};
+use std::{hash, num::NonZeroUsize, path::Path, sync::Arc};
+use std::ptr::hash;
+use fastcrypto::hash::{HashFunction, Sha256};
 use sui_macros::nondeterministic;
 
 pub enum CommitteeConfig {
@@ -318,6 +320,10 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 configs
             }
         };
+
+        let bytes = bcs::to_bytes(&validator_initialization_configs)?;
+        let hashed = hex::encode(Sha256::digest(bytes));
+        println!("Validator initialization configs: {}", hashed);
 
         for (i, validator) in validator_initialization_configs.iter_mut().enumerate() {
             validator.name = validator.name.clone().or(Some(format!("validator-{i}")));
