@@ -52,22 +52,22 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 	return obj?.event_data?.dwallet_id !== undefined;
 }
 
-export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
-	let firstRoundOutput = await launchDKGFirstRound(conf);
-	console.log('First round output:', firstRoundOutput);
-	const [
-		centralizedPublicKeyShareAndProof,
-		centralizedPublicOutput,
-		centralizedSecretKeyShare,
-		serializedPublicKeys,
-	] = create_dkg_centralized_output(
-		protocolPublicParameters,
-		MPCKeyScheme.Secp256k1,
-		Uint8Array.from(dkgFirstRoundResult.decentralized_public_output),
-		// Remove the 0x prefix.
-		dkgFirstRoundResult.session_id.slice(2),
-	);
-}
+// export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
+// 	let firstRoundOutput = await launchDKGFirstRound(conf);
+// 	console.log('First round output:', firstRoundOutput);
+// 	const [
+// 		centralizedPublicKeyShareAndProof,
+// 		centralizedPublicOutput,
+// 		centralizedSecretKeyShare,
+// 		serializedPublicKeys,
+// 	] = create_dkg_centralized_output(
+// 		protocolPublicParameters,
+// 		MPCKeyScheme.Secp256k1,
+// 		Uint8Array.from(dkgFirstRoundResult.decentralized_public_output),
+// 		// Remove the 0x prefix.
+// 		dkgFirstRoundResult.session_id.slice(2),
+// 	);
+// }
 
 /**
  * Starts the first round of the DKG protocol to create a new dWallet.

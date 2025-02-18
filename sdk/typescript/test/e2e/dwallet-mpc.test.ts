@@ -31,6 +31,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create a dWallet (DKG)', async () => {
-		await createDWallet(conf);
+		let output = await launchDKGFirstRound(conf);
+		console.log('First round output:', output);
 	});
 });
