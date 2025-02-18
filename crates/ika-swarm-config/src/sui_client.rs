@@ -820,6 +820,8 @@ async fn create_class_groups_public_key_and_proof_object(
         Box::new(bcs::from_bytes(&class_groups_public_key_and_proof_bytes)?);
 
     create_partial_keypair_and_proof_with_rng(
+        publisher_address,
+        context,
         client,
         ika_system_package_id,
         (0, 4),
@@ -827,6 +829,8 @@ async fn create_class_groups_public_key_and_proof_object(
         &class_groups_public_key_and_proof,
     ).await?;
     create_partial_keypair_and_proof_with_rng(
+        publisher_address,
+        context,
         client,
         ika_system_package_id,
         (4, 8),
@@ -834,6 +838,8 @@ async fn create_class_groups_public_key_and_proof_object(
         &class_groups_public_key_and_proof,
     ).await?;
     create_partial_keypair_and_proof_with_rng(
+        publisher_address,
+        context,
         client,
         ika_system_package_id,
         (8, 13),
@@ -884,6 +890,8 @@ async fn create_class_groups_public_key_and_proof_object(
 }
 
 async fn create_partial_keypair_and_proof_with_rng(
+    publisher_address: SuiAddress,
+    context: &mut WalletContext,
     client: &SuiClient,
     ika_system_package_id: ObjectID,
     range: (u8, u8),
@@ -914,6 +922,9 @@ async fn create_partial_keypair_and_proof_with_rng(
             ],
         );
     }
+    let tx_kind = TransactionKind::ProgrammableTransaction(first_ptb.finish());
+
+    let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
     Ok(())
 }
 
