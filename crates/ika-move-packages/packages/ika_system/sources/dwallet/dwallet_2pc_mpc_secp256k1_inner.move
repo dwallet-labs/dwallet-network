@@ -1763,9 +1763,11 @@ fun process_checkpoint_message(
     let mut i = 0;
     while (i < len) {
         let message_data_type = bcs_body.peel_vec_length();
-        if (message_data_type == 0) {
-
-        } else if (message_data_type == 1) {
+        // Parses checkpoint BCS bytes directly.
+        // Messages with `message_data_type` 1 & 2 are handled by the system module,
+        // but their bytes must be extracted here to allow correct parsing of types 3 and above.
+        // This step only extracts the bytes without further processing.
+        if (message_data_type == 1) {
             // EndOfEpochMessage
             let len = bcs_body.peel_vec_length();
             let mut i = 0;
