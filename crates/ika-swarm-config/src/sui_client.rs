@@ -820,24 +820,29 @@ async fn create_class_groups_public_key_and_proof_object(
         Box::new(bcs::from_bytes(&class_groups_public_key_and_proof_bytes)?);
 
     let mut first_ptb = ProgrammableTransactionBuilder::new();
-    for i in 0..7 {
+
+    for i in 0..4 {
         let pubkey_and_proof = &class_groups_public_key_and_proof[i];
         let pubkey_and_proof = bcs::to_bytes(pubkey_and_proof)?;
-        first_ptb.move_call(
+        let builder = first_ptb.obj(ObjectArg::ImmOrOwnedObject(builder_object_ref));
+        let first_bytes = first_ptb.pure(bcs::to_bytes(&pubkey_and_proof[0..10_000])?)?;
+        let second_bytes = first_ptb.pure(bcs::to_bytes(&pubkey_and_proof[10_000..])?)?;
+        first_ptb.programmable_move_call(
             ika_system_package_id,
             ident_str!("class_groups_public_key_and_proof").into(),
             ident_str!("add_public_key_and_proof").into(),
             vec![],
             vec![
-                CallArg::Object(ObjectArg::ImmOrOwnedObject(builder_object_ref)),
+                builder?,
                 /// Sui limits the size of a single call argument to 16KB.
-                CallArg::Pure(bcs::to_bytes(&pubkey_and_proof[0..10_000])?),
-                CallArg::Pure(bcs::to_bytes(&pubkey_and_proof[10_000..])?),
+                first_bytes,
+                second_bytes
             ],
-        )?;
+        );
     }
     let tx_kind = TransactionKind::ProgrammableTransaction(first_ptb.finish());
-    execute_sui_transaction(publisher_address, tx_kind, context).await?;
+    let res = execute_sui_transaction(publisher_address, tx_kind, context).await;
+    res?;
     let mut first_ptb = ProgrammableTransactionBuilder::new();
     for i in 7..13 {
         let pubkey_and_proof = &class_groups_public_key_and_proof[i];
