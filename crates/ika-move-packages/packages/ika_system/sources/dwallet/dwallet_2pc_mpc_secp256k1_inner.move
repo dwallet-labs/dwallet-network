@@ -1395,7 +1395,7 @@ fun emit_ecdsa_sign_event(
         session_id,
         state: ECDSASignState::Requested,
     });
-    
+
     event::emit(emit_event);
 }
 
@@ -1707,8 +1707,6 @@ public(package) fun respond_ecdsa_sign(
     };
 }
 
-// TODO (#648): Fix DWallet checkpoint processing for the different MPC flows & remove unused allowances
-#[allow(unused_mut_parameter, unused_variable)]
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     signature: vector<u8>,
@@ -1728,12 +1726,9 @@ public(package) fun process_checkpoint_message_by_quorum(
         total_signers_stake,
     });
 
-    // TODO (#648): Fix DWallet checkpoint processing for the different MPC flows
-    // self.process_checkpoint_message(message, ctx);
+    self.process_checkpoint_message(message, ctx);
 }
 
-// TODO (#648): Fix DWallet checkpoint processing for the different MPC flows & remove unused allowances
-#[allow(unused_function)]
 fun process_checkpoint_message(
     self: &mut DWallet2PcMpcSecp256K1InnerV1,
     message: vector<u8>,
@@ -1768,11 +1763,31 @@ fun process_checkpoint_message(
     let mut i = 0;
     while (i < len) {
         let message_data_type = bcs_body.peel_vec_length();
-            if (message_data_type == 0) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+        if (message_data_type == 0) {
+
+        } else if (message_data_type == 1) {
+            // EndOfEpochMessage
+            let len = bcs_body.peel_vec_length();
+            let mut i = 0;
+            while (i < len) {
+                let end_of_epch_message_type = bcs_body.peel_vec_length();
+            // AdvanceEpoch
+                if(end_of_epch_message_type == 0) {
+                    let _new_epoch = bcs_body.peel_u64();
+                    let _next_protocol_version = bcs_body.peel_u64();
+                    let _epoch_start_timestamp_ms = bcs_body.peel_u64();
+                };
+                i = i + 1;
+            };
+        } else if (message_data_type == 2) {
+                //TestMessage
+                let _authority = bcs_body.peel_u32();
+                let _num = bcs_body.peel_u64();
+            } else if (message_data_type == 3) {
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dkg_first_round_output(dwallet_id, first_round_output);
-            } else if (message_data_type == 1) {
+            } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
@@ -1786,7 +1801,7 @@ fun process_checkpoint_message(
                     rejected,
                     ctx,
                 );
-            } else if (message_data_type == 2) {
+            } else if (message_data_type == 5) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let encrypted_user_secret_key_share_id = object::id_from_address(bcs_body.peel_address());
                 let rejected = bcs_body.peel_bool();
@@ -1795,7 +1810,7 @@ fun process_checkpoint_message(
                     encrypted_user_secret_key_share_id,
                     rejected,
                 );
-            } else if (message_data_type == 3) {
+            } else if (message_data_type == 6) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let sign_id = object::id_from_address(bcs_body.peel_address());
                 let session_id = object::id_from_address(bcs_body.peel_address());
@@ -1810,7 +1825,7 @@ fun process_checkpoint_message(
                     is_future_sign,
                     rejected,
                 );
-            } else if (message_data_type == 4) {
+            } else if (message_data_type == 7) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
                 let rejected = bcs_body.peel_bool();
@@ -1819,7 +1834,7 @@ fun process_checkpoint_message(
                     partial_centralized_signed_message_id,
                     rejected,
                 );
-            } else if (message_data_type == 5) {
+            } else if (message_data_type == 8) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let session_id = object::id_from_address(bcs_body.peel_address());
                 let presign = bcs_body.peel_vec_u8();
