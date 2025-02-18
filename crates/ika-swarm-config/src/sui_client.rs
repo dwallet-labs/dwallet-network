@@ -819,7 +819,7 @@ async fn create_class_groups_public_key_and_proof_object(
     let class_groups_public_key_and_proof: Box<ClassGroupsEncryptionKeyAndProof> =
         Box::new(bcs::from_bytes(&class_groups_public_key_and_proof_bytes)?);
 
-    create_partial_keypair_and_proof_with_rng(
+    add_public_keys_and_proofs_with_rng(
         publisher_address,
         context,
         client,
@@ -829,7 +829,7 @@ async fn create_class_groups_public_key_and_proof_object(
         &class_groups_public_key_and_proof,
     )
     .await?;
-    create_partial_keypair_and_proof_with_rng(
+    add_public_keys_and_proofs_with_rng(
         publisher_address,
         context,
         client,
@@ -839,7 +839,7 @@ async fn create_class_groups_public_key_and_proof_object(
         &class_groups_public_key_and_proof,
     )
     .await?;
-    create_partial_keypair_and_proof_with_rng(
+    add_public_keys_and_proofs_with_rng(
         publisher_address,
         context,
         client,
@@ -896,7 +896,7 @@ async fn create_class_groups_public_key_and_proof_object(
     Ok(pubkey_and_proof_obj_ref)
 }
 
-async fn create_partial_keypair_and_proof_with_rng(
+async fn add_public_keys_and_proofs_with_rng(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: &SuiClient,
