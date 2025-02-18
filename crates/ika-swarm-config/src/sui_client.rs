@@ -834,34 +834,10 @@ async fn create_class_groups_public_key_and_proof_object(
             ],
         )?;
         let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
-
-        let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
-        let object_changes = response
-            .object_changes
-            .clone()
-            .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
-        let builder_id = object_changes
-            .iter()
-            .filter_map(|o| match o {
-                ObjectChange::Mutated {
-                    object_id,
-                    object_type,
-                    ..
-                } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_system_package_id.into())
-                    == *object_type =>
-                {
-                    Some(*object_id)
-                }
-                _ => None,
-            })
-            .collect::<Vec<_>>()
-            .first()
-            .unwrap()
-            .clone();
-
+        execute_sui_transaction(publisher_address, tx_kind, context).await?;
         builder_object_ref = client
             .transaction_builder()
-            .get_object_ref(builder_id)
+            .get_object_ref(builder_object_ref.0)
             .await?;
     }
 
