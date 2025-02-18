@@ -74,7 +74,7 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
  * The output of this function is being used to generate the input for the second round,
  * and as input for the centralized party round.
  */
-export async function launchDKGFirstRound(c: Config) {
+export async function launchDKGFirstRound(c: Config): Promise<Uint8Array> {
 	const tx = new Transaction();
 	let emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
