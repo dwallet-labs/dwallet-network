@@ -6,7 +6,7 @@ import {
 	encrypt_secret_share,
 } from '@dwallet-network/dwallet-mpc-wasm';
 
-import type { Config } from './globals.js';
+import {Config, MPCKeyScheme} from './globals.js';
 import {
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
@@ -52,9 +52,21 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 	return obj?.event_data?.dwallet_id !== undefined;
 }
 
-export async function createDWallet(conf: Config) {
+export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
 	let firstRoundOutput = await launchDKGFirstRound(conf);
 	console.log('First round output:', firstRoundOutput);
+	const [
+		centralizedPublicKeyShareAndProof,
+		centralizedPublicOutput,
+		centralizedSecretKeyShare,
+		serializedPublicKeys,
+	] = create_dkg_centralized_output(
+		protocolPublicParameters,
+		MPCKeyScheme.Secp256k1,
+		Uint8Array.from(dkgFirstRoundResult.decentralized_public_output),
+		// Remove the 0x prefix.
+		dkgFirstRoundResult.session_id.slice(2),
+	);
 }
 
 /**
@@ -105,7 +117,7 @@ export async function launchDKGFirstRound(c: Config) {
 	let dwalletID = startDKGEvent.event_data.dwallet_id;
 	return await waitForDKGFirstRoundOutput(c, dwalletID);
 }
-// dwallet.data.content.fields.state.fields.first_round_output
+
 interface WaitingForUserDWallet {
 	state: {
 		first_round_output: Uint8Array;
@@ -114,6 +126,14 @@ interface WaitingForUserDWallet {
 
 function isWaitingForUserDWallet(obj: any): obj is WaitingForUserDWallet {
 	return obj?.state?.first_round_output !== undefined;
+}
+
+interface MoveObject {
+	fields: any
+}
+
+function isMoveObject(obj: any): obj is MoveObject {
+	return obj?.fields !== undefined;
 }
 
 async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Promise<Uint8Array> {
@@ -128,9 +148,11 @@ async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Prom
 				showContent: true,
 			}
 		});
-		let dwalletMoveObject = dwallet?.data?.content;
-		if (isWaitingForUserDWallet(dwalletMoveObject)) {
-			return dwalletMoveObject.state.first_round_output;
+		if (isMoveObject(dwallet?.data?.content)) {
+			let dwalletMoveObject = dwallet?.data?.content?.fields;
+			if (isWaitingForUserDWallet(dwalletMoveObject)) {
+				return dwalletMoveObject.state.first_round_output;
+			}
 		}
 	}
 	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
