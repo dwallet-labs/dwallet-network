@@ -896,7 +896,7 @@ async fn create_partial_keypair_and_proof_with_rng(
         .get_object_ref(cg_builder_object_id)
         .await?;
     for i in range.0..range.1 {
-        let pubkey_and_proof = &class_groups_public_key_and_proof[i];
+        let pubkey_and_proof = &class_groups_public_key_and_proof[i as usize];
         let pubkey_and_proof = bcs::to_bytes(pubkey_and_proof)?;
         let builder = first_ptb.obj(ObjectArg::ImmOrOwnedObject(builder_object_ref));
         let first_bytes = first_ptb.pure(bcs::to_bytes(&pubkey_and_proof[0..10_000])?)?;
