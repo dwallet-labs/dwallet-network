@@ -911,27 +911,27 @@ async fn add_public_keys_and_proofs_with_rng(
         .get_object_ref(cg_builder_object_id)
         .await?;
     for i in range.0..range.1 {
-        let pubkey_and_proof = &class_groups_public_key_and_proof[i as usize];
-        let pubkey_and_proof = bcs::to_bytes(pubkey_and_proof)?;
-        let builder = first_ptb.obj(ObjectArg::ImmOrOwnedObject(builder_object_ref));
-        let first_bytes = first_ptb.pure(bcs::to_bytes(&pubkey_and_proof[0..10_000])?)?;
-        let second_bytes = first_ptb.pure(bcs::to_bytes(&pubkey_and_proof[10_000..])?)?;
+        let pubkey_and_proof = bcs::to_bytes(&class_groups_public_key_and_proof[i as usize])?;
+        let proof_builder = first_ptb.obj(ObjectArg::ImmOrOwnedObject(builder_object_ref))?;
+        let first_proof_bytes_half =
+            first_ptb.pure(bcs::to_bytes(&pubkey_and_proof[0..10_000])?)?;
+        let second_proof_bytes_half =
+            first_ptb.pure(bcs::to_bytes(&pubkey_and_proof[10_000..])?)?;
         first_ptb.programmable_move_call(
             ika_system_package_id,
             ident_str!("class_groups_public_key_and_proof").into(),
             ident_str!("add_public_key_and_proof").into(),
             vec![],
             vec![
-                builder?,
+                proof_builder,
                 /// Sui limits the size of a single call argument to 16KB.
-                first_bytes,
-                second_bytes
+                first_proof_bytes_half,
+                second_proof_bytes_half
             ],
         );
     }
     let tx_kind = TransactionKind::ProgrammableTransaction(first_ptb.finish());
-
-    let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
+    execute_sui_transaction(publisher_address, tx_kind, context).await?;
     Ok(())
 }
 
