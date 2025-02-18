@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::{
-    fmt::{Debug, Display, Formatter},
+    fmt::{Debug, Display, Formatter, Write},
     fs,
     path::PathBuf,
 };
@@ -131,7 +131,7 @@ impl IkaValidatorCommand {
 
 impl Display for IkaValidatorCommandResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let writer = String::new();
+        let mut writer = String::new();
         match self {
             IkaValidatorCommandResponse::MakeValidatorInfo => {}
         }
