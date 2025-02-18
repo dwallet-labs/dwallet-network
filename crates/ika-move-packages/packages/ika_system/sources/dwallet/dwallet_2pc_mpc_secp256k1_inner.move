@@ -1773,7 +1773,7 @@ fun process_checkpoint_message(
             let mut i = 0;
             while (i < len) {
                 let end_of_epch_message_type = bcs_body.peel_vec_length();
-            // AdvanceEpoch
+                // AdvanceEpoch
                 if(end_of_epch_message_type == 0) {
                     let _new_epoch = bcs_body.peel_u64();
                     let _next_protocol_version = bcs_body.peel_u64();
