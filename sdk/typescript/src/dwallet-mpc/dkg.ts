@@ -1,6 +1,10 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Transaction } from '@mysten/sui/transactions';
+import {
+	create_dkg_centralized_output,
+	encrypt_secret_share,
+} from '@dwallet-network/dwallet-mpc-wasm';
 
 import type { Config } from './globals.js';
 import {
@@ -8,6 +12,7 @@ import {
 	DWALLET_NETWORK_VERSION,
 	SUI_PACKAGE_ID,
 } from './globals.js';
+import {delay} from "msw";
 
 /**
  * Represents the Move `SystemInnerV1` struct.
@@ -94,7 +99,50 @@ export async function launchDKGFirstRound(c: Config) {
 	}
 	let dwalletID = startDKGEvent.event_data.dwallet_id;
 	console.log(`dwallet ID: ${dwalletID}`);
-	// TODO (#631): Use the session ID to fetch the DKG first round completion event.
+	return await waitForDKGFirstRoundOutput(c, dwalletID);
+}
+
+async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Promise<Uint8Array> {
+	const startTime = Date.now();
+
+	while (Date.now() - startTime <= conf.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		await delay(5_000);
+		let dwallet = await conf.client.getObject({
+			id: dwalletID,
+			options: {
+				showContent: true,
+			}
+		});
+		console.log({dwallet});
+	}
+	// 	const { data, nextCursor, hasNextPage } = await c.client.queryEvents({
+	// 		query: {
+	// 			TimeRange: {
+	// 				startTime: (Date.now() - c.timeout).toString(),
+	// 				endTime: Date.now().toString(),
+	// 			},
+	// 		},
+	// 		cursor,
+	// 	});
+	//
+	// 	const match = data.find(
+	// 		(event) =>
+	// 			event.type === eventType &&
+	// 			isEventFn(event.parsedJson) &&
+	// 			event.parsedJson.session_id === sessionID,
+	// 	);
+	//
+	// 	if (match) return match.parsedJson as TEvent;
+	// 	if (hasNextPage) cursor = nextCursor;
+	// }
+
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch the DWallet object within ${
+			conf.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
 }
 
 function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
