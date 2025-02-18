@@ -846,6 +846,10 @@ async fn create_class_groups_public_key_and_proof_object(
         builder_object_ref.0,
         &class_groups_public_key_and_proof,
     ).await?;
+    let builder_object_ref = client
+        .transaction_builder()
+        .get_object_ref(builder_object_ref.0)
+        .await?;
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
         ika_system_package_id,
