@@ -52,6 +52,11 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 	return obj?.event_data?.dwallet_id !== undefined;
 }
 
+export async function createDWallet(conf: Config) {
+	let firstRoundOutput = await launchDKGFirstRound(conf);
+	console.log('First round output:', firstRoundOutput);
+}
+
 /**
  * Starts the first round of the DKG protocol to create a new dWallet.
  * The output of this function is being used to generate the input for the second round,
@@ -98,8 +103,17 @@ export async function launchDKGFirstRound(c: Config) {
 		throw new Error('invalid start DKG first round event');
 	}
 	let dwalletID = startDKGEvent.event_data.dwallet_id;
-	console.log(`dwallet ID: ${dwalletID}`);
 	return await waitForDKGFirstRoundOutput(c, dwalletID);
+}
+// dwallet.data.content.fields.state.fields.first_round_output
+interface WaitingForUserDWallet {
+	state: {
+		first_round_output: Uint8Array;
+	}
+}
+
+function isWaitingForUserDWallet(obj: any): obj is WaitingForUserDWallet {
+	return obj?.state?.first_round_output !== undefined;
 }
 
 async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Promise<Uint8Array> {
@@ -114,29 +128,11 @@ async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Prom
 				showContent: true,
 			}
 		});
-		console.log({dwallet});
+		let dwalletMoveObject = dwallet?.data?.content;
+		if (isWaitingForUserDWallet(dwalletMoveObject)) {
+			return dwalletMoveObject.state.first_round_output;
+		}
 	}
-	// 	const { data, nextCursor, hasNextPage } = await c.client.queryEvents({
-	// 		query: {
-	// 			TimeRange: {
-	// 				startTime: (Date.now() - c.timeout).toString(),
-	// 				endTime: Date.now().toString(),
-	// 			},
-	// 		},
-	// 		cursor,
-	// 	});
-	//
-	// 	const match = data.find(
-	// 		(event) =>
-	// 			event.type === eventType &&
-	// 			isEventFn(event.parsedJson) &&
-	// 			event.parsedJson.session_id === sessionID,
-	// 	);
-	//
-	// 	if (match) return match.parsedJson as TEvent;
-	// 	if (hasNextPage) cursor = nextCursor;
-	// }
-
 	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
 	throw new Error(
 		`timeout: unable to fetch the DWallet object within ${
