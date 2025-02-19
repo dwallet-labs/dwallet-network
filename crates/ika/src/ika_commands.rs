@@ -27,7 +27,7 @@ use std::net::{AddrParseError, IpAddr, Ipv4Addr, SocketAddr};
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::{fs, io, thread};
+use std::{fs, io};
 use sui::client_commands::{
     estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet,
     SuiClientCommandResult,
@@ -40,7 +40,7 @@ use sui_sdk::SuiClient;
 
 use crate::validator_commands::IkaValidatorCommand;
 use ika_move_packages::IkaMovePackage;
-use ika_swarm::memory::{Swarm, SwarmBuilder};
+use ika_swarm::memory::Swarm;
 use ika_swarm_config::network_config::NetworkConfig;
 use ika_swarm_config::network_config_builder::ConfigBuilder;
 use ika_swarm_config::node_config_builder::FullnodeConfigBuilder;
@@ -63,9 +63,8 @@ use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionData, TransactionKind};
 use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
 use tempfile::tempdir;
-use tokio::runtime::Runtime;
 use tracing;
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 
 const DEFAULT_EPOCH_DURATION_MS: u64 = 60_000;
 
@@ -205,28 +204,15 @@ impl IkaCommand {
                 no_full_node,
                 epoch_duration_ms,
             } => {
-                let builder = thread::Builder::new();
-                let builder = builder.stack_size(16777216);
-                let thread_join_handle = builder.spawn(move || {
-                    let mut rt = Runtime::new().unwrap();
-                    rt.block_on(async move {
-                        let res = start(
-                            config_dir.clone(),
-                            force_reinitiation,
-                            epoch_duration_ms,
-                            sui_fullnode_rpc_url,
-                            sui_faucet_url,
-                            no_full_node,
-                        )
-                            .await;
-                        if let Err(e) = res {
-                            let err_str = e.to_string();
-                            println!("failed to start network: {:?}", err_str);
-                        }
-                    });
-                }).unwrap();
-
-                let res = thread_join_handle.join();
+                start(
+                    config_dir.clone(),
+                    force_reinitiation,
+                    epoch_duration_ms,
+                    sui_fullnode_rpc_url,
+                    sui_faucet_url,
+                    no_full_node,
+                )
+                .await?;
 
                 Ok(())
             }
@@ -338,37 +324,8 @@ async fn start(
     }
 
     let mut swarm = swarm_builder.build().await?;
-    let ika_config_dir = {
-        let config_path = ika_config_dir()?;
-        fs::create_dir_all(&config_path)?;
-        config_path
-    };
-    let network_path = ika_config_dir.join(IKA_NETWORK_CONFIG);
-    swarm.network_config.save(&network_path)?;
 
-    // if Ika config dir is not empty then either clean it
-    // up (if --force/-f option was specified or report an
-    // error
-    let _ = ika_config_dir.read_dir().map_err(|err| {
-        anyhow!(err).context(format!("Cannot open Ika config dir {:?}", ika_config_dir))
-    })?;
-
-    let network_config: NetworkConfig =
-        PersistedConfig::read(&network_path).map_err(|err| {
-            err.context(format!(
-                "Cannot open Ika network config file at {:?}",
-                network_path
-            ))
-        })?;
-
-
-    let mut swarm_builder = Swarm::builder();
-    let swarm_builder = swarm_builder
-        .dir(ika_config_dir)
-        .with_network_config(network_config);
-    let mut swarm = swarm_builder.build().await?;
     swarm.launch().await?;
-
     // Let nodes connect to one another
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
     info!("Cluster started");
@@ -415,7 +372,7 @@ async fn initiation(
 
     let network_path = ika_config_dir.join(IKA_NETWORK_CONFIG);
     let mut builder =
-        SwarmBuilder::new()
+        ConfigBuilder::new(ika_config_dir.clone(), sui_fullnode_rpc_url, sui_faucet_url)
             .committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
     if let Some(epoch_duration_ms) = epoch_duration_ms {
         builder = builder.with_epoch_duration(epoch_duration_ms);
