@@ -269,6 +269,24 @@ async fn start(
         );
     }
 
+    let network_config_path = if let Some(ref config) = config {
+        if config.is_dir() {
+            config.join(IKA_NETWORK_CONFIG)
+        } else if config.is_file()
+            && config
+            .extension()
+            .is_some_and(|ext| (ext == "yml" || ext == "yaml"))
+        {
+            config.clone()
+        } else {
+            config.join(IKA_NETWORK_CONFIG)
+        }
+    } else {
+        config
+            .clone()
+            .unwrap_or(ika_config_dir()?)
+            .join(IKA_NETWORK_CONFIG)
+    };
     let mut swarm_builder = Swarm::builder();
     // If this is set, then no data will be persisted between runs, and a new initiation will be
     // generated each run.
@@ -286,24 +304,7 @@ async fn start(
                 swarm_builder.committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
             let epoch_duration_ms = epoch_duration_ms.unwrap_or(DEFAULT_EPOCH_DURATION_MS);
             swarm_builder = swarm_builder.with_epoch_duration_ms(epoch_duration_ms);
-            let network_config_path = if let Some(ref config) = config {
-                if config.is_dir() {
-                    config.join(IKA_NETWORK_CONFIG)
-                } else if config.is_file()
-                    && config
-                    .extension()
-                    .is_some_and(|ext| (ext == "yml" || ext == "yaml"))
-                {
-                    config.clone()
-                } else {
-                    config.join(IKA_NETWORK_CONFIG)
-                }
-            } else {
-                config
-                    .clone()
-                    .unwrap_or(ika_config_dir()?)
-                    .join(IKA_NETWORK_CONFIG)
-            };
+        } else {
             let network_config: NetworkConfig =
                 PersistedConfig::read(&network_config_path).map_err(|err| {
                     err.context(format!(
@@ -315,8 +316,6 @@ async fn start(
             swarm_builder = swarm_builder
                 .with_network_config(network_config);
         }
-
-
     }
 
     if no_full_node {
@@ -327,8 +326,7 @@ async fn start(
 
     let mut swarm = swarm_builder.build().await?;
     if ika_network_config_not_exists {
-        let network_path = config.join(IKA_NETWORK_CONFIG);
-        swarm.network_config.save(&network_path)?;
+        swarm.network_config.save(&network_config_path)?;
     }
 
     swarm.launch().await?;
