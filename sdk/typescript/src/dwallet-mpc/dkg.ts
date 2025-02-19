@@ -1,14 +1,11 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import {
-	create_dkg_centralized_output,
-	encrypt_secret_share,
-} from '@dwallet-network/dwallet-mpc-wasm';
+import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import { Transaction } from '@mysten/sui/transactions';
 import { delay } from 'msw';
 
+import type { Config } from './globals.js';
 import {
-	Config,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
 	MPCKeyScheme,
@@ -75,7 +72,7 @@ export async function createDWallet(conf: Config, protocolPublicParameters: Uint
 		centralizedPublicOutput,
 		centralizedSecretKeyShare,
 		serializedPublicKeys,
-	})
+	});
 }
 
 interface DKGFirstRoundOutputResult {

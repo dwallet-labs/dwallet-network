@@ -6,8 +6,8 @@ import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
-import {createDWallet, launchDKGFirstRound} from '../../src/dwallet-mpc/dkg';
-import {Config, delay, mockedProtocolPublicParameters} from '../../src/dwallet-mpc/globals';
+import { createDWallet } from '../../src/dwallet-mpc/dkg';
+import { Config, delay, mockedProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
