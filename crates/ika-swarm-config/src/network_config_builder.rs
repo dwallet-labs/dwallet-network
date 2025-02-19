@@ -403,7 +403,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
             (0..self.fullnode_count).for_each(|idx| {
                 let mut builder = fullnode_config_builder.clone();
                 let notifier_client_key_pair = if idx == 0 {
-                    Some(publisher_keypair.clone())
+                    Some(publisher_keypair.copy())
                 } else {
                     None
                 };
