@@ -7,7 +7,7 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
 import {createDWallet, launchDKGFirstRound} from '../../src/dwallet-mpc/dkg';
-import { Config, delay } from '../../src/dwallet-mpc/globals';
+import {Config, delay, mockedProtocolPublicParameters} from '../../src/dwallet-mpc/globals';
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -31,7 +31,6 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create a dWallet (DKG)', async () => {
-		let output = await launchDKGFirstRound(conf);
-		console.log('First round output:', output);
+		await createDWallet(conf, mockedProtocolPublicParameters);
 	});
 });

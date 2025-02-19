@@ -69,6 +69,13 @@ export async function createDWallet(conf: Config, protocolPublicParameters: Uint
 		// Remove the 0x prefix.
 		firstRoundOutputResult.sessionID.slice(2),
 	);
+
+	console.log({
+		centralizedPublicKeyShareAndProof,
+		centralizedPublicOutput,
+		centralizedSecretKeyShare,
+		serializedPublicKeys,
+	})
 }
 
 interface DKGFirstRoundOutputResult {
