@@ -55,6 +55,10 @@ interface WaitingForUserDWallet {
 	};
 }
 
+interface MoveObject {
+	fields: any;
+}
+
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 	return obj?.event_data?.dwallet_id !== undefined && obj?.session_id !== undefined;
 }
@@ -143,10 +147,6 @@ export async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutpu
 
 function isWaitingForUserDWallet(obj: any): obj is WaitingForUserDWallet {
 	return obj?.state?.fields?.first_round_output !== undefined;
-}
-
-interface MoveObject {
-	fields: any;
 }
 
 function isMoveObject(obj: any): obj is MoveObject {
