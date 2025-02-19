@@ -218,7 +218,8 @@ impl IkaCommand {
                             sui_faucet_url,
                             no_full_node,
                         )
-                            .await {
+                        .await
+                        {
                             eprintln!("{}", format!("[error] {e}").red().bold());
                         }
                     });
@@ -290,8 +291,8 @@ async fn start(
             config.join(IKA_NETWORK_CONFIG)
         } else if config.is_file()
             && config
-            .extension()
-            .is_some_and(|ext| (ext == "yml" || ext == "yaml"))
+                .extension()
+                .is_some_and(|ext| (ext == "yml" || ext == "yaml"))
         {
             config.clone()
         } else {
@@ -306,31 +307,30 @@ async fn start(
     let mut swarm_builder = Swarm::builder();
     // If this is set, then no data will be persisted between runs, and a new initiation will be
     // generated each run.
-    let ika_network_config_not_exists = config.is_none() && !ika_config_dir()?.join(IKA_NETWORK_CONFIG).exists();
+    let ika_network_config_not_exists =
+        config.is_none() && !ika_config_dir()?.join(IKA_NETWORK_CONFIG).exists();
     if force_reinitiation {
         swarm_builder =
             swarm_builder.committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
         let epoch_duration_ms = epoch_duration_ms.unwrap_or(DEFAULT_EPOCH_DURATION_MS);
         swarm_builder = swarm_builder.with_epoch_duration_ms(epoch_duration_ms);
     } else {
-        swarm_builder = swarm_builder
-            .dir(ika_config_dir()?);
+        swarm_builder = swarm_builder.dir(ika_config_dir()?);
         if ika_network_config_not_exists {
-            swarm_builder =
-                swarm_builder.committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
+            swarm_builder = swarm_builder
+                .committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
             let epoch_duration_ms = epoch_duration_ms.unwrap_or(DEFAULT_EPOCH_DURATION_MS);
             swarm_builder = swarm_builder.with_epoch_duration_ms(epoch_duration_ms);
         } else {
-            let network_config: NetworkConfig =
-                PersistedConfig::read(&network_config_path).map_err(|err| {
+            let network_config: NetworkConfig = PersistedConfig::read(&network_config_path)
+                .map_err(|err| {
                     err.context(format!(
                         "Cannot open Ika network config file at {:?}",
                         network_config_path
                     ))
                 })?;
 
-            swarm_builder = swarm_builder
-                .with_network_config(network_config);
+            swarm_builder = swarm_builder.with_network_config(network_config);
         }
     }
 
