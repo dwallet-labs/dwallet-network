@@ -278,43 +278,49 @@ async fn start(
         let epoch_duration_ms = epoch_duration_ms.unwrap_or(DEFAULT_EPOCH_DURATION_MS);
         swarm_builder = swarm_builder.with_epoch_duration_ms(epoch_duration_ms);
     } else {
+        swarm_builder = swarm_builder
+            .dir(ika_config_dir()?);
         if config.is_none() && !ika_config_dir()?.join(IKA_NETWORK_CONFIG).exists() {
-            initiation(sui_fullnode_rpc_url, sui_faucet_url, epoch_duration_ms).await?;
+            swarm_builder =
+                swarm_builder.committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
+            let epoch_duration_ms = epoch_duration_ms.unwrap_or(DEFAULT_EPOCH_DURATION_MS);
+            swarm_builder = swarm_builder.with_epoch_duration_ms(epoch_duration_ms);
+            // initiation(sui_fullnode_rpc_url, sui_faucet_url, epoch_duration_ms).await?;
             //.map_err(|_| anyhow!("Cannot run initiation with non-empty Ika config directory: {}.\n\nIf you are trying to run a local network without persisting the data (so a new initiation that is randomly generated and will not be saved once the network is shut down), use --force-reinitiation flag.\nIf you are trying to persist the network data and start from a new initiation, use ika initiation --help to see how to generate a new initiation.", ika_config_dir().unwrap().display()))?;
-        }
-
-        // Load the config of the Ika authority.
-        // To keep compatibility with ika-test-validator where the user can pass a config
-        // directory, this checks if the config is a file or a directory
-        let network_config_path = if let Some(ref config) = config {
-            if config.is_dir() {
-                config.join(IKA_NETWORK_CONFIG)
-            } else if config.is_file()
-                && config
+            // Load the config of the Ika authority.
+            // To keep compatibility with ika-test-validator where the user can pass a config
+            // directory, this checks if the config is a file or a directory
+            let network_config_path = if let Some(ref config) = config {
+                if config.is_dir() {
+                    config.join(IKA_NETWORK_CONFIG)
+                } else if config.is_file()
+                    && config
                     .extension()
                     .is_some_and(|ext| (ext == "yml" || ext == "yaml"))
-            {
-                config.clone()
+                {
+                    config.clone()
+                } else {
+                    config.join(IKA_NETWORK_CONFIG)
+                }
             } else {
-                config.join(IKA_NETWORK_CONFIG)
-            }
-        } else {
-            config
-                .clone()
-                .unwrap_or(ika_config_dir()?)
-                .join(IKA_NETWORK_CONFIG)
-        };
-        let network_config: NetworkConfig =
-            PersistedConfig::read(&network_config_path).map_err(|err| {
-                err.context(format!(
-                    "Cannot open Ika network config file at {:?}",
-                    network_config_path
-                ))
-            })?;
+                config
+                    .clone()
+                    .unwrap_or(ika_config_dir()?)
+                    .join(IKA_NETWORK_CONFIG)
+            };
+            let network_config: NetworkConfig =
+                PersistedConfig::read(&network_config_path).map_err(|err| {
+                    err.context(format!(
+                        "Cannot open Ika network config file at {:?}",
+                        network_config_path
+                    ))
+                })?;
 
-        swarm_builder = swarm_builder
-            .dir(ika_config_dir()?)
-            .with_network_config(network_config);
+            swarm_builder = swarm_builder
+                .with_network_config(network_config);
+        }
+
+
     }
 
     if no_full_node {
