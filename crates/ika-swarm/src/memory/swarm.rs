@@ -40,7 +40,7 @@ pub struct SwarmBuilder<R = OsRng> {
     // template: NodeConfig,
     dir: Option<PathBuf>,
     committee: CommitteeConfig,
-    pub network_config: Option<NetworkConfig>,
+    network_config: Option<NetworkConfig>,
     epoch_duration_ms: Option<u64>,
     protocol_version: Option<ProtocolVersion>,
     fullnode_count: usize,
