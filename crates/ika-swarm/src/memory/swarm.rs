@@ -40,7 +40,7 @@ pub struct SwarmBuilder<R = OsRng> {
     // template: NodeConfig,
     dir: Option<PathBuf>,
     committee: CommitteeConfig,
-    network_config: Option<NetworkConfig>,
+    pub network_config: Option<NetworkConfig>,
     epoch_duration_ms: Option<u64>,
     protocol_version: Option<ProtocolVersion>,
     fullnode_count: usize,
@@ -291,7 +291,7 @@ impl<R: rand::RngCore + rand::CryptoRng> SwarmBuilder<R> {
 #[derive(Debug)]
 pub struct Swarm {
     dir: SwarmDirectory,
-    network_config: NetworkConfig,
+    pub network_config: NetworkConfig,
     nodes: HashMap<AuthorityName, Node>,
 }
 

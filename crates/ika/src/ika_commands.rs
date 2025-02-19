@@ -40,7 +40,7 @@ use sui_sdk::SuiClient;
 
 use crate::validator_commands::IkaValidatorCommand;
 use ika_move_packages::IkaMovePackage;
-use ika_swarm::memory::Swarm;
+use ika_swarm::memory::{Swarm, SwarmBuilder};
 use ika_swarm_config::network_config::NetworkConfig;
 use ika_swarm_config::network_config_builder::ConfigBuilder;
 use ika_swarm_config::node_config_builder::FullnodeConfigBuilder;
@@ -338,8 +338,37 @@ async fn start(
     }
 
     let mut swarm = swarm_builder.build().await?;
+    let ika_config_dir = {
+        let config_path = ika_config_dir()?;
+        fs::create_dir_all(&config_path)?;
+        config_path
+    };
+    let network_path = ika_config_dir.join(IKA_NETWORK_CONFIG);
+    swarm.network_config.save(&network_path)?;
 
+    // if Ika config dir is not empty then either clean it
+    // up (if --force/-f option was specified or report an
+    // error
+    let _ = ika_config_dir.read_dir().map_err(|err| {
+        anyhow!(err).context(format!("Cannot open Ika config dir {:?}", ika_config_dir))
+    })?;
+
+    let network_config: NetworkConfig =
+        PersistedConfig::read(&network_path).map_err(|err| {
+            err.context(format!(
+                "Cannot open Ika network config file at {:?}",
+                network_path
+            ))
+        })?;
+
+
+    let mut swarm_builder = Swarm::builder();
+    let swarm_builder = swarm_builder
+        .dir(ika_config_dir)
+        .with_network_config(network_config);
+    let mut swarm = swarm_builder.build().await?;
     swarm.launch().await?;
+
     // Let nodes connect to one another
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
     info!("Cluster started");
@@ -386,7 +415,7 @@ async fn initiation(
 
     let network_path = ika_config_dir.join(IKA_NETWORK_CONFIG);
     let mut builder =
-        ConfigBuilder::new(ika_config_dir.clone(), sui_fullnode_rpc_url, sui_faucet_url)
+        SwarmBuilder::new()
             .committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
     if let Some(epoch_duration_ms) = epoch_duration_ms {
         builder = builder.with_epoch_duration(epoch_duration_ms);
