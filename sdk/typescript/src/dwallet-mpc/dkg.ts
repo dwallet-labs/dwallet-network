@@ -60,7 +60,7 @@ interface MoveObject {
 }
 
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
-	return obj?.event_data?.dwallet_id !== undefined && obj?.session_id !== undefined;
+	return !!obj?.event_data?.dwallet_id && !!obj?.session_id;
 }
 
 export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {

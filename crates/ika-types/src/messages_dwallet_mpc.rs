@@ -30,7 +30,7 @@ pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
     DKGFirst(StartDKGFirstRoundEvent),
     /// The second round of the DKG protocol.
-    /// Contains the data of the event that triggered the round
+    /// Contains the data of the event that triggered the round,
     /// and the network key version of the first round.
     DKGSecond(StartDKGSecondRoundEvent, u8),
     /// This is not a real round, but an indicator the Batches Manager to
@@ -43,7 +43,7 @@ pub enum MPCProtocolInitData {
     /// and the dWallets' network key version.
     Presign(StartPresignFirstRoundEvent),
     /// The first and only round of the Sign protocol.
-    /// Contains the all the data needed to sign the message.
+    /// Contains all the data needed to sign the message.
     Sign(SingleSignSessionData),
     /// A batched sign session, contains the list of messages that are being signed.
     // TODO (#536): Store batch state and logic on Sui & remove this field.
@@ -88,7 +88,7 @@ pub enum MPCSessionSpecificState {
 /// If the first round was not completed, the `session_specific_state` will be `None`.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct PresignSessionState {
-    /// The verified output of the first party of the Presign protocol.
+    /// The verified output from the first party of the Presign protocol.
     pub first_presign_party_output: MPCPublicOutput,
     /// The public input for the second party of the Presign protocol.
     pub second_party_public_input: MPCPublicInput,
@@ -105,16 +105,17 @@ pub struct DBSuiEvent {
 /// The state of a sign-identifiable abort session.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SignIASessionState {
-    /// The first report that triggered the beginning of the Sign Identifiable Abort protocol,
+    /// The first report that triggered the beginning of the Sign-Identifiable Abort protocol,
     /// in which, instead of having only one validator run the last sign step, every validator runs
     /// the last step to agree on the malicious actors.
     pub start_ia_flow_malicious_report: MaliciousReport,
-    /// The malicious report that have been agreed upon by a quorum of validators. If this report
+    /// The malicious report that has been agreed upon by a quorum of validators.
+    /// If this report
     /// is different from the `start_ia_flow_malicious_report`, the authority that sent the
     /// `start_ia_flow_malicious_report` is being marked as malicious.
     pub verified_malicious_report: Option<MaliciousReport>,
     /// The first authority that sent a [`MaliciousReport`] in this sign session and triggered
-    /// the beginning of the Sign Identifiable Abort flow.
+    /// the beginning of the Sign-Identifiable Abort flow.
     pub initiating_ia_authority: AuthorityName,
 }
 
@@ -475,11 +476,11 @@ impl DWalletMPCEventTrait for StartPresignFirstRoundEvent {
 
 #[derive(Debug, Clone)]
 pub struct IkaPackagesConfig {
-    /// The move package id of ika (IKA) on sui.
+    /// The move package ID of ika (IKA) on sui.
     pub ika_package_id: ObjectID,
-    /// The move package id of ika_system on sui.
+    /// The move package ID of `ika_system` on sui.
     pub ika_system_package_id: ObjectID,
-    /// The object id of ika_system_state on sui.
+    /// The object ID of ika_system_state on sui.
     pub system_id: ObjectID,
 }
 
