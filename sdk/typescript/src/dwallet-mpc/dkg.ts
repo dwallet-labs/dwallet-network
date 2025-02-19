@@ -93,7 +93,6 @@ export async function launchDKGFirstRound(c: Config) {
 		throw new Error('invalid start DKG first round event');
 	}
 	let dwalletID = startDKGEvent.event_data.dwallet_id;
-	console.log(`dwallet ID: ${dwalletID}`);
 	// TODO (#631): Use the session ID to fetch the DKG first round completion event.
 }
 
