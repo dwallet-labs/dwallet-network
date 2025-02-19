@@ -1,18 +1,19 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { Transaction } from '@mysten/sui/transactions';
 import {
 	create_dkg_centralized_output,
 	encrypt_secret_share,
 } from '@dwallet-network/dwallet-mpc-wasm';
+import { Transaction } from '@mysten/sui/transactions';
+import { delay } from 'msw';
 
-import {Config, MPCKeyScheme} from './globals.js';
 import {
+	Config,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
+	MPCKeyScheme,
 	SUI_PACKAGE_ID,
 } from './globals.js';
-import {delay} from "msw";
 
 /**
  * Represents the Move `SystemInnerV1` struct.
@@ -120,8 +121,10 @@ export async function launchDKGFirstRound(c: Config): Promise<Uint8Array> {
 
 interface WaitingForUserDWallet {
 	state: {
-		first_round_output: Uint8Array;
-	}
+		fields: {
+			first_round_output: Uint8Array;
+		};
+	};
 }
 
 function isWaitingForUserDWallet(obj: any): obj is WaitingForUserDWallet {
@@ -129,7 +132,7 @@ function isWaitingForUserDWallet(obj: any): obj is WaitingForUserDWallet {
 }
 
 interface MoveObject {
-	fields: any
+	fields: any;
 }
 
 function isMoveObject(obj: any): obj is MoveObject {
@@ -146,12 +149,12 @@ async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Prom
 			id: dwalletID,
 			options: {
 				showContent: true,
-			}
+			},
 		});
 		if (isMoveObject(dwallet?.data?.content)) {
 			let dwalletMoveObject = dwallet?.data?.content?.fields;
 			if (isWaitingForUserDWallet(dwalletMoveObject)) {
-				return dwalletMoveObject.state.first_round_output;
+				return dwalletMoveObject.state.fields.first_round_output;
 			}
 		}
 	}
