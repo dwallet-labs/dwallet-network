@@ -56,6 +56,7 @@ struct IkaConfig {
     pub ika_package_id: ObjectID,
     pub ika_system_package_id: ObjectID,
     pub ika_system_obj_id: ObjectID,
+    pub publisher_keypair: SuiKeyPair,
 }
 
 pub async fn init_ika_on_sui(
@@ -181,14 +182,6 @@ pub async fn init_ika_on_sui(
     .await?;
 
     println!("Running `init::initialize` done: system_id: {system_id}");
-    let ika_config = IkaConfig {
-        ika_package_id,
-        ika_system_package_id,
-        ika_system_obj_id: system_id,
-    };
-    let mut file = File::create("ika_config.json")?;
-    let json = serde_json::to_string_pretty(&ika_config)?;
-    file.write_all(json.as_bytes())?;
 
     let mut validator_ids = Vec::new();
     let mut validator_cap_ids = Vec::new();
@@ -253,6 +246,16 @@ pub async fn init_ika_on_sui(
     println!("Running `ika_system::initialize` done.");
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+    let ika_config = IkaConfig {
+        ika_package_id,
+        ika_system_package_id,
+        ika_system_obj_id: system_id,
+        publisher_keypair,
+    };
+    let mut file = File::create("ika_config.json")?;
+    let json = serde_json::to_string_pretty(&ika_config)?;
+    file.write_all(json.as_bytes())?;
 
     Ok((
         ika_package_id,
