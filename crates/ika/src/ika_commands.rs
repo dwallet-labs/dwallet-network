@@ -206,7 +206,7 @@ impl IkaCommand {
                 epoch_duration_ms,
             } => {
                 let builder = thread::Builder::new();
-                let builder = builder.stack_size(67108864);
+                let builder = builder.stack_size(16777216);
                 let thread_join_handle = builder.spawn(move || {
                     let mut rt = Runtime::new().unwrap();
                     rt.block_on(async move {
