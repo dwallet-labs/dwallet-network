@@ -230,7 +230,7 @@ impl IkaCommand {
                 })?;
 
                 if let Err(e) = thread_join_handle.join() {
-                    eprintln!("{}", format!("[error] {e}").red().bold());
+                    eprintln!("{}", format!("[error] {:?}", e).red().bold());
                 }
 
                 Ok(())
