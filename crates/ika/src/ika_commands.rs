@@ -220,7 +220,8 @@ impl IkaCommand {
                         )
                             .await;
                         if let Err(e) = res {
-                            error!("failed to start network: {:?}", e);
+                            let err_str = e.to_string();
+                            println!("failed to start network: {:?}", err_str);
                         }
                     });
                 }).unwrap();
