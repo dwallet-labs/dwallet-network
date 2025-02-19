@@ -205,11 +205,15 @@ impl IkaCommand {
                 no_full_node,
                 epoch_duration_ms,
             } => {
-                let builder = thread::Builder::new();
-                let builder = builder.stack_size(67108864);
-                let thread_join_handle = builder.spawn(move || {
-                    let mut rt = Runtime::new().unwrap();
-                    rt.block_on(async move {
+                let thread_builder = thread::Builder::new();
+                const SIXTEEN_MB: usize = 16777216;
+                let thread_builder = thread_builder.stack_size(SIXTEEN_MB);
+                let thread_join_handle = thread_builder.spawn(move || {
+                    let Ok(mut tokio_runtime) = Runtime::new() else {
+                        eprintln!("{}", "[error] Failed to start tokio runtime".red().bold());
+                        return;
+                    };
+                    tokio_runtime.block_on(async move {
                         if let Err(e) = start(
                             config_dir.clone(),
                             force_reinitiation,
@@ -225,9 +229,7 @@ impl IkaCommand {
                     });
                 })?;
 
-                let res = thread_join_handle.join();
-
-                if let Err(e) = res {
+                if let Err(e) = thread_join_handle.join() {
                     eprintln!("{}", format!("[error] {e}").red().bold());
                 }
 
