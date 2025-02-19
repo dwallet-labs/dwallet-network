@@ -272,7 +272,7 @@ impl FullnodeConfigBuilder {
         ika_package_id: ObjectID,
         ika_system_package_id: ObjectID,
         system_id: ObjectID,
-        notifier_client_key_pair: Option<SuiKeyPair>,
+        notifier_client_key_pair: Option<KeyPairWithPath>,
     ) -> NodeConfig {
         // Take advantage of ValidatorGenesisConfigBuilder to build the keypairs and addresses,
         // even though this is a fullnode.
@@ -326,8 +326,6 @@ impl FullnodeConfigBuilder {
         };
 
         let localhost = local_ip_utils::localhost_for_testing();
-
-        let notifier_client_key_pair = notifier_client_key_pair.map(|k| KeyPairWithPath::new(k));
 
         NodeConfig {
             class_groups_private_key: validator_config
