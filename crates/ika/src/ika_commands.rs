@@ -27,7 +27,7 @@ use std::net::{AddrParseError, IpAddr, Ipv4Addr, SocketAddr};
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::{fs, io};
+use std::{fs, io, thread};
 use sui::client_commands::{
     estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet,
     SuiClientCommandResult,
@@ -63,6 +63,7 @@ use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionData, TransactionKind};
 use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
 use tempfile::tempdir;
+use tokio::runtime::Runtime;
 use tracing;
 use tracing::{debug, info};
 
@@ -204,15 +205,30 @@ impl IkaCommand {
                 no_full_node,
                 epoch_duration_ms,
             } => {
-                start(
-                    config_dir.clone(),
-                    force_reinitiation,
-                    epoch_duration_ms,
-                    sui_fullnode_rpc_url,
-                    sui_faucet_url,
-                    no_full_node,
-                )
-                .await?;
+                let builder = thread::Builder::new();
+                let builder = builder.stack_size(67108864);
+                let thread_join_handle = builder.spawn(move || {
+                    let mut rt = Runtime::new().unwrap();
+                    rt.block_on(async move {
+                        if let Err(e) = start(
+                            config_dir.clone(),
+                            force_reinitiation,
+                            epoch_duration_ms,
+                            sui_fullnode_rpc_url,
+                            sui_faucet_url,
+                            no_full_node,
+                        )
+                            .await {
+                            eprintln!("{}", format!("[error] {e}").red().bold());
+                        }
+                    });
+                })?;
+
+                let res = thread_join_handle.join();
+
+                if let Err(e) = res {
+                    eprintln!("{}", format!("[error] {e}").red().bold());
+                }
 
                 Ok(())
             }
