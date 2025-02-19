@@ -65,7 +65,7 @@ use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
 use tempfile::tempdir;
 use tokio::runtime::Runtime;
 use tracing;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 const DEFAULT_EPOCH_DURATION_MS: u64 = 60_000;
 
@@ -210,7 +210,7 @@ impl IkaCommand {
                 let thread_join_handle = builder.spawn(move || {
                     let mut rt = Runtime::new().unwrap();
                     rt.block_on(async move {
-                        start(
+                        let res = start(
                             config_dir.clone(),
                             force_reinitiation,
                             epoch_duration_ms,
@@ -219,6 +219,9 @@ impl IkaCommand {
                             no_full_node,
                         )
                             .await;
+                        if let Err(e) = res {
+                            error!("failed to start network: {:?}", e);
+                        }
                     });
                 }).unwrap();
 
