@@ -47,35 +47,41 @@ interface StartDKGFirstRoundEvent {
 	event_data: {
 		dwallet_id: string;
 	};
+	session_id: string;
 }
 
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
-	return obj?.event_data?.dwallet_id !== undefined;
+	return obj?.event_data?.dwallet_id !== undefined && obj?.session_id !== undefined;
 }
 
-// export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
-// 	let firstRoundOutput = await launchDKGFirstRound(conf);
-// 	console.log('First round output:', firstRoundOutput);
-// 	const [
-// 		centralizedPublicKeyShareAndProof,
-// 		centralizedPublicOutput,
-// 		centralizedSecretKeyShare,
-// 		serializedPublicKeys,
-// 	] = create_dkg_centralized_output(
-// 		protocolPublicParameters,
-// 		MPCKeyScheme.Secp256k1,
-// 		Uint8Array.from(dkgFirstRoundResult.decentralized_public_output),
-// 		// Remove the 0x prefix.
-// 		dkgFirstRoundResult.session_id.slice(2),
-// 	);
-// }
+export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
+	let firstRoundOutputResult = await launchDKGFirstRound(conf);
+	console.log('First round output:', firstRoundOutputResult);
+	const [
+		centralizedPublicKeyShareAndProof,
+		centralizedPublicOutput,
+		centralizedSecretKeyShare,
+		serializedPublicKeys,
+	] = create_dkg_centralized_output(
+		protocolPublicParameters,
+		MPCKeyScheme.Secp256k1,
+		Uint8Array.from(firstRoundOutputResult.output),
+		// Remove the 0x prefix.
+		firstRoundOutputResult.sessionID.slice(2),
+	);
+}
+
+interface DKGFirstRoundOutputResult {
+	sessionID: string;
+	output: Uint8Array;
+}
 
 /**
  * Starts the first round of the DKG protocol to create a new dWallet.
  * The output of this function is being used to generate the input for the second round,
  * and as input for the centralized party round.
  */
-export async function launchDKGFirstRound(c: Config): Promise<Uint8Array> {
+export async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult> {
 	const tx = new Transaction();
 	let emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
@@ -116,7 +122,11 @@ export async function launchDKGFirstRound(c: Config): Promise<Uint8Array> {
 		throw new Error('invalid start DKG first round event');
 	}
 	let dwalletID = startDKGEvent.event_data.dwallet_id;
-	return await waitForDKGFirstRoundOutput(c, dwalletID);
+	let output = await waitForDKGFirstRoundOutput(c, dwalletID);
+	return {
+		sessionID: startDKGEvent.session_id,
+		output: output,
+	};
 }
 
 interface WaitingForUserDWallet {
