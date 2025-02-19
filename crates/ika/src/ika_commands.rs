@@ -272,6 +272,7 @@ async fn start(
     let mut swarm_builder = Swarm::builder();
     // If this is set, then no data will be persisted between runs, and a new initiation will be
     // generated each run.
+    let ika_network_config_not_exists = config.is_none() && !ika_config_dir()?.join(IKA_NETWORK_CONFIG).exists();
     if force_reinitiation {
         swarm_builder =
             swarm_builder.committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
@@ -280,16 +281,11 @@ async fn start(
     } else {
         swarm_builder = swarm_builder
             .dir(ika_config_dir()?);
-        if config.is_none() && !ika_config_dir()?.join(IKA_NETWORK_CONFIG).exists() {
+        if ika_network_config_not_exists {
             swarm_builder =
                 swarm_builder.committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
             let epoch_duration_ms = epoch_duration_ms.unwrap_or(DEFAULT_EPOCH_DURATION_MS);
             swarm_builder = swarm_builder.with_epoch_duration_ms(epoch_duration_ms);
-            // initiation(sui_fullnode_rpc_url, sui_faucet_url, epoch_duration_ms).await?;
-            //.map_err(|_| anyhow!("Cannot run initiation with non-empty Ika config directory: {}.\n\nIf you are trying to run a local network without persisting the data (so a new initiation that is randomly generated and will not be saved once the network is shut down), use --force-reinitiation flag.\nIf you are trying to persist the network data and start from a new initiation, use ika initiation --help to see how to generate a new initiation.", ika_config_dir().unwrap().display()))?;
-            // Load the config of the Ika authority.
-            // To keep compatibility with ika-test-validator where the user can pass a config
-            // directory, this checks if the config is a file or a directory
             let network_config_path = if let Some(ref config) = config {
                 if config.is_dir() {
                     config.join(IKA_NETWORK_CONFIG)
@@ -330,6 +326,10 @@ async fn start(
     }
 
     let mut swarm = swarm_builder.build().await?;
+    if ika_network_config_not_exists {
+        let network_path = config.join(IKA_NETWORK_CONFIG);
+        swarm.network_config.save(&network_path)?;
+    }
 
     swarm.launch().await?;
     // Let nodes connect to one another
@@ -356,51 +356,6 @@ async fn start(
 
         interval.tick().await;
     }
-}
-
-async fn initiation(
-    sui_fullnode_rpc_url: String,
-    sui_faucet_url: String,
-    epoch_duration_ms: Option<u64>,
-) -> Result<(), anyhow::Error> {
-    let ika_config_dir = {
-        let config_path = ika_config_dir()?;
-        fs::create_dir_all(&config_path)?;
-        config_path
-    };
-
-    // if Ika config dir is not empty then either clean it
-    // up (if --force/-f option was specified or report an
-    // error
-    let _ = ika_config_dir.read_dir().map_err(|err| {
-        anyhow!(err).context(format!("Cannot open Ika config dir {:?}", ika_config_dir))
-    })?;
-
-    let network_path = ika_config_dir.join(IKA_NETWORK_CONFIG);
-    let mut builder =
-        ConfigBuilder::new(ika_config_dir.clone(), sui_fullnode_rpc_url, sui_faucet_url)
-            .committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
-    if let Some(epoch_duration_ms) = epoch_duration_ms {
-        builder = builder.with_epoch_duration(epoch_duration_ms);
-    }
-    let network_config = builder.build().await?;
-
-    network_config.save(&network_path)?;
-    info!("Network config file is stored in {:?}.", network_path);
-
-    for (i, validator) in network_config
-        .into_validator_configs()
-        .into_iter()
-        .enumerate()
-    {
-        let path = ika_config_dir.join(ika_config::validator_config_file(
-            validator.network_address.clone(),
-            i,
-        ));
-        validator.save(path)?;
-    }
-
-    Ok(())
 }
 
 fn read_line() -> Result<String, anyhow::Error> {
