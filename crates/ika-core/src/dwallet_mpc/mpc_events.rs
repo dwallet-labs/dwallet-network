@@ -27,28 +27,6 @@ use serde::{Deserialize, Serialize};
 use sui_types::base_types::ObjectID;
 use sui_types::{base_types::SuiAddress, id::ID, SUI_SYSTEM_ADDRESS};
 
-/// Represents the Rust version of the Move struct `ika_system::dwallet::StartDKGFirstRoundEvent`.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartDKGFirstRoundEvent {
-    /// The `DWalletCap` object's ID associated with the `DWallet`.
-    pub dwallet_cap_id: ID,
-    pub dwallet_id: ID,
-    pub dwallet_network_decryption_key_id: ID,
-}
-
-impl DWalletMPCEventTrait for StartDKGFirstRoundEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartDKGFirstRoundEvent`] events from the chain and initiate the MPC session.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_system_package_id,
-            name: START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
 /// An event to start a batched sign session, i.e.,
 /// a sign session that signs on multiple messages simultaneously.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
