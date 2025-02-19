@@ -125,7 +125,7 @@ interface WaitingForUserDWallet {
 }
 
 function isWaitingForUserDWallet(obj: any): obj is WaitingForUserDWallet {
-	return obj?.state?.first_round_output !== undefined;
+	return obj?.state?.fields?.first_round_output !== undefined;
 }
 
 interface MoveObject {
