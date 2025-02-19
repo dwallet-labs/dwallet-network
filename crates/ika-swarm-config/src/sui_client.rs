@@ -28,7 +28,6 @@ use sui::client_commands::{
     estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet,
     SuiClientCommandResult,
 };
-use sui_config::node::KeyPairWithPath;
 use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
 use sui_sdk::rpc_types::SuiTransactionBlockEffectsAPI;
@@ -64,7 +63,7 @@ pub async fn init_ika_on_sui(
     sui_fullnode_rpc_url: String,
     sui_faucet_url: String,
     initiation_parameters: InitiationParameters,
-) -> Result<(ObjectID, ObjectID, ObjectID, KeyPairWithPath), anyhow::Error> {
+) -> Result<(ObjectID, ObjectID, ObjectID, SuiKeyPair), anyhow::Error> {
     //let config_dir = ika_config_dir()?;
     let config_dir = tempfile::tempdir()?.into_path();
     let config_path = config_dir.join(SUI_CLIENT_CONFIG);
@@ -182,6 +181,14 @@ pub async fn init_ika_on_sui(
     .await?;
 
     println!("Running `init::initialize` done: system_id: {system_id}");
+    let ika_config = IkaConfig {
+        ika_package_id,
+        ika_system_package_id,
+        ika_system_obj_id: system_id,
+    };
+    let mut file = File::create("ika_config.json")?;
+    let json = serde_json::to_string_pretty(&ika_config)?;
+    file.write_all(json.as_bytes())?;
 
     let mut validator_ids = Vec::new();
     let mut validator_cap_ids = Vec::new();
@@ -247,25 +254,11 @@ pub async fn init_ika_on_sui(
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    let publisher_keypair_with_path = KeyPairWithPath::new(publisher_keypair);
-
-    let mut file = File::create("publisher_keypair")?;
-    file.write_all(&bcs::to_bytes(&publisher_keypair_with_path)?)?;
-
-    let ika_config = IkaConfig {
-        ika_package_id,
-        ika_system_package_id,
-        ika_system_obj_id: system_id,
-    };
-    let mut file = File::create("ika_config.json")?;
-    let json = serde_json::to_string_pretty(&ika_config)?;
-    file.write_all(json.as_bytes())?;
-
     Ok((
         ika_package_id,
         ika_system_package_id,
         system_id,
-        publisher_keypair_with_path,
+        publisher_keypair,
     ))
 }
 
