@@ -250,7 +250,7 @@ pub async fn init_ika_on_sui(
     let publisher_keypair_with_path = KeyPairWithPath::new(publisher_keypair);
 
     let mut file = File::create("publisher_keypair")?;
-    file.write_all(bcs::to_bytes(&publisher_keypair_with_path))?;
+    file.write_all(bcs::to_bytes(&publisher_keypair_with_path)?)?;
 
     let ika_config = IkaConfig {
         ika_package_id,
