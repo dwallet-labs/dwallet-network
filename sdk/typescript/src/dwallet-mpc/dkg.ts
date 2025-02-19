@@ -44,7 +44,7 @@ interface StartDKGFirstRoundEvent {
 }
 
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
-	return obj?.event_data?.dwallet_id !== undefined;
+	return !!obj?.event_data?.dwallet_id;
 }
 
 /**
