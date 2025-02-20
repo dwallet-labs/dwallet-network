@@ -1,7 +1,11 @@
+import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
 import { SuiClient } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
+
+
 import { Config } from './globals';
+
 
 /**
  * A class groups key pair.
@@ -14,9 +18,8 @@ interface ClassGroupsSecpKeyPair {
 
 async function getOrCreateClassGroupsKeyPair(
 	conf: Config,
-	activeEncryptionKeysTableID: string,
 ): Promise<ClassGroupsSecpKeyPair> {
-	const [expectedEncryptionKey, decryptionKey] = generateCGKeyPairFromSuiKeyPair(keyPair);
+	const [expectedEncryptionKey, decryptionKey] = generate_secp_cg_keypair_from_seed(conf.dWalletSeed);
 	const activeEncryptionKeyObjID = await this.getActiveEncryptionKeyObjID(
 		conf.keypair.getPublicKey(),
 		activeEncryptionKeysTableID,
@@ -60,4 +63,3 @@ async function getOrCreateClassGroupsKeyPair(
 		objectID: encryptionKeyCreationEvent.encryption_key_id,
 	};
 }
-
