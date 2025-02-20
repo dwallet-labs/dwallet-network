@@ -166,21 +166,20 @@ async function registerEncryptionKey(
 			showEvents: true,
 		},
 	});
+	let createdEncryptionKeyEvent = res.events?.find(event => isCreatedEncryptionKeyEvent(event.parsedJson));
+	if (!createdEncryptionKeyEvent) {
+		throw new Error('Encryption key registration failed');
+	}
+	return createdEncryptionKeyEvent.parsedJson as CreatedEncryptionKeyEvent;
+}
 
-	const sessionID = (
-		res.events?.find(
-			(event) =>
-				event.type === startEncryptionKeyVerificationEventMoveType &&
-				isStartSessionEvent(event.parsedJson),
-		)?.parsedJson as StartSessionEvent
-	).session_id;
+interface CreatedEncryptionKeyEvent{
+	encryption_key_id: string,
+	signer_address: string,
+}
 
-	return await fetchCompletedEvent<CreatedEncryptionKeyEvent>(
-		this.toConfig(keyPair),
-		sessionID,
-		`${dWalletPackageID}::${dWalletModuleName}::CreatedEncryptionKeyEvent`,
-		isCreatedEncryptionKeyEvent,
-	);
+function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent {
+	return 'encryption_key_id' in obj && 'signer_address' in obj;
 }
 
 
