@@ -1,15 +1,18 @@
 import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
-import { SuiClient } from '@mysten/sui/client';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import {toHex} from "@mysten/bcs"
+import { toHex, bcs } from "@mysten/bcs";
+import { Transaction } from "@mysten/sui/transactions";
+
+
+
 import {
-	Config, DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
+	Config, delay,
+	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	fetchObjectWithType,
 	getDWalletSecpState,
-	getInitialSharedVersion
+	getInitialSharedVersion,
 } from './globals';
-import {Transaction} from "@mysten/sui/transactions";
+
 
 /**
  * A class groups key pair.
@@ -96,10 +99,9 @@ async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<ClassGroupsS
 		);
 	}
 
-	const encryptionKeyCreationEvent: CreatedEncryptionKeyEvent = await this.registerEncryptionKey(
-		keyPair,
-		expectedEncryptionKey,
-		EncryptionKeyScheme.ClassGroups,
+	const encryptionKeyCreationEvent: CreatedEncryptionKeyEvent = await registerEncryptionKey(
+		conf,
+		expectedEncryptionKey
 	);
 	await delay(checkpointCreationTime);
 
@@ -116,6 +118,81 @@ async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<ClassGroupsS
 		objectID: encryptionKeyCreationEvent.encryption_key_id,
 	};
 }
+
+export enum EncryptionKeyScheme {
+	ClassGroups = 0,
+}
+
+/**
+ * Registers (stores) the given encryption key in the blockchain.
+ *
+ * This function facilitates the storage of an encryption key as an immutable object
+ * on the blockchain.
+ * The key is signed with the provided key pair to ensure
+ * cryptographic integrity, and validate it by the blockchain.
+ * Currently, only Class Groups encryption keys are supported.
+ *
+ * ### Parameters
+ * — `keyPair`: A `Keypair` object used to sign the encryption key.
+ * — `encryptionKey`: The encryption key to be registered.
+ * — `encryptionKeyScheme`: The scheme of the encryption key (e.g., Class Groups).
+ */
+async function registerEncryptionKey(
+	conf: Config,
+	encryptionKey: Uint8Array
+): Promise<CreatedEncryptionKeyEvent> {
+	// Sign the encryption key with the key pair.
+	const encryptionKeySignature = await conf.keypair.sign(new Uint8Array(encryptionKey));
+	const tx = new Transaction();
+
+	let dwalletState = await getDWalletSecpState(conf);
+	tx.moveCall({
+		target: `${conf.ikaConfig.ika_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::register_encryption_key`,
+		arguments: [
+			tx.sharedObjectRef({
+				objectId: dwalletState.object_id,
+				initialSharedVersion: dwalletState.initial_shared_version,
+				mutable: true,
+			}),
+			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKeySignature)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes())),
+		],
+	});
+	const res = await conf.client.signAndExecuteTransaction({
+		signer: conf.keypair,
+		transaction: tx,
+		options: {
+			showEvents: true,
+		},
+	});
+
+	const sessionID = (
+		res.events?.find(
+			(event) =>
+				event.type === startEncryptionKeyVerificationEventMoveType &&
+				isStartSessionEvent(event.parsedJson),
+		)?.parsedJson as StartSessionEvent
+	).session_id;
+
+	return await fetchCompletedEvent<CreatedEncryptionKeyEvent>(
+		this.toConfig(keyPair),
+		sessionID,
+		`${dWalletPackageID}::${dWalletModuleName}::CreatedEncryptionKeyEvent`,
+		isCreatedEncryptionKeyEvent,
+	);
+}
+
+
+/**
+ * Event emitted by the blockchain when an
+ * `EncryptionKey` Move object is created.
+ */
+interface CreatedEncryptionKeyEvent {
+	session_id: string;
+	encryption_key_id: string;
+}
+
 
 export function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
 	return arr1.length === arr2.length && arr1.every((value, index) => value === arr2[index]);
