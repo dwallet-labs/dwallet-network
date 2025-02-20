@@ -1,5 +1,5 @@
-import { Config, DWALLET_NETWORK_VERSION } from './globals';
-
+import type { Config } from './globals.js';
+import { DWALLET_NETWORK_VERSION } from './globals.js';
 
 /**
  * Represents the Move `SystemInnerV1` struct.

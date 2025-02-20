@@ -41,8 +41,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should get or create an encryption key', async () => {
-		let enc = await getOrCreateClassGroupsKeyPair(conf);
-		let enc2 = await getOrCreateClassGroupsKeyPair(conf);
-		console.log({ enc });
+		let classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+		console.log({ classGroupsSecpKeyPair });
 	});
 });

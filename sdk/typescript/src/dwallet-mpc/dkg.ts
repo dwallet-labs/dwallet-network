@@ -1,14 +1,20 @@
-;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import { Transaction } from '@mysten/sui/transactions';
 import { delay } from 'msw';
 
-
-
-import { Config, DWALLET_ECDSAK1_MOVE_MODULE_NAME, DWALLET_NETWORK_VERSION, getDwalletSecp256k1ObjID, getInitialSharedVersion, isIKASystemStateInner, isMoveObject, MPCKeyScheme, SUI_PACKAGE_ID } from './globals.js';
-
+import type { Config } from './globals.js';
+import {
+	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	DWALLET_NETWORK_VERSION,
+	getDwalletSecp256k1ObjID,
+	getInitialSharedVersion,
+	isIKASystemStateInner,
+	isMoveObject,
+	MPCKeyScheme,
+	SUI_PACKAGE_ID,
+} from './globals.js';
 
 interface StartDKGFirstRoundEvent {
 	event_data: {

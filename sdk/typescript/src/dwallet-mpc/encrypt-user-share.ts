@@ -2,16 +2,13 @@ import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc
 import { bcs, toHex } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
+import type { Config } from './globals.js';
 import {
-	checkpointCreationTime,
-	Config,
-	delay,
 	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	fetchObjectWithType,
 	getDWalletSecpState,
-	getInitialSharedVersion,
-} from './globals';
+} from './globals.js';
 
 /**
  * A class groups key pair.
