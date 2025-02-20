@@ -34,7 +34,7 @@ async function getActiveEncryptionKeyObjID(conf: Config, address: string): Promi
 	const tx = new Transaction();
 	let dwalletState = await getDWalletSecpState(conf);
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::get_active_encryption_key`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::get_active_encryption_key`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletState.object_id,
