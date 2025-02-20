@@ -740,7 +740,7 @@ public(package) fun advance_epoch(
 
     let total_reward_amount_after_distribution = total_reward.value();
     let total_reward_distributed =
-         total_reward_amount_before_distribution - total_reward_amount_after_distribution;
+        total_reward_amount_before_distribution - total_reward_amount_after_distribution;
 
     // Because of precision issues with integer divisions, we expect that there will be some
     // remaining balance in `computation_reward`.

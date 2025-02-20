@@ -7,10 +7,7 @@ use crate::dwallet_mpc::mpc_events::{
     StartBatchedPresignEvent, StartBatchedSignEvent, StartNetworkDKGEvent, StartSignEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
-use crate::dwallet_mpc::presign::{
-    PresignFirstParty, PresignFirstPartyPublicInputGenerator, PresignSecondParty,
-    PresignSecondPartyPublicInputGenerator,
-};
+use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -31,6 +28,7 @@ use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use rand_core::OsRng;
 use serde::de::DeserializeOwned;
 use std::collections::{HashMap, HashSet};
+use std::vec::Vec;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
 use tracing::warn;
@@ -117,7 +115,7 @@ pub(crate) fn session_info_from_event(
         t if t == &DWalletMPCSuiEvent::<StartPresignFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent> =
                 bcs::from_bytes(&event.contents)?;
-            Ok(Some(presign_first_party_session_info(
+            Ok(Some(presign_party_session_info(
                 deserialized_event.event_data,
             )))
         }
@@ -253,21 +251,19 @@ fn dkg_second_party_session_info(
     }
 }
 
-pub(crate) fn presign_first_public_input(
+pub(crate) fn presign_public_input(
     deserialized_event: StartPresignFirstRoundEvent,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
     Ok(
-        <PresignFirstParty as PresignFirstPartyPublicInputGenerator>::generate_public_input(
+        <PresignParty as PresignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
             deserialized_event.dkg_output.clone(),
         )?,
     )
 }
 
-fn presign_first_party_session_info(
-    deserialized_event: StartPresignFirstRoundEvent,
-) -> SessionInfo {
+fn presign_party_session_info(deserialized_event: StartPresignFirstRoundEvent) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
         initiating_user_address: deserialized_event.initiator,
@@ -535,10 +531,7 @@ pub(crate) fn session_input_from_event(
                     .dwallet_mpc_network_key_version,
             )?;
             Ok((
-                presign_first_public_input(
-                    deserialized_event.event_data,
-                    protocol_public_parameters,
-                )?,
+                presign_public_input(deserialized_event.event_data, protocol_public_parameters)?,
                 None,
             ))
         }

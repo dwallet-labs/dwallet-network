@@ -74,11 +74,11 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], branch = "pera-network-dkg" }
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-network-dkg", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], branch = "pera-network-dkg" }
-group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", branch = "pera-network-dkg" }
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "pera-network-dkg" }
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], branch = "ika" }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "ika", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], branch = "ika" }
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", branch = "ika" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "ika" }
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
@@ -295,7 +295,7 @@ serde_with = "3.8"
 serde_yaml = "0.8.26"
 shell-words = "1.1.0"
 shellexpand = "3.1.0"
-signature = "1.6.0"
+signature = "2.2.0"
 similar = "2.4.0"
 simple-server-timing-header = "0.1.1"
 slip10_ed25519 = "0.1.3"
@@ -524,6 +524,8 @@ sui-execution = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e9
 consensus-config = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
 consensus-core = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
 
+crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '271d029' }
+
 ### Workspace Members ###
 dwallet-mpc-centralized-party = { path = "crates/dwallet-mpc-centralized-party" }
 dwallet-mpc-types = { path = "crates/dwallet-mpc-types"}
@@ -556,3 +558,6 @@ spinners = "4.1.0"
 include_dir = "0.7.3"
 
 [patch.crates-io]
+signature = { git = "https://github.com/yaelAbergel/traits", rev = "e4008c230e50f04848198f6570a4f7c9b94e503c"}
+ecdsa = { git = "https://github.com/yaelAbergel/signatures", rev = "7c8523182b1a28e5bcc6bb8d1508fbde1ea845c4"}
+crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '271d029' }
