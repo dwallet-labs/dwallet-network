@@ -6,7 +6,7 @@ version.workspace = true
 [dependencies]
 class_groups.workspace = true
 group.workspace = true
-crypto-bigint = "0.5.5"
+crypto-bigint.workspace = true
 serde.workspace = true
 anyhow.workspace = true
 bcs.workspace = true
@@ -18,8 +18,6 @@ serde_derive = "1.0.217"
 ika-types.workspace = true
 twopc_mpc.workspace = true
 flate2 = "1.0.35"
-
-
 
 [lints]
 workspace = true

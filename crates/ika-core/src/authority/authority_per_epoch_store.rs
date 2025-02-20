@@ -28,7 +28,7 @@ use std::sync::Arc;
 use sui_macros::fail_point_arg;
 use sui_types::accumulator::Accumulator;
 use sui_types::authenticator_state::{get_authenticator_state, ActiveJwk};
-use sui_types::base_types::{ConciseableName, ObjectRef};
+use sui_types::base_types::{ConciseableName, ObjectRef, SuiAddress};
 use sui_types::base_types::{EpochId, ObjectID, SequenceNumber};
 use sui_types::crypto::RandomnessRound;
 use sui_types::signature::GenericSignature;
@@ -69,7 +69,7 @@ use crate::dwallet_mpc::mpc_outputs_verifier::{
 };
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::{
-    authority_name_to_party_id, presign_first_public_input, session_info_from_event,
+    authority_name_to_party_id, presign_public_input, session_info_from_event,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
@@ -2115,11 +2115,10 @@ impl AuthorityPerEpochStore {
         session_info: SessionInfo,
     ) -> DwalletMPCResult<ConsensusCertificateResult> {
         match &session_info.mpc_round {
-            MPCProtocolInitData::DKGFirst => {
+            MPCProtocolInitData::DKGFirst(event_data) => {
                 let tx = MessageKind::DwalletDKGFirstRoundOutput(DKGFirstRoundOutput {
-                    session_id: session_info.session_id.to_vec(),
+                    dwallet_id: event_data.dwallet_id.to_vec(),
                     output,
-                    initiating_user_address: session_info.initiating_user_address.to_vec(),
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }

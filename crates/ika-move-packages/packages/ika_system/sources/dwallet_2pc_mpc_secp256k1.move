@@ -65,7 +65,7 @@ public(package) fun set_active_committee(
     self: &mut DWallet2PcMpcSecp256K1,
     committee: Committee,
 ) {
-    self.set_active_committee(committee);
+    self.inner_mut().set_active_committee(committee);
 }
 
 public fun get_active_encryption_key(
@@ -260,6 +260,7 @@ public fun compare_ecdsa_partial_user_signatures_with_approvals(
     )
 }
 
+#[allow(unused_function)]
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWallet2PcMpcSecp256K1,
     signature: vector<u8>,

@@ -218,7 +218,7 @@ pub enum IkaError {
     #[error("Sui Client internal error")]
     SuiClientInternalError(String),
 
-    #[error("Sui Client sui transaction failure due to generic error")]
+    #[error("Sui Client sui transaction failure due to generic error: {0}")]
     SuiClientTxFailureGeneric(String),
 
     // Sui Connector

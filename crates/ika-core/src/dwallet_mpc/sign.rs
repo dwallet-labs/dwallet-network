@@ -52,9 +52,9 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
     ) -> DwalletMPCResult<MPCPublicInput> {
-        let auxiliary = SignPublicInput::from((
+        let public_input = SignPublicInput::from((
             bcs::from_bytes(&protocol_public_parameters)?,
-            bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::Message>(
+            bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::HashedMessage>(
                 &hashed_message,
             )?,
             bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(
@@ -67,7 +67,7 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
             decryption_key_share_public_parameters,
         ));
 
-        Ok(bcs::to_bytes(&auxiliary)?)
+        Ok(bcs::to_bytes(&public_input)?)
     }
 }
 
@@ -90,14 +90,11 @@ pub(crate) fn verify_partial_signature(
     let partial: <AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage =
         bcs::from_bytes(partially_signed_message)?;
     twopc_mpc::sign::decentralized_party::signature_partial_decryption_round::Party::verify_encryption_of_signature_parts_prehash_class_groups(
-        message,
+        protocol_public_parameters,
         dkg_output,
         presign,
         partial,
-        protocol_public_parameters,
-        CommitmentSizedNumber::from_le_slice(
-            session_id.to_vec().as_slice(),
-        ),
+        message,
     ).map_err(|err| {
         DwalletMPCError::TwoPCMPCError(format!("{:?}", err))
     })

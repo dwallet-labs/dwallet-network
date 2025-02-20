@@ -1,11 +1,14 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import { Transaction } from '@mysten/sui/transactions';
+import { delay } from 'msw';
 
-import type { Config, StartSessionEvent } from './globals.js';
+import type { Config } from './globals.js';
 import {
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
+	MPCKeyScheme,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 
@@ -37,12 +40,64 @@ interface SharedObjectOwner {
 	};
 }
 
+interface StartDKGFirstRoundEvent {
+	event_data: {
+		dwallet_id: string;
+	};
+	session_id: string;
+}
+
+interface WaitingForUserDWallet {
+	state: {
+		fields: {
+			first_round_output: Uint8Array;
+		};
+	};
+}
+
+interface MoveObject {
+	fields: any;
+}
+
+function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
+	return !!obj?.event_data?.dwallet_id && !!obj?.session_id;
+}
+
+export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
+	let firstRoundOutputResult = await launchDKGFirstRound(conf);
+	console.log('First round output:', firstRoundOutputResult);
+	const [
+		centralizedPublicKeyShareAndProof,
+		centralizedPublicOutput,
+		centralizedSecretKeyShare,
+		serializedPublicKeys,
+	] = create_dkg_centralized_output(
+		protocolPublicParameters,
+		MPCKeyScheme.Secp256k1,
+		Uint8Array.from(firstRoundOutputResult.output),
+		// Remove the 0x prefix.
+		firstRoundOutputResult.sessionID.slice(2),
+	);
+
+	console.log({
+		centralizedPublicKeyShareAndProof,
+		centralizedPublicOutput,
+		centralizedSecretKeyShare,
+		serializedPublicKeys,
+	});
+}
+
+interface DKGFirstRoundOutputResult {
+	sessionID: string;
+	output: Uint8Array;
+}
+
 /**
  * Starts the first round of the DKG protocol to create a new dWallet.
  * The output of this function is being used to generate the input for the second round,
  * and as input for the centralized party round.
  */
-export async function launchDKGFirstRound(c: Config) {
+export async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult> {
 	const tx = new Transaction();
 	let emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
@@ -78,9 +133,51 @@ export async function launchDKGFirstRound(c: Config) {
 			showEvents: true,
 		},
 	});
-	let sessionID = (result.events?.at(0)?.parsedJson as StartSessionEvent).session_id;
-	console.log(`Session ID: ${sessionID}`);
-	// TODO (#631): Use the session ID to fetch the DKG first round completion event.
+	let startDKGEvent = result.events?.at(0)?.parsedJson;
+	if (!isStartDKGFirstRoundEvent(startDKGEvent)) {
+		throw new Error('invalid start DKG first round event');
+	}
+	let dwalletID = startDKGEvent.event_data.dwallet_id;
+	let output = await waitForDKGFirstRoundOutput(c, dwalletID);
+	return {
+		sessionID: startDKGEvent.session_id,
+		output: output,
+	};
+}
+
+function isWaitingForUserDWallet(obj: any): obj is WaitingForUserDWallet {
+	return obj?.state?.fields?.first_round_output !== undefined;
+}
+
+function isMoveObject(obj: any): obj is MoveObject {
+	return obj?.fields !== undefined;
+}
+
+async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Promise<Uint8Array> {
+	const startTime = Date.now();
+
+	while (Date.now() - startTime <= conf.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		await delay(5_000);
+		let dwallet = await conf.client.getObject({
+			id: dwalletID,
+			options: {
+				showContent: true,
+			},
+		});
+		if (isMoveObject(dwallet?.data?.content)) {
+			let dwalletMoveObject = dwallet?.data?.content?.fields;
+			if (isWaitingForUserDWallet(dwalletMoveObject)) {
+				return dwalletMoveObject.state.fields.first_round_output;
+			}
+		}
+	}
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch the DWallet object within ${
+			conf.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
 }
 
 function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
