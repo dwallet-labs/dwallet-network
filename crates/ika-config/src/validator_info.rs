@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use dwallet_classgroups_types::ClassGroupsPublicKeyAndProofBytes;
 use ika_types::crypto::{AuthorityPublicKeyBytes, AuthoritySignature, NetworkPublicKey};
 use serde::{Deserialize, Serialize};
@@ -7,6 +8,7 @@ use sui_types::multiaddr::Multiaddr;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ValidatorInfo {
     pub name: String,
+    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
     pub account_address: SuiAddress,
     pub protocol_public_key: AuthorityPublicKeyBytes,
@@ -50,4 +52,22 @@ impl ValidatorInfo {
     pub fn proof_of_possession(&self) -> &AuthoritySignature {
         &self.proof_of_possession
     }
+}
+
+fn as_base64<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let encoded = STANDARD.encode(bytes);
+    serializer.serialize_str(&encoded)
+}
+
+fn from_base64<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let base64_str: String = Deserialize::deserialize(deserializer)?;
+    STANDARD
+        .decode(&base64_str)
+        .map_err(serde::de::Error::custom)
 }

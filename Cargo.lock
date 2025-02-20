@@ -5024,6 +5024,7 @@ version = "0.0.0"
 dependencies = [
  "anemo",
  "anyhow",
+ "base64 0.22.1",
  "consensus-config",
  "dirs 4.0.0",
  "dwallet-classgroups-types",

@@ -1,20 +1,27 @@
-use sui_types::base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress};
-use sui_types::transaction::{Argument, CallArg, ObjectArg, SenderSignedData, Transaction, TransactionKind};
-use sui_sdk::wallet_context::WalletContext;
-use shared_crypto::intent::Intent;
-use sui_sdk::SuiClient;
-use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use move_core_types::ident_str;
-use sui_json_rpc_types::{ObjectChange, SuiTransactionBlockResponse};
 use anyhow::bail;
+use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
-use ika_types::sui::{ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, SYSTEM_MODULE_NAME};
-use sui::client_commands::{estimate_gas_budget_from_gas_cost, execute_dry_run, SuiClientCommandResult};
-use sui_keys::keystore::AccountKeystore;
-use sui_types::transaction::TransactionDataAPI;
-use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
 use ika_config::validator_info::ValidatorInfo;
+use ika_types::sui::{
+    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder,
+    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, SYSTEM_MODULE_NAME,
+};
+use move_core_types::ident_str;
+use shared_crypto::intent::Intent;
+use sui::client_commands::{
+    estimate_gas_budget_from_gas_cost, execute_dry_run, SuiClientCommandResult,
+};
+use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
+use sui_json_rpc_types::{ObjectChange, SuiTransactionBlockResponse};
+use sui_keys::keystore::AccountKeystore;
+use sui_sdk::wallet_context::WalletContext;
+use sui_sdk::SuiClient;
+use sui_types::base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress};
+use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
+use sui_types::transaction::TransactionDataAPI;
+use sui_types::transaction::{
+    Argument, CallArg, ObjectArg, SenderSignedData, Transaction, TransactionKind,
+};
 
 async fn create_class_groups_public_key_and_proof_builder_object(
     publisher_address: SuiAddress,
