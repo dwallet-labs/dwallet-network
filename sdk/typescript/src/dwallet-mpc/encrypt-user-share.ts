@@ -78,7 +78,7 @@ export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<Class
 		conf,
 		conf.keypair.toSuiAddress(),
 	);
-	const encryptionKeyMoveType = `${conf.ikaConfig.ika_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
+	const encryptionKeyMoveType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
 
 	if (activeEncryptionKeyObjID) {
 		const activeEncryptionKeyObj = await fetchObjectWithType<EncryptionKey>(
