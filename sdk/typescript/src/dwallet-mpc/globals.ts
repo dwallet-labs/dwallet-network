@@ -77,6 +77,11 @@ interface MoveObject {
 	fields: any;
 }
 
+interface SharedObjectData {
+	object_id: string;
+	initial_shared_version: number;
+}
+
 export function isMoveObject(obj: any): obj is MoveObject {
 	return obj?.fields !== undefined;
 }
@@ -118,11 +123,6 @@ export async function getInitialSharedVersion(c: Config, objectID: string): Prom
 		throw new Error('Object is not shared');
 	}
 	return owner.Shared?.initial_shared_version;
-}
-
-interface SharedObjectData {
-	object_id: string;
-	initial_shared_version: number;
 }
 
 export async function getDWalletSecpState(c: Config): Promise<SharedObjectData> {
