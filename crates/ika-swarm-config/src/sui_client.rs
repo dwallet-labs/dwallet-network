@@ -190,6 +190,8 @@ pub async fn init_ika_on_sui(
     let json = serde_json::to_string_pretty(&ika_config)?;
     file.write_all(json.as_bytes())?;
 
+    let cinf
+
     let mut validator_ids = Vec::new();
     let mut validator_cap_ids = Vec::new();
     for validator_initialization_config in validator_initialization_configs {

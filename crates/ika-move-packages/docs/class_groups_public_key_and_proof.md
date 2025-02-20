@@ -140,6 +140,7 @@ Creates a new <code><a href="../ika_system/class_groups_public_key_and_proof.md#
         id: object::new(ctx),
         public_keys_and_proofs: table_vec::empty(ctx),
     };
+    // transfer::transfer(builder, ctx.sender());
     builder
 }
 </code></pre>
