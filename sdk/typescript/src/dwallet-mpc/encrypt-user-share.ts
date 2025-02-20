@@ -2,10 +2,8 @@ import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc
 import { SuiClient } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
-
-
-import { Config } from './globals';
-
+import {Config, DWALLET_ECDSAK1_MOVE_MODULE_NAME, getDWalletSecpState, getInitialSharedVersion} from './globals';
+import {Transaction} from "@mysten/sui/transactions";
 
 /**
  * A class groups key pair.
@@ -16,13 +14,47 @@ interface ClassGroupsSecpKeyPair {
 	objectID: string;
 }
 
-async function getOrCreateClassGroupsKeyPair(
-	conf: Config,
-): Promise<ClassGroupsSecpKeyPair> {
-	const [expectedEncryptionKey, decryptionKey] = generate_secp_cg_keypair_from_seed(conf.dWalletSeed);
-	const activeEncryptionKeyObjID = await this.getActiveEncryptionKeyObjID(
-		conf.keypair.getPublicKey(),
-		activeEncryptionKeysTableID,
+/**
+ * Retrieves the active encryption key object ID
+ * from the active encryption keys table *activeEncryptionKeysTableID*
+ * for the given address — derived from the public key.
+ * Throws an error otherwise.
+ */
+async function getActiveEncryptionKeyObjID(conf: Config, address: string): Promise<string> {
+	const tx = new Transaction();
+	let dwalletState = await getDWalletSecpState(conf);
+	tx.moveCall({
+		target: `${conf.ikaConfig.ika_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::get_active_encryption_key`,
+		arguments: [
+			tx.sharedObjectRef({
+				objectId: dwalletState.object_id,
+				initialSharedVersion: dwalletState.initial_shared_version,
+				mutable: false,
+			}),
+			tx.pure.address(address)],
+	});
+
+	// Safe to use this function as it has been used here:
+	// https://github.com/dwallet-labs/dwallet-network/blob/29929ded135f05578b6ce33b52e6ff5e894d0487/sdk/deepbook-v3/src/client.ts#L84
+	// in late 2024 (can be seen with git blame).
+	// Note that regular `getObject()` is not working because of dynamic fields.
+	const res = await this.client.devInspectTransactionBlock({
+		sender: address,
+		transactionBlock: tx,
+	});
+
+	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0) as number[]);
+	return toHEX(objIDArray);
+}
+
+
+async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<ClassGroupsSecpKeyPair> {
+	const [expectedEncryptionKey, decryptionKey] = generate_secp_cg_keypair_from_seed(
+		conf.dWalletSeed,
+	);
+	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
+		conf,
+		conf.keypair.toSuiAddress(),
 	);
 	if (activeEncryptionKeyObjID) {
 		const activeEncryptionKeyObj = await fetchObjectWithType<EncryptionKey>(

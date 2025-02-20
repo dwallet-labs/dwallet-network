@@ -1,25 +1,8 @@
-;
-
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Buffer } from 'buffer';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-
-
-
-
-
-;
-
-
-
-
-
-
-
-
-
 
 export const DWALLET_ECDSAK1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
 export const DWALLET_NETWORK_VERSION = 0;
