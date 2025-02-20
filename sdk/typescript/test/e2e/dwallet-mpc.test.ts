@@ -1,3 +1,4 @@
+;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
@@ -6,8 +7,12 @@ import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
+
+
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
+import { getOrCreateClassGroupsKeyPair } from "../../src/dwallet-mpc/encrypt-user-share";
 import { Config, delay, mockedProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
+
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -36,5 +41,10 @@ describe('Test dWallet MPC', () => {
 
 	it('should create a dWallet (DKG)', async () => {
 		await createDWallet(conf, mockedProtocolPublicParameters);
+	});
+
+	it('should get or create an encryption key', async () => {
+		let enc = await getOrCreateClassGroupsKeyPair(conf);
+		console.log({ enc });
 	});
 });

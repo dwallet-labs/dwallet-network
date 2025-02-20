@@ -70,8 +70,7 @@ const isEncryptionKey = (obj: any): obj is EncryptionKey => {
 	return 'encryption_key' in obj && 'signer_address' in obj && 'encryption_key_signature' in obj;
 };
 
-
-async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<ClassGroupsSecpKeyPair> {
+export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<ClassGroupsSecpKeyPair> {
 	const [expectedEncryptionKey, decryptionKey] = generate_secp_cg_keypair_from_seed(
 		conf.dWalletSeed,
 	);
@@ -140,7 +139,7 @@ async function registerEncryptionKey(
 
 	let dwalletState = await getDWalletSecpState(conf);
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::register_encryption_key`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::register_encryption_key`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletState.object_id,
