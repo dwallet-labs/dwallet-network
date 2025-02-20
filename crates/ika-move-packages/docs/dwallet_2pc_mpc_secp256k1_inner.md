@@ -2472,7 +2472,7 @@ Supported hash schemes for message signing.
 Get the active encryption key ID by its address.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_encryption_key">get_active_encryption_key</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet2PcMpcSecp256K1InnerV1">dwallet_2pc_mpc_secp256k1_inner::DWallet2PcMpcSecp256K1InnerV1</a>, <b>address</b>: <b>address</b>): &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EncryptionKey">dwallet_2pc_mpc_secp256k1_inner::EncryptionKey</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_encryption_key">get_active_encryption_key</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet2PcMpcSecp256K1InnerV1">dwallet_2pc_mpc_secp256k1_inner::DWallet2PcMpcSecp256K1InnerV1</a>, <b>address</b>: <b>address</b>): <a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>
 </code></pre>
 
 
@@ -2484,8 +2484,8 @@ Get the active encryption key ID by its address.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_encryption_key">get_active_encryption_key</a>(
     self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet2PcMpcSecp256K1InnerV1">DWallet2PcMpcSecp256K1InnerV1</a>,
     <b>address</b>: <b>address</b>,
-): &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EncryptionKey">EncryptionKey</a> {
-    self.encryption_keys.borrow(<b>address</b>)
+): ID {
+    self.encryption_keys.borrow(<b>address</b>).id.to_inner()
 }
 </code></pre>
 
@@ -4038,14 +4038,17 @@ the function will abort with this error.
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; len) {
         <b>let</b> message_data_type = bcs_body.peel_vec_length();
-        <b>if</b> (message_data_type == 0) {
-        } <b>else</b> <b>if</b> (message_data_type == 1) {
+        // Parses checkpoint BCS bytes directly.
+        // Messages with `message_data_type` 1 & 2 are handled by the <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> <b>module</b>,
+        // but their bytes must be extracted here to allow correct parsing of types 3 and above.
+        // This step only extracts the bytes without further processing.
+        <b>if</b> (message_data_type == 1) {
             // EndOfEpochMessage
             <b>let</b> len = bcs_body.peel_vec_length();
             <b>let</b> <b>mut</b> i = 0;
             <b>while</b> (i &lt; len) {
                 <b>let</b> end_of_epch_message_type = bcs_body.peel_vec_length();
-            // AdvanceEpoch
+                // AdvanceEpoch
                 <b>if</b>(end_of_epch_message_type == 0) {
                     <b>let</b> _new_epoch = bcs_body.peel_u64();
                     <b>let</b> _next_protocol_version = bcs_body.peel_u64();
