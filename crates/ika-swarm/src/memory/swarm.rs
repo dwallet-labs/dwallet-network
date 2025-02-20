@@ -291,7 +291,7 @@ impl<R: rand::RngCore + rand::CryptoRng> SwarmBuilder<R> {
 #[derive(Debug)]
 pub struct Swarm {
     dir: SwarmDirectory,
-    network_config: NetworkConfig,
+    pub network_config: NetworkConfig,
     nodes: HashMap<AuthorityName, Node>,
 }
 
