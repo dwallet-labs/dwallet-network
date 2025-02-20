@@ -58,9 +58,14 @@ async function getActiveEncryptionKeyObjID(conf: Config, address: string): Promi
  */
 interface EncryptionKey {
 	encryption_key: Uint8Array;
-	key_owner_address: string;
+	signer_address: string;
 	encryption_key_signature: Uint8Array;
 }
+
+const isEncryptionKey = (obj: any): obj is EncryptionKey => {
+	return 'encryption_key' in obj && 'signer_address' in obj && 'encryption_key_signature' in obj;
+};
+
 
 async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<ClassGroupsSecpKeyPair> {
 	const [expectedEncryptionKey, decryptionKey] = generate_secp_cg_keypair_from_seed(
