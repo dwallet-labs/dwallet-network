@@ -5,6 +5,7 @@ import { Transaction } from "@mysten/sui/transactions";
 
 
 import {
+	checkpointCreationTime,
 	Config, delay,
 	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
@@ -103,14 +104,6 @@ async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<ClassGroupsS
 		conf,
 		expectedEncryptionKey
 	);
-	await delay(checkpointCreationTime);
-
-	await this.upsertActiveEncryptionKey(
-		keyPair,
-		encryptionKeyCreationEvent.encryption_key_id,
-		activeEncryptionKeysTableID,
-	);
-	await delay(checkpointCreationTime);
 
 	return {
 		decryptionKey,
