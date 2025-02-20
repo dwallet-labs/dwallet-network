@@ -12,10 +12,13 @@ use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
     ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System,
-    INITIALIZE_FUNCTION_NAME, INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME,
-    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_FUNCTION_NAME, SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME,
-    VALIDATOR_CAP_STRUCT_NAME,
+    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, INITIALIZE_FUNCTION_NAME,
+    INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
@@ -762,8 +765,8 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
         ika_system_package_id,
-        ident_str!("class_groups_public_key_and_proof").into(),
-        ident_str!("empty").into(),
+        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
+        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
         vec![],
         vec![],
     )?;
@@ -856,8 +859,8 @@ async fn create_class_groups_public_key_and_proof_object(
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
         ika_system_package_id,
-        ident_str!("class_groups_public_key_and_proof").into(),
-        ident_str!("finish").into(),
+        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
+        FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
         vec![],
         vec![CallArg::Object(ObjectArg::ImmOrOwnedObject(
             builder_object_ref,
@@ -919,8 +922,8 @@ async fn add_public_keys_and_proofs_with_rng(
             first_ptb.pure(bcs::to_bytes(&pubkey_and_proof[10_000..])?)?;
         first_ptb.programmable_move_call(
             ika_system_package_id,
-            ident_str!("class_groups_public_key_and_proof").into(),
-            ident_str!("add_public_key_and_proof").into(),
+            CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
+            ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
             vec![],
             vec![
                 proof_builder,

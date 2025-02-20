@@ -54,8 +54,8 @@ use sui_types::{
 use tokio::sync::OnceCell;
 use tracing::{error, warn};
 
+pub mod ika_validator_transactions;
 pub mod metrics;
-pub mod temp_file_name;
 
 #[macro_export]
 macro_rules! retry_with_max_elapsed_time {

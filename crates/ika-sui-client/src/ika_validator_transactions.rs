@@ -4,6 +4,10 @@ use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::sui::{
     ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder,
+    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use move_core_types::ident_str;
@@ -23,6 +27,7 @@ use sui_types::transaction::{
     Argument, CallArg, ObjectArg, SenderSignedData, Transaction, TransactionKind,
 };
 
+/// Create a ClassGroupsPublicKeyAndProofBuilder object
 async fn create_class_groups_public_key_and_proof_builder_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
@@ -32,8 +37,8 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
         ika_system_package_id,
-        ident_str!("class_groups_public_key_and_proof").into(),
-        ident_str!("empty").into(),
+        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
+        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
         vec![],
         vec![],
     )?;
@@ -71,6 +76,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     Ok(builder_ref)
 }
 
+/// Create a ClassGroupsPublicKeyAndProof object, using the ClassGroupsPublicKeyAndProofBuilder object
 pub async fn create_class_groups_public_key_and_proof_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
@@ -93,8 +99,8 @@ pub async fn create_class_groups_public_key_and_proof_object(
         let pubkey_and_proof = bcs::to_bytes(pubkey_and_proof)?;
         ptb.move_call(
             ika_system_package_id,
-            ident_str!("class_groups_public_key_and_proof").into(),
-            ident_str!("add_public_key_and_proof").into(),
+            CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
+            ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
             vec![],
             vec![
                 CallArg::Object(ObjectArg::ImmOrOwnedObject(builder_object_ref)),
@@ -138,8 +144,8 @@ pub async fn create_class_groups_public_key_and_proof_object(
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
         ika_system_package_id,
-        ident_str!("class_groups_public_key_and_proof").into(),
-        ident_str!("finish").into(),
+        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
+        FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
         vec![],
         vec![CallArg::Object(ObjectArg::ImmOrOwnedObject(
             builder_object_ref,
@@ -178,72 +184,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
     Ok(pubkey_and_proof_obj_ref)
 }
 
-pub async fn create_sui_transaction(
-    signer: SuiAddress,
-    tx_kind: TransactionKind,
-    context: &mut WalletContext,
-) -> Result<Transaction, anyhow::Error> {
-    let gas_price = context.get_reference_gas_price().await?;
-
-    let client = context.get_client().await?;
-
-    //let gas_budget = max_gas_budget(&client).await?;
-    let gas_budget =
-        estimate_gas_budget(context, signer, tx_kind.clone(), gas_price, None, None).await?;
-
-    let tx_data = client
-        .transaction_builder()
-        .tx_data(signer, tx_kind, gas_budget, gas_price, vec![], None)
-        .await?;
-
-    let signature = context.config.keystore.sign_secure(
-        &tx_data.sender(),
-        &tx_data,
-        Intent::sui_transaction(),
-    )?;
-    let sender_signed_data = SenderSignedData::new_from_sender_signature(tx_data, signature);
-
-    let transaction = Transaction::new(sender_signed_data);
-
-    Ok(transaction)
-}
-
-pub async fn execute_sui_transaction(
-    signer: SuiAddress,
-    tx_kind: TransactionKind,
-    context: &mut WalletContext,
-) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
-    let transaction = create_sui_transaction(signer, tx_kind, context).await?;
-
-    let response = context
-        .execute_transaction_may_fail(transaction.clone())
-        .await?;
-    Ok(response)
-}
-
-pub async fn estimate_gas_budget(
-    context: &mut WalletContext,
-    signer: SuiAddress,
-    kind: TransactionKind,
-    gas_price: u64,
-    gas_payment: Option<Vec<ObjectID>>,
-    sponsor: Option<SuiAddress>,
-) -> Result<u64, anyhow::Error> {
-    let client = context.get_client().await?;
-    let SuiClientCommandResult::DryRun(dry_run) =
-        execute_dry_run(context, signer, kind, None, gas_price, gas_payment, sponsor).await?
-    else {
-        bail!("Wrong SuiClientCommandResult. Should be SuiClientCommandResult::DryRun.")
-    };
-
-    let rgp = client.read_api().get_reference_gas_price().await?;
-
-    Ok(estimate_gas_budget_from_gas_cost(
-        dry_run.effects.gas_cost_summary(),
-        rgp,
-    ))
-}
-
+/// Request to add a validator candidate transaction
 pub async fn request_add_validator_candidate(
     validator_address: SuiAddress,
     context: &mut WalletContext,
@@ -322,4 +263,70 @@ pub async fn request_add_validator_candidate(
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
     execute_sui_transaction(validator_address, tx_kind, context).await
+}
+
+async fn create_sui_transaction(
+    signer: SuiAddress,
+    tx_kind: TransactionKind,
+    context: &mut WalletContext,
+) -> Result<Transaction, anyhow::Error> {
+    let gas_price = context.get_reference_gas_price().await?;
+
+    let client = context.get_client().await?;
+
+    //let gas_budget = max_gas_budget(&client).await?;
+    let gas_budget =
+        estimate_gas_budget(context, signer, tx_kind.clone(), gas_price, None, None).await?;
+
+    let tx_data = client
+        .transaction_builder()
+        .tx_data(signer, tx_kind, gas_budget, gas_price, vec![], None)
+        .await?;
+
+    let signature = context.config.keystore.sign_secure(
+        &tx_data.sender(),
+        &tx_data,
+        Intent::sui_transaction(),
+    )?;
+    let sender_signed_data = SenderSignedData::new_from_sender_signature(tx_data, signature);
+
+    let transaction = Transaction::new(sender_signed_data);
+
+    Ok(transaction)
+}
+
+async fn execute_sui_transaction(
+    signer: SuiAddress,
+    tx_kind: TransactionKind,
+    context: &mut WalletContext,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let transaction = create_sui_transaction(signer, tx_kind, context).await?;
+
+    let response = context
+        .execute_transaction_may_fail(transaction.clone())
+        .await?;
+    Ok(response)
+}
+
+async fn estimate_gas_budget(
+    context: &mut WalletContext,
+    signer: SuiAddress,
+    kind: TransactionKind,
+    gas_price: u64,
+    gas_payment: Option<Vec<ObjectID>>,
+    sponsor: Option<SuiAddress>,
+) -> Result<u64, anyhow::Error> {
+    let client = context.get_client().await?;
+    let SuiClientCommandResult::DryRun(dry_run) =
+        execute_dry_run(context, signer, kind, None, gas_price, gas_payment, sponsor).await?
+    else {
+        bail!("Wrong SuiClientCommandResult. Should be SuiClientCommandResult::DryRun.")
+    };
+
+    let rgp = client.read_api().get_reference_gas_price().await?;
+
+    Ok(estimate_gas_budget_from_gas_cost(
+        dry_run.effects.gas_cost_summary(),
+        rgp,
+    ))
 }

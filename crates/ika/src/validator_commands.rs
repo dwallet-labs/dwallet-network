@@ -161,23 +161,24 @@ impl IkaValidatorCommand {
                 let validator_info_bytes = fs::read_to_string(file)?;
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
 
-                let class_groups_keypair_and_proof_obj_ref = ika_sui_client::temp_file_name::create_class_groups_public_key_and_proof_object(
+                let class_groups_keypair_and_proof_obj_ref = ika_sui_client::ika_validator_transactions::create_class_groups_public_key_and_proof_object(
                     context.active_address()?,
                     context,
                     config.ika_system_package_id.clone(),
                     validator_info.class_groups_public_key_and_proof.clone(),
                 ).await?;
 
-                let res = ika_sui_client::temp_file_name::request_add_validator_candidate(
-                    context.active_address()?,
-                    context,
-                    &validator_info,
-                    config.ika_system_package_id.clone(),
-                    config.system_id.clone(),
-                    init_system_shared_version.into(),
-                    class_groups_keypair_and_proof_obj_ref,
-                )
-                .await?;
+                let res =
+                    ika_sui_client::ika_validator_transactions::request_add_validator_candidate(
+                        context.active_address()?,
+                        context,
+                        &validator_info,
+                        config.ika_system_package_id.clone(),
+                        config.system_id.clone(),
+                        init_system_shared_version.into(),
+                        class_groups_keypair_and_proof_obj_ref,
+                    )
+                    .await?;
                 IkaValidatorCommandResponse::BecomeCandidate(res)
             }
         });
