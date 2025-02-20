@@ -4,7 +4,7 @@ import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm
 import { Transaction } from '@mysten/sui/transactions';
 import { delay } from 'msw';
 
-import type { Config } from './globals.js';
+import {Config, getDWalletSecpState} from './globals.js';
 import {
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
@@ -19,6 +19,8 @@ import {
 interface StartDKGFirstRoundEvent {
 	event_data: {
 		dwallet_id: string;
+		dwallet_cap_id: string;
+		dwallet_network_decryption_key_id: string;
 	};
 	session_id: string;
 }
@@ -32,7 +34,7 @@ interface WaitingForUserDWallet {
 }
 
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
-	return !!obj?.event_data?.dwallet_id && !!obj?.session_id;
+	return !!obj?.event_data?.dwallet_id && !!obj?.session_id && !!obj?.event_data?.dwallet_cap_id && !!obj?.event_data?.dwallet_network_decryption_key_id;
 }
 
 export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
@@ -57,6 +59,27 @@ export async function createDWallet(conf: Config, protocolPublicParameters: Uint
 		centralizedSecretKeyShare,
 		serializedPublicKeys,
 	});
+
+	let dWalletStateData = await getDWalletSecpState(conf);
+	const tx = new Transaction();
+	let dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
+	let dwalletCapArg = tx.object(firstRoundOutputResult.sessionID),
+
+
+// public fun request_dkg_second_round(
+// 		self: &mut DWallet2PcMpcSecp256K1,
+// 		dwallet_cap: &DWalletCap,
+// 		centralized_public_key_share_and_proof: vector<u8>,
+// 		encrypted_centralized_secret_share_and_proof: vector<u8>,
+// 		encryption_key_address: address,
+// 		user_public_output: vector<u8>,
+// 		singer_public_key: vector<u8>,
+// 		ctx: &mut TxContext
+// )
 }
 
 interface DKGFirstRoundOutputResult {
@@ -64,12 +87,14 @@ interface DKGFirstRoundOutputResult {
 	output: Uint8Array;
 }
 
+
+
 /**
  * Starts the first round of the DKG protocol to create a new dWallet.
  * The output of this function is being used to generate the input for the second round,
  * and as input for the centralized party round.
  */
-export async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult> {
+async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult> {
 	const tx = new Transaction();
 	let emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
