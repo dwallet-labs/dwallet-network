@@ -20,6 +20,7 @@ export interface Config {
 	client: SuiClient;
 	timeout: number;
 	ikaConfig: IkaConfig;
+	dWalletSeed: Uint8Array;
 }
 
 export enum MPCKeyScheme {

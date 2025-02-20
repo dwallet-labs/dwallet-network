@@ -21,11 +21,15 @@ describe('Test dWallet MPC', () => {
 			host: getFaucetHost('localnet'),
 			recipient: address,
 		});
+		const dWalletSeed = new Uint8Array(32);
+		crypto.getRandomValues(dWalletSeed);
+
 		conf = {
 			keypair,
 			client: suiClient,
 			timeout: fiveMinutes,
 			ikaConfig: require('../../../../ika_config.json'),
+			dWalletSeed
 		};
 		await delay(2000);
 	});
