@@ -1,14 +1,20 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
+import {
+	create_dkg_centralized_output,
+	encrypt_secret_share,
+} from '@dwallet-network/dwallet-mpc-wasm';
+import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 import { delay } from 'msw';
 
-import {Config, getDWalletSecpState} from './globals.js';
+import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share';
 import {
+	Config,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
 	getDwalletSecp256k1ObjID,
+	getDWalletSecpState,
 	getInitialSharedVersion,
 	isIKASystemStateInner,
 	isMoveObject,
@@ -34,7 +40,12 @@ interface WaitingForUserDWallet {
 }
 
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
-	return !!obj?.event_data?.dwallet_id && !!obj?.session_id && !!obj?.event_data?.dwallet_cap_id && !!obj?.event_data?.dwallet_network_decryption_key_id;
+	return (
+		!!obj?.event_data?.dwallet_id &&
+		!!obj?.session_id &&
+		!!obj?.event_data?.dwallet_cap_id &&
+		!!obj?.event_data?.dwallet_network_decryption_key_id
+	);
 }
 
 export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
@@ -67,27 +78,42 @@ export async function createDWallet(conf: Config, protocolPublicParameters: Uint
 		initialSharedVersion: dWalletStateData.initial_shared_version,
 		mutable: true,
 	});
-	let dwalletCapArg = tx.object(firstRoundOutputResult.sessionID),
 
+	let dwalletCapArg = tx.object(firstRoundOutputResult.dwalletCapID);
+	let centralizedPublicKeyShareAndProofArg = tx.pure(
+		bcs.vector(bcs.u8()).serialize(centralizedPublicKeyShareAndProof),
+	);
+	let classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+	const encryptedCentralizedSecretKeyShareAndProofOfEncryption = encrypt_secret_share(
+		new Uint8Array(centralizedSecretKeyShare),
+		new Uint8Array(classGroupsSecpKeyPair.encryptionKey),
+	);
 
-// public fun request_dkg_second_round(
-// 		self: &mut DWallet2PcMpcSecp256K1,
-// 		dwallet_cap: &DWalletCap,
-// 		centralized_public_key_share_and_proof: vector<u8>,
-// 		encrypted_centralized_secret_share_and_proof: vector<u8>,
-// 		encryption_key_address: address,
-// 		user_public_output: vector<u8>,
-// 		singer_public_key: vector<u8>,
-// 		ctx: &mut TxContext
-// )
+	let encryptedCentralizedSecretShareAndProofArg = tx.pure(
+		bcs.vector(bcs.u8()).serialize(encryptedCentralizedSecretKeyShareAndProofOfEncryption),
+	);
+	let encryptionKeyAddressArg = tx.pure(bcs.string().serialize(classGroupsSecpKeyPair.objectID));
+	let userPublicOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput));
+	let singerPublicKeyArg = tx.pure(
+		bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes()),
+	);
+	// public fun request_dkg_second_round(
+	// 		self: &mut DWallet2PcMpcSecp256K1,
+	// 		dwallet_cap: &DWalletCap,
+	// 		centralized_public_key_share_and_proof: vector<u8>,
+	// 		encrypted_centralized_secret_share_and_proof: vector<u8>,
+	// 		encryption_key_address: address,
+	// 		user_public_output: vector<u8>,
+	// 		singer_public_key: vector<u8>,
+	// 		ctx: &mut TxContext
+	// )
 }
 
 interface DKGFirstRoundOutputResult {
 	sessionID: string;
 	output: Uint8Array;
+	dwalletCapID: string;
 }
-
-
 
 /**
  * Starts the first round of the DKG protocol to create a new dWallet.
@@ -139,6 +165,7 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 	return {
 		sessionID: startDKGEvent.session_id,
 		output: output,
+		dwalletCapID: startDKGEvent.event_data.dwallet_cap_id,
 	};
 }
 
