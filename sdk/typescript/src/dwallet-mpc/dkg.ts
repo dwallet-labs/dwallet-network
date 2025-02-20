@@ -1,44 +1,14 @@
+;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import { Transaction } from '@mysten/sui/transactions';
 import { delay } from 'msw';
 
-import type { Config } from './globals.js';
-import {
-	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
-	DWALLET_NETWORK_VERSION,
-	MPCKeyScheme,
-	SUI_PACKAGE_ID,
-} from './globals.js';
 
-/**
- * Represents the Move `SystemInnerV1` struct.
- */
-interface IKASystemStateInner {
-	fields: {
-		value: {
-			fields: {
-				dwallet_2pc_mpc_secp256k1_id: string;
-				dwallet_network_decryption_key: {
-					fields: {
-						dwallet_network_decryption_key_id: string;
-					};
-				};
-			};
-		};
-	};
-}
 
-/**
- * Represents a Move shared object owner.
- */
-interface SharedObjectOwner {
-	Shared: {
-		// The object version when it became shared.
-		initial_shared_version: number;
-	};
-}
+import { Config, DWALLET_ECDSAK1_MOVE_MODULE_NAME, DWALLET_NETWORK_VERSION, getDwalletSecp256k1ObjID, getInitialSharedVersion, isIKASystemStateInner, isMoveObject, MPCKeyScheme, SUI_PACKAGE_ID } from './globals.js';
+
 
 interface StartDKGFirstRoundEvent {
 	event_data: {
@@ -53,10 +23,6 @@ interface WaitingForUserDWallet {
 			first_round_output: Uint8Array;
 		};
 	};
-}
-
-interface MoveObject {
-	fields: any;
 }
 
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
@@ -149,10 +115,6 @@ function isWaitingForUserDWallet(obj: any): obj is WaitingForUserDWallet {
 	return obj?.state?.fields?.first_round_output !== undefined;
 }
 
-function isMoveObject(obj: any): obj is MoveObject {
-	return obj?.fields !== undefined;
-}
-
 async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Promise<Uint8Array> {
 	const startTime = Date.now();
 
@@ -180,27 +142,6 @@ async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Prom
 	);
 }
 
-function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
-	return (
-		obj?.fields?.value?.fields?.dwallet_network_decryption_key !== undefined &&
-		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_id !== undefined
-	);
-}
-
-async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
-	const dynamicFields = await c.client.getDynamicFields({
-		parentId: c.ikaConfig.ika_system_obj_id,
-	});
-	let innerSystemState = await c.client.getDynamicFieldObject({
-		parentId: c.ikaConfig.ika_system_obj_id,
-		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
-	});
-	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
-		throw new Error('Invalid inner system state');
-	}
-	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_secp256k1_id;
-}
-
 async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	const dynamicFields = await c.client.getDynamicFields({
 		parentId: c.ikaConfig.ika_system_obj_id,
@@ -215,22 +156,4 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 
 	return innerSystemState.data.content.fields.value.fields.dwallet_network_decryption_key.fields
 		.dwallet_network_decryption_key_id;
-}
-
-function isSharedObjectOwner(obj: any): obj is SharedObjectOwner {
-	return obj?.Shared?.initial_shared_version !== undefined;
-}
-
-async function getInitialSharedVersion(c: Config, objectID: string): Promise<number> {
-	let obj = await c.client.getObject({
-		id: objectID,
-		options: {
-			showOwner: true,
-		},
-	});
-	let owner = obj.data?.owner;
-	if (!owner || !isSharedObjectOwner(owner)) {
-		throw new Error('Object is not shared');
-	}
-	return owner.Shared?.initial_shared_version;
 }
