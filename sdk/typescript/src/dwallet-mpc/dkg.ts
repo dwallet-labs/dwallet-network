@@ -97,16 +97,28 @@ export async function createDWallet(conf: Config, protocolPublicParameters: Uint
 	let singerPublicKeyArg = tx.pure(
 		bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes()),
 	);
-	// public fun request_dkg_second_round(
-	// 		self: &mut DWallet2PcMpcSecp256K1,
-	// 		dwallet_cap: &DWalletCap,
-	// 		centralized_public_key_share_and_proof: vector<u8>,
-	// 		encrypted_centralized_secret_share_and_proof: vector<u8>,
-	// 		encryption_key_address: address,
-	// 		user_public_output: vector<u8>,
-	// 		singer_public_key: vector<u8>,
-	// 		ctx: &mut TxContext
-	// )
+	tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dkg_second_round`,
+		arguments: [
+			dwalletStateArg,
+			dwalletCapArg,
+			centralizedPublicKeyShareAndProofArg,
+			encryptedCentralizedSecretShareAndProofArg,
+			encryptionKeyAddressArg,
+			userPublicOutputArg,
+			singerPublicKeyArg,
+			tx.gas,
+		],
+	});
+	let result = await conf.client.signAndExecuteTransaction({
+		signer: conf.keypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+			showEvents: true,
+		},
+	});
+	console.log({ result });
 }
 
 interface DKGFirstRoundOutputResult {
