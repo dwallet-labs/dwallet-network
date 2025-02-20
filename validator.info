@@ -6,7 +6,7 @@ protocol_public_key: mWfAKXeOGLWNRS9Ldt2Txv6Ll78bwLqTOiQyNWUfzJ7XTtBUhik/rL69LNm
 consensus_public_key: 9isOLO4sxVaFXFUZV1tIKnJBb1HlGjkxq9lwMlJ665o=
 network_public_key: BCslgsW/1K3eqw2IUYxoqNpwI50Z8BQ2wXfFMACEouo=
 network_address: /dns/127.0.0.1/tcp/8080/http
-computation_price: 100000
+computation_price: 1000
 commission_rate: 200
 p2p_address: /dns/127.0.0.1/udp/8084
 consensus_address: /dns/127.0.0.1/udp/8081
