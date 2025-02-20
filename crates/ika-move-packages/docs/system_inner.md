@@ -1986,7 +1986,7 @@ gas coins.
     <b>let</b> new_total_stake = self.validators.total_stake();
     <b>let</b> total_reward_amount_after_distribution = total_reward.value();
     <b>let</b> total_reward_distributed =
-        total_reward_amount_before_distribution - total_reward_amount_after_distribution;
+         total_reward_amount_before_distribution - total_reward_amount_after_distribution;
     // Because of precision issues with integer divisions, we expect that there will be some
     // remaining balance in `computation_reward`.
     self.computation_reward.join(total_reward);
