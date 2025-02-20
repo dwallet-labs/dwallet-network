@@ -15,7 +15,7 @@ describe('Test dWallet MPC', () => {
 	let conf: Config;
 
 	beforeEach(async () => {
-		const keypair = Ed25519Keypair.generate();
+		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x1');
 		const address = keypair.getPublicKey().toSuiAddress();
 		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
 		await requestSuiFromFaucetV1({
