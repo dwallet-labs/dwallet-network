@@ -22,9 +22,8 @@ describe('Test dWallet MPC', () => {
 			host: getFaucetHost('localnet'),
 			recipient: address,
 		});
-		// const dWalletSeed = new Uint8Array(32);
-		// crypto.getRandomValues(dWalletSeed);
-		const dWalletSeed = new Uint8Array(32).fill(8);
+		const dWalletSeed = new Uint8Array(32);
+		crypto.getRandomValues(dWalletSeed);
 
 		conf = {
 			keypair,
