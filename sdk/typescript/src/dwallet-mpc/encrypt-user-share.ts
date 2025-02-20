@@ -116,3 +116,7 @@ async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<ClassGroupsS
 		objectID: encryptionKeyCreationEvent.encryption_key_id,
 	};
 }
+
+export function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
+	return arr1.length === arr2.length && arr1.every((value, index) => value === arr2[index]);
+}
