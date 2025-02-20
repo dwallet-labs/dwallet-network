@@ -5,6 +5,7 @@ import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
 export const DWALLET_ECDSAK1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
+export const DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1_inner';
 export const DWALLET_NETWORK_VERSION = 0;
 
 export const SUI_PACKAGE_ID = '0x2';
@@ -130,4 +131,31 @@ export async function getDWalletSecpState(c: Config): Promise<SharedObjectData> 
 		object_id: dwalletSecp256k1ObjID,
 		initial_shared_version: initialSharedVersion,
 	};
+}
+
+export async function fetchObjectWithType<TObject>(
+	conf: Config,
+	objectType: string,
+	isObject: (obj: any) => obj is TObject,
+	objectId: string,
+) {
+	const res = await conf.client.getObject({
+		id: objectId,
+		options: { showContent: true },
+	});
+
+	const objectData =
+		res.data?.content?.dataType === 'moveObject' &&
+		res.data?.content.type === objectType &&
+		isObject(res.data.content.fields)
+			? (res.data.content.fields as TObject)
+			: null;
+
+	if (!objectData) {
+		throw new Error(
+			`invalid object of type ${objectType}, got: ${JSON.stringify(res.data?.content)}`,
+		);
+	}
+
+	return objectData;
 }

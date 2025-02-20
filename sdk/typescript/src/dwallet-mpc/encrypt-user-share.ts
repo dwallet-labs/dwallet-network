@@ -2,7 +2,13 @@ import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc
 import { SuiClient } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import {toHex} from "@mysten/bcs"
-import {Config, DWALLET_ECDSAK1_MOVE_MODULE_NAME, getDWalletSecpState, getInitialSharedVersion} from './globals';
+import {
+	Config, DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
+	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	fetchObjectWithType,
+	getDWalletSecpState,
+	getInitialSharedVersion
+} from './globals';
 import {Transaction} from "@mysten/sui/transactions";
 
 /**
@@ -47,6 +53,14 @@ async function getActiveEncryptionKeyObjID(conf: Config, address: string): Promi
 	return toHex(objIDArray);
 }
 
+/**
+ * A class groups Move encryption key object.
+ */
+interface EncryptionKey {
+	encryption_key: Uint8Array;
+	key_owner_address: string;
+	encryption_key_signature: Uint8Array;
+}
 
 async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<ClassGroupsSecpKeyPair> {
 	const [expectedEncryptionKey, decryptionKey] = generate_secp_cg_keypair_from_seed(
@@ -56,9 +70,11 @@ async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<ClassGroupsS
 		conf,
 		conf.keypair.toSuiAddress(),
 	);
+	const encryptionKeyMoveType = `${conf.ikaConfig.ika_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
+
 	if (activeEncryptionKeyObjID) {
 		const activeEncryptionKeyObj = await fetchObjectWithType<EncryptionKey>(
-			this.toConfig(keyPair),
+			conf,
 			encryptionKeyMoveType,
 			isEncryptionKey,
 			activeEncryptionKeyObjID,
