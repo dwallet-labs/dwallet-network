@@ -218,7 +218,7 @@ pub enum IkaError {
     #[error("Sui Client internal error")]
     SuiClientInternalError(String),
 
-    #[error("Sui Client sui transaction failure due to generic error")]
+    #[error("Sui Client sui transaction failure due to generic error: {0}")]
     SuiClientTxFailureGeneric(String),
 
     // Sui Connector
@@ -231,6 +231,9 @@ pub enum IkaError {
     // This is a string because the encapsulating error has too many derives.
     #[error("dWallet MPC Error: {0}")]
     DwalletMPCError(String),
+
+    #[error("BCS serialization error: {0}")]
+    BCSError(String),
 }
 
 pub type IkaResult<T = ()> = Result<T, IkaError>;

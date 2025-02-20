@@ -130,7 +130,7 @@ DWallet2PcMpcSecp256K1InnerV1
 DWalletCap
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-DWalletNetworkrkDecryptionKeyCap
+DWalletNetworkDecryptionKeyCap
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 DWalletNetworkDecryptionKey
@@ -397,27 +397,6 @@ inner_mut
 inner
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1
-ExtendedField
-	public struct
-	0x0::extended_field
-Key
-	public struct
-	0x0::extended_field
-new
-	public fun
-	0x0::extended_field
-borrow
-	public fun
-	0x0::extended_field
-borrow_mut
-	public fun
-	0x0::extended_field
-swap
-	public fun
-	0x0::extended_field
-destroy
-	public fun
-	0x0::extended_field
 ValidatorCap
 	public struct
 	0x0::validator_cap

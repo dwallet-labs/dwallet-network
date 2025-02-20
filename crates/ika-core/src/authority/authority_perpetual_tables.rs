@@ -2,19 +2,14 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::*;
-use serde::{Deserialize, Serialize};
 use std::path::Path;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::Identifier;
-use typed_store::metrics::SamplingInterval;
-use typed_store::rocks::util::{empty_compaction_filter, reference_count_merge_operator};
-use typed_store::rocks::{
-    default_db_options, read_size_from_env, DBBatch, DBMap, DBMapTableConfigMap, DBOptions,
-    MetricConf,
-};
+use typed_store::rocks::{DBBatch, DBMap, MetricConf};
 use typed_store::traits::{Map, TableSummary, TypedStoreDebug};
 
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
+use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use typed_store::rocksdb::Options;
 use typed_store::DBMapUtils;
 
@@ -28,7 +23,7 @@ pub struct AuthorityPerpetualTables {
     pub(crate) pruned_checkpoint: DBMap<(), CheckpointSequenceNumber>,
 
     /// pending events from sui received but not yet executed
-    pub(crate) pending_events: DBMap<EventID, SuiEvent>,
+    pending_events: DBMap<EventID, Vec<u8>>,
 
     /// module identifier to the last processed EventID
     pub(crate) sui_syncer_cursors: DBMap<Identifier, EventID>,
@@ -42,8 +37,7 @@ impl AuthorityPerpetualTables {
     pub fn open(parent_path: &Path, db_options: Option<Options>) -> Self {
         Self::open_tables_read_write(
             Self::path(parent_path),
-            MetricConf::new("perpetual")
-                .with_sampling(SamplingInterval::new(Duration::from_secs(60), 0)),
+            MetricConf::new("perpetual"),
             db_options,
             None,
         )
@@ -99,9 +93,21 @@ impl AuthorityPerpetualTables {
         if let Some(cursor) = cursor {
             let mut batch = self.pending_events.batch();
             batch.insert_batch(&self.sui_syncer_cursors, [(module, cursor)])?;
-            batch.insert_batch(&self.pending_events, events.iter().map(|e| (e.id, e)))?;
+            let serialized_events: IkaResult<Vec<(EventID, Vec<u8>)>> = events
+                .iter()
+                .map(|e| {
+                    let serialized_event = bcs::to_bytes(&DBSuiEvent {
+                        type_: e.type_.clone(),
+                        contents: e.bcs.clone().into_bytes(),
+                    })
+                    .map_err(|e| IkaError::BCSError(e.to_string()))?;
+                    Ok((e.id, serialized_event))
+                })
+                .collect();
+            batch.insert_batch(&self.pending_events, serialized_events?)?;
             batch.write()?;
         }
+        self.pending_events.rocksdb.flush()?;
         Ok(())
     }
 
@@ -112,7 +118,7 @@ impl AuthorityPerpetualTables {
         Ok(())
     }
 
-    pub fn get_all_pending_events(&self) -> HashMap<EventID, SuiEvent> {
+    pub fn get_all_pending_events(&self) -> HashMap<EventID, Vec<u8>> {
         self.pending_events.unbounded_iter().collect()
     }
 

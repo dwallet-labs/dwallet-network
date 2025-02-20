@@ -38,13 +38,14 @@ use sui_sdk::rpc_types::{ObjectChange, SuiObjectDataOptions, SuiTransactionBlock
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::SuiClient;
 
+use crate::validator_commands::IkaValidatorCommand;
 use ika_move_packages::IkaMovePackage;
 use ika_swarm::memory::Swarm;
 use ika_swarm_config::network_config::NetworkConfig;
 use ika_swarm_config::network_config_builder::ConfigBuilder;
 use ika_swarm_config::node_config_builder::FullnodeConfigBuilder;
 use ika_swarm_config::validator_initialization_config::{
-    ValidatorInitializationConfig, ValidatorInitializationMetadata, DEFAULT_NUMBER_OF_AUTHORITIES,
+    ValidatorInitializationConfig, DEFAULT_NUMBER_OF_AUTHORITIES,
 };
 use ika_types::governance::{
     MIN_VALIDATOR_JOINING_STAKE_NIKA, VALIDATOR_LOW_STAKE_GRACE_PERIOD,
@@ -142,6 +143,21 @@ pub enum IkaCommand {
         #[clap(short, long, help = "Dump the public keys of all authorities")]
         dump_addresses: bool,
     },
+
+    /// A tool for validators and validator candidates.
+    #[clap(name = "validator")]
+    Validator {
+        /// Sets the file storing the state of our user accounts (an empty one will be created if missing)
+        #[clap(long = "client.config")]
+        config: Option<PathBuf>,
+        #[clap(subcommand)]
+        cmd: Option<IkaValidatorCommand>,
+        /// Return command outputs in json format.
+        #[clap(long, global = true)]
+        json: bool,
+        #[clap(short = 'y', long = "yes")]
+        accept_defaults: bool,
+    },
 }
 
 impl IkaCommand {
@@ -198,6 +214,30 @@ impl IkaCommand {
                 )
                 .await?;
 
+                Ok(())
+            }
+            IkaCommand::Validator {
+                config,
+                cmd,
+                json,
+                accept_defaults,
+            } => {
+                let config_path = config.unwrap_or(sui_config_dir()?.join(SUI_CLIENT_CONFIG));
+                // prompt_if_no_config(&config_path, accept_defaults).await?;
+                let mut context = WalletContext::new(&config_path, None, None)?;
+                if let Some(cmd) = cmd {
+                    if let Ok(client) = context.get_client().await {
+                        if let Err(e) = client.check_api_version() {
+                            eprintln!("{}", format!("[warning] {e}").yellow().bold());
+                        }
+                    }
+                    cmd.execute(&mut context).await?.print(!json);
+                } else {
+                    // Print help
+                    let mut app: Command = IkaCommand::command();
+                    app.build();
+                    app.find_subcommand_mut("validator").unwrap().print_help()?;
+                }
                 Ok(())
             }
         }

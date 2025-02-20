@@ -32,6 +32,14 @@ pub struct ClassGroupsKeyPairAndProof {
     encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
 }
 
+/// Contains the public keys of the DWallet.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
+pub struct DWalletPublicKeys {
+    pub centralized_public_share: Vec<u8>,
+    pub decentralized_public_share: Vec<u8>,
+    pub public_key: Vec<u8>,
+}
+
 impl ClassGroupsKeyPairAndProof {
     pub fn new(
         decryption_key: ClassGroupsDecryptionKey,
@@ -98,20 +106,13 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + 
 /// Reads a class group key pair and proof (encoded in Base64) from a file.
 pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
     path: P,
-) -> DwalletMPCResult<ClassGroupsKeyPairAndProof> {
+) -> DwalletMPCResult<Box<ClassGroupsKeyPairAndProof>> {
     let contents = std::fs::read_to_string(path)
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
     let decoded = Base64::decode(contents.as_str())
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
-    Ok(bcs::from_bytes(&decoded)?)
-}
-
-/// Contains the public keys of the DWallet.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
-pub struct DWalletPublicKeys {
-    pub centralized_public_share: Vec<u8>,
-    pub decentralized_public_share: Vec<u8>,
-    pub public_key: Vec<u8>,
+    let keypair: Box<ClassGroupsKeyPairAndProof> = Box::new(bcs::from_bytes(&decoded)?);
+    Ok(keypair)
 }
 
 /// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].

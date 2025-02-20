@@ -321,7 +321,7 @@ Uses SystemParametersV1 as the parameters.
 <dd>
 </dd>
 <dt>
-<code>dwallet_network_decryption_key: <a href="../../std/option.md#std_option_Option">std::option::Option</a>&lt;(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletNetworkrkDecryptionKeyCap">dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkrkDecryptionKeyCap</a>&gt;</code>
+<code>dwallet_network_decryption_key: <a href="../../std/option.md#std_option_Option">std::option::Option</a>&lt;(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletNetworkDecryptionKeyCap">dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKeyCap</a>&gt;</code>
 </dt>
 <dd>
 </dd>

@@ -5,13 +5,13 @@ use std::net::{IpAddr, SocketAddr};
 
 use dwallet_classgroups_types::{
     generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
-    ClassGroupsPublicKeyAndProofBytes,
 };
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_config::local_ip_utils;
+use ika_config::validator_info::ValidatorInfo;
 use ika_types::crypto::{
     generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,
-    AuthorityPublicKeyBytes, AuthoritySignature, NetworkKeyPair, NetworkPublicKey,
+    AuthorityPublicKeyBytes, NetworkKeyPair, NetworkPublicKey,
 };
 use ika_types::sui::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_COMPUTATION_PRICE};
 use serde::{Deserialize, Serialize};
@@ -25,7 +25,7 @@ pub const DEFAULT_NUMBER_OF_AUTHORITIES: usize = 4;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ValidatorInitializationConfig {
     pub name: Option<String>,
-    pub class_groups_key_pair_and_proof: ClassGroupsKeyPairAndProof,
+    pub class_groups_key_pair_and_proof: Box<ClassGroupsKeyPairAndProof>,
     #[serde(default = "default_bls12381_key_pair")]
     pub key_pair: AuthorityKeyPair,
     #[serde(default = "default_ed25519_key_pair")]
@@ -47,7 +47,7 @@ pub struct ValidatorInitializationConfig {
 }
 
 impl ValidatorInitializationConfig {
-    pub fn to_validator_initialization_metadata(&self) -> ValidatorInitializationMetadata {
+    pub fn to_validator_info(&self) -> ValidatorInfo {
         let name = self.name.clone().unwrap_or("".to_string());
         let class_groups_public_key_and_proof = self.class_groups_key_pair_and_proof.public_bytes();
         let protocol_public_key: AuthorityPublicKeyBytes = self.key_pair.public().into();
@@ -57,7 +57,7 @@ impl ValidatorInitializationConfig {
         let network_address = self.network_address.clone();
         let consensus_address = self.consensus_address.clone();
 
-        ValidatorInitializationMetadata {
+        ValidatorInfo {
             name,
             class_groups_public_key_and_proof,
             protocol_public_key,
@@ -80,59 +80,11 @@ impl ValidatorInitializationConfig {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ValidatorInitializationMetadata {
-    pub name: String,
-    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
-    pub account_address: SuiAddress,
-    pub protocol_public_key: AuthorityPublicKeyBytes,
-    pub consensus_public_key: NetworkPublicKey,
-    pub network_public_key: NetworkPublicKey,
-    pub network_address: Multiaddr,
-    pub computation_price: u64,
-    pub commission_rate: u16,
-    pub p2p_address: Multiaddr,
-    pub consensus_address: Multiaddr,
-    pub description: String,
-    pub image_url: String,
-    pub project_url: String,
-    pub proof_of_possession: AuthoritySignature,
-}
-
-impl ValidatorInitializationMetadata {
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn sui_address(&self) -> SuiAddress {
-        self.account_address
-    }
-
-    pub fn protocol_public_key(&self) -> AuthorityPublicKeyBytes {
-        self.protocol_public_key
-    }
-
-    pub fn worker_public_key(&self) -> &NetworkPublicKey {
-        &self.consensus_public_key
-    }
-
-    pub fn network_public_key(&self) -> &NetworkPublicKey {
-        &self.network_public_key
-    }
-
-    pub fn network_address(&self) -> &Multiaddr {
-        &self.network_address
-    }
-    pub fn proof_of_possession(&self) -> &AuthoritySignature {
-        &self.proof_of_possession
-    }
-}
-
 #[derive(Default)]
 pub struct ValidatorInitializationConfigBuilder {
     protocol_key_pair: Option<AuthorityKeyPair>,
     account_key_pair: Option<AccountKeyPair>,
-    class_groups_key_pair_and_proof: Option<ClassGroupsKeyPairAndProof>,
+    class_groups_key_pair_and_proof: Option<Box<ClassGroupsKeyPairAndProof>>,
     ip: Option<String>,
     computation_price: Option<u64>,
     /// If set, the validator will use deterministic addresses based on the port offset.
@@ -159,7 +111,7 @@ impl ValidatorInitializationConfigBuilder {
 
     pub fn with_class_groups_key_pair_and_proof(
         mut self,
-        key_pair: ClassGroupsKeyPairAndProof,
+        key_pair: Box<ClassGroupsKeyPairAndProof>,
     ) -> Self {
         self.class_groups_key_pair_and_proof = Some(key_pair);
         self
@@ -205,7 +157,7 @@ impl ValidatorInitializationConfigBuilder {
             .class_groups_key_pair_and_proof
             .clone()
             .unwrap_or_else(|| {
-                generate_class_groups_keypair_and_proof_from_seed(
+                Box::new(generate_class_groups_keypair_and_proof_from_seed(
                     protocol_key_pair
                         .copy()
                         .private()
@@ -213,7 +165,7 @@ impl ValidatorInitializationConfigBuilder {
                         .try_into()
                         // Safe to unwrap because the key is 32 bytes.
                         .unwrap(),
-                )
+                ))
             });
 
         let (worker_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =

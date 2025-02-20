@@ -8,7 +8,7 @@ use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
 use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
     Self,
     DWallet2PcMpcSecp256K1InnerV1,
-    DWalletNetworkrkDecryptionKeyCap,
+    DWalletNetworkDecryptionKeyCap,
     EncryptionKey,
     DWalletCap,
     MessageApproval,
@@ -40,7 +40,7 @@ public(package) fun create(
     active_committee: Committee,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
-): (ID, DWalletNetworkrkDecryptionKeyCap) {
+): (ID, DWalletNetworkDecryptionKeyCap) {
     let mut dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1_inner::create(
         epoch,
         active_committee,
@@ -65,7 +65,7 @@ public(package) fun set_active_committee(
     self: &mut DWallet2PcMpcSecp256K1,
     committee: Committee,
 ) {
-    self.set_active_committee(committee);
+    self.inner_mut().set_active_committee(committee);
 }
 
 public fun get_active_encryption_key(
@@ -260,6 +260,7 @@ public fun compare_ecdsa_partial_user_signatures_with_approvals(
     )
 }
 
+#[allow(unused_function)]
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWallet2PcMpcSecp256K1,
     signature: vector<u8>,

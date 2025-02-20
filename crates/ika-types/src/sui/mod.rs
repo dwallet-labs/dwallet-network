@@ -13,6 +13,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use sui_types::base_types::ObjectID;
+use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::{
     get_dynamic_field_from_store, get_dynamic_field_object_from_store, Field,
 };
@@ -103,6 +104,7 @@ pub trait SystemInnerTrait {
     fn last_processed_checkpoint_sequence_number(&self) -> Option<u64>;
     fn previous_epoch_last_checkpoint_sequence_number(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
+    fn get_dwallet_state_obj_id(&self) -> Option<ObjectID>;
     // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata;
     // fn into_epoch_start_state(self) -> EpochStartSystemState;
 }
@@ -169,10 +171,12 @@ pub struct Validator {
     pub inner: Versioned,
 }
 
+/// Rust representation of the Move ika::class_groups::ClassGroupsPublicKeyAndProofBuilder type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ClassGroupsPublicKeyAndProofBuilder;
 
 impl ClassGroupsPublicKeyAndProofBuilder {
+    /// Return the Move struct tag for this type
     pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {
             address: ika_system_package_address,
@@ -183,10 +187,15 @@ impl ClassGroupsPublicKeyAndProofBuilder {
     }
 }
 
+/// Rust version of the Move ika::class_groups::ClassGroupsPublicKeyAndProof type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct ClassGroupsPublicKeyAndProof;
+pub struct ClassGroupsPublicKeyAndProof {
+    pub id: ObjectID,
+    pub public_keys_and_proofs: TableVec,
+}
 
 impl ClassGroupsPublicKeyAndProof {
+    /// Return the Move struct tag for this type
     pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {
             address: ika_system_package_address,
