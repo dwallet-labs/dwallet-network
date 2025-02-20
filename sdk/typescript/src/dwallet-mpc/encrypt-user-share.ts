@@ -1,7 +1,7 @@
 import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
 import { SuiClient } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-
+import {toHex} from "@mysten/bcs"
 import {Config, DWALLET_ECDSAK1_MOVE_MODULE_NAME, getDWalletSecpState, getInitialSharedVersion} from './globals';
 import {Transaction} from "@mysten/sui/transactions";
 
@@ -38,13 +38,13 @@ async function getActiveEncryptionKeyObjID(conf: Config, address: string): Promi
 	// https://github.com/dwallet-labs/dwallet-network/blob/29929ded135f05578b6ce33b52e6ff5e894d0487/sdk/deepbook-v3/src/client.ts#L84
 	// in late 2024 (can be seen with git blame).
 	// Note that regular `getObject()` is not working because of dynamic fields.
-	const res = await this.client.devInspectTransactionBlock({
+	const res = await conf.client.devInspectTransactionBlock({
 		sender: address,
 		transactionBlock: tx,
 	});
 
 	const objIDArray = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0) as number[]);
-	return toHEX(objIDArray);
+	return toHex(objIDArray);
 }
 
 
