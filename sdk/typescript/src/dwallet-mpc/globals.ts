@@ -134,3 +134,17 @@ export async function getInitialSharedVersion(c: Config, objectID: string): Prom
 	}
 	return owner.Shared?.initial_shared_version;
 }
+
+interface SharedObjectData {
+	object_id: string;
+	initial_shared_version: number;
+}
+
+export async function getDWalletSecpState(c: Config): Promise<SharedObjectData> {
+	const dwalletSecp256k1ObjID = await getDwalletSecp256k1ObjID(c);
+	const initialSharedVersion = await getInitialSharedVersion(c, dwalletSecp256k1ObjID);
+	return {
+		object_id: dwalletSecp256k1ObjID,
+		initial_shared_version: initialSharedVersion,
+	};
+}
