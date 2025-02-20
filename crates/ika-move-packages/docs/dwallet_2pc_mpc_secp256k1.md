@@ -223,7 +223,7 @@ This function will be called only once in init.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_get_active_encryption_key">get_active_encryption_key</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWallet2PcMpcSecp256K1">dwallet_2pc_mpc_secp256k1::DWallet2PcMpcSecp256K1</a>, <b>address</b>: <b>address</b>): &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EncryptionKey">dwallet_2pc_mpc_secp256k1_inner::EncryptionKey</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_get_active_encryption_key">get_active_encryption_key</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWallet2PcMpcSecp256K1">dwallet_2pc_mpc_secp256k1::DWallet2PcMpcSecp256K1</a>, <b>address</b>: <b>address</b>): <a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>
 </code></pre>
 
 
@@ -235,7 +235,7 @@ This function will be called only once in init.
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_get_active_encryption_key">get_active_encryption_key</a>(
     self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWallet2PcMpcSecp256K1">DWallet2PcMpcSecp256K1</a>,
     <b>address</b>: <b>address</b>,
-): &EncryptionKey {
+): ID {
     self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner">inner</a>().<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_get_active_encryption_key">get_active_encryption_key</a>(<b>address</b>)
 }
 </code></pre>
