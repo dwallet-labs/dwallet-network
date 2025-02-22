@@ -50,7 +50,14 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 
 export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
 	let firstRoundOutputResult = await launchDKGFirstRound(conf);
-	console.log('First round output:', firstRoundOutputResult);
+	return await launchDKGSecondRound(conf, firstRoundOutputResult, protocolPublicParameters);
+}
+
+async function launchDKGSecondRound(
+	conf: Config,
+	firstRoundOutputResult: DKGFirstRoundOutputResult,
+	protocolPublicParameters: Uint8Array,
+) {
 	const [
 		centralizedPublicKeyShareAndProof,
 		centralizedPublicOutput,
@@ -63,22 +70,6 @@ export async function createDWallet(conf: Config, protocolPublicParameters: Uint
 		// Remove the 0x prefix.
 		firstRoundOutputResult.sessionID.slice(2),
 	);
-
-	// print base64 encoding of all those values
-
-	console.log(
-		'centralizedPublicKeyShareAndProof:',
-		Buffer.from(centralizedPublicKeyShareAndProof).toString('base64'),
-	);
-	console.log('centralizedPublicOutput:', Buffer.from(centralizedPublicOutput).toString('base64'));
-	console.log(
-		'centralizedSecretKeyShare:',
-		Buffer.from(centralizedSecretKeyShare).toString('base64'),
-	);
-	console.log('serializedPublicKeys:', Buffer.from(serializedPublicKeys).toString('base64'));
-	console.log('sessionID:', firstRoundOutputResult.sessionID);
-	console.log('dwalletCapID:', firstRoundOutputResult.dwalletCapID);
-	console.log('first round output:', Buffer.from(firstRoundOutputResult.output).toString('base64'));
 
 	let dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
@@ -94,8 +85,8 @@ export async function createDWallet(conf: Config, protocolPublicParameters: Uint
 	);
 	let classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	const encryptedCentralizedSecretKeyShareAndProofOfEncryption = encrypt_secret_share(
-		new Uint8Array(centralizedSecretKeyShare),
-		new Uint8Array(classGroupsSecpKeyPair.encryptionKey),
+		centralizedSecretKeyShare,
+		classGroupsSecpKeyPair.encryptionKey,
 	);
 
 	let encryptedCentralizedSecretShareAndProofArg = tx.pure(
