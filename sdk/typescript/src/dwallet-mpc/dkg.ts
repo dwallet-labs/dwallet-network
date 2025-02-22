@@ -53,7 +53,7 @@ export async function createDWallet(conf: Config, protocolPublicParameters: Uint
 	return await launchDKGSecondRound(conf, firstRoundOutputResult, protocolPublicParameters);
 }
 
-async function launchDKGSecondRound(
+export async function launchDKGSecondRound(
 	conf: Config,
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	protocolPublicParameters: Uint8Array,
