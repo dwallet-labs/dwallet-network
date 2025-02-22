@@ -17,10 +17,10 @@ homomorphic_encryption.workspace = true
 class_groups.workspace = true
 dwallet-classgroups-types.workspace = true
 schemars.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "pera-network-dkg" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "ika" }
 class_groups_constants = { path = "../class-groups-constants" }
 rand_core = "0.6.4"
-crypto-bigint = { version = "0.5.5", features = ["rand_core", "serde"], default-features = false }
+crypto-bigint = { workspace = true, features = ["rand_core", "serde"], default-features = false }
 dwallet-mpc-types.workspace = true
 anyhow = { workspace = true, features = ["backtrace"] }
 arc-swap.workspace = true

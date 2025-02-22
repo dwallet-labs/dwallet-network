@@ -22,13 +22,17 @@ use k256::elliptic_curve::bigint::{Encoding, Uint};
 use k256::elliptic_curve::ops::Reduce;
 use k256::{elliptic_curve, U256};
 use mpc::two_party::Round;
+use mpc::Party;
 use rand_core::{OsRng, SeedableRng};
+use sha3::digest::FixedOutput as Sha3FixedOutput;
+use sha3::Digest as Sha3Digest;
 use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
 use serde::{Deserialize, Serialize};
+use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -39,8 +43,6 @@ type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentr
 pub type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
 type EncryptionOfSecretKeyShareAndPublicKeyShare =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareAndPublicKeyShare;
-pub type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
-<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart;
 
 /// Contains the public keys of the DWallet.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
@@ -122,7 +124,7 @@ pub fn create_dkg_output(
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
 ) -> anyhow::Result<CentralizedDKGWasmResult> {
-    let decentralized_first_round_public_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
+    let (decentralized_first_round_public_output, _): <<AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty as Party>::PublicOutput =
         bcs::from_bytes(&decentralized_first_round_public_output)
             .context("Failed to deserialize decentralized first round output")?;
     let public_parameters = bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
@@ -229,7 +231,6 @@ pub fn advance_centralized_sign_party(
                             protocol_public_parameters.clone(),
                             key_scheme,
                         )?)?,
-                        session_id,
                     ),
                 );
 
@@ -406,7 +407,9 @@ pub fn decrypt_user_share_inner(
         .decrypt(&ciphertext, &public_parameters).into() else {
         return Err(anyhow!("Decryption failed"));
     };
-    let secret_share_bytes = U256::from(&plaintext.value()).to_be_bytes().to_vec();
+    let secret_share_bytes = crypto_bigint::U256::from(&plaintext.value())
+        .to_be_bytes()
+        .to_vec();
     Ok(secret_share_bytes)
 }
 
@@ -419,7 +422,11 @@ fn cg_secp256k1_public_key_share_from_secret_share(
         group::secp256k1::group_element::GroupElement::generator_from_public_parameters(
             &public_parameters,
         )?;
-    Ok(generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(&secret_key_share)))
+    Ok(
+        generator_group_element.scale(&crypto_bigint::Uint::<{ SCALAR_LIMBS }>::from_be_slice(
+            &secret_key_share,
+        )),
+    )
 }
 
 /// Derives [`DWalletPublicKeys`] from the given dwallet DKG output.

@@ -122,7 +122,7 @@ impl DWalletMPCOutputsVerifier {
             )?);
         Ok(epoch_store
             .get_weighted_threshold_access_structure()?
-            .authorized_subset(&self.voted_to_lock_committee)
+            .is_authorized_subset(&self.voted_to_lock_committee)
             .is_ok())
     }
 
@@ -211,7 +211,7 @@ impl DWalletMPCOutputsVerifier {
                     .map(|voter| authority_name_to_party_id(voter, &epoch_store).unwrap())
                     .collect();
                 weighted_threshold_access_structure
-                    .authorized_subset(&voters_ids)
+                    .is_authorized_subset(&voters_ids)
                     .is_ok()
             });
 
