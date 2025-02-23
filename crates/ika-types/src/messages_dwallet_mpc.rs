@@ -371,9 +371,9 @@ impl DWalletMPCEventTrait for StartDKGSecondRoundEvent {
     /// and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_package_id,
+            address: *packages_config.ika_system_package_id,
             name: START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
