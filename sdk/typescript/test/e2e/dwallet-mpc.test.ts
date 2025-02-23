@@ -7,10 +7,10 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
 import {
+	createDKGFirstRoundOutputMock,
 	createDWallet,
 	dkgSecondRoundMoveCall,
 	launchDKGSecondRound,
-	createDKGFirstRoundOutputMock,
 } from '../../src/dwallet-mpc/dkg';
 import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
@@ -54,22 +54,8 @@ describe('Test dWallet MPC', () => {
 		await createDWallet(conf, mockedProtocolPublicParameters);
 	});
 
-	it('should run DKG second round', async () => {
-		await launchDKGSecondRound(
-			conf,
-			{
-				sessionID: dkgFirstRoundMock.sessionID,
-				dwalletCapID: dkgFirstRoundMock.dwalletCapID,
-				output: Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
-			},
-			mockedProtocolPublicParameters,
-			Buffer.from(dkgFirstRoundMock.encryptedSecretShareAndProof, 'base64'),
-		);
-	});
-
-	it('should run DKG second round move call', async () => {
+	it('should run the DKG second round', async () => {
 		let dwalletState = await getDWalletSecpState(conf);
-		let keypair = await getOrCreateClassGroupsKeyPair(conf);
 		let event = await createDKGFirstRoundOutputMock(
 			conf,
 			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
@@ -85,21 +71,7 @@ describe('Test dWallet MPC', () => {
 			},
 			Buffer.from(dkgFirstRoundMock.centralizedPublicKeyShareAndProof, 'base64'),
 			Buffer.from(dkgFirstRoundMock.encryptedSecretShareAndProof, 'base64'),
-			keypair,
 			Buffer.from(dkgFirstRoundMock.centralizedPublicOutput, 'base64'),
 		);
-	});
-
-	it('should get or create an encryption key', async () => {
-		let classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
-		console.log({ classGroupsSecpKeyPair });
-	});
-
-	it('should mock dkg first round', async () => {
-		let event = await createDKGFirstRoundOutputMock(
-			conf,
-			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
-		);
-		console.log({ event });
 	});
 });
