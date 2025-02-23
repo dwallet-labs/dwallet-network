@@ -66,17 +66,14 @@ export async function launchDKGSecondRound(
 	protocolPublicParameters: Uint8Array,
 	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
 ) {
-	const [
-		centralizedPublicKeyShareAndProof,
-		centralizedPublicOutput,
-		centralizedSecretKeyShare,
-	] = create_dkg_centralized_output(
-		protocolPublicParameters,
-		MPCKeyScheme.Secp256k1,
-		Uint8Array.from(firstRoundOutputResult.output),
-		// Remove the 0x prefix.
-		firstRoundOutputResult.sessionID.slice(2),
-	);
+	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
+		create_dkg_centralized_output(
+			protocolPublicParameters,
+			MPCKeyScheme.Secp256k1,
+			Uint8Array.from(firstRoundOutputResult.output),
+			// Remove the 0x prefix.
+			firstRoundOutputResult.sessionID.slice(2),
+		);
 	let dWalletStateData = await getDWalletSecpState(conf);
 
 	// TODO (#672): Fix the encrypt_secret_share wasm function.
@@ -95,7 +92,10 @@ export async function launchDKGSecondRound(
 	);
 }
 
-export async function runDkgFirstRoundMock(
+/**
+ * Creates a valid mock output of the first DKG blockchain round.
+ */
+export async function createDKGFirstRoundOutputMock(
 	conf: Config,
 	mockOutput: Uint8Array,
 ): Promise<StartDKGFirstRoundEvent> {

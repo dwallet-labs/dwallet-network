@@ -10,7 +10,7 @@ import {
 	createDWallet,
 	dkgSecondRoundMoveCall,
 	launchDKGSecondRound,
-	runDkgFirstRoundMock,
+	createDKGFirstRoundOutputMock,
 } from '../../src/dwallet-mpc/dkg';
 import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
@@ -70,7 +70,7 @@ describe('Test dWallet MPC', () => {
 	it('should run DKG second round move call', async () => {
 		let dwalletState = await getDWalletSecpState(conf);
 		let keypair = await getOrCreateClassGroupsKeyPair(conf);
-		let event = await runDkgFirstRoundMock(
+		let event = await createDKGFirstRoundOutputMock(
 			conf,
 			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 		);
@@ -96,7 +96,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should mock dkg first round', async () => {
-		let event = await runDkgFirstRoundMock(
+		let event = await createDKGFirstRoundOutputMock(
 			conf,
 			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 		);
