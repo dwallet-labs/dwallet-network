@@ -299,7 +299,7 @@ impl DWalletMPCSession {
                         decentralized_public_output_signature: event_data
                             .public_keys_signature
                             .clone(),
-                        encryptor_ed25519_pubkey: event_data.initiator_public_key.clone(),
+                        encryptor_ed25519_pubkey: event_data.signer_public_key.clone(),
 
                         // Fields not relevant for verification; passing empty values.
                         dwallet_id: ObjectID::new([0; 32]),

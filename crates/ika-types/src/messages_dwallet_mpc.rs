@@ -349,21 +349,13 @@ pub struct StartDKGSecondRoundEvent {
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     /// The `EncryptionKey` object used for encrypting the secret key share.
     pub encryption_key: Vec<u8>,
-    /// The unique identifier for the DKG session.
-    pub session_id: SuiAddress,
-    /// The address of the user who initiated the dWallet creation.
-    pub initiator: SuiAddress,
-    /// The session ID associated with the first DKG round.
-    pub first_round_session_id: ObjectID,
     /// The unique identifier of the `EncryptionKey` object.
     pub encryption_key_id: ObjectID,
-    /// The public output of the centralized party in the DKG process.
-    pub decentralized_public_output: Vec<u8>,
-    /// The signature for the public output of the decentralized party in the DKG process.
-    pub public_keys_signature: Vec<u8>,
+    pub encryption_key_address: SuiAddress,
+    pub user_public_output: Vec<u8>,
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
-    pub initiator_public_key: Vec<u8>,
+    pub signer_public_key: Vec<u8>,
 }
 
 impl DWalletMPCEventTrait for StartDKGSecondRoundEvent {

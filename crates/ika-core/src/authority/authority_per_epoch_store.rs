@@ -2134,7 +2134,7 @@ impl AuthorityPerEpochStore {
                     encryption_key_id: init_event_data.encryption_key_id.to_vec(),
                     pubkeys_signature: bcs::to_bytes(&init_event_data.public_keys_signature)?,
                     initiating_user_address: session_info.initiating_user_address.to_vec(),
-                    initiator_public_key: bcs::to_bytes(&init_event_data.initiator_public_key)?,
+                    initiator_public_key: bcs::to_bytes(&init_event_data.signer_public_key)?,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
