@@ -468,7 +468,7 @@ impl DWalletMPCSession {
         Ok(())
     }
 
-    pub(crate) fn check_quorum_for_next_crypto_round(&mut self) -> ReadyToAdvanceCheckResult {
+    pub(crate) fn check_quorum_for_next_crypto_round(&self) -> ReadyToAdvanceCheckResult {
         match self.status {
             MPCSessionStatus::Active => {
                 if self.pending_quorum_for_highest_round_number == 0
