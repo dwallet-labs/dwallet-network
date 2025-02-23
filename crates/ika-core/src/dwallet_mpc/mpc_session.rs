@@ -292,7 +292,6 @@ impl DWalletMPCSession {
                             .clone(),
                         encryption_key: event_data.event_data.encryption_key.clone(),
                         encryption_key_id: event_data.event_data.encryption_key_id.clone(),
-                        encryptor_ed25519_pubkey: event_data.signer_public_key.clone(),
 
                         // Fields not relevant for verification; passing empty values.
                         dwallet_id: ObjectID::new([0; 32]),

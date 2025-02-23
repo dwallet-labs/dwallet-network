@@ -112,7 +112,7 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent> =
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(dkg_second_party_session_info(
-                &deserialized_event.event_data,
+                deserialized_event,
                 if cfg!(feature = "with-network-dkg") {
                     dwallet_network_key_version.ok_or(DwalletMPCError::MissingKeyVersion)?
                 } else {

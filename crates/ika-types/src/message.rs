@@ -117,7 +117,6 @@ pub struct EncryptedUserShareOutput {
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     pub encryption_key_id: Vec<u8>,
     pub session_id: Vec<u8>,
-    pub encryptor_ed25519_pubkey: Vec<u8>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
