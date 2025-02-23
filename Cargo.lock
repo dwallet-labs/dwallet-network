@@ -2954,7 +2954,6 @@ dependencies = [
  "group 0.1.0",
  "homomorphic_encryption",
  "k256 0.14.0-pre.2",
- "maurer",
  "mpc",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
