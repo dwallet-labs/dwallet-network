@@ -169,6 +169,7 @@ export async function dkgSecondRoundMoveCall(
 	let singerPublicKeyArg = tx.pure(
 		bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes()),
 	);
+
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dkg_second_round`,
 		arguments: [
@@ -179,7 +180,6 @@ export async function dkgSecondRoundMoveCall(
 			encryptionKeyAddressArg,
 			userPublicOutputArg,
 			singerPublicKeyArg,
-			tx.gas,
 		],
 	});
 	let result = await conf.client.signAndExecuteTransaction({
