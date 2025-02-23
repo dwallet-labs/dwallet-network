@@ -981,6 +981,14 @@ public(package) fun create_first_round_dwallet_mock(
             first_round_output
         },
     });
+    event::emit(self.create_current_epoch_dwallet_event(
+        DKGFirstRoundRequestEvent {
+            dwallet_id,
+            dwallet_cap_id,
+            dwallet_network_decryption_key_id,
+        },
+        ctx,
+    ));
     dwallet_cap
 }
 

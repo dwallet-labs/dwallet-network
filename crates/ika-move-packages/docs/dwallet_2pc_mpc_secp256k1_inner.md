@@ -2887,6 +2887,14 @@ Validators call it, it's part of the blockchain logic.
             first_round_output
         },
     });
+    event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_current_epoch_dwallet_event">create_current_epoch_dwallet_event</a>(
+        <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DKGFirstRoundRequestEvent">DKGFirstRoundRequestEvent</a> {
+            dwallet_id,
+            dwallet_cap_id,
+            dwallet_network_decryption_key_id,
+        },
+        ctx,
+    ));
     dwallet_cap
 }
 </code></pre>

@@ -74,4 +74,8 @@ describe('Test dWallet MPC', () => {
 		let classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 		console.log({ classGroupsSecpKeyPair });
 	});
+
+	it('should mock dkg first round', async () => {
+		await dkgFirstRoundMock(conf);
+	});
 });
