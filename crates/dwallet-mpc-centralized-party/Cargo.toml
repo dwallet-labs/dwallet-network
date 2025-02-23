@@ -12,6 +12,7 @@ k256 = { git = "https://github.com/RustCrypto/elliptic-curves.git", tag = "k256/
 class_groups.workspace = true
 group.workspace = true
 homomorphic_encryption.workspace = true
+maurer = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "ika", subdir = "maurer" }
 dwallet-mpc-types.workspace = true
 schemars.workspace = true
 anyhow.workspace = true
