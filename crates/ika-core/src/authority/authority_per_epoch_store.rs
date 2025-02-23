@@ -2169,9 +2169,6 @@ impl AuthorityPerEpochStore {
                     encrypted_centralized_secret_share_and_proof: output,
                     encryption_key_id: init_event_data.encryption_key_id.to_vec(),
                     session_id: session_info.session_id.to_vec(),
-                    pubkeys_signature: bcs::to_bytes(
-                        &init_event_data.decentralized_public_output_signature,
-                    )?,
                     initiating_user_address: session_info.initiating_user_address.to_vec(),
                     encryptor_ed25519_pubkey: bcs::to_bytes(
                         &init_event_data.encryptor_ed25519_pubkey,

@@ -32,7 +32,7 @@ pub enum MPCProtocolInitData {
     /// The second round of the DKG protocol.
     /// Contains the data of the event that triggered the round,
     /// and the network key version of the first round.
-    DKGSecond(StartDKGSecondRoundEvent, u8),
+    DKGSecond(DWalletMPCSuiEvent<StartDKGSecondRoundEvent>, u8),
     /// This is not a real round, but an indicator the Batches Manager to
     /// register a Presign Batch session.
     /// Holds the number of messages in the batch.
@@ -216,7 +216,7 @@ pub trait DWalletMPCEventTrait {
 }
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet::DWalletMPCEvent`.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct DWalletMPCSuiEvent<E: DWalletMPCEventTrait> {
     pub epoch: u64,
     pub session_id: ObjectID,
@@ -252,9 +252,6 @@ pub struct StartEncryptedShareVerificationEvent {
     /// Encrypted centralized secret key share and the associated
     /// cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
-    /// The signature of the dWallet `decentralized_public_output`,
-    /// signed by the secret key that corresponds to `encryptor_ed25519_pubkey`.
-    pub decentralized_public_output_signature: Vec<u8>,
     /// The public output of the decentralized party,
     /// belongs to the dWallet that its centralized secret share is being encrypted.
     pub decentralized_public_output: Vec<u8>,
@@ -271,7 +268,6 @@ pub struct StartEncryptedShareVerificationEvent {
     /// and the encryption can be done with another public key, so this is NOT
     /// the public key that was used for encryption.
     pub encryptor_ed25519_pubkey: Vec<u8>,
-    pub initiator: SuiAddress,
 }
 
 impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {

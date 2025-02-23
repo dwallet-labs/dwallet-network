@@ -253,7 +253,7 @@ fn dkg_second_party_session_info(
         session_id: ObjectID::from(deserialized_event.session_id),
         initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::DKGSecond(
-            deserialized_event.event_data.clone(),
+            deserialized_event.clone(),
             dwallet_network_key_version,
         ),
     }
