@@ -84,6 +84,13 @@ export async function launchDKGSecondRound(
 		bcs.vector(bcs.u8()).serialize(centralizedPublicKeyShareAndProof),
 	);
 	let classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+
+	// log the centralized secret key share anb encryption key in base 64
+	// convert the centralized secret key share and encryption key to base64
+
+	console.log('centralizedSecretKeyShare', Buffer.from(centralizedSecretKeyShare).toString('base64'));
+	console.log('encryption key', Buffer.from(classGroupsSecpKeyPair.encryptionKey).toString('base64'));
+
 	const encryptedCentralizedSecretKeyShareAndProofOfEncryption = encrypt_secret_share(
 		centralizedSecretKeyShare,
 		classGroupsSecpKeyPair.encryptionKey,
