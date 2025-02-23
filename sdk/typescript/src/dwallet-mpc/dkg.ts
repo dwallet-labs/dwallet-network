@@ -1,6 +1,5 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { Buffer } from 'buffer';
 import {
 	create_dkg_centralized_output,
 	encrypt_secret_share,
@@ -10,9 +9,9 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.ts';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.ts';
-import { delay } from './globals';
-import type { Config, SharedObjectData } from './globals';
+import type { Config, SharedObjectData } from './globals.ts';
 import {
+	delay,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
 	getDwalletSecp256k1ObjID,
@@ -22,7 +21,7 @@ import {
 	isMoveObject,
 	MPCKeyScheme,
 	SUI_PACKAGE_ID,
-} from './globals.js';
+} from './globals.ts';
 
 interface StartDKGFirstRoundEvent {
 	event_data: {
