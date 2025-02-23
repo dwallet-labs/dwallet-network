@@ -1,14 +1,17 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Buffer } from 'buffer';
-import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
+import {
+	create_dkg_centralized_output,
+	encrypt_secret_share,
+} from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
-import { delay } from 'msw';
 
-import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
-import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import type { Config, SharedObjectData } from './globals.js';
+import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.ts';
+import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.ts';
+import { delay } from './globals';
+import type { Config, SharedObjectData } from './globals';
 import {
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
@@ -49,14 +52,20 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 
 export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
 	let firstRoundOutputResult = await launchDKGFirstRound(conf);
-	return await launchDKGSecondRound(conf, firstRoundOutputResult, protocolPublicParameters);
+	let classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+	return await launchDKGSecondRound(
+		conf,
+		firstRoundOutputResult,
+		protocolPublicParameters,
+		classGroupsSecpKeyPair,
+	);
 }
 
 export async function launchDKGSecondRound(
 	conf: Config,
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	protocolPublicParameters: Uint8Array,
-	encryptedUserShareAndProof: Uint8Array,
+	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
 ) {
 	const [
 		centralizedPublicKeyShareAndProof,
@@ -70,57 +79,22 @@ export async function launchDKGSecondRound(
 		// Remove the 0x prefix.
 		firstRoundOutputResult.sessionID.slice(2),
 	);
-
 	let dWalletStateData = await getDWalletSecpState(conf);
-	let classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
-
-	const tx = new Transaction();
-	let dwalletStateArg = tx.sharedObjectRef({
-		objectId: dWalletStateData.object_id,
-		initialSharedVersion: dWalletStateData.initial_shared_version,
-		mutable: true,
-	});
-	let dwalletCapArg = tx.object(firstRoundOutputResult.dwalletCapID);
-	let centralizedPublicKeyShareAndProofArg = tx.pure(
-		bcs.vector(bcs.u8()).serialize(centralizedPublicKeyShareAndProof),
-	);
 
 	// TODO (#672): Fix the encrypt_secret_share wasm function.
-	// const encryptedCentralizedSecretKeyShareAndProofOfEncryption = encrypt_secret_share(
-	// 	centralizedSecretKeyShare,
-	// 	classGroupsSecpKeyPair.encryptionKey,
-	// );
+	const encryptedUserShareAndProof = encrypt_secret_share(
+		centralizedSecretKeyShare,
+		classGroupsSecpKeyPair.encryptionKey,
+	);
 
-	let encryptedCentralizedSecretShareAndProofArg = tx.pure(
-		bcs.vector(bcs.u8()).serialize(encryptedUserShareAndProof),
+	await dkgSecondRoundMoveCall(
+		conf,
+		dWalletStateData,
+		firstRoundOutputResult,
+		centralizedPublicKeyShareAndProof,
+		encryptedUserShareAndProof,
+		centralizedPublicOutput,
 	);
-	let encryptionKeyAddressArg = tx.pure(bcs.string().serialize(classGroupsSecpKeyPair.objectID));
-	let userPublicOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput));
-	let singerPublicKeyArg = tx.pure(
-		bcs.vector(bcs.u8()).serialize(conf.suiClientKeypair.getPublicKey().toRawBytes()),
-	);
-	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dkg_second_round`,
-		arguments: [
-			dwalletStateArg,
-			dwalletCapArg,
-			centralizedPublicKeyShareAndProofArg,
-			encryptedCentralizedSecretShareAndProofArg,
-			encryptionKeyAddressArg,
-			userPublicOutputArg,
-			singerPublicKeyArg,
-			tx.gas,
-		],
-	});
-	let result = await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-			showEvents: true,
-		},
-	});
-	console.log({ result });
 }
 
 export async function runDkgFirstRoundMock(
@@ -164,7 +138,6 @@ export async function dkgSecondRoundMoveCall(
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	centralizedPublicKeyShareAndProof: Uint8Array,
 	encryptedUserShareAndProof: Uint8Array,
-	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
 	centralizedPublicOutput: Uint8Array,
 ) {
 	const tx = new Transaction();
@@ -177,12 +150,6 @@ export async function dkgSecondRoundMoveCall(
 	let centralizedPublicKeyShareAndProofArg = tx.pure(
 		bcs.vector(bcs.u8()).serialize(centralizedPublicKeyShareAndProof),
 	);
-
-	// const encryptedCentralizedSecretKeyShareAndProofOfEncryption = encrypt_secret_share(
-	// 	centralizedSecretKeyShare,
-	// 	classGroupsSecpKeyPair.encryptionKey,
-	// );
-
 	let encryptedCentralizedSecretShareAndProofArg = tx.pure(
 		bcs.vector(bcs.u8()).serialize(encryptedUserShareAndProof),
 	);
@@ -212,7 +179,9 @@ export async function dkgSecondRoundMoveCall(
 			showEvents: true,
 		},
 	});
-	console.log({ result });
+	if (result.errors !== undefined) {
+		throw new Error(`DKG second round failed with errors ${result.errors}`);
+	}
 }
 
 interface DKGFirstRoundOutputResult {
