@@ -960,6 +960,30 @@ public(package) fun respond_dkg_first_round_output(
     });
 }
 
+public(package) fun create_first_round_dwallet_mock(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
+): DWalletCap {
+    let id = object::new(ctx);
+    let dwallet_id = id.to_inner();
+    let dwallet_cap = DWalletCap {
+        id: object::new(ctx),
+        dwallet_id,
+    };
+    let dwallet_cap_id = object::id(&dwallet_cap);
+    self.dwallets.add(dwallet_id, DWallet {
+        id,
+        dwallet_cap_id,
+        dwallet_network_decryption_key_id,
+        encrypted_user_secret_key_shares: object_table::new(ctx),
+        ecdsa_presigns: object_table::new(ctx),
+        ecdsa_signs: object_table::new(ctx),
+        state: DWalletState::AwaitingUser {
+            first_round_output
+        },
+    });
+    dwallet_cap
+}
+
 /// Initiates the second round of the Distributed Key Generation (DKG) process
 /// and emits an event for validators to begin their participation in this round.
 ///
