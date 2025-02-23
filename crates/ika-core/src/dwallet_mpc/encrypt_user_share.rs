@@ -98,7 +98,6 @@ fn verify_centralized_secret_key_share_proof(
     )
         .into();
 
-    proof
-        .verify(&PhantomData, &language_public_parameters, vec![statement])
-        .map_err(Into::into)
+    let res = proof.verify(&PhantomData, &language_public_parameters, vec![statement]);
+    res.map_err(Into::into)
 }
