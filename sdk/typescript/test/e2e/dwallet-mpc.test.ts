@@ -81,6 +81,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should mock dkg first round', async () => {
-		await runDkgFirstRoundMock(conf, Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'));
+		let event = await runDkgFirstRoundMock(conf, Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'));
+		console.log({ event });
 	});
 });
