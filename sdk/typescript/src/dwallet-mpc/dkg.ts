@@ -196,7 +196,7 @@ export async function dkgSecondRoundMoveCall(
 	let encryptedCentralizedSecretShareAndProofArg = tx.pure(
 		bcs.vector(bcs.u8()).serialize(encryptedUserShareAndProof),
 	);
-	let encryptionKeyAddressArg = tx.pure.id(classGroupsSecpKeyPair.objectID);
+	let encryptionKeyAddressArg = tx.pure.id(conf.keypair.toSuiAddress());
 	let userPublicOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput));
 	let singerPublicKeyArg = tx.pure(
 		bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes()),
