@@ -9,7 +9,7 @@ export function hexToAscii(hex: string) {
 
 	var str = '';
 	for (var n = 0; n < hex.length; n += 2)
-		str += String.fromCharCode(parseInt(hex.substring(n, 2), 16));
+		str += String.fromCharCode(parseInt(hex.substring(n, n + 2), 16));
 
 	return str;
 }
