@@ -246,14 +246,14 @@ fn dkg_second_public_input(
 }
 
 fn dkg_second_party_session_info(
-    deserialized_event: &StartDKGSecondRoundEvent,
+    deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent>,
     dwallet_network_key_version: u8,
 ) -> SessionInfo {
     SessionInfo {
         session_id: ObjectID::from(deserialized_event.session_id),
-        initiating_user_address: deserialized_event.initiator,
+        initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::DKGSecond(
-            deserialized_event.clone(),
+            deserialized_event.event_data.clone(),
             dwallet_network_key_version,
         ),
     }

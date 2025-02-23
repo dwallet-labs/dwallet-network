@@ -89,7 +89,6 @@ pub struct DKGSecondRoundOutput {
     pub dwallet_mpc_network_decryption_key_version: Vec<u8>,
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     pub encryption_key_id: Vec<u8>,
-    pub pubkeys_signature: Vec<u8>,
     pub initiator_public_key: Vec<u8>,
 }
 

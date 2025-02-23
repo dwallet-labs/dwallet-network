@@ -2132,7 +2132,6 @@ impl AuthorityPerEpochStore {
                         &init_event_data.encrypted_centralized_secret_share_and_proof,
                     )?,
                     encryption_key_id: init_event_data.encryption_key_id.to_vec(),
-                    pubkeys_signature: bcs::to_bytes(&init_event_data.public_keys_signature)?,
                     initiating_user_address: session_info.initiating_user_address.to_vec(),
                     initiator_public_key: bcs::to_bytes(&init_event_data.signer_public_key)?,
                 });
