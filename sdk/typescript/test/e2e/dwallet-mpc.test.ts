@@ -13,7 +13,13 @@ import {
 	runDkgFirstRoundMock
 } from '../../src/dwallet-mpc/dkg';
 import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share';
-import {Config, delay, getDWalletSecpState, mockedProtocolPublicParameters} from '../../src/dwallet-mpc/globals';
+import {
+	checkpointCreationTime,
+	Config,
+	delay,
+	getDWalletSecpState,
+	mockedProtocolPublicParameters
+} from '../../src/dwallet-mpc/globals';
 import { dkgFirstRoundMock } from '../../src/dwallet-mpc/mocks';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -60,12 +66,14 @@ describe('Test dWallet MPC', () => {
 	it('should run DKG second round move call', async () => {
 		let dwalletState = await getDWalletSecpState(conf);
 		let keypair = await getOrCreateClassGroupsKeyPair(conf);
+		let event = await runDkgFirstRoundMock(conf, Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'));
+		await delay(checkpointCreationTime);
 		await dkgSecondRoundMoveCall(
 			conf,
 			dwalletState,
 			{
 				sessionID: dkgFirstRoundMock.sessionID,
-				dwalletCapID: dkgFirstRoundMock.dwalletCapID,
+				dwalletCapID: event.event_data.dwallet_cap_id,
 				output: Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 			},
 			Buffer.from(dkgFirstRoundMock.centralizedPublicKeyShareAndProof, 'base64'),
