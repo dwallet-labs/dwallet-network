@@ -145,7 +145,9 @@ async function registerEncryptionKey(
 	encryptionKey: Uint8Array,
 ): Promise<CreatedEncryptionKeyEvent> {
 	// Sign the encryption key with the key pair.
-	const encryptionKeySignature = await conf.encryptedSecretShareSigningKeypair.sign(new Uint8Array(encryptionKey));
+	const encryptionKeySignature = await conf.encryptedSecretShareSigningKeypair.sign(
+		new Uint8Array(encryptionKey),
+	);
 	const tx = new Transaction();
 
 	let dwalletState = await getDWalletSecpState(conf);
@@ -159,7 +161,11 @@ async function registerEncryptionKey(
 			}),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKeySignature)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(conf.encryptedSecretShareSigningKeypair.getPublicKey().toRawBytes())),
+			tx.pure(
+				bcs
+					.vector(bcs.u8())
+					.serialize(conf.encryptedSecretShareSigningKeypair.getPublicKey().toRawBytes()),
+			),
 		],
 	});
 	const res = await conf.client.signAndExecuteTransaction({

@@ -1,16 +1,15 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import {
-	create_dkg_centralized_output,
-	encrypt_secret_share,
-} from '@dwallet-network/dwallet-mpc-wasm';
+import { Buffer } from 'buffer';
+import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 import { delay } from 'msw';
 
-import {ClassGroupsSecpKeyPair, getOrCreateClassGroupsKeyPair} from './encrypt-user-share';
+import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
+import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
+import type { Config, SharedObjectData } from './globals.js';
 import {
-	Config,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
 	getDwalletSecp256k1ObjID,
@@ -19,7 +18,6 @@ import {
 	isIKASystemStateInner,
 	isMoveObject,
 	MPCKeyScheme,
-	SharedObjectData,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 
@@ -64,7 +62,7 @@ export async function launchDKGSecondRound(
 		centralizedPublicKeyShareAndProof,
 		centralizedPublicOutput,
 		centralizedSecretKeyShare,
-		serializedPublicKeys,
+		_serializedPublicKeys,
 	] = create_dkg_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
@@ -136,7 +134,10 @@ export async function launchDKGSecondRound(
 	console.log({ result });
 }
 
-export async function runDkgFirstRoundMock(conf: Config, mockOutput: Uint8Array): Promise<StartDKGFirstRoundEvent> {
+export async function runDkgFirstRoundMock(
+	conf: Config,
+	mockOutput: Uint8Array,
+): Promise<StartDKGFirstRoundEvent> {
 	// create_first_round_dwallet_mock(self: &mut DWallet2PcMpcSecp256K1, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext): DWalletCap
 	const tx = new Transaction();
 	let dwalletStateObjData = await getDWalletSecpState(conf);
