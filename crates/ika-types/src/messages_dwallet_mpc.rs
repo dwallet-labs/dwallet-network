@@ -338,22 +338,23 @@ impl DWalletMPCEventTrait for StartPartialSignaturesVerificationEvent<SignData> 
 /// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGSecondRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartDKGSecondRoundEvent {
-    /// The unique identifier for the DKG session.
-    pub session_id: SuiAddress,
-    /// The address of the user who initiated the dWallet creation.
-    pub initiator: SuiAddress,
+    pub dwallet_id: ObjectID,
     /// The output from the first round of the DKG process.
     pub first_round_output: Vec<u8>,
     /// A serialized vector containing the centralized public key share and its proof.
     pub centralized_public_key_share_and_proof: Vec<u8>,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ObjectID,
-    /// The session ID associated with the first DKG round.
-    pub first_round_session_id: ObjectID,
     /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     /// The `EncryptionKey` object used for encrypting the secret key share.
     pub encryption_key: Vec<u8>,
+    /// The unique identifier for the DKG session.
+    pub session_id: SuiAddress,
+    /// The address of the user who initiated the dWallet creation.
+    pub initiator: SuiAddress,
+    /// The session ID associated with the first DKG round.
+    pub first_round_session_id: ObjectID,
     /// The unique identifier of the `EncryptionKey` object.
     pub encryption_key_id: ObjectID,
     /// The public output of the centralized party in the DKG process.
