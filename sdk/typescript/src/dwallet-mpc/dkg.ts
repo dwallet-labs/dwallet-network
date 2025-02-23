@@ -147,7 +147,7 @@ export async function runDkgFirstRoundMock(conf: Config, mockOutput: Uint8Array)
 	});
 	let firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockOutput));
 	let networkDecryptionKeyID = await getNetworkDecryptionKeyID(conf);
-	let networkDecryptionKeyIDArg = tx.pure(bcs.string().serialize(networkDecryptionKeyID));
+	let networkDecryptionKeyIDArg = tx.pure.id(networkDecryptionKeyID);
 	let dwalletCap = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::create_first_round_dwallet_mock`,
 		arguments: [stateArg, firstRoundOutputArg, networkDecryptionKeyIDArg],
