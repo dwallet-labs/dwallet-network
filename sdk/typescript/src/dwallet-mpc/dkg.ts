@@ -110,7 +110,7 @@ export async function launchDKGSecondRound(
 	let encryptionKeyAddressArg = tx.pure(bcs.string().serialize(classGroupsSecpKeyPair.objectID));
 	let userPublicOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput));
 	let singerPublicKeyArg = tx.pure(
-		bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes()),
+		bcs.vector(bcs.u8()).serialize(conf.suiClientKeypair.getPublicKey().toRawBytes()),
 	);
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dkg_second_round`,
@@ -126,7 +126,7 @@ export async function launchDKGSecondRound(
 		],
 	});
 	let result = await conf.client.signAndExecuteTransaction({
-		signer: conf.keypair,
+		signer: conf.suiClientKeypair,
 		transaction: tx,
 		options: {
 			showEffects: true,
@@ -152,9 +152,9 @@ export async function runDkgFirstRoundMock(conf: Config, mockOutput: Uint8Array)
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::create_first_round_dwallet_mock`,
 		arguments: [stateArg, firstRoundOutputArg, networkDecryptionKeyIDArg],
 	});
-	tx.transferObjects([dwalletCap], conf.keypair.toSuiAddress());
+	tx.transferObjects([dwalletCap], conf.suiClientKeypair.toSuiAddress());
 	const result = await conf.client.signAndExecuteTransaction({
-		signer: conf.keypair,
+		signer: conf.suiClientKeypair,
 		transaction: tx,
 		options: {
 			showEffects: true,
@@ -196,10 +196,10 @@ export async function dkgSecondRoundMoveCall(
 	let encryptedCentralizedSecretShareAndProofArg = tx.pure(
 		bcs.vector(bcs.u8()).serialize(encryptedUserShareAndProof),
 	);
-	let encryptionKeyAddressArg = tx.pure.id(conf.keypair.toSuiAddress());
+	let encryptionKeyAddressArg = tx.pure.id(conf.encryptedSecretShareSigningKeypair.toSuiAddress());
 	let userPublicOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput));
 	let singerPublicKeyArg = tx.pure(
-		bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes()),
+		bcs.vector(bcs.u8()).serialize(conf.suiClientKeypair.getPublicKey().toRawBytes()),
 	);
 
 	tx.moveCall({
@@ -215,7 +215,7 @@ export async function dkgSecondRoundMoveCall(
 		],
 	});
 	let result = await conf.client.signAndExecuteTransaction({
-		signer: conf.keypair,
+		signer: conf.suiClientKeypair,
 		transaction: tx,
 		options: {
 			showEffects: true,
@@ -258,14 +258,14 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 			tx.gas,
 		],
 	});
-	tx.transferObjects([dwalletCap], c.keypair.toSuiAddress());
+	tx.transferObjects([dwalletCap], c.suiClientKeypair.toSuiAddress());
 	tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
 		arguments: [emptyIKACoin],
 		typeArguments: [`${c.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 	const result = await c.client.signAndExecuteTransaction({
-		signer: c.keypair,
+		signer: c.suiClientKeypair,
 		transaction: tx,
 		options: {
 			showEffects: true,

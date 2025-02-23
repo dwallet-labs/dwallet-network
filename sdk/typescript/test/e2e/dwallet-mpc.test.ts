@@ -10,7 +10,7 @@ import {
 	createDWallet,
 	dkgSecondRoundMoveCall,
 	launchDKGSecondRound,
-	runDkgFirstRoundMock
+	runDkgFirstRoundMock,
 } from '../../src/dwallet-mpc/dkg';
 import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
@@ -18,7 +18,7 @@ import {
 	Config,
 	delay,
 	getDWalletSecpState,
-	mockedProtocolPublicParameters
+	mockedProtocolPublicParameters,
 } from '../../src/dwallet-mpc/globals';
 import { dkgFirstRoundMock } from '../../src/dwallet-mpc/mocks';
 
@@ -28,20 +28,24 @@ describe('Test dWallet MPC', () => {
 
 	beforeEach(async () => {
 		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x1');
+		const dWalletSeed = new Uint8Array(32).fill(8);
+		const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
+			Buffer.from(dWalletSeed).toString('hex'),
+		);
 		const address = keypair.getPublicKey().toSuiAddress();
 		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
 		await requestSuiFromFaucetV1({
 			host: getFaucetHost('localnet'),
 			recipient: address,
 		});
-		const dWalletSeed = new Uint8Array(32).fill(8);
 
 		conf = {
-			keypair,
+			suiClientKeypair: keypair,
 			client: suiClient,
 			timeout: fiveMinutes,
 			ikaConfig: require('../../../../ika_config.json'),
 			dWalletSeed,
+			encryptedSecretShareSigningKeypair,
 		};
 		await delay(2000);
 	});
@@ -66,7 +70,10 @@ describe('Test dWallet MPC', () => {
 	it('should run DKG second round move call', async () => {
 		let dwalletState = await getDWalletSecpState(conf);
 		let keypair = await getOrCreateClassGroupsKeyPair(conf);
-		let event = await runDkgFirstRoundMock(conf, Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'));
+		let event = await runDkgFirstRoundMock(
+			conf,
+			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
+		);
 		await delay(checkpointCreationTime);
 		await dkgSecondRoundMoveCall(
 			conf,
@@ -89,7 +96,10 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should mock dkg first round', async () => {
-		let event = await runDkgFirstRoundMock(conf, Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'));
+		let event = await runDkgFirstRoundMock(
+			conf,
+			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
+		);
 		console.log({ event });
 	});
 });

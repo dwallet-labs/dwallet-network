@@ -1,5 +1,6 @@
 import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs, toHex } from '@mysten/bcs';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 
 import type { Config } from './globals.js';
@@ -52,7 +53,7 @@ export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<Class
 	);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		conf,
-		conf.keypair.toSuiAddress(),
+		conf.suiClientKeypair.toSuiAddress(),
 	);
 	const encryptionKeyMoveType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
 
@@ -144,7 +145,7 @@ async function registerEncryptionKey(
 	encryptionKey: Uint8Array,
 ): Promise<CreatedEncryptionKeyEvent> {
 	// Sign the encryption key with the key pair.
-	const encryptionKeySignature = await conf.keypair.sign(new Uint8Array(encryptionKey));
+	const encryptionKeySignature = await conf.encryptedSecretShareSigningKeypair.sign(new Uint8Array(encryptionKey));
 	const tx = new Transaction();
 
 	let dwalletState = await getDWalletSecpState(conf);
@@ -158,11 +159,11 @@ async function registerEncryptionKey(
 			}),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKeySignature)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes())),
+			tx.pure(bcs.vector(bcs.u8()).serialize(conf.encryptedSecretShareSigningKeypair.getPublicKey().toRawBytes())),
 		],
 	});
 	const res = await conf.client.signAndExecuteTransaction({
-		signer: conf.keypair,
+		signer: conf.suiClientKeypair,
 		transaction: tx,
 		options: {
 			showEvents: true,

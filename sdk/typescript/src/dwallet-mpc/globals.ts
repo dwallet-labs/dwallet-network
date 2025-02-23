@@ -18,7 +18,8 @@ interface IkaConfig {
 }
 
 export interface Config {
-	keypair: Ed25519Keypair;
+	suiClientKeypair: Ed25519Keypair;
+	encryptedSecretShareSigningKeypair: Ed25519Keypair;
 	client: SuiClient;
 	timeout: number;
 	ikaConfig: IkaConfig;
