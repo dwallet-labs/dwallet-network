@@ -960,6 +960,7 @@ public(package) fun respond_dkg_first_round_output(
     });
 }
 
+// TODO (#493): Remove mock functions
 public(package) fun create_first_round_dwallet_mock(
     self: &mut DWallet2PcMpcSecp256K1InnerV1, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
 ): DWalletCap {
