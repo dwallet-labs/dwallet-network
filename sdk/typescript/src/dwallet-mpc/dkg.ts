@@ -136,6 +136,34 @@ export async function launchDKGSecondRound(
 	console.log({ result });
 }
 
+export async function dkgFirstRoundMock(conf: Config, mockOutput: Uint8Array) {
+	// create_first_round_dwallet_mock(self: &mut DWallet2PcMpcSecp256K1, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext): DWalletCap
+	const tx = new Transaction();
+	let dwalletStateObjData = await getDWalletSecpState(conf);
+	let stateArg = tx.sharedObjectRef({
+		objectId: dwalletStateObjData.object_id,
+		initialSharedVersion: dwalletStateObjData.initial_shared_version,
+		mutable: true,
+	});
+	let firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockOutput));
+	let networkDecryptionKeyID = await getNetworkDecryptionKeyID(conf);
+	let networkDecryptionKeyIDArg = tx.pure(bcs.string().serialize(networkDecryptionKeyID));
+	let dwalletCap = tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::create_first_round_dwallet_mock`,
+		arguments: [stateArg, firstRoundOutputArg, networkDecryptionKeyIDArg],
+	});
+	tx.transferObjects([dwalletCap], conf.keypair.toSuiAddress());
+	const result = await conf.client.signAndExecuteTransaction({
+		signer: conf.keypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+			showEvents: true,
+		},
+	});
+	console.log({ result });
+}
+
 export async function dkgSecondRoundMoveCall(
 	conf: Config,
 	dWalletStateData: SharedObjectData,
