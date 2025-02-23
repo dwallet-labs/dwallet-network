@@ -93,7 +93,6 @@ pub struct CentralizedDKGWasmResult {
     pub public_key_share_and_proof: Vec<u8>,
     pub public_output: Vec<u8>,
     pub centralized_secret_output: Vec<u8>,
-    pub public_keys: Vec<u8>,
 }
 
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
@@ -165,7 +164,6 @@ pub fn create_dkg_output(
         public_output,
         public_key_share_and_proof,
         centralized_secret_output,
-        public_keys,
     })
 }
 

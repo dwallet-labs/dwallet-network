@@ -70,7 +70,6 @@ export async function launchDKGSecondRound(
 		centralizedPublicKeyShareAndProof,
 		centralizedPublicOutput,
 		centralizedSecretKeyShare,
-		_serializedPublicKeys,
 	] = create_dkg_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
