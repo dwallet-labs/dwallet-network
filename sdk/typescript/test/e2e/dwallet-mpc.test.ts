@@ -10,9 +10,7 @@ import {
 	createDKGFirstRoundOutputMock,
 	createDWallet,
 	dkgSecondRoundMoveCall,
-	launchDKGSecondRound,
 } from '../../src/dwallet-mpc/dkg';
-import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
 	checkpointCreationTime,
 	Config,
