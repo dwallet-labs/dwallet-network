@@ -155,7 +155,7 @@ export async function dkgSecondRoundMoveCall(
 	);
 	let encryptionKeyAddressArg = tx.pure.id(conf.encryptedSecretShareSigningKeypair.toSuiAddress());
 	let userPublicOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput));
-	let singerPublicKeyArg = tx.pure(
+	let signerPublicKeyArg = tx.pure(
 		bcs.vector(bcs.u8()).serialize(conf.suiClientKeypair.getPublicKey().toRawBytes()),
 	);
 
@@ -168,7 +168,7 @@ export async function dkgSecondRoundMoveCall(
 			encryptedCentralizedSecretShareAndProofArg,
 			encryptionKeyAddressArg,
 			userPublicOutputArg,
-			singerPublicKeyArg,
+			signerPublicKeyArg,
 		],
 	});
 	let result = await conf.client.signAndExecuteTransaction({
