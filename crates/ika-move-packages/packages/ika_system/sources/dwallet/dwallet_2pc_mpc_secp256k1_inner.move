@@ -736,8 +736,8 @@ fun get_active_dwallet_and_public_output_mut(
 public(package) fun get_active_encryption_key(
     self: &DWallet2PcMpcSecp256K1InnerV1,
     address: address,
-): &EncryptionKey {
-    self.encryption_keys.borrow(address)
+): ID {
+    self.encryption_keys.borrow(address).id.to_inner()
 }
 
 /// Registers an encryption key to be used later for encrypting a

@@ -9,7 +9,6 @@ use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
     Self,
     DWallet2PcMpcSecp256K1InnerV1,
     DWalletNetworkDecryptionKeyCap,
-    EncryptionKey,
     DWalletCap,
     MessageApproval,
     UnverifiedECDSAPartialUserSignatureCap,
@@ -71,7 +70,7 @@ public(package) fun set_active_committee(
 public fun get_active_encryption_key(
     self: &DWallet2PcMpcSecp256K1,
     address: address,
-): &EncryptionKey {
+): ID {
     self.inner().get_active_encryption_key(address)
 }
 

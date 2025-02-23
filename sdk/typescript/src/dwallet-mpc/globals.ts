@@ -5,9 +5,11 @@ import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
 export const DWALLET_ECDSAK1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
+export const DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1_inner';
 export const DWALLET_NETWORK_VERSION = 0;
 
 export const SUI_PACKAGE_ID = '0x2';
+export const checkpointCreationTime = 2000;
 
 interface IkaConfig {
 	ika_package_id: string;
@@ -20,6 +22,7 @@ export interface Config {
 	client: SuiClient;
 	timeout: number;
 	ikaConfig: IkaConfig;
+	dWalletSeed: Uint8Array;
 }
 
 export enum MPCKeyScheme {
@@ -41,3 +44,119 @@ export const mockedProtocolPublicParameters = Uint8Array.from(
 		'base64',
 	),
 );
+
+/**
+ * Represents the Move `SystemInnerV1` struct.
+ */
+interface IKASystemStateInner {
+	fields: {
+		value: {
+			fields: {
+				dwallet_2pc_mpc_secp256k1_id: string;
+				dwallet_network_decryption_key: {
+					fields: {
+						dwallet_network_decryption_key_id: string;
+					};
+				};
+			};
+		};
+	};
+}
+
+/**
+ * Represents a Move shared object owner.
+ */
+interface SharedObjectOwner {
+	Shared: {
+		// The object version when it became shared.
+		initial_shared_version: number;
+	};
+}
+
+interface MoveObject {
+	fields: any;
+}
+
+interface SharedObjectData {
+	object_id: string;
+	initial_shared_version: number;
+}
+
+export function isMoveObject(obj: any): obj is MoveObject {
+	return obj?.fields !== undefined;
+}
+
+export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
+	return (
+		obj?.fields?.value?.fields?.dwallet_network_decryption_key !== undefined &&
+		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_id !== undefined
+	);
+}
+
+export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
+	const dynamicFields = await c.client.getDynamicFields({
+		parentId: c.ikaConfig.ika_system_obj_id,
+	});
+	let innerSystemState = await c.client.getDynamicFieldObject({
+		parentId: c.ikaConfig.ika_system_obj_id,
+		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
+	});
+	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
+		throw new Error('Invalid inner system state');
+	}
+	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_secp256k1_id;
+}
+
+export function isSharedObjectOwner(obj: any): obj is SharedObjectOwner {
+	return obj?.Shared?.initial_shared_version !== undefined;
+}
+
+export async function getInitialSharedVersion(c: Config, objectID: string): Promise<number> {
+	let obj = await c.client.getObject({
+		id: objectID,
+		options: {
+			showOwner: true,
+		},
+	});
+	let owner = obj.data?.owner;
+	if (!owner || !isSharedObjectOwner(owner)) {
+		throw new Error('Object is not shared');
+	}
+	return owner.Shared?.initial_shared_version;
+}
+
+export async function getDWalletSecpState(c: Config): Promise<SharedObjectData> {
+	const dwalletSecp256k1ObjID = await getDwalletSecp256k1ObjID(c);
+	const initialSharedVersion = await getInitialSharedVersion(c, dwalletSecp256k1ObjID);
+	return {
+		object_id: dwalletSecp256k1ObjID,
+		initial_shared_version: initialSharedVersion,
+	};
+}
+
+export async function fetchObjectWithType<TObject>(
+	conf: Config,
+	objectType: string,
+	isObject: (obj: any) => obj is TObject,
+	objectId: string,
+) {
+	const res = await conf.client.getObject({
+		id: objectId,
+		options: { showContent: true },
+	});
+
+	const objectData =
+		res.data?.content?.dataType === 'moveObject' &&
+		res.data?.content.type === objectType &&
+		isObject(res.data.content.fields)
+			? (res.data.content.fields as TObject)
+			: null;
+
+	if (!objectData) {
+		throw new Error(
+			`invalid object of type ${objectType}, got: ${JSON.stringify(res.data?.content)}`,
+		);
+	}
+
+	return objectData;
+}

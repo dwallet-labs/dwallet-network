@@ -27,7 +27,7 @@ use std::net::{AddrParseError, IpAddr, Ipv4Addr, SocketAddr};
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::{fs, io};
+use std::{fs, io, thread};
 use sui::client_commands::{
     estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet,
     SuiClientCommandResult,
@@ -63,10 +63,11 @@ use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionData, TransactionKind};
 use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
 use tempfile::tempdir;
+use tokio::runtime::Runtime;
 use tracing;
 use tracing::{debug, info};
 
-const DEFAULT_EPOCH_DURATION_MS: u64 = 60_000;
+const DEFAULT_EPOCH_DURATION_MS: u64 = 1000000000000;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Parser)]
@@ -204,15 +205,33 @@ impl IkaCommand {
                 no_full_node,
                 epoch_duration_ms,
             } => {
-                start(
-                    config_dir.clone(),
-                    force_reinitiation,
-                    epoch_duration_ms,
-                    sui_fullnode_rpc_url,
-                    sui_faucet_url,
-                    no_full_node,
-                )
-                .await?;
+                let thread_builder = thread::Builder::new();
+                const SIXTEEN_MB: usize = 16777216;
+                let thread_builder = thread_builder.stack_size(SIXTEEN_MB);
+                let thread_join_handle = thread_builder.spawn(move || {
+                    let Ok(mut tokio_runtime) = Runtime::new() else {
+                        eprintln!("{}", "[error] Failed to start tokio runtime".red().bold());
+                        return;
+                    };
+                    tokio_runtime.block_on(async move {
+                        if let Err(e) = start(
+                            config_dir.clone(),
+                            force_reinitiation,
+                            epoch_duration_ms,
+                            sui_fullnode_rpc_url,
+                            sui_faucet_url,
+                            no_full_node,
+                        )
+                        .await
+                        {
+                            eprintln!("{}", format!("[error] {e}").red().bold());
+                        }
+                    });
+                })?;
+
+                if let Err(e) = thread_join_handle.join() {
+                    eprintln!("{}", format!("[error] {:?}", e).red().bold());
+                }
 
                 Ok(())
             }
@@ -269,52 +288,52 @@ async fn start(
         );
     }
 
+    let network_config_path = if let Some(ref config) = config {
+        if config.is_dir() {
+            config.join(IKA_NETWORK_CONFIG)
+        } else if config.is_file()
+            && config
+                .extension()
+                .is_some_and(|ext| (ext == "yml" || ext == "yaml"))
+        {
+            config.clone()
+        } else {
+            config.join(IKA_NETWORK_CONFIG)
+        }
+    } else {
+        config
+            .clone()
+            .unwrap_or(ika_config_dir()?)
+            .join(IKA_NETWORK_CONFIG)
+    };
     let mut swarm_builder = Swarm::builder();
     // If this is set, then no data will be persisted between runs, and a new initiation will be
     // generated each run.
+    let ika_network_config_not_exists =
+        config.is_none() && !ika_config_dir()?.join(IKA_NETWORK_CONFIG).exists();
     if force_reinitiation {
         swarm_builder =
             swarm_builder.committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
         let epoch_duration_ms = epoch_duration_ms.unwrap_or(DEFAULT_EPOCH_DURATION_MS);
         swarm_builder = swarm_builder.with_epoch_duration_ms(epoch_duration_ms);
     } else {
-        if config.is_none() && !ika_config_dir()?.join(IKA_NETWORK_CONFIG).exists() {
-            initiation(sui_fullnode_rpc_url, sui_faucet_url, epoch_duration_ms).await?;
-            //.map_err(|_| anyhow!("Cannot run initiation with non-empty Ika config directory: {}.\n\nIf you are trying to run a local network without persisting the data (so a new initiation that is randomly generated and will not be saved once the network is shut down), use --force-reinitiation flag.\nIf you are trying to persist the network data and start from a new initiation, use ika initiation --help to see how to generate a new initiation.", ika_config_dir().unwrap().display()))?;
-        }
-
-        // Load the config of the Ika authority.
-        // To keep compatibility with ika-test-validator where the user can pass a config
-        // directory, this checks if the config is a file or a directory
-        let network_config_path = if let Some(ref config) = config {
-            if config.is_dir() {
-                config.join(IKA_NETWORK_CONFIG)
-            } else if config.is_file()
-                && config
-                    .extension()
-                    .is_some_and(|ext| (ext == "yml" || ext == "yaml"))
-            {
-                config.clone()
-            } else {
-                config.join(IKA_NETWORK_CONFIG)
-            }
+        swarm_builder = swarm_builder.dir(ika_config_dir()?);
+        if ika_network_config_not_exists {
+            swarm_builder = swarm_builder
+                .committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
+            let epoch_duration_ms = epoch_duration_ms.unwrap_or(DEFAULT_EPOCH_DURATION_MS);
+            swarm_builder = swarm_builder.with_epoch_duration_ms(epoch_duration_ms);
         } else {
-            config
-                .clone()
-                .unwrap_or(ika_config_dir()?)
-                .join(IKA_NETWORK_CONFIG)
-        };
-        let network_config: NetworkConfig =
-            PersistedConfig::read(&network_config_path).map_err(|err| {
-                err.context(format!(
-                    "Cannot open Ika network config file at {:?}",
-                    network_config_path
-                ))
-            })?;
+            let network_config: NetworkConfig = PersistedConfig::read(&network_config_path)
+                .map_err(|err| {
+                    err.context(format!(
+                        "Cannot open Ika network config file at {:?}",
+                        network_config_path
+                    ))
+                })?;
 
-        swarm_builder = swarm_builder
-            .dir(ika_config_dir()?)
-            .with_network_config(network_config);
+            swarm_builder = swarm_builder.with_network_config(network_config);
+        }
     }
 
     if no_full_node {
@@ -324,6 +343,9 @@ async fn start(
     }
 
     let mut swarm = swarm_builder.build().await?;
+    if ika_network_config_not_exists {
+        swarm.network_config.save(&network_config_path)?;
+    }
 
     swarm.launch().await?;
     // Let nodes connect to one another
@@ -350,51 +372,6 @@ async fn start(
 
         interval.tick().await;
     }
-}
-
-async fn initiation(
-    sui_fullnode_rpc_url: String,
-    sui_faucet_url: String,
-    epoch_duration_ms: Option<u64>,
-) -> Result<(), anyhow::Error> {
-    let ika_config_dir = {
-        let config_path = ika_config_dir()?;
-        fs::create_dir_all(&config_path)?;
-        config_path
-    };
-
-    // if Ika config dir is not empty then either clean it
-    // up (if --force/-f option was specified or report an
-    // error
-    let _ = ika_config_dir.read_dir().map_err(|err| {
-        anyhow!(err).context(format!("Cannot open Ika config dir {:?}", ika_config_dir))
-    })?;
-
-    let network_path = ika_config_dir.join(IKA_NETWORK_CONFIG);
-    let mut builder =
-        ConfigBuilder::new(ika_config_dir.clone(), sui_fullnode_rpc_url, sui_faucet_url)
-            .committee_size(NonZeroUsize::new(DEFAULT_NUMBER_OF_AUTHORITIES).unwrap());
-    if let Some(epoch_duration_ms) = epoch_duration_ms {
-        builder = builder.with_epoch_duration(epoch_duration_ms);
-    }
-    let network_config = builder.build().await?;
-
-    network_config.save(&network_path)?;
-    info!("Network config file is stored in {:?}.", network_path);
-
-    for (i, validator) in network_config
-        .into_validator_configs()
-        .into_iter()
-        .enumerate()
-    {
-        let path = ika_config_dir.join(ika_config::validator_config_file(
-            validator.network_address.clone(),
-            i,
-        ));
-        validator.save(path)?;
-    }
-
-    Ok(())
 }
 
 fn read_line() -> Result<String, anyhow::Error> {
