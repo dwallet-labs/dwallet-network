@@ -77,7 +77,7 @@ interface MoveObject {
 	fields: any;
 }
 
-interface SharedObjectData {
+export interface SharedObjectData {
 	object_id: string;
 	initial_shared_version: number;
 }

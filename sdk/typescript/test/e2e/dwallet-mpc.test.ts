@@ -6,9 +6,9 @@ import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
-import { createDWallet, launchDKGSecondRound } from '../../src/dwallet-mpc/dkg';
+import {createDWallet, dkgSecondRoundMoveCall, launchDKGSecondRound} from '../../src/dwallet-mpc/dkg';
 import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share';
-import { Config, delay, mockedProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
+import {Config, delay, getDWalletSecpState, mockedProtocolPublicParameters} from '../../src/dwallet-mpc/globals';
 import { dkgFirstRoundMock } from '../../src/dwallet-mpc/mocks';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -48,6 +48,25 @@ describe('Test dWallet MPC', () => {
 				output: Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 			},
 			mockedProtocolPublicParameters,
+			Buffer.from(dkgFirstRoundMock.encryptedSecretShareAndProof, 'base64'),
+		);
+	});
+
+	it('should run DKG second round move call', async () => {
+		let dwalletState = await getDWalletSecpState(conf);
+		let keypair = await getOrCreateClassGroupsKeyPair(conf);
+		await dkgSecondRoundMoveCall(
+			conf,
+			dwalletState,
+			{
+				sessionID: dkgFirstRoundMock.sessionID,
+				dwalletCapID: dkgFirstRoundMock.dwalletCapID,
+				output: Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
+			},
+			Buffer.from(dkgFirstRoundMock.centralizedPublicKeyShareAndProof, 'base64'),
+			Buffer.from(dkgFirstRoundMock.encryptedSecretShareAndProof, 'base64'),
+			keypair,
+			Buffer.from(dkgFirstRoundMock.centralizedPublicOutput, 'base64'),
 		);
 	});
 

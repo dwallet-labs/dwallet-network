@@ -8,7 +8,7 @@ import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 import { delay } from 'msw';
 
-import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share';
+import {ClassGroupsSecpKeyPair, getOrCreateClassGroupsKeyPair} from './encrypt-user-share';
 import {
 	Config,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
@@ -19,6 +19,7 @@ import {
 	isIKASystemStateInner,
 	isMoveObject,
 	MPCKeyScheme,
+	SharedObjectData,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 
@@ -57,6 +58,7 @@ export async function launchDKGSecondRound(
 	conf: Config,
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	protocolPublicParameters: Uint8Array,
+	encryptedUserShareAndProof: Uint8Array,
 ) {
 	const [
 		centralizedPublicKeyShareAndProof,
@@ -72,32 +74,95 @@ export async function launchDKGSecondRound(
 	);
 
 	let dWalletStateData = await getDWalletSecpState(conf);
+	let classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+
 	const tx = new Transaction();
 	let dwalletStateArg = tx.sharedObjectRef({
 		objectId: dWalletStateData.object_id,
 		initialSharedVersion: dWalletStateData.initial_shared_version,
 		mutable: true,
 	});
-
 	let dwalletCapArg = tx.object(firstRoundOutputResult.dwalletCapID);
 	let centralizedPublicKeyShareAndProofArg = tx.pure(
 		bcs.vector(bcs.u8()).serialize(centralizedPublicKeyShareAndProof),
 	);
-	let classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 
 	// log the centralized secret key share anb encryption key in base 64
 	// convert the centralized secret key share and encryption key to base64
 
-	console.log('centralizedSecretKeyShare', Buffer.from(centralizedSecretKeyShare).toString('base64'));
-	console.log('encryption key', Buffer.from(classGroupsSecpKeyPair.encryptionKey).toString('base64'));
-
-	const encryptedCentralizedSecretKeyShareAndProofOfEncryption = encrypt_secret_share(
-		centralizedSecretKeyShare,
-		classGroupsSecpKeyPair.encryptionKey,
+	console.log(
+		'centralizedSecretKeyShare',
+		Buffer.from(centralizedSecretKeyShare).toString('base64'),
+	);
+	console.log(
+		'encryption key',
+		Buffer.from(classGroupsSecpKeyPair.encryptionKey).toString('base64'),
 	);
 
+	// const encryptedCentralizedSecretKeyShareAndProofOfEncryption = encrypt_secret_share(
+	// 	centralizedSecretKeyShare,
+	// 	classGroupsSecpKeyPair.encryptionKey,
+	// );
+
 	let encryptedCentralizedSecretShareAndProofArg = tx.pure(
-		bcs.vector(bcs.u8()).serialize(encryptedCentralizedSecretKeyShareAndProofOfEncryption),
+		bcs.vector(bcs.u8()).serialize(encryptedUserShareAndProof),
+	);
+	let encryptionKeyAddressArg = tx.pure(bcs.string().serialize(classGroupsSecpKeyPair.objectID));
+	let userPublicOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput));
+	let singerPublicKeyArg = tx.pure(
+		bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes()),
+	);
+	tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dkg_second_round`,
+		arguments: [
+			dwalletStateArg,
+			dwalletCapArg,
+			centralizedPublicKeyShareAndProofArg,
+			encryptedCentralizedSecretShareAndProofArg,
+			encryptionKeyAddressArg,
+			userPublicOutputArg,
+			singerPublicKeyArg,
+			tx.gas,
+		],
+	});
+	let result = await conf.client.signAndExecuteTransaction({
+		signer: conf.keypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+			showEvents: true,
+		},
+	});
+	console.log({ result });
+}
+
+export async function dkgSecondRoundMoveCall(
+	conf: Config,
+	dWalletStateData: SharedObjectData,
+	firstRoundOutputResult: DKGFirstRoundOutputResult,
+	centralizedPublicKeyShareAndProof: Uint8Array,
+	encryptedUserShareAndProof: Uint8Array,
+	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
+	centralizedPublicOutput: Uint8Array,
+) {
+	const tx = new Transaction();
+	let dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
+	let dwalletCapArg = tx.object(firstRoundOutputResult.dwalletCapID);
+	let centralizedPublicKeyShareAndProofArg = tx.pure(
+		bcs.vector(bcs.u8()).serialize(centralizedPublicKeyShareAndProof),
+	);
+
+	// const encryptedCentralizedSecretKeyShareAndProofOfEncryption = encrypt_secret_share(
+	// 	centralizedSecretKeyShare,
+	// 	classGroupsSecpKeyPair.encryptionKey,
+	// );
+
+	let encryptedCentralizedSecretShareAndProofArg = tx.pure(
+		bcs.vector(bcs.u8()).serialize(encryptedUserShareAndProof),
 	);
 	let encryptionKeyAddressArg = tx.pure(bcs.string().serialize(classGroupsSecpKeyPair.objectID));
 	let userPublicOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(centralizedPublicOutput));

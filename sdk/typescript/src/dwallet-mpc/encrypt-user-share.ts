@@ -13,7 +13,7 @@ import {
 /**
  * A class groups key pair.
  */
-interface ClassGroupsSecpKeyPair {
+export interface ClassGroupsSecpKeyPair {
 	encryptionKey: Uint8Array;
 	decryptionKey: Uint8Array;
 	objectID: string;
