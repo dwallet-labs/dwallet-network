@@ -6,7 +6,12 @@ import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
-import {createDWallet, dkgSecondRoundMoveCall, launchDKGSecondRound} from '../../src/dwallet-mpc/dkg';
+import {
+	createDWallet,
+	dkgSecondRoundMoveCall,
+	launchDKGSecondRound,
+	runDkgFirstRoundMock
+} from '../../src/dwallet-mpc/dkg';
 import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share';
 import {Config, delay, getDWalletSecpState, mockedProtocolPublicParameters} from '../../src/dwallet-mpc/globals';
 import { dkgFirstRoundMock } from '../../src/dwallet-mpc/mocks';
@@ -76,6 +81,6 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should mock dkg first round', async () => {
-		await dkgFirstRoundMock(conf);
+		await runDkgFirstRoundMock(conf, Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'));
 	});
 });
