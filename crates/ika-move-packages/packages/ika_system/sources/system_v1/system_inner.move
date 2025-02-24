@@ -944,7 +944,7 @@ fun process_checkpoint_message(
                               let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                               let _first_round_output = bcs_body.peel_vec_u8();
                           } else if (message_data_type == 4) {
-                              let _dwallet_id = object::id_from_address(bcs_body.peel_address());
+                              let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                               let _public_output = bcs_body.peel_vec_u8();
                               let _encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                               let _encryption_key_address = bcs_body.peel_address();
