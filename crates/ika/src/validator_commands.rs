@@ -17,17 +17,26 @@ use fastcrypto::traits::KeyPair;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
+use ika_config::{ika_config_dir, IKA_NETWORK_CONFIG};
+use ika_sui_client::ika_validator_transactions::{
+    request_add_validator, request_add_validator_candidate, stake_ika,
+};
+use ika_swarm_config::network_config::NetworkConfig;
 use ika_types::crypto::{generate_proof_of_possession, AuthorityKeyPair};
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::sui::DEFAULT_COMMISSION_RATE;
 use serde::Serialize;
+use sui::validator_commands::write_transaction_response;
+use sui_config::PersistedConfig;
 use sui_keys::{
     key_derive::generate_new_key,
     keypair_file::{
         read_network_keypair_from_file, write_authority_keypair_to_file, write_keypair_to_file,
     },
 };
+use sui_sdk::rpc_types::SuiTransactionBlockResponse;
 use sui_sdk::wallet_context::WalletContext;
+use sui_types::base_types::ObjectID;
 use sui_types::crypto::get_authority_key_pair;
 use sui_types::crypto::{NetworkKeyPair, SignatureScheme, SuiKeyPair};
 
@@ -46,12 +55,50 @@ pub enum IkaValidatorCommand {
         gas_price: u64,
         sender_sui_address: SuiAddress,
     },
+    #[clap(name = "become-candidate")]
+    BecomeCandidate {
+        #[clap(name = "validator-info-path")]
+        file: PathBuf,
+        #[clap(name = "gas-budget", long)]
+        gas_budget: Option<u64>,
+        #[clap(name = "ika-system-package-id", long)]
+        ika_system_config_file: Option<PathBuf>,
+    },
+    #[clap(name = "join-committee")]
+    JoinCommittee {
+        #[clap(name = "gas-budget", long)]
+        gas_budget: Option<u64>,
+        #[clap(name = "ika-system-package-id", long)]
+        ika_system_config_file: Option<PathBuf>,
+        #[clap(name = "validator-cap-id", long)]
+        validator_cap_id: ObjectID,
+        #[clap(name = "validator-id", long)]
+        validator_id: ObjectID,
+        #[clap(name = "ika-supply-id", long)]
+        ika_supply_id: ObjectID,
+    },
+    #[clap(name = "stake-validator")]
+    StakeValidator {
+        #[clap(name = "gas-budget", long)]
+        gas_budget: Option<u64>,
+        #[clap(name = "ika-system-package-id", long)]
+        ika_system_config_file: Option<PathBuf>,
+        #[clap(name = "validator-id", long)]
+        validator_id: ObjectID,
+        #[clap(name = "ika-coin-id", long)]
+        ika_coin_id: ObjectID,
+        #[clap(name = "stake-amount", long)]
+        stake_amount: u64,
+    },
 }
 
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum IkaValidatorCommandResponse {
     MakeValidatorInfo,
+    BecomeCandidate(SuiTransactionBlockResponse, ObjectID, ObjectID),
+    JoinCommittee(SuiTransactionBlockResponse),
+    StakeValidator(SuiTransactionBlockResponse),
 }
 
 impl IkaValidatorCommand {
@@ -59,8 +106,6 @@ impl IkaValidatorCommand {
         self,
         context: &mut WalletContext,
     ) -> Result<IkaValidatorCommandResponse, anyhow::Error> {
-        let sui_address = context.active_address()?;
-
         let ret = Ok(match self {
             IkaValidatorCommand::MakeValidatorInfo {
                 name,
@@ -124,6 +169,100 @@ impl IkaValidatorCommand {
                 );
                 IkaValidatorCommandResponse::MakeValidatorInfo
             }
+            IkaValidatorCommand::BecomeCandidate {
+                file,
+                gas_budget,
+                ika_system_config_file,
+            } => {
+                let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
+                let config_path =
+                    ika_system_config_file.unwrap_or(ika_config_dir()?.join(IKA_NETWORK_CONFIG));
+                let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
+                    err.context(format!(
+                        "Cannot open Ika network config file at {:?}",
+                        config_path
+                    ))
+                })?;
+
+                let validator_info_bytes = fs::read_to_string(file)?;
+                let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
+
+                let class_groups_keypair_and_proof_obj_ref = ika_sui_client::ika_validator_transactions::create_class_groups_public_key_and_proof_object(
+                    context.active_address()?,
+                    context,
+                    config.ika_system_package_id.clone(),
+                    validator_info.class_groups_public_key_and_proof.clone(),
+                    gas_budget,
+                ).await?;
+
+                let (res, validator_id, validator_cap_id) = request_add_validator_candidate(
+                    context,
+                    &validator_info,
+                    config.ika_system_package_id.clone(),
+                    config.system_id.clone(),
+                    class_groups_keypair_and_proof_obj_ref,
+                    gas_budget,
+                )
+                .await?;
+                IkaValidatorCommandResponse::BecomeCandidate(res, validator_id, validator_cap_id)
+            }
+            IkaValidatorCommand::JoinCommittee {
+                gas_budget,
+                ika_system_config_file,
+                validator_cap_id,
+                validator_id,
+                ika_supply_id,
+            } => {
+                let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
+                let config_path =
+                    ika_system_config_file.unwrap_or(ika_config_dir()?.join(IKA_NETWORK_CONFIG));
+                let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
+                    err.context(format!(
+                        "Cannot open Ika network config file at {:?}",
+                        config_path
+                    ))
+                })?;
+
+                let response = request_add_validator(
+                    context,
+                    config.ika_system_package_id.clone(),
+                    config.system_id.clone(),
+                    validator_cap_id,
+                    gas_budget,
+                )
+                .await?;
+                IkaValidatorCommandResponse::JoinCommittee(response)
+            }
+            IkaValidatorCommand::StakeValidator {
+                gas_budget,
+                ika_system_config_file,
+                validator_id,
+                ika_coin_id,
+                stake_amount,
+            } => {
+                let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
+                let config_path =
+                    ika_system_config_file.unwrap_or(ika_config_dir()?.join(IKA_NETWORK_CONFIG));
+                let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
+                    err.context(format!(
+                        "Cannot open Ika network config file at {:?}",
+                        config_path
+                    ))
+                })?;
+
+                let res = stake_ika(
+                    context,
+                    config.ika_system_package_id.clone(),
+                    config.system_id.clone(),
+                    ika_coin_id,
+                    validator_id,
+                    stake_amount,
+                    gas_budget,
+                )
+                .await?;
+
+                IkaValidatorCommandResponse::StakeValidator(res)
+            }
         });
         ret
     }
@@ -134,6 +273,19 @@ impl Display for IkaValidatorCommandResponse {
         let mut writer = String::new();
         match self {
             IkaValidatorCommandResponse::MakeValidatorInfo => {}
+            IkaValidatorCommandResponse::BecomeCandidate(
+                response,
+                validator_id,
+                validator_cap_id,
+            ) => {
+                write!(writer, "{}", write_transaction_response(response)?)?;
+                writeln!(writer, "Validator ID: {}", validator_id)?;
+                writeln!(writer, "Validator Cap ID: {}", validator_cap_id)?;
+            }
+            IkaValidatorCommandResponse::JoinCommittee(response)
+            | IkaValidatorCommandResponse::StakeValidator(response) => {
+                write!(writer, "{}", write_transaction_response(response)?)?;
+            }
         }
         write!(f, "{}", writer.trim_end_matches('\n'))
     }

@@ -343,7 +343,7 @@ async fn start(
     }
 
     let mut swarm = swarm_builder.build().await?;
-    if ika_network_config_not_exists {
+    if ika_network_config_not_exists || force_reinitiation {
         swarm.network_config.save(&network_config_path)?;
     }
 

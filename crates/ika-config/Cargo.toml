@@ -28,6 +28,7 @@ ika-types.workspace = true
 
 sui-types.workspace = true
 sui-config.workspace = true
+base64 = "0.22.1"
 
 [dev-dependencies]
 sui-types = { workspace = true }
