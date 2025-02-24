@@ -268,7 +268,7 @@ pub(crate) async fn build_sui_transaction<C: SuiClientInner>(
     let computation_price = sui_client.get_reference_gas_price_until_success().await;
 
     let tx_data =
-        TransactionData::new_programmable(signer, gas_payment, pt, 100_000_000, computation_price);
+        TransactionData::new_programmable(signer, gas_payment, pt, 10000_000_000, computation_price);
 
     let signature = Signature::new_secure(
         &IntentMessage::new(Intent::sui_transaction(), &tx_data),
