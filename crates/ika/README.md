@@ -87,11 +87,3 @@ Stake IKA tokens to a validator.
 ```sh
 ika validator stake-validator --validator-id 0x1234 --ika-coin-id 0x5678 --stake-amount 1000000
 ```
-
-## Options
-
-- `--client.config <CONFIG>` - Sets the file storing user account states
-- `--json` - Outputs command responses in JSON format
-- `-y, --yes` - Automatic confirmation of prompts
-- `-h, --help` - Display help information
-- `-V, --version` - Display version information
