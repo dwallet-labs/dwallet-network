@@ -1,12 +1,13 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module ika_system::committee;
+module ika_system::bls_committee;
 
 use sui::bls12381::{Self, G1, UncompressedG1};
 use sui::group_ops::{Self, Element};
+use sui::event;
 
-public struct CommitteeMember has store, copy, drop {
+public struct BlsCommitteeMember has store, copy, drop {
     validator_id: ID,
     protocol_pubkey: Element<UncompressedG1>,
     voting_power: u64,
@@ -14,10 +15,16 @@ public struct CommitteeMember has store, copy, drop {
 }
 
 /// Represents the current committee in the system.
-public struct Committee has store, copy, drop {
-    members: vector<CommitteeMember>,
+public struct BlsCommittee has store, copy, drop {
+    members: vector<BlsCommitteeMember>,
     /// The aggregation of public keys for all members of the committee
     aggregated_protocol_pubkey: Element<G1>,
+}
+
+/// Event emitted after verifing quorum of signature.
+public struct CommitteeQuorumVerifiedEvent has copy, drop {
+    epoch: u64,
+    total_signers_stake: u64,
 }
 
 /// Set total_voting_power as 10_000 by convention. Individual voting powers can be interpreted
@@ -51,12 +58,12 @@ const EInvalidSignature: vector<u8> = b"Invalid certificate signature.";
 #[error]
 const ENotEnoughStake: vector<u8> = b"Not enough stake of signers for the bls signature.";
 
-public(package) fun new_committee_member(
+public(package) fun new_bls_committee_member(
     validator_id: ID,
     protocol_pubkey: Element<UncompressedG1>,
     stake: u64,
-): CommitteeMember {
-    CommitteeMember {
+): BlsCommitteeMember {
+    BlsCommitteeMember {
         validator_id,
         protocol_pubkey,
         voting_power: 0,
@@ -64,18 +71,18 @@ public(package) fun new_committee_member(
     }
 }
 
-public(package) fun voting_power(member: &CommitteeMember): u64 {
+public(package) fun voting_power(member: &BlsCommitteeMember): u64 {
     member.voting_power
 }
 
-public(package) fun validator_id(member: &CommitteeMember): ID {
+public(package) fun validator_id(member: &BlsCommitteeMember): ID {
     member.validator_id
 }
 
 /// Create a new committee from members.
 /// Each member's voting power is initialized using their stake. We then attempt to cap their voting power
 /// at `MAX_VOTING_POWER`. If `MAX_VOTING_POWER` is not a feasible cap, we pick the lowest possible cap.
-public(package) fun new_committee(mut members: vector<CommitteeMember>): Committee {
+public(package) fun new_bls_committee(mut members: vector<BlsCommitteeMember>): BlsCommittee {
     // If threshold_pct is too small, it's possible that even when all members reach the threshold we still don't
     // have 100%. So we bound the threshold_pct to be always enough to find a solution.
     let threshold = TOTAL_VOTING_POWER.min(MAX_VOTING_POWER.max(TOTAL_VOTING_POWER.divide_and_round_up(members.length())));
@@ -90,29 +97,29 @@ public(package) fun new_committee(mut members: vector<CommitteeMember>): Committ
         ),
     );
 
-    Committee {
+    BlsCommittee {
         members,
         aggregated_protocol_pubkey
     }
 }
 
 /// Creates an empty committee. Only relevant for init phase.
-public(package) fun empty(): Committee {
-    Committee {
+public(package) fun empty(): BlsCommittee {
+    BlsCommittee {
         members: vector[],
         aggregated_protocol_pubkey: bls12381::g1_identity()
     }
 }
 
-public(package) fun members(self: &Committee): &vector<CommitteeMember> {
+public(package) fun members(self: &BlsCommittee): &vector<BlsCommitteeMember> {
     &self.members
 }
 
-public(package) fun validator_ids(self: &Committee): vector<ID> {
+public(package) fun validator_ids(self: &BlsCommittee): vector<ID> {
     self.members().map_ref!(|m| m.validator_id())
 }
 
-public(package) fun contains(self: &Committee, validator_id: &ID): bool {
+public(package) fun contains(self: &BlsCommittee, validator_id: &ID): bool {
     self.members().any!(|m| m.validator_id() == validator_id)
 }
 
@@ -121,7 +128,7 @@ public(package) fun contains(self: &Committee, validator_id: &ID): bool {
 /// descending order using voting power.
 /// Anything beyond the threshold is added to the remaining_power, which is also returned.
 fun init_voting_power_info(
-    members: &mut vector<CommitteeMember>,
+    members: &mut vector<BlsCommitteeMember>,
     threshold: u64,
 ): u64 {
     let total_stake = total_stake(members);
@@ -141,7 +148,7 @@ fun init_voting_power_info(
 }
 
 /// Sum up the total stake of all members.
-fun total_stake(members: &vector<CommitteeMember>): u64 {
+fun total_stake(members: &vector<BlsCommitteeMember>): u64 {
     let mut i = 0;
     let len = members.length();
     let mut total_stake = 0;
@@ -154,7 +161,7 @@ fun total_stake(members: &vector<CommitteeMember>): u64 {
 
 /// Distribute remaining_power to members that are not capped at threshold.
 fun adjust_voting_power(
-    members: &mut vector<CommitteeMember>,
+    members: &mut vector<BlsCommitteeMember>,
     threshold: u64,
     mut remaining_power: u64,
 ) {
@@ -177,7 +184,7 @@ fun adjust_voting_power(
 }
 
 /// Check a few invariants that must hold after setting the voting power.
-fun check_invariants(members: &vector<CommitteeMember>,) {
+fun check_invariants(members: &vector<BlsCommitteeMember>,) {
     // First check that the total voting power must be TOTAL_VOTING_POWER.
     let mut i = 0;
     let len = members.length();
@@ -230,11 +237,12 @@ public fun quorum_threshold(): u64 {
 /// an increasing list of indexes into the `committee` vector.
 /// If there is a certificate, the function returns the total stake. Otherwise, it aborts.
 public(package) fun verify_certificate(
-    self: &Committee,
+    self: &BlsCommittee,
+    epoch: u64,
     signature: &vector<u8>,
     signers_bitmap: &vector<u8>,
     intent_bytes: &vector<u8>,
-): u64 {
+) {
     assert!(signature.length() == BLS_SIGNATURE_LEN, EInvalidSignatureLength);
     let members = &self.members;
 
@@ -308,7 +316,10 @@ public(package) fun verify_certificate(
         EInvalidSignature,
     );
 
-    aggregate_voting_power
+    event::emit(CommitteeQuorumVerifiedEvent {
+        epoch,
+        total_signers_stake: aggregate_voting_power,
+    });
 }
 
 

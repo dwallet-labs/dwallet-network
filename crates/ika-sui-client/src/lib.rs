@@ -298,7 +298,7 @@ where
         static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
         *ARG.get_or_init(|| async move {
             let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
-                self.inner.get_mutable_system_arg(self.system_id),
+                self.inner.get_mutable_shared_arg(self.system_id),
                 Duration::from_secs(30)
             ) else {
                 panic!("Failed to get system object arg after retries");
@@ -306,6 +306,24 @@ where
             system_arg
         })
         .await
+    }
+
+    /// Retrieves the dwallet_2pc_mpc_secp256k1_id object arg from the Sui chain.
+    pub async fn get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(
+        &self,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+    ) -> ObjectArg {
+        static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
+        *ARG.get_or_init(|| async move {
+            let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
+                self.inner.get_mutable_shared_arg(dwallet_2pc_mpc_secp256k1_id),
+                Duration::from_secs(30)
+            ) else {
+                panic!("Failed to get dwallet_2pc_mpc_secp256k1_id object arg after retries");
+            };
+            system_arg
+        })
+            .await
     }
 
     pub async fn get_available_move_packages(
@@ -472,7 +490,7 @@ pub trait SuiClientInner: Send + Sync {
         validators: Vec<Validator>,
     ) -> Result<Vec<Vec<u8>>, Self::Error>;
 
-    async fn get_mutable_system_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error>;
+    async fn get_mutable_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error>;
 
     async fn get_available_move_packages(
         &self,
@@ -699,7 +717,7 @@ impl SuiClientInner for SuiSdkClient {
         Ok(validator_inners)
     }
 
-    async fn get_mutable_system_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error> {
+    async fn get_mutable_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error> {
         let response = self
             .read_api()
             .get_object_with_options(system_id, SuiObjectDataOptions::new().with_owner())

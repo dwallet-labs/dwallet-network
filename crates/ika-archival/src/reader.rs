@@ -70,7 +70,7 @@ impl ArchiveReaderBalancer {
         }
         Ok(ArchiveReaderBalancer { readers })
     }
-    pub async fn get_archive_watermark(&self) -> Result<Option<u64>> {
+    pub async fn get_archive_watermark(&self) -> Result<Option<u32>> {
         let mut checkpoints: Vec<Result<CheckpointSequenceNumber>> = vec![];
         for reader in self
             .readers
@@ -519,7 +519,7 @@ impl ArchiveReader {
         S: WriteStore + Clone,
     {
         store
-            .get_checkpoint_by_sequence_number(certified_checkpoint.sequence_number)
+            .get_checkpoint_by_sequence_number(certified_checkpoint.epoch, certified_checkpoint.sequence_number)
             .map_err(|e| anyhow!("Store op failed: {e}"))?
             .map(Ok::<VerifiedCheckpointMessage, anyhow::Error>)
             .unwrap_or_else(|| {

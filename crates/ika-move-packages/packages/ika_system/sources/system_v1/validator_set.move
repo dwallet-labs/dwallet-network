@@ -15,7 +15,7 @@ use ika_system::staked_ika::{
 use ika_system::validator_inner_v1::{ValidatorInnerV1};
 use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap };
 use ika_system::validator::{Self, Validator};
-use ika_system::committee::{Self, Committee, new_committee, new_committee_member, total_voting_power, quorum_threshold};
+use ika_system::bls_committee::{Self, BlsCommittee, new_bls_committee, new_bls_committee_member, total_voting_power, quorum_threshold};
 use sui::bag::{Self, Bag};
 use sui::balance::Balance;
 use sui::event;
@@ -31,12 +31,12 @@ public struct ValidatorSet has store {
     /// A talbe that contains all validators
     validators: ObjectTable<ID, Validator>,
     /// The current list of active committee of validators.
-    active_committee: Committee,
+    active_committee: BlsCommittee,
     /// The next list of active committee of validators.
     /// It will become the active_committee at the end of the epoch.
-    next_epoch_active_committee: Option<Committee>,
+    next_epoch_active_committee: Option<BlsCommittee>,
     /// The current list of previous committee of validators.
-    previous_committee: Committee,
+    previous_committee: BlsCommittee,
     /// The next list of peding active validators to be next_epoch_active_committee.
     /// It will start from the last next_epoch_active_committee and will be
     /// process between middle of the epochs and will be finlize
@@ -134,9 +134,9 @@ public(package) fun new(ctx: &mut TxContext): ValidatorSet {
     let validators = ValidatorSet {
         total_stake: 0,
         validators: object_table::new(ctx),
-        active_committee: committee::empty(),
+        active_committee: bls_committee::empty(),
         next_epoch_active_committee: option::none(),
-        previous_committee: committee::empty(),
+        previous_committee: bls_committee::empty(),
         pending_active_validators: vector[],
         at_risk_validators: vec_map::empty(),
         validator_report_records: vec_map::empty(),
@@ -577,7 +577,7 @@ fun effectuate_staged_metadata(self: &mut ValidatorSet) {
 /// Derive the computation price per unit size based on the computation price quote submitted by each validator.
 /// The returned computation price should be greater than or equal to 2/3 of the validators submitted
 /// computation price, weighted by stake.
-public(package) fun derive_computation_price_per_unit_size(self: &mut ValidatorSet, committee: &Committee): u64 {
+public(package) fun derive_computation_price_per_unit_size(self: &mut ValidatorSet, committee: &BlsCommittee): u64 {
     let vs = committee.members();
     let num_validators = vs.length();
     let mut entries = vector[];
@@ -885,10 +885,10 @@ fun process_pending_validators(self: &mut ValidatorSet) {
     while (i < length) {
         let validator_id = self.pending_active_validators[i];
         let validator = self.get_validator_mut(validator_id);
-        next_epoch_active_members.push_back(new_committee_member(validator_id, *validator.protocol_pubkey(), validator.total_stake_amount()));
+        next_epoch_active_members.push_back(new_bls_committee_member(validator_id, *validator.protocol_pubkey(), validator.total_stake_amount()));
         i = i + 1;
     };
-    let next_epoch_active_committee = new_committee(next_epoch_active_members);
+    let next_epoch_active_committee = new_bls_committee(next_epoch_active_members);
     self.next_epoch_active_committee.fill(next_epoch_active_committee);
 }
 
@@ -1217,12 +1217,12 @@ fun undo_report_validator_impl(
 }
 
 /// Return the active validators in `self`
-public fun active_committee(self: &ValidatorSet): Committee {
+public fun active_committee(self: &ValidatorSet): BlsCommittee {
     self.active_committee
 }
 
 /// Return the next epoch active committee in `self`
-public fun next_epoch_active_committee(self: &ValidatorSet): Option<Committee> {
+public fun next_epoch_active_committee(self: &ValidatorSet): Option<BlsCommittee> {
     self.next_epoch_active_committee
 }
 

@@ -39,8 +39,28 @@ pub use crate::digests::CheckpointContentsDigest;
 pub use crate::digests::CheckpointMessageDigest;
 use crate::message::MessageKind;
 
-pub type CheckpointSequenceNumber = u64;
+pub type CheckpointSequenceNumber = u32;
 pub type CheckpointTimestamp = u64;
+
+#[derive(
+    Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema, Debug
+)]
+pub struct CheckpointMessageKey {
+    epoch: EpochId,
+    sequence_number: CheckpointSequenceNumber,
+}
+
+impl CheckpointMessageKey {
+    pub fn new(
+        epoch: EpochId,
+        sequence_number: CheckpointSequenceNumber,
+    ) -> Self {
+        Self {
+            epoch,
+            sequence_number,
+        }
+    }
+}
 
 // The constituent parts of checkpoints, signed and certified
 

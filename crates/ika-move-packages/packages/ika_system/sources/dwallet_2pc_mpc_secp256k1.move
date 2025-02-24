@@ -7,17 +7,17 @@ use sui::dynamic_field;
 use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
 use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
     Self,
-    DWallet2PcMpcSecp256K1InnerV1,
-    DWalletNetworkrkDecryptionKeyCap,
+    DWalletCoordinatorInner,
+    DWalletNetworkDecryptionKeyCap,
     EncryptionKey,
     DWalletCap,
     MessageApproval,
     UnverifiedECDSAPartialUserSignatureCap,
     VerifiedECDSAPartialUserSignatureCap
 };
-use ika_system::committee::Committee;
+use ika_system::bls_committee::BlsCommittee;
 
-public struct DWallet2PcMpcSecp256K1 has key {
+public struct DWalletCoordinator has key {
     id: UID,
     version: u64,
     package_id: ID,
@@ -34,49 +34,64 @@ const VERSION: u64 = 1;
 
 /// Create a new System object and make it shared.
 /// This function will be called only once in init.
-public(package) fun create(
+public(package) fun create_dwallet_coordinator(
     package_id: ID,
     epoch: u64,
-    active_committee: Committee,
+    active_committee: BlsCommittee,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
-): (ID, DWalletNetworkrkDecryptionKeyCap) {
-    let mut dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1_inner::create(
+): ID {
+    let dwallet_coordinator_inner = dwallet_2pc_mpc_secp256k1_inner::create_dwallet_coordinator_inner(
         epoch,
         active_committee,
         pricing,
         ctx,
     );
         // TODO: remove this code!
-    let cap = dwallet_2pc_mpc_secp256k1.create_dwallet_network_decryption_key(ctx);
-    let mut self = DWallet2PcMpcSecp256K1 {
+    let mut self = DWalletCoordinator {
         id: object::new(ctx),
         version: VERSION,
         package_id,
         new_package_id: option::none(),
     };
     let self_id = object::id(&self);
-    dynamic_field::add(&mut self.id, VERSION, dwallet_2pc_mpc_secp256k1);
+    dynamic_field::add(&mut self.id, VERSION, dwallet_coordinator_inner);
     transfer::share_object(self);
-    (self_id, cap)
+    self_id
 }
 
-public(package) fun set_active_committee(
-    self: &mut DWallet2PcMpcSecp256K1,
-    committee: Committee,
+
+public(package) fun request_dwallet_network_decryption_key_dkg(
+    self: &mut DWalletCoordinator,
+    ctx: &mut TxContext
+): DWalletNetworkDecryptionKeyCap {
+    self.inner_mut().request_dwallet_network_decryption_key_dkg(ctx)
+}
+
+public(package) fun advance_epoch_dwallet_network_decryption_key(
+    self: &mut DWalletCoordinator,
+    cap: &DWalletNetworkDecryptionKeyCap,
 ) {
-    self.set_active_committee(committee);
+    self.inner_mut().advance_epoch_dwallet_network_decryption_key(cap);
+}
+
+public(package) fun advance_epoch(
+    self: &mut DWalletCoordinator,
+    committee: BlsCommittee,
+    ctx: &mut TxContext
+) {
+    self.inner_mut().advance_epoch(committee, ctx);
 }
 
 public fun get_active_encryption_key(
-    self: &DWallet2PcMpcSecp256K1,
+    self: &DWalletCoordinator,
     address: address,
 ): &EncryptionKey {
     self.inner().get_active_encryption_key(address)
 }
 
 public fun register_encryption_key(
-    self: &mut DWallet2PcMpcSecp256K1,
+    self: &mut DWalletCoordinator,
     encryption_key: vector<u8>,
     encryption_key_signature: vector<u8>,
     signer_public_key: vector<u8>,
@@ -90,14 +105,14 @@ public fun register_encryption_key(
     )
 }
 
-public fun request_dkg_first_round(
-    self: &mut DWallet2PcMpcSecp256K1,
+public fun request_dwallet_dkg_first_round(
+    self: &mut DWalletCoordinator,
     dwallet_network_decryption_key_id: ID,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ): DWalletCap {
-    self.inner_mut().request_dkg_first_round(
+    self.inner_mut().request_dwallet_dkg_first_round(
         dwallet_network_decryption_key_id,
         payment_ika,
         payment_sui,
@@ -105,29 +120,33 @@ public fun request_dkg_first_round(
     )
 }
 
-public fun request_dkg_second_round(
-    self: &mut DWallet2PcMpcSecp256K1,
+public fun request_dwallet_dkg_second_round(
+    self: &mut DWalletCoordinator,
     dwallet_cap: &DWalletCap,
     centralized_public_key_share_and_proof: vector<u8>,
     encrypted_centralized_secret_share_and_proof: vector<u8>,
     encryption_key_address: address,
     user_public_output: vector<u8>,
     singer_public_key: vector<u8>,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ) {
-    self.inner_mut().request_dkg_second_round(
+    self.inner_mut().request_dwallet_dkg_second_round(
         dwallet_cap,
         centralized_public_key_share_and_proof,
         encrypted_centralized_secret_share_and_proof,
         encryption_key_address,
         user_public_output,
         singer_public_key,
+        payment_ika,
+        payment_sui,
         ctx
     )
 }
 
 public fun request_re_encrypt_user_share_for(
-    self: &mut DWallet2PcMpcSecp256K1,
+    self: &mut DWalletCoordinator,
     dwallet_id: ID,
     destination_encryption_key_address: address,
     encrypted_centralized_secret_share_and_proof: vector<u8>,
@@ -148,7 +167,7 @@ public fun request_re_encrypt_user_share_for(
 }
 
 public fun accept_encrypted_user_share(
-    self: &mut DWallet2PcMpcSecp256K1,
+    self: &mut DWalletCoordinator,
     dwallet_id: ID,
     encrypted_user_secret_key_share_id: ID,
     user_output_signature: vector<u8>,
@@ -161,7 +180,7 @@ public fun accept_encrypted_user_share(
 }
 
 public fun request_ecdsa_presign(
-    self: &mut DWallet2PcMpcSecp256K1,
+    self: &mut DWalletCoordinator,
     dwallet_id: ID,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
@@ -176,7 +195,7 @@ public fun request_ecdsa_presign(
 }
 
 public fun request_ecdsa_sign(
-    self: &mut DWallet2PcMpcSecp256K1,
+    self: &mut DWalletCoordinator,
     dwallet_id: ID,
     message_approval: MessageApproval,
     presign_id: ID,
@@ -197,7 +216,7 @@ public fun request_ecdsa_sign(
 }
 
 public fun request_ecdsa_future_sign(
-    self: &mut DWallet2PcMpcSecp256K1,
+    self: &mut DWalletCoordinator,
     dwallet_id: ID,
     message: vector<u8>,
     presign_id: ID,
@@ -220,7 +239,7 @@ public fun request_ecdsa_future_sign(
 }
 
 public fun verifiy_ecdsa_partial_user_signature_cap(
-    self: &mut DWallet2PcMpcSecp256K1,
+    self: &mut DWalletCoordinator,
     cap: UnverifiedECDSAPartialUserSignatureCap,
     ctx: &mut TxContext
 ): VerifiedECDSAPartialUserSignatureCap {
@@ -231,7 +250,7 @@ public fun verifiy_ecdsa_partial_user_signature_cap(
 }
 
 public fun request_ecdsa_sign_with_partial_user_signatures(
-    self: &mut DWallet2PcMpcSecp256K1,
+    self: &mut DWalletCoordinator,
     dwallet_id: ID,
     partial_user_signature_cap: VerifiedECDSAPartialUserSignatureCap,
     message_approval: MessageApproval,
@@ -250,7 +269,7 @@ public fun request_ecdsa_sign_with_partial_user_signatures(
 }
 
 public fun compare_ecdsa_partial_user_signatures_with_approvals(
-    self: &DWallet2PcMpcSecp256K1,
+    self: &DWalletCoordinator,
     partial_user_signature_cap: &VerifiedECDSAPartialUserSignatureCap,
     message_approval: &MessageApproval,
 ) {
@@ -261,14 +280,15 @@ public fun compare_ecdsa_partial_user_signatures_with_approvals(
 }
 
 public(package) fun process_checkpoint_message_by_quorum(
-    self: &mut DWallet2PcMpcSecp256K1,
+    self: &mut DWalletCoordinator,
+    epoch: u64,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
     let self = self.inner_mut();
-    self.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+    self.process_checkpoint_message_by_quorum(epoch, signature, signers_bitmap, message, ctx);
 }
 
 /// Migrate the dwallet_2pc_mpc_secp256k1 object to the new package id.
@@ -276,12 +296,12 @@ public(package) fun process_checkpoint_message_by_quorum(
 /// This function sets the new package id and version and can be modified in future versions
 /// to migrate changes in the `dwallet_2pc_mpc_secp256k1_inner` object if needed.
 public fun migrate(
-        self: &mut DWallet2PcMpcSecp256K1,
+        self: &mut DWalletCoordinator,
 ) {
     assert!(self.version < VERSION, EInvalidMigration);
 
     // Move the old system state inner to the new version.
-    let dwallet_2pc_mpc_secp256k1_inner: DWallet2PcMpcSecp256K1InnerV1 = dynamic_field::remove(&mut self.id, self.version);
+    let dwallet_2pc_mpc_secp256k1_inner: DWalletCoordinatorInner = dynamic_field::remove(&mut self.id, self.version);
     dynamic_field::add(&mut self.id, VERSION, dwallet_2pc_mpc_secp256k1_inner);
     self.version = VERSION;
 
@@ -292,14 +312,14 @@ public fun migrate(
 
 // === Internals ===
 
-/// Get a mutable reference to `DWallet2PcMpcSecp256K1InnerVX` from the `DWallet2PcMpcSecp256K1`.
-fun inner_mut(self: &mut DWallet2PcMpcSecp256K1): &mut DWallet2PcMpcSecp256K1InnerV1 {
+/// Get a mutable reference to `DWalletCoordinatorInnerVX` from the `DWalletCoordinator`.
+fun inner_mut(self: &mut DWalletCoordinator): &mut DWalletCoordinatorInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow_mut(&mut self.id, VERSION)
 }
 
-/// Get an immutable reference to `DWallet2PcMpcSecp256K1VX` from the `DWallet2PcMpcSecp256K1`.
-fun inner(self: &DWallet2PcMpcSecp256K1): &DWallet2PcMpcSecp256K1InnerV1 {
+/// Get an immutable reference to `DWalletCoordinatorVX` from the `DWalletCoordinator`.
+fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow(&self.id, VERSION)
 }

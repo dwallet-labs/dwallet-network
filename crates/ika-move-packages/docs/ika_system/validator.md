@@ -1,34 +1,63 @@
 ---
-title: Module `0x0::validator`
+title: Module `(ika_system=0x0)::validator`
 ---
 
 
 
--  [Resource `Validator`](#0x0_validator_Validator)
+-  [Struct `Validator`](#(ika_system=0x0)_validator_Validator)
 -  [Constants](#@Constants_0)
--  [Function `create`](#0x0_validator_create)
--  [Function `load_validator_maybe_upgrade`](#0x0_validator_load_validator_maybe_upgrade)
--  [Function `destroy`](#0x0_validator_destroy)
--  [Function `upgrade_to_latest`](#0x0_validator_upgrade_to_latest)
--  [Function `version`](#0x0_validator_version)
+-  [Function `create`](#(ika_system=0x0)_validator_create)
+-  [Function `load_validator_maybe_upgrade`](#(ika_system=0x0)_validator_load_validator_maybe_upgrade)
+-  [Function `destroy`](#(ika_system=0x0)_validator_destroy)
+-  [Function `upgrade_to_latest`](#(ika_system=0x0)_validator_upgrade_to_latest)
+-  [Function `version`](#(ika_system=0x0)_validator_version)
 
 
-<pre><code><b>use</b> <a href="validator_cap.md#0x0_validator_cap">0x0::validator_cap</a>;
-<b>use</b> <a href="validator_inner.md#0x0_validator_inner_v1">0x0::validator_inner_v1</a>;
-<b>use</b> <a href="../sui-framework/object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="../sui-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
-<b>use</b> <a href="../sui-framework/versioned.md#0x2_versioned">0x2::versioned</a>;
+<pre><code><b>use</b> (ika=0x0)::ika;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool">staking_pool</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap">validator_cap</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1">validator_inner_v1</a>;
+<b>use</b> <a href="../std/address.md#std_address">std::address</a>;
+<b>use</b> <a href="../std/ascii.md#std_ascii">std::ascii</a>;
+<b>use</b> <a href="../std/bcs.md#std_bcs">std::bcs</a>;
+<b>use</b> <a href="../std/option.md#std_option">std::option</a>;
+<b>use</b> <a href="../std/string.md#std_string">std::string</a>;
+<b>use</b> <a href="../std/type_name.md#std_type_name">std::type_name</a>;
+<b>use</b> <a href="../std/u64.md#std_u64">std::u64</a>;
+<b>use</b> <a href="../std/vector.md#std_vector">std::vector</a>;
+<b>use</b> <a href="../sui/address.md#sui_address">sui::address</a>;
+<b>use</b> <a href="../sui/bag.md#sui_bag">sui::bag</a>;
+<b>use</b> <a href="../sui/balance.md#sui_balance">sui::balance</a>;
+<b>use</b> <a href="../sui/bcs.md#sui_bcs">sui::bcs</a>;
+<b>use</b> <a href="../sui/bls12381.md#sui_bls12381">sui::bls12381</a>;
+<b>use</b> <a href="../sui/coin.md#sui_coin">sui::coin</a>;
+<b>use</b> <a href="../sui/config.md#sui_config">sui::config</a>;
+<b>use</b> <a href="../sui/deny_list.md#sui_deny_list">sui::deny_list</a>;
+<b>use</b> <a href="../sui/dynamic_field.md#sui_dynamic_field">sui::dynamic_field</a>;
+<b>use</b> <a href="../sui/dynamic_object_field.md#sui_dynamic_object_field">sui::dynamic_object_field</a>;
+<b>use</b> <a href="../sui/event.md#sui_event">sui::event</a>;
+<b>use</b> <a href="../sui/group_ops.md#sui_group_ops">sui::group_ops</a>;
+<b>use</b> <a href="../sui/hex.md#sui_hex">sui::hex</a>;
+<b>use</b> <a href="../sui/object.md#sui_object">sui::object</a>;
+<b>use</b> <a href="../sui/table.md#sui_table">sui::table</a>;
+<b>use</b> <a href="../sui/transfer.md#sui_transfer">sui::transfer</a>;
+<b>use</b> <a href="../sui/tx_context.md#sui_tx_context">sui::tx_context</a>;
+<b>use</b> <a href="../sui/types.md#sui_types">sui::types</a>;
+<b>use</b> <a href="../sui/url.md#sui_url">sui::url</a>;
+<b>use</b> <a href="../sui/vec_set.md#sui_vec_set">sui::vec_set</a>;
+<b>use</b> <a href="../sui/versioned.md#sui_versioned">sui::versioned</a>;
 </code></pre>
 
 
 
-<a name="0x0_validator_Validator"></a>
+<a name="(ika_system=0x0)_validator_Validator"></a>
 
-## Resource `Validator`
+## Struct `Validator`
 
 
 
-<pre><code><b>struct</b> <a href="validator.md#0x0_validator_Validator">Validator</a> <b>has</b> store, key
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a> <b>has</b> key, store
 </code></pre>
 
 
@@ -39,16 +68,14 @@ title: Module `0x0::validator`
 
 <dl>
 <dt>
-<code>id: <a href="../sui-framework/object.md#0x2_object_UID">object::UID</a></code>
+<code>id: <a href="../sui/object.md#sui_object_UID">sui::object::UID</a></code>
 </dt>
 <dd>
-
 </dd>
 <dt>
-<code>inner: <a href="../sui-framework/versioned.md#0x2_versioned_Versioned">versioned::Versioned</a></code>
+<code>inner: <a href="../sui/versioned.md#sui_versioned_Versioned">sui::versioned::Versioned</a></code>
 </dt>
 <dd>
-
 </dd>
 </dl>
 
@@ -60,32 +87,32 @@ title: Module `0x0::validator`
 ## Constants
 
 
-<a name="0x0_validator_EInvalidVersion"></a>
+<a name="(ika_system=0x0)_validator_EInvalidVersion"></a>
 
 
 
-<pre><code><b>const</b> <a href="validator.md#0x0_validator_EInvalidVersion">EInvalidVersion</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 0;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EInvalidVersion">EInvalidVersion</a>: u64 = 0;
 </code></pre>
 
 
 
-<a name="0x0_validator_VERSION"></a>
+<a name="(ika_system=0x0)_validator_VERSION"></a>
 
 Flag to indicate the version of the ika validator.
 
 
-<pre><code><b>const</b> <a href="validator.md#0x0_validator_VERSION">VERSION</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 1;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_VERSION">VERSION</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x0_validator_create"></a>
+<a name="(ika_system=0x0)_validator_create"></a>
 
 ## Function `create`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x0_validator_create">create</a>(payment_address: <b>address</b>, protocol_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, network_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, consensus_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_of_possession_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, name: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, description: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, image_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, project_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, network_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, p2p_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, consensus_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, computation_price: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, commission_rate: u16, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): (<a href="validator.md#0x0_validator_Validator">validator::Validator</a>, <a href="validator_cap.md#0x0_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, <a href="validator_cap.md#0x0_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_create">create</a>(payment_address: <b>address</b>, protocol_pubkey_bytes: vector&lt;u8&gt;, network_pubkey_bytes: vector&lt;u8&gt;, consensus_pubkey_bytes: vector&lt;u8&gt;, proof_of_possession_bytes: vector&lt;u8&gt;, name: vector&lt;u8&gt;, description: vector&lt;u8&gt;, image_url: vector&lt;u8&gt;, project_url: vector&lt;u8&gt;, network_address: vector&lt;u8&gt;, p2p_address: vector&lt;u8&gt;, consensus_address: vector&lt;u8&gt;, computation_price: u64, commission_rate: u16, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): ((ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
 </code></pre>
 
 
@@ -94,38 +121,33 @@ Flag to indicate the version of the ika validator.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<a href="../sui-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="validator.md#0x0_validator_create">create</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_create">create</a>(
     payment_address: <b>address</b>,
-    protocol_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    network_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    consensus_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    proof_of_possession_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    name: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    description: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    image_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    project_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    network_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    p2p_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    consensus_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    computation_price: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
+    protocol_pubkey_bytes: vector&lt;u8&gt;,
+    network_pubkey_bytes: vector&lt;u8&gt;,
+    consensus_pubkey_bytes: vector&lt;u8&gt;,
+    proof_of_possession_bytes: vector&lt;u8&gt;,
+    name: vector&lt;u8&gt;,
+    description: vector&lt;u8&gt;,
+    image_url: vector&lt;u8&gt;,
+    project_url: vector&lt;u8&gt;,
+    network_address: vector&lt;u8&gt;,
+    p2p_address: vector&lt;u8&gt;,
+    consensus_address: vector&lt;u8&gt;,
+    computation_price: u64,
     commission_rate: u16,
     ctx: &<b>mut</b> TxContext,
-): (<a href="validator.md#0x0_validator_Validator">Validator</a>, ValidatorCap, ValidatorOperationCap) {
-    <b>let</b> validator_uid = <a href="../sui-framework/object.md#0x2_object_new">object::new</a>(ctx);
-
+): (<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>, ValidatorCap, ValidatorOperationCap) {
+    <b>let</b> validator_uid = object::new(ctx);
     <b>let</b> validator_id = validator_uid.to_inner();
-
-    <b>let</b> cap = <a href="validator_cap.md#0x0_validator_cap_new_validator_cap">validator_cap::new_validator_cap</a>(validator_id, ctx);
-
-    <b>let</b> operation_cap = <a href="validator_cap.md#0x0_validator_cap_new_validator_operation_cap">validator_cap::new_validator_operation_cap</a>(
+    <b>let</b> cap = <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_new_validator_cap">validator_cap::new_validator_cap</a>(validator_id, ctx);
+    <b>let</b> operation_cap = <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_new_validator_operation_cap">validator_cap::new_validator_operation_cap</a>(
         validator_id,
         ctx,
     );
-
-    <b>let</b> cap_id = <a href="../sui-framework/object.md#0x2_object_id">object::id</a>(&cap);
-    <b>let</b> operation_cap_id = <a href="../sui-framework/object.md#0x2_object_id">object::id</a>(&operation_cap);
-
-    <b>let</b> <a href="validator_inner.md#0x0_validator_inner_v1">validator_inner_v1</a> = <a href="validator_inner.md#0x0_validator_inner_v1_create">validator_inner_v1::create</a>(
+    <b>let</b> cap_id = object::id(&cap);
+    <b>let</b> operation_cap_id = object::id(&operation_cap);
+    <b>let</b> <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1">validator_inner_v1</a> = <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_create">validator_inner_v1::create</a>(
         validator_id,
         cap_id,
         operation_cap_id,
@@ -145,12 +167,11 @@ Flag to indicate the version of the ika validator.
         commission_rate,
         ctx,
     );
-
-    <b>let</b> <a href="validator.md#0x0_validator">validator</a> = <a href="validator.md#0x0_validator_Validator">Validator</a> {
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a> {
         id: validator_uid,
-        inner: <a href="../sui-framework/versioned.md#0x2_versioned_create">versioned::create</a>(<a href="validator.md#0x0_validator_VERSION">VERSION</a>, <a href="validator_inner.md#0x0_validator_inner_v1">validator_inner_v1</a>, ctx),
+        inner: versioned::create(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_VERSION">VERSION</a>, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1">validator_inner_v1</a>, ctx),
     };
-    (<a href="validator.md#0x0_validator">validator</a>, cap, operation_cap)
+    (<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>, cap, operation_cap)
 }
 </code></pre>
 
@@ -158,7 +179,7 @@ Flag to indicate the version of the ika validator.
 
 </details>
 
-<a name="0x0_validator_load_validator_maybe_upgrade"></a>
+<a name="(ika_system=0x0)_validator_load_validator_maybe_upgrade"></a>
 
 ## Function `load_validator_maybe_upgrade`
 
@@ -166,7 +187,7 @@ This function should always return the latest supported version.
 If the inner version is old, we upgrade it lazily in-place.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x0_validator_load_validator_maybe_upgrade">load_validator_maybe_upgrade</a>(self: &<b>mut</b> <a href="validator.md#0x0_validator_Validator">validator::Validator</a>): &<b>mut</b> <a href="validator_inner.md#0x0_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_load_validator_maybe_upgrade">load_validator_maybe_upgrade</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>): &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>
 </code></pre>
 
 
@@ -175,9 +196,9 @@ If the inner version is old, we upgrade it lazily in-place.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<a href="../sui-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="validator.md#0x0_validator_load_validator_maybe_upgrade">load_validator_maybe_upgrade</a>(self: &<b>mut</b> <a href="validator.md#0x0_validator_Validator">Validator</a>): &<b>mut</b> ValidatorInnerV1 {
-    <a href="validator.md#0x0_validator_upgrade_to_latest">upgrade_to_latest</a>(self);
-    <a href="../sui-framework/versioned.md#0x2_versioned_load_value_mut">versioned::load_value_mut</a>(&<b>mut</b> self.inner)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_load_validator_maybe_upgrade">load_validator_maybe_upgrade</a>(self: &<b>mut</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>): &<b>mut</b> ValidatorInnerV1 {
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator_upgrade_to_latest">upgrade_to_latest</a>(self);
+    versioned::load_value_mut(&<b>mut</b> self.inner)
 }
 </code></pre>
 
@@ -185,14 +206,14 @@ If the inner version is old, we upgrade it lazily in-place.
 
 </details>
 
-<a name="0x0_validator_destroy"></a>
+<a name="(ika_system=0x0)_validator_destroy"></a>
 
 ## Function `destroy`
 
 Destroy the wrapper and retrieve the inner validator object.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x0_validator_destroy">destroy</a>(self: <a href="validator.md#0x0_validator_Validator">validator::Validator</a>): <a href="validator_inner.md#0x0_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_destroy">destroy</a>(self: (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>): (ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>
 </code></pre>
 
 
@@ -201,11 +222,11 @@ Destroy the wrapper and retrieve the inner validator object.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<a href="../sui-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="validator.md#0x0_validator_destroy">destroy</a>(self: <a href="validator.md#0x0_validator_Validator">Validator</a>): ValidatorInnerV1 {
-    <a href="validator.md#0x0_validator_upgrade_to_latest">upgrade_to_latest</a>(&self);
-    <b>let</b> <a href="validator.md#0x0_validator_Validator">Validator</a> { id, inner } = self;
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_destroy">destroy</a>(self: <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>): ValidatorInnerV1 {
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator_upgrade_to_latest">upgrade_to_latest</a>(&self);
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a> { id, inner } = self;
     id.delete();
-    <a href="../sui-framework/versioned.md#0x2_versioned_destroy">versioned::destroy</a>(inner)
+    versioned::destroy(inner)
 }
 </code></pre>
 
@@ -213,13 +234,13 @@ Destroy the wrapper and retrieve the inner validator object.
 
 </details>
 
-<a name="0x0_validator_upgrade_to_latest"></a>
+<a name="(ika_system=0x0)_validator_upgrade_to_latest"></a>
 
 ## Function `upgrade_to_latest`
 
 
 
-<pre><code><b>fun</b> <a href="validator.md#0x0_validator_upgrade_to_latest">upgrade_to_latest</a>(self: &<a href="validator.md#0x0_validator_Validator">validator::Validator</a>)
+<pre><code><b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_upgrade_to_latest">upgrade_to_latest</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>)
 </code></pre>
 
 
@@ -228,10 +249,10 @@ Destroy the wrapper and retrieve the inner validator object.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="validator.md#0x0_validator_upgrade_to_latest">upgrade_to_latest</a>(self: &<a href="validator.md#0x0_validator_Validator">Validator</a>) {
-    <b>let</b> version = <a href="validator.md#0x0_validator_version">version</a>(self);
-    // TODO: When new versions are added, we need <b>to</b> explicitly upgrade here.
-    <b>assert</b>!(version == <a href="validator.md#0x0_validator_VERSION">VERSION</a>, <a href="validator.md#0x0_validator_EInvalidVersion">EInvalidVersion</a>);
+<pre><code><b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_upgrade_to_latest">upgrade_to_latest</a>(self: &<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>) {
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_version">version</a> = <a href="../ika_system/validator.md#(ika_system=0x0)_validator_version">version</a>(self);
+    // TODO: When new versions are added, we need to explicitly upgrade here.
+    <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_version">version</a> == <a href="../ika_system/validator.md#(ika_system=0x0)_validator_VERSION">VERSION</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EInvalidVersion">EInvalidVersion</a>);
 }
 </code></pre>
 
@@ -239,13 +260,13 @@ Destroy the wrapper and retrieve the inner validator object.
 
 </details>
 
-<a name="0x0_validator_version"></a>
+<a name="(ika_system=0x0)_validator_version"></a>
 
 ## Function `version`
 
 
 
-<pre><code><b>fun</b> <a href="validator.md#0x0_validator_version">version</a>(self: &<a href="validator.md#0x0_validator_Validator">validator::Validator</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
+<pre><code><b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_version">version</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>): u64
 </code></pre>
 
 
@@ -254,8 +275,8 @@ Destroy the wrapper and retrieve the inner validator object.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="validator.md#0x0_validator_version">version</a>(self: &<a href="validator.md#0x0_validator_Validator">Validator</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> {
-    <a href="../sui-framework/versioned.md#0x2_versioned_version">versioned::version</a>(&self.inner)
+<pre><code><b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_version">version</a>(self: &<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>): u64 {
+    versioned::version(&self.inner)
 }
 </code></pre>
 

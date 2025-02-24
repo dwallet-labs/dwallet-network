@@ -1,26 +1,33 @@
 ---
-title: Module `0x0::protocol_cap`
+title: Module `(ika_system=0x0)::protocol_cap`
 ---
 
 
 
--  [Resource `ProtocolCap`](#0x0_protocol_cap_ProtocolCap)
--  [Function `new_protocol_cap`](#0x0_protocol_cap_new_protocol_cap)
+-  [Struct `ProtocolCap`](#(ika_system=0x0)_protocol_cap_ProtocolCap)
+-  [Function `new_protocol_cap`](#(ika_system=0x0)_protocol_cap_new_protocol_cap)
 
 
-<pre><code><b>use</b> <a href="../sui-framework/object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="../sui-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
+<pre><code><b>use</b> <a href="../std/ascii.md#std_ascii">std::ascii</a>;
+<b>use</b> <a href="../std/bcs.md#std_bcs">std::bcs</a>;
+<b>use</b> <a href="../std/option.md#std_option">std::option</a>;
+<b>use</b> <a href="../std/string.md#std_string">std::string</a>;
+<b>use</b> <a href="../std/vector.md#std_vector">std::vector</a>;
+<b>use</b> <a href="../sui/address.md#sui_address">sui::address</a>;
+<b>use</b> <a href="../sui/hex.md#sui_hex">sui::hex</a>;
+<b>use</b> <a href="../sui/object.md#sui_object">sui::object</a>;
+<b>use</b> <a href="../sui/tx_context.md#sui_tx_context">sui::tx_context</a>;
 </code></pre>
 
 
 
-<a name="0x0_protocol_cap_ProtocolCap"></a>
+<a name="(ika_system=0x0)_protocol_cap_ProtocolCap"></a>
 
-## Resource `ProtocolCap`
+## Struct `ProtocolCap`
 
 
 
-<pre><code><b>struct</b> <a href="protocol_cap.md#0x0_protocol_cap_ProtocolCap">ProtocolCap</a> <b>has</b> store, key
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">ProtocolCap</a> <b>has</b> key, store
 </code></pre>
 
 
@@ -31,23 +38,22 @@ title: Module `0x0::protocol_cap`
 
 <dl>
 <dt>
-<code>id: <a href="../sui-framework/object.md#0x2_object_UID">object::UID</a></code>
+<code>id: <a href="../sui/object.md#sui_object_UID">sui::object::UID</a></code>
 </dt>
 <dd>
-
 </dd>
 </dl>
 
 
 </details>
 
-<a name="0x0_protocol_cap_new_protocol_cap"></a>
+<a name="(ika_system=0x0)_protocol_cap_new_protocol_cap"></a>
 
 ## Function `new_protocol_cap`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="protocol_cap.md#0x0_protocol_cap_new_protocol_cap">new_protocol_cap</a>(ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="protocol_cap.md#0x0_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_new_protocol_cap">new_protocol_cap</a>(ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>
 </code></pre>
 
 
@@ -56,11 +62,11 @@ title: Module `0x0::protocol_cap`
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<a href="../sui-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="protocol_cap.md#0x0_protocol_cap_new_protocol_cap">new_protocol_cap</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_new_protocol_cap">new_protocol_cap</a>(
     ctx: &<b>mut</b> TxContext,
-): <a href="protocol_cap.md#0x0_protocol_cap_ProtocolCap">ProtocolCap</a> {
-    <b>let</b> cap = <a href="protocol_cap.md#0x0_protocol_cap_ProtocolCap">ProtocolCap</a> {
-        id: <a href="../sui-framework/object.md#0x2_object_new">object::new</a>(ctx),
+): <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">ProtocolCap</a> {
+    <b>let</b> cap = <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">ProtocolCap</a> {
+        id: object::new(ctx),
     };
     cap
 }
