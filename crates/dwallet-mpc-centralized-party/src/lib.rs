@@ -7,8 +7,7 @@ use anyhow::{anyhow, Context};
 use class_groups::setup::get_setup_parameters_secp256k1;
 use class_groups::{
     CiphertextSpaceGroupElement, CiphertextSpaceValue, DecryptionKey, EncryptionKey,
-    Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    Secp256k1DecryptionKey,
 };
 use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use group::{CyclicGroupElement, GroupElement, Samplable};
@@ -35,6 +34,9 @@ use serde::{Deserialize, Serialize};
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
+};
+use twopc_mpc::secp256k1::class_groups::{
+    FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
@@ -77,15 +79,15 @@ enum Hash {
 type SignedMessages = Vec<u8>;
 type EncryptionOfSecretShareProof = EncryptionOfDiscreteLogProofWithoutCtx<
     SCALAR_LIMBS,
-    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     secp256k1::GroupElement,
 >;
 
 type Secp256k1EncryptionKey = EncryptionKey<
     SCALAR_LIMBS,
-    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     secp256k1::GroupElement,
 >;
 
@@ -256,8 +258,8 @@ fn protocol_public_parameters_by_key_scheme(
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             Ok(bcs::to_bytes(&ProtocolPublicParameters::new::<
                 { secp256k1::SCALAR_LIMBS },
-                { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-                { SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                { FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
                 secp256k1::GroupElement,
             >(
                 encryption_scheme_public_parameters
@@ -310,8 +312,8 @@ pub fn encrypt_secret_key_share_and_prove(
     let protocol_public_params = protocol_public_parameters();
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
         SCALAR_LIMBS,
-        { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        { SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
         secp256k1::GroupElement,
     >(
         protocol_public_params
@@ -321,7 +323,7 @@ pub fn encrypt_secret_key_share_and_prove(
         bcs::from_bytes(&encryption_key)?,
     );
     let randomness = class_groups::RandomnessSpaceGroupElement::<
-        { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
     >::sample(
         language_public_parameters
             .encryption_scheme_public_parameters
@@ -383,7 +385,7 @@ pub fn decrypt_user_share_inner(
 ) -> anyhow::Result<Vec<u8>> {
     let (_, encryption_of_discrete_log): (
         EncryptionOfSecretShareProof,
-        CiphertextSpaceValue<SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
+        CiphertextSpaceValue<NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
     ) = bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let public_parameters: homomorphic_encryption::PublicParameters<
         SCALAR_LIMBS,
@@ -397,8 +399,8 @@ pub fn decrypt_user_share_inner(
     let decryption_key = bcs::from_bytes(&decryption_key)?;
     let decryption_key: DecryptionKey<
         SCALAR_LIMBS,
-        SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-        SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
         secp256k1::GroupElement,
     > = DecryptionKey::new(decryption_key, &public_parameters)?;
     let Some(plaintext): Option<<Secp256k1EncryptionKey as AdditivelyHomomorphicEncryptionKey<SCALAR_LIMBS>>::PlaintextSpaceGroupElement> = decryption_key
