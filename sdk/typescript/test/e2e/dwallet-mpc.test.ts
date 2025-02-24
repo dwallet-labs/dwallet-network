@@ -61,11 +61,12 @@ describe('Test dWallet MPC', () => {
 
 	it('should run the DKG second round', async () => {
 		let cgKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+		await delay(checkpointCreationTime);
 		// log the encryption key base 64
 		console.log(Buffer.from(cgKeyPair.encryptionKey).toString('base64'));
 
 		let dwalletState = await getDWalletSecpState(conf);
-		let event = await createDKGFirstRoundOutputMock(
+		let dwalletCapID = await createDKGFirstRoundOutputMock(
 			conf,
 			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 		);
@@ -75,7 +76,7 @@ describe('Test dWallet MPC', () => {
 			dwalletState,
 			{
 				sessionID: dkgFirstRoundMock.sessionID,
-				dwalletCapID: event.event_data.dwallet_cap_id,
+				dwalletCapID: dwalletCapID,
 				output: Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 			},
 			Buffer.from(dkgFirstRoundMock.centralizedPublicKeyShareAndProof, 'base64'),
