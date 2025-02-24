@@ -58,8 +58,6 @@ pub(crate) fn verify_encryption_key(
     Ok(())
 }
 
-pub fn
-
 /// Verifies that the given centralized secret key share
 /// encryption is the encryption of the given dWallet's secret share.
 fn verify_centralized_secret_key_share_proof(
