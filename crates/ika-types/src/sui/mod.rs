@@ -54,6 +54,8 @@ pub const REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME: &IdentStr =
     ident_str!("request_add_validator_candidate");
 pub const REQUEST_ADD_VALIDATOR_FUNCTION_NAME: &IdentStr = ident_str!("request_add_validator");
 pub const REQUEST_ADD_STAKE_FUNCTION_NAME: &IdentStr = ident_str!("request_add_stake");
+pub const REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME: &IdentStr =
+    ident_str!("request_remove_validator");
 pub const PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME: &IdentStr =
     ident_str!("process_checkpoint_message_by_quorum");
 

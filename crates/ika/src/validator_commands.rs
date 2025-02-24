@@ -1,10 +1,10 @@
 use anyhow::Result;
+use std::collections::HashSet;
 use std::{
     fmt::{Debug, Display, Formatter, Write},
     fs,
     path::PathBuf,
 };
-
 use sui_types::{base_types::SuiAddress, crypto::Signable, multiaddr::Multiaddr};
 
 use clap::*;
@@ -19,7 +19,7 @@ use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
 use ika_config::{ika_config_dir, IKA_NETWORK_CONFIG};
 use ika_sui_client::ika_validator_transactions::{
-    request_add_validator, request_add_validator_candidate, stake_ika,
+    request_add_validator, request_add_validator_candidate, request_remove_validator, stake_ika,
 };
 use ika_swarm_config::network_config::NetworkConfig;
 use ika_types::crypto::{generate_proof_of_possession, AuthorityKeyPair};
@@ -72,10 +72,6 @@ pub enum IkaValidatorCommand {
         ika_system_config_file: Option<PathBuf>,
         #[clap(name = "validator-cap-id", long)]
         validator_cap_id: ObjectID,
-        #[clap(name = "validator-id", long)]
-        validator_id: ObjectID,
-        #[clap(name = "ika-supply-id", long)]
-        ika_supply_id: ObjectID,
     },
     #[clap(name = "stake-validator")]
     StakeValidator {
@@ -90,6 +86,15 @@ pub enum IkaValidatorCommand {
         #[clap(name = "stake-amount", long)]
         stake_amount: u64,
     },
+    #[clap(name = "leave-committee")]
+    LeaveCommittee {
+        #[clap(name = "gas-budget", long)]
+        gas_budget: Option<u64>,
+        #[clap(name = "validator-cap-id", long)]
+        validator_cap_id: ObjectID,
+        #[clap(name = "ika-system-package-id", long)]
+        ika_system_config_file: Option<PathBuf>,
+    },
 }
 
 #[derive(Serialize)]
@@ -99,6 +104,7 @@ pub enum IkaValidatorCommandResponse {
     BecomeCandidate(SuiTransactionBlockResponse, ObjectID, ObjectID),
     JoinCommittee(SuiTransactionBlockResponse),
     StakeValidator(SuiTransactionBlockResponse),
+    LeaveCommittee(SuiTransactionBlockResponse),
 }
 
 impl IkaValidatorCommand {
@@ -210,8 +216,6 @@ impl IkaValidatorCommand {
                 gas_budget,
                 ika_system_config_file,
                 validator_cap_id,
-                validator_id,
-                ika_supply_id,
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path =
@@ -263,6 +267,30 @@ impl IkaValidatorCommand {
 
                 IkaValidatorCommandResponse::StakeValidator(res)
             }
+            IkaValidatorCommand::LeaveCommittee {
+                gas_budget,
+                validator_cap_id,
+                ika_system_config_file,
+            } => {
+                let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
+                let config_path =
+                    ika_system_config_file.unwrap_or(ika_config_dir()?.join(IKA_NETWORK_CONFIG));
+                let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
+                    err.context(format!(
+                        "Cannot open Ika network config file at {:?}",
+                        config_path
+                    ))
+                })?;
+                let response = request_remove_validator(
+                    context,
+                    config.ika_system_package_id.clone(),
+                    config.system_id.clone(),
+                    validator_cap_id,
+                    gas_budget,
+                )
+                .await?;
+                IkaValidatorCommandResponse::LeaveCommittee(response)
+            }
         });
         ret
     }
@@ -283,7 +311,8 @@ impl Display for IkaValidatorCommandResponse {
                 writeln!(writer, "Validator Cap ID: {}", validator_cap_id)?;
             }
             IkaValidatorCommandResponse::JoinCommittee(response)
-            | IkaValidatorCommandResponse::StakeValidator(response) => {
+            | IkaValidatorCommandResponse::StakeValidator(response)
+            | IkaValidatorCommandResponse::LeaveCommittee(response) => {
                 write!(writer, "{}", write_transaction_response(response)?)?;
             }
         }

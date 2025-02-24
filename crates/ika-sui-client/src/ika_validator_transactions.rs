@@ -9,8 +9,8 @@ use ika_types::sui::{
     CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
     CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
     FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME,
-    VALIDATOR_CAP_STRUCT_NAME,
+    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
+    SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
 };
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
@@ -391,6 +391,36 @@ pub async fn request_add_validator(
     Ok(call_ika_system(
         context,
         REQUEST_ADD_STAKE_FUNCTION_NAME,
+        call_args,
+        gas_budget,
+        system_id,
+        ika_system_package_id,
+        ptb,
+    )
+    .await?)
+}
+
+pub async fn request_remove_validator(
+    context: &mut WalletContext,
+    ika_system_package_id: ObjectID,
+    system_id: ObjectID,
+    validator_cap_id: ObjectID,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let client = context.get_client().await?;
+    let validator_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(validator_cap_id)
+        .await?;
+
+    let mut ptb = ProgrammableTransactionBuilder::new();
+    let call_args = vec![ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+        validator_cap_ref,
+    )))?];
+
+    Ok(call_ika_system(
+        context,
+        REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
         call_args,
         gas_budget,
         system_id,
