@@ -4110,7 +4110,7 @@ the function will abort with this error.
                 <b>let</b> first_round_output = bcs_body.peel_vec_u8();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dkg_first_round_output">respond_dkg_first_round_output</a>(dwallet_id, first_round_output);
             } <b>else</b> <b>if</b> (message_data_type == 4) {
-                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> public_output = bcs_body.peel_vec_u8();
                 <b>let</b> encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 <b>let</b> encryption_key_address = bcs_body.peel_address();
