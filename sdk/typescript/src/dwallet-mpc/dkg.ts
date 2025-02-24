@@ -1,5 +1,6 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import { Buffer } from 'buffer';
 import {
 	create_dkg_centralized_output,
 	encrypt_secret_share,
@@ -75,6 +76,18 @@ export async function launchDKGSecondRound(
 			firstRoundOutputResult.sessionID.slice(2),
 		);
 	let dWalletStateData = await getDWalletSecpState(conf);
+
+	console.log(
+		'centralizedPublicKeyShareAndProof',
+		Buffer.from(centralizedPublicKeyShareAndProof).toString('base64'),
+	);
+	console.log('centralizedPublicOutput', Buffer.from(centralizedPublicOutput).toString('base64'));
+	console.log(
+		'centralizedSecretKeyShare',
+		Buffer.from(centralizedSecretKeyShare).toString('base64'),
+	);
+	console.log('first round output', Buffer.from(firstRoundOutputResult.output).toString('base64'));
+	console.log('sessionID', firstRoundOutputResult.sessionID);
 
 	// TODO (#672): Fix the encrypt_secret_share wasm function.
 	const encryptedUserShareAndProof = encrypt_secret_share(
