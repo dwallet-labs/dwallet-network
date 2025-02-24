@@ -127,14 +127,14 @@ impl DWalletMPCService {
             .iter()
             .filter_map(|(id, event)| {
                 let Ok(event) = bcs::from_bytes::<DBSuiEvent>(event) else {
-                    return None
+                    return None;
                 };
                 let Ok(Some(session_info)) = session_info_from_event(
                     event.clone(),
                     Some(key_version),
                     &self.epoch_store.packages_config,
                 ) else {
-                    return None
+                    return None;
                 };
                 let event = DWalletMPCEvent {
                     event,

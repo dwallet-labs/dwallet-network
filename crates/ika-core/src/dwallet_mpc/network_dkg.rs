@@ -13,8 +13,7 @@ use class_groups::dkg::{
 };
 use class_groups::{
     SecretKeyShareSizedInteger, SecretKeyShareSizedNumber,
-    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
-    SECP256K1_SCALAR_LIMBS,
+    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, SECP256K1_SCALAR_LIMBS,
 };
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};

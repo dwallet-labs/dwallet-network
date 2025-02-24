@@ -313,14 +313,13 @@ pub fn encrypt_secret_key_share_and_prove(
         protocol_public_params.group_public_parameters.clone(),
         bcs::from_bytes(&encryption_key)?,
     );
-    let randomness = class_groups::RandomnessSpaceGroupElement::<
-        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
-    >::sample(
-        language_public_parameters
-            .encryption_scheme_public_parameters
-            .randomness_space_public_parameters(),
-        &mut OsRng,
-    )?;
+    let randomness =
+        class_groups::RandomnessSpaceGroupElement::<{ FUNDAMENTAL_DISCRIMINANT_LIMBS }>::sample(
+            language_public_parameters
+                .encryption_scheme_public_parameters
+                .randomness_space_public_parameters(),
+            &mut OsRng,
+        )?;
     let parsed_secret_key_share = bcs::from_bytes(&secret_key_share)?;
     let witness = (parsed_secret_key_share, randomness).into();
     let (proof, statements) = EncryptionOfSecretShareProof::prove(
