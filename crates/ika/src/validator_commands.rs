@@ -157,7 +157,14 @@ impl IkaValidatorCommand {
                     image_url,
                     project_url,
                     commission_rate: DEFAULT_COMMISSION_RATE,
-                    consensus_address: Multiaddr::try_from(format!("/dns/{}/udp/8081", host_name))?,
+                    current_epoch_consensus_address: Multiaddr::try_from(format!(
+                        "/dns/{}/udp/8081",
+                        host_name
+                    ))?,
+                    next_epoch_consensus_address: Multiaddr::try_from(format!(
+                        "/dns/{}/udp/8082",
+                        host_name
+                    ))?,
                     network_address: Multiaddr::try_from(format!(
                         "/dns/{}/tcp/8080/http",
                         host_name
