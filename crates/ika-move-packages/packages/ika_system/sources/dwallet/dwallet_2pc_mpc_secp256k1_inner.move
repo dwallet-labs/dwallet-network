@@ -1082,7 +1082,7 @@ public(package) fun respond_dkg_second_round_output(
 ) {
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
     let encryption_key_id = encryption_key.id.to_inner();
-    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let dwallet = self.get_dwallet_mut(dwallet_id);
 
    dwallet.state = match (&dwallet.state) {
         DWalletState::AwaitingNetworkVerification => {
