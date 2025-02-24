@@ -53,17 +53,9 @@ describe('Test dWallet MPC', () => {
 		await createDWallet(conf, mockedProtocolPublicParameters);
 	});
 
-	it('should create the encryption key', async () => {
-		let cgKeyPair = await getOrCreateClassGroupsKeyPair(conf);
-		// log the encryption key base 64
-		console.log(Buffer.from(cgKeyPair.encryptionKey).toString('base64'));
-	});
-
 	it('should run the DKG second round', async () => {
-		let cgKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+		await getOrCreateClassGroupsKeyPair(conf);
 		await delay(checkpointCreationTime);
-		// log the encryption key base 64
-		console.log(Buffer.from(cgKeyPair.encryptionKey).toString('base64'));
 
 		let dwalletState = await getDWalletSecpState(conf);
 		let dwalletCapID = await createDKGFirstRoundOutputMock(
