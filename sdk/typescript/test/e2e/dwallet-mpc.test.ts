@@ -19,6 +19,7 @@ import {
 	mockedProtocolPublicParameters,
 } from '../../src/dwallet-mpc/globals';
 import { dkgFirstRoundMock } from '../../src/dwallet-mpc/mocks';
+import {getOrCreateClassGroupsKeyPair} from "../../src/dwallet-mpc/encrypt-user-share.ts";
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -52,7 +53,17 @@ describe('Test dWallet MPC', () => {
 		await createDWallet(conf, mockedProtocolPublicParameters);
 	});
 
+	it('should create the encryption key', async () => {
+		let cgKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+		// log the encryption key base 64
+		console.log(Buffer.from(cgKeyPair.encryptionKey).toString('base64'));
+	});
+
 	it('should run the DKG second round', async () => {
+		let cgKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+		// log the encryption key base 64
+		console.log(Buffer.from(cgKeyPair.encryptionKey).toString('base64'));
+
 		let dwalletState = await getDWalletSecpState(conf);
 		let event = await createDKGFirstRoundOutputMock(
 			conf,
