@@ -1815,7 +1815,7 @@ fun process_checkpoint_message(
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dkg_first_round_output(dwallet_id, first_round_output);
             } else if (message_data_type == 4) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 let encryption_key_address = bcs_body.peel_address();
