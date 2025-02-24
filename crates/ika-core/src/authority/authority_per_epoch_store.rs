@@ -2124,7 +2124,6 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::DKGSecond(init_event_data, network_key_version) => {
                 let tx = MessageKind::DwalletDKGSecondRoundOutput(DKGSecondRoundOutput {
-                    session_id: session_info.session_id.to_vec(),
                     output,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                     encrypted_centralized_secret_share_and_proof: bcs::to_bytes(
