@@ -33,7 +33,7 @@ Creates a validator information file containing necessary details to become a va
 ##### Example:
 
 ```sh
-ika validator make-validator-info --name "My Validator" --description "Secure and fast" --image_url "https://example.com/image.png" --project_url "https://example.com" --host_name "validator-node" --gas_price 1000000 --sender_sui_address 0x1234...
+ika validator make-validator-info --name "My Validator" --description "Secure and fast" --image_url "https://example.com/image.png" --project_url "https://example.com" --host_name "x.x.x.x" --gas_price 1000000 --sender_sui_address 0x1234...
 ```
 
 #### `become-candidate`
