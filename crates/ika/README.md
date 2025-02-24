@@ -3,8 +3,8 @@
 ## Overview
 
 The `ika validator` CLI tool is designed for validators and validator candidates to manage their participation in the
-Ika network. It provides commands to create validator information, become a candidate, join the committee, and stake
-tokens.
+Ika network. It provides commands to create validator information, become a candidate, join the committee, stake tokens,
+and leave the committee.
 
 ## Usage
 
@@ -61,13 +61,11 @@ Requests to join the validator committee.
 - `--gas-budget` (Optional) - Gas budget for the transaction
 - `--ika-system-package-id` (Optional) - Path to the Ika system package configuration file
 - `--validator-cap-id` (ObjectID) - ID of the validator capability
-- `--validator-id` (ObjectID) - Validator ID
-- `--ika-supply-id` (ObjectID) - IKA token supply ID
 
 ##### Example:
 
 ```sh
-ika validator join-committee --validator-cap-id 0x5678 --validator-id 0x1234 --ika-supply-id 0x91011
+ika validator join-committee --validator-cap-id 0x5678
 ```
 
 #### `stake-validator`
@@ -86,4 +84,20 @@ Stake IKA tokens to a validator.
 
 ```sh
 ika validator stake-validator --validator-id 0x1234 --ika-coin-id 0x5678 --stake-amount 1000000
+```
+
+#### `leave-committee`
+
+Requests to leave the validator committee.
+
+##### Arguments:
+
+- `--gas-budget` (Optional) - Gas budget for the transaction
+- `--validator-cap-id` (ObjectID) - ID of the validator capability
+- `--ika-system-package-id` (Optional) - Path to the Ika system package configuration file
+
+##### Example:
+
+```sh
+ika validator leave-committee --validator-cap-id 0x5678
 ```
