@@ -70,6 +70,7 @@ describe('Test dWallet MPC', () => {
 			conf,
 			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 		);
+		console.log('dWalletCapID', dwalletCapID);
 		await delay(checkpointCreationTime);
 		await dkgSecondRoundMoveCall(
 			conf,
