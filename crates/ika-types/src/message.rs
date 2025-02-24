@@ -86,7 +86,7 @@ pub struct DKGSecondRoundOutput {
     pub output: Vec<u8>,
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     pub encryption_key_address: Vec<u8>,
-    pub rejected: Vec<u8>,
+    pub rejected: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]

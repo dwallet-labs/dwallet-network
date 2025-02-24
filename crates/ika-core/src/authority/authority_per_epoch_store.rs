@@ -2135,7 +2135,7 @@ impl AuthorityPerEpochStore {
                         .event_data
                         .encryption_key_address
                         .to_vec(),
-                    rejected: vec![0],
+                    rejected: false,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
