@@ -6,6 +6,7 @@ use class_groups::{
     CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
 };
+use crypto_bigint::rand_core::OsRng;
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -79,7 +80,8 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
 
     let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
     let decryption_key =
-        generate_keypairs_per_crt_prime(setup_parameters_per_crt_prime.clone(), &mut rng).unwrap();
+        generate_keypairs_per_crt_prime(setup_parameters_per_crt_prime.clone(), &mut OsRng)
+            .unwrap();
 
     let encryption_key_and_proof = generate_knowledge_of_decryption_key_proofs_per_crt_prime(
         language_public_parameters_per_crt_prime.clone(),

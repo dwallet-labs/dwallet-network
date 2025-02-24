@@ -10,8 +10,8 @@ use fastcrypto::encoding::{Encoding, Hex};
 use fastcrypto::traits::KeyPair;
 use ika_config::node::{
     default_end_of_epoch_broadcast_channel_capacity, AuthorityKeyPairWithPath,
-    AuthorityOverloadConfig, KeyPairWithPath, RunWithRange, StateArchiveConfig, SuiChainIdentifier,
-    SuiConnectorConfig,
+    AuthorityOverloadConfig, ClassGroupsKeyPairWithPath, KeyPairWithPath, RunWithRange,
+    StateArchiveConfig, SuiChainIdentifier, SuiConnectorConfig,
 };
 use std::path::PathBuf;
 use sui_types::base_types::ObjectID;
@@ -124,14 +124,16 @@ impl ValidatorConfigBuilder {
             ..Default::default()
         };
         NodeConfig {
-            class_groups_private_key: validator.class_groups_key_pair_and_proof.decryption_key(),
+            class_groups_key_pair_and_proof: ClassGroupsKeyPairWithPath::new(
+                validator.class_groups_key_pair_and_proof.clone(),
+            ),
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator.key_pair.copy()),
             network_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
                 validator.network_key_pair.copy(),
             )),
             account_key_pair: KeyPairWithPath::new(validator.account_key_pair.copy()),
-            worker_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
-                validator.worker_key_pair.copy(),
+            consensus_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
+                validator.consensus_key_pair.copy(),
             )),
             sui_connector_config: SuiConnectorConfig {
                 sui_rpc_url: sui_rpc_url.to_string(),
@@ -330,13 +332,13 @@ impl FullnodeConfigBuilder {
         let notifier_client_key_pair = notifier_client_key_pair.map(|k| KeyPairWithPath::new(k));
 
         NodeConfig {
-            class_groups_private_key: validator_config
-                .class_groups_key_pair_and_proof
-                .decryption_key(),
+            class_groups_key_pair_and_proof: ClassGroupsKeyPairWithPath::new(
+                validator_config.class_groups_key_pair_and_proof.clone(),
+            ),
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator_config.key_pair),
             account_key_pair: KeyPairWithPath::new(validator_config.account_key_pair),
-            worker_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
-                validator_config.worker_key_pair,
+            consensus_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
+                validator_config.consensus_key_pair,
             )),
             network_key_pair: self.network_key_pair.unwrap_or(KeyPairWithPath::new(
                 SuiKeyPair::Ed25519(validator_config.network_key_pair),

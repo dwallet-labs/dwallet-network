@@ -29,7 +29,7 @@ pub struct ValidatorInitializationConfig {
     #[serde(default = "default_bls12381_key_pair")]
     pub key_pair: AuthorityKeyPair,
     #[serde(default = "default_ed25519_key_pair")]
-    pub worker_key_pair: NetworkKeyPair,
+    pub consensus_key_pair: NetworkKeyPair,
     #[serde(default = "default_ika_key_pair")]
     pub account_key_pair: SuiKeyPair,
     #[serde(default = "default_ed25519_key_pair")]
@@ -53,7 +53,7 @@ impl ValidatorInitializationConfig {
         let protocol_public_key: AuthorityPublicKeyBytes = self.key_pair.public().into();
         let account_key: PublicKey = self.account_key_pair.public();
         let network_public_key: NetworkPublicKey = self.network_key_pair.public().clone();
-        let worker_public_key: NetworkPublicKey = self.worker_key_pair.public().clone();
+        let worker_public_key: NetworkPublicKey = self.consensus_key_pair.public().clone();
         let network_address = self.network_address.clone();
         let consensus_address = self.consensus_address.clone();
 
@@ -168,7 +168,7 @@ impl ValidatorInitializationConfigBuilder {
                 ))
             });
 
-        let (worker_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
+        let (consensus_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
             (get_key_pair_from_rng(rng).1, get_key_pair_from_rng(rng).1);
 
         let (network_address, p2p_address, metrics_address, consensus_address) =
@@ -196,7 +196,7 @@ impl ValidatorInitializationConfigBuilder {
         ValidatorInitializationConfig {
             key_pair: protocol_key_pair,
             class_groups_key_pair_and_proof,
-            worker_key_pair,
+            consensus_key_pair,
             account_key_pair: account_key_pair.into(),
             network_key_pair,
             network_address,
