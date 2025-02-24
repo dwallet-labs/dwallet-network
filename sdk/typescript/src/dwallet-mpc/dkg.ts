@@ -90,19 +90,19 @@ export async function launchDKGSecondRound(
 	console.log('sessionID', firstRoundOutputResult.sessionID);
 
 	// TODO (#672): Fix the encrypt_secret_share wasm function.
-	const encryptedUserShareAndProof = encrypt_secret_share(
-		centralizedSecretKeyShare,
-		classGroupsSecpKeyPair.encryptionKey,
-	);
-
-	await dkgSecondRoundMoveCall(
-		conf,
-		dWalletStateData,
-		firstRoundOutputResult,
-		centralizedPublicKeyShareAndProof,
-		encryptedUserShareAndProof,
-		centralizedPublicOutput,
-	);
+	// const encryptedUserShareAndProof = encrypt_secret_share(
+	// 	centralizedSecretKeyShare,
+	// 	classGroupsSecpKeyPair.encryptionKey,
+	// );
+	//
+	// await dkgSecondRoundMoveCall(
+	// 	conf,
+	// 	dWalletStateData,
+	// 	firstRoundOutputResult,
+	// 	centralizedPublicKeyShareAndProof,
+	// 	encryptedUserShareAndProof,
+	// 	centralizedPublicOutput,
+	// );
 }
 
 /**
