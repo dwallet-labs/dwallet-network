@@ -1818,7 +1818,7 @@ fun process_checkpoint_message(
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
-                let encryption_key_address = bcs_body.peel_address();
+                let encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
                 self.respond_dkg_second_round_output(
                     dwallet_id,
