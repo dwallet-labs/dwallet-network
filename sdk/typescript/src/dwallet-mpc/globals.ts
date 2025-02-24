@@ -74,6 +74,13 @@ interface SharedObjectOwner {
 	};
 }
 
+/**
+ * Represents a Move Address object owner.
+ */
+interface AddressObjectOwner {
+	AddressOwner: string;
+}
+
 interface MoveObject {
 	fields: any;
 }
@@ -81,6 +88,10 @@ interface MoveObject {
 export interface SharedObjectData {
 	object_id: string;
 	initial_shared_version: number;
+}
+
+export function isAddressObjectOwner(obj: any): obj is AddressObjectOwner {
+	return obj?.AddressOwner !== undefined;
 }
 
 export function isMoveObject(obj: any): obj is MoveObject {

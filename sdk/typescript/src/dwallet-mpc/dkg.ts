@@ -10,17 +10,19 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.ts';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.ts';
-import type { Config, SharedObjectData } from './globals.ts';
 import {
+	Config,
 	delay,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
 	getInitialSharedVersion,
+	isAddressObjectOwner,
 	isIKASystemStateInner,
 	isMoveObject,
 	MPCKeyScheme,
+	SharedObjectData,
 	SUI_PACKAGE_ID,
 } from './globals.ts';
 
@@ -111,7 +113,7 @@ export async function launchDKGSecondRound(
 export async function createDKGFirstRoundOutputMock(
 	conf: Config,
 	mockOutput: Uint8Array,
-): Promise<StartDKGFirstRoundEvent> {
+): Promise<string> {
 	// create_first_round_dwallet_mock(self: &mut DWallet2PcMpcSecp256K1, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext): DWalletCap
 	const tx = new Transaction();
 	let dwalletStateObjData = await getDWalletSecpState(conf);
@@ -136,11 +138,15 @@ export async function createDKGFirstRoundOutputMock(
 			showEvents: true,
 		},
 	});
-	let startDKGEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartDKGFirstRoundEvent(startDKGEvent)) {
-		throw new Error('invalid start DKG first round event');
+	const createdDWalletCap = result?.effects?.created?.find(
+		(obj) =>
+			isAddressObjectOwner(obj.owner) &&
+			obj.owner.AddressOwner === conf.suiClientKeypair.toSuiAddress(),
+	);
+	if (!dwalletCap || createdDWalletCap === undefined) {
+		throw new Error('Unable to create the DWallet cap');
 	}
-	return startDKGEvent;
+	return createdDWalletCap.reference.objectId;
 }
 
 export async function dkgSecondRoundMoveCall(
