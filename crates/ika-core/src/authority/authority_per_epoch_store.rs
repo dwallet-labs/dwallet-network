@@ -2136,7 +2136,6 @@ impl AuthorityPerEpochStore {
                         .event_data
                         .encryption_key_address
                         .to_vec(),
-                    initiating_user_address: session_info.initiating_user_address.to_vec(),
                     rejected: bcs::to_bytes(&false)?,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
