@@ -110,6 +110,7 @@ num_enum.workspace = true
 strum_macros.workspace = true
 derive_more.workspace = true
 backoff.workspace = true
+base64 = "0.22.1"
 
 
 [dev-dependencies]

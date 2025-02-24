@@ -13,6 +13,7 @@ use ika_types::messages_dwallet_mpc::{
 };
 use std::marker::PhantomData;
 use sui_types::base_types::SuiAddress;
+use tracing::warn;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -65,6 +66,7 @@ fn verify_centralized_secret_key_share_proof(
     encryption_key: &Vec<u8>,
 ) -> anyhow::Result<()> {
     let protocol_public_params = protocol_public_parameters();
+    warn!("base 64 encryption key: {:?}", base64::encode(encryption_key));
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
         SCALAR_LIMBS,
         { FUNDAMENTAL_DISCRIMINANT_LIMBS },
