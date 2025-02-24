@@ -2126,14 +2126,13 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::DwalletDKGSecondRoundOutput(DKGSecondRoundOutput {
                     session_id: session_info.session_id.to_vec(),
                     output,
-                    dwallet_id: init_event_data.event_data.dwallet_cap_id.to_vec(),
-                    dwallet_mpc_network_decryption_key_version: bcs::to_bytes(network_key_version)?,
+                    dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                     encrypted_centralized_secret_share_and_proof: bcs::to_bytes(
                         &init_event_data.event_data.encrypted_centralized_secret_share_and_proof,
                     )?,
-                    encryption_key_address: init_event_data.event_data.encryption_key_id.to_vec(),
+                    encryption_key_address: init_event_data.event_data.encryption_key_address.to_vec(),
                     initiating_user_address: session_info.initiating_user_address.to_vec(),
-                    initiator_public_key: bcs::to_bytes(&init_event_data.event_data.signer_public_key)?,
+                    rejected: bcs::to_bytes(&false)?
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
