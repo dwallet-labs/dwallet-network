@@ -11,7 +11,7 @@ and leave the committee.
 The CLI follows the structure:
 
 ```sh
-ika validator [OPTIONS] <COMMAND>
+ika validator <COMMAND> [OPTIONS]
 ```
 
 ### Available Commands
@@ -44,7 +44,7 @@ Registers a validator candidate using a validator info file.
 
 - `--validator-info-path` (PathBuf) - Path to the validator information file
 - `--gas-budget` (Optional) - Gas budget for the transaction
-- `--ika-system-package-id` (Optional) - Path to the Ika system package configuration file
+- `--ika-network-config-file` (Optional) - Path to the Ika system package network file
 
 ##### Example:
 
@@ -59,7 +59,7 @@ Requests to join the validator committee.
 ##### Arguments:
 
 - `--gas-budget` (Optional) - Gas budget for the transaction
-- `--ika-system-package-id` (Optional) - Path to the Ika system package configuration file
+- `--ika-network-config-file` (Optional) - Path to the Ika system network configuration file
 - `--validator-cap-id` (ObjectID) - ID of the validator capability
 
 ##### Example:
@@ -75,7 +75,7 @@ Stake IKA tokens to a validator.
 ##### Arguments:
 
 - `--gas-budget` (Optional) - Gas budget for the transaction
-- `--ika-system-package-id` (Optional) - Path to the Ika system package configuration file
+- `--ika-network-config-file` (Optional) - Path to the Ika system network configuration file
 - `--validator-id` (ObjectID) - Validator ID to stake to
 - `--ika-coin-id` (ObjectID) - ID of the IKA coin being staked
 - `--stake-amount` (u64) - Amount of IKA tokens to stake
@@ -94,7 +94,7 @@ Requests to leave the validator committee.
 
 - `--gas-budget` (Optional) - Gas budget for the transaction
 - `--validator-cap-id` (ObjectID) - ID of the validator capability
-- `--ika-system-package-id` (Optional) - Path to the Ika system package configuration file
+- `--ika-network-config-file` (Optional) - Path to the Ika system network configuration file
 
 ##### Example:
 
