@@ -17,11 +17,17 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 use tokio::sync::{mpsc, OwnedSemaphorePermit, Semaphore};
+use ika_types::committee::EpochId;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
 pub enum GetCheckpointMessageRequest {
     ByDigest(CheckpointMessageDigest),
-    BySequenceNumber(CheckpointSequenceNumber),
+    BySequenceNumber(EpochId, CheckpointSequenceNumber),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GetCheckpointAvailabilityRequest {
+    pub(crate) epoch: EpochId,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -67,7 +73,7 @@ where
 
         let highest_verified_checkpoint = self
             .store
-            .get_highest_verified_checkpoint()
+            .get_highest_verified_checkpoint(checkpoint.epoch)
             .map_err(|e| Status::internal(e.to_string()))?;
 
         let should_sync = highest_verified_checkpoint
@@ -93,9 +99,9 @@ where
             GetCheckpointMessageRequest::ByDigest(digest) => {
                 self.store.get_checkpoint_by_digest(digest)
             }
-            GetCheckpointMessageRequest::BySequenceNumber(sequence_number) => self
+            GetCheckpointMessageRequest::BySequenceNumber(epoch, sequence_number) => self
                 .store
-                .get_checkpoint_by_sequence_number(*sequence_number),
+                .get_checkpoint_by_sequence_number(*epoch, *sequence_number),
         }
         .map_err(|e| Status::internal(e.to_string()))?
         .map(VerifiedCheckpointMessage::into_inner);
@@ -105,11 +111,13 @@ where
 
     async fn get_checkpoint_availability(
         &self,
-        _request: Request<()>,
+        request: Request<GetCheckpointAvailabilityRequest>,
     ) -> Result<Response<GetCheckpointAvailabilityResponse>, Status> {
+        let epoch = request.into_inner().epoch;
+
         let highest_synced_checkpoint = self
             .store
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_checkpoint(epoch)
             .map_err(|e| Status::internal(e.to_string()))?
             .map(VerifiedCheckpointMessage::into_inner);
 

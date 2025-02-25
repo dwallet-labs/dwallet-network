@@ -9,10 +9,10 @@ use ika_system::staking_pool::{PoolTokenExchangeRate};
 use ika_system::staked_ika::{StakedIka, FungibleStakedIka};
 use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap};
 use ika_system::validator_set::{ValidatorSet};
-use ika_system::committee::{Committee};
+use ika_system::bls_committee::{BlsCommittee};
 use ika_system::protocol_cap::ProtocolCap;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::dwallet_2pc_mpc_secp256k1;
+use ika_system::dwallet_2pc_mpc_secp256k1::{Self, DWalletCoordinator};
 use ika_system::dwallet_2pc_mpc_secp256k1_inner::{DWalletNetworkDecryptionKeyCap};
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
@@ -80,17 +80,14 @@ public struct SystemInnerV1 has store {
     /// The total messages processed.
     total_messages_processed: u64,
     /// The last checkpoint sequence number processed.
-    last_processed_checkpoint_sequence_number: Option<u64>,
-    /// The last checkpoint sequence number of previous epoch.
-    previous_epoch_last_checkpoint_sequence_number: u64,
+    last_processed_checkpoint_sequence_number: Option<u32>,
     /// The fees paid for computation.
     computation_reward: Balance<IKA>,
     /// List of authorized protocol cap ids.
     authorized_protocol_cap_ids: vector<ID>, 
     // TODO: maybe change that later
     dwallet_2pc_mpc_secp256k1_id: Option<ID>,
-    // TODO: dummy code, change that later
-    dwallet_network_decryption_key: Option<DWalletNetworkDecryptionKeyCap>,
+    dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector<DWalletNetworkDecryptionKeyCap>,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -105,13 +102,7 @@ public struct SystemEpochInfoEvent has copy, drop {
     stake_subsidy_amount: u64,
     total_computation_fees: u64,
     total_stake_rewards_distributed: u64,
-    last_processed_checkpoint_sequence_number: u64
-}
-
-/// Event emitted after verifing quorum of signature.
-public struct SystemQuorumVerifiedEvent has copy, drop {
-    epoch: u64,
-    total_signers_stake: u64,
+    last_processed_checkpoint_sequence_number: u32
 }
 
 /// Event emitted during verifing quorum checkpoint submmision signature.
@@ -124,7 +115,7 @@ public struct SystemProtocolCapVerifiedEvent has copy, drop {
 /// the checkpoint submmision message.
 public struct SystemCheckpointInfoEvent has copy, drop {
     epoch: u64,
-    sequence_number: u64,
+    sequence_number: u32,
     timestamp_ms: u64,
 }
 
@@ -144,7 +135,7 @@ const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.
 const EWrongCheckpointSequenceNumber: vector<u8> = b"The checkpoint sequence number should be the expected next one.";
 
 #[error]
-const EActiveCommitteeMustInitialize: vector<u8> = b"Fitst active committee must initialize.";
+const EActiveBlsCommitteeMustInitialize: vector<u8> = b"Fitst active committee must initialize.";
 
 #[error]
 const ECannotInitialize: vector<u8> = b"Too early for initialization time or alreay initialized.";
@@ -175,11 +166,10 @@ public(package) fun create(
         epoch_start_timestamp_ms,
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: option::none(),
-        previous_epoch_last_checkpoint_sequence_number: 0,
         computation_reward: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_secp256k1_id: option::none(),
-        dwallet_network_decryption_key: option::none(),
+        dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector[],
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -231,10 +221,9 @@ public(package) fun initialize(
     assert!(self.epoch == 0 && now >= self.epoch_start_timestamp_ms, ECannotInitialize);
     assert!(self.active_committee().members().is_empty(), ECannotInitialize);
     self.validators.initialize();
-    let pricing = ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
-    let (dwallet_2pc_mpc_secp256k1_id, cap) = dwallet_2pc_mpc_secp256k1::create(package_id, self.epoch, self.active_committee(), pricing, ctx);
+    let pricing = ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
+    let dwallet_2pc_mpc_secp256k1_id = dwallet_2pc_mpc_secp256k1::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, ctx);
     self.dwallet_2pc_mpc_secp256k1_id.fill(dwallet_2pc_mpc_secp256k1_id);
-    self.dwallet_network_decryption_key.fill(cap);
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
@@ -753,7 +742,7 @@ public(package) fun advance_epoch(
     self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&active_committee);
 
     let last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
-    self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
+    self.last_processed_checkpoint_sequence_number.extract();
 
     event::emit(SystemEpochInfoEvent {
         epoch: self.epoch,
@@ -820,23 +809,21 @@ public(package) fun pool_exchange_rates(
     validators.pool_exchange_rates(validator_id)
 }
 
-public(package) fun active_committee(self: &SystemInnerV1): Committee {
+public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
     let validator_set = &self.validators;
     validator_set.active_committee()
 }
 
 public struct TestMessageEvent has drop, copy {
     epoch: u64,
-    sequence_number: u64,
+    sequence_number: u32,
     authority: u32,
     num: u64,
 }
 
-public(package) fun process_checkpoint_message_by_cap(
-    self: &mut SystemInnerV1,
+fun verify_cap(
+    self: &SystemInnerV1,
     cap: &ProtocolCap,
-    message: vector<u8>,
-    ctx: &mut TxContext,
 ) {
     let protocol_cap_id = object::id(cap);
 
@@ -846,12 +833,23 @@ public(package) fun process_checkpoint_message_by_cap(
         epoch: self.epoch,
         protocol_cap_id: object::id(cap),
     });
+}
+
+public(package) fun process_checkpoint_message_by_cap(
+    self: &mut SystemInnerV1,
+    cap: &ProtocolCap,
+    message: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    self.verify_cap(cap);
 
     self.process_checkpoint_message(message, ctx);
 }
 
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut SystemInnerV1,
+    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    epoch: u64,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
@@ -861,14 +859,27 @@ public(package) fun process_checkpoint_message_by_quorum(
     intent_bytes.append(message);
     intent_bytes.append(bcs::to_bytes(&self.epoch));
 
-    let total_signers_stake = self.active_committee().verify_certificate(&signature, &signers_bitmap, &intent_bytes);
-
-    event::emit(SystemQuorumVerifiedEvent {
-        epoch: self.epoch,
-        total_signers_stake,
-    });
+    self.active_committee().verify_certificate(epoch, &signature, &signers_bitmap, &intent_bytes);
 
     self.process_checkpoint_message(message, ctx);
+
+    // TODO: seperate this to its own process
+    dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(epoch, signature, signers_bitmap, message, ctx);
+    if(epoch + 1 == self.epoch()) {
+        dwallet_2pc_mpc_secp256k1.advance_epoch(self.active_committee(), ctx);
+        self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
+    }
+}
+
+public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
+    self: &mut SystemInnerV1,
+    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    cap: &ProtocolCap,
+    ctx: &mut TxContext,
+) {
+    self.verify_cap(cap);
+    let key_cap = dwallet_2pc_mpc_secp256k1.request_dwallet_network_decryption_key_dkg(ctx);
+    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.push_back(key_cap);
 }
 
 fun process_checkpoint_message(
@@ -876,7 +887,7 @@ fun process_checkpoint_message(
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    assert!(!self.active_committee().members().is_empty(), EActiveCommitteeMustInitialize);
+    assert!(!self.active_committee().members().is_empty(), EActiveBlsCommitteeMustInitialize);
 
     // first let's make sure it's the correct checkpoint message
     let mut bcs_body = bcs::new(copy message);
@@ -884,7 +895,7 @@ fun process_checkpoint_message(
     let epoch = bcs_body.peel_u64();
     assert!(epoch == self.epoch, EIncorrectEpochInCheckpoint);
 
-    let sequence_number = bcs_body.peel_u64();
+    let sequence_number = bcs_body.peel_u32();
 
     if(self.last_processed_checkpoint_sequence_number.is_none()) {
         assert!(sequence_number == 0, EWrongCheckpointSequenceNumber);
@@ -903,10 +914,6 @@ fun process_checkpoint_message(
         sequence_number,
         timestamp_ms,
     });
-
-    // now let's process message
-
-    //assert!(false, 456);
 
     let len = bcs_body.peel_vec_length();
     let mut i = 0;

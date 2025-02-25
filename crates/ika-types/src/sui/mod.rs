@@ -44,10 +44,15 @@ pub const DEFAULT_COMMISSION_RATE: u16 = 200;
 pub const INIT_CAP_STRUCT_NAME: &IdentStr = ident_str!("InitCap");
 pub const SYSTEM_STRUCT_NAME: &IdentStr = ident_str!("System");
 pub const VALIDATOR_CAP_STRUCT_NAME: &IdentStr = ident_str!("ValidatorCap");
+pub const PROTOCOL_CAP_STRUCT_NAME: &IdentStr = ident_str!("ProtocolCap");
+pub const DWALLET_COORDINATOR_STRUCT_NAME: &IdentStr = ident_str!("DWalletCoordinator");
+
 
 pub const SYSTEM_MODULE_NAME: &IdentStr = ident_str!("system");
 pub const INIT_MODULE_NAME: &IdentStr = ident_str!("init");
 pub const VALIDATOR_CAP_MODULE_NAME: &IdentStr = ident_str!("validator_cap");
+pub const PROTOCOL_CAP_MODULE_NAME: &IdentStr = ident_str!("protocol_cap");
+pub const DWALLET_2PC_MPC_SECP256K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1");
 
 pub const INITIALIZE_FUNCTION_NAME: &IdentStr = ident_str!("initialize");
 pub const REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME: &IdentStr =
@@ -58,6 +63,8 @@ pub const REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME: &IdentStr =
     ident_str!("request_remove_validator");
 pub const PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME: &IdentStr =
     ident_str!("process_checkpoint_message_by_quorum");
+pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &IdentStr =
+    ident_str!("request_dwallet_network_decryption_key_dkg_by_cap");
 
 pub const CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME: &IdentStr =
     ident_str!("class_groups_public_key_and_proof");
@@ -110,10 +117,9 @@ pub trait SystemInnerTrait {
     fn protocol_version(&self) -> u64;
     fn upgrade_caps(&self) -> &Vec<UpgradeCap>;
     fn epoch_start_timestamp_ms(&self) -> u64;
-    fn last_processed_checkpoint_sequence_number(&self) -> Option<u64>;
-    fn previous_epoch_last_checkpoint_sequence_number(&self) -> u64;
+    fn last_processed_checkpoint_sequence_number(&self) -> Option<u32>;
     fn epoch_duration_ms(&self) -> u64;
-    fn get_dwallet_state_obj_id(&self) -> Option<ObjectID>;
+    fn dwallet_2pc_mpc_secp256k1_id(&self) -> Option<ObjectID>;
     // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata;
     // fn into_epoch_start_state(self) -> EpochStartSystemState;
 }

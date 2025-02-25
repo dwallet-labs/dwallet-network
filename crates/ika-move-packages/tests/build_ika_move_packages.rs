@@ -130,12 +130,10 @@ fn build_packages_with_move_config(
     let docs_dir = out_dir.join(DOCS_DIR);
     let mut files_to_write = BTreeMap::new();
     relocate_docs(
-        ika_dir,
         &ika_pkg.package.compiled_docs.unwrap(),
         &mut files_to_write,
     );
     relocate_docs(
-        ika_system_dir,
         &ika_system_pkg.package.compiled_docs.unwrap(),
         &mut files_to_write,
     );
@@ -156,7 +154,7 @@ fn build_packages_with_move_config(
 ///   a flat list of packages;
 /// * Deduplicate packages (since multiple packages could share dependencies); and
 /// * Write out the package docs in a flat directory structure.
-fn relocate_docs(prefix: &str, files: &[(String, String)], output: &mut BTreeMap<String, String>) {
+fn relocate_docs(files: &[(String, String)], output: &mut BTreeMap<String, String>) {
     // Turn on multi-line mode so that `.` matches newlines, consume from the start of the file to
     // beginning of the heading, then capture the heading and replace with the yaml tag for docusaurus. E.g.,
     // ```
@@ -170,21 +168,14 @@ fn relocate_docs(prefix: &str, files: &[(String, String)], output: &mut BTreeMap
     //```
     let re = regex::Regex::new(r"(?s).*\n#\s+(.*?)\n").unwrap();
     for (file_name, file_content) in files {
-        let path = PathBuf::from(file_name);
-        let top_level = path.components().count() == 1;
-        let file_name = if top_level {
-            let mut new_path = PathBuf::from(prefix);
-            new_path.push(file_name);
-            new_path.to_string_lossy().to_string()
-        } else {
-            let mut new_path = PathBuf::new();
-            new_path.push(path.components().skip(1).collect::<PathBuf>());
-            new_path.to_string_lossy().to_string()
+        if file_name.contains("dependencies") {
+            continue;
         };
-        output.entry(file_name).or_insert_with(|| {
+        output.entry(file_name.to_owned()).or_insert_with(|| {
             re.replace_all(
                 &file_content
                     .replace("../../dependencies/", "../")
+                    .replace("../dependencies/", "../")
                     .replace("dependencies/", "../"),
                 "---\ntitle: $1\n---\n",
             )

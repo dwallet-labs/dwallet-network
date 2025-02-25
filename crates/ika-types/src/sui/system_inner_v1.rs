@@ -52,7 +52,7 @@ pub struct SystemParametersV1 {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct CommitteeMember {
+pub struct BlsCommitteeMember {
     pub validator_id: ObjectID,
     pub protocol_pubkey: Element,
     pub voting_power: u64,
@@ -61,18 +61,21 @@ pub struct CommitteeMember {
 
 /// Represents the current committee in the system.
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct Committee {
-    pub members: Vec<CommitteeMember>,
-    pub total_aggregated_key: Element,
+pub struct BlsCommittee {
+    pub members: Vec<BlsCommitteeMember>,
+    pub aggregated_protocol_pubkey: Element,
 }
+
+pub type ObjectTable = Table;
 
 /// Rust version of the Move ika_system::validator_set::ValidatorSet type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ValidatorSetV1 {
     pub total_stake: u64,
-    pub validators: Table, //ObjectTable
-    pub active_committee: Committee,
-    pub next_epoch_active_committee: Option<Committee>,
+    pub validators: ObjectTable,
+    pub active_committee: BlsCommittee,
+    pub next_epoch_active_committee: Option<BlsCommittee>,
+    pub previous_committee: BlsCommittee,
     pub previous_committee: Committee,
     pub pending_active_validators: Vec<ObjectID>,
     pub at_risk_validators: VecMap<ID, u64>,
@@ -108,12 +111,11 @@ pub struct SystemInnerV1 {
     pub ika_treasury: IkaTreasuryV1,
     pub epoch_start_timestamp_ms: u64,
     pub total_messages_processed: u64,
-    pub last_processed_checkpoint_sequence_number: Option<u64>,
-    pub previous_epoch_last_checkpoint_sequence_number: u64,
+    pub last_processed_checkpoint_sequence_number: Option<u32>,
     pub computation_reward: Balance,
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_id: Option<ObjectID>,
-    pub dwallet_network_decryption_key: Option<DWalletNetworkDecryptionKeyCap>,
+    pub dwallet_2pc_mpc_secp256k1_network_decryption_keys: Vec<DWalletNetworkDecryptionKeyCap>,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }
@@ -161,21 +163,18 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.epoch_start_timestamp_ms
     }
 
-    fn last_processed_checkpoint_sequence_number(&self) -> Option<u64> {
+    fn last_processed_checkpoint_sequence_number(&self) -> Option<u32> {
         self.last_processed_checkpoint_sequence_number
-    }
-
-    fn previous_epoch_last_checkpoint_sequence_number(&self) -> u64 {
-        self.previous_epoch_last_checkpoint_sequence_number
     }
 
     fn epoch_duration_ms(&self) -> u64 {
         self.parameters.epoch_duration_ms
     }
 
-    fn get_dwallet_state_obj_id(&self) -> Option<ObjectID> {
+    fn dwallet_2pc_mpc_secp256k1_id(&self) -> Option<ObjectID> {
         self.dwallet_2pc_mpc_secp256k1_id
     }
+
     //
     // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata {
     //     let validators = self
@@ -242,4 +241,12 @@ pub struct ValidatorCapV1 {
 pub struct ValidatorOperationCapV1 {
     pub id: ObjectID,
     pub validator_id: ObjectID,
+}
+
+
+/// Rust version of the Move ika_system::dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKeyCap type
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct DWalletNetworkDecryptionKeyCap {
+    pub id: ObjectID,
+    pub dwallet_network_decryption_key_id: ObjectID,
 }
