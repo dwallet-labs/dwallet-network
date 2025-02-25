@@ -13,21 +13,26 @@ COPY . /app
 RUN apt-get update && apt-get install -y curl build-essential
 
 # Install Rust non-interactively using rustup
+# Install Rust non-interactively using rustup
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-
+#    rustup set default-host x86_64-unknown-linux-gnu && \
 # Update PATH to include Cargo binaries
 ENV PATH="/root/.cargo/bin:$PATH"
 
-# Explicitly update the Rust stable toolchain. This helps ensure that all components (like Cargo)
-# are properly downloaded and installed before they are used.
-RUN rustup update stable
+
+RUN  rm -rf /root/.rustup/downloads/* && \
+    rustup update stable && \
+    rustup component add cargo
+
+
+## Explicitly update the Rust stable toolchain. This helps ensure that all components (like Cargo)
+## are properly downloaded and installed before they are used.
+#RUN rustup update stable
 
 # Install wasm-pack using its installer.
 # Create a symlink to /usr/local/bin so it's found by subsequent commands.
 RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh && \
     ln -s /root/.cargo/bin/wasm-pack /usr/local/bin/wasm-pack
-
-RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 # --mount=[...] will ensure a persistent cache volume is mounted at /pnpm_store.
 # This is like running docker run -v /tmp/cache:/pnpm_store ... except that mount is
