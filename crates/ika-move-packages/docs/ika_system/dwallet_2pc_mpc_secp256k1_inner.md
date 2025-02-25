@@ -2746,7 +2746,7 @@ Supported hash schemes for message signing.
 Get the active encryption key ID by its address.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_encryption_key">get_active_encryption_key</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, <b>address</b>: <b>address</b>): &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EncryptionKey">dwallet_2pc_mpc_secp256k1_inner::EncryptionKey</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_encryption_key">get_active_encryption_key</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, <b>address</b>: <b>address</b>): <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>
 </code></pre>
 
 
@@ -2758,8 +2758,8 @@ Get the active encryption key ID by its address.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_encryption_key">get_active_encryption_key</a>(
     self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     <b>address</b>: <b>address</b>,
-): &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EncryptionKey">EncryptionKey</a> {
-    self.encryption_keys.borrow(<b>address</b>)
+): ID {
+    self.encryption_keys.borrow(<b>address</b>).id.to_inner()
 }
 </code></pre>
 
@@ -4395,22 +4395,63 @@ the function will abort with this error.
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> first_round_output = bcs_body.peel_vec_u8();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_first_round">respond_dwallet_dkg_first_round</a>(dwallet_id, first_round_output);
-                // TODO: add <b>for</b> every reponse
                 response_session_count = response_session_count + 1;
             } <b>else</b> <b>if</b> (message_data_type == 4) {
                 <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> public_output = bcs_body.peel_vec_u8();
                 <b>let</b> encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
-                <b>let</b> encryption_key_id = bcs_body.peel_address();
+                <b>let</b> encryption_key_address = bcs_body.peel_address();
                 <b>let</b> rejected = bcs_body.peel_bool();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_second_round">respond_dwallet_dkg_second_round</a>(
                     dwallet_id,
                     public_output,
                     encrypted_centralized_secret_share_and_proof,
-                    encryption_key_id,
+                    encryption_key_address,
                     rejected,
                     ctx,
                 );
+                response_session_count = response_session_count + 1;
+            } <b>else</b> <b>if</b> (message_data_type == 5) {
+                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> encrypted_user_secret_key_share_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> rejected = bcs_body.peel_bool();
+                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_re_encrypt_user_share_for">respond_re_encrypt_user_share_for</a>(
+                    dwallet_id,
+                    encrypted_user_secret_key_share_id,
+                    rejected,
+                );
+                response_session_count = response_session_count + 1;
+            } <b>else</b> <b>if</b> (message_data_type == 6) {
+                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> sign_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> session_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> signature = bcs_body.peel_vec_u8();
+                <b>let</b> is_future_sign = bcs_body.peel_bool();
+                <b>let</b> rejected = bcs_body.peel_bool();
+                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_sign">respond_ecdsa_sign</a>(
+                    dwallet_id,
+                    sign_id,
+                    session_id,
+                    signature,
+                    is_future_sign,
+                    rejected,
+                );
+                response_session_count = response_session_count + 1;
+            } <b>else</b> <b>if</b> (message_data_type == 7) {
+                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> rejected = bcs_body.peel_bool();
+                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_future_sign">respond_ecdsa_future_sign</a>(
+                    dwallet_id,
+                    partial_centralized_signed_message_id,
+                    rejected,
+                );
+                response_session_count = response_session_count + 1;
+            } <b>else</b> <b>if</b> (message_data_type == 8) {
+                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> session_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> presign = bcs_body.peel_vec_u8();
+                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_presign">respond_ecdsa_presign</a>(dwallet_id, session_id, presign, ctx);
                 response_session_count = response_session_count + 1;
             };
         i = i + 1;

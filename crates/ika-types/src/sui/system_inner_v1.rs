@@ -76,7 +76,6 @@ pub struct ValidatorSetV1 {
     pub active_committee: BlsCommittee,
     pub next_epoch_active_committee: Option<BlsCommittee>,
     pub previous_committee: BlsCommittee,
-    pub previous_committee: Committee,
     pub pending_active_validators: Vec<ObjectID>,
     pub at_risk_validators: VecMap<ID, u64>,
     pub validator_report_records: VecMap<ObjectID, VecSet<ObjectID>>,
@@ -90,13 +89,6 @@ pub struct UpgradeCap {
     pub package: ObjectID,
     pub version: u64,
     pub policy: u8,
-}
-
-/// Represents a capability granting control over a specific dWallet network decryption key.
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletNetworkDecryptionKeyCap {
-    pub id: ObjectID,
-    pub dwallet_network_decryption_key_id: ObjectID,
 }
 
 /// Rust version of the Move ika_system::ika_system::IkaSystemStateInner type

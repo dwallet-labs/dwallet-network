@@ -9,7 +9,6 @@ use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
     Self,
     DWalletCoordinatorInner,
     DWalletNetworkDecryptionKeyCap,
-    EncryptionKey,
     DWalletCap,
     MessageApproval,
     UnverifiedECDSAPartialUserSignatureCap,
