@@ -1,17 +1,33 @@
 FROM node:20-slim AS build
 ENV PNPM_HOME="/pnpm"
+# Initially set PATH so corepack is available
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+
+# Enable corepack and lock pnpm version
+RUN corepack enable && corepack prepare pnpm@9.9.0 --activate
+
 WORKDIR /app
 
-COPY /sdk /app/sdk
-COPY /apps /app/apps
-COPY /dapps /app/dapps
-COPY Cargo.toml Cargo.lock /app/
-COPY package.json /app/package.json
-COPY pnpm-lock.yaml /app/pnpm-lock.yaml
-COPY pnpm-workspace.yaml /app/pnpm-workspace.yaml
-COPY .eslintrc.js .npmrc turbo.json /app/
+COPY . /app
+
+RUN apt-get update && apt-get install -y curl build-essential
+
+# Install Rust non-interactively using rustup
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# Update PATH to include Cargo binaries
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Explicitly update the Rust stable toolchain. This helps ensure that all components (like Cargo)
+# are properly downloaded and installed before they are used.
+RUN rustup update stable
+
+# Install wasm-pack using its installer.
+# Create a symlink to /usr/local/bin so it's found by subsequent commands.
+RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh && \
+    ln -s /root/.cargo/bin/wasm-pack /usr/local/bin/wasm-pack
+
+RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 # --mount=[...] will ensure a persistent cache volume is mounted at /pnpm_store.
 # This is like running docker run -v /tmp/cache:/pnpm_store ... except that mount is
@@ -26,6 +42,8 @@ RUN --mount=type=cache,id=pnmcache,target=/pnpm_store \
   # By copying we ensure that packages are effectively saved in resulting Docker image.
   pnpm config set package-import-method copy && \
   pnpm install --prefer-offline --ignore-scripts --frozen-lockfile
+
+# Run your build command; wasm-pack should now be available.
 RUN pnpm explorer build
 
 FROM nginx:alpine as release
