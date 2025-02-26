@@ -8,8 +8,8 @@
 
 import { Transaction } from '@mysten/sui/transactions';
 
+import type { Config } from './globals.ts';
 import {
-	Config,
 	delay,
 	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
@@ -112,8 +112,8 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 		const match = data.find(
 			(event) =>
 				// event.type === eventType &&
-				isEventFn(event.parsedJson)
-				// event.parsedJson.session_id === sessionID,
+				isEventFn(event.parsedJson),
+			// event.parsedJson.session_id === sessionID,
 		);
 
 		if (match) return match.parsedJson as TEvent;
