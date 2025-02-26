@@ -74,11 +74,11 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], rev = "6f395fc98ff1d3784b3b3f72763b072c55d9ba5d" }
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "6f395fc98ff1d3784b3b3f72763b072c55d9ba5d", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], rev = "6f395fc98ff1d3784b3b3f72763b072c55d9ba5d" }
-group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "6f395fc98ff1d3784b3b3f72763b072c55d9ba5d" }
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "6f395fc98ff1d3784b3b3f72763b072c55d9ba5d" }
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], rev = "3a44e3e4aeca49622d1bf5fdf998683c77806eea" }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3a44e3e4aeca49622d1bf5fdf998683c77806eea", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], rev = "3a44e3e4aeca49622d1bf5fdf998683c77806eea" }
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "3a44e3e4aeca49622d1bf5fdf998683c77806eea" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "3a44e3e4aeca49622d1bf5fdf998683c77806eea" }
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
