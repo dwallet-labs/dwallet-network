@@ -695,7 +695,6 @@ impl DWalletMPCManager {
     /// New messages from these parties will be ignored.
     /// Restarted for each epoch.
     fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID]) -> DwalletMPCResult<()> {
-        return Ok(());
         let malicious_parties_names =
             party_ids_to_authority_names(malicious_parties, &*self.epoch_store()?)?;
         warn!(
