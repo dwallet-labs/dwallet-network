@@ -2135,6 +2135,7 @@ impl AuthorityPerEpochStore {
                         .event_data
                         .encryption_key_address
                         .to_vec(),
+                    // TODO (#679): Update the blockchain when an MPC round fails
                     rejected: false,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
