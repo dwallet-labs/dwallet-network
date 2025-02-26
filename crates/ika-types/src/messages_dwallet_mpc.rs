@@ -474,15 +474,17 @@ impl DWalletMPCEventTrait for StartPresignFirstRoundEvent {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct IkaPackagesConfig {
     /// The move package ID of ika (IKA) on sui.
     pub ika_package_id: ObjectID,
     /// The move package ID of `ika_system` on sui.
     pub ika_system_package_id: ObjectID,
     /// The object ID of ika_system_state on sui.
-    pub system_id: ObjectID,
+    pub ika_system_object_id: ObjectID,
 }
+
+impl sui_config::Config for IkaPackagesConfig {}
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet::StartDKGFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]

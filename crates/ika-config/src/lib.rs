@@ -20,12 +20,14 @@ pub use node::{ConsensusConfig, NodeConfig};
 pub use sui_config::object_storage_config;
 pub use sui_config::{Config, PersistedConfig};
 use sui_types::multiaddr::Multiaddr;
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 
 const IKA_DIR: &str = ".ika";
 pub const IKA_CONFIG_DIR: &str = "ika_config";
 pub const IKA_NETWORK_CONFIG: &str = "network.yaml";
 pub const IKA_FULLNODE_CONFIG: &str = "fullnode.yaml";
 pub const IKA_CLIENT_CONFIG: &str = "client.yaml";
+pub const IKA_SUI_CONFIG: &str = "sui_sui_config.yaml";
 pub const IKA_KEYSTORE_FILENAME: &str = "ika.keystore";
 pub const IKA_KEYSTORE_ALIASES_FILENAME: &str = "ika.aliases";
 pub const IKA_BENCHMARK_GENESIS_GAS_KEYSTORE_FILENAME: &str = "benchmark.keystore";
