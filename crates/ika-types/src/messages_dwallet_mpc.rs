@@ -437,7 +437,6 @@ impl DWalletMPCEventTrait for SignData {
 // dwallet_network_decryption_key_id: ID,
 // }
 
-
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartPresignFirstRoundEvent {
