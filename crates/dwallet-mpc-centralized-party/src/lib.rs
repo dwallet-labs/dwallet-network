@@ -27,6 +27,7 @@ use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
 use std::fmt;
 use std::marker::PhantomData;
+use log::{log, warn};
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
@@ -300,7 +301,9 @@ pub fn encrypt_secret_key_share_and_prove(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
+    warn!("1");
     let protocol_public_params = protocol_public_parameters();
+    warn!("2");
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
         SCALAR_LIMBS,
         { FUNDAMENTAL_DISCRIMINANT_LIMBS },

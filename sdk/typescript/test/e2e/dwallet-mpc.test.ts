@@ -5,12 +5,13 @@ import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
-
+import { encrypt_secret_share } from '@dwallet-network/dwallet-mpc-wasm';
 import {
 	createDKGFirstRoundOutputMock,
 	createDWallet,
 	dkgSecondRoundMoveCall,
 } from '../../src/dwallet-mpc/dkg';
+import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share.ts';
 import {
 	checkpointCreationTime,
 	Config,
@@ -18,8 +19,7 @@ import {
 	getDWalletSecpState,
 	mockedProtocolPublicParameters,
 } from '../../src/dwallet-mpc/globals';
-import { dkgFirstRoundMock } from '../../src/dwallet-mpc/mocks';
-import {getOrCreateClassGroupsKeyPair} from "../../src/dwallet-mpc/encrypt-user-share.ts";
+import { dkgFirstRoundMock } from '../../src/dwallet-mpc/mocks.ts';
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -77,4 +77,19 @@ describe('Test dWallet MPC', () => {
 			Buffer.from(dkgFirstRoundMock.centralizedPublicOutput, 'base64'),
 		);
 	});
+
+	it('should ', async () => {
+		let keypair = await getOrCreateClassGroupsKeyPair(conf);
+		console.log('keypair.encryptionKey', Buffer.from(keypair.encryptionKey).toString('base64'));
+		let encryptedSecretShare = encrypt_secret_share(Buffer.from(dkgFirstRoundMock.centralizedSecretKeyShare, 'base64'), keypair.encryptionKey);
+		console.log('encryptedSecretShare', encryptedSecretShare);
+	});
 });
+
+// describe('DWallet tests - offline', () => {
+// 	it('should encrypt a secret share', () => {
+//
+// 		let encryptedSecretShare = encrypt_secret_share(dkgFirstRoundMock.);
+//
+// 	});
+// });

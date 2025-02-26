@@ -160,7 +160,7 @@ export async function createDKGFirstRoundOutputMock(
 		id: createdDWalletCap.reference.objectId,
 		options: { showContent: true },
 	});
-	let dwalletCapObj = dwalletCapObj?.data?.content;
+	let dwalletCapObjContent = dwalletCapObj?.data?.content;
 	if (!isMoveObject(dwalletCapObj)) {
 		throw new Error('Invalid DWallet cap object');
 	}

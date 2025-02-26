@@ -74,11 +74,11 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], branch = "ika" }
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "ika", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], branch = "ika" }
-group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", branch = "ika" }
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "ika" }
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], rev = "3bfcc2fb18e814af9bbdf4d427b15d117f3c5e78" }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3bfcc2fb18e814af9bbdf4d427b15d117f3c5e78", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], rev = "3bfcc2fb18e814af9bbdf4d427b15d117f3c5e78" }
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "3bfcc2fb18e814af9bbdf4d427b15d117f3c5e78" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "3bfcc2fb18e814af9bbdf4d427b15d117f3c5e78" }
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"

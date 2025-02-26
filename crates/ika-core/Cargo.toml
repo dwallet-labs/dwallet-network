@@ -17,7 +17,7 @@ homomorphic_encryption.workspace = true
 class_groups.workspace = true
 dwallet-classgroups-types.workspace = true
 schemars.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "ika" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", rev = "3bfcc2fb18e814af9bbdf4d427b15d117f3c5e78" }
 class_groups_constants = { path = "../class-groups-constants" }
 rand_core = "0.6.4"
 crypto-bigint = { workspace = true, features = ["rand_core", "serde"], default-features = false }
