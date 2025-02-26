@@ -1,6 +1,5 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { Buffer } from 'buffer';
 import {
 	create_dkg_centralized_output,
 	encrypt_secret_share,
@@ -10,9 +9,9 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.ts';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.ts';
+import type { Config, SharedObjectData } from './globals.ts';
 import {
 	checkpointCreationTime,
-	Config,
 	delay,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
@@ -23,7 +22,6 @@ import {
 	isIKASystemStateInner,
 	isMoveObject,
 	MPCKeyScheme,
-	SharedObjectData,
 	SUI_PACKAGE_ID,
 } from './globals.ts';
 
@@ -296,7 +294,10 @@ function isActiveDWallet(obj: any): obj is ActiveDWallet {
 	return obj?.state?.fields?.public_output !== undefined;
 }
 
-async function waitForDKGSecondRoundCompletion(conf: Config, dwalletID: string): Promise<Uint8Array> {
+async function waitForDKGSecondRoundCompletion(
+	conf: Config,
+	dwalletID: string,
+): Promise<Uint8Array> {
 	const startTime = Date.now();
 
 	while (Date.now() - startTime <= conf.timeout) {
