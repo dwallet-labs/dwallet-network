@@ -7,7 +7,8 @@ use anyhow::{anyhow, Context};
 use class_groups::setup::get_setup_parameters_secp256k1;
 use class_groups::{
     CiphertextSpaceGroupElement, CiphertextSpaceValue, DecryptionKey, EncryptionKey,
-    Secp256k1DecryptionKey,
+    Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use group::{CyclicGroupElement, GroupElement, Samplable};
@@ -27,7 +28,6 @@ use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
 use std::fmt;
 use std::marker::PhantomData;
-use log::{log, warn};
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
@@ -35,9 +35,6 @@ use serde::{Deserialize, Serialize};
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
-};
-use twopc_mpc::secp256k1::class_groups::{
-    FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
@@ -80,15 +77,15 @@ enum Hash {
 type SignedMessages = Vec<u8>;
 type EncryptionOfSecretShareProof = EncryptionOfDiscreteLogProofWithoutCtx<
     SCALAR_LIMBS,
-    FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     secp256k1::GroupElement,
 >;
 
 type Secp256k1EncryptionKey = EncryptionKey<
     SCALAR_LIMBS,
-    FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     secp256k1::GroupElement,
 >;
 
@@ -154,6 +151,15 @@ pub fn create_dkg_output(
     // The secret (private) key share returned from this function should never be sent,
     // and should always be kept private.
     let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
+    let public_keys = bcs::to_bytes(&DWalletPublicKeys {
+        centralized_public_share: bcs::to_bytes(&round_result.public_output.public_key_share)?,
+        decentralized_public_share: bcs::to_bytes(
+            &round_result
+                .public_output
+                .decentralized_party_public_key_share,
+        )?,
+        public_key: bcs::to_bytes(&round_result.public_output.public_key)?,
+    })?;
     Ok(CentralizedDKGWasmResult {
         public_output,
         public_key_share_and_proof,
@@ -250,8 +256,8 @@ fn protocol_public_parameters_by_key_scheme(
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             Ok(bcs::to_bytes(&ProtocolPublicParameters::new::<
                 { secp256k1::SCALAR_LIMBS },
-                { FUNDAMENTAL_DISCRIMINANT_LIMBS },
-                { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                { SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
                 secp256k1::GroupElement,
             >(
                 encryption_scheme_public_parameters
@@ -301,13 +307,11 @@ pub fn encrypt_secret_key_share_and_prove(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
-    warn!("1");
     let protocol_public_params = protocol_public_parameters();
-    warn!("2");
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
         SCALAR_LIMBS,
-        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        { SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
         secp256k1::GroupElement,
     >(
         protocol_public_params
@@ -316,13 +320,14 @@ pub fn encrypt_secret_key_share_and_prove(
         protocol_public_params.group_public_parameters.clone(),
         bcs::from_bytes(&encryption_key)?,
     );
-    let randomness =
-        class_groups::RandomnessSpaceGroupElement::<{ FUNDAMENTAL_DISCRIMINANT_LIMBS }>::sample(
-            language_public_parameters
-                .encryption_scheme_public_parameters
-                .randomness_space_public_parameters(),
-            &mut OsRng,
-        )?;
+    let randomness = class_groups::RandomnessSpaceGroupElement::<
+        { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+    >::sample(
+        language_public_parameters
+            .encryption_scheme_public_parameters
+            .randomness_space_public_parameters(),
+        &mut OsRng,
+    )?;
     let parsed_secret_key_share = bcs::from_bytes(&secret_key_share)?;
     let witness = (parsed_secret_key_share, randomness).into();
     let (proof, statements) = EncryptionOfSecretShareProof::prove(
@@ -378,7 +383,7 @@ pub fn decrypt_user_share_inner(
 ) -> anyhow::Result<Vec<u8>> {
     let (_, encryption_of_discrete_log): (
         EncryptionOfSecretShareProof,
-        CiphertextSpaceValue<NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
+        CiphertextSpaceValue<SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
     ) = bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let public_parameters: homomorphic_encryption::PublicParameters<
         SCALAR_LIMBS,
@@ -392,8 +397,8 @@ pub fn decrypt_user_share_inner(
     let decryption_key = bcs::from_bytes(&decryption_key)?;
     let decryption_key: DecryptionKey<
         SCALAR_LIMBS,
-        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+        SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
         secp256k1::GroupElement,
     > = DecryptionKey::new(decryption_key, &public_parameters)?;
     let Some(plaintext): Option<<Secp256k1EncryptionKey as AdditivelyHomomorphicEncryptionKey<SCALAR_LIMBS>>::PlaintextSpaceGroupElement> = decryption_key
