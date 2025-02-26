@@ -5545,6 +5545,7 @@ dependencies = [
  "static_assertions",
  "strum 0.24.1",
  "strum_macros 0.24.3",
+ "sui-config",
  "sui-enum-compat-util",
  "sui-json-rpc-types",
  "sui-macros",

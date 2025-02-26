@@ -17,7 +17,7 @@ use fastcrypto::traits::KeyPair;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
-use ika_config::{ika_config_dir, IKA_NETWORK_CONFIG};
+use ika_config::{ika_config_dir, IKA_SUI_CONFIG};
 use ika_sui_client::ika_validator_transactions::{
     request_add_validator, request_add_validator_candidate, request_remove_validator, stake_ika,
 };
@@ -38,6 +38,7 @@ use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
 use sui_types::crypto::get_authority_key_pair;
 use sui_types::crypto::{NetworkKeyPair, SignatureScheme, SuiKeyPair};
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 
 const DEFAULT_GAS_BUDGET: u64 = 200_000_000; // 0.2 SUI
 
@@ -60,15 +61,15 @@ pub enum IkaValidatorCommand {
         file: PathBuf,
         #[clap(name = "gas-budget", long)]
         gas_budget: Option<u64>,
-        #[clap(name = "ika-network-config-file", long)]
-        ika_network_config_file: Option<PathBuf>,
+        #[clap(name = "ika-sui-config", long)]
+        ika_sui_config: Option<PathBuf>,
     },
     #[clap(name = "join-committee")]
     JoinCommittee {
         #[clap(name = "gas-budget", long)]
         gas_budget: Option<u64>,
-        #[clap(name = "ika-network-config-file", long)]
-        ika_network_config_file: Option<PathBuf>,
+        #[clap(name = "ika-sui-config", long)]
+        ika_sui_config: Option<PathBuf>,
         #[clap(name = "validator-cap-id", long)]
         validator_cap_id: ObjectID,
     },
@@ -76,8 +77,8 @@ pub enum IkaValidatorCommand {
     StakeValidator {
         #[clap(name = "gas-budget", long)]
         gas_budget: Option<u64>,
-        #[clap(name = "ika-network-config-file", long)]
-        ika_network_config_file: Option<PathBuf>,
+        #[clap(name = "ika-sui-config", long)]
+        ika_sui_config: Option<PathBuf>,
         #[clap(name = "validator-id", long)]
         validator_id: ObjectID,
         #[clap(name = "ika-coin-id", long)]
@@ -91,8 +92,8 @@ pub enum IkaValidatorCommand {
         gas_budget: Option<u64>,
         #[clap(name = "validator-cap-id", long)]
         validator_cap_id: ObjectID,
-        #[clap(name = "ika-network-config-file", long)]
-        ika_network_config_file: Option<PathBuf>,
+        #[clap(name = "ika-sui-config", long)]
+        ika_sui_config: Option<PathBuf>,
     },
 }
 
@@ -184,11 +185,11 @@ impl IkaValidatorCommand {
             IkaValidatorCommand::BecomeCandidate {
                 file,
                 gas_budget,
-                ika_network_config_file,
+                ika_sui_config,
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path =
-                    ika_network_config_file.unwrap_or(ika_config_dir()?.join(IKA_NETWORK_CONFIG));
+                    ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
                 let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
                     err.context(format!(
                         "Cannot open Ika network config file at {:?}",
@@ -220,12 +221,12 @@ impl IkaValidatorCommand {
             }
             IkaValidatorCommand::JoinCommittee {
                 gas_budget,
-                ika_network_config_file,
+                ika_sui_config,
                 validator_cap_id,
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path =
-                    ika_network_config_file.unwrap_or(ika_config_dir()?.join(IKA_NETWORK_CONFIG));
+                    ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
                 let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
                     err.context(format!(
                         "Cannot open Ika network config file at {:?}",
@@ -245,15 +246,15 @@ impl IkaValidatorCommand {
             }
             IkaValidatorCommand::StakeValidator {
                 gas_budget,
-                ika_network_config_file,
+                ika_sui_config,
                 validator_id,
                 ika_coin_id,
                 stake_amount,
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path =
-                    ika_network_config_file.unwrap_or(ika_config_dir()?.join(IKA_NETWORK_CONFIG));
-                let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
+                    ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
+                let config: IkaPackagesConfig = PersistedConfig::read(&config_path).map_err(|err| {
                     err.context(format!(
                         "Cannot open Ika network config file at {:?}",
                         config_path
@@ -263,7 +264,7 @@ impl IkaValidatorCommand {
                 let res = stake_ika(
                     context,
                     config.ika_system_package_id.clone(),
-                    config.system_id.clone(),
+                    config.ika_system_object_id.clone(),
                     ika_coin_id,
                     validator_id,
                     stake_amount,
@@ -276,11 +277,11 @@ impl IkaValidatorCommand {
             IkaValidatorCommand::LeaveCommittee {
                 gas_budget,
                 validator_cap_id,
-                ika_network_config_file,
+                ika_sui_config,
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path =
-                    ika_network_config_file.unwrap_or(ika_config_dir()?.join(IKA_NETWORK_CONFIG));
+                    ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
                 let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
                     err.context(format!(
                         "Cannot open Ika network config file at {:?}",
