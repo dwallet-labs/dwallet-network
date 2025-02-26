@@ -2148,7 +2148,6 @@ impl AuthorityPerEpochStore {
                 let session_ids: Vec<ObjectID> = presigns.iter().map(|(k, _)| *k).collect();
                 let presigns: Vec<MPCPublicOutput> = presigns.into_iter().map(|(_, v)| v).collect();
                 let tx = MessageKind::DwalletPresign(PresignOutput {
-                    batch_session_id: init_event_data.batch_session_id.to_vec(),
                     presigns: bcs::to_bytes(&presigns)?,
                     session_ids: bcs::to_bytes(&session_ids)?,
                     dwallet_id: init_event_data.dwallet_id.to_vec(),

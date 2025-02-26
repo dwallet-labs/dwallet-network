@@ -264,11 +264,12 @@ pub(crate) fn presign_public_input(
     )
 }
 
-fn presign_party_session_info(deserialized_event: StartPresignFirstRoundEvent) -> SessionInfo {
+fn presign_party_session_info(deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent>) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::Presign(deserialized_event),
+        // TODO (#642): Remove the redundant initiating user address field
+        initiating_user_address: deserialized_event.session_id.into(),
+        mpc_round: MPCProtocolInitData::Presign(deserialized_event.event_data),
     }
 }
 
