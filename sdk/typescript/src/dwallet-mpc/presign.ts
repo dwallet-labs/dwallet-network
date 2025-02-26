@@ -111,9 +111,9 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 
 		const match = data.find(
 			(event) =>
-				event.type === eventType &&
-				isEventFn(event.parsedJson) &&
-				event.parsedJson.session_id === sessionID,
+				// event.type === eventType &&
+				isEventFn(event.parsedJson)
+				// event.parsedJson.session_id === sessionID,
 		);
 
 		if (match) return match.parsedJson as TEvent;

@@ -152,9 +152,9 @@ pub enum MessageKind {
     DwalletSign(SignOutput),
     DwalletEncryptedUserShare(EncryptedUserShareOutput),
     DwalletEncryptionKeyVerification(EncryptionKeyVerificationOutput),
+    DwalletPresign(PresignOutput),
     DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
     DwalletMPCNetworkDKGOutput(DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares),
-    DwalletPresign(PresignOutput),
 }
 
 impl MessageKind {
