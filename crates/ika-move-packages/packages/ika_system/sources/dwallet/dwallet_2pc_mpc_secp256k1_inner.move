@@ -1091,7 +1091,7 @@ public(package) fun respond_dwallet_dkg_first_round(
 
 // TODO (#493): Remove mock functions
 public(package) fun create_first_round_dwallet_mock(
-    self: &mut DWallet2PcMpcSecp256K1InnerV1, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
+    self: &mut DWalletCoordinatorInner, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
 ): DWalletCap {
     let id = object::new(ctx);
     let dwallet_id = id.to_inner();
@@ -1110,6 +1110,7 @@ public(package) fun create_first_round_dwallet_mock(
         state: DWalletState::AwaitingUser {
             first_round_output
         },
+        created_at_epoch: self.current_epoch,
     });
     dwallet_cap
 }
