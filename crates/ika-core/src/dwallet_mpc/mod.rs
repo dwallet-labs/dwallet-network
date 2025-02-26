@@ -116,7 +116,7 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent> =
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(presign_party_session_info(
-                deserialized_event.event_data,
+                deserialized_event,
             )))
         }
         t if t == &DWalletMPCSuiEvent::<StartSignEvent<SignData>>::type_(packages_config) => {
