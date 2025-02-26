@@ -16,10 +16,11 @@ import {
 	checkpointCreationTime,
 	Config,
 	delay,
-	getDWalletSecpState,
+	getDWalletSecpState, isMoveObject,
 	mockedProtocolPublicParameters,
 } from '../../src/dwallet-mpc/globals';
 import { dkgFirstRoundMock } from '../../src/dwallet-mpc/mocks.ts';
+import {presign} from "../../src/dwallet-mpc/presign.ts";
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -77,5 +78,9 @@ describe('Test dWallet MPC', () => {
 			Buffer.from(dkgFirstRoundMock.centralizedPublicOutput, 'base64'),
 		);
 		console.log(`dWallet has been created successfully: ${firstRoundOutputResult.dwalletID}`);
+	});
+
+	it('should run presign', async () => {
+		await presign(conf, '0xda392e036d0569507596b1d8d5937c2bd6ef12b04fb9886da0c2f370bf77075b');
 	});
 });

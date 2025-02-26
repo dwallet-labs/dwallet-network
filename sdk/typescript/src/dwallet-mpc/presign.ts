@@ -41,6 +41,12 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 		],
 	});
 
+	tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
+		arguments: [emptyIKACoin],
+		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
+	});
+
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
 		transaction: tx,
