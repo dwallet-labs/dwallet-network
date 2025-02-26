@@ -129,10 +129,7 @@ fn build_packages_with_move_config(
     // write out generated docs
     let docs_dir = out_dir.join(DOCS_DIR);
     let mut files_to_write = BTreeMap::new();
-    relocate_docs(
-        &ika_pkg.package.compiled_docs.unwrap(),
-        &mut files_to_write,
-    );
+    relocate_docs(&ika_pkg.package.compiled_docs.unwrap(), &mut files_to_write);
     relocate_docs(
         &ika_system_pkg.package.compiled_docs.unwrap(),
         &mut files_to_write,

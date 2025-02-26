@@ -49,10 +49,11 @@ pub enum MPCProtocolInitData {
     // TODO (#536): Store batch state and logic on Sui & remove this field.
     BatchedSign(Vec<Vec<u8>>),
     /// The only round of the network DKG protocol.
-    /// Contains the network key scheme
+    /// Contains the network key scheme, the dWallet network decryption key object ID
     /// and at the end of the session holds the new key version.
     NetworkDkg(
         DWalletMPCNetworkKeyScheme,
+        ObjectID,
         Option<NetworkDecryptionKeyShares>,
     ),
     /// The round of verifying the encrypted share proof is valid and

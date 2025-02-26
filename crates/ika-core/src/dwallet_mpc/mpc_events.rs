@@ -165,8 +165,7 @@ impl DWalletMPCEventTrait for LockedNextEpochCommitteeEvent {
 /// It is used to trigger the start of the network DKG process.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartNetworkDKGEvent {
-    pub(crate) session_id: ID,
-    pub(crate) key_scheme: u8,
+    pub(crate) dwallet_network_decryption_key_id: ID,
 }
 
 impl DWalletMPCEventTrait for StartNetworkDKGEvent {
@@ -175,9 +174,9 @@ impl DWalletMPCEventTrait for StartNetworkDKGEvent {
     /// It is used to trigger the start of the network DKG process.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_package_id,
+            address: *packages_config.ika_system_package_id,
             name: START_NETWORK_DKG_EVENT_STRUCT_NAME.to_owned(),
-            module: ident_str!("dwallet_network_key").to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

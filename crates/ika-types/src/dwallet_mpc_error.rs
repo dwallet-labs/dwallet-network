@@ -122,6 +122,9 @@ pub enum DwalletMPCError {
 
     #[error("failed to find the presign round data")]
     PresignRoundDataNotFound,
+
+    #[error("unsupported network DKG key scheme")]
+    UnsupportedNetworkDKGKeyScheme,
 }
 
 /// A wrapper type for the result of a runtime operation.

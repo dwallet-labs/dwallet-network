@@ -144,6 +144,13 @@ pub struct PartialSignatureVerificationOutput {
     pub messages: Vec<u8>,
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct Secp256K1NetworkDKGOutput {
+    pub dwallet_network_decryption_key_id: ObjectID,
+    pub public_output: Vec<u8>,
+    pub key_shares: Vec<u8>,
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
 pub enum MessageKind {
     InitiateProcessMidEpoch,
@@ -162,7 +169,7 @@ pub enum MessageKind {
     DwalletEncryptedUserShare(EncryptedUserShareOutput),
     DwalletEncryptionKeyVerification(EncryptionKeyVerificationOutput),
     DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
-    DwalletMPCNetworkDKGOutput(DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares),
+    DwalletMPCNetworkDKGOutput(Secp256K1NetworkDKGOutput),
 }
 
 impl MessageKind {
@@ -175,7 +182,7 @@ impl MessageKind {
             Self::InitiateProcessMidEpoch => "InitiateProcessMidEpoch",
             Self::EndOfEpoch(_) => "EndOfEpoch",
             Self::TestMessage(_, _) => "TestMessage",
-            MessageKind::DwalletMPCNetworkDKGOutput(_, _) => "DwalletMPCNetworkDKGOutput",
+            MessageKind::DwalletMPCNetworkDKGOutput(_) => "DwalletMPCNetworkDKGOutput",
             MessageKind::DwalletDKGFirstRoundOutput(_) => "DwalletDKGFirstRoundOutput",
             MessageKind::DwalletDKGSecondRoundOutput(_) => "DwalletDKGSecondRoundOutput",
             MessageKind::DwalletPresign(_) => "DwalletPresign",
@@ -218,11 +225,11 @@ impl Display for MessageKind {
                     authority, num
                 )?;
             }
-            MessageKind::DwalletMPCNetworkDKGOutput(key_scheme, _) => {
+            MessageKind::DwalletMPCNetworkDKGOutput(output) => {
                 writeln!(
                     writer,
                     "MessageKind : DwalletMPCNetworkDKGOutput {:?}",
-                    key_scheme
+                    output
                 )?;
             }
             MessageKind::DwalletDKGFirstRoundOutput(_) => {

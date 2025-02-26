@@ -26,7 +26,8 @@ pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("LockedNextEpochCommitteeEvent");
 pub const VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME: &IdentStr =
     ident_str!("ValidatorDataForDWalletSecretShare");
-pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartNetworkDKGEvent");
+pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
+    ident_str!("DWalletNetworkDKGDecryptionKeyRequestEvent");
 
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;

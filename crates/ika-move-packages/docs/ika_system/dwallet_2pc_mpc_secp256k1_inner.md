@@ -4453,6 +4453,12 @@ the function will abort with this error.
                 <b>let</b> presign = bcs_body.peel_vec_u8();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_presign">respond_ecdsa_presign</a>(dwallet_id, session_id, presign, ctx);
                 response_session_count = response_session_count + 1;
+            } <b>else</b> <b>if</b> (message_data_type == 10) {
+                <b>let</b> dwallet_network_decryption_key_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> public_output = bcs_body.peel_vec_u8();
+                <b>let</b> key_shares = bcs_body.peel_vec_u8();
+                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(dwallet_network_decryption_key_id, public_output, key_shares);
+                response_session_count = response_session_count + 1;
             };
         i = i + 1;
     };

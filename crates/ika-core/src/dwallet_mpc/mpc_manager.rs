@@ -219,11 +219,11 @@ impl DWalletMPCManager {
                 break;
             }
         }
-        self.epoch_store()?
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .status()?;
+        // let a = self.epoch_store()?
+        //     .dwallet_mpc_network_keys
+        //     .get()
+        //     .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+        //     .status()?;
 
         let (ready_to_advance, malicious_parties) = self.get_ready_to_advance_sessions()?;
         if !malicious_parties.is_empty() {
@@ -597,7 +597,7 @@ impl DWalletMPCManager {
         public_output: MPCPublicOutput,
         private_output: MPCPrivateOutput,
     ) -> DwalletMPCResult<()> {
-        if let MPCProtocolInitData::NetworkDkg(key_type, _) = session_info.mpc_round {
+        if let MPCProtocolInitData::NetworkDkg(key_type, _, _) = session_info.mpc_round {
             let epoch_store = self.epoch_store()?;
             let network_keys = epoch_store
                 .dwallet_mpc_network_keys

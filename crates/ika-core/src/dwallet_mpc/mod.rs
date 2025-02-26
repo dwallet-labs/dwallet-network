@@ -156,7 +156,8 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent> =
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(network_dkg::network_dkg_session_info(
-                deserialized_event.event_data,
+                deserialized_event,
+                DWalletMPCNetworkKeyScheme::Secp256k1,
             )?))
         }
         t if t
@@ -488,13 +489,15 @@ pub(crate) fn session_input_from_event(
                 bcs::from_bytes(&event.contents)?;
             Ok((
                 network_dkg::network_dkg_public_input(
-                    deserialized_event.event_data,
                     &dwallet_mpc_manager.validators_data_for_network_dkg,
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
                 )?,
                 Some(bcs::to_bytes(
                     &dwallet_mpc_manager
                         .node_config
-                        .class_groups_key_pair_and_proof,
+                        .class_groups_key_pair_and_proof
+                        .class_groups_keypair()
+                        .decryption_key(),
                 )?),
             ))
         }

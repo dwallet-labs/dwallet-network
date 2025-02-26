@@ -947,6 +947,13 @@ fun process_checkpoint_message(
                     authority,
                     num,
                 });
+            } else if (message_data_type == 3) {
+                object::id_from_address(bcs_body.peel_address());
+                bcs_body.peel_vec_u8();
+            } else if (message_data_type == 10) {
+                object::id_from_address(bcs_body.peel_address());
+                bcs_body.peel_vec_u8();
+                bcs_body.peel_vec_u8();
             };
         i = i + 1;
     };

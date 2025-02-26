@@ -85,7 +85,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
     DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput,
     EncryptionKeyVerificationOutput, MessageKind, PartialSignatureVerificationOutput,
-    PresignOutput, SignOutput,
+    PresignOutput, Secp256K1NetworkDKGOutput, SignOutput,
 };
 use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
@@ -2064,7 +2064,12 @@ impl AuthorityPerEpochStore {
                     // the verified output.
                     // We can't preform this within the execution engine,
                     // as it requires the class-groups crate from crypto-private lib.
-                    if let MPCProtocolInitData::NetworkDkg(key_scheme, _) = session_info.mpc_round {
+                    if let MPCProtocolInitData::NetworkDkg(
+                        key_scheme,
+                        dwallet_network_decryption_key_id,
+                        _,
+                    ) = session_info.mpc_round
+                    {
                         let weighted_threshold_access_structure =
                             self.get_weighted_threshold_access_structure()?;
 
@@ -2075,9 +2080,37 @@ impl AuthorityPerEpochStore {
                             &output,
                         )?;
 
-                        Ok(self.process_consensus_system_transaction(
-                            &MessageKind::DwalletMPCNetworkDKGOutput(key_scheme, key),
-                        ))
+                        match key_scheme {
+                            DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                                let secp256k1_network_dkg_output = Secp256K1NetworkDKGOutput {
+                                    dwallet_network_decryption_key_id,
+                                    public_output: bcs::to_bytes(&(
+                                        key.encryption_key,
+                                        key.decryption_key_share_public_parameters,
+                                        key.encryption_scheme_public_parameters,
+                                        key.public_verification_keys,
+                                    ))
+                                    .map_err(|e| DwalletMPCError::BcsError(e))?,
+                                    key_shares: bcs::to_bytes(
+                                        &key.current_epoch_encryptions_of_shares_per_crt_prime,
+                                    )
+                                    .map_err(|e| DwalletMPCError::BcsError(e))?,
+                                };
+
+                                println!(
+                                    "secp256k1_network_dkg_ id: {:?}",
+                                    dwallet_network_decryption_key_id
+                                );
+                                Ok(self.process_consensus_system_transaction(
+                                    &MessageKind::DwalletMPCNetworkDKGOutput(
+                                        secp256k1_network_dkg_output,
+                                    ),
+                                ))
+                            }
+                            DWalletMPCNetworkKeyScheme::Ristretto => Err(IkaError::from(
+                                DwalletMPCError::UnsupportedNetworkDKGKeyScheme,
+                            )),
+                        }
                     } else {
                         self.process_dwallet_transaction(output, session_info)
                             .map_err(|e| IkaError::from(e))
@@ -2218,7 +2251,7 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::BatchedSign(_) | MPCProtocolInitData::NetworkDkg(_, _) => {
+            MPCProtocolInitData::BatchedSign(_) | MPCProtocolInitData::NetworkDkg(..) => {
                 Ok(ConsensusCertificateResult::Ignored)
             }
         }

@@ -355,7 +355,10 @@ impl ArchiveWriter {
 
         while kill.try_recv().is_err() {
             if let Some(checkpoint_message) = store
-                .get_checkpoint_by_sequence_number(checkpoint_writer.epoch_num, checkpoint_sequence_number)
+                .get_checkpoint_by_sequence_number(
+                    checkpoint_writer.epoch_num,
+                    checkpoint_sequence_number,
+                )
                 .map_err(|_| anyhow!("Failed to read checkpoint message from store"))?
             {
                 checkpoint_writer.write(checkpoint_message.into_inner())?;
