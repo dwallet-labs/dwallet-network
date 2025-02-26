@@ -25,6 +25,10 @@ import {
 	SUI_PACKAGE_ID,
 } from './globals.ts';
 
+interface DWalletCap {
+	dwallet_id: string;
+}
+
 interface StartDKGFirstRoundEvent {
 	event_data: {
 		dwallet_id: string;
@@ -161,10 +165,6 @@ export async function createDKGFirstRoundOutputMock(
 		sessionID: '',
 		output: mockOutput,
 	};
-}
-
-interface DWalletCap {
-	dwallet_id: string;
 }
 
 function isDWalletCap(obj: any): obj is DWalletCap {
