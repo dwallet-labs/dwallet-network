@@ -81,6 +81,6 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should run presign', async () => {
-		await presign(conf, '0x7b39d82f45a80791a6729dbffd10087fd2d7e2cd29414e066ab08a6091a14895');
+		await presign(conf, '0xeaed9f91f46a95bb0ea5d6e665b3c4ef2526a3b51e88676a7891cedb29e101d2');
 	});
 });
