@@ -1937,7 +1937,7 @@ fun process_checkpoint_message(
         timestamp_ms,
     });
 
-    let len = bcs_body.peel_vec_length();
+    let len = bcs_body.peel_vec_length() as u32;
     let mut i = 0;
     let mut response_session_count = 0;
     while (i < len) {
@@ -2024,12 +2024,12 @@ fun process_checkpoint_message(
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let session_id = object::id_from_address(bcs_body.peel_address());
                 let presign = bcs_body.peel_vec_u8();
-                self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx)
+                self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx);
                 response_session_count = response_session_count + 1;
             };
         i = i + 1;
     };
     let epoch_coordinator = self.active_epochs.borrow_mut(epoch);
-    epoch_coordinator.total_messages_processed = epoch_coordinator.total_messages_processed + messages_len;
+    epoch_coordinator.total_messages_processed = epoch_coordinator.total_messages_processed + len;
     epoch_coordinator.session_count = epoch_coordinator.session_count - response_session_count;
 }
