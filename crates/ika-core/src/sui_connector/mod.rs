@@ -271,7 +271,7 @@ pub(crate) async fn build_sui_transaction<C: SuiClientInner>(
         signer,
         gas_payment,
         pt,
-        10000_000_000,
+        10_000_000_000,
         computation_price,
     );
 
