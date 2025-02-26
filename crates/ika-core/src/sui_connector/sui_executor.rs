@@ -220,15 +220,9 @@ where
         )
         .await;
 
-        let res = sui_client
+        sui_client
             .execute_transaction_block_with_effects(transaction)
             .await?;
-        if !res.errors.is_empty() {
-            error!(
-                "Sui transaction execution failed with errors: {:?}",
-                res.errors[0]
-            );
-        }
 
         Ok(())
     }
