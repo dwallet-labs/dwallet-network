@@ -122,7 +122,7 @@ export async function launchDKGSecondRound(
 export async function createDKGFirstRoundOutputMock(
 	conf: Config,
 	mockOutput: Uint8Array,
-): Promise<string> {
+): Promise<DKGFirstRoundOutputResult> {
 	// create_first_round_dwallet_mock(self: &mut DWallet2PcMpcSecp256K1, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext): DWalletCap
 	const tx = new Transaction();
 	let dwalletStateObjData = await getDWalletSecpState(conf);
@@ -161,10 +161,10 @@ export async function createDKGFirstRoundOutputMock(
 		options: { showContent: true },
 	});
 	let dwalletCapObjContent = dwalletCapObj?.data?.content;
-	if (!isMoveObject(dwalletCapObj)) {
+	if (!isMoveObject(dwalletCapObjContent)) {
 		throw new Error('Invalid DWallet cap object');
 	}
-	let dwalletCapFields = dwalletCapObj.fields;
+	let dwalletCapFields = dwalletCapObjContent.fields;
 	if (!isDWalletCap(dwalletCapFields)) {
 		throw new Error('Invalid DWallet cap fields');
 	}
@@ -172,10 +172,9 @@ export async function createDKGFirstRoundOutputMock(
 	return {
 		dwalletCapID: createdDWalletCap.reference.objectId,
 		dwalletID: dwalletCapFields.dwallet_id,
-	}
-	let dwalletID = dwalletCapFields.dwallet_id;
-
-	return createdDWalletCap.reference.objectId;
+		sessionID: '',
+		output: mockOutput,
+	};
 }
 
 interface DWalletCap {
