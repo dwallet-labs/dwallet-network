@@ -1967,7 +1967,7 @@ fun process_checkpoint_message(
             } else if (message_data_type == 3) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
-                self.respond_dkg_first_round_output(dwallet_id, first_round_output);
+                self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output);
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
