@@ -149,12 +149,12 @@ pub enum MessageKind {
     // .. more action types go here
     DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
-    DwalletPresign(PresignOutput),
     DwalletSign(SignOutput),
     DwalletEncryptedUserShare(EncryptedUserShareOutput),
     DwalletEncryptionKeyVerification(EncryptionKeyVerificationOutput),
     DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
     DwalletMPCNetworkDKGOutput(DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares),
+    DwalletPresign(PresignOutput),
 }
 
 impl MessageKind {
