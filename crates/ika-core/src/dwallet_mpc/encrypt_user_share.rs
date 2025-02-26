@@ -1,4 +1,7 @@
-use class_groups::{CiphertextSpaceGroupElement, CiphertextSpaceValue};
+use class_groups::{
+    CiphertextSpaceGroupElement, CiphertextSpaceValue, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+};
 use class_groups_constants::protocol_public_parameters;
 use dwallet_classgroups_types::public_keys_from_dkg_output;
 use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
@@ -11,20 +14,17 @@ use ika_types::messages_dwallet_mpc::{
 };
 use std::marker::PhantomData;
 use sui_types::base_types::SuiAddress;
-use tracing::warn;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
 use twopc_mpc::secp256k1;
-use twopc_mpc::secp256k1::class_groups::{
-    AsyncProtocol, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-};
+use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
     SCALAR_LIMBS,
-    FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     secp256k1::GroupElement,
 >;
 
@@ -68,8 +68,8 @@ fn verify_centralized_secret_key_share_proof(
     let protocol_public_params = protocol_public_parameters();
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
         SCALAR_LIMBS,
-        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        { SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
         secp256k1::GroupElement,
     >(
         protocol_public_params.scalar_group_public_parameters,
@@ -80,7 +80,7 @@ fn verify_centralized_secret_key_share_proof(
         bcs::from_bytes(serialized_dkg_public_output)?;
     let (proof, encrypted_centralized_secret_key_share): (
         SecretShareEncryptionProof,
-        CiphertextSpaceValue<NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
+        CiphertextSpaceValue<SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
     ) = bcs::from_bytes(encrypted_centralized_secret_share_and_proof)?;
     let encrypted_centralized_secret_key_share_for_statement = CiphertextSpaceGroupElement::new(
         encrypted_centralized_secret_key_share,
@@ -89,7 +89,7 @@ fn verify_centralized_secret_key_share_proof(
             .ciphertext_space_public_parameters(),
     )?;
     let centralized_public_key_share = secp256k1::GroupElement::new(
-        decentralized_public_output.centralized_party_public_key_share,
+        decentralized_public_output.public_key_share,
         &protocol_public_params.group_public_parameters,
     )?;
     let statement = (
@@ -98,6 +98,7 @@ fn verify_centralized_secret_key_share_proof(
     )
         .into();
 
-    let res = proof.verify(&PhantomData, &language_public_parameters, vec![statement]);
-    res.map_err(Into::into)
+    proof
+        .verify(&PhantomData, &language_public_parameters, vec![statement])
+        .map_err(Into::into)
 }
