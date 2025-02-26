@@ -14,7 +14,6 @@ import {
 	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	getDWalletSecpState,
-	getInitialSharedVersion,
 	SUI_PACKAGE_ID,
 } from './globals.ts';
 

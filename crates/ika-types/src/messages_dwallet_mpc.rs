@@ -445,15 +445,7 @@ pub struct StartPresignFirstRoundEvent {
     pub dwallet_id: ObjectID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
-    /// Unique identifier for the MPC session.
-    pub session_id: ObjectID,
-    /// The address of the user that initiated this session.
-    pub initiator: SuiAddress,
-    /// A unique identifier for the entire batch,
-    /// used to collect all the presigns in the batch and complete it.
-    pub batch_session_id: ObjectID,
-    /// The dWallet mpc network key version
-    pub dwallet_mpc_network_key_version: u8,
+    dwallet_network_decryption_key_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for StartPresignFirstRoundEvent {
