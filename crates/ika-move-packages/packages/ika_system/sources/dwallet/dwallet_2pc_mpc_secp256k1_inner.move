@@ -489,6 +489,7 @@ public struct CompletedECDSAPresignEvent has copy, drop {
 
     /// The session ID.
     session_id: ID,
+    presign_id: ID,
 }
 
 // END OF PRESIGN TYPES
@@ -1344,7 +1345,8 @@ public(package) fun respond_ecdsa_presign(
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let id = object::new(ctx);
-    dwallet.ecdsa_presigns.add(id.to_inner(), ECDSAPresign {
+    let presign_id = id.to_inner();
+    dwallet.ecdsa_presigns.add(presign_id, ECDSAPresign {
         id,
         dwallet_id,
         presign,
@@ -1352,6 +1354,7 @@ public(package) fun respond_ecdsa_presign(
     event::emit(CompletedECDSAPresignEvent {
         dwallet_id,
         session_id,
+        presign_id,
     });
 }
 
