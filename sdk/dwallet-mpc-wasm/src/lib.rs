@@ -57,7 +57,6 @@ pub fn encrypt_secret_share(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
 ) -> Result<JsValue, JsError> {
-    console_log::init_with_level(log::Level::Info).expect("Failed to initialize logger");
     let encryption_and_proof =
         encrypt_secret_key_share_and_prove(secret_key_share, encryption_key).map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
