@@ -1938,6 +1938,7 @@ fun process_checkpoint_message(
 
     let len = bcs_body.peel_vec_length();
     let mut i = 0;
+    let mut response_session_count = 0;
     while (i < len) {
         let message_data_type = bcs_body.peel_vec_length();
         // Parses checkpoint BCS bytes directly.
