@@ -445,7 +445,7 @@ pub struct StartPresignFirstRoundEvent {
     pub dwallet_id: ObjectID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
-    dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_decryption_key_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for StartPresignFirstRoundEvent {

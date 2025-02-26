@@ -528,9 +528,7 @@ pub(crate) fn session_input_from_event(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
                 DWalletMPCNetworkKeyScheme::Secp256k1,
-                deserialized_event
-                    .event_data
-                    .dwallet_mpc_network_key_version,
+                network_key_version_from_key_id(&deserialized_event.event_data.dwallet_network_decryption_key_id)
             )?;
             Ok((
                 presign_public_input(deserialized_event.event_data, protocol_public_parameters)?,
@@ -591,4 +589,8 @@ pub(crate) fn session_input_from_event(
         }
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),
     }
+}
+
+fn network_key_version_from_key_id(key_id: &ObjectID) -> u8 {
+    return 0;
 }
