@@ -235,7 +235,7 @@ export async function dkgSecondRoundMoveCall(
 	if (result.errors !== undefined) {
 		throw new Error(`DKG second round failed with errors ${result.errors}`);
 	}
-	return await waitForDKGSecondRoundOutput(conf, firstRoundOutputResult.dwalletID);
+	await waitForDKGSecondRoundCompletion(conf, firstRoundOutputResult.dwalletID);
 }
 
 interface DKGFirstRoundOutputResult {
@@ -308,7 +308,7 @@ function isActiveDWallet(obj: any): obj is ActiveDWallet {
 	return obj?.state?.fields?.public_output !== undefined;
 }
 
-async function waitForDKGSecondRoundOutput(conf: Config, dwalletID: string): Promise<Uint8Array> {
+async function waitForDKGSecondRoundCompletion(conf: Config, dwalletID: string): Promise<Uint8Array> {
 	const startTime = Date.now();
 
 	while (Date.now() - startTime <= conf.timeout) {
