@@ -2143,15 +2143,10 @@ impl AuthorityPerEpochStore {
 
             MPCProtocolInitData::BatchedPresign(_) => Ok(ConsensusCertificateResult::Ignored),
             MPCProtocolInitData::Presign(init_event_data) => {
-                let presigns: Vec<(ObjectID, MPCPublicOutput)> =
-                    bcs::from_bytes(&output).map_err(|e| DwalletMPCError::BcsError(e))?;
-                let session_ids: Vec<ObjectID> = presigns.iter().map(|(k, _)| *k).collect();
-                let presigns: Vec<MPCPublicOutput> = presigns.into_iter().map(|(_, v)| v).collect();
                 let tx = MessageKind::DwalletPresign(PresignOutput {
-                    presigns: bcs::to_bytes(&presigns)?,
-                    session_ids: bcs::to_bytes(&session_ids)?,
+                    presign: bcs::to_bytes(&output)?,
+                    session_id: bcs::to_bytes(&session_info.session_id)?,
                     dwallet_id: init_event_data.dwallet_id.to_vec(),
-                    initiating_user_address: session_info.initiating_user_address.to_vec(),
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
