@@ -93,20 +93,20 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 	isEventFn: (parsedJson: any) => parsedJson is TEvent,
 ): Promise<TEvent> {
 	const startTime = Date.now();
-	let cursor = null;
 
 	while (Date.now() - startTime <= c.timeout) {
 		// Wait for a bit before polling again, objects might not be available immediately.
-		await delay(5_000);
+		let interval = 5_000;
+		await delay(interval);
 
 		const { data, nextCursor, hasNextPage } = await c.client.queryEvents({
 			query: {
 				TimeRange: {
-					startTime: (Date.now() - c.timeout).toString(),
+					startTime: (Date.now() - interval * 2).toString(),
 					endTime: Date.now().toString(),
 				},
 			},
-			cursor,
+			limit: 1000,
 		});
 
 		const match = data.find(
@@ -117,7 +117,6 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 		);
 
 		if (match) return match.parsedJson as TEvent;
-		if (hasNextPage) cursor = nextCursor;
 	}
 
 	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
