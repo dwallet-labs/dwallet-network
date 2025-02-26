@@ -310,6 +310,24 @@ where
         }
     }
 
+    /// Retrieves the dwallet_2pc_mpc_secp256k1_id object arg from the Sui chain.
+    pub async fn get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(
+        &self,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+    ) -> ObjectArg {
+        static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
+        *ARG.get_or_init(|| async move {
+            let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
+                self.inner.get_mutable_shared_arg(dwallet_2pc_mpc_secp256k1_id),
+                Duration::from_secs(30)
+            ) else {
+                panic!("Failed to get dwallet_2pc_mpc_secp256k1_id object arg after retries");
+            };
+            system_arg
+        })
+            .await
+    }
+
     pub async fn get_available_move_packages(
         &self,
     ) -> IkaResult<Vec<(ObjectID, MovePackageDigest)>> {

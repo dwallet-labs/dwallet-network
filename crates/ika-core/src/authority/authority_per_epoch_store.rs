@@ -2384,7 +2384,7 @@ impl AuthorityPerEpochStore {
         }
     }
 
-    pub(crate) fn report_epoch_metrics_at_last_checkpoint(&self, checkpoint_count: u64) {
+    pub(crate) fn report_epoch_metrics_at_last_checkpoint(&self, checkpoint_count: u32) {
         if let Some(epoch_close_time) = *self.epoch_close_time.read() {
             self.metrics
                 .epoch_last_checkpoint_created_time_since_epoch_close_ms

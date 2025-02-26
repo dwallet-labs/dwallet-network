@@ -111,7 +111,7 @@ where
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
             }
-            let last_processed_checkpoint_sequence_number: Option<u64> =
+            let last_processed_checkpoint_sequence_number: Option<u32> =
                 ika_system_state_inner.last_processed_checkpoint_sequence_number();
             let next_checkpoint_sequence_number = last_processed_checkpoint_sequence_number
                 .map(|s| s + 1)
@@ -120,7 +120,7 @@ where
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 if let Ok(Some(checkpoint_message)) = self
                     .checkpoint_store
-                    .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
+                    .get_checkpoint_by_sequence_number(epoch, next_checkpoint_sequence_number)
                 {
                     // Safe to expect here as this code is only executed after the Ika state is initialized
                     let dwallet_id = ika_system_state_inner.get_dwallet_state_obj_id().expect(
@@ -133,27 +133,29 @@ where
                         bcs::to_bytes::<CheckpointMessage>(&checkpoint_message.into_message())
                             .expect("Serializing checkpoint message cannot fail");
 
-                    info!("signers_bitmap: {:?}", signers_bitmap);
+                        info!("signers_bitmap: {:?}", signers_bitmap);
 
-                    let task = Self::handle_execution_task(
-                        self.ika_system_package_id,
-                        dwallet_id,
-                        signature,
-                        signers_bitmap,
-                        message,
-                        &sui_notifier,
-                        &self.sui_client,
-                        &self.metrics,
-                    )
-                    .await;
-                    match task {
-                        Ok(_) => {
-                            info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
-                        }
-                        Err(err) => {
-                            error!("Sui transaction execution failed for checkpoint sequence number: {}, error: {}", next_checkpoint_sequence_number, err);
-                        }
-                    };
+                        let task = Self::handle_execution_task(
+                            self.ika_system_package_id,
+                            dwallet_2pc_mpc_secp256k1_id,
+                            epoch,
+                            signature,
+                            signers_bitmap,
+                            message,
+                            &sui_notifier,
+                            &self.sui_client,
+                            &self.metrics,
+                        )
+                            .await;
+                        match task {
+                            Ok(_) => {
+                                info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
+                            }
+                            Err(err) => {
+                                error!("Sui transaction execution failed for checkpoint sequence number: {}, error: {}", next_checkpoint_sequence_number, err);
+                            }
+                        };
+                    }
                 }
             }
         }
@@ -169,7 +171,8 @@ where
 
     async fn handle_execution_task(
         ika_system_package_id: ObjectID,
-        dwallet_id: ObjectID,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        epoch: EpochId,
         signature: Vec<u8>,
         signers_bitmap: Vec<u8>,
         message: Vec<u8>,
@@ -186,6 +189,9 @@ where
         let (ika_system_state_arg, ika_dwallet_system_state_arg) =
             sui_client.get_ika_system_shared_objects(dwallet_id).await;
 
+        let dwallet_2pc_mpc_secp256k1_arg =
+            sui_client.get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id).await;
+
         ptb.move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
@@ -193,7 +199,10 @@ where
             vec![],
             vec![
                 CallArg::Object(ika_system_state_arg),
-                CallArg::Object(ika_dwallet_system_state_arg),
+                CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+                CallArg::Pure(bcs::to_bytes(&epoch).map_err(|e| {
+                    IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
+                })?),
                 CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                     IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
                 })?),
