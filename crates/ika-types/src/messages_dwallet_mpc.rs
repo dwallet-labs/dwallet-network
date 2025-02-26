@@ -425,17 +425,30 @@ impl DWalletMPCEventTrait for SignData {
     }
 }
 
+// public struct ECDSAPresignRequestEvent has copy, drop {
+// /// ID of the associated dWallet.
+// dwallet_id: ID,
+//
+// /// The output produced by the DKG process,
+// /// used as input for the Presign session.
+// dwallet_public_output: vector<u8>,
+//
+// /// The MPC network decryption key id that is used to decrypt associated dWallet.
+// dwallet_network_decryption_key_id: ID,
+// }
+
+
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartPresignFirstRoundEvent {
-    /// Unique identifier for the MPC session.
-    pub session_id: ObjectID,
-    /// The address of the user that initiated this session.
-    pub initiator: SuiAddress,
     /// The `DWallet` object's ID associated with the DKG output.
     pub dwallet_id: ObjectID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
+    /// Unique identifier for the MPC session.
+    pub session_id: ObjectID,
+    /// The address of the user that initiated this session.
+    pub initiator: SuiAddress,
     /// A unique identifier for the entire batch,
     /// used to collect all the presigns in the batch and complete it.
     pub batch_session_id: ObjectID,
