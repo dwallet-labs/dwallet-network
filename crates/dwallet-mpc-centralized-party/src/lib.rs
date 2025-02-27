@@ -28,6 +28,7 @@ use sha3::Digest as Sha3Digest;
 use std::fmt;
 use std::marker::PhantomData;
 use log::{log, warn};
+use rand_chacha::{ChaCha20Core, ChaCha20Rng};
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
@@ -301,6 +302,10 @@ pub fn encrypt_secret_key_share_and_prove(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
+    // Setup an RNG that works in WASM
+    let seed = [1u8;32]; // TODO: perhaps you want a better seed?
+    let mut rng = ChaCha20Rng::from(ChaCha20Core::from_seed(seed));
+
     warn!("1");
     let protocol_public_params = protocol_public_parameters();
     warn!("2");
@@ -321,7 +326,7 @@ pub fn encrypt_secret_key_share_and_prove(
             language_public_parameters
                 .encryption_scheme_public_parameters
                 .randomness_space_public_parameters(),
-            &mut OsRng,
+            &mut rng,
         )?;
     let parsed_secret_key_share = bcs::from_bytes(&secret_key_share)?;
     let witness = (parsed_secret_key_share, randomness).into();
@@ -329,7 +334,7 @@ pub fn encrypt_secret_key_share_and_prove(
         &PhantomData,
         &language_public_parameters,
         vec![witness],
-        &mut OsRng,
+        &mut rng,
     )?;
     // todo(scaly): why is it derived from statements?
     let (encryption_of_discrete_log, _) = statements.first().unwrap().clone().into();
@@ -400,7 +405,7 @@ pub fn decrypt_user_share_inner(
         .decrypt(&ciphertext, &public_parameters).into() else {
         return Err(anyhow!("Decryption failed"));
     };
-    let secret_share_bytes = crypto_bigint::U256::from(&plaintext.value())
+    let secret_share_bytes = U256::from(&plaintext.value())
         .to_be_bytes()
         .to_vec();
     Ok(secret_share_bytes)
@@ -416,7 +421,7 @@ fn cg_secp256k1_public_key_share_from_secret_share(
             &public_parameters,
         )?;
     Ok(
-        generator_group_element.scale(&crypto_bigint::Uint::<{ SCALAR_LIMBS }>::from_be_slice(
+        generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(
             &secret_key_share,
         )),
     )

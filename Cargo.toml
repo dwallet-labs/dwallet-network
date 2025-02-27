@@ -74,11 +74,11 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], rev = "3a44e3e4aeca49622d1bf5fdf998683c77806eea" }
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3a44e3e4aeca49622d1bf5fdf998683c77806eea", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], rev = "3a44e3e4aeca49622d1bf5fdf998683c77806eea" }
-group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "3a44e3e4aeca49622d1bf5fdf998683c77806eea" }
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "3a44e3e4aeca49622d1bf5fdf998683c77806eea" }
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], rev = "3bfcc2fb18e814af9bbdf4d427b15d117f3c5e78" }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3bfcc2fb18e814af9bbdf4d427b15d117f3c5e78", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], rev = "3bfcc2fb18e814af9bbdf4d427b15d117f3c5e78" }
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "3bfcc2fb18e814af9bbdf4d427b15d117f3c5e78" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "3bfcc2fb18e814af9bbdf4d427b15d117f3c5e78" }
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
@@ -560,4 +560,4 @@ include_dir = "0.7.3"
 [patch.crates-io]
 signature = { git = "https://github.com/yaelAbergel/traits", rev = "e4008c230e50f04848198f6570a4f7c9b94e503c"}
 ecdsa = { git = "https://github.com/yaelAbergel/signatures", rev = "7c8523182b1a28e5bcc6bb8d1508fbde1ea845c4"}
-crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '271d029' }
+crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '71d665ad' }
