@@ -7,9 +7,8 @@ import {
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.ts';
-import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.ts';
-import type { Config, SharedObjectData } from './globals.ts';
+import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
+import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import {
 	checkpointCreationTime,
 	delay,
@@ -23,7 +22,8 @@ import {
 	isMoveObject,
 	MPCKeyScheme,
 	SUI_PACKAGE_ID,
-} from './globals.ts';
+} from './globals.js';
+import type { Config, SharedObjectData } from './globals.ts';
 
 interface DWalletCap {
 	dwallet_id: string;
@@ -113,7 +113,6 @@ export async function createDKGFirstRoundOutputMock(
 	conf: Config,
 	mockOutput: Uint8Array,
 ): Promise<DKGFirstRoundOutputResult> {
-	// create_first_round_dwallet_mock(self: &mut DWallet2PcMpcSecp256K1, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext): DWalletCap
 	const tx = new Transaction();
 	let dwalletStateObjData = await getDWalletSecpState(conf);
 	let stateArg = tx.sharedObjectRef({

@@ -31,7 +31,6 @@
 		"module": "CommonJS",
 		"outDir": "./dist",
 		"rootDir": "src",
-		"isolatedModules": true,
-		"allowImportingTsExtensions": true
+		"isolatedModules": true
 	}
 }
