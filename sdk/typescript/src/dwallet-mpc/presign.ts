@@ -11,6 +11,15 @@ import {
 	SUI_PACKAGE_ID,
 } from './globals.ts';
 
+interface CompletedPresignEvent {
+	presign_id: string;
+	session_id: string;
+}
+
+interface StartSessionEvent {
+	session_id: string;
+}
+
 export async function presign(conf: Config, dwallet_id: string): Promise<CompletedPresignEvent> {
 	const tx = new Transaction();
 	let emptyIKACoin = tx.moveCall({
@@ -65,15 +74,6 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 
 function isCompletedPresignEvent(event: any): event is CompletedPresignEvent {
 	return event.presign_id !== undefined;
-}
-
-interface CompletedPresignEvent {
-	presign_id: string;
-	session_id: string;
-}
-
-interface StartSessionEvent {
-	session_id: string;
 }
 
 function isStartSessionEvent(event: any): event is StartSessionEvent {
