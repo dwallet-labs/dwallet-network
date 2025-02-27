@@ -17,10 +17,7 @@ use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
-use crate::dwallet_mpc::presign::{
-    PresignFirstParty, PresignSecondParty, PresignSecondPartyPublicInputGenerator,
-    PRESIGN_FIRST_PARTY_TOTAL_ROUNDS,
-};
+use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{
     authority_name_to_party_id, party_id_to_authority_name, party_ids_to_authority_names, presign,
@@ -312,11 +309,15 @@ impl DWalletMPCSession {
                 Ok(result)
             }
             MPCProtocolInitData::Presign(..) => {
-                if self.pending_quorum_for_highest_round_number >= PRESIGN_FIRST_PARTY_TOTAL_ROUNDS
-                {
-                    return self.advance_presign_second_round_party(session_id);
-                }
-                self.advance_presign_first_round_party(session_id)
+                let public_input = bcs::from_bytes(&self.public_input)?;
+                crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.serialized_messages.clone(),
+                    public_input,
+                    (),
+                )
             }
             MPCProtocolInitData::Sign(init_data) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
@@ -394,59 +395,6 @@ impl DWalletMPCSession {
         }
     }
 
-    fn advance_presign_first_round_party(
-        &self,
-        session_id: CommitmentSizedNumber,
-    ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-        let public_input = bcs::from_bytes(&self.public_input)?;
-        match crate::dwallet_mpc::advance_and_serialize::<PresignFirstParty>(
-            session_id,
-            self.party_id,
-            &self.weighted_threshold_access_structure,
-            self.serialized_messages.clone(),
-            public_input,
-            (),
-        ) {
-            Ok(advance_result) => match advance_result {
-                AsynchronousRoundResult::Finalize {
-                    public_output,
-                    private_output: _,
-                    malicious_parties,
-                } => Ok(AsynchronousRoundResult::Advance {
-                    malicious_parties,
-                    message: public_output,
-                }),
-                _ => Ok(advance_result),
-            },
-            Err(err) => Err(err),
-        }
-    }
-
-    fn advance_presign_second_round_party(
-        &self,
-        session_id: CommitmentSizedNumber,
-    ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-        let Some(MPCSessionSpecificState::Presign(presign_state)) = &self.session_specific_state
-        else {
-            return Err(DwalletMPCError::PresignRoundDataNotFound);
-        };
-        let second_presign_party_messages = self
-            .serialized_messages
-            .clone()
-            .into_iter()
-            .skip(PRESIGN_FIRST_PARTY_TOTAL_ROUNDS)
-            .collect();
-        let public_input = bcs::from_bytes(&presign_state.second_party_public_input)?;
-        crate::dwallet_mpc::advance_and_serialize::<PresignSecondParty>(
-            session_id,
-            self.party_id,
-            &self.weighted_threshold_access_structure,
-            second_presign_party_messages,
-            public_input,
-            (),
-        )
-    }
-
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     /// Returns Error only if the epoch switched in the middle and was not available.
     fn new_dwallet_mpc_message(
@@ -520,32 +468,13 @@ impl DWalletMPCSession {
         Ok(())
     }
 
-    pub(crate) fn check_quorum_for_next_crypto_round(&mut self) -> ReadyToAdvanceCheckResult {
+    pub(crate) fn check_quorum_for_next_crypto_round(&self) -> ReadyToAdvanceCheckResult {
         match self.status {
             MPCSessionStatus::Active => {
-                if matches!(
-                    &self.session_info.mpc_round,
-                    MPCProtocolInitData::Presign(..)
-                ) && self.pending_quorum_for_highest_round_number
-                    == PRESIGN_FIRST_PARTY_TOTAL_ROUNDS
-                {
-                    return self
-                        .check_quorum_for_presign_first_party_output()
-                        .unwrap_or_else(|e| {
-                            error!(
-                                "Failed to check quorum for presign first party output: {:?}",
-                                e
-                            );
-                            ReadyToAdvanceCheckResult {
-                                is_ready: false,
-                                malicious_parties: vec![],
-                            }
-                        });
-                }
                 if self.pending_quorum_for_highest_round_number == 0
                     || self
                         .weighted_threshold_access_structure
-                        .authorized_subset(
+                        .is_authorized_subset(
                             &self
                                 .serialized_messages
                                 .get(self.pending_quorum_for_highest_round_number)
@@ -573,60 +502,6 @@ impl DWalletMPCSession {
                 malicious_parties: vec![],
             },
         }
-    }
-
-    fn check_quorum_for_presign_first_party_output(
-        &mut self,
-    ) -> DwalletMPCResult<ReadyToAdvanceCheckResult> {
-        let MPCProtocolInitData::Presign(presign_first_round_event) = &self.session_info.mpc_round
-        else {
-            return Err(DwalletMPCError::PresignRoundDataNotFound);
-        };
-        let messages = &self.serialized_messages[PRESIGN_FIRST_PARTY_TOTAL_ROUNDS];
-        let mut message_to_voting_authorities: HashMap<MPCMessage, HashSet<PartyID>> =
-            HashMap::new();
-        for (party_id, message) in messages.clone().into_iter() {
-            message_to_voting_authorities
-                .entry(message)
-                .or_insert_with(HashSet::new)
-                .insert(party_id);
-        }
-        let agreed_output = message_to_voting_authorities.iter().find(|(_, votes)| {
-            self.weighted_threshold_access_structure
-                .authorized_subset(votes)
-                .is_ok()
-        });
-        if let Some((agreed_output, _)) = agreed_output {
-            let voted_for_other_outputs: Vec<PartyID> = message_to_voting_authorities
-                .iter()
-                .filter(|(output, _)| *output != agreed_output)
-                .flat_map(|(_, voters)| voters)
-                .cloned()
-                .collect();
-            let protocol_public_parameters = self.get_protocol_public_parameters(
-                // Todo (#473): Support generic network key scheme
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-                presign_first_round_event.dwallet_mpc_network_key_version,
-            )?;
-            let presign_second_party_public_input = <PresignSecondParty as PresignSecondPartyPublicInputGenerator>::generate_public_input(
-                protocol_public_parameters,
-                presign_first_round_event.dkg_output.clone(),
-                agreed_output.clone(),
-            )?;
-            self.session_specific_state =
-                Some(MPCSessionSpecificState::Presign(PresignSessionState {
-                    first_presign_party_output: agreed_output.clone(),
-                    second_party_public_input: presign_second_party_public_input,
-                }));
-            return Ok(ReadyToAdvanceCheckResult {
-                is_ready: true,
-                malicious_parties: voted_for_other_outputs,
-            });
-        }
-        Ok(ReadyToAdvanceCheckResult {
-            is_ready: false,
-            malicious_parties: vec![],
-        })
     }
 
     fn get_protocol_public_parameters(

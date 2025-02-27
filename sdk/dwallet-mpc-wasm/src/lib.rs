@@ -28,7 +28,6 @@ pub fn create_dkg_centralized_output(
         dkg_centralized_result.public_key_share_and_proof.clone(),
         dkg_centralized_result.public_output.clone(),
         dkg_centralized_result.centralized_secret_output.clone(),
-        dkg_centralized_result.public_keys.clone(),
     ))
     .map_err(|e| JsError::new(&e.to_string()))
 }
