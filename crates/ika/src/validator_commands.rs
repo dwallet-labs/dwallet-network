@@ -21,8 +21,8 @@ use ika_config::{ika_config_dir, IKA_SUI_CONFIG};
 use ika_sui_client::ika_validator_transactions::{
     request_add_validator, request_add_validator_candidate, request_remove_validator, stake_ika,
 };
-use ika_swarm_config::network_config::NetworkConfig;
 use ika_types::crypto::{generate_proof_of_possession, AuthorityKeyPair};
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::DEFAULT_COMMISSION_RATE;
 use serde::Serialize;
 use sui::validator_commands::write_transaction_response;
@@ -38,7 +38,6 @@ use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
 use sui_types::crypto::get_authority_key_pair;
 use sui_types::crypto::{NetworkKeyPair, SignatureScheme, SuiKeyPair};
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 
 const DEFAULT_GAS_BUDGET: u64 = 200_000_000; // 0.2 SUI
 
@@ -181,14 +180,14 @@ impl IkaValidatorCommand {
                 ika_sui_config,
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
-                let config_path =
-                    ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
-                    err.context(format!(
-                        "Cannot open Ika network config file at {:?}",
-                        config_path
-                    ))
-                })?;
+                let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
+                let config: IkaPackagesConfig =
+                    PersistedConfig::read(&config_path).map_err(|err| {
+                        err.context(format!(
+                            "Cannot open Ika network config file at {:?}",
+                            config_path
+                        ))
+                    })?;
 
                 let validator_info_bytes = fs::read_to_string(file)?;
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
@@ -205,7 +204,7 @@ impl IkaValidatorCommand {
                     context,
                     &validator_info,
                     config.ika_system_package_id.clone(),
-                    config.system_id.clone(),
+                    config.ika_system_object_id.clone(),
                     class_groups_keypair_and_proof_obj_ref,
                     gas_budget,
                 )
@@ -218,19 +217,19 @@ impl IkaValidatorCommand {
                 validator_cap_id,
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
-                let config_path =
-                    ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
-                    err.context(format!(
-                        "Cannot open Ika network config file at {:?}",
-                        config_path
-                    ))
-                })?;
+                let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
+                let config: IkaPackagesConfig =
+                    PersistedConfig::read(&config_path).map_err(|err| {
+                        err.context(format!(
+                            "Cannot open Ika network config file at {:?}",
+                            config_path
+                        ))
+                    })?;
 
                 let response = request_add_validator(
                     context,
                     config.ika_system_package_id.clone(),
-                    config.system_id.clone(),
+                    config.ika_system_object_id.clone(),
                     validator_cap_id,
                     gas_budget,
                 )
@@ -245,14 +244,14 @@ impl IkaValidatorCommand {
                 stake_amount,
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
-                let config_path =
-                    ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig = PersistedConfig::read(&config_path).map_err(|err| {
-                    err.context(format!(
-                        "Cannot open Ika network config file at {:?}",
-                        config_path
-                    ))
-                })?;
+                let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
+                let config: IkaPackagesConfig =
+                    PersistedConfig::read(&config_path).map_err(|err| {
+                        err.context(format!(
+                            "Cannot open Ika network config file at {:?}",
+                            config_path
+                        ))
+                    })?;
 
                 let res = stake_ika(
                     context,
@@ -273,18 +272,18 @@ impl IkaValidatorCommand {
                 ika_sui_config,
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
-                let config_path =
-                    ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
-                    err.context(format!(
-                        "Cannot open Ika network config file at {:?}",
-                        config_path
-                    ))
-                })?;
+                let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
+                let config: IkaPackagesConfig =
+                    PersistedConfig::read(&config_path).map_err(|err| {
+                        err.context(format!(
+                            "Cannot open Ika network config file at {:?}",
+                            config_path
+                        ))
+                    })?;
                 let response = request_remove_validator(
                     context,
                     config.ika_system_package_id.clone(),
-                    config.system_id.clone(),
+                    config.ika_system_object_id.clone(),
                     validator_cap_id,
                     gas_budget,
                 )

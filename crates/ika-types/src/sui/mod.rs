@@ -61,7 +61,8 @@ pub const PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME: &IdentStr =
 
 pub const CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME: &IdentStr =
     ident_str!("class_groups_public_key_and_proof");
-pub const CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr = ident_str!("empty");
+pub const CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME: &IdentStr =
+    ident_str!("empty");
 pub const ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr =
     ident_str!("add_public_key_and_proof");
 pub const FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr = ident_str!("finish");
