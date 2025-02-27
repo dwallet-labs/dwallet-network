@@ -54,8 +54,18 @@ pub const REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME: &IdentStr =
     ident_str!("request_add_validator_candidate");
 pub const REQUEST_ADD_VALIDATOR_FUNCTION_NAME: &IdentStr = ident_str!("request_add_validator");
 pub const REQUEST_ADD_STAKE_FUNCTION_NAME: &IdentStr = ident_str!("request_add_stake");
+pub const REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME: &IdentStr =
+    ident_str!("request_remove_validator");
 pub const PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME: &IdentStr =
     ident_str!("process_checkpoint_message_by_quorum");
+
+pub const CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME: &IdentStr =
+    ident_str!("class_groups_public_key_and_proof");
+pub const CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME: &IdentStr =
+    ident_str!("empty");
+pub const ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr =
+    ident_str!("add_public_key_and_proof");
+pub const FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr = ident_str!("finish");
 
 #[cfg(msim)]
 pub const IKA_SYSTEM_STATE_SIM_TEST_V1: u64 = 18446744073709551605; // u64::MAX - 10
@@ -181,7 +191,7 @@ impl ClassGroupsPublicKeyAndProofBuilder {
         StructTag {
             address: ika_system_package_address,
             name: ident_str!("ClassGroupsPublicKeyAndProofBuilder").to_owned(),
-            module: ident_str!("class_groups_public_key_and_proof").to_owned(),
+            module: CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -200,7 +210,7 @@ impl ClassGroupsPublicKeyAndProof {
         StructTag {
             address: ika_system_package_address,
             name: ident_str!("ClassGroupsPublicKeyAndProof").to_owned(),
-            module: ident_str!("class_groups_public_key_and_proof").to_owned(),
+            module: CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

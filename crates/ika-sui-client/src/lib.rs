@@ -54,6 +54,7 @@ use sui_types::{
 use tokio::sync::OnceCell;
 use tracing::{error, warn};
 
+pub mod ika_validator_transactions;
 pub mod metrics;
 
 #[macro_export]
