@@ -319,7 +319,7 @@ impl IkaNode {
         let packages_config = IkaPackagesConfig {
             ika_package_id: config.sui_connector_config.ika_package_id,
             ika_system_package_id: config.sui_connector_config.ika_system_package_id,
-            system_id: config.sui_connector_config.system_id,
+            ika_system_object_id: config.sui_connector_config.system_id,
         };
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
