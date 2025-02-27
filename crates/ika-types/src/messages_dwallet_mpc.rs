@@ -138,7 +138,10 @@ impl MPCProtocolInitData {
     /// Returns `true` if the round is a single message, which is
     /// part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
-        false
+        matches!(
+            self,
+            MPCProtocolInitData::Sign(..)
+        )
     }
 
     /// Is a special Round that indicates an initialization of a batch session.
