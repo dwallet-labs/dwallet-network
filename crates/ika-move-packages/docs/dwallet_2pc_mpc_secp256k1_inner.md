@@ -64,6 +64,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `request_dkg_first_round`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_request_dkg_first_round)
 -  [Function `respond_dkg_first_round_output`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dkg_first_round_output)
 -  [Function `create_first_round_dwallet_mock`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_first_round_dwallet_mock)
+-  [Function `mock_create_dwallet`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_mock_create_dwallet)
 -  [Function `request_dkg_second_round`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_request_dkg_second_round)
 -  [Function `respond_dkg_second_round_output`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dkg_second_round_output)
 -  [Function `request_re_encrypt_user_share_for`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_request_re_encrypt_user_share_for)
@@ -2890,6 +2891,50 @@ Validators call it, it's part of the blockchain logic.
         ecdsa_signs: object_table::new(ctx),
         state: DWalletState::AwaitingUser {
             first_round_output
+        },
+    });
+    dwallet_cap
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_mock_create_dwallet"></a>
+
+## Function `mock_create_dwallet`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_mock_create_dwallet">mock_create_dwallet</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet2PcMpcSecp256K1InnerV1">dwallet_2pc_mpc_secp256k1_inner::DWallet2PcMpcSecp256K1InnerV1</a>, output: vector&lt;u8&gt;, dwallet_network_decryption_key_id: <a href="../../sui/object.md#sui_object_ID">sui::object::ID</a>, ctx: &<b>mut</b> <a href="../../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCap">dwallet_2pc_mpc_secp256k1_inner::DWalletCap</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_mock_create_dwallet">mock_create_dwallet</a>(
+    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet2PcMpcSecp256K1InnerV1">DWallet2PcMpcSecp256K1InnerV1</a>, output: vector&lt;u8&gt;, dwallet_network_decryption_key_id: ID, ctx: &<b>mut</b> TxContext
+): <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCap">DWalletCap</a> {
+    <b>let</b> id = object::new(ctx);
+    <b>let</b> dwallet_id = id.to_inner();
+    <b>let</b> dwallet_cap = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCap">DWalletCap</a> {
+        id: object::new(ctx),
+        dwallet_id,
+    };
+    <b>let</b> dwallet_cap_id = object::id(&dwallet_cap);
+    self.dwallets.add(dwallet_id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet">DWallet</a> {
+        id,
+        dwallet_cap_id,
+        dwallet_network_decryption_key_id,
+        encrypted_user_secret_key_shares: object_table::new(ctx),
+        ecdsa_presigns: object_table::new(ctx),
+        ecdsa_signs: object_table::new(ctx),
+        state: DWalletState::Active {
+            public_output: output
         },
     });
     dwallet_cap
