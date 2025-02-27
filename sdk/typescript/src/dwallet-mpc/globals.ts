@@ -1,8 +1,25 @@
+;
+
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Buffer } from 'buffer';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+
+
+
+
+
+;
+
+
+
+
+
+
+
+
+
 
 export const DWALLET_ECDSAK1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
 export const DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1_inner';
@@ -171,4 +188,53 @@ export async function fetchObjectWithType<TObject>(
 	}
 
 	return objectData;
+}
+
+interface StartSessionEvent {
+	session_id: string;
+}
+
+export function isStartSessionEvent(event: any): event is StartSessionEvent {
+	return event.session_id !== undefined;
+}
+
+export async function fetchCompletedEvent<TEvent extends { session_id: string }>(
+	c: Config,
+	sessionID: string,
+	eventType: string,
+	isEventFn: (parsedJson: any) => parsedJson is TEvent,
+): Promise<TEvent> {
+	const startTime = Date.now();
+
+	while (Date.now() - startTime <= c.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		let interval = 5_000;
+		await delay(interval);
+
+		const { data } = await c.client.queryEvents({
+			query: {
+				TimeRange: {
+					startTime: (Date.now() - interval * 2).toString(),
+					endTime: Date.now().toString(),
+				},
+			},
+			limit: 1000,
+		});
+
+		const match = data.find(
+			(event) =>
+				event.type === eventType &&
+				isEventFn(event.parsedJson) &&
+				event.parsedJson.session_id === sessionID,
+		);
+
+		if (match) return match.parsedJson as TEvent;
+	}
+
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch an event of type ${eventType} within ${
+			c.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
 }

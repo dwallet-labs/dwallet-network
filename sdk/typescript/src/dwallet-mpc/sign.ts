@@ -56,4 +56,16 @@ export async function sign(
 			tx.gas,
 		],
 	});
+	const result = await conf.client.signAndExecuteTransaction({
+		signer: conf.suiClientKeypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+			showEvents: true,
+		},
+	});
+	let startSessionEvent = result.events?.at(0)?.parsedJson;
+	if (!isStartSessionEvent(startSessionEvent)) {
+		throw new Error('invalid start session event');
+	}
 }
