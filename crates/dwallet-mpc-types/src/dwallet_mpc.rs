@@ -14,7 +14,7 @@ pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DKGFirstRoundRequestEvent");
 // TODO (#650): Rename Move structs
 pub const START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-// TODO (#650): Rename Move structs
+    // TODO (#650): Rename Move structs
     ident_str!("DKGSecondRoundRequestEvent");
 pub const START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("ECDSAPresignRequestEvent");
