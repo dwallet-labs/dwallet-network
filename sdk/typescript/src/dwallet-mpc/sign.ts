@@ -5,13 +5,28 @@ import {
 	Config,
 	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	fetchCompletedEvent,
 	getDWalletSecpState,
+	isStartSessionEvent,
 	SUI_PACKAGE_ID,
 } from './globals.ts';
 
 export enum Hash {
 	KECCAK256 = 0,
 	SHA256 = 1,
+}
+
+interface CompletedSignEvent {
+	session_id: string;
+	sign_id: string;
+	signature: Uint8Array;
+	is_future_sign: boolean;
+}
+
+function isCompletedSignEvent(obj: any): obj is CompletedSignEvent {
+	return (
+		obj && 'session_id' in obj && 'sign_id' in obj && 'signature' in obj && 'is_future_sign' in obj
+	);
 }
 
 export async function sign(
@@ -21,7 +36,7 @@ export async function sign(
 	dwalletCapID: string,
 	message: Uint8Array,
 	hash = Hash.KECCAK256,
-) {
+): Promise<CompletedSignEvent> {
 	// TODO: replace with mock
 	let centralizedSignedMessage = new Uint8Array();
 	let dWalletStateData = await getDWalletSecpState(conf);
@@ -68,4 +83,11 @@ export async function sign(
 	if (!isStartSessionEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
+	let completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::CompletedECDSASignEvent`;
+	return await fetchCompletedEvent(
+		conf,
+		startSessionEvent.session_id,
+		completedSignEventType,
+		isCompletedSignEvent,
+	);
 }
