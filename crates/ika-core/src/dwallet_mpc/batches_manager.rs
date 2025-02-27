@@ -119,10 +119,6 @@ impl DWalletMPCBatchesManager {
             MPCProtocolInitData::Sign(SingleSignSessionData {
                 batch_session_id, ..
             }) => self.is_sign_batch_completed(batch_session_id.clone()),
-            MPCProtocolInitData::Presign(event_data) => {
-                Ok(None)
-                // self.is_presign_batch_completed(event_data.batch_session_id)
-            }
             _ => Ok(None),
         }
     }
