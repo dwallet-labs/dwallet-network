@@ -90,7 +90,6 @@ export async function launchDKGSecondRound(
 		);
 	let dWalletStateData = await getDWalletSecpState(conf);
 
-	// TODO (#672): Fix the encrypt_secret_share wasm function.
 	const encryptedUserShareAndProof = encrypt_secret_share(
 		centralizedSecretKeyShare,
 		classGroupsSecpKeyPair.encryptionKey,
