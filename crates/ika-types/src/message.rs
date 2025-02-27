@@ -145,11 +145,16 @@ pub struct PartialSignatureVerificationOutput {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct Secp256K1NetworkDKGOutput {
+pub struct Secp256K1NetworkDKGOutputSlice {
     pub dwallet_network_decryption_key_id: ObjectID,
+    // pub sequence_number: u64, Not needed if transactions order is guaranteed
     pub public_output: Vec<u8>,
     pub key_shares: Vec<u8>,
+    pub is_last: bool,
 }
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct Secp256K1NetworkDKGOutput(pub Vec<Secp256K1NetworkDKGOutputSlice>);
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
 pub enum MessageKind {

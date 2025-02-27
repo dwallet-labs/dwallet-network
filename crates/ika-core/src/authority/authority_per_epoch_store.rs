@@ -82,11 +82,7 @@ use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::message::{
-    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput,
-    EncryptionKeyVerificationOutput, MessageKind, PartialSignatureVerificationOutput,
-    PresignOutput, Secp256K1NetworkDKGOutput, SignOutput,
-};
+use ika_types::message::{DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput, EncryptionKeyVerificationOutput, MessageKind, PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkDKGOutput, Secp256K1NetworkDKGOutputSlice, SignOutput};
 use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
     CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage,
@@ -2084,20 +2080,38 @@ impl AuthorityPerEpochStore {
 
                         match key_scheme {
                             DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                                let secp256k1_network_dkg_output = Secp256K1NetworkDKGOutput {
-                                    dwallet_network_decryption_key_id,
-                                    public_output: bcs::to_bytes(&(
-                                        key.encryption_key,
-                                        key.decryption_key_share_public_parameters,
-                                        key.encryption_scheme_public_parameters,
-                                        key.public_verification_keys,
-                                    ))
-                                    .map_err(|e| DwalletMPCError::BcsError(e))?,
-                                    key_shares: bcs::to_bytes(
-                                        &key.current_epoch_encryptions_of_shares_per_crt_prime,
-                                    )
-                                    .map_err(|e| DwalletMPCError::BcsError(e))?,
-                                };
+                                let public_output =  bcs::to_bytes(&(
+                                key.encryption_key,
+                                key.decryption_key_share_public_parameters,
+                                key.encryption_scheme_public_parameters,
+                                key.public_verification_keys,
+                                ))
+                                .map_err(|e| DwalletMPCError::BcsError(e))?;
+
+                                let key_shares= bcs::to_bytes(
+                                    &key.current_epoch_encryptions_of_shares_per_crt_prime,
+                                )
+                                .map_err(|e| DwalletMPCError::BcsError(e))?;
+
+                                let mut slices = Vec::new();
+
+                                let public_chunks = public_output.chunks(16 * 1024);
+                                let key_shares_chunks = key_shares.chunks(16 * 1024);
+
+
+                                let total_slices = public_chunks.len().max(key_shares_chunks.len());
+                                for i in 0..total_slices {
+                                    let public_chunk = public_chunks.get(i).unwrap_or(&[]);
+                                    let key_chunk = key_shares_chunks.get(i).unwrap_or(&[]);
+                                    slices.push(Secp256K1NetworkDKGOutputSlice {
+                                        dwallet_network_decryption_key_id: dwallet_network_decryption_key_id.clone(),
+                                        public_output: public_chunk.to_vec(),
+                                        key_shares: key_chunk.to_vec(),
+                                        is_last: i == total_slices - 1,
+                                    });
+                                }
+
+                                let output = Secp256K1NetworkDKGOutput(slices);
 
                                 println!(
                                     "secp256k1_network_dkg_ id: {:?}",
