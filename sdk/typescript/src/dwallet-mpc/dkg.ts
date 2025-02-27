@@ -10,18 +10,24 @@ import { Transaction } from '@mysten/sui/transactions';
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import {
+	checkpointCreationTime,
 	delay,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
 	getInitialSharedVersion,
+	isAddressObjectOwner,
 	isIKASystemStateInner,
 	isMoveObject,
 	MPCKeyScheme,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 import type { Config, SharedObjectData } from './globals.ts';
+
+interface DWalletCap {
+	dwallet_id: string;
+}
 
 interface StartDKGFirstRoundEvent {
 	event_data: {
@@ -36,6 +42,14 @@ interface WaitingForUserDWallet {
 	state: {
 		fields: {
 			first_round_output: Uint8Array;
+		};
+	};
+}
+
+interface ActiveDWallet {
+	state: {
+		fields: {
+			public_output: Uint8Array;
 		};
 	};
 }
@@ -98,7 +112,7 @@ export async function launchDKGSecondRound(
 export async function createDKGFirstRoundOutputMock(
 	conf: Config,
 	mockOutput: Uint8Array,
-): Promise<StartDKGFirstRoundEvent> {
+): Promise<DKGFirstRoundOutputResult> {
 	const tx = new Transaction();
 	let dwalletStateObjData = await getDWalletSecpState(conf);
 	let stateArg = tx.sharedObjectRef({
@@ -122,11 +136,38 @@ export async function createDKGFirstRoundOutputMock(
 			showEvents: true,
 		},
 	});
-	let startDKGEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartDKGFirstRoundEvent(startDKGEvent)) {
-		throw new Error('invalid start DKG first round event');
+	const createdDWalletCap = result?.effects?.created?.find(
+		(obj) =>
+			isAddressObjectOwner(obj.owner) &&
+			obj.owner.AddressOwner === conf.suiClientKeypair.toSuiAddress(),
+	);
+	if (!dwalletCap || createdDWalletCap === undefined) {
+		throw new Error('Unable to create the DWallet cap');
 	}
-	return startDKGEvent;
+	await delay(checkpointCreationTime);
+	let dwalletCapObj = await conf.client.getObject({
+		id: createdDWalletCap.reference.objectId,
+		options: { showContent: true },
+	});
+	let dwalletCapObjContent = dwalletCapObj?.data?.content;
+	if (!isMoveObject(dwalletCapObjContent)) {
+		throw new Error('Invalid DWallet cap object');
+	}
+	let dwalletCapFields = dwalletCapObjContent.fields;
+	if (!isDWalletCap(dwalletCapFields)) {
+		throw new Error('Invalid DWallet cap fields');
+	}
+
+	return {
+		dwalletCapID: createdDWalletCap.reference.objectId,
+		dwalletID: dwalletCapFields.dwallet_id,
+		sessionID: '',
+		output: mockOutput,
+	};
+}
+
+function isDWalletCap(obj: any): obj is DWalletCap {
+	return !!obj?.dwallet_id;
 }
 
 export async function dkgSecondRoundMoveCall(
@@ -179,12 +220,14 @@ export async function dkgSecondRoundMoveCall(
 	if (result.errors !== undefined) {
 		throw new Error(`DKG second round failed with errors ${result.errors}`);
 	}
+	await waitForDKGSecondRoundCompletion(conf, firstRoundOutputResult.dwalletID);
 }
 
 interface DKGFirstRoundOutputResult {
 	sessionID: string;
 	output: Uint8Array;
 	dwalletCapID: string;
+	dwalletID: string;
 }
 
 /**
@@ -238,11 +281,46 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 		sessionID: startDKGEvent.session_id,
 		output: output,
 		dwalletCapID: startDKGEvent.event_data.dwallet_cap_id,
+		dwalletID,
 	};
 }
 
 function isWaitingForUserDWallet(obj: any): obj is WaitingForUserDWallet {
 	return obj?.state?.fields?.first_round_output !== undefined;
+}
+
+function isActiveDWallet(obj: any): obj is ActiveDWallet {
+	return obj?.state?.fields?.public_output !== undefined;
+}
+
+async function waitForDKGSecondRoundCompletion(
+	conf: Config,
+	dwalletID: string,
+): Promise<Uint8Array> {
+	const startTime = Date.now();
+
+	while (Date.now() - startTime <= conf.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		await delay(5_000);
+		let dwallet = await conf.client.getObject({
+			id: dwalletID,
+			options: {
+				showContent: true,
+			},
+		});
+		if (isMoveObject(dwallet?.data?.content)) {
+			let dwalletMoveObject = dwallet?.data?.content?.fields;
+			if (isActiveDWallet(dwalletMoveObject)) {
+				return dwalletMoveObject.state.fields.public_output;
+			}
+		}
+	}
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch the DWallet object within ${
+			conf.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
 }
 
 async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Promise<Uint8Array> {

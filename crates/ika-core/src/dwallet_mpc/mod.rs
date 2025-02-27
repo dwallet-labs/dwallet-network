@@ -104,7 +104,7 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent> =
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(dkg_second_party_session_info(
-                &deserialized_event.event_data,
+                deserialized_event,
                 if cfg!(feature = "with-network-dkg") {
                     dwallet_network_key_version.ok_or(DwalletMPCError::MissingKeyVersion)?
                 } else {
@@ -238,12 +238,13 @@ fn dkg_second_public_input(
 }
 
 fn dkg_second_party_session_info(
-    deserialized_event: &StartDKGSecondRoundEvent,
+    deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent>,
     dwallet_network_key_version: u8,
 ) -> SessionInfo {
     SessionInfo {
         session_id: ObjectID::from(deserialized_event.session_id),
-        initiating_user_address: deserialized_event.initiator,
+        // TODO (#642): Remove the redundant initiating user address field
+        initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::DKGSecond(
             deserialized_event.clone(),
             dwallet_network_key_version,

@@ -982,14 +982,6 @@ public(package) fun create_first_round_dwallet_mock(
             first_round_output
         },
     });
-    event::emit(self.create_current_epoch_dwallet_event(
-        DKGFirstRoundRequestEvent {
-            dwallet_id,
-            dwallet_cap_id,
-            dwallet_network_decryption_key_id,
-        },
-        ctx,
-    ));
     dwallet_cap
 }
 
@@ -1090,7 +1082,7 @@ public(package) fun respond_dkg_second_round_output(
 ) {
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
     let encryption_key_id = encryption_key.id.to_inner();
-    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let dwallet = self.get_dwallet_mut(dwallet_id);
 
    dwallet.state = match (&dwallet.state) {
         DWalletState::AwaitingNetworkVerification => {
@@ -1823,10 +1815,10 @@ fun process_checkpoint_message(
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dkg_first_round_output(dwallet_id, first_round_output);
             } else if (message_data_type == 4) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
-                let encryption_key_address = bcs_body.peel_address();
+                let encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
                 self.respond_dkg_second_round_output(
                     dwallet_id,

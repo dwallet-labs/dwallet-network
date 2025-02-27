@@ -275,12 +275,9 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::DKGSecond(event_data, _) => {
-                let first_round_session_id = CommitmentSizedNumber::from_le_slice(
-                    &event_data.first_round_session_id.into_bytes(),
-                );
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
-                    first_round_session_id,
+                    session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_messages.clone(),
@@ -291,15 +288,11 @@ impl DWalletMPCSession {
                     verify_encrypted_share(&StartEncryptedShareVerificationEvent {
                         decentralized_public_output: public_output.clone(),
                         encrypted_centralized_secret_share_and_proof: event_data
+                            .event_data
                             .encrypted_centralized_secret_share_and_proof
                             .clone(),
-                        encryption_key: event_data.encryption_key.clone(),
-                        encryption_key_id: event_data.encryption_key_id.clone(),
-                        initiator: event_data.initiator.clone(),
-                        decentralized_public_output_signature: event_data
-                            .public_keys_signature
-                            .clone(),
-                        encryptor_ed25519_pubkey: event_data.initiator_public_key.clone(),
+                        encryption_key: event_data.event_data.encryption_key.clone(),
+                        encryption_key_id: event_data.event_data.encryption_key_id.clone(),
 
                         // Fields not relevant for verification; passing empty values.
                         dwallet_id: ObjectID::new([0; 32]),

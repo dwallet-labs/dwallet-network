@@ -89,7 +89,7 @@ fn verify_centralized_secret_key_share_proof(
             .ciphertext_space_public_parameters(),
     )?;
     let centralized_public_key_share = secp256k1::GroupElement::new(
-        decentralized_public_output.public_key_share,
+        decentralized_public_output.centralized_party_public_key_share,
         &protocol_public_params.group_public_parameters,
     )?;
     let statement = (
