@@ -5,6 +5,7 @@ use std::{
     fs,
     path::PathBuf,
 };
+use sui_config::Config;
 use sui_types::{base_types::SuiAddress, crypto::Signable, multiaddr::Multiaddr};
 
 use clap::*;
@@ -54,6 +55,15 @@ pub enum IkaValidatorCommand {
         gas_price: u64,
         sender_sui_address: SuiAddress,
     },
+    #[clap(name = "config-env")]
+    ConfigEnv {
+        #[clap(name = "ika-package-id", long)]
+        ika_package_id: ObjectID,
+        #[clap(name = "ika-system-package-id", long)]
+        ika_system_package_id: ObjectID,
+        #[clap(name = "ika-system-object-id", long)]
+        ika_system_object_id: ObjectID,
+    },
     #[clap(name = "become-candidate")]
     BecomeCandidate {
         #[clap(name = "validator-info-path")]
@@ -100,6 +110,7 @@ pub enum IkaValidatorCommand {
 #[serde(untagged)]
 pub enum IkaValidatorCommandResponse {
     MakeValidatorInfo,
+    ConfigEnv(PathBuf),
     BecomeCandidate(SuiTransactionBlockResponse, ObjectID, ObjectID),
     JoinCommittee(SuiTransactionBlockResponse),
     StakeValidator(SuiTransactionBlockResponse),
@@ -173,6 +184,21 @@ impl IkaValidatorCommand {
                     validator_info_file_name
                 );
                 IkaValidatorCommandResponse::MakeValidatorInfo
+            }
+            IkaValidatorCommand::ConfigEnv {
+                ika_package_id,
+                ika_system_package_id,
+                ika_system_object_id,
+            } => {
+                let config = IkaPackagesConfig {
+                    ika_package_id,
+                    ika_system_package_id,
+                    ika_system_object_id,
+                };
+
+                let config_path = ika_config_dir()?.join(IKA_SUI_CONFIG);
+                config.save(&config_path)?;
+                IkaValidatorCommandResponse::ConfigEnv(config_path)
             }
             IkaValidatorCommand::BecomeCandidate {
                 file,
@@ -313,6 +339,9 @@ impl Display for IkaValidatorCommandResponse {
             | IkaValidatorCommandResponse::StakeValidator(response)
             | IkaValidatorCommandResponse::LeaveCommittee(response) => {
                 write!(writer, "{}", write_transaction_response(response)?)?;
+            }
+            IkaValidatorCommandResponse::ConfigEnv(path) => {
+                writeln!(writer, "Ika Sui config file created at: {:?}", path)?;
             }
         }
         write!(f, "{}", writer.trim_end_matches('\n'))

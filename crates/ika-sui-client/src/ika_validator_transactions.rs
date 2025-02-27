@@ -16,9 +16,7 @@ use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
 use shared_crypto::intent::Intent;
 use sui::fire_drill::get_gas_obj_ref;
-use sui_json_rpc_types::{
-    ObjectChange, SuiTransactionBlockResponse,
-};
+use sui_json_rpc_types::{ObjectChange, SuiTransactionBlockResponse};
 use sui_json_rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions};
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
