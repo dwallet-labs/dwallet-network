@@ -595,6 +595,7 @@ pub(crate) fn session_input_from_event(
     }
 }
 
-fn network_key_version_from_key_id(key_id: &ObjectID) -> u8 {
-    return 0;
+// TODO (#683): Parse the network key version from the network key object ID
+fn network_key_version_from_key_id(_key_id: &ObjectID) -> u8 {
+    0
 }
