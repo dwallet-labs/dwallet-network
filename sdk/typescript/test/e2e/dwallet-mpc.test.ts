@@ -1,39 +1,25 @@
-;
-
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
-
-
-import { createDKGFirstRoundOutputMock, createDWallet, dkgSecondRoundMoveCall } from '../../src/dwallet-mpc/dkg';
-import { checkpointCreationTime, Config, delay, getDWalletSecpState, mockedProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
+import {
+	createDKGFirstRoundOutputMock,
+	createDWallet,
+	dkgSecondRoundMoveCall,
+} from '../../src/dwallet-mpc/dkg';
+import {
+	checkpointCreationTime,
+	Config,
+	delay,
+	getDWalletSecpState,
+	mockedProtocolPublicParameters,
+} from '../../src/dwallet-mpc/globals';
 import { dkgFirstRoundMock } from './mocks';
-
-
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
