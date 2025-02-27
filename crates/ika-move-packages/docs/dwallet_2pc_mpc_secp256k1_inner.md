@@ -2887,6 +2887,14 @@ Validators call it, it's part of the blockchain logic.
             first_round_output
         },
     });
+    event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_current_epoch_dwallet_event">create_current_epoch_dwallet_event</a>(
+        <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DKGFirstRoundRequestEvent">DKGFirstRoundRequestEvent</a> {
+            dwallet_id,
+            dwallet_cap_id,
+            dwallet_network_decryption_key_id,
+        },
+        ctx,
+    ));
     dwallet_cap
 }
 </code></pre>
@@ -3035,7 +3043,7 @@ representing the decentralized computation result.
 ) {
     <b>let</b> encryption_key = self.encryption_keys.borrow(encryption_key_address);
     <b>let</b> encryption_key_id = encryption_key.id.to_inner();
-    <b>let</b> dwallet = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet_mut">get_dwallet_mut</a>(dwallet_id);
+    <b>let</b> (dwallet, _) = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_and_public_output_mut">get_active_dwallet_and_public_output_mut</a>(dwallet_id);
    dwallet.state = match (&dwallet.state) {
         DWalletState::AwaitingNetworkVerification =&gt; {
             <b>if</b> (rejected) {
@@ -4110,10 +4118,10 @@ the function will abort with this error.
                 <b>let</b> first_round_output = bcs_body.peel_vec_u8();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dkg_first_round_output">respond_dkg_first_round_output</a>(dwallet_id, first_round_output);
             } <b>else</b> <b>if</b> (message_data_type == 4) {
-                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> public_output = bcs_body.peel_vec_u8();
                 <b>let</b> encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
-                <b>let</b> encryption_key_address = <a href="../../sui/address.md#sui_address_from_bytes">sui::address::from_bytes</a>(bcs_body.peel_vec_u8());
+                <b>let</b> encryption_key_address = bcs_body.peel_address();
                 <b>let</b> rejected = bcs_body.peel_bool();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dkg_second_round_output">respond_dkg_second_round_output</a>(
                     dwallet_id,

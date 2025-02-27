@@ -7,11 +7,10 @@ import {
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.ts';
-import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.ts';
-import type { Config, SharedObjectData } from './globals.ts';
+import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
+import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import {
-	checkpointCreationTime,
+    checkpointCreationTime,
 	delay,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	DWALLET_NETWORK_VERSION,
@@ -23,10 +22,11 @@ import {
 	isMoveObject,
 	MPCKeyScheme,
 	SUI_PACKAGE_ID,
-} from './globals.ts';
+} from './globals.js';
+import type { Config, SharedObjectData } from './globals.ts';
 
 interface DWalletCap {
-	dwallet_id: string;
+    dwallet_id: string;
 }
 
 interface StartDKGFirstRoundEvent {
