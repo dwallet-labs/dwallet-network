@@ -1757,7 +1757,7 @@ source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#3a
 dependencies = [
  "commitment",
  "criterion",
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "crypto-primes",
  "group 0.1.0",
  "homomorphic_encryption",
@@ -1922,7 +1922,7 @@ name = "commitment"
 version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#3a44e3e4aeca49622d1bf5fdf998683c77806eea"
 dependencies = [
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "group 0.1.0",
  "merlin",
  "serde",
@@ -2336,6 +2336,17 @@ name = "crypto-bigint"
 version = "0.6.0-rc.6"
 source = "git+https://github.com/erik-3milabs/crypto-bigint.git?rev=271d029#271d02932e6aa93e6585ecf1cffdb34d7fecdea4"
 dependencies = [
+ "num-traits",
+ "rand_core 0.6.4",
+ "serdect 0.3.0-rc.0",
+ "subtle",
+]
+
+[[package]]
+name = "crypto-bigint"
+version = "0.6.0-rc.6"
+source = "git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad#71d665add85dfd3f9b2cbf1296c7cd31b2cbb93a"
+dependencies = [
  "hybrid-array",
  "num-traits",
  "rand_core 0.6.4",
@@ -2382,7 +2393,7 @@ version = "0.6.0-pre.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9fad3f7645c77d3e0269f3e74a8dd25746de992b16bcecbb316059836e0b366"
 dependencies = [
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "rand_core 0.6.4",
 ]
 
@@ -2927,7 +2938,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "class_groups",
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=271d029)",
  "fastcrypto",
  "flate2",
  "group 0.1.0",
@@ -2949,7 +2960,7 @@ dependencies = [
  "class_groups",
  "class_groups_constants",
  "commitment",
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=271d029)",
  "dwallet-mpc-types",
  "group 0.1.0",
  "homomorphic_encryption",
@@ -3105,7 +3116,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc43715037532dc2d061e5c97e81b684c28993d52a4fa4eb7d2ce2826d78f2f2"
 dependencies = [
  "base16ct 0.2.0",
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "digest 0.11.0-pre.9",
  "ff 0.13.0",
  "group 0.13.0",
@@ -3154,7 +3165,7 @@ version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#3a44e3e4aeca49622d1bf5fdf998683c77806eea"
 dependencies = [
  "commitment",
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "getrandom 0.2.15",
  "group 0.1.0",
  "homomorphic_encryption",
@@ -4244,7 +4255,7 @@ name = "group"
 version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#3a44e3e4aeca49622d1bf5fdf998683c77806eea"
 dependencies = [
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "curve25519-dalek-ng",
  "getrandom 0.2.15",
  "itertools 0.13.0",
@@ -4521,7 +4532,7 @@ name = "homomorphic_encryption"
 version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#3a44e3e4aeca49622d1bf5fdf998683c77806eea"
 dependencies = [
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "getrandom 0.2.15",
  "group 0.1.0",
  "rand 0.8.5",
@@ -5060,7 +5071,7 @@ dependencies = [
  "consensus-core",
  "count-min-sketch",
  "criterion",
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=271d029)",
  "dashmap",
  "derive_more 1.0.0",
  "diffy",
@@ -6412,7 +6423,7 @@ version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#3a44e3e4aeca49622d1bf5fdf998683c77806eea"
 dependencies = [
  "commitment",
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "getrandom 0.2.15",
  "group 0.1.0",
  "homomorphic_encryption",
@@ -7403,7 +7414,7 @@ source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#3a
 dependencies = [
  "commitment",
  "criterion",
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "gcd",
  "getrandom 0.2.15",
  "group 0.1.0",
@@ -9011,7 +9022,7 @@ dependencies = [
  "bulletproofs",
  "commitment",
  "criterion",
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "curve25519-dalek-ng",
  "getrandom 0.2.15",
  "group 0.1.0",
@@ -13707,7 +13718,7 @@ name = "tiresias"
 version = "0.2.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#3a44e3e4aeca49622d1bf5fdf998683c77806eea"
 dependencies = [
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "crypto-primes",
  "group 0.1.0",
  "homomorphic_encryption",
@@ -14443,7 +14454,7 @@ dependencies = [
  "class_groups",
  "commitment",
  "criterion",
- "crypto-bigint 0.6.0-rc.6",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665ad)",
  "ecdsa 0.17.0-pre.9",
  "enhanced_maurer",
  "getrandom 0.2.15",

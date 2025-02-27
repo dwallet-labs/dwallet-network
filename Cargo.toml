@@ -524,7 +524,7 @@ sui-execution = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e9
 consensus-config = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
 consensus-core = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
 
-crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '271d029' }
+crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '71d665a' }
 
 ### Workspace Members ###
 dwallet-mpc-centralized-party = { path = "crates/dwallet-mpc-centralized-party" }
