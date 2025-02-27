@@ -26,12 +26,12 @@ export async function sign(
 	let centralizedSignedMessage = new Uint8Array();
 	let dWalletStateData = await getDWalletSecpState(conf);
 	let tx = new Transaction();
-	const [messageApprovals] = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::approve_messages`,
+	const messageApproval = tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::approve_message`,
 		arguments: [
 			tx.object(dwalletCapID),
 			tx.pure(bcs.u8().serialize(hash.valueOf())),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize([message])),
+			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
 		],
 	});
 	let emptyIKACoin = tx.moveCall({
@@ -49,7 +49,9 @@ export async function sign(
 				mutable: true,
 			}),
 			tx.pure.id(dwalletID),
+			messageApproval,
 			tx.pure.id(presignID),
+			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
 			emptyIKACoin,
 			tx.gas,
 		],
