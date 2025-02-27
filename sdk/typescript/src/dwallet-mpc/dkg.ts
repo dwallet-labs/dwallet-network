@@ -23,6 +23,8 @@ import {
 } from './globals.js';
 import type { Config, SharedObjectData } from './globals.ts';
 
+// Temp comment
+
 interface StartDKGFirstRoundEvent {
 	event_data: {
 		dwallet_id: string;
