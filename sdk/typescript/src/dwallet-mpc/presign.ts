@@ -93,7 +93,7 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 		let interval = 5_000;
 		await delay(interval);
 
-		const { data, nextCursor, hasNextPage } = await c.client.queryEvents({
+		const { data } = await c.client.queryEvents({
 			query: {
 				TimeRange: {
 					startTime: (Date.now() - interval * 2).toString(),
@@ -105,9 +105,9 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 
 		const match = data.find(
 			(event) =>
-				// event.type === eventType &&
-				isEventFn(event.parsedJson),
-			// event.parsedJson.session_id === sessionID,
+				event.type === eventType &&
+				isEventFn(event.parsedJson) &&
+				event.parsedJson.session_id === sessionID,
 		);
 
 		if (match) return match.parsedJson as TEvent;
