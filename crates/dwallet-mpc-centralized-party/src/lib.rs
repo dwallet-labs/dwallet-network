@@ -406,7 +406,7 @@ pub fn decrypt_user_share_inner(
         .decrypt(&ciphertext, &public_parameters).into() else {
         return Err(anyhow!("Decryption failed"));
     };
-    let secret_share_bytes = crypto_bigint::U256::from(&plaintext.value())
+    let secret_share_bytes = U256::from(&plaintext.value())
         .to_be_bytes()
         .to_vec();
     Ok(secret_share_bytes)
@@ -422,7 +422,7 @@ fn cg_secp256k1_public_key_share_from_secret_share(
             &public_parameters,
         )?;
     Ok(
-        generator_group_element.scale(&crypto_bigint::Uint::<{ SCALAR_LIMBS }>::from_be_slice(
+        generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(
             &secret_key_share,
         )),
     )
