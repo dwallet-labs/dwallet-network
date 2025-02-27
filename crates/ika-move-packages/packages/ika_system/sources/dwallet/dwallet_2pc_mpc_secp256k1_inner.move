@@ -838,27 +838,16 @@ public(package) fun create_message_approval(
 ///
 /// ### Aborts
 /// - Aborts if the provided `hash_scheme` is not supported by the system (checked during `create_message_approval`).
-public fun approve_messages(
+public fun approve_message(
     dwallet_cap: &DWalletCap,
     hash_scheme: u8,
-    messages: &mut vector<vector<u8>>
-): vector<MessageApproval> {
-    let mut message_approvals = vector::empty<MessageApproval>();
-
-    // Approve all messages and maintain their order.
-    let messages_length = vector::length(messages);
-    let mut i: u64 = 0;
-    while (i < messages_length) {
-        let message = vector::pop_back(messages);
-        vector::push_back(&mut message_approvals, create_message_approval(
-            dwallet_cap.dwallet_id,
-            hash_scheme,
-            message,
-        ));
-        i = i + 1;
-    };
-    vector::reverse(&mut message_approvals);
-    message_approvals
+    message: vector<u8>
+): MessageApproval {
+    create_message_approval(
+        dwallet_cap.dwallet_id,
+        hash_scheme,
+        message,
+    )
 }
 
 /// Checks if the given hash scheme is supported for message signing.
