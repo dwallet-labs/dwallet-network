@@ -1,11 +1,3 @@
-// public fun request_ecdsa_presign(
-//     self: &mut DWallet2PcMpcSecp256K1,
-//     dwallet_id: ID,
-//     payment_ika: &mut Coin<IKA>,
-//     payment_sui: &mut Coin<SUI>,
-//     ctx: &mut TxContext
-// ) {
-
 import { Transaction } from '@mysten/sui/transactions';
 
 import type { Config } from './globals.ts';
