@@ -960,6 +960,31 @@ public(package) fun respond_dkg_first_round_output(
     });
 }
 
+// TODO (#493): Remove mock functions
+public(package) fun create_first_round_dwallet_mock(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
+): DWalletCap {
+    let id = object::new(ctx);
+    let dwallet_id = id.to_inner();
+    let dwallet_cap = DWalletCap {
+        id: object::new(ctx),
+        dwallet_id,
+    };
+    let dwallet_cap_id = object::id(&dwallet_cap);
+    self.dwallets.add(dwallet_id, DWallet {
+        id,
+        dwallet_cap_id,
+        dwallet_network_decryption_key_id,
+        encrypted_user_secret_key_shares: object_table::new(ctx),
+        ecdsa_presigns: object_table::new(ctx),
+        ecdsa_signs: object_table::new(ctx),
+        state: DWalletState::AwaitingUser {
+            first_round_output
+        },
+    });
+    dwallet_cap
+}
+
 /// Initiates the second round of the Distributed Key Generation (DKG) process
 /// and emits an event for validators to begin their participation in this round.
 ///
@@ -1057,7 +1082,7 @@ public(package) fun respond_dkg_second_round_output(
 ) {
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
     let encryption_key_id = encryption_key.id.to_inner();
-    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let dwallet = self.get_dwallet_mut(dwallet_id);
 
    dwallet.state = match (&dwallet.state) {
         DWalletState::AwaitingNetworkVerification => {
@@ -1790,10 +1815,10 @@ fun process_checkpoint_message(
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dkg_first_round_output(dwallet_id, first_round_output);
             } else if (message_data_type == 4) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
-                let encryption_key_address = bcs_body.peel_address();
+                let encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
                 self.respond_dkg_second_round_output(
                     dwallet_id,

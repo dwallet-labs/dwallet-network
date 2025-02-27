@@ -13,7 +13,7 @@ import {
 /**
  * A class groups key pair.
  */
-interface ClassGroupsSecpKeyPair {
+export interface ClassGroupsSecpKeyPair {
 	encryptionKey: Uint8Array;
 	decryptionKey: Uint8Array;
 	objectID: string;
@@ -52,7 +52,7 @@ export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<Class
 	);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		conf,
-		conf.keypair.toSuiAddress(),
+		conf.encryptedSecretShareSigningKeypair.toSuiAddress(),
 	);
 	const encryptionKeyMoveType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
 
@@ -144,7 +144,9 @@ async function registerEncryptionKey(
 	encryptionKey: Uint8Array,
 ): Promise<CreatedEncryptionKeyEvent> {
 	// Sign the encryption key with the key pair.
-	const encryptionKeySignature = await conf.keypair.sign(new Uint8Array(encryptionKey));
+	const encryptionKeySignature = await conf.encryptedSecretShareSigningKeypair.sign(
+		new Uint8Array(encryptionKey),
+	);
 	const tx = new Transaction();
 
 	let dwalletState = await getDWalletSecpState(conf);
@@ -158,11 +160,15 @@ async function registerEncryptionKey(
 			}),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKeySignature)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(conf.keypair.getPublicKey().toRawBytes())),
+			tx.pure(
+				bcs
+					.vector(bcs.u8())
+					.serialize(conf.encryptedSecretShareSigningKeypair.getPublicKey().toRawBytes()),
+			),
 		],
 	});
 	const res = await conf.client.signAndExecuteTransaction({
-		signer: conf.keypair,
+		signer: conf.suiClientKeypair,
 		transaction: tx,
 		options: {
 			showEvents: true,

@@ -12,8 +12,9 @@ pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
 pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1_inner");
 pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DKGFirstRoundRequestEvent");
+// TODO (#650): Rename Move structs
 pub const START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("StartDKGSecondRoundEvent");
+    ident_str!("DKGSecondRoundRequestEvent");
 pub const START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartPresignFirstRoundEvent");
 pub const START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
