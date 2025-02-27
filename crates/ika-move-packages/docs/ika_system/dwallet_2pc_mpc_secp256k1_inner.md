@@ -2373,8 +2373,7 @@ Supported hash schemes for message signing.
         previous_epoch_shares: vector[],
         public_output: vector[],
         computation_fee_charged_ika: balance::zero(),
-        // TODO: IMPORTANT fix it to be AwaitingNetworkDKG
-        state: DWalletNetworkDecryptionKeyState::NetworkDKGCompleted,
+        state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
     event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_current_epoch_dwallet_event">create_current_epoch_dwallet_event</a>(
         <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletNetworkDKGDecryptionKeyRequestEvent">DWalletNetworkDKGDecryptionKeyRequestEvent</a> {

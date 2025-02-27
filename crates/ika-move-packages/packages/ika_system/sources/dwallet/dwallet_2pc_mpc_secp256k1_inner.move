@@ -696,8 +696,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         previous_epoch_shares: vector[],
         public_output: vector[],
         computation_fee_charged_ika: balance::zero(),
-        // TODO: IMPORTANT fix it to be AwaitingNetworkDKG
-        state: DWalletNetworkDecryptionKeyState::NetworkDKGCompleted,
+        state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
     event::emit(self.create_current_epoch_dwallet_event(
         DWalletNetworkDKGDecryptionKeyRequestEvent {

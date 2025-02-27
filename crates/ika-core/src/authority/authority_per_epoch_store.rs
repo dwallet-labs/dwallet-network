@@ -167,6 +167,8 @@ pub enum ConsensusCertificateResult {
     Ignored,
     /// An executable transaction (can be a user tx or a system tx)
     IkaTransaction(MessageKind),
+
+    IkaLargeTransaction(Vec<MessageKind>)
     /// A message was processed which updates randomness state.
     RandomnessConsensusMessage,
     /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
