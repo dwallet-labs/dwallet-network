@@ -38,7 +38,6 @@ module.exports = {
 	],
 	rules: {
 		'no-case-declarations': 'off',
-	 	"allowImportingTsExtensions": 'off',
 		'no-implicit-coercion': [2, { number: true, string: true, boolean: false }],
 		'@typescript-eslint/no-redeclare': 'off',
 		'@typescript-eslint/ban-types': [
