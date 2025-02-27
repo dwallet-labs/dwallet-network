@@ -19,7 +19,7 @@ import {
 	getDWalletSecpState,
 	mockedProtocolPublicParameters,
 } from '../../src/dwallet-mpc/globals';
-import { dkgFirstRoundMock } from '../../src/dwallet-mpc/mocks.ts';
+import { dkgFirstRoundMock } from './mocks.ts';
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
