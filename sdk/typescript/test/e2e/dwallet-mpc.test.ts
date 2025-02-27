@@ -57,7 +57,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should run the DKG second round', async () => {
-		await getOrCreateClassGroupsKeyPair(conf);
+		let classGroupsKeypair = await getOrCreateClassGroupsKeyPair(conf);
 		await delay(checkpointCreationTime);
 
 		let dwalletState = await getDWalletSecpState(conf);
@@ -66,6 +66,10 @@ describe('Test dWallet MPC', () => {
 			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 		);
 		await delay(checkpointCreationTime);
+		let encryptedSecretShare = encrypt_secret_share(
+			Buffer.from(dkgFirstRoundMock.centralizedSecretKeyShare, 'base64'),
+			classGroupsKeypair.encryptionKey,
+		);
 		await dkgSecondRoundMoveCall(
 			conf,
 			dwalletState,
@@ -76,7 +80,7 @@ describe('Test dWallet MPC', () => {
 				dwalletID: firstRoundOutputResult.dwalletID,
 			},
 			Buffer.from(dkgFirstRoundMock.centralizedPublicKeyShareAndProof, 'base64'),
-			Buffer.from(dkgFirstRoundMock.encryptedSecretShareAndProof, 'base64'),
+			encryptedSecretShare,
 			Buffer.from(dkgFirstRoundMock.centralizedPublicOutput, 'base64'),
 		);
 		console.log(`dWallet has been created successfully: ${firstRoundOutputResult.dwalletID}`);
