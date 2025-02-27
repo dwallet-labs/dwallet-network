@@ -2334,7 +2334,7 @@ dependencies = [
 [[package]]
 name = "crypto-bigint"
 version = "0.6.0-rc.6"
-source = "git+https://github.com/erik-3milabs/crypto-bigint.git?rev=271d029#271d02932e6aa93e6585ecf1cffdb34d7fecdea4"
+source = "git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665a#71d665add85dfd3f9b2cbf1296c7cd31b2cbb93a"
 dependencies = [
  "num-traits",
  "rand_core 0.6.4",
@@ -2938,7 +2938,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "class_groups",
- "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=271d029)",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665a)",
  "fastcrypto",
  "flate2",
  "group 0.1.0",
@@ -2960,7 +2960,7 @@ dependencies = [
  "class_groups",
  "class_groups_constants",
  "commitment",
- "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=271d029)",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665a)",
  "dwallet-mpc-types",
  "group 0.1.0",
  "homomorphic_encryption",
@@ -5071,7 +5071,7 @@ dependencies = [
  "consensus-core",
  "count-min-sketch",
  "criterion",
- "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=271d029)",
+ "crypto-bigint 0.6.0-rc.6 (git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665a)",
  "dashmap",
  "derive_more 1.0.0",
  "diffy",
