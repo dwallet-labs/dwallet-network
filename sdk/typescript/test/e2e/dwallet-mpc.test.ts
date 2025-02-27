@@ -17,7 +17,6 @@ import {
 	Config,
 	delay,
 	getDWalletSecpState,
-	isMoveObject,
 	mockedProtocolPublicParameters,
 } from '../../src/dwallet-mpc/globals';
 import { dkgFirstRoundMock } from '../../src/dwallet-mpc/mocks.ts';
