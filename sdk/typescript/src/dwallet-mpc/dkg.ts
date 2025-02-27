@@ -99,7 +99,6 @@ export async function createDKGFirstRoundOutputMock(
 	conf: Config,
 	mockOutput: Uint8Array,
 ): Promise<StartDKGFirstRoundEvent> {
-	// create_first_round_dwallet_mock(self: &mut DWallet2PcMpcSecp256K1, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext): DWalletCap
 	const tx = new Transaction();
 	let dwalletStateObjData = await getDWalletSecpState(conf);
 	let stateArg = tx.sharedObjectRef({
