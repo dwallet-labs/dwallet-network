@@ -48,8 +48,8 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 			showEvents: true,
 		},
 	});
-	let startDKGEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartSessionEvent(startDKGEvent)) {
+	let startSessionEvent = result.events?.at(0)?.parsedJson;
+	if (!isStartSessionEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
 
@@ -57,7 +57,7 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 
 	return await fetchCompletedEvent(
 		conf,
-		startDKGEvent.session_id,
+		startSessionEvent.session_id,
 		completedPresignEventType,
 		isCompletedPresignEvent,
 	);
