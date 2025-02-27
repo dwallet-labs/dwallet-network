@@ -277,7 +277,7 @@ register_encryption_key
 create_message_approval
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-approve_messages
+approve_message
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 is_supported_hash_scheme
@@ -290,6 +290,9 @@ respond_dkg_first_round_output
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 create_first_round_dwallet_mock
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+mock_create_dwallet
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 request_dkg_second_round
@@ -365,6 +368,9 @@ request_dkg_second_round
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
 create_first_round_dwallet_mock
+	public fun
+	0x0::dwallet_2pc_mpc_secp256k1
+mock_create_dwallet
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
 request_re_encrypt_user_share_for
