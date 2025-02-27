@@ -1782,7 +1782,7 @@ name = "class_groups_constants"
 version = "1.0.0"
 dependencies = [
  "anyhow",
- "base64 0.22.1",
+ "base64 0.21.7",
  "bcs",
  "class_groups",
  "group 0.1.0",
@@ -5024,7 +5024,7 @@ version = "0.0.0"
 dependencies = [
  "anemo",
  "anyhow",
- "base64 0.22.1",
+ "base64 0.21.7",
  "consensus-config",
  "dirs 4.0.0",
  "dwallet-classgroups-types",
