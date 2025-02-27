@@ -1,25 +1,20 @@
+;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import path from 'path';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
-import {
-	createDKGFirstRoundOutputMock,
-	createDWallet,
-	dkgSecondRoundMoveCall,
-} from '../../src/dwallet-mpc/dkg';
+
+
+import { createDKGFirstRoundOutputMock, createDWallet, dkgSecondRoundMoveCall } from '../../src/dwallet-mpc/dkg';
 import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share.ts';
-import {
-	checkpointCreationTime,
-	Config,
-	delay,
-	getDWalletSecpState,
-	mockedProtocolPublicParameters,
-} from '../../src/dwallet-mpc/globals';
+import { checkpointCreationTime, Config, delay, getDWalletSecpState, mockedProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
 import { dkgFirstRoundMock } from './mocks.ts';
+
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -42,7 +37,7 @@ describe('Test dWallet MPC', () => {
 			suiClientKeypair: keypair,
 			client: suiClient,
 			timeout: fiveMinutes,
-			ikaConfig: require('../../../../ika_config.json'),
+			ikaConfig: require(path.resolve(process.cwd(), '../../ika_config.json')),
 			dWalletSeed,
 			encryptedSecretShareSigningKeypair,
 		};
