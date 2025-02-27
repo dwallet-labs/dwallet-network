@@ -7,9 +7,8 @@ import {
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.ts';
-import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.ts';
-import type { Config, SharedObjectData } from './globals.ts';
+import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
+import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import {
 	delay,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
@@ -21,7 +20,8 @@ import {
 	isMoveObject,
 	MPCKeyScheme,
 	SUI_PACKAGE_ID,
-} from './globals.ts';
+} from './globals.js';
+import type { Config, SharedObjectData } from './globals.ts';
 
 interface StartDKGFirstRoundEvent {
 	event_data: {
