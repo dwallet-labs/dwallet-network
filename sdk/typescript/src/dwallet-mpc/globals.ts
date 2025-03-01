@@ -109,7 +109,7 @@ export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 	const dynamicFields = await c.client.getDynamicFields({
 		parentId: c.ikaConfig.ika_system_obj_id,
 	});
-	let innerSystemState = await c.client.getDynamicFieldObject({
+	const innerSystemState = await c.client.getDynamicFieldObject({
 		parentId: c.ikaConfig.ika_system_obj_id,
 		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
 	});
@@ -124,13 +124,13 @@ export function isSharedObjectOwner(obj: any): obj is SharedObjectOwner {
 }
 
 export async function getInitialSharedVersion(c: Config, objectID: string): Promise<number> {
-	let obj = await c.client.getObject({
+	const obj = await c.client.getObject({
 		id: objectID,
 		options: {
 			showOwner: true,
 		},
 	});
-	let owner = obj.data?.owner;
+	const owner = obj.data?.owner;
 	if (!owner || !isSharedObjectOwner(owner)) {
 		throw new Error('Object is not shared');
 	}

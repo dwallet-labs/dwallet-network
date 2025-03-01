@@ -99,7 +99,7 @@ function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
  */
 async function getActiveEncryptionKeyObjID(conf: Config, address: string): Promise<string> {
 	const tx = new Transaction();
-	let dwalletState = await getDWalletSecpState(conf);
+	const dwalletState = await getDWalletSecpState(conf);
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::get_active_encryption_key`,
 		arguments: [
@@ -149,7 +149,7 @@ async function registerEncryptionKey(
 	);
 	const tx = new Transaction();
 
-	let dwalletState = await getDWalletSecpState(conf);
+	const dwalletState = await getDWalletSecpState(conf);
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::register_encryption_key`,
 		arguments: [
@@ -174,7 +174,7 @@ async function registerEncryptionKey(
 			showEvents: true,
 		},
 	});
-	let createdEncryptionKeyEvent = res.events?.find((event) =>
+	const createdEncryptionKeyEvent = res.events?.find((event) =>
 		isCreatedEncryptionKeyEvent(event.parsedJson),
 	);
 	if (!createdEncryptionKeyEvent) {
