@@ -137,7 +137,7 @@ pub fn create_dkg_output(
         decentralized_first_round_public_output.clone(),
         &(),
         &(public_parameters, session_id).into(),
-        &mut rng,
+        &mut OsRng,
     )
     .context("advance() failed on the DKGCentralizedParty")?;
 
