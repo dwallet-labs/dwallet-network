@@ -1,6 +1,7 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import path from 'path';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
@@ -11,7 +12,7 @@ import {
 	createDWallet,
 	dkgSecondRoundMoveCall,
 } from '../../src/dwallet-mpc/dkg';
-import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share.ts';
+import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
 	checkpointCreationTime,
 	Config,
@@ -19,8 +20,8 @@ import {
 	getDWalletSecpState,
 	mockedProtocolPublicParameters,
 } from '../../src/dwallet-mpc/globals';
-import { dkgFirstRoundMock } from '../../src/dwallet-mpc/mocks.ts';
-import { presign } from '../../src/dwallet-mpc/presign.ts';
+import { presign } from '../../src/dwallet-mpc/presign';
+import { dkgFirstRoundMock } from './mocks';
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -43,7 +44,7 @@ describe('Test dWallet MPC', () => {
 			suiClientKeypair: keypair,
 			client: suiClient,
 			timeout: fiveMinutes,
-			ikaConfig: require('../../../../ika_config.json'),
+			ikaConfig: require(path.resolve(process.cwd(), '../../ika_config.json')),
 			dWalletSeed,
 			encryptedSecretShareSigningKeypair,
 		};
@@ -58,8 +59,8 @@ describe('Test dWallet MPC', () => {
 		await getOrCreateClassGroupsKeyPair(conf);
 		await delay(checkpointCreationTime);
 
-		let dwalletState = await getDWalletSecpState(conf);
-		let firstRoundOutputResult = await createDKGFirstRoundOutputMock(
+		const dwalletState = await getDWalletSecpState(conf);
+		const firstRoundOutputResult = await createDKGFirstRoundOutputMock(
 			conf,
 			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 		);
@@ -84,8 +85,8 @@ describe('Test dWallet MPC', () => {
 		await getOrCreateClassGroupsKeyPair(conf);
 		await delay(checkpointCreationTime);
 
-		let dwalletState = await getDWalletSecpState(conf);
-		let firstRoundOutputResult = await createDKGFirstRoundOutputMock(
+		const dwalletState = await getDWalletSecpState(conf);
+		const firstRoundOutputResult = await createDKGFirstRoundOutputMock(
 			conf,
 			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 		);
@@ -104,7 +105,7 @@ describe('Test dWallet MPC', () => {
 			Buffer.from(dkgFirstRoundMock.centralizedPublicOutput, 'base64'),
 		);
 		console.log(`dWallet has been created successfully: ${firstRoundOutputResult.dwalletID}`);
-		let presignCompletion = await presign(conf, firstRoundOutputResult.dwalletID);
+		const presignCompletion = await presign(conf, firstRoundOutputResult.dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 	});
 });
