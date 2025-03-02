@@ -85,19 +85,6 @@ export async function launchDKGSecondRound(
 	protocolPublicParameters: Uint8Array,
 	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
 ) {
-	// print all the values arguments i pass as base64 strings
-
-	console.log(
-		'firstRoundOutputResult',
-		Buffer.from(firstRoundOutputResult.output).toString('base64'),
-	);
-	console.log('protocolPublicParameters', Buffer.from(protocolPublicParameters).toString('base64'));
-	console.log(
-		'classGroupsSecpKeyPair.encryptionKey',
-		Buffer.from(classGroupsSecpKeyPair.encryptionKey).toString('base64'),
-	);
-	console.log('firstRoundOutputResult.sessionID', firstRoundOutputResult.sessionID);
-
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			protocolPublicParameters,
