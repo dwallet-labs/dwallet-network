@@ -66,7 +66,6 @@ export async function sign(
 		presign.presign,
 		message,
 		hash,
-		bcs.string().serialize(presign.id.id.slice(2)).toBytes(),
 	);
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
