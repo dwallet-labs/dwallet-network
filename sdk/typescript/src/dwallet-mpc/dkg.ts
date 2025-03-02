@@ -11,7 +11,22 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import { checkpointCreationTime, delay, DWALLET_ECDSAK1_MOVE_MODULE_NAME, DWALLET_NETWORK_VERSION, getDwalletSecp256k1ObjID, getDWalletSecpState, getInitialSharedVersion, isAddressObjectOwner, isDWalletCap, isIKASystemStateInner, isMoveObject, MPCKeyScheme, SUI_PACKAGE_ID } from './globals.js';
+import {
+	checkpointCreationTime,
+	delay,
+	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	DWALLET_NETWORK_VERSION,
+	getDWalletCap,
+	getDwalletSecp256k1ObjID,
+	getDWalletSecpState,
+	getInitialSharedVersion,
+	isAddressObjectOwner,
+	isDWalletCap,
+	isIKASystemStateInner,
+	isMoveObject,
+	MPCKeyScheme,
+	SUI_PACKAGE_ID
+} from './globals.js';
 import type { Config, SharedObjectData } from './globals.ts';
 
 
@@ -151,22 +166,10 @@ export async function createDKGFirstRoundOutputMock(
 		throw new Error('Unable to create the DWallet cap');
 	}
 	await delay(checkpointCreationTime);
-	const dwalletCapObj = await conf.client.getObject({
-		id: createdDWalletCap.reference.objectId,
-		options: { showContent: true },
-	});
-	const dwalletCapObjContent = dwalletCapObj?.data?.content;
-	if (!isMoveObject(dwalletCapObjContent)) {
-		throw new Error('Invalid DWallet cap object');
-	}
-	const dwalletCapFields = dwalletCapObjContent.fields;
-	if (!isDWalletCap(dwalletCapFields)) {
-		throw new Error('Invalid DWallet cap fields');
-	}
-
+	const dwalletCapObj = await getDWalletCap(conf, createdDWalletCap.reference.objectId);
 	return {
 		dwalletCapID: createdDWalletCap.reference.objectId,
-		dwalletID: dwalletCapFields.dwallet_id,
+		dwalletID: dwalletCapObj.dwallet_id,
 		sessionID: '',
 		output: mockOutput,
 	};
@@ -211,22 +214,11 @@ export async function mockCreateDWallet(
 		throw new Error('Unable to create the DWallet cap');
 	}
 	await delay(checkpointCreationTime);
-	const dwalletCapObj = await conf.client.getObject({
-		id: createdDWalletCap.reference.objectId,
-		options: { showContent: true },
-	});
-	const dwalletCapObjContent = dwalletCapObj?.data?.content;
-	if (!isMoveObject(dwalletCapObjContent)) {
-		throw new Error('Invalid DWallet cap object');
-	}
-	const dwalletCapFields = dwalletCapObjContent.fields;
-	if (!isDWalletCap(dwalletCapFields)) {
-		throw new Error('Invalid DWallet cap fields');
-	}
+	const dwalletCapObj = await getDWalletCap(conf, createdDWalletCap.reference.objectId);
 
 	return {
 		dwalletCapID: createdDWalletCap.reference.objectId,
-		dwalletID: dwalletCapFields.dwallet_id,
+		dwalletID: dwalletCapObj.dwallet_id,
 		sessionID: '',
 		output: mockOutput,
 	};
