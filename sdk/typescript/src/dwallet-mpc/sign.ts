@@ -1,7 +1,8 @@
+import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config } from './globals.ts';
+import {Config, mockedProtocolPublicParameters, MPCKeyScheme} from './globals.ts';
 import {
 	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
@@ -32,11 +33,16 @@ function isCompletedSignEvent(obj: any): obj is CompletedSignEvent {
 export async function sign(
 	conf: Config,
 	presignID: string,
-	dwalletID: string,
 	dwalletCapID: string,
 	message: Uint8Array,
 	hash = Hash.KECCAK256,
+	protocolPublicParameters: Uint8Array = mockedProtocolPublicParameters,
 ): Promise<CompletedSignEvent> {
+	let partialSignatures = create_sign_centralized_output(
+		protocolPublicParameters,
+		MPCKeyScheme.Secp256k1,
+
+	);
 	// TODO: replace with mock
 	const centralizedSignedMessage = new Uint8Array();
 	const dWalletStateData = await getDWalletSecpState(conf);

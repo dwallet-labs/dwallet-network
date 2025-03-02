@@ -38,6 +38,22 @@ export function delay(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export async function getDWalletCap(conf: Config, dwalletCapID: string): Promise<DWalletCap> {
+	const dwalletCapObj = await conf.client.getObject({
+		id: dwalletCapID,
+		options: { showContent: true },
+	});
+	const dwalletCapObjContent = dwalletCapObj?.data?.content;
+	if (!isMoveObject(dwalletCapObjContent)) {
+		throw new Error('Invalid DWallet cap object');
+	}
+	const dwalletCapFields = dwalletCapObjContent.fields;
+	if (!isDWalletCap(dwalletCapFields)) {
+		throw new Error('Invalid DWallet cap fields');
+	}
+	return dwalletCapFields;
+}
+
 // Mocked protocol parameters used for testing purposes in non-production environments.
 export const mockedProtocolPublicParameters = Uint8Array.from(
 	Buffer.from(
@@ -220,4 +236,12 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 			c.timeout / (60 * 1000)
 		} minutes (${seconds} seconds passed).`,
 	);
+}
+
+export interface DWalletCap {
+	dwallet_id: string;
+}
+
+export function isDWalletCap(obj: any): obj is DWalletCap {
+	return !!obj?.dwallet_id;
 }

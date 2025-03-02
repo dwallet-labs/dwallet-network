@@ -68,4 +68,14 @@ describe('Test dWallet MPC', () => {
 		);
 		console.log(`presign has been created successfully: ${presign}`);
 	});
+
+	it('should sign', async () => {
+		const dwalletID = (await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64')))
+			.dwalletID;
+		const presign = await mockCreatePresign(
+			conf,
+			Buffer.from(mockPresign.presignBytes, 'base64'),
+			dwalletID,
+		);
+	});
 });
