@@ -191,7 +191,7 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 
 	while (Date.now() - startTime <= c.timeout) {
 		// Wait for a bit before polling again, objects might not be available immediately.
-		let interval = 5_000;
+		const interval = 5_000;
 		await delay(interval);
 
 		const { data } = await c.client.queryEvents({

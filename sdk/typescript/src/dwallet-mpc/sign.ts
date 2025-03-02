@@ -1,8 +1,8 @@
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
+import type { Config } from './globals.ts';
 import {
-	Config,
 	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	fetchCompletedEvent,
@@ -38,9 +38,9 @@ export async function sign(
 	hash = Hash.KECCAK256,
 ): Promise<CompletedSignEvent> {
 	// TODO: replace with mock
-	let centralizedSignedMessage = new Uint8Array();
-	let dWalletStateData = await getDWalletSecpState(conf);
-	let tx = new Transaction();
+	const centralizedSignedMessage = new Uint8Array();
+	const dWalletStateData = await getDWalletSecpState(conf);
+	const tx = new Transaction();
 	const messageApproval = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::approve_message`,
 		arguments: [
@@ -49,7 +49,7 @@ export async function sign(
 			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
 		],
 	});
-	let emptyIKACoin = tx.moveCall({
+	const emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
 		arguments: [],
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
@@ -79,11 +79,11 @@ export async function sign(
 			showEvents: true,
 		},
 	});
-	let startSessionEvent = result.events?.at(0)?.parsedJson;
+	const startSessionEvent = result.events?.at(0)?.parsedJson;
 	if (!isStartSessionEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
-	let completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::CompletedECDSASignEvent`;
+	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::CompletedECDSASignEvent`;
 	return await fetchCompletedEvent(
 		conf,
 		startSessionEvent.session_id,
