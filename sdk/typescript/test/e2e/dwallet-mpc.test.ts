@@ -8,8 +8,14 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
 import { createDWallet, mockCreateDWallet } from '../../src/dwallet-mpc/dkg';
-import { Config, delay, mockedProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
+import {
+	checkpointCreationTime,
+	Config,
+	delay,
+	mockedProtocolPublicParameters,
+} from '../../src/dwallet-mpc/globals';
 import { mockCreatePresign, presign } from '../../src/dwallet-mpc/presign';
+import { sign } from '../../src/dwallet-mpc/sign';
 import { dkgMocks, mockPresign } from './mocks';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -70,12 +76,19 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should sign', async () => {
-		const dwalletID = (await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64')))
-			.dwalletID;
+		const dkgResult = await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64'));
 		const presign = await mockCreatePresign(
 			conf,
 			Buffer.from(mockPresign.presignBytes, 'base64'),
-			dwalletID,
+			dkgResult.dwalletID,
+		);
+		await delay(checkpointCreationTime);
+		await sign(
+			conf,
+			presign.presign_id,
+			dkgResult.dwalletCapID,
+			Buffer.from('hello world'),
+			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
 		);
 	});
 });
