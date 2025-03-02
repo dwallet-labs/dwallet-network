@@ -9,8 +9,8 @@ import { beforeEach, describe, it } from 'vitest';
 
 import { createDWallet, mockCreateDWallet } from '../../src/dwallet-mpc/dkg';
 import { Config, delay, mockedProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
-import { presign } from '../../src/dwallet-mpc/presign';
-import { dkgMocks } from './mocks';
+import { mockCreatePresign, presign } from '../../src/dwallet-mpc/presign';
+import { dkgMocks, mockPresign } from './mocks';
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -56,7 +56,11 @@ describe('Test dWallet MPC', () => {
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		const presignCompletion = await presign(conf, dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
-		// log the presign base64
-		console.log(Buffer.from(presignCompletion.presign).toString('base64'));
+	});
+
+	it('should mock create presign', async () => {
+		const dwalletID = (await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64')))
+			.dwalletID;
+		await mockCreatePresign(conf, Buffer.from(mockPresign.presignBytes, 'base64'), dwalletID);
 	});
 });

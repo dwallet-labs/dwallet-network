@@ -130,7 +130,8 @@ export async function mockCreatePresign(
 	conf: Config,
 	mockPresign: Uint8Array,
 	dwalletID: string,
-): Promise<CompletedPresignEvent> {
+// ): Promise<CompletedPresignEvent> {
+) {
 	const tx = new Transaction();
 	const dwalletStateObjData = await getDWalletSecpState(conf);
 	const stateArg = tx.sharedObjectRef({
@@ -139,48 +140,17 @@ export async function mockCreatePresign(
 		mutable: true,
 	});
 
-// public fun mock_create_presign(self: &mut DWallet2PcMpcSecp256K1, presign: vector<u8>, dwallet_id: ID, ctx: &mut TxContext) {
-	
-	
 	const firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockPresign));
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::mock_create_presign`,
-		arguments: [stateArg, firstRoundOutputArg, networkDecryptionKeyIDArg],
+		arguments: [stateArg, firstRoundOutputArg, tx.pure.id(dwalletID)],
 	});
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
 		transaction: tx,
 		options: {
-			showEffects: true,
 			showEvents: true,
 		},
 	});
-	const createdDWalletCap = result?.effects?.created?.find(
-		(obj) =>
-			isAddressObjectOwner(obj.owner) &&
-			obj.owner.AddressOwner === conf.suiClientKeypair.toSuiAddress(),
-	);
-	if (!dwalletCap || createdDWalletCap === undefined) {
-		throw new Error('Unable to create the DWallet cap');
-	}
-	await delay(checkpointCreationTime);
-	const dwalletCapObj = await conf.client.getObject({
-		id: createdDWalletCap.reference.objectId,
-		options: { showContent: true },
-	});
-	const dwalletCapObjContent = dwalletCapObj?.data?.content;
-	if (!isMoveObject(dwalletCapObjContent)) {
-		throw new Error('Invalid DWallet cap object');
-	}
-	const dwalletCapFields = dwalletCapObjContent.fields;
-	if (!isDWalletCap(dwalletCapFields)) {
-		throw new Error('Invalid DWallet cap fields');
-	}
-
-	return {
-		dwalletCapID: createdDWalletCap.reference.objectId,
-		dwalletID: dwalletCapFields.dwallet_id,
-		sessionID: '',
-		output: mockPresign,
-	};
+	console.log(result);
 }
