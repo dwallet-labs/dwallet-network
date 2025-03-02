@@ -46,13 +46,17 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should mock create dwallet', async () => {
-		await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64'));
+		const result = await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64'));
+		console.log(`dWallet has been created successfully: ${result.dwalletID}`);
 	});
 
 	it('should run presign', async () => {
-		const dwalletID = await createDWallet(conf, mockedProtocolPublicParameters);
+		const dwalletID = (await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64')))
+			.dwalletID;
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		const presignCompletion = await presign(conf, dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		// log the presign base64
+		console.log(Buffer.from(presignCompletion.presign).toString('base64'));
 	});
 });

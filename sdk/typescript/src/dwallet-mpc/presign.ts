@@ -143,6 +143,10 @@ export async function mockCreatePresign(
 	
 	
 	const firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockPresign));
+	tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::mock_create_presign`,
+		arguments: [stateArg, firstRoundOutputArg, networkDecryptionKeyIDArg],
+	});
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
 		transaction: tx,
