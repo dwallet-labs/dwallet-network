@@ -66,12 +66,13 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
-	return await launchDKGSecondRound(
+	await launchDKGSecondRound(
 		conf,
 		firstRoundOutputResult,
 		protocolPublicParameters,
 		classGroupsSecpKeyPair,
 	);
+	return firstRoundOutputResult.dwalletID;
 }
 
 export async function launchDKGSecondRound(
@@ -90,7 +91,6 @@ export async function launchDKGSecondRound(
 		);
 	const dWalletStateData = await getDWalletSecpState(conf);
 
-	// TODO (#672): Fix the encrypt_secret_share wasm function.
 	const encryptedUserShareAndProof = encrypt_secret_share(
 		centralizedSecretKeyShare,
 		classGroupsSecpKeyPair.encryptionKey,
