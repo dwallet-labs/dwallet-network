@@ -53,7 +53,8 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create a dWallet (DKG)', async () => {
-		await createDWallet(conf, mockedProtocolPublicParameters);
+		const dwalletID = await createDWallet(conf, mockedProtocolPublicParameters);
+		console.log(`dWallet has been created successfully: ${dwalletID}`);
 	});
 
 	it('should run the DKG second round', async () => {

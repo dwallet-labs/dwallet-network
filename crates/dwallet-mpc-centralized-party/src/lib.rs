@@ -131,12 +131,13 @@ pub fn create_dkg_output(
     )?)?;
 
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
-
+    let seed = [1u8;32];
+    let mut rng = ChaCha20Rng::from(ChaCha20Core::from_seed(seed));
     let round_result = DKGCentralizedParty::advance(
         decentralized_first_round_public_output.clone(),
         &(),
         &(public_parameters, session_id).into(),
-        &mut OsRng,
+        &mut rng,
     )
     .context("advance() failed on the DKGCentralizedParty")?;
 
