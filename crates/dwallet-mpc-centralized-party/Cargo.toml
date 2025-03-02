@@ -6,13 +6,13 @@ version.workspace = true
 [dependencies]
 mpc.workspace = true
 twopc_mpc.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "ika", subdir = "commitment" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "546dd26d2f3665de2934811f70fc2094327b4862", subdir = "commitment" }
 class_groups_constants = { path = "../class-groups-constants" }
 k256 = { git = "https://github.com/RustCrypto/elliptic-curves.git", tag = "k256/v0.14.0-pre.2", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
 class_groups.workspace = true
 group.workspace = true
 homomorphic_encryption.workspace = true
-maurer = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "ika", subdir = "maurer" }
+maurer = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "546dd26d2f3665de2934811f70fc2094327b4862", subdir = "maurer" }
 dwallet-mpc-types.workspace = true
 schemars.workspace = true
 anyhow.workspace = true
