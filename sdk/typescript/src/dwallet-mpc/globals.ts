@@ -38,6 +38,16 @@ export function delay(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export interface Presign {
+	id: string;
+	dwallet_id: string;
+	presign: Uint8Array;
+}
+
+export function isPresign(obj: any): obj is Presign {
+	return obj?.id !== undefined && obj?.dwallet_id !== undefined && obj?.presign !== undefined;
+}
+
 export async function getObjectWithType<TObject>(
 	conf: Config,
 	objectID: string,

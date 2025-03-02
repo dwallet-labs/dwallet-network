@@ -9,7 +9,7 @@ import {
 	fetchCompletedEvent,
 	getDWalletSecpState,
 	getObjectWithType, isActiveDWallet,
-	isDWalletCap,
+	isDWalletCap, isPresign,
 	isStartSessionEvent,
 	mockedProtocolPublicParameters,
 	MPCKeyScheme,
@@ -46,11 +46,14 @@ export async function sign(
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
 	let activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
+	let presign = await getObjectWithType(conf, presignID, isPresign);
 	const partialSignatures = create_sign_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
+		bcs.vector(bcs.vector(bcs.u8())).serialize([presign]),
+		bcs.vector(bcs.u8()).serialize(message),
 	);
 	// TODO: replace with mock
 	const centralizedSignedMessage = new Uint8Array();

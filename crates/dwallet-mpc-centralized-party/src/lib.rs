@@ -72,7 +72,7 @@ enum Hash {
     SHA256 = 1,
 }
 
-type SignedMessages = Vec<u8>;
+type SignedMessage = Vec<u8>;
 type EncryptionOfSecretShareProof = EncryptionOfDiscreteLogProofWithoutCtx<
     SCALAR_LIMBS,
     SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
@@ -193,11 +193,11 @@ pub fn advance_centralized_sign_party(
     key_scheme: u8,
     decentralized_party_dkg_public_output: Vec<u8>,
     centralized_party_secret_key_share: Vec<u8>,
-    presigns: Vec<Vec<u8>>,
-    messages: Vec<Vec<u8>>,
+    presign: Vec<u8>,
+    message: Vec<u8>,
     hash_type: u8,
-    presign_session_ids: Vec<String>,
-) -> anyhow::Result<Vec<SignedMessages>> {
+    presign_session_id: String,
+) -> anyhow::Result<SignedMessage> {
     let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_public_output)?;
     let centralized_public_output = twopc_mpc::class_groups::DKGCentralizedPartyOutput::<
         { secp256k1::SCALAR_LIMBS },
@@ -207,41 +207,32 @@ pub fn advance_centralized_sign_party(
         public_key: decentralized_output.public_key,
         decentralized_party_public_key_share: decentralized_output.public_key_share,
     };
-    let signed_messages: Vec<_> = messages
-        .iter()
-        .enumerate()
-        .map(|(index, message)| {
-            let session_id =
-                commitment::CommitmentSizedNumber::from_le_hex(&presign_session_ids[index]);
-            let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
-                bcs::from_bytes(&presigns[index])?;
-            let hashed_message = message_digest(&message, &hash_type.try_into()?)
-                .context("Message digest failed")?;
-            let centralized_party_public_input =
-                <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedPartyPublicInput::from(
-                    (
-                        hashed_message,
-                        centralized_public_output.clone(),
-                        presign,
-                        bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-                            protocol_public_parameters.clone(),
-                            key_scheme,
-                        )?)?,
-                    ),
-                );
+    let session_id = commitment::CommitmentSizedNumber::from_le_hex(&presign_session_id);
+    let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
+        bcs::from_bytes(&presign)?;
+    let hashed_message =
+        message_digest(&message, &hash_type.try_into()?).context("Message digest failed")?;
+    let centralized_party_public_input =
+        <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedPartyPublicInput::from((
+            hashed_message,
+            centralized_public_output.clone(),
+            presign,
+            bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
+                protocol_public_parameters.clone(),
+                key_scheme,
+            )?)?,
+        ));
 
-            let round_result = SignCentralizedParty::advance(
-                (),
-                &bcs::from_bytes(&centralized_party_secret_key_share)?,
-                &centralized_party_public_input,
-                &mut OsRng,
-            )
-            .context("advance() failed on the SignCentralizedParty")?;
+    let round_result = SignCentralizedParty::advance(
+        (),
+        &bcs::from_bytes(&centralized_party_secret_key_share)?,
+        &centralized_party_public_input,
+        &mut OsRng,
+    )
+    .context("advance() failed on the SignCentralizedParty")?;
 
-            Ok(bcs::to_bytes(&round_result.outgoing_message)?)
-        })
-        .collect::<anyhow::Result<Vec<_>>>()?;
-    Ok(signed_messages)
+    let signed_message = bcs::to_bytes(&round_result.outgoing_message)?;
+    Ok(signed_message)
 }
 
 fn protocol_public_parameters_by_key_scheme(
