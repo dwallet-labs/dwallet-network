@@ -63,13 +63,10 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 	);
 }
 
-export async function createDWallet(
-	conf: Config,
-	protocolPublicParameters: Uint8Array,
-): Promise<string> {
+export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
-	await launchDKGSecondRound(
+	return await launchDKGSecondRound(
 		conf,
 		firstRoundOutputResult,
 		protocolPublicParameters,
