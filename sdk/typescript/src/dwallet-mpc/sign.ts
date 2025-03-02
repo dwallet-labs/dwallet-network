@@ -42,6 +42,7 @@ export async function sign(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
 
+
 	);
 	// TODO: replace with mock
 	const centralizedSignedMessage = new Uint8Array();
