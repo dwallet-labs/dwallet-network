@@ -20,6 +20,7 @@ import {
 	getDWalletSecpState,
 	mockedProtocolPublicParameters,
 } from '../../src/dwallet-mpc/globals';
+import { presign } from '../../src/dwallet-mpc/presign';
 import { dkgFirstRoundMock } from './mocks';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -58,8 +59,8 @@ describe('Test dWallet MPC', () => {
 		await getOrCreateClassGroupsKeyPair(conf);
 		await delay(checkpointCreationTime);
 
-		let dwalletState = await getDWalletSecpState(conf);
-		let firstRoundOutputResult = await createDKGFirstRoundOutputMock(
+		const dwalletState = await getDWalletSecpState(conf);
+		const firstRoundOutputResult = await createDKGFirstRoundOutputMock(
 			conf,
 			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 		);
@@ -78,5 +79,33 @@ describe('Test dWallet MPC', () => {
 			Buffer.from(dkgFirstRoundMock.centralizedPublicOutput, 'base64'),
 		);
 		console.log(`dWallet has been created successfully: ${firstRoundOutputResult.dwalletID}`);
+	});
+
+	it('should run presign', async () => {
+		await getOrCreateClassGroupsKeyPair(conf);
+		await delay(checkpointCreationTime);
+
+		const dwalletState = await getDWalletSecpState(conf);
+		const firstRoundOutputResult = await createDKGFirstRoundOutputMock(
+			conf,
+			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
+		);
+		await delay(checkpointCreationTime);
+		await dkgSecondRoundMoveCall(
+			conf,
+			dwalletState,
+			{
+				sessionID: dkgFirstRoundMock.sessionID,
+				dwalletCapID: firstRoundOutputResult.dwalletCapID,
+				output: Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
+				dwalletID: firstRoundOutputResult.dwalletID,
+			},
+			Buffer.from(dkgFirstRoundMock.centralizedPublicKeyShareAndProof, 'base64'),
+			Buffer.from(dkgFirstRoundMock.encryptedSecretShareAndProof, 'base64'),
+			Buffer.from(dkgFirstRoundMock.centralizedPublicOutput, 'base64'),
+		);
+		console.log(`dWallet has been created successfully: ${firstRoundOutputResult.dwalletID}`);
+		const presignCompletion = await presign(conf, firstRoundOutputResult.dwalletID);
+		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 	});
 });

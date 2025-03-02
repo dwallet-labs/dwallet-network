@@ -1343,6 +1343,11 @@ It provides details about the presign objects created and their associated metad
 <dd>
  The session ID.
 </dd>
+<dt>
+<code>presign_id: <a href="../../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
 </dl>
 
 
@@ -3419,7 +3424,8 @@ emits a <code>CompletedPresignEvent</code>, and transfers the result to the init
 ) {
     <b>let</b> (dwallet, _) = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_and_public_output_mut">get_active_dwallet_and_public_output_mut</a>(dwallet_id);
     <b>let</b> id = object::new(ctx);
-    dwallet.ecdsa_presigns.add(id.to_inner(), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSAPresign">ECDSAPresign</a> {
+    <b>let</b> presign_id = id.to_inner();
+    dwallet.ecdsa_presigns.add(presign_id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSAPresign">ECDSAPresign</a> {
         id,
         dwallet_id,
         presign,
@@ -3427,6 +3433,7 @@ emits a <code>CompletedPresignEvent</code>, and transfers the result to the init
     event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedECDSAPresignEvent">CompletedECDSAPresignEvent</a> {
         dwallet_id,
         session_id,
+        presign_id,
     });
 }
 </code></pre>
@@ -4157,8 +4164,8 @@ the function will abort with this error.
                     rejected,
                 );
             } <b>else</b> <b>if</b> (message_data_type == 8) {
-                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
-                <b>let</b> session_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> presign = bcs_body.peel_vec_u8();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_presign">respond_ecdsa_presign</a>(dwallet_id, session_id, presign, ctx)
             };

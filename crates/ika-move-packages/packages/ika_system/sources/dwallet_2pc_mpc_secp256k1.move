@@ -130,6 +130,10 @@ public fun create_first_round_dwallet_mock(self: &mut DWallet2PcMpcSecp256K1, fi
     self.inner_mut().create_first_round_dwallet_mock(first_round_output, dwallet_network_decryption_key_id, ctx)
 }
 
+public fun mock_create_dwallet(self: &mut DWallet2PcMpcSecp256K1, output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext): DWalletCap {
+    self.inner_mut().mock_create_dwallet(output, dwallet_network_decryption_key_id, ctx)
+}
+
 public fun request_re_encrypt_user_share_for(
     self: &mut DWallet2PcMpcSecp256K1,
     dwallet_id: ID,

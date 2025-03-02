@@ -138,10 +138,7 @@ impl MPCProtocolInitData {
     /// Returns `true` if the round is a single message, which is
     /// part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
-        matches!(
-            self,
-            MPCProtocolInitData::Sign(..) | MPCProtocolInitData::Presign(..)
-        )
+        matches!(self, MPCProtocolInitData::Sign(..))
     }
 
     /// Is a special Round that indicates an initialization of a batch session.
@@ -428,19 +425,11 @@ impl DWalletMPCEventTrait for SignData {
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartPresignFirstRoundEvent {
-    /// Unique identifier for the MPC session.
-    pub session_id: ObjectID,
-    /// The address of the user that initiated this session.
-    pub initiator: SuiAddress,
     /// The `DWallet` object's ID associated with the DKG output.
     pub dwallet_id: ObjectID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
-    /// A unique identifier for the entire batch,
-    /// used to collect all the presigns in the batch and complete it.
-    pub batch_session_id: ObjectID,
-    /// The dWallet mpc network key version
-    pub dwallet_mpc_network_key_version: u8,
+    pub dwallet_network_decryption_key_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for StartPresignFirstRoundEvent {
@@ -449,9 +438,9 @@ impl DWalletMPCEventTrait for StartPresignFirstRoundEvent {
     /// from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_package_id,
+            address: *packages_config.ika_system_package_id,
             name: START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
