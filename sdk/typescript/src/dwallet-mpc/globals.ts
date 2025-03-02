@@ -54,6 +54,41 @@ export async function getDWalletCap(conf: Config, dwalletCapID: string): Promise
 	return dwalletCapFields;
 }
 
+export async function getActiveDWallet(conf: Config, dwalletID: string): Promise<ActiveDWallet> {
+	const dwalletCapObj = await conf.client.getObject({
+		id: dwalletID,
+		options: { showContent: true },
+	});
+	const dwalletCapObjContent = dwalletCapObj?.data?.content;
+	if (!isMoveObject(dwalletCapObjContent)) {
+		throw new Error('Invalid DWallet cap object');
+	}
+	const dwalletCapFields = dwalletCapObjContent.fields;
+	if (!isActiveDWallet(dwalletCapFields)) {
+		throw new Error('Invalid DWallet cap fields');
+	}
+	return dwalletCapFields;
+}
+
+export async function getObjectWithType<TObject>(
+	conf: Config,
+	objectID: string,
+	isObject: (obj: any) => obj is TObject,
+): Promise<TObject> {
+	const obj = await conf.client.getObject({
+		id: objectID,
+		options: { showContent: true },
+	});
+	if (!isMoveObject(obj.data?.content)) {
+		throw new Error('Invalid object');
+	}
+	const objContent = obj.data?.content.fields;
+	if (!isObject(objContent)) {
+		throw new Error('Invalid object fields');
+	}
+	return objContent;
+}
+
 // Mocked protocol parameters used for testing purposes in non-production environments.
 export const mockedProtocolPublicParameters = Uint8Array.from(
 	Buffer.from(
@@ -244,4 +279,16 @@ export interface DWalletCap {
 
 export function isDWalletCap(obj: any): obj is DWalletCap {
 	return !!obj?.dwallet_id;
+}
+
+interface ActiveDWallet {
+	state: {
+		fields: {
+			public_output: Uint8Array;
+		};
+	};
+}
+
+export function isActiveDWallet(obj: any): obj is ActiveDWallet {
+	return obj?.state?.fields?.public_output !== undefined;
 }

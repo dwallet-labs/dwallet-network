@@ -1,5 +1,4 @@
 ;
-
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Buffer } from 'buffer';
@@ -11,38 +10,8 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import {
-	checkpointCreationTime,
-	delay,
-	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
-	DWALLET_NETWORK_VERSION,
-	getDWalletCap,
-	getDwalletSecp256k1ObjID,
-	getDWalletSecpState,
-	getInitialSharedVersion,
-	isAddressObjectOwner,
-	isDWalletCap,
-	isIKASystemStateInner,
-	isMoveObject,
-	MPCKeyScheme,
-	SUI_PACKAGE_ID
-} from './globals.js';
+import { checkpointCreationTime, delay, DWALLET_ECDSAK1_MOVE_MODULE_NAME, DWALLET_NETWORK_VERSION, getDWalletCap, getDwalletSecp256k1ObjID, getDWalletSecpState, getInitialSharedVersion, isActiveDWallet, isAddressObjectOwner, isIKASystemStateInner, isMoveObject, MPCKeyScheme, SUI_PACKAGE_ID } from './globals.js';
 import type { Config, SharedObjectData } from './globals.ts';
-
-
-;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 interface StartDKGFirstRoundEvent {
@@ -58,14 +27,6 @@ interface WaitingForUserDWallet {
 	state: {
 		fields: {
 			first_round_output: Uint8Array;
-		};
-	};
-}
-
-interface ActiveDWallet {
-	state: {
-		fields: {
-			public_output: Uint8Array;
 		};
 	};
 }
@@ -224,8 +185,6 @@ export async function mockCreateDWallet(
 	};
 }
 
-
-
 export async function dkgSecondRoundMoveCall(
 	conf: Config,
 	dWalletStateData: SharedObjectData,
@@ -345,10 +304,6 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 
 function isWaitingForUserDWallet(obj: any): obj is WaitingForUserDWallet {
 	return obj?.state?.fields?.first_round_output !== undefined;
-}
-
-function isActiveDWallet(obj: any): obj is ActiveDWallet {
-	return obj?.state?.fields?.public_output !== undefined;
 }
 
 async function waitForDKGSecondRoundCompletion(
