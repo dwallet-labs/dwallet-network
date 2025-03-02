@@ -38,22 +38,6 @@ export function delay(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function getDWalletCap(conf: Config, dwalletCapID: string): Promise<DWalletCap> {
-	const dwalletCapObj = await conf.client.getObject({
-		id: dwalletCapID,
-		options: { showContent: true },
-	});
-	const dwalletCapObjContent = dwalletCapObj?.data?.content;
-	if (!isMoveObject(dwalletCapObjContent)) {
-		throw new Error('Invalid DWallet cap object');
-	}
-	const dwalletCapFields = dwalletCapObjContent.fields;
-	if (!isDWalletCap(dwalletCapFields)) {
-		throw new Error('Invalid DWallet cap fields');
-	}
-	return dwalletCapFields;
-}
-
 export async function getActiveDWallet(conf: Config, dwalletID: string): Promise<ActiveDWallet> {
 	const dwalletCapObj = await conf.client.getObject({
 		id: dwalletID,
