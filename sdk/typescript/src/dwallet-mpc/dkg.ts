@@ -1,5 +1,6 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import { Buffer } from 'buffer';
 import {
 	create_dkg_centralized_output,
 	encrypt_secret_share,
@@ -63,7 +64,10 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 	);
 }
 
-export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array): Promise<string> {
+export async function createDWallet(
+	conf: Config,
+	protocolPublicParameters: Uint8Array,
+): Promise<string> {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	await launchDKGSecondRound(
@@ -81,6 +85,19 @@ export async function launchDKGSecondRound(
 	protocolPublicParameters: Uint8Array,
 	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
 ) {
+	// print all the values arguments i pass as base64 strings
+
+	console.log(
+		'firstRoundOutputResult',
+		Buffer.from(firstRoundOutputResult.output).toString('base64'),
+	);
+	console.log('protocolPublicParameters', Buffer.from(protocolPublicParameters).toString('base64'));
+	console.log(
+		'classGroupsSecpKeyPair.encryptionKey',
+		Buffer.from(classGroupsSecpKeyPair.encryptionKey).toString('base64'),
+	);
+	console.log('firstRoundOutputResult.sessionID', firstRoundOutputResult.sessionID);
+
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			protocolPublicParameters,
