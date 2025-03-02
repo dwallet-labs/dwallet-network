@@ -47,9 +47,9 @@ export async function sign(
 ): Promise<CompletedSignEvent> {
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
-	let activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
-	let presign = await getObjectWithType(conf, presignID, isPresign);
-	const partialSignatures = create_sign_centralized_output(
+	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
+	const presign = await getObjectWithType(conf, presignID, isPresign);
+	const centralizedSignedMessage = create_sign_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
@@ -57,10 +57,8 @@ export async function sign(
 		presign.presign,
 		message,
 		hash,
-		bcs.vector(bcs.u8()).serialize(presign.id.slice(2)),
+		bcs.string().serialize(presign.id.slice(2)).toBytes(),
 	);
-	// TODO: replace with mock
-	const centralizedSignedMessage = new Uint8Array();
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
 	const messageApproval = tx.moveCall({
