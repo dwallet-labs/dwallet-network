@@ -6,7 +6,7 @@ import {
 } from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
-
+import {Buffer} from 'buffer';
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import {
@@ -69,12 +69,14 @@ export async function createDWallet(
 ): Promise<string> {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
-	await launchDKGSecondRound(
+	const dwalletOutput = await launchDKGSecondRound(
 		conf,
 		firstRoundOutputResult,
 		protocolPublicParameters,
 		classGroupsSecpKeyPair,
 	);
+	// log the output in base64
+	console.log('dWallet output:', Buffer.from(dwalletOutput).toString('base64'));
 	return firstRoundOutputResult.dwalletID;
 }
 
@@ -83,7 +85,7 @@ export async function launchDKGSecondRound(
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	protocolPublicParameters: Uint8Array,
 	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
-) {
+) : Promise<Uint8Array>{
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			protocolPublicParameters,
@@ -99,7 +101,7 @@ export async function launchDKGSecondRound(
 		classGroupsSecpKeyPair.encryptionKey,
 	);
 
-	await dkgSecondRoundMoveCall(
+	return await dkgSecondRoundMoveCall(
 		conf,
 		dWalletStateData,
 		firstRoundOutputResult,
