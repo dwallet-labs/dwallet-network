@@ -7,9 +7,8 @@ import {
 	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	fetchCompletedEvent,
-	getActiveDWallet,
 	getDWalletSecpState,
-	getObjectWithType,
+	getObjectWithType, isActiveDWallet,
 	isDWalletCap,
 	isStartSessionEvent,
 	mockedProtocolPublicParameters,
@@ -46,7 +45,7 @@ export async function sign(
 ): Promise<CompletedSignEvent> {
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
-	let activeDWallet = await getActiveDWallet(conf, dwalletID);
+	let activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
 	const partialSignatures = create_sign_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
