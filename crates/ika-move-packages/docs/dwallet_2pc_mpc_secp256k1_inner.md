@@ -1349,6 +1349,11 @@ It provides details about the presign objects created and their associated metad
 </dt>
 <dd>
 </dd>
+<dt>
+<code>presign: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+</dd>
 </dl>
 
 
@@ -3469,6 +3474,7 @@ emits a <code>CompletedPresignEvent</code>, and transfers the result to the init
         dwallet_id,
         session_id,
         presign_id,
+        presign
     });
 }
 </code></pre>
