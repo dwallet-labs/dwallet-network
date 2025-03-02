@@ -39,7 +39,7 @@ export function delay(ms: number) {
 }
 
 export interface Presign {
-	id: string;
+	id: { id: string };
 	dwallet_id: string;
 	presign: Uint8Array;
 }

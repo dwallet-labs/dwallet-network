@@ -115,10 +115,7 @@ pub fn create_sign_centralized_output(
     presign: Vec<u8>,
     message: Vec<u8>,
     hash_type: u8,
-    session_id: Vec<u8>,
 ) -> Result<JsValue, JsError> {
-    let session_id: String =
-        bcs::from_bytes(&session_id).map_err(|e| JsError::new(&e.to_string()))?;
     let signed_message = advance_centralized_sign_party(
         protocol_public_parameters,
         key_scheme,
@@ -127,7 +124,6 @@ pub fn create_sign_centralized_output(
         presign,
         message,
         hash_type,
-        session_id,
     )
     .map_err(|e| JsError::new(&e.to_string()))?;
 

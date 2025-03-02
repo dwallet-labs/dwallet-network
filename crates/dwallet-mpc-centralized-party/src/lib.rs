@@ -196,7 +196,6 @@ pub fn advance_centralized_sign_party(
     presign: Vec<u8>,
     message: Vec<u8>,
     hash_type: u8,
-    presign_session_id: String,
 ) -> anyhow::Result<SignedMessage> {
     let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_public_output)?;
     let centralized_public_output = twopc_mpc::class_groups::DKGCentralizedPartyOutput::<
@@ -207,7 +206,6 @@ pub fn advance_centralized_sign_party(
         public_key: decentralized_output.public_key,
         decentralized_party_public_key_share: decentralized_output.public_key_share,
     };
-    let session_id = commitment::CommitmentSizedNumber::from_le_hex(&presign_session_id);
     let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
         bcs::from_bytes(&presign)?;
     let hashed_message =
