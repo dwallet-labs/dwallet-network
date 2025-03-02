@@ -108,4 +108,32 @@ describe('Test dWallet MPC', () => {
 		const presignCompletion = await presign(conf, firstRoundOutputResult.dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 	});
+
+	it('should run sign', async () => {
+		await getOrCreateClassGroupsKeyPair(conf);
+		await delay(checkpointCreationTime);
+
+		const dwalletState = await getDWalletSecpState(conf);
+		const firstRoundOutputResult = await createDKGFirstRoundOutputMock(
+			conf,
+			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
+		);
+		await delay(checkpointCreationTime);
+		await dkgSecondRoundMoveCall(
+			conf,
+			dwalletState,
+			{
+				sessionID: dkgFirstRoundMock.sessionID,
+				dwalletCapID: firstRoundOutputResult.dwalletCapID,
+				output: Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
+				dwalletID: firstRoundOutputResult.dwalletID,
+			},
+			Buffer.from(dkgFirstRoundMock.centralizedPublicKeyShareAndProof, 'base64'),
+			Buffer.from(dkgFirstRoundMock.encryptedSecretShareAndProof, 'base64'),
+			Buffer.from(dkgFirstRoundMock.centralizedPublicOutput, 'base64'),
+		);
+		console.log(`dWallet has been created successfully: ${firstRoundOutputResult.dwalletID}`);
+		const presignCompletion = await presign(conf, firstRoundOutputResult.dwalletID);
+		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+	});
 });

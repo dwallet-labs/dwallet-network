@@ -490,6 +490,7 @@ public struct CompletedECDSAPresignEvent has copy, drop {
     /// The session ID.
     session_id: ID,
     presign_id: ID,
+    presign: vector<u8>,
 }
 
 // END OF PRESIGN TYPES
@@ -1369,6 +1370,7 @@ public(package) fun respond_ecdsa_presign(
         dwallet_id,
         session_id,
         presign_id,
+        presign
     });
 }
 
