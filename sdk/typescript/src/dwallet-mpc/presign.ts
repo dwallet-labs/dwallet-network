@@ -130,8 +130,7 @@ export async function mockCreatePresign(
 	conf: Config,
 	mockPresign: Uint8Array,
 	dwalletID: string,
-// ): Promise<CompletedPresignEvent> {
-) {
+): Promise<CompletedPresignEvent> {
 	const tx = new Transaction();
 	const dwalletStateObjData = await getDWalletSecpState(conf);
 	const stateArg = tx.sharedObjectRef({
@@ -153,4 +152,9 @@ export async function mockCreatePresign(
 		},
 	});
 	console.log(result);
+	const completedPresignEvent = result.events?.at(0)?.parsedJson;
+	if (!isCompletedPresignEvent(completedPresignEvent)) {
+		throw new Error('invalid completed presign event');
+	}
+	return completedPresignEvent;
 }
