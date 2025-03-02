@@ -28,7 +28,6 @@ use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
 use std::fmt;
 use std::marker::PhantomData;
-use rand_chacha::{ChaCha20Core, ChaCha20Rng};
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
@@ -131,8 +130,7 @@ pub fn create_dkg_output(
     )?)?;
 
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
-    let seed = [1u8;32];
-    let mut rng = ChaCha20Rng::from(ChaCha20Core::from_seed(seed));
+
     let round_result = DKGCentralizedParty::advance(
         decentralized_first_round_public_output.clone(),
         &(),
@@ -307,8 +305,6 @@ pub fn encrypt_secret_key_share_and_prove(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
-    let seed = [1u8;32];
-    let mut rng = ChaCha20Rng::from(ChaCha20Core::from_seed(seed));
     let protocol_public_params = protocol_public_parameters();
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
         SCALAR_LIMBS,
@@ -328,7 +324,7 @@ pub fn encrypt_secret_key_share_and_prove(
         language_public_parameters
             .encryption_scheme_public_parameters
             .randomness_space_public_parameters(),
-        &mut rng,
+        &mut OsRng,
     )?;
     let parsed_secret_key_share = bcs::from_bytes(&secret_key_share)?;
     let witness = (parsed_secret_key_share, randomness).into();
@@ -336,7 +332,7 @@ pub fn encrypt_secret_key_share_and_prove(
         &PhantomData,
         &language_public_parameters,
         vec![witness],
-        &mut rng,
+        &mut OsRng,
     )?;
     // todo(scaly): why is it derived from statements?
     let (encryption_of_discrete_log, _) = statements.first().unwrap().clone().into();
@@ -407,7 +403,7 @@ pub fn decrypt_user_share_inner(
         .decrypt(&ciphertext, &public_parameters).into() else {
         return Err(anyhow!("Decryption failed"));
     };
-    let secret_share_bytes = U256::from(&plaintext.value())
+    let secret_share_bytes = crypto_bigint::U256::from(&plaintext.value())
         .to_be_bytes()
         .to_vec();
     Ok(secret_share_bytes)
@@ -423,7 +419,7 @@ fn cg_secp256k1_public_key_share_from_secret_share(
             &public_parameters,
         )?;
     Ok(
-        generator_group_element.scale(&Uint::<{ SCALAR_LIMBS }>::from_be_slice(
+        generator_group_element.scale(&crypto_bigint::Uint::<{ SCALAR_LIMBS }>::from_be_slice(
             &secret_key_share,
         )),
     )
