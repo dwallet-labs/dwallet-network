@@ -65,7 +65,7 @@ describe('Test dWallet MPC', () => {
 			Buffer.from(dkgFirstRoundMock.firstRoundOutput, 'base64'),
 		);
 		await delay(checkpointCreationTime);
-		await dkgSecondRoundMoveCall(
+		const output = await dkgSecondRoundMoveCall(
 			conf,
 			dwalletState,
 			{
@@ -79,6 +79,8 @@ describe('Test dWallet MPC', () => {
 			Buffer.from(dkgFirstRoundMock.centralizedPublicOutput, 'base64'),
 		);
 		console.log(`dWallet has been created successfully: ${firstRoundOutputResult.dwalletID}`);
+		const base64Output = Buffer.from(output).toString('base64');
+		console.log(`dWallet second round output base64: ${base64Output}`);
 	});
 
 	it('should run presign', async () => {
@@ -107,6 +109,10 @@ describe('Test dWallet MPC', () => {
 		console.log(`dWallet has been created successfully: ${firstRoundOutputResult.dwalletID}`);
 		const presignCompletion = await presign(conf, firstRoundOutputResult.dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		// print the presign base64
+		const presignOutput = presignCompletion.presign;
+		const presignBase64 = Buffer.from(presignOutput).toString('base64');
+		console.log(`presign base64: ${presignBase64}`);
 	});
 
 	it('should run sign', async () => {

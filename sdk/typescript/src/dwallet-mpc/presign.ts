@@ -1,19 +1,19 @@
+;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
-import {
-	delay,
-	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
-	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
-	getDWalletSecpState,
-	SUI_PACKAGE_ID,
-} from './globals.js';
+
+
+import { delay, DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME, DWALLET_ECDSAK1_MOVE_MODULE_NAME, getDWalletSecpState, SUI_PACKAGE_ID } from './globals.js';
 import type { Config } from './globals.ts';
+
 
 interface CompletedPresignEvent {
 	presign_id: string;
 	session_id: string;
+	presign: Uint8Array;
 }
 
 interface StartSessionEvent {
@@ -73,7 +73,9 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 }
 
 function isCompletedPresignEvent(event: any): event is CompletedPresignEvent {
-	return event.presign_id !== undefined;
+	return (
+		event.presign_id !== undefined && event.presign !== undefined && event.session_id !== undefined
+	);
 }
 
 function isStartSessionEvent(event: any): event is StartSessionEvent {
@@ -119,4 +121,62 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 			c.timeout / (60 * 1000)
 		} minutes (${seconds} seconds passed).`,
 	);
+}
+
+/**
+ * Creates a valid mock output of the first DKG blockchain round.
+ */
+export async function mockCreatePresign(
+	conf: Config,
+	mockPresign: Uint8Array,
+	dwalletID: string,
+): Promise<CompletedPresignEvent> {
+	const tx = new Transaction();
+	const dwalletStateObjData = await getDWalletSecpState(conf);
+	const stateArg = tx.sharedObjectRef({
+		objectId: dwalletStateObjData.object_id,
+		initialSharedVersion: dwalletStateObjData.initial_shared_version,
+		mutable: true,
+	});
+
+// public fun mock_create_presign(self: &mut DWallet2PcMpcSecp256K1, presign: vector<u8>, dwallet_id: ID, ctx: &mut TxContext) {
+	
+	
+	const firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockPresign));
+	const result = await conf.client.signAndExecuteTransaction({
+		signer: conf.suiClientKeypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+			showEvents: true,
+		},
+	});
+	const createdDWalletCap = result?.effects?.created?.find(
+		(obj) =>
+			isAddressObjectOwner(obj.owner) &&
+			obj.owner.AddressOwner === conf.suiClientKeypair.toSuiAddress(),
+	);
+	if (!dwalletCap || createdDWalletCap === undefined) {
+		throw new Error('Unable to create the DWallet cap');
+	}
+	await delay(checkpointCreationTime);
+	const dwalletCapObj = await conf.client.getObject({
+		id: createdDWalletCap.reference.objectId,
+		options: { showContent: true },
+	});
+	const dwalletCapObjContent = dwalletCapObj?.data?.content;
+	if (!isMoveObject(dwalletCapObjContent)) {
+		throw new Error('Invalid DWallet cap object');
+	}
+	const dwalletCapFields = dwalletCapObjContent.fields;
+	if (!isDWalletCap(dwalletCapFields)) {
+		throw new Error('Invalid DWallet cap fields');
+	}
+
+	return {
+		dwalletCapID: createdDWalletCap.reference.objectId,
+		dwalletID: dwalletCapFields.dwallet_id,
+		sessionID: '',
+		output: mockPresign,
+	};
 }

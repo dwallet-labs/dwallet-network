@@ -166,6 +166,66 @@ export async function createDKGFirstRoundOutputMock(
 	};
 }
 
+/**
+ * Creates a valid mock output of the first DKG blockchain round.
+ */
+export async function mockCreateDWallet(
+	conf: Config,
+	mockOutput: Uint8Array,
+): Promise<DKGFirstRoundOutputResult> {
+	const tx = new Transaction();
+	const dwalletStateObjData = await getDWalletSecpState(conf);
+	const stateArg = tx.sharedObjectRef({
+		objectId: dwalletStateObjData.object_id,
+		initialSharedVersion: dwalletStateObjData.initial_shared_version,
+		mutable: true,
+	});
+	const firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockOutput));
+	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(conf);
+	const networkDecryptionKeyIDArg = tx.pure.id(networkDecryptionKeyID);
+	const dwalletCap = tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::mock_create_dwallet`,
+		arguments: [stateArg, firstRoundOutputArg, networkDecryptionKeyIDArg],
+	});
+	tx.transferObjects([dwalletCap], conf.suiClientKeypair.toSuiAddress());
+	const result = await conf.client.signAndExecuteTransaction({
+		signer: conf.suiClientKeypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+			showEvents: true,
+		},
+	});
+	const createdDWalletCap = result?.effects?.created?.find(
+		(obj) =>
+			isAddressObjectOwner(obj.owner) &&
+			obj.owner.AddressOwner === conf.suiClientKeypair.toSuiAddress(),
+	);
+	if (!dwalletCap || createdDWalletCap === undefined) {
+		throw new Error('Unable to create the DWallet cap');
+	}
+	await delay(checkpointCreationTime);
+	const dwalletCapObj = await conf.client.getObject({
+		id: createdDWalletCap.reference.objectId,
+		options: { showContent: true },
+	});
+	const dwalletCapObjContent = dwalletCapObj?.data?.content;
+	if (!isMoveObject(dwalletCapObjContent)) {
+		throw new Error('Invalid DWallet cap object');
+	}
+	const dwalletCapFields = dwalletCapObjContent.fields;
+	if (!isDWalletCap(dwalletCapFields)) {
+		throw new Error('Invalid DWallet cap fields');
+	}
+
+	return {
+		dwalletCapID: createdDWalletCap.reference.objectId,
+		dwalletID: dwalletCapFields.dwallet_id,
+		sessionID: '',
+		output: mockOutput,
+	};
+}
+
 function isDWalletCap(obj: any): obj is DWalletCap {
 	return !!obj?.dwallet_id;
 }
@@ -177,7 +237,7 @@ export async function dkgSecondRoundMoveCall(
 	centralizedPublicKeyShareAndProof: Uint8Array,
 	encryptedUserShareAndProof: Uint8Array,
 	centralizedPublicOutput: Uint8Array,
-) {
+): Promise<Uint8Array> {
 	const tx = new Transaction();
 	const dwalletStateArg = tx.sharedObjectRef({
 		objectId: dWalletStateData.object_id,
@@ -222,7 +282,7 @@ export async function dkgSecondRoundMoveCall(
 	if (result.errors !== undefined) {
 		throw new Error(`DKG second round failed with errors ${result.errors}`);
 	}
-	await waitForDKGSecondRoundCompletion(conf, firstRoundOutputResult.dwalletID);
+	return await waitForDKGSecondRoundCompletion(conf, firstRoundOutputResult.dwalletID);
 }
 
 interface DKGFirstRoundOutputResult {
