@@ -8,8 +8,10 @@ import {
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	fetchCompletedEvent,
 	getDWalletSecpState,
-	getObjectWithType, isActiveDWallet,
-	isDWalletCap, isPresign,
+	getObjectWithType,
+	isActiveDWallet,
+	isDWalletCap,
+	isPresign,
 	isStartSessionEvent,
 	mockedProtocolPublicParameters,
 	MPCKeyScheme,
@@ -52,8 +54,10 @@ export async function sign(
 		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
-		bcs.vector(bcs.vector(bcs.u8())).serialize([presign]),
-		bcs.vector(bcs.u8()).serialize(message),
+		presign.presign,
+		message,
+		hash,
+		bcs.vector(bcs.u8()).serialize(presign.id.slice(2)),
 	);
 	// TODO: replace with mock
 	const centralizedSignedMessage = new Uint8Array();

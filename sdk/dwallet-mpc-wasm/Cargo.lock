@@ -64,6 +64,12 @@ checksum = "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf"
 
 [[package]]
 name = "base64"
+version = "0.21.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
+
+[[package]]
+name = "base64"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
@@ -286,7 +292,7 @@ name = "class_groups_constants"
 version = "1.0.0"
 dependencies = [
  "anyhow",
- "base64",
+ "base64 0.21.7",
  "bcs",
  "class_groups",
  "group 0.1.0",
@@ -1764,7 +1770,7 @@ version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6b6f7f2fcb69f747921f79f3926bd1e203fce4fef62c268dd3abfb6d86029aa"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "chrono",
  "hex",
  "indexmap 1.9.3",
@@ -2062,7 +2068,7 @@ name = "twopc_mpc"
 version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bcs",
  "class_groups",
  "commitment",
