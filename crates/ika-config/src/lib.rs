@@ -26,6 +26,7 @@ pub const IKA_CONFIG_DIR: &str = "ika_config";
 pub const IKA_NETWORK_CONFIG: &str = "network.yaml";
 pub const IKA_FULLNODE_CONFIG: &str = "fullnode.yaml";
 pub const IKA_CLIENT_CONFIG: &str = "client.yaml";
+pub const IKA_SUI_CONFIG: &str = "ika_sui_config.yaml";
 pub const IKA_KEYSTORE_FILENAME: &str = "ika.keystore";
 pub const IKA_KEYSTORE_ALIASES_FILENAME: &str = "ika.aliases";
 pub const IKA_BENCHMARK_GENESIS_GAS_KEYSTORE_FILENAME: &str = "benchmark.keystore";

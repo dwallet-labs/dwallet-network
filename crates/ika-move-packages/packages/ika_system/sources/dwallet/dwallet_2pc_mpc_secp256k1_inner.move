@@ -1001,6 +1001,31 @@ public(package) fun mock_create_dwallet(
     dwallet_cap
 }
 
+// TODO (#493): Remove mock functions
+public(package) fun mock_create_dwallet(
+    self: &mut DWallet2PcMpcSecp256K1InnerV1, output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
+): DWalletCap {
+    let id = object::new(ctx);
+    let dwallet_id = id.to_inner();
+    let dwallet_cap = DWalletCap {
+        id: object::new(ctx),
+        dwallet_id,
+    };
+    let dwallet_cap_id = object::id(&dwallet_cap);
+    self.dwallets.add(dwallet_id, DWallet {
+        id,
+        dwallet_cap_id,
+        dwallet_network_decryption_key_id,
+        encrypted_user_secret_key_shares: object_table::new(ctx),
+        ecdsa_presigns: object_table::new(ctx),
+        ecdsa_signs: object_table::new(ctx),
+        state: DWalletState::Active {
+            public_output: output
+        },
+    });
+    dwallet_cap
+}
+
 /// Initiates the second round of the Distributed Key Generation (DKG) process
 /// and emits an event for validators to begin their participation in this round.
 ///
