@@ -2144,7 +2144,7 @@ impl AuthorityPerEpochStore {
             MPCProtocolInitData::BatchedPresign(_) => Ok(ConsensusCertificateResult::Ignored),
             MPCProtocolInitData::Presign(init_event_data) => {
                 let tx = MessageKind::DwalletPresign(PresignOutput {
-                    presign: bcs::to_bytes(&output)?,
+                    presign: output,
                     session_id: bcs::to_bytes(&session_info.session_id)?,
                     dwallet_id: init_event_data.dwallet_id.to_vec(),
                 });

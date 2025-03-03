@@ -32,6 +32,7 @@ use std::vec::Vec;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
 use tracing::warn;
+use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 
 pub mod batches_manager;
 mod cryptographic_computations_orchestrator;
@@ -426,6 +427,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         } => {
             let public_output: P::PublicOutputValue = public_output.into();
             let public_output = bcs::to_bytes(&public_output)?;
+            let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
+                bcs::from_bytes(&public_output)?;
             let private_output = bcs::to_bytes(&private_output)?;
             mpc::AsynchronousRoundResult::Finalize {
                 malicious_parties,
