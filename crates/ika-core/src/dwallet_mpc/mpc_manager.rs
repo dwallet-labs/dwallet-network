@@ -680,8 +680,6 @@ impl DWalletMPCManager {
                     "received a message for an MPC session ID: `{:?}` which does not exist",
                     message.session_id
                 );
-                self.malicious_handler
-                    .report_malicious_actors(&vec![message.authority]);
                 return Ok(());
             }
         };
