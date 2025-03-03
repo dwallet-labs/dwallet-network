@@ -82,7 +82,7 @@ impl<D: DWalletMPCEventTrait> DWalletMPCEventTrait for StartSignEvent<D> {
             address: *packages_config.ika_system_package_id,
             name: START_SIGN_ROUND_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![D::type_(packages_config).into()],
+            type_params: vec![],
         }
     }
 }
