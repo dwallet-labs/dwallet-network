@@ -99,6 +99,11 @@ export async function sign(
 			tx.gas,
 		],
 	});
+	tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
+		arguments: [emptyIKACoin],
+		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
+	});
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
 		transaction: tx,
