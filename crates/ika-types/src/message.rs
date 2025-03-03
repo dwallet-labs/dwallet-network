@@ -150,8 +150,8 @@ pub enum MessageKind {
     // .. more action types go here
     DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
-    DwalletSign(SignOutput),
     DwalletEncryptedUserShare(EncryptedUserShareOutput),
+    DwalletSign(SignOutput),
     DwalletEncryptionKeyVerification(EncryptionKeyVerificationOutput),
     DwalletPresign(PresignOutput),
     DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
