@@ -1882,9 +1882,9 @@ fun process_checkpoint_message(
                     rejected,
                 );
             } else if (message_data_type == 6) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
-                let sign_id = object::id_from_address(bcs_body.peel_address());
-                let session_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let signature = bcs_body.peel_vec_u8();
                 let is_future_sign = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
@@ -1897,8 +1897,8 @@ fun process_checkpoint_message(
                     rejected,
                 );
             } else if (message_data_type == 7) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
-                let partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
                 self.respond_ecdsa_future_sign(
                     dwallet_id,

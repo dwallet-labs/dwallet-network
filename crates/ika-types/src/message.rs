@@ -102,8 +102,8 @@ pub struct SignOutput {
     pub sign_id: Vec<u8>,
     pub session_id: Vec<u8>,
     pub signature: Vec<u8>,
-    pub is_future_sign: Vec<u8>,
-    pub rejected: Vec<u8>
+    pub is_future_sign: bool,
+    pub rejected: bool
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]

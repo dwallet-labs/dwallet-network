@@ -2155,10 +2155,10 @@ impl AuthorityPerEpochStore {
                     session_id: init_event.batch_session_id.to_vec(),
                     signature: output,
                     dwallet_id: init_event.dwallet_id.to_vec(),
-                    is_future_sign: bcs::to_bytes(&init_event.is_future_sign)?,
+                    is_future_sign: init_event.is_future_sign,
                     sign_id: init_event.sign_id.to_vec(),
                     // TODO (#679): Update the blockchain when an MPC round fails
-                    rejected: bcs::to_bytes(&false)?,
+                    rejected: false,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
