@@ -97,6 +97,22 @@ describe('Test dWallet MPC', () => {
 			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
 		);
 	});
+
+	it('should sign full flow', async () => {
+		const dwalletID = await createDWallet(conf, mockedProtocolPublicParameters);
+		console.log(`dWallet has been created successfully: ${dwalletID}`);
+		await delay(checkpointCreationTime);
+		const presignCompletion = await presign(conf, dwalletID.dwallet_id);
+		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		await delay(checkpointCreationTime);
+		await sign(
+			conf,
+			presignCompletion.presign_id,
+			dwalletID.dwallet_cap_id,
+			Buffer.from('hello world'),
+			dwalletID.secret_share,
+		);
+	});
 });
 
 describe('Test dWallet MPC - offline', () => {

@@ -55,10 +55,16 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 	);
 }
 
+interface DWallet {
+	dwallet_id: string;
+	dwallet_cap_id: string;
+	secret_share: Uint8Array;
+}
+
 export async function createDWallet(
 	conf: Config,
 	protocolPublicParameters: Uint8Array,
-): Promise<string> {
+): Promise<DWallet> {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	const dwalletOutput = await launchDKGSecondRound(
@@ -68,8 +74,17 @@ export async function createDWallet(
 		classGroupsSecpKeyPair,
 	);
 	// log the output in base64
-	console.log('dWallet output:', Buffer.from(dwalletOutput).toString('base64'));
-	return firstRoundOutputResult.dwalletID;
+	console.log('dWallet output:', Buffer.from(dwalletOutput.dwalletOutput).toString('base64'));
+	return {
+		dwallet_id: firstRoundOutputResult.dwalletID,
+		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
+		secret_share: dwalletOutput.secretShare
+	};
+}
+
+interface SecondResult {
+	dwalletOutput: Uint8Array,
+	secretShare: Uint8Array,
 }
 
 export async function launchDKGSecondRound(
@@ -77,7 +92,7 @@ export async function launchDKGSecondRound(
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	protocolPublicParameters: Uint8Array,
 	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
-): Promise<Uint8Array> {
+): Promise<SecondResult> {
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			protocolPublicParameters,
