@@ -291,7 +291,14 @@ fn sign_public_input(
             deserialized_event
                 .dwallet_decentralized_public_output
                 .clone(),
-            deserialized_event.message.clone(),
+            // deserialized_event.message.clone(),
+            bcs::to_bytes(
+                &message_digest(
+                    &deserialized_event.message.clone(),
+                    deserialized_event.hash_scheme.into(),
+                )
+                .map_err(Into::into),
+            )?,
             deserialized_event.presign.clone(),
             deserialized_event.message_centralized_signature.clone(),
             bcs::from_bytes(&decryption_pp)?,
@@ -305,6 +312,7 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
         // TODO (#642): Remove the redundant initiating user address field
         initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
+            hash: deserialized_event.event_data.hash_scheme,
             batch_session_id: deserialized_event.session_id,
             message: deserialized_event.event_data.message.clone(),
             dwallet_id: deserialized_event.event_data.dwallet_id.bytes,
