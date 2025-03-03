@@ -960,7 +960,7 @@ fun process_checkpoint_message(
                 let _signature = bcs_body.peel_vec_u8();
                 let _is_future_sign = bcs_body.peel_bool();
                 let _rejected = bcs_body.peel_bool();
-            }
+            };
         i = i + 1;
     };
     self.total_messages_processed = self.total_messages_processed + i;
