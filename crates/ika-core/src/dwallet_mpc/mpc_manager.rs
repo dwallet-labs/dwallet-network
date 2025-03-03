@@ -42,7 +42,6 @@ use ika_types::messages_dwallet_mpc::{
     SignIASessionState, StartPresignFirstRoundEvent,
 };
 use mpc::WeightedThresholdAccessStructure;
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
