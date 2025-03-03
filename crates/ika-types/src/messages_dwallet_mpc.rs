@@ -123,7 +123,7 @@ pub struct SignIASessionState {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SingleSignSessionData {
     pub batch_session_id: ObjectID,
-    pub hashed_message: Vec<u8>,
+    pub message: Vec<u8>,
     /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,
     /// The DKG output of the dWallet, used to sign and verify the message.
@@ -131,6 +131,7 @@ pub struct SingleSignSessionData {
     pub network_key_version: u8,
     /// Indicates whether the future sign feature was used to start the session.
     pub is_future_sign: bool,
+    pub hash: u8,
     pub presign_session_id: ObjectID,
 }
 

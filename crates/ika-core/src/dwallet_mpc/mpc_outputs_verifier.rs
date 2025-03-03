@@ -5,9 +5,9 @@
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
 use crate::dwallet_mpc::sign::SignFirstParty;
+use crate::dwallet_mpc::{authority_name_to_party_id, message_digest};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
 use group::{GroupElement, PartyID};
 use ika_types::committee::StakeUnit;
@@ -19,6 +19,7 @@ use ika_types::messages_dwallet_mpc::{
 use mpc::Party;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 use std::sync::{Arc, Weak};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
@@ -277,7 +278,8 @@ impl DWalletMPCOutputsVerifier {
         if let Err(err) = verify_signature(
             sign_output.0,
             sign_output.1,
-            bcs::from_bytes(&sign_session_data.hashed_message)?,
+            message_digest(&sign_session_data.message, sign_session_data.hash.into())
+                .map_err(Into::into)?,
             dwallet_public_key,
         ) {
             return Err(DwalletMPCError::SignatureVerificationFailed(

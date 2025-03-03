@@ -99,7 +99,7 @@ impl DWalletMPCBatchesManager {
         match session_info.mpc_round {
             MPCProtocolInitData::Sign(SingleSignSessionData {
                 batch_session_id,
-                hashed_message: message,
+                message: message,
                 ..
             }) => {
                 self.store_verified_sign_output(batch_session_id, message.clone(), output)?;
