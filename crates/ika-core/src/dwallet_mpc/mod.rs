@@ -298,7 +298,7 @@ fn sign_public_input(
                     &crate::dwallet_mpc::Hash::try_from(deserialized_event.hash_scheme)
                         .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
                 )
-                .map_err(Into::into),
+                .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
             )?,
             deserialized_event.presign.clone(),
             deserialized_event.message_centralized_signature.clone(),
