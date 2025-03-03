@@ -120,8 +120,8 @@ pub(crate) fn session_info_from_event(
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(presign_party_session_info(deserialized_event)))
         }
-        t if t == &DWalletMPCSuiEvent::<StartSignEvent<SignData>>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartSignEvent<SignData>> =
+        t if t == &DWalletMPCSuiEvent::<StartSignEvent>::type_(packages_config) => {
+            let deserialized_event: DWalletMPCSuiEvent<StartSignEvent> =
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(sign_party_session_info(
                 &deserialized_event,
@@ -277,7 +277,7 @@ fn presign_party_session_info(
 }
 
 fn sign_public_input(
-    deserialized_event: &StartSignEvent<SignData>,
+    deserialized_event: &StartSignEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
@@ -305,7 +305,7 @@ fn sign_public_input(
     )
 }
 
-fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEvent<SignData>>) -> SessionInfo {
+fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEvent>) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
         // TODO (#642): Remove the redundant initiating user address field
