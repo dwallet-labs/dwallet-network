@@ -23,7 +23,6 @@ sha3 = "0.10.8"
 rand_chacha = "0.3.1"
 serde = { version = "1.0.217", features = ["derive"] }
 crypto-bigint.workspace = true
-log = "0.4.14"
 
 [lints]
 workspace = true
