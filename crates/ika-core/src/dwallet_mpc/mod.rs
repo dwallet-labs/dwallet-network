@@ -333,7 +333,7 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
 }
 
 #[derive(Clone, Debug)]
-enum Hash {
+pub enum Hash {
     KECCAK256 = 0,
     SHA256 = 1,
 }
