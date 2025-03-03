@@ -16,7 +16,7 @@ import {
 	DWALLET_NETWORK_VERSION,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
-	getInitialSharedVersion,
+	getInitialSharedVersion, getObjectWithType,
 	isAddressObjectOwner,
 	isIKASystemStateInner,
 	isMoveObject,
@@ -73,6 +73,59 @@ export async function createDWallet(conf: Config, protocolPublicParameters: Uint
 		classGroupsSecpKeyPair,
 	);
 	return firstRoundOutputResult.dwalletID;
+}
+
+/**
+ * Creates a valid mock output of the first DKG blockchain round.
+ */
+export async function mockCreateDWallet(
+	conf: Config,
+	mockOutput: Uint8Array,
+): Promise<DKGFirstRoundOutputResult> {
+	const tx = new Transaction();
+	const dwalletStateObjData = await getDWalletSecpState(conf);
+	const stateArg = tx.sharedObjectRef({
+		objectId: dwalletStateObjData.object_id,
+		initialSharedVersion: dwalletStateObjData.initial_shared_version,
+		mutable: true,
+	});
+	const firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockOutput));
+	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(conf);
+	const networkDecryptionKeyIDArg = tx.pure.id(networkDecryptionKeyID);
+	const dwalletCap = tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::mock_create_dwallet`,
+		arguments: [stateArg, firstRoundOutputArg, networkDecryptionKeyIDArg],
+	});
+	tx.transferObjects([dwalletCap], conf.suiClientKeypair.toSuiAddress());
+	const result = await conf.client.signAndExecuteTransaction({
+		signer: conf.suiClientKeypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+			showEvents: true,
+		},
+	});
+	const createdDWalletCap = result?.effects?.created?.find(
+		(obj) =>
+			isAddressObjectOwner(obj.owner) &&
+			obj.owner.AddressOwner === conf.suiClientKeypair.toSuiAddress(),
+	);
+	if (!dwalletCap || createdDWalletCap === undefined) {
+		throw new Error('Unable to create the DWallet cap');
+	}
+	await delay(checkpointCreationTime);
+	const dwalletCapObj = await getObjectWithType(
+		conf,
+		createdDWalletCap.reference.objectId,
+		isDWalletCap,
+	);
+
+	return {
+		dwalletCapID: createdDWalletCap.reference.objectId,
+		dwalletID: dwalletCapObj.dwallet_id,
+		sessionID: '',
+		output: mockOutput,
+	};
 }
 
 export async function launchDKGSecondRound(

@@ -172,3 +172,22 @@ export async function fetchObjectWithType<TObject>(
 
 	return objectData;
 }
+
+export async function getObjectWithType<TObject>(
+	conf: Config,
+	objectID: string,
+	isObject: (obj: any) => obj is TObject,
+): Promise<TObject> {
+	const obj = await conf.client.getObject({
+		id: objectID,
+		options: { showContent: true },
+	});
+	if (!isMoveObject(obj.data?.content)) {
+		throw new Error('Invalid object');
+	}
+	const objContent = obj.data?.content.fields;
+	if (!isObject(objContent)) {
+		throw new Error('Invalid object fields');
+	}
+	return objContent;
+}
