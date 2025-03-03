@@ -49,7 +49,7 @@ pub struct StartBatchedPresignEvent {
 /// Represents the Rust version of the Move
 /// struct `ika_system::dwallet::StartSignEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartSignEvent<D> {
+pub struct StartSignEvent {
     pub sign_id: ID,
     /// The `DWallet` object's ID associated with the DKG output.
     pub(super) dwallet_id: ID,
