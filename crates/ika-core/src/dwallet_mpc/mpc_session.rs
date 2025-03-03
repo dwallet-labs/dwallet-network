@@ -303,14 +303,21 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::Presign(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
-                crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
+                let result = crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_messages.clone(),
                     public_input,
                     (),
-                )
+                )?;
+                if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
+                    let bytes = bcs::to_bytes(&public_output)?;
+                    let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
+                        bcs::from_bytes(&bytes)?;
+                    warn!("Presign output: {:?}", presign);
+                }
+                Ok(result)
             }
             MPCProtocolInitData::Sign(init_data) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
