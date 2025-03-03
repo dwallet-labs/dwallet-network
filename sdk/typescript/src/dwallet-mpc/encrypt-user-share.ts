@@ -197,7 +197,6 @@ function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent
 // 		payment_sui: &mut Coin<SUI>,
 // 		ctx: &mut TxContext,
 // ) {
-function encryptUserShare() {
-
+export async function encryptUserShare(conf: Config, destinationEncryptionKeyAddress: string, dwallet_id: string, secretShare: Uint8Array) {
 
 }
