@@ -245,7 +245,9 @@ pub async fn request_add_validator_candidate(
             &validator_initialization_metadata.p2p_address.clone(),
         )?),
         CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata.consensus_address.clone(),
+            &validator_initialization_metadata
+                .consensus_public_key
+                .clone(),
         )?),
         CallArg::Pure(bcs::to_bytes(
             &validator_initialization_metadata.computation_price,
