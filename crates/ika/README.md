@@ -18,7 +18,7 @@ ika validator <COMMAND> [OPTIONS]
 
 #### `make-validator-info`
 
-Creates a validator information file containing necessary details to become a validator.
+Create a validator information file containing the necessary details to become a validator.
 
 ##### Arguments:
 
@@ -38,7 +38,7 @@ ika validator make-validator-info --name "My Validator" --description "Secure an
 
 #### `become-candidate`
 
-Registers a validator candidate using a validator info file.
+Register a validator candidate using a validator info file.
 
 ##### Arguments:
 
@@ -78,7 +78,7 @@ Stake IKA tokens to a validator.
 - `--ika-sui-config` (Optional) - Path to the Ika system network configuration file
 - `--validator-id` (ObjectID) - Validator ID to stake to
 - `--ika-coin-id` (ObjectID) - ID of the IKA coin being staked
-- `--stake-amount` (u64) - Amount of IKA tokens to stake
+- `--stake-amount` (u64)—Number of IKA tokens to stake
 
 ##### Example:
 

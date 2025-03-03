@@ -104,7 +104,7 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent> =
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(dkg_second_party_session_info(
-                &deserialized_event.event_data,
+                deserialized_event,
                 if cfg!(feature = "with-network-dkg") {
                     dwallet_network_key_version.ok_or(DwalletMPCError::MissingKeyVersion)?
                 } else {
@@ -115,9 +115,7 @@ pub(crate) fn session_info_from_event(
         t if t == &DWalletMPCSuiEvent::<StartPresignFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent> =
                 bcs::from_bytes(&event.contents)?;
-            Ok(Some(presign_party_session_info(
-                deserialized_event.event_data,
-            )))
+            Ok(Some(presign_party_session_info(deserialized_event)))
         }
         t if t == &DWalletMPCSuiEvent::<StartSignEvent<SignData>>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartSignEvent<SignData>> =
@@ -238,12 +236,13 @@ fn dkg_second_public_input(
 }
 
 fn dkg_second_party_session_info(
-    deserialized_event: &StartDKGSecondRoundEvent,
+    deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent>,
     dwallet_network_key_version: u8,
 ) -> SessionInfo {
     SessionInfo {
         session_id: ObjectID::from(deserialized_event.session_id),
-        initiating_user_address: deserialized_event.initiator,
+        // TODO (#642): Remove the redundant initiating user address field
+        initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::DKGSecond(
             deserialized_event.clone(),
             dwallet_network_key_version,
@@ -263,11 +262,14 @@ pub(crate) fn presign_public_input(
     )
 }
 
-fn presign_party_session_info(deserialized_event: StartPresignFirstRoundEvent) -> SessionInfo {
+fn presign_party_session_info(
+    deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent>,
+) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::Presign(deserialized_event),
+        // TODO (#642): Remove the redundant initiating user address field
+        initiating_user_address: deserialized_event.session_id.into(),
+        mpc_round: MPCProtocolInitData::Presign(deserialized_event.event_data),
     }
 }
 
@@ -528,9 +530,11 @@ pub(crate) fn session_input_from_event(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
                 DWalletMPCNetworkKeyScheme::Secp256k1,
-                deserialized_event
-                    .event_data
-                    .dwallet_mpc_network_key_version,
+                network_key_version_from_key_id(
+                    &deserialized_event
+                        .event_data
+                        .dwallet_network_decryption_key_id,
+                ),
             )?;
             Ok((
                 presign_public_input(deserialized_event.event_data, protocol_public_parameters)?,
@@ -591,4 +595,9 @@ pub(crate) fn session_input_from_event(
         }
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),
     }
+}
+
+// TODO (#683): Parse the network key version from the network key object ID
+fn network_key_version_from_key_id(_key_id: &ObjectID) -> u8 {
+    0
 }

@@ -104,13 +104,6 @@ impl DWalletMPCBatchesManager {
             }) => {
                 self.store_verified_sign_output(batch_session_id, message.clone(), output)?;
             }
-            MPCProtocolInitData::Presign(flow_start_event) => {
-                self.store_verified_presign_output(
-                    flow_start_event.batch_session_id,
-                    session_info.session_id,
-                    output,
-                )?;
-            }
             _ => {}
         }
         Ok(())
@@ -126,9 +119,6 @@ impl DWalletMPCBatchesManager {
             MPCProtocolInitData::Sign(SingleSignSessionData {
                 batch_session_id, ..
             }) => self.is_sign_batch_completed(batch_session_id.clone()),
-            MPCProtocolInitData::Presign(event_data) => {
-                self.is_presign_batch_completed(event_data.batch_session_id)
-            }
             _ => Ok(None),
         }
     }

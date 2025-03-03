@@ -82,24 +82,18 @@ pub struct DKGFirstRoundOutput {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct DKGSecondRoundOutput {
-    pub initiating_user_address: Vec<u8>,
-    pub session_id: Vec<u8>,
+    pub dwallet_id: Vec<u8>,
     pub output: Vec<u8>,
-    pub dwallet_cap_id: Vec<u8>,
-    pub dwallet_mpc_network_decryption_key_version: Vec<u8>,
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
-    pub encryption_key_id: Vec<u8>,
-    pub pubkeys_signature: Vec<u8>,
-    pub initiator_public_key: Vec<u8>,
+    pub encryption_key_address: Vec<u8>,
+    pub rejected: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct PresignOutput {
-    pub initiating_user_address: Vec<u8>,
-    pub batch_session_id: Vec<u8>,
-    pub session_ids: Vec<u8>,
-    pub presigns: Vec<u8>,
     pub dwallet_id: Vec<u8>,
+    pub session_id: Vec<u8>,
+    pub presign: Vec<u8>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -118,8 +112,6 @@ pub struct EncryptedUserShareOutput {
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     pub encryption_key_id: Vec<u8>,
     pub session_id: Vec<u8>,
-    pub pubkeys_signature: Vec<u8>,
-    pub encryptor_ed25519_pubkey: Vec<u8>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -157,10 +149,10 @@ pub enum MessageKind {
     // .. more action types go here
     DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
-    DwalletPresign(PresignOutput),
     DwalletSign(SignOutput),
     DwalletEncryptedUserShare(EncryptedUserShareOutput),
     DwalletEncryptionKeyVerification(EncryptionKeyVerificationOutput),
+    DwalletPresign(PresignOutput),
     DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
     DwalletMPCNetworkDKGOutput(DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares),
 }
