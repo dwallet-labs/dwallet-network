@@ -74,6 +74,7 @@ export async function createDWallet(
 		classGroupsSecpKeyPair,
 	);
 	// log the output in base64
+	console.log(Buffer.from(dwalletOutput.dwalletOutput).toString('base64'));
 	return {
 		dwallet_id: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
@@ -110,7 +111,7 @@ export async function launchDKGSecondRound(
 		classGroupsSecpKeyPair.encryptionKey,
 	);
 
-	return await dkgSecondRoundMoveCall(
+	const output = await dkgSecondRoundMoveCall(
 		conf,
 		dWalletStateData,
 		firstRoundOutputResult,
@@ -118,6 +119,10 @@ export async function launchDKGSecondRound(
 		encryptedUserShareAndProof,
 		centralizedPublicOutput,
 	);
+	return {
+		dwalletOutput: output,
+		secretShare: centralizedSecretKeyShare,
+	};
 }
 
 /**
