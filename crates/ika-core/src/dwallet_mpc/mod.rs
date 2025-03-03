@@ -319,7 +319,7 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
                 .clone(),
             network_key_version: network_key_version_from_key_id(&deserialized_event.event_data.dwallet_mpc_network_key_id.bytes),
             is_future_sign: deserialized_event.event_data.is_future_sign,
-            presign_session_id: deserialized_event.event_data.signature_algorithm_data.presign_id,
+            presign_session_id: deserialized_event.event_data.presign_id,
         }),
     }
 }
@@ -573,8 +573,8 @@ pub(crate) fn session_input_from_event(
                 None,
             ))
         }
-        t if t == &DWalletMPCSuiEvent::<StartSignEvent<SignData>>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartSignEvent<SignData>> =
+        t if t == &DWalletMPCSuiEvent::<StartSignEvent>::type_(packages_config) => {
+            let deserialized_event: DWalletMPCSuiEvent<StartSignEvent> =
                 bcs::from_bytes(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.

@@ -60,7 +60,7 @@ pub struct StartSignEvent {
     pub(super) message: Vec<u8>,
     /// The dWallet mpc network key version
     pub(super) dwallet_mpc_network_key_id: ID,
-    presign_id: ID,
+    pub(crate) presign_id: ID,
 
     /// The presign protocol output as bytes.
     pub(crate) presign: Vec<u8>,
