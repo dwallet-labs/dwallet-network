@@ -50,6 +50,7 @@ pub struct StartBatchedPresignEvent {
 /// struct `ika_system::dwallet::StartSignEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartSignEvent<D> {
+    pub sign_id: ID,
     /// Unique identifier for the MPC session.
     pub(super) session_id: ID,
     /// The address of the user that initiated this session.

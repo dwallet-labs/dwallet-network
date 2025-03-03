@@ -305,20 +305,20 @@ fn sign_public_input(
     )
 }
 
-fn sign_party_session_info(deserialized_event: &StartSignEvent<SignData>) -> SessionInfo {
+fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEvent<SignData>>) -> SessionInfo {
     SessionInfo {
-        session_id: deserialized_event.session_id.bytes,
-        initiating_user_address: deserialized_event.initiator,
+        session_id: deserialized_event.session_id,
+        initiating_user_address: deserialized_event.event_data.initiator,
         mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
-            batch_session_id: deserialized_event.batched_session_id.bytes,
-            hashed_message: deserialized_event.hashed_message.clone(),
-            dwallet_id: deserialized_event.dwallet_id.bytes,
-            dwallet_decentralized_public_output: deserialized_event
+            batch_session_id: deserialized_event.event_data.batched_session_id.bytes,
+            hashed_message: deserialized_event.event_data.hashed_message.clone(),
+            dwallet_id: deserialized_event.event_data.dwallet_id.bytes,
+            dwallet_decentralized_public_output: deserialized_event.event_data
                 .dwallet_decentralized_public_output
                 .clone(),
-            network_key_version: deserialized_event.dwallet_mpc_network_key_version,
-            is_future_sign: deserialized_event.is_future_sign,
-            presign_session_id: deserialized_event.signature_algorithm_data.presign_id,
+            network_key_version: deserialized_event.event_data.dwallet_mpc_network_key_version,
+            is_future_sign: deserialized_event.event_data.is_future_sign,
+            presign_session_id: deserialized_event.event_data.signature_algorithm_data.presign_id,
         }),
     }
 }
