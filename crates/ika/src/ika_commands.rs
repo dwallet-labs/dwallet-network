@@ -206,8 +206,8 @@ impl IkaCommand {
                 epoch_duration_ms,
             } => {
                 let thread_builder = thread::Builder::new();
-                const SIXTY_FOUR_MB: usize = 67108864;
-                let thread_builder = thread_builder.stack_size(SIXTY_FOUR_MB);
+                const SIXTEEN_MB: usize = 16777216;
+                let thread_builder = thread_builder.stack_size(SIXTEEN_MB);
                 let thread_join_handle = thread_builder.spawn(move || {
                     let Ok(mut tokio_runtime) = Runtime::new() else {
                         eprintln!("{}", "[error] Failed to start tokio runtime".red().bold());
