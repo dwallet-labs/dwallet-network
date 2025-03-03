@@ -74,17 +74,16 @@ export async function createDWallet(
 		classGroupsSecpKeyPair,
 	);
 	// log the output in base64
-	console.log('dWallet output:', Buffer.from(dwalletOutput.dwalletOutput).toString('base64'));
 	return {
 		dwallet_id: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
-		secret_share: dwalletOutput.secretShare
+		secret_share: dwalletOutput.secretShare,
 	};
 }
 
 interface SecondResult {
-	dwalletOutput: Uint8Array,
-	secretShare: Uint8Array,
+	dwalletOutput: Uint8Array;
+	secretShare: Uint8Array;
 }
 
 export async function launchDKGSecondRound(
