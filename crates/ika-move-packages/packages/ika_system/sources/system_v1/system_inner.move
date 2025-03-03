@@ -954,6 +954,7 @@ fun process_checkpoint_message(
                 object::id_from_address(bcs_body.peel_address());
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
+                bcs_body.peel_bool();   
             };
         i = i + 1;
     };

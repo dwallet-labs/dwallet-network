@@ -82,7 +82,7 @@ use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::message::{DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput, EncryptionKeyVerificationOutput, MessageKind, PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkDKGOutput, Secp256K1NetworkDKGOutputSlice, SignOutput};
+use ika_types::message::{DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput, EncryptionKeyVerificationOutput, MessageKind, PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkDKGOutputSlice, SignOutput};
 use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
     CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage,
@@ -164,7 +164,7 @@ pub enum ConsensusCertificateResult {
     /// An executable transaction (can be a user tx or a system tx)
     IkaTransaction(MessageKind),
 
-    IkaLargeTransaction(Vec<MessageKind>)
+    IkaLargeTransaction(Vec<MessageKind>),
     /// A message was processed which updates randomness state.
     RandomnessConsensusMessage,
     /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
@@ -1526,16 +1526,30 @@ impl AuthorityPerEpochStore {
         if make_checkpoint {
             let checkpoint_height = consensus_commit_info.round;
 
-            let pending_checkpoint = PendingCheckpoint::V1(PendingCheckpointV1 {
-                messages: verified_messages.clone(),
-                details: PendingCheckpointInfo {
-                    timestamp_ms: consensus_commit_info.timestamp,
-                    mid_of_epoch: mid_epoch_round,
-                    last_of_epoch: final_round,
-                    checkpoint_height,
-                },
-            });
-            self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
+            let mut ms: Vec<Vec<MessageKind>>= vec![];
+           for m in verified_messages.clone().into_iter() {
+
+               if (!ms.is_empty() && bcs::to_bytes(ms.last().unwrap()).unwrap().len() + bcs::to_bytes(&m).unwrap().len() < 15 * 1024) {
+                   ms.last_mut().unwrap().push(m);
+               } else {
+                   ms.push(vec![m]);
+               }
+           }
+
+            let _ = ms.into_iter().map( |m| {
+                let pending_checkpoint = PendingCheckpoint::V1(PendingCheckpointV1 {
+                    messages: m.clone(),
+                    details: PendingCheckpointInfo {
+                        timestamp_ms: consensus_commit_info.timestamp,
+                        mid_of_epoch: mid_epoch_round,
+                        last_of_epoch: final_round,
+                        checkpoint_height,
+                    },
+                });
+                self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
+                Ok(())
+            }
+            ).collect::<IkaResult<_>>()?;
         }
 
         let mut batch = self.db_batch()?;
@@ -1670,6 +1684,10 @@ impl AuthorityPerEpochStore {
                 ConsensusCertificateResult::IkaTransaction(cert) => {
                     notifications.push(key.clone());
                     verified_certificates.push_back(cert);
+                }
+                ConsensusCertificateResult::IkaLargeTransaction(certs) => {
+                    notifications.push(key.clone());// check this
+                    certs.into_iter().for_each(|cert| verified_certificates.push_back(cert));
                 }
                 // ConsensusCertificateResult::Cancelled((cert, reason)) => {
                 //     notifications.push(key.clone());
@@ -2095,32 +2113,32 @@ impl AuthorityPerEpochStore {
 
                                 let mut slices = Vec::new();
 
-                                let public_chunks = public_output.chunks(16 * 1024);
-                                let key_shares_chunks = key_shares.chunks(16 * 1024);
+                                let public_chunks = public_output.chunks(1 * 1024).collect_vec();
+                                let key_shares_chunks = key_shares.chunks(1 * 1024).collect_vec();
 
-
+                                let empty: &[u8] = &[];
                                 let total_slices = public_chunks.len().max(key_shares_chunks.len());
                                 for i in 0..total_slices {
-                                    let public_chunk = public_chunks.get(i).unwrap_or(&[]);
-                                    let key_chunk = key_shares_chunks.get(i).unwrap_or(&[]);
+                                    let public_chunk = public_chunks.get(i).unwrap_or(&empty);
+                                    let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
                                     slices.push(Secp256K1NetworkDKGOutputSlice {
                                         dwallet_network_decryption_key_id: dwallet_network_decryption_key_id.clone(),
-                                        public_output: public_chunk.to_vec(),
-                                        key_shares: key_chunk.to_vec(),
+                                        public_output: (*public_chunk).to_vec(),
+                                        key_shares: (*key_chunk).to_vec(),
                                         is_last: i == total_slices - 1,
                                     });
                                 }
 
-                                let output = Secp256K1NetworkDKGOutput(slices);
+                                let messages : Vec<_> = slices.clone().into_iter().map(|slice| {
+                                    MessageKind::DwalletMPCNetworkDKGOutput(slice)
+                                }).collect();
 
                                 println!(
                                     "secp256k1_network_dkg_ id: {:?}",
                                     dwallet_network_decryption_key_id
                                 );
-                                Ok(self.process_consensus_system_transaction(
-                                    &MessageKind::DwalletMPCNetworkDKGOutput(
-                                        secp256k1_network_dkg_output,
-                                    ),
+                                Ok(self.process_consensus_system_large_transaction(
+                                    &vec![messages.first().unwrap().clone()],
                                 ))
                             }
                             DWalletMPCNetworkKeyScheme::Ristretto => Err(IkaError::from(
@@ -2156,6 +2174,21 @@ impl AuthorityPerEpochStore {
         }
 
         ConsensusCertificateResult::IkaTransaction(system_transaction.clone())
+    }
+
+    fn process_consensus_system_large_transaction(
+        &self,
+        system_transaction: &Vec<MessageKind>,
+    ) -> ConsensusCertificateResult {
+        if !self.get_reconfig_state_read_lock_guard().should_accept_tx() {
+            debug!(
+                "Ignoring system transaction of Ika large transaction {:?} because of end of epoch",
+                system_transaction
+            );
+            return ConsensusCertificateResult::IgnoredSystem;
+        }
+
+        ConsensusCertificateResult::IkaLargeTransaction(system_transaction.clone())
     }
 
     fn process_dwallet_transaction(

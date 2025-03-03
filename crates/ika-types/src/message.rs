@@ -153,9 +153,6 @@ pub struct Secp256K1NetworkDKGOutputSlice {
     pub is_last: bool,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct Secp256K1NetworkDKGOutput(pub Vec<Secp256K1NetworkDKGOutputSlice>);
-
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
 pub enum MessageKind {
     InitiateProcessMidEpoch,
@@ -174,7 +171,7 @@ pub enum MessageKind {
     DwalletEncryptedUserShare(EncryptedUserShareOutput),
     DwalletEncryptionKeyVerification(EncryptionKeyVerificationOutput),
     DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
-    DwalletMPCNetworkDKGOutput(Secp256K1NetworkDKGOutput),
+    DwalletMPCNetworkDKGOutput(Secp256K1NetworkDKGOutputSlice),
 }
 
 impl MessageKind {
