@@ -2,8 +2,8 @@ import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-was
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
+import type { Config } from './globals.ts';
 import {
-	Config,
 	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	fetchCompletedEvent,
