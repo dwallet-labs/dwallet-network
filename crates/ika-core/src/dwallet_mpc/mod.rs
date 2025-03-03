@@ -319,7 +319,7 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
                 .clone(),
             network_key_version: network_key_version_from_key_id(&deserialized_event.event_data.dwallet_mpc_network_key_id.bytes),
             is_future_sign: deserialized_event.event_data.is_future_sign,
-            presign_session_id: deserialized_event.event_data.presign_id,
+            presign_session_id: deserialized_event.event_data.presign_id.bytes,
         }),
     }
 }
