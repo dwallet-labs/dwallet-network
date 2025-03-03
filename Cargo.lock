@@ -1753,19 +1753,19 @@ checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
 dependencies = [
- "commitment",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "criterion",
  "crypto-bigint 0.6.0-rc.6",
  "crypto-primes",
- "group 0.1.0",
- "homomorphic_encryption",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "itertools 0.13.0",
- "maurer",
+ "maurer 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "merlin",
- "mpc",
- "proof",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
@@ -1785,8 +1785,8 @@ dependencies = [
  "base64 0.21.7",
  "bcs",
  "class_groups",
- "group 0.1.0",
- "mpc",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "schemars",
  "serde",
  "twopc_mpc",
@@ -1920,10 +1920,22 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+dependencies = [
+ "crypto-bigint 0.6.0-rc.6",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "merlin",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "commitment"
+version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
 dependencies = [
  "crypto-bigint 0.6.0-rc.6",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
  "merlin",
  "serde",
  "thiserror 1.0.69",
@@ -2930,7 +2942,7 @@ dependencies = [
  "crypto-bigint 0.6.0-rc.6",
  "fastcrypto",
  "flate2",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "ika-types",
  "rand_chacha 0.3.1",
  "schemars",
@@ -2948,15 +2960,15 @@ dependencies = [
  "bcs",
  "class_groups",
  "class_groups_constants",
- "commitment",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
  "crypto-bigint 0.6.0-rc.6",
  "dwallet-mpc-types",
- "group 0.1.0",
- "homomorphic_encryption",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "k256 0.14.0-pre.2",
  "log",
- "maurer",
- "mpc",
+ "maurer 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "schemars",
@@ -3152,17 +3164,17 @@ checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
 dependencies = [
- "commitment",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "crypto-bigint 0.6.0-rc.6",
  "getrandom 0.2.15",
- "group 0.1.0",
- "homomorphic_encryption",
- "maurer",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "maurer 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "merlin",
- "mpc",
- "proof",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -4243,6 +4255,24 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.1.0"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+dependencies = [
+ "crypto-bigint 0.6.0-rc.6",
+ "curve25519-dalek-ng",
+ "getrandom 0.2.15",
+ "itertools 0.13.0",
+ "k256 0.14.0-pre.2",
+ "serde",
+ "sha3 0.11.0-pre.4",
+ "sha3 0.9.1",
+ "subtle",
+ "subtle-ng",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "group"
+version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
 dependencies = [
  "crypto-bigint 0.6.0-rc.6",
@@ -4520,14 +4550,26 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+dependencies = [
+ "crypto-bigint 0.6.0-rc.6",
+ "getrandom 0.2.15",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "rstest 0.22.0",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "homomorphic_encryption"
+version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
 dependencies = [
  "crypto-bigint 0.6.0-rc.6",
  "getrandom 0.2.15",
- "group 0.1.0",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "rstest 0.22.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
  "serde",
  "thiserror 1.0.69",
 ]
@@ -5058,7 +5100,7 @@ dependencies = [
  "clap",
  "class_groups",
  "class_groups_constants",
- "commitment",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
  "consensus-config",
  "consensus-core",
  "count-min-sketch",
@@ -5078,8 +5120,8 @@ dependencies = [
  "fastcrypto-zkp",
  "fs_extra",
  "futures",
- "group 0.1.0",
- "homomorphic_encryption",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "ika-config",
  "ika-move-packages",
  "ika-network",
@@ -5100,7 +5142,7 @@ dependencies = [
  "move-core-types",
  "move-package",
  "move-symbol-pool",
- "mpc",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "mysten-common",
  "mysten-metrics",
  "mysten-network",
@@ -5502,7 +5544,7 @@ dependencies = [
  "fastcrypto",
  "fastcrypto-tbls",
  "fastcrypto-zkp",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "ika-protocol-config",
  "im",
  "indexmap 2.7.1",
@@ -6416,16 +6458,34 @@ checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
 dependencies = [
- "commitment",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "crypto-bigint 0.6.0-rc.6",
  "getrandom 0.2.15",
- "group 0.1.0",
- "homomorphic_encryption",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "merlin",
- "mpc",
- "proof",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "maurer"
+version = "0.1.0"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
+dependencies = [
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
+ "crypto-bigint 0.6.0-rc.6",
+ "getrandom 0.2.15",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
+ "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
+ "merlin",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
+ "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -7406,18 +7466,34 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
 dependencies = [
- "commitment",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "criterion",
  "crypto-bigint 0.6.0-rc.6",
  "gcd",
  "getrandom 0.2.15",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rayon",
  "rstest 0.22.0",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "mpc"
+version = "0.1.0"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
+dependencies = [
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
+ "crypto-bigint 0.6.0-rc.6",
+ "gcd",
+ "getrandom 0.2.15",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -9013,22 +9089,41 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
 dependencies = [
  "bulletproofs",
- "commitment",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "criterion",
  "crypto-bigint 0.6.0-rc.6",
  "curve25519-dalek-ng",
  "getrandom 0.2.15",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "itertools 0.13.0",
  "merlin",
- "mpc",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rayon",
  "rstest 0.22.0",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "proof"
+version = "0.1.0"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
+dependencies = [
+ "bulletproofs",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
+ "crypto-bigint 0.6.0-rc.6",
+ "curve25519-dalek-ng",
+ "getrandom 0.2.15",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
+ "itertools 0.13.0",
+ "merlin",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862)",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -13712,14 +13807,14 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
 dependencies = [
  "crypto-bigint 0.6.0-rc.6",
  "crypto-primes",
- "group 0.1.0",
- "homomorphic_encryption",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "merlin",
- "mpc",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rayon",
@@ -14443,24 +14538,24 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=546dd26d2f3665de2934811f70fc2094327b4862#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
 dependencies = [
  "base64 0.22.1",
  "bcs",
  "class_groups",
- "commitment",
+ "commitment 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "criterion",
  "crypto-bigint 0.6.0-rc.6",
  "ecdsa 0.17.0-pre.9",
  "enhanced_maurer",
  "getrandom 0.2.15",
- "group 0.1.0",
- "homomorphic_encryption",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "homomorphic_encryption 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "k256 0.14.0-pre.2",
- "maurer",
+ "maurer 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "merlin",
- "mpc",
- "proof",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
+ "proof 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=ika)",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rstest 0.22.0",
