@@ -42,11 +42,11 @@ use ika_types::messages_dwallet_mpc::{
     SignIASessionState, StartPresignFirstRoundEvent,
 };
 use mpc::WeightedThresholdAccessStructure;
+use rayon::ThreadPoolBuilder;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
-use rayon::ThreadPoolBuilder;
 use sui_json_rpc_types::SuiEvent;
 use sui_storage::mutex_table::MutexGuard;
 use sui_types::digests::TransactionDigest;
@@ -132,7 +132,6 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> DwalletMPCResult<Self> {
-
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
         let quorum_threshold = epoch_store.committee().quorum_threshold();
