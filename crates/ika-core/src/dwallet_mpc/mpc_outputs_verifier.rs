@@ -280,9 +280,10 @@ impl DWalletMPCOutputsVerifier {
             sign_output.1,
             message_digest(
                 &sign_session_data.message,
-                &crate::dwallet_mpc::Hash::try_from(sign_session_data.hash).map_err(Into::into)?,
+                &crate::dwallet_mpc::Hash::try_from(sign_session_data.hash)
+                    .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
             )
-            .map_err(Into::into)?,
+            .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
             dwallet_public_key,
         ) {
             return Err(DwalletMPCError::SignatureVerificationFailed(

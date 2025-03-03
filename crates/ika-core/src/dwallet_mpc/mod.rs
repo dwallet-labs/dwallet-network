@@ -295,7 +295,8 @@ fn sign_public_input(
             bcs::to_bytes(
                 &message_digest(
                     &deserialized_event.message.clone(),
-                    deserialized_event.hash_scheme.into(),
+                    &crate::dwallet_mpc::Hash::try_from(deserialized_event.hash_scheme)
+                        .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
                 )
                 .map_err(Into::into),
             )?,
