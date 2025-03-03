@@ -73,7 +73,7 @@ use ika_core::storage::RocksDbStore;
 use mysten_metrics::{spawn_monitored_task, RegistryService};
 use mysten_network::server::ServerBuilder;
 use mysten_service::server_timing::server_timing_middleware;
-
+use rayon::ThreadPoolBuilder;
 use ika_network::discovery;
 use ika_network::discovery::TrustedPeerChangeEvent;
 use ika_network::state_sync;
@@ -244,6 +244,9 @@ impl IkaNode {
         registry_service: RegistryService,
         software_version: &'static str,
     ) -> Result<Arc<IkaNode>> {
+        // let _res = ThreadPoolBuilder::new()
+        //     .stack_size(64 * 1024 * 1024) // Set stack size to 64MB
+        //     .build_global();
         NodeConfigMetrics::new(&registry_service.default_registry()).record_metrics(&config);
         let mut config = config.clone();
         if config.supported_protocol_versions.is_none() {

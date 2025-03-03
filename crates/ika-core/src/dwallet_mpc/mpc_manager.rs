@@ -132,9 +132,7 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> DwalletMPCResult<Self> {
-        let _res = ThreadPoolBuilder::new()
-            .stack_size(64 * 1024 * 1024) // Set stack size to 64MB
-            .build_global();
+
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
         let quorum_threshold = epoch_store.committee().quorum_threshold();
