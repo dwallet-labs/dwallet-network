@@ -285,7 +285,7 @@ fn sign_public_input(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
         // Todo (#473): Support generic network key scheme
         DWalletMPCNetworkKeyScheme::Secp256k1,
-        deserialized_event.dwallet_mpc_network_key_version,
+        network_key_version_from_key_id(&deserialized_event.dwallet_mpc_network_key_id.bytes),
     )?;
     Ok(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
@@ -295,11 +295,9 @@ fn sign_public_input(
                 .clone(),
             deserialized_event.message.clone(),
             deserialized_event
-                .signature_algorithm_data
-                .presign_output
+                .presign
                 .clone(),
             deserialized_event
-                .signature_algorithm_data
                 .message_centralized_signature
                 .clone(),
             bcs::from_bytes(&decryption_pp)?,
@@ -319,7 +317,7 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
             dwallet_decentralized_public_output: deserialized_event.event_data
                 .dwallet_decentralized_public_output
                 .clone(),
-            network_key_version: deserialized_event.event_data.dwallet_mpc_network_key_version,
+            network_key_version: network_key_version_from_key_id(&deserialized_event.event_data.dwallet_mpc_network_key_id.bytes),
             is_future_sign: deserialized_event.event_data.is_future_sign,
             presign_session_id: deserialized_event.event_data.signature_algorithm_data.presign_id,
         }),
@@ -582,9 +580,9 @@ pub(crate) fn session_input_from_event(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
                 DWalletMPCNetworkKeyScheme::Secp256k1,
-                deserialized_event
+                network_key_version_from_key_id(&deserialized_event
                     .event_data
-                    .dwallet_mpc_network_key_version,
+                    .dwallet_mpc_network_key_id.bytes),
             )?;
             Ok((
                 sign_public_input(
@@ -632,6 +630,6 @@ pub(crate) fn session_input_from_event(
 }
 
 // TODO (#683): Parse the network key version from the network key object ID
-fn network_key_version_from_key_id(_key_id: &ObjectID) -> u8 {
+pub fn network_key_version_from_key_id(_key_id: &ObjectID) -> u8 {
     0
 }

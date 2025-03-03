@@ -59,10 +59,15 @@ pub struct StartSignEvent<D> {
     /// Hashed messages to Sign.
     pub(super) message: Vec<u8>,
     /// The dWallet mpc network key version
-    pub(super) dwallet_mpc_network_key_version: u8,
-    /// The type of data that can be stored with the object.
-    /// Specific to each Digital Signature Algorithm.
-    pub(crate) signature_algorithm_data: D,
+    pub(super) dwallet_mpc_network_key_id: ID,
+    presign_id: ID,
+
+    /// The presign protocol output as bytes.
+    pub(crate) presign: Vec<u8>,
+
+    /// The centralized party signature of a message.
+    pub(crate) message_centralized_signature: Vec<u8>,
+
     /// Indicates whether the future sign feature was used to start the session.
     pub(crate) is_future_sign: bool,
 }
