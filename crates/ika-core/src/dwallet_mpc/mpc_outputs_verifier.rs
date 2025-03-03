@@ -278,7 +278,7 @@ impl DWalletMPCOutputsVerifier {
         if let Err(err) = verify_signature(
             sign_output.0,
             sign_output.1,
-            message_digest(&sign_session_data.message, sign_session_data.hash.into())
+            message_digest(&sign_session_data.message, sign_session_data.hash.try_into().map_err(Into::into)?)
                 .map_err(Into::into)?,
             dwallet_public_key,
         ) {
