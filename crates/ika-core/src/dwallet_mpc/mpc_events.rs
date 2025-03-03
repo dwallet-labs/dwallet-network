@@ -72,7 +72,7 @@ pub struct StartSignEvent {
     pub(crate) is_future_sign: bool,
 }
 
-impl<D: DWalletMPCEventTrait> DWalletMPCEventTrait for StartSignEvent<D> {
+impl DWalletMPCEventTrait for StartSignEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`StartSignEvent`]
     /// events from the chain and initiate the MPC session.
