@@ -51,8 +51,6 @@ pub struct StartBatchedPresignEvent {
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartSignEvent<D> {
     pub sign_id: ID,
-    /// Unique identifier for the MPC session.
-    pub(super) session_id: ID,
     /// The address of the user that initiated this session.
     pub(super) initiator: SuiAddress,
     /// The ID of the batch sign session that contains this sign session.

@@ -308,7 +308,8 @@ fn sign_public_input(
 fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEvent<SignData>>) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: deserialized_event.event_data.initiator,
+        // TODO (#642): Remove the redundant initiating user address field
+        initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
             batch_session_id: deserialized_event.event_data.batched_session_id.bytes,
             hashed_message: deserialized_event.event_data.hashed_message.clone(),
