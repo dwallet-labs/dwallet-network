@@ -6,13 +6,13 @@ import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
-
+import {create_sign_centralized_output} from "@dwallet-network/dwallet-mpc-wasm";
 import { createDWallet, mockCreateDWallet } from '../../src/dwallet-mpc/dkg';
 import {
 	checkpointCreationTime,
 	Config,
 	delay,
-	mockedProtocolPublicParameters,
+	mockedProtocolPublicParameters, MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';
 import { mockCreatePresign, presign } from '../../src/dwallet-mpc/presign';
 import { sign } from '../../src/dwallet-mpc/sign';
@@ -74,6 +74,8 @@ describe('Test dWallet MPC', () => {
 			dwalletID,
 		);
 		console.log(`presign has been created successfully: ${presign}`);
+		// log the presign.presign as base64
+		console.log(`presign bytes: ${Buffer.from(presign.presign).toString('base64')}`);
 	});
 
 	it('should sign', async () => {
@@ -90,6 +92,20 @@ describe('Test dWallet MPC', () => {
 			dkgResult.dwalletCapID,
 			Buffer.from('hello world'),
 			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
+		);
+	});
+});
+
+describe('Test dWallet MPC - offline', () => {
+	it('should run sign centralized part', () => {
+		const centralizedSignedMessage = create_sign_centralized_output(
+			mockedProtocolPublicParameters,
+			MPCKeyScheme.Secp256k1,
+			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
+			secretKey,
+			Buffer.from(mockPresign.presignBytes, 'base64'),
+			Buffer.from('hello world'),
+			1,
 		);
 	});
 });

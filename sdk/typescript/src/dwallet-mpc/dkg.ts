@@ -88,6 +88,9 @@ export async function launchDKGSecondRound(
 		);
 	const dWalletStateData = await getDWalletSecpState(conf);
 
+	// log the secret share in base64
+	console.log('secret share:', Buffer.from(centralizedSecretKeyShare).toString('base64'));
+
 	const encryptedUserShareAndProof = encrypt_secret_share(
 		centralizedSecretKeyShare,
 		classGroupsSecpKeyPair.encryptionKey,
