@@ -329,6 +329,7 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
             ),
             is_future_sign: deserialized_event.event_data.is_future_sign,
             presign_session_id: deserialized_event.event_data.presign_id.bytes,
+            sign_id: deserialized_event.event_data.sign_id.bytes,
         }),
     }
 }

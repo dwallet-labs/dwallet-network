@@ -132,6 +132,7 @@ pub struct SingleSignSessionData {
     /// Indicates whether the future sign feature was used to start the session.
     pub is_future_sign: bool,
     pub hash: u8,
+    pub sign_id: ObjectID,
     pub presign_session_id: ObjectID,
 }
 
