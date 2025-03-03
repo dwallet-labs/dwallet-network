@@ -953,7 +953,14 @@ fun process_checkpoint_message(
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _presign = bcs_body.peel_vec_u8();
-            };
+            } else if (message_data_type == 6) {
+                let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let _sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let _signature = bcs_body.peel_vec_u8();
+                let _is_future_sign = bcs_body.peel_bool();
+                let _rejected = bcs_body.peel_bool();
+            }
         i = i + 1;
     };
     self.total_messages_processed = self.total_messages_processed + i;
