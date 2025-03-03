@@ -51,18 +51,13 @@ pub struct StartBatchedPresignEvent {
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartSignEvent<D> {
     pub sign_id: ID,
-    /// The address of the user that initiated this session.
-    pub(super) initiator: SuiAddress,
-    /// The ID of the batch sign session that contains this sign session.
-    /// The output of this session will be written to the chain only once,
-    /// along with the entire batch.
-    pub(super) batched_session_id: ID,
     /// The `DWallet` object's ID associated with the DKG output.
     pub(super) dwallet_id: ID,
     /// The public output of the decentralized party in the dWallet DKG process.
     pub(super) dwallet_decentralized_public_output: Vec<u8>,
+    pub hash_scheme: u8,
     /// Hashed messages to Sign.
-    pub(super) hashed_message: Vec<u8>,
+    pub(super) message: Vec<u8>,
     /// The dWallet mpc network key version
     pub(super) dwallet_mpc_network_key_version: u8,
     /// The type of data that can be stored with the object.

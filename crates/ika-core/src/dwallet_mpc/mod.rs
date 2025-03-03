@@ -14,7 +14,8 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
     MPCPublicOutput,
 };
-use group::PartyID;
+use k256::elliptic_curve::ops::Reduce;
+use group::{PartyID};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{DBSuiEvent, StartDKGFirstRoundEvent};
@@ -32,6 +33,7 @@ use std::vec::Vec;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
 use tracing::warn;
+use twopc_mpc::secp256k1;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 
 pub mod batches_manager;
@@ -122,7 +124,7 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: DWalletMPCSuiEvent<StartSignEvent<SignData>> =
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(sign_party_session_info(
-                &deserialized_event.event_data,
+                &deserialized_event,
             )))
         }
         t if t
@@ -291,7 +293,7 @@ fn sign_public_input(
             deserialized_event
                 .dwallet_decentralized_public_output
                 .clone(),
-            deserialized_event.hashed_message.clone(),
+            deserialized_event.message.clone(),
             deserialized_event
                 .signature_algorithm_data
                 .presign_output
@@ -311,8 +313,8 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
         // TODO (#642): Remove the redundant initiating user address field
         initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
-            batch_session_id: deserialized_event.event_data.batched_session_id.bytes,
-            hashed_message: deserialized_event.event_data.hashed_message.clone(),
+            batch_session_id: deserialized_event.session_id,
+            hashed_message: deserialized_event.event_data.message.clone(),
             dwallet_id: deserialized_event.event_data.dwallet_id.bytes,
             dwallet_decentralized_public_output: deserialized_event.event_data
                 .dwallet_decentralized_public_output
@@ -323,6 +325,36 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
         }),
     }
 }
+
+#[derive(Clone, Debug)]
+enum Hash {
+    KECCAK256 = 0,
+    SHA256 = 1,
+}
+use k256::ecdsa::hazmat::bits2field;
+use k256::{elliptic_curve};
+use sha3::Digest as Sha3Digest;
+use sha3::digest::FixedOutput as Sha3FixedOutput;
+use k256::U256;
+
+/// Computes the message digest of a given message using the specified hash function.
+fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1::Scalar> {
+    let hash = match hash_type {
+        Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
+            &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
+        )
+            .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
+
+        Hash::SHA256 => {
+            bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
+                .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
+        }
+    };
+    #[allow(clippy::useless_conversion)]
+    let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
+    Ok(U256::from(m).into())
+}
+
 
 fn get_verify_partial_signatures_session_info(
     deserialized_event: &StartPartialSignaturesVerificationEvent<SignData>,
