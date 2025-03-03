@@ -368,6 +368,21 @@ impl TryFrom<u8> for Hash {
     }
 }
 
+impl TryFrom<u8> for Hash {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Hash::KECCAK256),
+            1 => Ok(Hash::SHA256),
+            _ => Err(anyhow::Error::msg(format!(
+                "invalid value for Hash enum: {}",
+                value
+            ))),
+        }
+    }
+}
+
 /// Decrypts the given encrypted user share using the given decryption key.
 pub fn decrypt_user_share_inner(
     encryption_key: Vec<u8>,
