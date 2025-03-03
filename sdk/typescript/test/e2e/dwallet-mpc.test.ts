@@ -2,17 +2,19 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
+import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
-import {create_sign_centralized_output} from "@dwallet-network/dwallet-mpc-wasm";
+
 import { createDWallet, mockCreateDWallet } from '../../src/dwallet-mpc/dkg';
 import {
 	checkpointCreationTime,
 	Config,
 	delay,
-	mockedProtocolPublicParameters, MPCKeyScheme,
+	mockedProtocolPublicParameters,
+	MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';
 import { mockCreatePresign, presign } from '../../src/dwallet-mpc/presign';
 import { sign } from '../../src/dwallet-mpc/sign';
@@ -102,10 +104,13 @@ describe('Test dWallet MPC - offline', () => {
 			mockedProtocolPublicParameters,
 			MPCKeyScheme.Secp256k1,
 			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
-			secretKey,
+			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
 			Buffer.from(mockPresign.presignBytes, 'base64'),
 			Buffer.from('hello world'),
 			1,
+		);
+		console.log(
+			`centralizedSignedMessage: ${Buffer.from(centralizedSignedMessage).toString('base64')}`,
 		);
 	});
 });
