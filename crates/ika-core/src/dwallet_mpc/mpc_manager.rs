@@ -553,13 +553,13 @@ impl DWalletMPCManager {
                 .await;
             }
             let manager = epoch_store.get_dwallet_mpc_manager().await;
-            let Some(session) = manager.mpc_sessions.get(&session_id) else {
+            let Some(real_session) = manager.mpc_sessions.get(&session_id) else {
                 error!(
                     "failed to get session when checking if sign last round should get executed"
                 );
                 return;
             };
-            if session.status != MPCSessionStatus::Active && !session.is_verifying_sign_ia_report()
+            if real_session.status != MPCSessionStatus::Active && !real_session.is_verifying_sign_ia_report()
             {
                 return;
             }
