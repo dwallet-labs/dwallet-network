@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use twopc_mpc::secp256k1::class_groups::{
     ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
+use crate::constants::ENCRYPTION_SCHEME_PUBLIC_PARAMETERS;
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -43,6 +44,12 @@ pub fn decryption_key_share_public_parameters() -> Vec<u8> {
     STANDARD
         .decode(DECRYPTION_KEY_SHARE_PUBLIC_PARAMETERS)
         .unwrap()
+}
+
+pub fn encryption_scheme_public_parameters() -> Vec<u8> {
+    // Safe to unwrap as we're using a hardcoded constant.
+    STANDARD
+        .decode(&ENCRYPTION_SCHEME_PUBLIC_PARAMETERS).unwrap()
 }
 
 pub fn decryption_key_share(party_id: PartyID) -> HashMap<PartyID, SecretKeyShareSizedInteger> {
