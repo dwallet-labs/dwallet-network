@@ -116,7 +116,6 @@ pub fn create_sign_centralized_output(
     message: Vec<u8>,
     hash_type: u8,
 ) -> Result<JsValue, JsError> {
-    console_log::init_with_level(log::Level::Debug).unwrap();
     let signed_message = advance_centralized_sign_party(
         protocol_public_parameters,
         key_scheme,
