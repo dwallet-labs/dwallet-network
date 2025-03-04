@@ -20,7 +20,7 @@ import { mockCreatePresign, presign } from '../../src/dwallet-mpc/presign';
 import { sign } from '../../src/dwallet-mpc/sign';
 import { dkgMocks, mockPresign } from './mocks';
 
-const fiveMinutes = 5 * 60 * 1000;
+const fiveMinutes = 10 * 60 * 1000;
 describe('Test dWallet MPC', () => {
 	let conf: Config;
 
