@@ -126,29 +126,11 @@ impl DwalletMPCNetworkKeyVersions {
             public_verification_keys: bcs::to_bytes(&public_output.public_verification_keys).unwrap(),
         };
 
-        let self_decryption_key_share = secret_shares
-            .into_iter()
-            .map(|(party_id, secret_key_share)| {
-                Ok((
-                    party_id,
-                    <AsyncProtocol as Protocol>::DecryptionKeyShare::new(
-                        party_id,
-                        secret_key_share,
-                        &bcs::from_bytes(
-                            &class_groups_constants::decryption_key_share_public_parameters(),
-                        )?,
-                    )
-                    .unwrap(),
-                ))
-            })
-            .collect::<DwalletMPCResult<HashMap<_, _>>>()
-            .unwrap();
-
         Self {
             inner: Arc::new(RwLock::new(DwalletMPCNetworkKeyVersionsInner {
                 validator_decryption_key_share: HashMap::from([(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
-                    vec![self_decryption_key_share],
+                    vec![secret_shares],
                 )]),
                 key_shares_versions: HashMap::from([(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
