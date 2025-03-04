@@ -29,7 +29,7 @@ pub struct ValidatorInitializationConfig {
     #[serde(default = "default_bls12381_key_pair")]
     pub key_pair: AuthorityKeyPair,
     #[serde(default = "default_ed25519_key_pair")]
-    pub worker_key_pair: NetworkKeyPair,
+    pub consensus_key_pair: NetworkKeyPair,
     #[serde(default = "default_ika_key_pair")]
     pub account_key_pair: SuiKeyPair,
     #[serde(default = "default_ed25519_key_pair")]
@@ -41,7 +41,8 @@ pub struct ValidatorInitializationConfig {
     pub metrics_address: SocketAddr,
     pub computation_price: u64,
     pub commission_rate: u16,
-    pub consensus_address: Multiaddr,
+    pub current_epoch_consensus_address: Multiaddr,
+    pub next_epoch_consensus_address: Multiaddr,
     #[serde(default = "default_stake")]
     pub stake: u64,
 }
@@ -53,9 +54,10 @@ impl ValidatorInitializationConfig {
         let protocol_public_key: AuthorityPublicKeyBytes = self.key_pair.public().into();
         let account_key: PublicKey = self.account_key_pair.public();
         let network_public_key: NetworkPublicKey = self.network_key_pair.public().clone();
-        let worker_public_key: NetworkPublicKey = self.worker_key_pair.public().clone();
+        let worker_public_key: NetworkPublicKey = self.consensus_key_pair.public().clone();
         let network_address = self.network_address.clone();
-        let consensus_address = self.consensus_address.clone();
+        let current_epoch_consensus_address = self.current_epoch_consensus_address.clone();
+        let next_epoch_consensus_address = self.next_epoch_consensus_address.clone();
 
         ValidatorInfo {
             name,
@@ -68,7 +70,8 @@ impl ValidatorInitializationConfig {
             commission_rate: self.commission_rate,
             network_address,
             p2p_address: self.p2p_address.clone(),
-            consensus_address,
+            current_epoch_consensus_address,
+            next_epoch_consensus_address,
             description: String::new(),
             image_url: String::new(),
             project_url: String::new(),
@@ -168,26 +171,33 @@ impl ValidatorInitializationConfigBuilder {
                 ))
             });
 
-        let (worker_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
+        let (consensus_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
             (get_key_pair_from_rng(rng).1, get_key_pair_from_rng(rng).1);
 
-        let (network_address, p2p_address, metrics_address, consensus_address) =
-            if let Some(offset) = self.port_offset {
-                (
-                    local_ip_utils::new_deterministic_tcp_address_for_testing(&ip, offset),
-                    local_ip_utils::new_deterministic_udp_address_for_testing(&ip, offset + 1),
-                    local_ip_utils::new_deterministic_tcp_address_for_testing(&ip, offset + 2)
-                        .with_zero_ip(),
-                    local_ip_utils::new_deterministic_udp_address_for_testing(&ip, offset + 3),
-                )
-            } else {
-                (
-                    local_ip_utils::new_tcp_address_for_testing(&ip),
-                    local_ip_utils::new_udp_address_for_testing(&ip),
-                    local_ip_utils::new_tcp_address_for_testing(&localhost),
-                    local_ip_utils::new_udp_address_for_testing(&ip),
-                )
-            };
+        let (
+            network_address,
+            p2p_address,
+            metrics_address,
+            current_epoch_consensus_address,
+            next_epoch_consensus_address,
+        ) = if let Some(offset) = self.port_offset {
+            (
+                local_ip_utils::new_deterministic_tcp_address_for_testing(&ip, offset),
+                local_ip_utils::new_deterministic_udp_address_for_testing(&ip, offset + 1),
+                local_ip_utils::new_deterministic_tcp_address_for_testing(&ip, offset + 2)
+                    .with_zero_ip(),
+                local_ip_utils::new_deterministic_udp_address_for_testing(&ip, offset + 3),
+                local_ip_utils::new_deterministic_udp_address_for_testing(&ip, offset + 4),
+            )
+        } else {
+            (
+                local_ip_utils::new_tcp_address_for_testing(&ip),
+                local_ip_utils::new_udp_address_for_testing(&ip),
+                local_ip_utils::new_tcp_address_for_testing(&localhost),
+                local_ip_utils::new_udp_address_for_testing(&ip),
+                local_ip_utils::new_udp_address_for_testing(&ip),
+            )
+        };
 
         let p2p_listen_address = self
             .p2p_listen_ip_address
@@ -196,7 +206,7 @@ impl ValidatorInitializationConfigBuilder {
         ValidatorInitializationConfig {
             key_pair: protocol_key_pair,
             class_groups_key_pair_and_proof,
-            worker_key_pair,
+            consensus_key_pair,
             account_key_pair: account_key_pair.into(),
             network_key_pair,
             network_address,
@@ -205,7 +215,8 @@ impl ValidatorInitializationConfigBuilder {
             metrics_address: metrics_address.to_socket_addr().unwrap(),
             computation_price,
             commission_rate: DEFAULT_COMMISSION_RATE,
-            consensus_address,
+            current_epoch_consensus_address,
+            next_epoch_consensus_address,
             stake: ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA,
             name: None,
         }
