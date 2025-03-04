@@ -2424,7 +2424,7 @@ Returns all the validators who are currently reporting <code>validator_id</code>
                 object::id_from_address(bcs_body.peel_address());
                 bcs_body.peel_vec_u8();
             } <b>else</b> <b>if</b> (message_data_type == 10) {
-                object::id_from_address(bcs_body.peel_address());
+                object::id_from_bytes(bcs_body.peel_vec_u8());
                 bcs_body.peel_u8();
                 bcs_body.peel_u8();
                 bcs_body.peel_bool();
