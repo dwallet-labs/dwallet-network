@@ -22,6 +22,7 @@ use parking_lot::RwLock;
 use parking_lot::{Mutex, RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
+use std::fs;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -1526,30 +1527,16 @@ impl AuthorityPerEpochStore {
         if make_checkpoint {
             let checkpoint_height = consensus_commit_info.round;
 
-            let mut ms: Vec<Vec<MessageKind>>= vec![];
-           for m in verified_messages.clone().into_iter() {
-
-               if (!ms.is_empty() && bcs::to_bytes(ms.last().unwrap()).unwrap().len() + bcs::to_bytes(&m).unwrap().len() < 15 * 1024) {
-                   ms.last_mut().unwrap().push(m);
-               } else {
-                   ms.push(vec![m]);
-               }
-           }
-
-            let _ = ms.into_iter().map( |m| {
-                let pending_checkpoint = PendingCheckpoint::V1(PendingCheckpointV1 {
-                    messages: m.clone(),
-                    details: PendingCheckpointInfo {
-                        timestamp_ms: consensus_commit_info.timestamp,
-                        mid_of_epoch: mid_epoch_round,
-                        last_of_epoch: final_round,
-                        checkpoint_height,
-                    },
-                });
-                self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
-                Ok(())
-            }
-            ).collect::<IkaResult<_>>()?;
+            let pending_checkpoint = PendingCheckpoint::V1(PendingCheckpointV1 {
+                messages: verified_messages.clone(),
+                details: PendingCheckpointInfo {
+                    timestamp_ms: consensus_commit_info.timestamp,
+                    mid_of_epoch: mid_epoch_round,
+                    last_of_epoch: final_round,
+                    checkpoint_height,
+                },
+            });
+            self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
         }
 
         let mut batch = self.db_batch()?;
@@ -2113,18 +2100,25 @@ impl AuthorityPerEpochStore {
 
                                 let mut slices = Vec::new();
 
-                                let public_chunks = public_output.chunks(1 * 1024).collect_vec();
-                                let key_shares_chunks = key_shares.chunks(1 * 1024).collect_vec();
+                                let public_chunks = public_output.chunks(5 * 1024).collect_vec();
+                                let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
 
                                 let empty: &[u8] = &[];
                                 let total_slices = public_chunks.len().max(key_shares_chunks.len());
+                                println!("total_slices: {:?}", total_slices);
+                                println!("dwallet_network_decryption_key_id: {:?}", dwallet_network_decryption_key_id);
+
+                                let _ = fs::write("data_i_need.txt", format!(
+                                    "total_slices: {:?}\ndwallet_network_decryption_key_id: {:?}", total_slices, dwallet_network_decryption_key_id
+                                ));
+
                                 for i in 0..total_slices {
                                     let public_chunk = public_chunks.get(i).unwrap_or(&empty);
                                     let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
                                     slices.push(Secp256K1NetworkDKGOutputSlice {
                                         dwallet_network_decryption_key_id: dwallet_network_decryption_key_id.clone(),
-                                        public_output: (*public_chunk).to_vec(),
-                                        key_shares: (*key_chunk).to_vec(),
+                                        public_output: 5,
+                                        key_shares: 5,
                                         is_last: i == total_slices - 1,
                                     });
                                 }
@@ -2137,8 +2131,12 @@ impl AuthorityPerEpochStore {
                                     "secp256k1_network_dkg_ id: {:?}",
                                     dwallet_network_decryption_key_id
                                 );
+
+                                let _ = fs::write("dwallet_network_decryption_key_id.txt", format!(
+                                    "secp256k1_network_dkg_ id: {:?}", dwallet_network_decryption_key_id
+                                ));
                                 Ok(self.process_consensus_system_large_transaction(
-                                    &vec![messages.first().unwrap().clone()],
+                                    &vec![messages.last().unwrap().clone()]
                                 ))
                             }
                             DWalletMPCNetworkKeyScheme::Ristretto => Err(IkaError::from(

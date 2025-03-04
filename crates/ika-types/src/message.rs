@@ -148,8 +148,8 @@ pub struct PartialSignatureVerificationOutput {
 pub struct Secp256K1NetworkDKGOutputSlice {
     pub dwallet_network_decryption_key_id: ObjectID,
     // pub sequence_number: u64, Not needed if transactions order is guaranteed
-    pub public_output: Vec<u8>,
-    pub key_shares: Vec<u8>,
+    pub public_output: u8, //Vec<u8>,
+    pub key_shares: u8, // Vec<u8>,
     pub is_last: bool,
 }
 

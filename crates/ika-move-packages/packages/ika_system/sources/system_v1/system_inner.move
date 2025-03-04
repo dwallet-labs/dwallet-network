@@ -952,8 +952,8 @@ fun process_checkpoint_message(
                 bcs_body.peel_vec_u8();
             } else if (message_data_type == 10) {
                 object::id_from_address(bcs_body.peel_address());
-                bcs_body.peel_vec_u8();
-                bcs_body.peel_vec_u8();
+                bcs_body.peel_u8();
+                bcs_body.peel_u8();
                 bcs_body.peel_bool();   
             };
         i = i + 1;

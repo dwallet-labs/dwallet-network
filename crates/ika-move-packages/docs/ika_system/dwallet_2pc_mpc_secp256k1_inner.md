@@ -243,7 +243,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <dd>
 </dd>
 <dt>
-<code>total_messages_processed: u32</code>
+<code>total_messages_processed: u64</code>
 </dt>
 <dd>
  The total messages processed.
@@ -2395,7 +2395,7 @@ Supported hash schemes for message signing.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: vector&lt;u8&gt;, key_shares: vector&lt;u8&gt;, is_last: bool)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: u8, _key_shares: u8, _is_last: bool)
 </code></pre>
 
 
@@ -2407,27 +2407,27 @@ Supported hash schemes for message signing.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_network_decryption_key_id: ID,
-    public_output: vector&lt;u8&gt;,
-    key_shares: vector&lt;u8&gt;,
-    is_last: bool,
+    public_output: u8,
+    _key_shares: u8,
+    _is_last: bool,
 ) {
     <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.public_output.append(public_output);
-    dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
-    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG =&gt; {
-            <b>if</b> (is_last) {
-                event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent">CompletedDWalletNetworkDKGDecryptionKeyEvent</a> {
-                dwallet_network_decryption_key_id,
-                public_output
-                });
-                DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-            } <b>else</b> {
-                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-            }
-        },
-        _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
-    };
+    dwallet_network_decryption_key.public_output.push_back(public_output);
+    // dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
+    // dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+    //     DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG =&gt; {
+    //         <b>if</b> (is_last) {
+    //             event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent">CompletedDWalletNetworkDKGDecryptionKeyEvent</a> {
+    //             dwallet_network_decryption_key_id,
+    //             public_output
+    //             });
+    //             DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+    //         } <b>else</b> {
+    //             DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+    //         }
+    //     },
+    //     _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
+    // };
 }
 </code></pre>
 
@@ -4368,7 +4368,7 @@ the function will abort with this error.
         sequence_number,
         timestamp_ms,
     });
-    <b>let</b> messages_len = bcs_body.peel_vec_length() <b>as</b> u32;
+    <b>let</b> messages_len = bcs_body.peel_vec_length();
     <b>let</b> <b>mut</b> i = 0;
     <b>let</b> <b>mut</b> response_session_count = 0;
     <b>while</b> (i &lt; messages_len) {
@@ -4458,12 +4458,12 @@ the function will abort with this error.
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_presign">respond_ecdsa_presign</a>(dwallet_id, session_id, presign, ctx);
                 response_session_count = response_session_count + 1;
             } <b>else</b> <b>if</b> (message_data_type == 10) {
-                object::id_from_address(bcs_body.peel_address());
-                bcs_body.peel_vec_u8();
-                bcs_body.peel_vec_u8();
-                bcs_body.peel_bool();
-                // self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
-                // response_session_count = response_session_count + 1;
+                <b>let</b> dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> public_output = bcs_body.peel_u8();
+                <b>let</b> key_shares = bcs_body.peel_u8();
+                <b>let</b> is_last = bcs_body.peel_bool();
+                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
+                response_session_count = response_session_count + 1;
             };
         i = i + 1;
     };

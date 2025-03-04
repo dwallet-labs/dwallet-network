@@ -54,7 +54,7 @@ public struct DWalletEpochCoordinator has key, store {
     committee: BlsCommittee,
     session_count: u32,
     /// The total messages processed.
-    total_messages_processed: u32,
+    total_messages_processed: u64,
     /// The last checkpoint sequence number processed.
     last_processed_checkpoint_sequence_number: Option<u32>,
     /// The fees paid for consuenes validation in IKA.
@@ -710,27 +710,27 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
 public(package) fun respond_dwallet_network_decryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
-    public_output: vector<u8>,
-    key_shares: vector<u8>,
-    is_last: bool,
+    public_output: u8,
+    _key_shares: u8,
+    _is_last: bool,
 ) {
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.public_output.append(public_output);
-    dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
-    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
-            if (is_last) {
-                event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
-                dwallet_network_decryption_key_id,
-                public_output
-                });
-                DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-            } else {
-                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-            }
-        },
-        _ => abort EWrongState
-    };
+    dwallet_network_decryption_key.public_output.push_back(public_output);
+    // dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
+    // dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+    //     DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
+    //         if (is_last) {
+    //             event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
+    //             dwallet_network_decryption_key_id,
+    //             public_output
+    //             });
+    //             DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+    //         } else {
+    //             DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+    //         }
+    //     },
+    //     _ => abort EWrongState
+    // };
 }
 
 public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
@@ -1915,7 +1915,7 @@ fun process_checkpoint_message(
         timestamp_ms,
     });
 
-    let messages_len = bcs_body.peel_vec_length() as u32;
+    let messages_len = bcs_body.peel_vec_length();
     let mut i = 0;
     let mut response_session_count = 0;
     while (i < messages_len) {
@@ -2005,12 +2005,12 @@ fun process_checkpoint_message(
                 self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx);
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 10) {
-                object::id_from_address(bcs_body.peel_address());
-                bcs_body.peel_vec_u8();
-                bcs_body.peel_vec_u8();
-                bcs_body.peel_bool();
-                // self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
-                // response_session_count = response_session_count + 1;
+                let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let public_output = bcs_body.peel_u8();
+                let key_shares = bcs_body.peel_u8();
+                let is_last = bcs_body.peel_bool();
+                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
+                response_session_count = response_session_count + 1;
             };
         i = i + 1;
     };

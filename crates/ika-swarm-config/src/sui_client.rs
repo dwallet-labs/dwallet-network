@@ -34,6 +34,7 @@ use sui::client_commands::{
 };
 use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
+use sui_sdk::apis::CoinReadApi;
 use sui_sdk::rpc_types::SuiTransactionBlockEffectsAPI;
 use sui_sdk::rpc_types::{
     ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
@@ -145,6 +146,9 @@ pub async fn init_ika_on_sui(
         publish_ika_package_to_sui(publisher_address, &mut context, client.clone(), ika_package)
             .await?;
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+    merge_coins(publisher_address, &mut context, &client.coin_read_api()).await?;
+    println!("merge coins done, address {:?}", publisher_address);
 
     println!("Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}");
 
@@ -585,6 +589,25 @@ async fn request_add_validator(
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
     let _ = execute_sui_transaction(validator_address, tx_kind, context).await?;
+
+    Ok(())
+}
+
+async fn merge_coins(
+    publisher_address: SuiAddress,
+    context: &mut WalletContext,
+    coin_read_api: &CoinReadApi,
+) -> Result<(), anyhow::Error> {
+    let mut ptb = ProgrammableTransactionBuilder::new();
+    let coins = coin_read_api.get_coins(publisher_address, Some("0x2::sui::SUI".to_string()), None, Some(4)).await?.data;
+    let coins = coins.iter().map(|c| ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(c.object_ref()))).unwrap()).collect::<Vec<_>>();
+
+    ptb.command(sui_types::transaction::Command::MergeCoins(
+        *coins.first().clone().unwrap(),
+        coins[1..].to_vec()
+    ));
+    let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
+    let _ = execute_sui_transaction(publisher_address, tx_kind, context).await?;
 
     Ok(())
 }

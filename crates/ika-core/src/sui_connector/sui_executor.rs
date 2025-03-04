@@ -191,9 +191,10 @@ where
             .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
             .await;
 
-        // let coin =
-        //     // Minimum balance for gas object is 10 SUI
-        //     pick_highest_balance_coin(sui_client.rea, sui_notifier.sui_address, 0)
+        // let a = sui_client.get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed()
+        // // let coin =
+        // //     // Minimum balance for gas object is 10 SUI
+        //     pick_highest_balance_coin(sui_client.coin, sui_notifier.sui_address, 0)
         //         .await?;
         // // coin.coin_object_id
 
