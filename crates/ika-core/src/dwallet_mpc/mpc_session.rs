@@ -497,17 +497,4 @@ impl DWalletMPCSession {
             },
         }
     }
-
-    fn get_protocol_public_parameters(
-        &self,
-        key_scheme: DWalletMPCNetworkKeyScheme,
-        key_version: u8,
-    ) -> DwalletMPCResult<Vec<u8>> {
-        if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
-            return self_decryption_share.get_protocol_public_parameters(key_scheme, key_version);
-        }
-        Err(DwalletMPCError::TwoPCMPCError(
-            "Decryption share not found".to_string(),
-        ))
-    }
 }
