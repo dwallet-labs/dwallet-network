@@ -56,5 +56,9 @@ pub fn decryption_key_share(party_id: PartyID) -> HashMap<PartyID, SecretKeyShar
     let bytes = STANDARD.decode(DYCRPTION_SHARES).unwrap();
     let shares: HashMap<PartyID, HashMap<PartyID, SecretKeyShareSizedInteger>> =
         bcs::from_bytes(&bytes).unwrap();
-    shares.get(&party_id).unwrap().clone()
+    // flatten the shares
+    let flatten_shares: HashMap<PartyID, SecretKeyShareSizedInteger> = shares.into_iter()
+        .map(|(id, map)| (id, map.values().last().unwrap().clone()))
+        .collect();
+    flatten_shares
 }
