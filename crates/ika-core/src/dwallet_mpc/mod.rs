@@ -25,17 +25,22 @@ use ika_types::messages_dwallet_mpc::{
     StartEncryptionKeyVerificationEvent, StartPresignFirstRoundEvent,
 };
 use ika_types::messages_dwallet_mpc::{SignData, StartPartialSignaturesVerificationEvent};
+use k256::ecdsa::hazmat::bits2field;
+use k256::elliptic_curve;
 use k256::elliptic_curve::ops::Reduce;
+use k256::U256;
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use rand_core::OsRng;
 use serde::de::DeserializeOwned;
+use sha3::digest::FixedOutput as Sha3FixedOutput;
+use sha3::Digest as Sha3Digest;
 use std::collections::{HashMap, HashSet};
 use std::vec::Vec;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
 use tracing::warn;
-use twopc_mpc::secp256k1;
 
+use twopc_mpc::secp256k1;
 pub mod batches_manager;
 mod cryptographic_computations_orchestrator;
 mod dkg;
@@ -48,6 +53,7 @@ pub mod mpc_outputs_verifier;
 pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
+
 pub(crate) mod sign;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
@@ -353,12 +359,6 @@ impl TryFrom<u8> for Hash {
         }
     }
 }
-
-use k256::ecdsa::hazmat::bits2field;
-use k256::elliptic_curve;
-use k256::U256;
-use sha3::digest::FixedOutput as Sha3FixedOutput;
-use sha3::Digest as Sha3Digest;
 
 /// Computes the message digest of a given message using the specified hash function.
 fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1::Scalar> {
