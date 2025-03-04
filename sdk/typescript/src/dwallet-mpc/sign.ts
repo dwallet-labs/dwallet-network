@@ -2,7 +2,6 @@ import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-was
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config } from './globals.ts';
 import {
 	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
@@ -16,7 +15,8 @@ import {
 	mockedProtocolPublicParameters,
 	MPCKeyScheme,
 	SUI_PACKAGE_ID,
-} from './globals.ts';
+} from './globals.js';
+import type { Config } from './globals.ts';
 
 export enum Hash {
 	KECCAK256 = 0,
