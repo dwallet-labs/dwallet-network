@@ -531,7 +531,8 @@ impl DWalletMPCManager {
         ready_to_advance_session: DWalletMPCSession,
         finished_computation_sender: UnboundedSender<ComputationUpdate>,
     ) -> DwalletMPCResult<()> {
-        let validator_position = self.get_validator_position(&ready_to_advance_session.session_info)?;
+        let validator_position =
+            self.get_validator_position(&ready_to_advance_session.session_info)?;
         let epoch_store = self.epoch_store()?;
         tokio::spawn(async move {
             for _ in 0..validator_position {
