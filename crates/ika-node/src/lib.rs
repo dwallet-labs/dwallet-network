@@ -70,14 +70,14 @@ use ika_core::epoch::consensus_store_pruner::ConsensusStorePruner;
 use ika_core::epoch::epoch_metrics::EpochMetrics;
 use ika_core::epoch::reconfiguration::ReconfigurationInitiator;
 use ika_core::storage::RocksDbStore;
+use mysten_metrics::{spawn_monitored_task, RegistryService};
+use mysten_network::server::ServerBuilder;
+use mysten_service::server_timing::server_timing_middleware;
+
 use ika_network::discovery;
 use ika_network::discovery::TrustedPeerChangeEvent;
 use ika_network::state_sync;
 use ika_protocol_config::{Chain, ProtocolConfig};
-use mysten_metrics::{spawn_monitored_task, RegistryService};
-use mysten_network::server::ServerBuilder;
-use mysten_service::server_timing::server_timing_middleware;
-use rayon::ThreadPoolBuilder;
 use sui_macros::fail_point;
 use sui_macros::{fail_point_async, replay_log};
 use sui_storage::{FileCompression, StorageFormat};
@@ -244,9 +244,6 @@ impl IkaNode {
         registry_service: RegistryService,
         software_version: &'static str,
     ) -> Result<Arc<IkaNode>> {
-        // let _res = ThreadPoolBuilder::new()
-        //     .stack_size(64 * 1024 * 1024) // Set stack size to 64MB
-        //     .build_global();
         NodeConfigMetrics::new(&registry_service.default_registry()).record_metrics(&config);
         let mut config = config.clone();
         if config.supported_protocol_versions.is_none() {

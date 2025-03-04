@@ -140,6 +140,7 @@ impl MPCProtocolInitData {
     /// Returns `true` if the round is a single message, which is
     /// part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
+        // TODO (#694): Remove the batch logic
         false
     }
 
