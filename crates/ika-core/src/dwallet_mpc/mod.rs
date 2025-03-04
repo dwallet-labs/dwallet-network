@@ -291,7 +291,6 @@ fn sign_public_input(
             deserialized_event
                 .dwallet_decentralized_public_output
                 .clone(),
-            // deserialized_event.message.clone(),
             bcs::to_bytes(
                 &message_digest(
                     &deserialized_event.message.clone(),
