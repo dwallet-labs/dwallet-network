@@ -31,7 +31,6 @@ use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
-use log::warn;
 use serde::{Deserialize, Serialize};
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::{
