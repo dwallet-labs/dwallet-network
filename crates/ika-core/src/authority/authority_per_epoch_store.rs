@@ -2116,9 +2116,9 @@ impl AuthorityPerEpochStore {
                                     let public_chunk = public_chunks.get(i).unwrap_or(&empty);
                                     let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
                                     slices.push(Secp256K1NetworkDKGOutputSlice {
-                                        dwallet_network_decryption_key_id: dwallet_network_decryption_key_id.clone(),
-                                        public_output: 5,
-                                        key_shares: 5,
+                                        dwallet_network_decryption_key_id: dwallet_network_decryption_key_id.clone().to_vec(),
+                                        public_output: (*public_chunk).to_vec(),
+                                        key_shares: (*key_chunk).to_vec(),
                                         is_last: i == total_slices - 1,
                                     });
                                 }
