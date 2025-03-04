@@ -528,10 +528,10 @@ impl DWalletMPCManager {
         &mut self,
         session_id: ObjectID,
         handle: Handle,
-        session: DWalletMPCSession,
+        ready_to_advance_session: DWalletMPCSession,
         finished_computation_sender: UnboundedSender<ComputationUpdate>,
     ) -> DwalletMPCResult<()> {
-        let validator_position = self.get_validator_position(&session.session_info)?;
+        let validator_position = self.get_validator_position(&ready_to_advance_session.session_info)?;
         let epoch_store = self.epoch_store()?;
         tokio::spawn(async move {
             for _ in 0..validator_position {
@@ -553,14 +553,14 @@ impl DWalletMPCManager {
                 .await;
             }
             let manager = epoch_store.get_dwallet_mpc_manager().await;
-            let Some(real_session) = manager.mpc_sessions.get(&session_id) else {
+            let Some(live_session) = manager.mpc_sessions.get(&session_id) else {
                 error!(
                     "failed to get session when checking if sign last round should get executed"
                 );
                 return;
             };
-            if real_session.status != MPCSessionStatus::Active
-                && !real_session.is_verifying_sign_ia_report()
+            if live_session.status != MPCSessionStatus::Active
+                && !live_session.is_verifying_sign_ia_report()
             {
                 return;
             }
@@ -568,7 +568,7 @@ impl DWalletMPCManager {
                 "running last sign cryptographic step for session_id: {:?}",
                 session_id
             );
-            let session = session.clone();
+            let session = ready_to_advance_session.clone();
             if let Err(err) = finished_computation_sender.send(ComputationUpdate::Started) {
                 error!(
                     "Failed to send a started computation message with error: {:?}",
