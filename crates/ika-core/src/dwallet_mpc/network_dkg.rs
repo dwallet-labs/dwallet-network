@@ -31,6 +31,7 @@ use twopc_mpc::secp256k1::class_groups::{
 };
 use twopc_mpc::sign::Protocol;
 use twopc_mpc::ProtocolPublicParameters;
+use class_groups_constants::encryption_scheme_public_parameters;
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -119,18 +120,11 @@ impl DwalletMPCNetworkKeyVersions {
             )
             .unwrap(),
             previous_epoch_encryptions_of_shares_per_crt_prime: vec![],
-            encryption_scheme_public_parameters: bcs::to_bytes(
-                &public_output
-                    .default_encryption_scheme_public_parameters::<secp256k1::GroupElement>()
-                    .map_err(|e| DwalletMPCError::ClassGroupsError(e.to_string()))
-                    .unwrap(),
-            )
-            .unwrap(),
+            encryption_scheme_public_parameters: class_groups_constants::encryption_scheme_public_parameters(),
             decryption_key_share_public_parameters: class_groups_constants::decryption_key_share_public_parameters(),
             encryption_key: bcs::to_bytes(&public_output.encryption_key).unwrap(),
             public_verification_keys: bcs::to_bytes(&public_output.public_verification_keys).unwrap(),
         };
-
 
         let self_decryption_key_share = secret_shares
             .into_iter()
