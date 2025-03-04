@@ -46,6 +46,12 @@ interface WaitingForUserDWallet {
 	};
 }
 
+interface DWallet {
+	dwallet_id: string;
+	dwallet_cap_id: string;
+	secret_share: Uint8Array;
+}
+
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 	return (
 		!!obj?.event_data?.dwallet_id &&
@@ -53,12 +59,6 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 		!!obj?.event_data?.dwallet_cap_id &&
 		!!obj?.event_data?.dwallet_network_decryption_key_id
 	);
-}
-
-interface DWallet {
-	dwallet_id: string;
-	dwallet_cap_id: string;
-	secret_share: Uint8Array;
 }
 
 export async function createDWallet(
@@ -73,8 +73,6 @@ export async function createDWallet(
 		protocolPublicParameters,
 		classGroupsSecpKeyPair,
 	);
-	// log the output in base64
-	console.log(Buffer.from(dwalletOutput.dwalletOutput).toString('base64'));
 	return {
 		dwallet_id: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
@@ -102,9 +100,6 @@ export async function launchDKGSecondRound(
 			firstRoundOutputResult.sessionID.slice(2),
 		);
 	const dWalletStateData = await getDWalletSecpState(conf);
-
-	// log the secret share in base64
-	console.log('secret share:', Buffer.from(centralizedSecretKeyShare).toString('base64'));
 
 	const encryptedUserShareAndProof = encrypt_secret_share(
 		centralizedSecretKeyShare,

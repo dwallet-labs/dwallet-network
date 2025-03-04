@@ -50,14 +50,6 @@ export async function sign(
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
 	const presign = await getObjectWithType(conf, presignID, isPresign);
 
-	// protocol_public_parameters: Vec<u8>,
-	// 	key_scheme: u8,
-	// 	decentralized_party_dkg_public_output: Vec<u8>,
-	// 	centralized_party_dkg_secret_output: Vec<u8>,
-	// 	presign: Vec<u8>,
-	// 	message: Vec<u8>,
-	// 	hash_type: u8,
-
 	const centralizedSignedMessage = create_sign_centralized_output(
 		protocolPublicParameters,
 		MPCKeyScheme.Secp256k1,
