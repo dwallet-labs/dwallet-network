@@ -122,7 +122,7 @@ pub struct SignIASessionState {
 /// The message and data for the Sign round.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SingleSignSessionData {
-    pub batch_session_id: ObjectID,
+    pub session_id: ObjectID,
     pub message: Vec<u8>,
     /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,

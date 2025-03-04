@@ -314,7 +314,7 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
         initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
             hash: deserialized_event.event_data.hash_scheme,
-            batch_session_id: deserialized_event.session_id,
+            session_id: deserialized_event.session_id,
             message: deserialized_event.event_data.message.clone(),
             dwallet_id: deserialized_event.event_data.dwallet_id.bytes,
             dwallet_decentralized_public_output: deserialized_event

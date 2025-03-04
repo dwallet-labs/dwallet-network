@@ -2152,7 +2152,7 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::Sign(init_event) => {
                 let tx = MessageKind::DwalletSign(SignOutput {
-                    session_id: init_event.batch_session_id.to_vec(),
+                    session_id: init_event.session_id.to_vec(),
                     signature: output,
                     dwallet_id: init_event.dwallet_id.to_vec(),
                     is_future_sign: init_event.is_future_sign,

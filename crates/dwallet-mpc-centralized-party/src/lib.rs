@@ -198,9 +198,7 @@ pub fn advance_centralized_sign_party(
     message: Vec<u8>,
     hash_type: u8,
 ) -> anyhow::Result<SignedMessage> {
-    warn!("1");
     let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_public_output)?;
-    warn!("2");
     let centralized_public_output = twopc_mpc::class_groups::DKGCentralizedPartyOutput::<
         { secp256k1::SCALAR_LIMBS },
         secp256k1::GroupElement,
@@ -209,13 +207,10 @@ pub fn advance_centralized_sign_party(
         public_key: decentralized_output.public_key,
         decentralized_party_public_key_share: decentralized_output.public_key_share,
     };
-    warn!("3");
     let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
         bcs::from_bytes(&presign)?;
-    warn!("4");
     let hashed_message =
         message_digest(&message, &hash_type.try_into()?).context("Message digest failed")?;
-    warn!("5");
     let centralized_party_public_input =
         <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedPartyPublicInput::from((
             hashed_message,
