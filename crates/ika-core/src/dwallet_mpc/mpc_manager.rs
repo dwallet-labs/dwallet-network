@@ -559,7 +559,8 @@ impl DWalletMPCManager {
                 );
                 return;
             };
-            if real_session.status != MPCSessionStatus::Active && !real_session.is_verifying_sign_ia_report()
+            if real_session.status != MPCSessionStatus::Active
+                && !real_session.is_verifying_sign_ia_report()
             {
                 return;
             }

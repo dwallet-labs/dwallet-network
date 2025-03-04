@@ -16,6 +16,7 @@ use class_groups::{
     DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_SCALAR_LIMBS,
 };
+use class_groups_constants::encryption_scheme_public_parameters;
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
@@ -31,7 +32,6 @@ use twopc_mpc::secp256k1::class_groups::{
 };
 use twopc_mpc::sign::Protocol;
 use twopc_mpc::ProtocolPublicParameters;
-use class_groups_constants::encryption_scheme_public_parameters;
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -120,10 +120,13 @@ impl DwalletMPCNetworkKeyVersions {
             )
             .unwrap(),
             previous_epoch_encryptions_of_shares_per_crt_prime: vec![],
-            encryption_scheme_public_parameters: class_groups_constants::encryption_scheme_public_parameters(),
-            decryption_key_share_public_parameters: class_groups_constants::decryption_key_share_public_parameters(),
+            encryption_scheme_public_parameters:
+                class_groups_constants::encryption_scheme_public_parameters(),
+            decryption_key_share_public_parameters:
+                class_groups_constants::decryption_key_share_public_parameters(),
             encryption_key: bcs::to_bytes(&public_output.encryption_key).unwrap(),
-            public_verification_keys: bcs::to_bytes(&public_output.public_verification_keys).unwrap(),
+            public_verification_keys: bcs::to_bytes(&public_output.public_verification_keys)
+                .unwrap(),
         };
 
         let self_decryption_key_share = secret_shares
