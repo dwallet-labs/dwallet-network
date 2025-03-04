@@ -114,7 +114,7 @@ impl DwalletMPCNetworkKeyVersions {
         let secret_shares = class_groups_constants::decryption_key_share(party_id);
 
         let new_key_version = NetworkDecryptionKeyShares {
-            epoch,
+            epoch: epoch_store.epoch(),
             current_epoch_encryptions_of_shares_per_crt_prime: bcs::to_bytes(
                 &public_output.encryptions_of_shares_per_crt_prime,
             )
