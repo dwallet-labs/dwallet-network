@@ -1872,8 +1872,8 @@ fun process_checkpoint_message(
                     rejected,
                 );
             } else if (message_data_type == 7) {
-                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                let partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
                 let rejected = bcs_body.peel_bool();
                 self.respond_ecdsa_future_sign(
                     dwallet_id,
