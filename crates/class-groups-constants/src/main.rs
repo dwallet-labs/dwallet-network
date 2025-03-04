@@ -7,7 +7,7 @@ fn main() {
         base64::encode(
             bcs::to_bytes(
                 &network_dkg_final_output()
-                    .default_encryption_scheme_public_parameters::<group::secp256k1::GroupElement>()
+                    .default_encryption_scheme_public_parameters::<twopc_mpc::secp256k1::GroupElement>()
                     .unwrap()
             )
             .unwrap()
