@@ -245,7 +245,7 @@ pub async fn request_add_validator_candidate(
             &validator_initialization_metadata.p2p_address.clone(),
         )?),
         CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata.consensus_address.clone(),
+            &validator_initialization_metadata.current_epoch_consensus_address,
         )?),
         CallArg::Pure(bcs::to_bytes(
             &validator_initialization_metadata.computation_price,
@@ -427,7 +427,7 @@ async fn construct_unsigned_ika_system_txn(
         .get_object_with_options(ika_system_id, SuiObjectDataOptions::new().with_owner())
         .await?
         .data
-        .ok_or(anyhow::Error::msg("Failed to get object data"))?
+        .ok_or(anyhow::Error::msg("failed to get object data"))?
         .owner
     else {
         bail!("Failed to get owner of object")

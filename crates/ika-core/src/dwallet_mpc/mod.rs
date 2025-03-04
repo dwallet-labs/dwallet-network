@@ -494,7 +494,9 @@ pub(crate) fn session_input_from_event(
                     &dwallet_mpc_manager.validators_data_for_network_dkg,
                 )?,
                 Some(bcs::to_bytes(
-                    &dwallet_mpc_manager.node_config.class_groups_private_key,
+                    &dwallet_mpc_manager
+                        .node_config
+                        .class_groups_key_pair_and_proof,
                 )?),
             ))
         }
