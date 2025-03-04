@@ -677,6 +677,7 @@ impl DWalletMPCManager {
                     "received a message for an MPC session ID: `{:?}` which does not exist",
                     message.session_id
                 );
+                // TODO (#693): Keep messages for non-existing sessions.
                 return Ok(());
             }
         };
