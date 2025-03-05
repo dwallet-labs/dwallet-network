@@ -135,15 +135,15 @@ impl IkaValidatorCommand {
                 let dir = std::env::current_dir()?;
                 let protocol_key_file_name = dir.join("protocol.key");
                 let network_key_file_name = dir.join("network.key");
-                let consensus_key_file_name = dir.join("consensus.key");
+                let worker_key_file_name = dir.join("worker.key");
 
                 make_key_files(protocol_key_file_name.clone(), true, None)?;
                 make_key_files(network_key_file_name.clone(), false, None)?;
-                make_key_files(consensus_key_file_name.clone(), false, None)?;
+                make_key_files(worker_key_file_name.clone(), false, None)?;
 
                 let keypair = read_authority_keypair_from_file(&protocol_key_file_name);
                 let consensus_keypair: NetworkKeyPair =
-                    read_network_keypair_from_file(consensus_key_file_name)?;
+                    read_network_keypair_from_file(worker_key_file_name)?;
                 let network_keypair: NetworkKeyPair =
                     read_network_keypair_from_file(network_key_file_name)?;
                 let pop = generate_proof_of_possession(&keypair, sender_sui_address);
@@ -167,14 +167,7 @@ impl IkaValidatorCommand {
                     image_url,
                     project_url,
                     commission_rate: DEFAULT_COMMISSION_RATE,
-                    current_epoch_consensus_address: Multiaddr::try_from(format!(
-                        "/dns/{}/udp/8081",
-                        host_name
-                    ))?,
-                    next_epoch_consensus_address: Multiaddr::try_from(format!(
-                        "/dns/{}/udp/8082",
-                        host_name
-                    ))?,
+                    consensus_address: Multiaddr::try_from(format!("/dns/{}/udp/8081", host_name))?,
                     network_address: Multiaddr::try_from(format!(
                         "/dns/{}/tcp/8080/http",
                         host_name

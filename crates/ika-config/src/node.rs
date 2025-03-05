@@ -30,9 +30,7 @@ pub use sui_config::node::KeyPairWithPath;
 use sui_types::crypto::SuiKeyPair;
 use sui_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
 
-use dwallet_classgroups_types::{
-    read_class_groups_from_file, ClassGroupsDecryptionKey, ClassGroupsKeyPairAndProof,
-};
+use dwallet_classgroups_types::ClassGroupsDecryptionKey;
 use ika_types::crypto::{
     get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, EncodeDecodeBase64,
 };
@@ -105,11 +103,11 @@ pub struct SuiConnectorConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
-    pub class_groups_key_pair_and_proof: ClassGroupsKeyPairWithPath,
+    pub class_groups_private_key: ClassGroupsDecryptionKey,
     #[serde(default = "default_authority_key_pair")]
     pub protocol_key_pair: AuthorityKeyPairWithPath,
     #[serde(default = "default_key_pair")]
-    pub consensus_key_pair: KeyPairWithPath,
+    pub worker_key_pair: KeyPairWithPath,
     #[serde(default = "default_key_pair")]
     pub account_key_pair: KeyPairWithPath,
     #[serde(default = "default_key_pair")]
@@ -207,8 +205,8 @@ impl NodeConfig {
         self.protocol_key_pair.authority_keypair()
     }
 
-    pub fn consensus_key_pair(&self) -> &NetworkKeyPair {
-        match self.consensus_key_pair.keypair() {
+    pub fn worker_key_pair(&self) -> &NetworkKeyPair {
+        match self.worker_key_pair.keypair() {
             SuiKeyPair::Ed25519(kp) => kp,
             other => panic!(
                 "Invalid keypair type: {:?}, only Ed25519 is allowed for worker key",
@@ -560,63 +558,4 @@ pub fn read_authority_keypair_from_file(path: &PathBuf) -> AuthorityKeyPair {
         .unwrap_or_else(|_| panic!("Invalid authority keypair file at path {:?}", &path));
     AuthorityKeyPair::decode_base64(contents.as_str().trim())
         .unwrap_or_else(|_| panic!("Invalid authority keypair file at path {:?}", &path))
-}
-
-/// Wrapper struct for ClassGroupsKeyPair that can be deserialized from a file path.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
-pub struct ClassGroupsKeyPairWithPath {
-    #[serde(flatten)]
-    location: ClassGroupsKeyPairLocation,
-
-    #[serde(skip)]
-    keypair: OnceCell<Arc<ClassGroupsKeyPairAndProof>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Eq)]
-#[serde_as]
-#[serde(untagged)]
-enum ClassGroupsKeyPairLocation {
-    InPlace {
-        value: Arc<ClassGroupsKeyPairAndProof>,
-    },
-    File {
-        path: PathBuf,
-    },
-}
-
-impl ClassGroupsKeyPairWithPath {
-    pub fn new(kp: Box<ClassGroupsKeyPairAndProof>) -> Self {
-        let cell: OnceCell<Arc<ClassGroupsKeyPairAndProof>> = OnceCell::new();
-        let arc_kp = Arc::new(*kp);
-        // OK to unwrap panic because class_groups should not start without all keypairs loaded.
-        cell.set(arc_kp.clone())
-            .expect("Failed to set class_groups keypair");
-        Self {
-            location: ClassGroupsKeyPairLocation::InPlace { value: arc_kp },
-            keypair: cell,
-        }
-    }
-
-    pub fn new_from_path(path: PathBuf) -> Self {
-        let cell: OnceCell<Arc<ClassGroupsKeyPairAndProof>> = OnceCell::new();
-        // OK to unwrap panic because class_groups should not start without all keypairs loaded.
-        cell.set(Arc::new(*read_class_groups_from_file(&path).unwrap()))
-            .expect("Failed to set class_groups keypair");
-        Self {
-            location: ClassGroupsKeyPairLocation::File { path },
-            keypair: cell,
-        }
-    }
-
-    pub fn class_groups_keypair(&self) -> &ClassGroupsKeyPairAndProof {
-        self.keypair
-            .get_or_init(|| match &self.location {
-                ClassGroupsKeyPairLocation::InPlace { value } => value.clone(),
-                ClassGroupsKeyPairLocation::File { path } => {
-                    // OK to unwrap panic because class_groups should not start without all keypairs loaded.
-                    Arc::new(*read_class_groups_from_file(path).unwrap())
-                }
-            })
-            .as_ref()
-    }
 }
