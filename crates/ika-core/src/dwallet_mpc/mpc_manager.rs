@@ -11,7 +11,7 @@ use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
+use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, EventDrivenData};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
@@ -741,7 +741,7 @@ impl DWalletMPCManager {
             self.consensus_adapter.clone(),
             self.epoch_id,
             MPCSessionStatus::Pending,
-            public_input,
+            public_input.clone(),
             session_info.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
@@ -752,7 +752,12 @@ impl DWalletMPCManager {
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
                 )?,
             },
-            private_input,
+            private_input.clone(),
+            Some(EventDrivenData {
+                private_input,
+                public_input: public_input.clone(),
+                session_info: session_info.clone(),
+            })
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing

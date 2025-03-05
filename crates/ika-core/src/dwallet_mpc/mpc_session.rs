@@ -45,6 +45,13 @@ pub(crate) struct ReadyToAdvanceCheckResult {
     pub(crate) malicious_parties: Vec<PartyID>,
 }
 
+#[derive(Clone)]
+pub struct EventDrivenData {
+    pub private_input: MPCPrivateInput,
+    pub(super) public_input: MPCPublicInput,
+    pub(super) session_info: SessionInfo,
+}
+
 /// A dWallet MPC session.
 /// It keeps track of the session, the channel to send messages to the session,
 /// and the messages that are pending to be sent to the session.
@@ -75,6 +82,7 @@ pub(super) struct DWalletMPCSession {
     decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     private_input: MPCPrivateInput,
+    event_driven_data: Option<EventDrivenData>
 }
 
 impl DWalletMPCSession {
@@ -89,6 +97,7 @@ impl DWalletMPCSession {
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
         private_input: MPCPrivateInput,
+        event_driven_data: Option<EventDrivenData>
     ) -> Self {
         Self {
             status,
@@ -104,6 +113,7 @@ impl DWalletMPCSession {
             decryption_share,
             private_input,
             session_specific_state: None,
+            event_driven_data
         }
     }
 

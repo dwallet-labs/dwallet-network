@@ -77,7 +77,6 @@ pub enum MPCProtocolInitData {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCSessionSpecificState {
     Sign(SignIASessionState),
-    Presign(PresignSessionState),
 }
 
 /// The optional state of the Presign session, if the first round party was
