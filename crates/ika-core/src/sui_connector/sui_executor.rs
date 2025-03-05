@@ -133,11 +133,6 @@ where
                         )
                         .expect("Serializing checkpoint message cannot fail");
 
-                        // if message.len() >= 5000 {
-                        //     println!("this will fail: {:?}", checkpoint_message.messages.len());
-                        //     println!("{:?}", checkpoint_message);
-                        // }
-
                         info!("signers_bitmap: {:?}", signers_bitmap);
 
                         println!("sequence number: {}", next_checkpoint_sequence_number);
@@ -192,13 +187,6 @@ where
             .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
             .await;
 
-        // let a = sui_client.get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed()
-        // // let coin =
-        // //     // Minimum balance for gas object is 10 SUI
-        //     pick_highest_balance_coin(sui_client.coin, sui_notifier.sui_address, 0)
-        //         .await?;
-        // // coin.coin_object_id
-
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
@@ -206,10 +194,6 @@ where
         let dwallet_2pc_mpc_secp256k1_arg = sui_client
             .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
             .await;
-
-        if message.len() >= 16384 {
-            println!("this will fail");
-        }
 
         ptb.move_call(
             ika_system_package_id,

@@ -29,8 +29,7 @@ use sui_types::digests::{get_mainnet_chain_identifier, get_testnet_chain_identif
 use sui_types::event::EventID;
 use sui_types::object::Owner;
 use sui_types::transaction::{
-    Command, ProgrammableTransaction, SenderSignedData, Transaction, TransactionData,
-    TransactionKind,
+    ProgrammableTransaction, SenderSignedData, Transaction, TransactionData, TransactionKind,
 };
 use sui_types::Identifier;
 use tokio::task::JoinHandle;
@@ -268,8 +267,13 @@ pub(crate) async fn build_sui_transaction<C: SuiClientInner>(
 ) -> Transaction {
     let computation_price = sui_client.get_reference_gas_price_until_success().await;
 
-    let tx_data =
-        TransactionData::new_programmable(signer, gas_payment, pt, 950_000_000, computation_price);
+    let tx_data = TransactionData::new_programmable(
+        signer,
+        gas_payment,
+        pt,
+        10_000_000_000,
+        computation_price,
+    );
 
     let signature = Signature::new_secure(
         &IntentMessage::new(Intent::sui_transaction(), &tx_data),
