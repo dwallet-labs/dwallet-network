@@ -181,10 +181,14 @@ impl DWalletMPCOutputsVerifier {
             .authorities_that_sent_output
             .contains(&origin_authority)
         {
-            // Report validators sending an output for the same session twice as malicious.
+            // Duplicate.
+            // We should NOT mark the origin party as malicious, as a message may be processed more than once
+            // due to a bug in the state sync mechanism.
+            // TODO (#697): Understand why consensus rounds that have already been processed are being processed
+            // TODO (#697): while performing state sync.
             return Ok(OutputVerificationResult {
-                result: OutputResult::Malicious,
-                malicious_actors: vec![origin_authority],
+                result: OutputResult::AlreadyCommitted,
+                malicious_actors: vec![],
             });
         }
         session_output_data
