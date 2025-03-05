@@ -1096,7 +1096,7 @@ public(package) fun respond_dwallet_dkg_first_round(
 
 // TODO (#493): Remove mock functions
 public(package) fun create_first_round_dwallet_mock(
-    self: &mut DWallet2PcMpcSecp256K1InnerV1, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
+    self: &mut DWalletCoordinatorInner, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
 ): DWalletCap {
     let id = object::new(ctx);
     let dwallet_id = id.to_inner();
@@ -1107,6 +1107,7 @@ public(package) fun create_first_round_dwallet_mock(
     let dwallet_cap_id = object::id(&dwallet_cap);
     self.dwallets.add(dwallet_id, DWallet {
         id,
+        created_at_epoch: self.current_epoch,
         dwallet_cap_id,
         dwallet_network_decryption_key_id,
         encrypted_user_secret_key_shares: object_table::new(ctx),
@@ -1121,7 +1122,7 @@ public(package) fun create_first_round_dwallet_mock(
 
 // TODO (#493): Remove mock functions
 public(package) fun mock_create_dwallet(
-    self: &mut DWallet2PcMpcSecp256K1InnerV1, output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
+    self: &mut DWalletCoordinatorInner, output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
 ): DWalletCap {
     let id = object::new(ctx);
     let dwallet_id = id.to_inner();
@@ -1132,6 +1133,7 @@ public(package) fun mock_create_dwallet(
     let dwallet_cap_id = object::id(&dwallet_cap);
     self.dwallets.add(dwallet_id, DWallet {
         id,
+        created_at_epoch: self.current_epoch,
         dwallet_cap_id,
         dwallet_network_decryption_key_id,
         encrypted_user_secret_key_shares: object_table::new(ctx),
