@@ -2125,7 +2125,7 @@ impl AuthorityPerEpochStore {
                                 return Ok(ConsensusCertificateResult::IkaTransaction(
                                     MessageKind::DwalletMPCNetworkDKGOutput(
                                         Secp256K1NetworkDKGOutputSlice {
-                                            dwallet_network_decryption_key_id: vec![],
+                                            dwallet_network_decryption_key_id: dwallet_network_decryption_key_id.clone().to_vec(),
                                             public_output,
                                             key_shares,
                                             is_last: false,
