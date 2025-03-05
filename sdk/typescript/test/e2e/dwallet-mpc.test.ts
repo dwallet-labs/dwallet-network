@@ -7,7 +7,7 @@ import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
-import { createDWallet } from '../../src/dwallet-mpc/dkg';
+import { createDWallet, getDKGEncryptionSchemePublicParameters } from '../../src/dwallet-mpc/dkg';
 import { Config, delay, mockedProtocolPublicParameters } from '../../src/dwallet-mpc/globals';
 import { presign } from '../../src/dwallet-mpc/presign';
 
@@ -40,7 +40,8 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create a dWallet (DKG)', async () => {
-		const dwalletID = await createDWallet(conf, mockedProtocolPublicParameters);
+		const dwalletpp = await getDKGEncryptionSchemePublicParameters(conf, null);
+		const dwalletID = await createDWallet(conf, dwalletpp);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 	});
 

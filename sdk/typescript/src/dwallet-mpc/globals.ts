@@ -54,14 +54,20 @@ interface IKASystemStateInner {
 		value: {
 			fields: {
 				dwallet_2pc_mpc_secp256k1_id: string;
-				dwallet_network_decryption_key: {
-					fields: {
-						dwallet_network_decryption_key_id: string;
-					};
-				};
+				dwallet_2pc_mpc_secp256k1_network_decryption_keys: Array<any>;
 			};
 		};
 	};
+}
+
+interface DWalletNetworkDecryptionKeyCap {
+	id: { id: string };
+	dwallet_network_decryption_key_id: string;
+}
+
+interface DWalletNetworkDecryptionKey {
+	id: { id: string };
+	public_output: Uint8Array;
 }
 
 /**
@@ -100,9 +106,13 @@ export function isMoveObject(obj: any): obj is MoveObject {
 
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (
-		obj?.fields?.value?.fields?.dwallet_network_decryption_key !== undefined &&
+		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_network_decryption_keys !== undefined &&
 		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_id !== undefined
 	);
+}
+
+export function isDWalletNetworkDecryptionKey(obj: any): obj is DWalletNetworkDecryptionKey {
+	return obj?.fields?.public_output !== undefined;
 }
 
 export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {

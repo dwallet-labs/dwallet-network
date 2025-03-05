@@ -18,6 +18,7 @@ import {
 	getDWalletSecpState,
 	getInitialSharedVersion,
 	isAddressObjectOwner,
+	isDWalletNetworkDecryptionKey,
 	isIKASystemStateInner,
 	isMoveObject,
 	MPCKeyScheme,
@@ -200,7 +201,7 @@ export async function dkgSecondRoundMoveCall(
 	);
 
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dkg_second_round`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dwallet_dkg_second_round`,
 		arguments: [
 			dwalletStateArg,
 			dwalletCapArg,
@@ -247,7 +248,7 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(c);
 	const dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(c);
 	const dwalletCap = tx.moveCall({
-		target: `${c.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dkg_first_round`,
+		target: `${c.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dwallet_dkg_first_round`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletSecp256k1ID,
@@ -364,6 +365,28 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		throw new Error('Invalid inner system state');
 	}
 
-	return innerSystemState.data.content.fields.value.fields.dwallet_network_decryption_key.fields
-		.dwallet_network_decryption_key_id;
+	const network_decryption_keys =
+		innerSystemState.data.content.fields.value.fields
+			.dwallet_2pc_mpc_secp256k1_network_decryption_keys;
+	return network_decryption_keys[network_decryption_keys.length - 1]?.fields
+		?.dwallet_network_decryption_key_id;
+}
+
+export async function getDKGEncryptionSchemePublicParameters(
+	c: Config,
+	network_decryption_key_id: string | null | undefined,
+): Promise<Uint8Array> {
+	if (network_decryption_key_id === null || network_decryption_key_id === undefined) {
+		network_decryption_key_id = await getNetworkDecryptionKeyID(c);
+	}
+	const networkDecryptionKey = await c.client.getObject({
+		id: network_decryption_key_id,
+		options: { showContent: true },
+	});
+
+	if (!isDWalletNetworkDecryptionKey(networkDecryptionKey?.data?.content)) {
+		throw new Error('Invalid network decryption key object');
+	}
+
+	return networkDecryptionKey.data.content?.fields?.public_output;
 }
