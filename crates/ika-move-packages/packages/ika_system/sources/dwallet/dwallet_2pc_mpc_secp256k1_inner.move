@@ -712,26 +712,26 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
     public_output: vector<u8>,
-    _key_shares: vector<u8>,
-    _is_last: bool,
+    key_shares: vector<u8>,
+    is_last: bool,
 ) {
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.public_output.append(public_output);
-    // dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
-    // dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-    //     DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
-    //         if (is_last) {
-    //             event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
-    //             dwallet_network_decryption_key_id,
-    //             public_output
-    //             });
-    //             DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-    //         } else {
-    //             DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-    //         }
-    //     },
-    //     _ => abort EWrongState
-    // };
+    dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
+    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
+            if (is_last) {
+                event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
+                dwallet_network_decryption_key_id,
+                public_output
+                });
+                DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+            } else {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+            }
+        },
+        _ => abort EWrongState
+    };
 }
 
 public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
@@ -2071,5 +2071,5 @@ fun process_checkpoint_message(
     };
     let epoch_coordinator = self.active_epochs.borrow_mut(epoch);
     epoch_coordinator.total_messages_processed = epoch_coordinator.total_messages_processed + messages_len;
-    epoch_coordinator.session_count = epoch_coordinator.session_count - response_session_count;
+    epoch_coordinator.session_count = epoch_coordinator.session_count + response_session_count;
 }

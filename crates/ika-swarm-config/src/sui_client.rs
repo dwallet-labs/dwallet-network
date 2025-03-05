@@ -114,6 +114,9 @@ pub async fn init_ika_on_sui(
     let mut request_tokens_from_faucet_futures = vec![request_tokens_from_faucet(
         publisher_address,
         sui_faucet_url.clone(),
+    ), request_tokens_from_faucet(
+        publisher_address,
+        sui_faucet_url.clone(),
     )];
     let mut validator_addresses = Vec::new();
     for validator_initialization_config in validator_initialization_configs {
@@ -605,7 +608,7 @@ async fn merge_coins(
             publisher_address,
             Some("0x2::sui::SUI".to_string()),
             None,
-            Some(4),
+            Some(7),
         )
         .await?
         .data;

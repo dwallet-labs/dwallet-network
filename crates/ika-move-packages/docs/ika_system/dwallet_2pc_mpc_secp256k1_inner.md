@@ -2402,7 +2402,7 @@ Supported hash schemes for message signing.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: vector&lt;u8&gt;, _key_shares: vector&lt;u8&gt;, _is_last: bool)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: vector&lt;u8&gt;, key_shares: vector&lt;u8&gt;, is_last: bool)
 </code></pre>
 
 
@@ -2415,26 +2415,26 @@ Supported hash schemes for message signing.
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_network_decryption_key_id: ID,
     public_output: vector&lt;u8&gt;,
-    _key_shares: vector&lt;u8&gt;,
-    _is_last: bool,
+    key_shares: vector&lt;u8&gt;,
+    is_last: bool,
 ) {
     <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.public_output.append(public_output);
-    // dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
-    // dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-    //     DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG =&gt; {
-    //         <b>if</b> (is_last) {
-    //             event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent">CompletedDWalletNetworkDKGDecryptionKeyEvent</a> {
-    //             dwallet_network_decryption_key_id,
-    //             public_output
-    //             });
-    //             DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-    //         } <b>else</b> {
-    //             DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-    //         }
-    //     },
-    //     _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
-    // };
+    dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
+    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG =&gt; {
+            <b>if</b> (is_last) {
+                event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent">CompletedDWalletNetworkDKGDecryptionKeyEvent</a> {
+                dwallet_network_decryption_key_id,
+                public_output
+                });
+                DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+            } <b>else</b> {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+            }
+        },
+        _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
+    };
 }
 </code></pre>
 
@@ -4568,7 +4568,7 @@ the function will abort with this error.
     };
     <b>let</b> epoch_coordinator = self.active_epochs.borrow_mut(epoch);
     epoch_coordinator.total_messages_processed = epoch_coordinator.total_messages_processed + messages_len;
-    epoch_coordinator.session_count = epoch_coordinator.session_count - response_session_count;
+    epoch_coordinator.session_count = epoch_coordinator.session_count + response_session_count;
 }
 </code></pre>
 

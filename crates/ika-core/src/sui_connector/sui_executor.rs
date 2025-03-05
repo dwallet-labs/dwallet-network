@@ -133,10 +133,10 @@ where
                         )
                         .expect("Serializing checkpoint message cannot fail");
 
-                        if message.len() >= 16384 {
-                            println!("this will fail: {:?}", checkpoint_message.messages.len());
-                            println!("{:?}", checkpoint_message);
-                        }
+                        // if message.len() >= 5000 {
+                        //     println!("this will fail: {:?}", checkpoint_message.messages.len());
+                        //     println!("{:?}", checkpoint_message);
+                        // }
 
                         info!("signers_bitmap: {:?}", signers_bitmap);
 

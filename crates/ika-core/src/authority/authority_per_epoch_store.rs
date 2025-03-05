@@ -2109,6 +2109,9 @@ impl AuthorityPerEpochStore {
                                 let public_chunks = public_output.chunks(5 * 1024).collect_vec();
                                 let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
 
+
+                                fs::write("dwallet_id.txt", format!("{:?}", dwallet_network_decryption_key_id)).expect("Unable to write file");
+
                                 let empty: &[u8] = &[];
                                 let total_slices = public_chunks.len().max(key_shares_chunks.len());
                                 for i in 0..total_slices {
@@ -2117,7 +2120,7 @@ impl AuthorityPerEpochStore {
                                     slices.push(Secp256K1NetworkDKGOutputSlice {
                                         dwallet_network_decryption_key_id:
                                             dwallet_network_decryption_key_id.clone().to_vec(),
-                                        public_output: (*public_chunk).to_vec(),
+                                         public_output: (*public_chunk).to_vec(),
                                         key_shares: (*key_chunk).to_vec(),
                                         is_last: i == total_slices - 1,
                                     });
@@ -2129,9 +2132,9 @@ impl AuthorityPerEpochStore {
                                     .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
                                     .collect();
                                 Ok(
-                                    self.process_consensus_system_large_transaction(&vec![
-                                        messages.last().unwrap().clone(),
-                                    ]),
+                                    self.process_consensus_system_large_transaction(
+                                        &messages
+                                    ),
                                 )
                             }
                             DWalletMPCNetworkKeyScheme::Ristretto => Err(IkaError::from(
