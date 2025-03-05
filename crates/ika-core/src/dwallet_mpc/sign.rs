@@ -47,7 +47,7 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
         dkg_output: MPCPublicOutput,
-        hashed_message: Vec<u8>,
+        message: Vec<u8>,
         presign: MPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
@@ -55,7 +55,7 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         let public_input = SignPublicInput::from((
             bcs::from_bytes(&protocol_public_parameters)?,
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::HashedMessage>(
-                &hashed_message,
+                &message,
             )?,
             bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(
                 &dkg_output,

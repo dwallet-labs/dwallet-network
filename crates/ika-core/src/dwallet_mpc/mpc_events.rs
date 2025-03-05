@@ -49,40 +49,39 @@ pub struct StartBatchedPresignEvent {
 /// Represents the Rust version of the Move
 /// struct `ika_system::dwallet::StartSignEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartSignEvent<D> {
-    /// Unique identifier for the MPC session.
-    pub(super) session_id: ID,
-    /// The address of the user that initiated this session.
-    pub(super) initiator: SuiAddress,
-    /// The ID of the batch sign session that contains this sign session.
-    /// The output of this session will be written to the chain only once,
-    /// along with the entire batch.
-    pub(super) batched_session_id: ID,
+pub struct StartSignEvent {
+    pub sign_id: ID,
     /// The `DWallet` object's ID associated with the DKG output.
     pub(super) dwallet_id: ID,
     /// The public output of the decentralized party in the dWallet DKG process.
     pub(super) dwallet_decentralized_public_output: Vec<u8>,
+    pub hash_scheme: u8,
     /// Hashed messages to Sign.
-    pub(super) hashed_message: Vec<u8>,
+    pub(super) message: Vec<u8>,
     /// The dWallet mpc network key version
-    pub(super) dwallet_mpc_network_key_version: u8,
-    /// The type of data that can be stored with the object.
-    /// Specific to each Digital Signature Algorithm.
-    pub(crate) signature_algorithm_data: D,
+    pub(super) dwallet_mpc_network_key_id: ID,
+    pub(crate) presign_id: ID,
+
+    /// The presign protocol output as bytes.
+    pub(crate) presign: Vec<u8>,
+
+    /// The centralized party signature of a message.
+    pub(crate) message_centralized_signature: Vec<u8>,
+
     /// Indicates whether the future sign feature was used to start the session.
     pub(crate) is_future_sign: bool,
 }
 
-impl<D: DWalletMPCEventTrait> DWalletMPCEventTrait for StartSignEvent<D> {
+impl DWalletMPCEventTrait for StartSignEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`StartSignEvent`]
     /// events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: SUI_SYSTEM_ADDRESS,
+            address: *packages_config.ika_system_package_id,
             name: START_SIGN_ROUND_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![D::type_(packages_config).into()],
+            type_params: vec![],
         }
     }
 }

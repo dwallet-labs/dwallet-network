@@ -2144,7 +2144,7 @@ impl AuthorityPerEpochStore {
             MPCProtocolInitData::BatchedPresign(_) => Ok(ConsensusCertificateResult::Ignored),
             MPCProtocolInitData::Presign(init_event_data) => {
                 let tx = MessageKind::DwalletPresign(PresignOutput {
-                    presign: bcs::to_bytes(&output)?,
+                    presign: output,
                     session_id: bcs::to_bytes(&session_info.session_id)?,
                     dwallet_id: init_event_data.dwallet_id.to_vec(),
                 });
@@ -2152,11 +2152,13 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::Sign(init_event) => {
                 let tx = MessageKind::DwalletSign(SignOutput {
-                    batch_session_id: init_event.batch_session_id.to_vec(),
-                    signatures: output,
+                    session_id: init_event.session_id.to_vec(),
+                    signature: output,
                     dwallet_id: init_event.dwallet_id.to_vec(),
-                    initiating_user_address: session_info.initiating_user_address.to_vec(),
-                    is_future_sign: bcs::to_bytes(&init_event.is_future_sign)?,
+                    is_future_sign: init_event.is_future_sign,
+                    sign_id: init_event.sign_id.to_vec(),
+                    // TODO (#679): Update the blockchain when an MPC round fails
+                    rejected: false,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
