@@ -1,2 +1,2 @@
-total_slices: 45
-dwallet_network_decryption_key_id: 0xda4e9cec9533da6e4a3f24220de1a6fc616f316e464e0ed92884ae5ea34090b2
+total_slices: 23
+dwallet_network_decryption_key_id: 0xa0256c02c2f81d4544a5c18d02f36d39d5e7639896da4a8dffd8ac324bf26731
