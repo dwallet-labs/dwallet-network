@@ -14,11 +14,12 @@ use ika_types::sui::{
     ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System,
     ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
     CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, DWALLET_2PC_MPC_SECP256K1_MODULE_NAME,
-    DWALLET_COORDINATOR_STRUCT_NAME, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
-    INITIALIZE_FUNCTION_NAME, INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, PROTOCOL_CAP_MODULE_NAME,
-    PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
+    DWALLET_2PC_MPC_SECP256K1_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME,
+    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, INITIALIZE_FUNCTION_NAME,
+    INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME,
+    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
     REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME,
     VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
 };
@@ -599,12 +600,26 @@ async fn merge_coins(
     coin_read_api: &CoinReadApi,
 ) -> Result<(), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
-    let coins = coin_read_api.get_coins(publisher_address, Some("0x2::sui::SUI".to_string()), None, Some(4)).await?.data;
-    let coins = coins.iter().map(|c| ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(c.object_ref()))).unwrap()).collect::<Vec<_>>();
+    let coins = coin_read_api
+        .get_coins(
+            publisher_address,
+            Some("0x2::sui::SUI".to_string()),
+            None,
+            Some(4),
+        )
+        .await?
+        .data;
+    let coins = coins
+        .iter()
+        .map(|c| {
+            ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(c.object_ref())))
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
 
     ptb.command(sui_types::transaction::Command::MergeCoins(
         *coins.first().clone().unwrap(),
-        coins[1..].to_vec()
+        coins[1..].to_vec(),
     ));
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
     let _ = execute_sui_transaction(publisher_address, tx_kind, context).await?;

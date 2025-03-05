@@ -128,9 +128,10 @@ where
                         let auth_sig = checkpoint_message.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap = Self::calculate_signers_bitmap(auth_sig);
-                        let message =
-                            bcs::to_bytes::<CheckpointMessage>(&checkpoint_message.clone().into_message())
-                                .expect("Serializing checkpoint message cannot fail");
+                        let message = bcs::to_bytes::<CheckpointMessage>(
+                            &checkpoint_message.clone().into_message(),
+                        )
+                        .expect("Serializing checkpoint message cannot fail");
 
                         if message.len() >= 16384 {
                             println!("this will fail: {:?}", checkpoint_message.messages.len());

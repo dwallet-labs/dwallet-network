@@ -28,7 +28,10 @@ use sui_types::crypto::{Signature, SuiKeyPair};
 use sui_types::digests::{get_mainnet_chain_identifier, get_testnet_chain_identifier};
 use sui_types::event::EventID;
 use sui_types::object::Owner;
-use sui_types::transaction::{Command, ProgrammableTransaction, SenderSignedData, Transaction, TransactionData, TransactionKind};
+use sui_types::transaction::{
+    Command, ProgrammableTransaction, SenderSignedData, Transaction, TransactionData,
+    TransactionKind,
+};
 use sui_types::Identifier;
 use tokio::task::JoinHandle;
 use tracing::info;

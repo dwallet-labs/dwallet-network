@@ -457,7 +457,6 @@ pub(crate) fn advance_network_dkg(
     class_groups_decryption_key: ClassGroupsDecryptionKey,
     epoch_store: Arc<AuthorityPerEpochStore>,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-
     Ok(AsynchronousRoundResult::Finalize {
         malicious_parties: Vec::new(),
         private_output: vec![],
