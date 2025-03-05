@@ -1,1 +1,1 @@
-secp256k1_network_dkg_ id: 0xe60aa40492f8c23dd83a61b77bea4d43630b7df56bc8ebc35dc122f57d65d735
+secp256k1_network_dkg_ id: 0xda4e9cec9533da6e4a3f24220de1a6fc616f316e464e0ed92884ae5ea34090b2
