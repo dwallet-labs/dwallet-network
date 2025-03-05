@@ -155,7 +155,7 @@ impl DWalletMPCOutputsVerifier {
             });
         }
         if let MPCProtocolInitData::Sign(_) = &session_info.mpc_round {
-            let mpc_manager = self.epoch_store()?.get_dwallet_mpc_manager().await;
+            let mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
             let Some(stored_sign_session) = mpc_manager.mpc_sessions.get(&session_info.session_id)
             else {
                 warn!("received an output for a session that an event has not been received for: {:?}", session_info.session_id);
