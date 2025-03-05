@@ -2419,9 +2419,7 @@ Supported hash schemes for message signing.
     _is_last: bool,
 ) {
     <b>let</b> _dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    <b>abort</b> 222;
-    _dwallet_network_decryption_key.public_output.append(public_output);
-    <b>abort</b> 333;
+    _dwallet_network_decryption_key.public_output.append(public_output)
     // dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
     // dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
     //     DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG =&gt; {

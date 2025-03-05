@@ -717,9 +717,7 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     _is_last: bool,
 ) {
     let _dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    abort 222;
-    _dwallet_network_decryption_key.public_output.append(public_output);
-    abort 333;
+    _dwallet_network_decryption_key.public_output.append(public_output)
     // dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
     // dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
     //     DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
