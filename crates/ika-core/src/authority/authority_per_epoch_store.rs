@@ -2111,16 +2111,6 @@ impl AuthorityPerEpochStore {
 
                                 let empty: &[u8] = &[];
                                 let total_slices = public_chunks.len().max(key_shares_chunks.len());
-                                println!("total_slices: {:?}", total_slices);
-                                println!(
-                                    "dwallet_network_decryption_key_id: {:?}",
-                                    dwallet_network_decryption_key_id
-                                );
-
-                                let _ = fs::write("data_i_need.txt", format!(
-                                    "total_slices: {:?}\ndwallet_network_decryption_key_id: {:?}", total_slices, dwallet_network_decryption_key_id
-                                ));
-
                                 for i in 0..total_slices {
                                     let public_chunk = public_chunks.get(i).unwrap_or(&empty);
                                     let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
@@ -2138,19 +2128,6 @@ impl AuthorityPerEpochStore {
                                     .into_iter()
                                     .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
                                     .collect();
-
-                                println!(
-                                    "secp256k1_network_dkg_ id: {:?}",
-                                    dwallet_network_decryption_key_id
-                                );
-
-                                let _ = fs::write(
-                                    "dwallet_network_decryption_key_id.txt",
-                                    format!(
-                                        "secp256k1_network_dkg_ id: {:?}",
-                                        dwallet_network_decryption_key_id
-                                    ),
-                                );
                                 Ok(
                                     self.process_consensus_system_large_transaction(&vec![
                                         messages.last().unwrap().clone(),
