@@ -11,7 +11,11 @@ use crate::dwallet_mpc::{advance_and_serialize, authority_name_to_party_id};
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
-use class_groups::{SecretKeyShareSizedInteger, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER};
+use class_groups::{
+    SecretKeyShareSizedInteger, SecretKeyShareSizedNumber,
+    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    SECP256K1_SCALAR_LIMBS,
+};
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{
     read_class_groups_from_file, ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof,

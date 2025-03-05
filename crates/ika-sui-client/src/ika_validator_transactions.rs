@@ -47,7 +47,9 @@ async fn create_class_groups_public_key_and_proof_builder_object(
 
     let tx_data = construct_unsigned_txn(context, publisher_address, gas_budget, ptb).await?;
     let response = execute_transaction(context, tx_data).await?;
-    let object_changes = response.object_changes.unwrap();
+    let object_changes = response
+        .object_changes
+        .ok_or(anyhow::Error::msg("failed to get object changes"))?;
     let builder_id = object_changes
         .iter()
         .filter_map(|o| match o {
@@ -64,7 +66,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
+        .ok_or(anyhow::Error::msg("failed to get builder object id"))?
         .clone();
 
     let builder_ref = client
@@ -134,7 +136,9 @@ pub async fn create_class_groups_public_key_and_proof_object(
             })
             .collect::<Vec<_>>()
             .first()
-            .unwrap()
+            .ok_or(anyhow::Error::msg(
+                "failed to get ClassGroupsPublicKeyAndProofBuilder object id",
+            ))?
             .clone();
 
         builder_object_ref = client
@@ -177,7 +181,9 @@ pub async fn create_class_groups_public_key_and_proof_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
+        .ok_or(anyhow::Error::msg(
+            "failed to get ClassGroupsPublicKeyAndProof object id",
+        ))?
         .clone();
 
     let pubkey_and_proof_obj_ref = client.transaction_builder().get_object_ref(obj_id).await?;
@@ -239,9 +245,7 @@ pub async fn request_add_validator_candidate(
             &validator_initialization_metadata.p2p_address.clone(),
         )?),
         CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata
-                .current_epoch_consensus_address
-                .clone(),
+            &validator_initialization_metadata.current_epoch_consensus_address,
         )?),
         CallArg::Pure(bcs::to_bytes(
             &validator_initialization_metadata.computation_price,
@@ -267,7 +271,10 @@ pub async fn request_add_validator_candidate(
     )
     .await?;
 
-    let object_changes = response.object_changes.clone().unwrap();
+    let object_changes = response
+        .object_changes
+        .clone()
+        .ok_or(anyhow::Error::msg("failed to get object changes"))?;
 
     let validator_cap_type = StructTag {
         address: ika_system_package_id.into(),
@@ -288,7 +295,7 @@ pub async fn request_add_validator_candidate(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
+        .ok_or(anyhow::Error::msg("failed to get validator cap object id"))?
         .clone();
 
     let validator_cap = context
@@ -326,7 +333,7 @@ pub async fn stake_ika(
         ika_supply_id_arg,
         vec![stake_amount],
     ));
-    let validator = ptb.input(CallArg::Pure(bcs::to_bytes(&validator_id).unwrap()))?;
+    let validator = ptb.input(CallArg::Pure(bcs::to_bytes(&validator_id)?))?;
     let call_args = vec![stake, validator];
 
     Ok(call_ika_system(
@@ -420,7 +427,7 @@ async fn construct_unsigned_ika_system_txn(
         .get_object_with_options(ika_system_id, SuiObjectDataOptions::new().with_owner())
         .await?
         .data
-        .unwrap()
+        .ok_or(anyhow::Error::msg("failed to get object data"))?
         .owner
     else {
         bail!("Failed to get owner of object")

@@ -2204,33 +2204,29 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::DKGSecond(init_event_data, network_key_version) => {
                 let tx = MessageKind::DwalletDKGSecondRoundOutput(DKGSecondRoundOutput {
-                    session_id: session_info.session_id.to_vec(),
                     output,
-                    dwallet_cap_id: init_event_data.dwallet_cap_id.to_vec(),
-                    dwallet_mpc_network_decryption_key_version: bcs::to_bytes(network_key_version)?,
+                    dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                     encrypted_centralized_secret_share_and_proof: bcs::to_bytes(
-                        &init_event_data.encrypted_centralized_secret_share_and_proof,
+                        &init_event_data
+                            .event_data
+                            .encrypted_centralized_secret_share_and_proof,
                     )?,
-                    encryption_key_id: init_event_data.encryption_key_id.to_vec(),
-                    pubkeys_signature: bcs::to_bytes(&init_event_data.public_keys_signature)?,
-                    initiating_user_address: session_info.initiating_user_address.to_vec(),
-                    initiator_public_key: bcs::to_bytes(&init_event_data.initiator_public_key)?,
+                    encryption_key_address: init_event_data
+                        .event_data
+                        .encryption_key_address
+                        .to_vec(),
+                    // TODO (#679): Update the blockchain when an MPC round fails
+                    rejected: false,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
 
             MPCProtocolInitData::BatchedPresign(_) => Ok(ConsensusCertificateResult::Ignored),
             MPCProtocolInitData::Presign(init_event_data) => {
-                let presigns: Vec<(ObjectID, MPCPublicOutput)> =
-                    bcs::from_bytes(&output).map_err(|e| DwalletMPCError::BcsError(e))?;
-                let session_ids: Vec<ObjectID> = presigns.iter().map(|(k, _)| *k).collect();
-                let presigns: Vec<MPCPublicOutput> = presigns.into_iter().map(|(_, v)| v).collect();
                 let tx = MessageKind::DwalletPresign(PresignOutput {
-                    batch_session_id: init_event_data.batch_session_id.to_vec(),
-                    presigns: bcs::to_bytes(&presigns)?,
-                    session_ids: bcs::to_bytes(&session_ids)?,
+                    presign: bcs::to_bytes(&output)?,
+                    session_id: bcs::to_bytes(&session_info.session_id)?,
                     dwallet_id: init_event_data.dwallet_id.to_vec(),
-                    initiating_user_address: session_info.initiating_user_address.to_vec(),
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
@@ -2250,13 +2246,7 @@ impl AuthorityPerEpochStore {
                     encrypted_centralized_secret_share_and_proof: output,
                     encryption_key_id: init_event_data.encryption_key_id.to_vec(),
                     session_id: session_info.session_id.to_vec(),
-                    pubkeys_signature: bcs::to_bytes(
-                        &init_event_data.decentralized_public_output_signature,
-                    )?,
                     initiating_user_address: session_info.initiating_user_address.to_vec(),
-                    encryptor_ed25519_pubkey: bcs::to_bytes(
-                        &init_event_data.encryptor_ed25519_pubkey,
-                    )?,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }

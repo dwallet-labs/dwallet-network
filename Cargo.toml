@@ -524,7 +524,7 @@ sui-execution = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e9
 consensus-config = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
 consensus-core = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
 
-crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '271d029' }
+crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '71d665a' }
 
 ### Workspace Members ###
 dwallet-mpc-centralized-party = { path = "crates/dwallet-mpc-centralized-party" }
@@ -560,4 +560,4 @@ include_dir = "0.7.3"
 [patch.crates-io]
 signature = { git = "https://github.com/yaelAbergel/traits", rev = "e4008c230e50f04848198f6570a4f7c9b94e503c"}
 ecdsa = { git = "https://github.com/yaelAbergel/signatures", rev = "7c8523182b1a28e5bcc6bb8d1508fbde1ea845c4"}
-crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '271d029' }
+crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '71d665a' }
