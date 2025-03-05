@@ -447,7 +447,7 @@ impl DWalletMPCSession {
                     // due to a bug in the state sync mechanism.
                     // TODO (#697): Understand why consensus rounds that have already been processed are being processed
                     // TODO (#697): while performing state sync.
-                    return Ok(())
+                    return Ok(());
                 }
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
