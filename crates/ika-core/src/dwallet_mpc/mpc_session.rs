@@ -270,11 +270,15 @@ impl DWalletMPCSession {
     fn advance_specific_party(
         &self,
     ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+        let Some(event_driven_data) = &self.event_driven_data else {
+            return Err(DwalletMPCError::MissingEventDrivenData);
+        };
         let session_id =
-            CommitmentSizedNumber::from_le_slice(self.session_info.session_id.to_vec().as_slice());
+            CommitmentSizedNumber::from_le_slice(event_driven_data.session_info.session_id.to_vec().as_slice());
+        let public_input = &event_driven_data.public_input;
         match &self.session_info.mpc_round {
             MPCProtocolInitData::DKGFirst(..) => {
-                let public_input = bcs::from_bytes(&self.public_input)?;
+                let public_input = bcs::from_bytes(public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
                     session_id,
                     self.party_id,
@@ -285,7 +289,7 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::DKGSecond(event_data, _) => {
-                let public_input = bcs::from_bytes(&self.public_input)?;
+                let public_input = bcs::from_bytes(public_input)?;
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,
                     self.party_id,
@@ -312,7 +316,7 @@ impl DWalletMPCSession {
                 Ok(result)
             }
             MPCProtocolInitData::Presign(..) => {
-                let public_input = bcs::from_bytes(&self.public_input)?;
+                let public_input = bcs::from_bytes(public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
                     session_id,
                     self.party_id,
@@ -323,7 +327,7 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::Sign(init_data) => {
-                let public_input = bcs::from_bytes(&self.public_input)?;
+                let public_input = bcs::from_bytes(public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
                     CommitmentSizedNumber::from_le_slice(
                         init_data.presign_session_id.to_vec().as_slice(),
@@ -339,7 +343,7 @@ impl DWalletMPCSession {
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
-                &self.public_input,
+                public_input,
                 key_scheme,
                 self.serialized_messages.clone(),
                 bcs::from_bytes(
@@ -380,7 +384,7 @@ impl DWalletMPCSession {
                         &event_data.dwallet_decentralized_public_output,
                         &signature_data.presign_output,
                         &signature_data.message_centralized_signature,
-                        &bcs::from_bytes(&self.public_input)?,
+                        &bcs::from_bytes(public_input)?,
                         &signature_data.presign_id,
                     )?;
                 }
