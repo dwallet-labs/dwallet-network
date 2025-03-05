@@ -453,47 +453,53 @@ pub(crate) fn advance_network_dkg(
     class_groups_decryption_key: ClassGroupsDecryptionKey,
     epoch_store: Arc<AuthorityPerEpochStore>,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-    let res = match key_scheme {
-        DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
-            session_id,
-            party_id,
-            &weighted_threshold_access_structure,
-            messages,
-            bcs::from_bytes(public_input)?,
-            class_groups_decryption_key,
-        ),
-        DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
-            session_id,
-            party_id,
-            &weighted_threshold_access_structure,
-            messages,
-            bcs::from_bytes(public_input)?,
-            class_groups_decryption_key,
-        ),
-    }?;
 
-    match &res {
-        AsynchronousRoundResult::Finalize {
-            malicious_parties: _,
-            private_output,
-            public_output,
-        } => {
-            // Update the network dWallet MPC keys with the new one.
-            // Todo (#507): Save the output only after it has been verified first by quorum of validators.
-            if let Some(network_key) = epoch_store.dwallet_mpc_network_keys.get() {
-                network_key.add_key_version(
-                    epoch_store.clone(),
-                    key_scheme.clone(),
-                    bcs::from_bytes(&private_output)?,
-                    public_output.clone(),
-                    weighted_threshold_access_structure,
-                )?;
-                return Ok(res);
-            };
-            Err(DwalletMPCError::DwalletMPCNetworkKeysNotFound)
-        }
-        _ => Ok(res),
-    }
+    Ok(AsynchronousRoundResult::Finalize {
+        malicious_parties: Vec::new(),
+        private_output: vec![],
+        public_output: bcs::to_bytes(&class_groups_constants::network_dkg_final_output()).unwrap(),
+    })
+    // let res = match key_scheme {
+    //     DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
+    //         session_id,
+    //         party_id,
+    //         &weighted_threshold_access_structure,
+    //         messages,
+    //         bcs::from_bytes(public_input)?,
+    //         class_groups_decryption_key,
+    //     ),
+    //     DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
+    //         session_id,
+    //         party_id,
+    //         &weighted_threshold_access_structure,
+    //         messages,
+    //         bcs::from_bytes(public_input)?,
+    //         class_groups_decryption_key,
+    //     ),
+    // }?;
+    //
+    // match &res {
+    //     AsynchronousRoundResult::Finalize {
+    //         malicious_parties: _,
+    //         private_output,
+    //         public_output,
+    //     } => {
+    //         // Update the network dWallet MPC keys with the new one.
+    //         // Todo (#507): Save the output only after it has been verified first by quorum of validators.
+    //         if let Some(network_key) = epoch_store.dwallet_mpc_network_keys.get() {
+    //             network_key.add_key_version(
+    //                 epoch_store.clone(),
+    //                 key_scheme.clone(),
+    //                 bcs::from_bytes(&private_output)?,
+    //                 public_output.clone(),
+    //                 weighted_threshold_access_structure,
+    //             )?;
+    //             return Ok(res);
+    //         };
+    //         Err(DwalletMPCError::DwalletMPCNetworkKeysNotFound)
+    //     }
+    //     _ => Ok(res),
+    // }
 }
 pub(super) fn network_dkg_public_input(
     encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
