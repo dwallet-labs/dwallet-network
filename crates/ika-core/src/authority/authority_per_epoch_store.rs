@@ -2126,8 +2126,8 @@ impl AuthorityPerEpochStore {
                                     MessageKind::DwalletMPCNetworkDKGOutput(
                                         Secp256K1NetworkDKGOutputSlice {
                                             dwallet_network_decryption_key_id: dwallet_network_decryption_key_id.clone().to_vec(),
-                                            public_output,
-                                            key_shares,
+                                            public_output: vec![1, 2],
+                                            key_shares: vec![3, 4],
                                             is_last: false,
                                         },
                                     ),

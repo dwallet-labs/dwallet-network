@@ -2418,10 +2418,9 @@ Supported hash schemes for message signing.
     _key_shares: vector&lt;u8&gt;,
     _is_last: bool,
 ) {
-    <b>abort</b> 111;
-    <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
+    <b>let</b> _dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     <b>abort</b> 222;
-    dwallet_network_decryption_key.public_output.append(public_output);
+    _dwallet_network_decryption_key.public_output.append(public_output);
     <b>abort</b> 333;
     // dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
     // dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
