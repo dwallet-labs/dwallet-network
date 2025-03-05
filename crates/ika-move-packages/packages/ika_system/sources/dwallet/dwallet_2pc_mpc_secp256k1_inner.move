@@ -708,6 +708,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
     cap
 }
 
+#[allow(unused_mut_parameter, dead_code)]
 public(package) fun respond_dwallet_network_decryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
@@ -715,8 +716,11 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     _key_shares: vector<u8>,
     _is_last: bool,
 ) {
+    abort 111;
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
+    abort 222;
     dwallet_network_decryption_key.public_output.append(public_output);
+    abort 333;
     // dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
     // dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
     //     DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {

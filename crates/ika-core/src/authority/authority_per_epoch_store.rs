@@ -2122,7 +2122,17 @@ impl AuthorityPerEpochStore {
                                         is_last: i == total_slices - 1,
                                     });
                                 }
-
+                                return Ok(ConsensusCertificateResult::IkaTransaction(
+                                    MessageKind::DwalletMPCNetworkDKGOutput(
+                                        Secp256K1NetworkDKGOutputSlice {
+                                            dwallet_network_decryption_key_id: vec![],
+                                            public_output,
+                                            key_shares,
+                                            is_last: false,
+                                        },
+                                    ),
+                                ));
+                                return Ok(ConsensusCertificateResult::IgnoredSystem);
                                 let messages: Vec<_> = slices
                                     .clone()
                                     .into_iter()
