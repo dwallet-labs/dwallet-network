@@ -82,7 +82,7 @@ pub(super) struct DWalletMPCSession {
     decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     private_input: MPCPrivateInput,
-    event_driven_data: Option<EventDrivenData>
+    event_driven_data: Option<EventDrivenData>,
 }
 
 impl DWalletMPCSession {
@@ -97,7 +97,7 @@ impl DWalletMPCSession {
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
         private_input: MPCPrivateInput,
-        event_driven_data: Option<EventDrivenData>
+        event_driven_data: Option<EventDrivenData>,
     ) -> Self {
         Self {
             status,
@@ -113,7 +113,7 @@ impl DWalletMPCSession {
             decryption_share,
             private_input,
             session_specific_state: None,
-            event_driven_data
+            event_driven_data,
         }
     }
 

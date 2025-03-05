@@ -757,7 +757,7 @@ impl DWalletMPCManager {
                 private_input,
                 public_input: public_input.clone(),
                 session_info: session_info.clone(),
-            })
+            }),
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing
