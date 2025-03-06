@@ -2162,9 +2162,7 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::NetworkDkg(_, _) => {
-                Ok(ConsensusCertificateResult::Ignored)
-            }
+            MPCProtocolInitData::NetworkDkg(_, _) => Ok(ConsensusCertificateResult::Ignored),
         }
     }
 

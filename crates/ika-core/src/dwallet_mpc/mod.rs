@@ -3,9 +3,7 @@ use crate::dwallet_mpc::dkg::{
     DKGFirstParty, DKGFirstPartyPublicInputGenerator, DKGSecondParty,
     DKGSecondPartyPublicInputGenerator,
 };
-use crate::dwallet_mpc::mpc_events::{
-    StartNetworkDKGEvent, StartSignEvent,
-};
+use crate::dwallet_mpc::mpc_events::{StartNetworkDKGEvent, StartSignEvent};
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
