@@ -702,18 +702,20 @@ impl DWalletMPCManager {
         public_input: MPCPublicInput,
         private_input: MPCPrivateInput,
         session_info: SessionInfo,
+        session_id: &ObjectID,
+        event_driven_data: Option<EventDrivenData>
     ) -> DwalletMPCResult<()> {
-        if self.mpc_sessions.contains_key(&session_info.session_id) {
+        if self.mpc_sessions.contains_key(&session_id) {
             // This should never happen, as the session ID is a Move UniqueID.
             error!(
                 "received start flow event for session ID {:?} that already exists",
-                &session_info.session_id
+                &session_id
             );
             return Ok(());
         }
         info!(
             "Received start MPC flow event for session ID {:?}",
-            session_info.session_id
+            session_id
         );
 
         let mut new_session = DWalletMPCSession::new(
@@ -721,7 +723,7 @@ impl DWalletMPCManager {
             self.consensus_adapter.clone(),
             self.epoch_id,
             MPCSessionStatus::Pending,
-            session_info.session_id,
+            session_id.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             match session_info.mpc_round {
@@ -731,7 +733,6 @@ impl DWalletMPCManager {
                     Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
                 )?,
             },
-            private_input.clone(),
             Some(EventDrivenData {
                 private_input,
                 public_input: public_input.clone(),
@@ -744,17 +745,17 @@ impl DWalletMPCManager {
             self.pending_sessions_queue.push_back(new_session);
             info!(
                 "Added MPCSession to pending queue for session_id {:?}",
-                &session_info.session_id
+                &session_id
             );
             return Ok(());
         }
         new_session.status = MPCSessionStatus::Active;
         self.mpc_sessions
-            .insert(session_info.session_id, new_session);
+            .insert(session_id.clone(), new_session);
         self.active_sessions_counter += 1;
         info!(
             "Added MPCSession to MPC manager for session_id {:?}",
-            session_info.session_id
+            session_id
         );
         Ok(())
     }
