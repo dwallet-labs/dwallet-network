@@ -47,12 +47,12 @@ pub const VALIDATOR_CAP_STRUCT_NAME: &IdentStr = ident_str!("ValidatorCap");
 pub const PROTOCOL_CAP_STRUCT_NAME: &IdentStr = ident_str!("ProtocolCap");
 pub const DWALLET_COORDINATOR_STRUCT_NAME: &IdentStr = ident_str!("DWalletCoordinator");
 
-
 pub const SYSTEM_MODULE_NAME: &IdentStr = ident_str!("system");
 pub const INIT_MODULE_NAME: &IdentStr = ident_str!("init");
 pub const VALIDATOR_CAP_MODULE_NAME: &IdentStr = ident_str!("validator_cap");
 pub const PROTOCOL_CAP_MODULE_NAME: &IdentStr = ident_str!("protocol_cap");
-pub const DWALLET_2PC_MPC_SECP256K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1");
+pub const DWALLET_2PC_MPC_SECP256K1_MODULE_NAME: &IdentStr =
+    ident_str!("dwallet_2pc_mpc_secp256k1");
 
 pub const INITIALIZE_FUNCTION_NAME: &IdentStr = ident_str!("initialize");
 pub const REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME: &IdentStr =
@@ -69,14 +69,6 @@ pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &Iden
 pub const CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME: &IdentStr =
     ident_str!("class_groups_public_key_and_proof");
 pub const CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr = ident_str!("empty");
-pub const ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr =
-    ident_str!("add_public_key_and_proof");
-pub const FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr = ident_str!("finish");
-
-pub const CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME: &IdentStr =
-    ident_str!("class_groups_public_key_and_proof");
-pub const CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME: &IdentStr =
-    ident_str!("empty");
 pub const ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr =
     ident_str!("add_public_key_and_proof");
 pub const FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr = ident_str!("finish");
