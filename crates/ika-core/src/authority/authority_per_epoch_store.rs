@@ -22,7 +22,6 @@ use parking_lot::RwLock;
 use parking_lot::{Mutex, RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
-use std::fs;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -2069,76 +2068,8 @@ impl AuthorityPerEpochStore {
                     self.process_dwallet_transaction(output, session_info)
                         .map_err(|e| IkaError::from(e))
                 } else {
-                    // Extract the final network DKG transaction parameters from
-                    // the verified output.
-                    // We can't preform this within the execution engine,
-                    // as it requires the class-groups crate from crypto-private lib.
-                    if let MPCProtocolInitData::NetworkDkg(
-                        key_scheme,
-                        dwallet_network_decryption_key_id,
-                        _,
-                    ) = session_info.mpc_round
-                    {
-                        let weighted_threshold_access_structure =
-                            self.get_weighted_threshold_access_structure()?;
-
-                        let key = crate::dwallet_mpc::network_dkg::dwallet_mpc_network_key_from_session_output(
-                            self.epoch(),
-                            key_scheme,
-                            &weighted_threshold_access_structure,
-                            &output,
-                        )?;
-
-                        match key_scheme {
-                            DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                                let public_output = bcs::to_bytes(&key.get_on_chain_output())
-                                    .map_err(|e| DwalletMPCError::BcsError(e))?;
-
-                                let key_shares = bcs::to_bytes(
-                                    &key.current_epoch_encryptions_of_shares_per_crt_prime,
-                                )
-                                .map_err(|e| DwalletMPCError::BcsError(e))?;
-
-                                let mut slices = Vec::new();
-
-                                let public_chunks = public_output.chunks(5 * 1024).collect_vec();
-                                let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
-
-                                fs::write(
-                                    "dwallet_id.txt",
-                                    format!("{:?}", dwallet_network_decryption_key_id),
-                                )
-                                .expect("Unable to write file");
-
-                                let empty: &[u8] = &[];
-                                let total_slices = public_chunks.len().max(key_shares_chunks.len());
-                                for i in 0..total_slices {
-                                    let public_chunk = public_chunks.get(i).unwrap_or(&empty);
-                                    let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
-                                    slices.push(Secp256K1NetworkDKGOutputSlice {
-                                        dwallet_network_decryption_key_id:
-                                            dwallet_network_decryption_key_id.clone().to_vec(),
-                                        public_output: (*public_chunk).to_vec(),
-                                        key_shares: (*key_chunk).to_vec(),
-                                        is_last: i == total_slices - 1,
-                                    });
-                                }
-
-                                let messages: Vec<_> = slices
-                                    .clone()
-                                    .into_iter()
-                                    .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
-                                    .collect();
-                                Ok(self.process_consensus_system_large_transaction(&messages))
-                            }
-                            DWalletMPCNetworkKeyScheme::Ristretto => Err(IkaError::from(
-                                DwalletMPCError::UnsupportedNetworkDKGKeyScheme,
-                            )),
-                        }
-                    } else {
-                        self.process_dwallet_transaction(output, session_info)
-                            .map_err(|e| IkaError::from(e))
-                    }
+                    self.process_dwallet_transaction(output, session_info)
+                        .map_err(|e| IkaError::from(e))
                 }
             }
             OutputResult::NotEnoughVotes => Ok(ConsensusCertificateResult::ConsensusMessage),
@@ -2280,9 +2211,57 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::BatchedSign(_) | MPCProtocolInitData::NetworkDkg(..) => {
-                Ok(ConsensusCertificateResult::Ignored)
+            MPCProtocolInitData::NetworkDkg(key_scheme, dwallet_network_decryption_key_id, _) => {
+                let weighted_threshold_access_structure =
+                    self.get_weighted_threshold_access_structure()?;
+
+                let key =
+                    crate::dwallet_mpc::network_dkg::dwallet_mpc_network_key_from_session_output(
+                        self.epoch(),
+                        *key_scheme,
+                        &weighted_threshold_access_structure,
+                        &output,
+                    )?;
+
+                match key_scheme {
+                    DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                        let public_output = bcs::to_bytes(&key.get_on_chain_output())
+                            .map_err(|e| DwalletMPCError::BcsError(e))?;
+
+                        let key_shares =
+                            bcs::to_bytes(&key.current_epoch_encryptions_of_shares_per_crt_prime)
+                                .map_err(|e| DwalletMPCError::BcsError(e))?;
+
+                        let mut slices = Vec::new();
+                        let public_chunks = public_output.chunks(5 * 1024).collect_vec();
+                        let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
+                        let empty: &[u8] = &[];
+                        let total_slices = public_chunks.len().max(key_shares_chunks.len());
+                        for i in 0..total_slices {
+                            let public_chunk = public_chunks.get(i).unwrap_or(&empty);
+                            let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
+                            slices.push(Secp256K1NetworkDKGOutputSlice {
+                                dwallet_network_decryption_key_id:
+                                    dwallet_network_decryption_key_id.clone().to_vec(),
+                                public_output: (*public_chunk).to_vec(),
+                                key_shares: (*key_chunk).to_vec(),
+                                is_last: i == total_slices - 1,
+                            });
+                        }
+
+                        let messages: Vec<_> = slices
+                            .clone()
+                            .into_iter()
+                            .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
+                            .collect();
+                        Ok(self.process_consensus_system_large_transaction(&messages))
+                    }
+                    DWalletMPCNetworkKeyScheme::Ristretto => {
+                        Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
+                    }
+                }
             }
+            MPCProtocolInitData::BatchedSign(_) => Ok(ConsensusCertificateResult::Ignored),
         }
     }
 

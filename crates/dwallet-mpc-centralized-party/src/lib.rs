@@ -25,7 +25,7 @@ use k256::elliptic_curve::bigint::{Encoding, Uint};
 use k256::elliptic_curve::ops::Reduce;
 use k256::{elliptic_curve, U256};
 use mpc::two_party::Round;
-use mpc::{Party, PublicOutput};
+use mpc::Party;
 use rand_core::{OsRng, SeedableRng};
 use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
@@ -247,7 +247,7 @@ pub fn advance_centralized_sign_party(
     Ok(signed_messages)
 }
 
-pub fn protocol_public_parameters_by_key_scheme(
+fn protocol_public_parameters_by_key_scheme(
     network_decryption_key_public_output: Vec<u8>,
     key_scheme: u8,
 ) -> anyhow::Result<Vec<u8>> {
