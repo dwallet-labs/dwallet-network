@@ -2094,8 +2094,6 @@ impl AuthorityPerEpochStore {
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-
-            MPCProtocolInitData::BatchedPresign(_) => Ok(ConsensusCertificateResult::Ignored),
             MPCProtocolInitData::Presign(init_event_data) => {
                 let tx = MessageKind::DwalletPresign(PresignOutput {
                     presign: output,

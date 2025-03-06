@@ -33,10 +33,6 @@ pub enum MPCProtocolInitData {
     /// Contains the data of the event that triggered the round,
     /// and the network key version of the first round.
     DKGSecond(DWalletMPCSuiEvent<StartDKGSecondRoundEvent>, u8),
-    /// This is not a real round, but an indicator the Batches Manager to
-    /// register a Presign Batch session.
-    /// Holds the number of messages in the batch.
-    BatchedPresign(u64),
     /// The first round of the Presign protocol for each message in the Batch.
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID (same for each message in the batch),
