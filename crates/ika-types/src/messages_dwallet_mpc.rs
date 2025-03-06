@@ -45,9 +45,6 @@ pub enum MPCProtocolInitData {
     /// The first and only round of the Sign protocol.
     /// Contains all the data needed to sign the message.
     Sign(SingleSignSessionData),
-    /// A batched sign session, contains the list of messages that are being signed.
-    // TODO (#536): Store batch state and logic on Sui & remove this field.
-    BatchedSign(Vec<Vec<u8>>),
     /// The only round of the network DKG protocol.
     /// Contains the network key scheme
     /// and at the end of the session holds the new key version.
