@@ -54,13 +54,6 @@ pub enum MPCProtocolInitData {
     /// but we use it to start the verification process using the same events mechanism
     /// because the system does not support native functions.
     EncryptedShareVerification(StartEncryptedShareVerificationEvent),
-    /// The round of verifying the public key that signed on the encryption key is
-    /// matching the initiator address.
-    /// TODO (#544): Check if there's a way to convert the public key to an address in Move.
-    /// This is not a real MPC round,
-    /// but we use it to start the verification process using the same events mechanism
-    /// because the system does not support native functions.
-    EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
     PartialSignatureVerification(StartPartialSignaturesVerificationEvent<SignData>),
 }
 

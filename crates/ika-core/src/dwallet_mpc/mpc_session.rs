@@ -350,15 +350,6 @@ impl DWalletMPCSession {
                     Err(err) => Err(err),
                 }
             }
-            MPCProtocolInitData::EncryptionKeyVerification(verification_data) => {
-                verify_encryption_key(verification_data)
-                    .map(|_| AsynchronousRoundResult::Finalize {
-                        public_output: vec![],
-                        private_output: vec![],
-                        malicious_parties: vec![],
-                    })
-                    .map_err(|err| err)
-            }
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
                 for (signature_data, hashed_message) in event_data
                     .signature_data
