@@ -79,11 +79,11 @@ impl Debug for ConsensusTransactionKey {
             Self::DWalletMPCMessage(message) => {
                 write!(f, "DWalletMPCMessage({:?})", message,)
             }
-            Self::DWalletMPCOutput(value, session_id, sender_address, authority) => {
+            Self::DWalletMPCOutput(value, session_id, authority) => {
                 write!(
                     f,
-                    "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
-                    value, session_id, sender_address, authority
+                    "DWalletMPCOutput({:?}, {:?}, {:?})",
+                    value, session_id, authority
                 )
             }
             Self::DWalletMPCSessionFailedWithMalicious(authority, report) => {
