@@ -204,10 +204,8 @@ fn dkg_second_party_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: ObjectID::from(deserialized_event.session_id),
-        // TODO (#642): Remove the redundant initiating user address field
         mpc_round: MPCProtocolInitData::DKGSecond(
             deserialized_event.clone(),
-            dwallet_network_key_version,
         ),
     }
 }
