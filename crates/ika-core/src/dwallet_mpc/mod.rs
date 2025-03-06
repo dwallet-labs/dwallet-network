@@ -20,7 +20,7 @@ use ika_types::messages_dwallet_mpc::{DBSuiEvent, StartDKGFirstRoundEvent};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEventTrait, DWalletMPCSuiEvent, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
     SingleSignSessionData, StartDKGSecondRoundEvent, StartEncryptedShareVerificationEvent,
-    StartEncryptionKeyVerificationEvent, StartPresignFirstRoundEvent,
+    StartPresignFirstRoundEvent,
 };
 use ika_types::messages_dwallet_mpc::{SignData, StartPartialSignaturesVerificationEvent};
 use k256::ecdsa::hazmat::bits2field;

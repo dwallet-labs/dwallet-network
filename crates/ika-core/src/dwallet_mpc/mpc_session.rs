@@ -15,7 +15,7 @@ use twopc_mpc::sign::Protocol;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
-use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
+use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
