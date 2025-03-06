@@ -3,7 +3,7 @@ use crate::dwallet_mpc::dkg::{
     DKGFirstParty, DKGFirstPartyPublicInputGenerator, DKGSecondParty,
     DKGSecondPartyPublicInputGenerator,
 };
-use crate::dwallet_mpc::mpc_events::{StartNetworkDKGEvent, StartSignEvent};
+use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
@@ -16,7 +16,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::PartyID;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DBSuiEvent, StartDKGFirstRoundEvent};
+use ika_types::messages_dwallet_mpc::{DBSuiEvent, StartDKGFirstRoundEvent, StartSignEvent};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEventTrait, DWalletMPCSuiEvent, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
     SingleSignSessionData, StartDKGSecondRoundEvent, StartEncryptedShareVerificationEvent,
@@ -279,25 +279,7 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
         session_id: deserialized_event.session_id,
         // TODO (#642): Remove the redundant initiating user address field
         initiating_user_address: deserialized_event.session_id.into(),
-        mpc_round: MPCProtocolInitData::Sign(SingleSignSessionData {
-            hash: deserialized_event.event_data.hash_scheme,
-            session_id: deserialized_event.session_id,
-            message: deserialized_event.event_data.message.clone(),
-            dwallet_id: deserialized_event.event_data.dwallet_id.bytes,
-            dwallet_decentralized_public_output: deserialized_event
-                .event_data
-                .dwallet_decentralized_public_output
-                .clone(),
-            network_key_version: network_key_version_from_key_id(
-                &deserialized_event
-                    .event_data
-                    .dwallet_mpc_network_key_id
-                    .bytes,
-            ),
-            is_future_sign: deserialized_event.event_data.is_future_sign,
-            presign_session_id: deserialized_event.event_data.presign_id.bytes,
-            sign_id: deserialized_event.event_data.sign_id.bytes,
-        }),
+        mpc_round: MPCProtocolInitData::Sign(deserialized_event.event_data.clone()),
     }
 }
 
