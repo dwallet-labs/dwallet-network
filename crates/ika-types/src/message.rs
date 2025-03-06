@@ -152,7 +152,6 @@ pub enum MessageKind {
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
     DwalletEncryptedUserShare(EncryptedUserShareOutput),
     DwalletSign(SignOutput),
-    DwalletEncryptionKeyVerification(EncryptionKeyVerificationOutput),
     DwalletPresign(PresignOutput),
     DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
     DwalletMPCNetworkDKGOutput(DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares),
@@ -174,7 +173,6 @@ impl MessageKind {
             MessageKind::DwalletPresign(_) => "DwalletPresign",
             MessageKind::DwalletSign(_) => "DwalletSign",
             MessageKind::DwalletEncryptedUserShare(_) => "DwalletEncryptedUserShare",
-            MessageKind::DwalletEncryptionKeyVerification(_) => "DwalletEncryptionKeyVerification",
             MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
                 "DwalletPartialSignatureVerificationOutput"
             }
@@ -232,9 +230,6 @@ impl Display for MessageKind {
             }
             MessageKind::DwalletEncryptedUserShare(_) => {
                 writeln!(writer, "MessageKind : DwalletEncryptedUserShare")?;
-            }
-            MessageKind::DwalletEncryptionKeyVerification(_) => {
-                writeln!(writer, "MessageKind : DwalletEncryptionKeyVerification")?;
             }
             MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
                 writeln!(

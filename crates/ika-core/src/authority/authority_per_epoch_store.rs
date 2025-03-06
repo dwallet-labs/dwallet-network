@@ -2124,25 +2124,6 @@ impl AuthorityPerEpochStore {
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::EncryptionKeyVerification(init_event_data) => {
-                let tx = MessageKind::DwalletEncryptionKeyVerification(
-                    EncryptionKeyVerificationOutput {
-                        encryption_key: bcs::to_bytes(&init_event_data.encryption_key)?,
-                        encryption_key_signature: bcs::to_bytes(
-                            &init_event_data.encryption_key_signature,
-                        )?,
-                        encryption_key_scheme: bcs::to_bytes(
-                            &init_event_data.encryption_key_scheme,
-                        )?,
-                        session_id: session_info.session_id.to_vec(),
-                        initiating_user_address: session_info.initiating_user_address.to_vec(),
-                        key_signer_public_key: bcs::to_bytes(
-                            &init_event_data.key_signer_public_key,
-                        )?,
-                    },
-                );
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
             MPCProtocolInitData::PartialSignatureVerification(init_event_data) => {
                 let tx = MessageKind::DwalletPartialSignatureVerificationOutput(
                     PartialSignatureVerificationOutput {
