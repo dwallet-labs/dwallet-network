@@ -212,8 +212,7 @@ impl DWalletMPCManager {
         while self.active_sessions_counter < self.max_active_mpc_sessions {
             if let Some(mut session) = self.pending_sessions_queue.pop_front() {
                 session.status = MPCSessionStatus::Active;
-                self.mpc_sessions
-                    .insert(session.session_info.session_id, session);
+                self.mpc_sessions.insert(session.session_id, session);
                 self.active_sessions_counter += 1;
             } else {
                 break;
@@ -479,7 +478,7 @@ impl DWalletMPCManager {
     }
 
     fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
-        let session_id = session.session_info.session_id;
+        let session_id = session.session_id;
         if self
             .mpc_sessions
             .get(&session_id)
@@ -532,7 +531,7 @@ impl DWalletMPCManager {
         finished_computation_sender: UnboundedSender<ComputationUpdate>,
     ) -> DwalletMPCResult<()> {
         let validator_position =
-            self.get_validator_position(&ready_to_advance_session.session_info)?;
+            self.get_validator_position(&ready_to_advance_session.session_id)?;
         let epoch_store = self.epoch_store()?;
         tokio::spawn(async move {
             for _ in 0..validator_position {
@@ -646,8 +645,8 @@ impl DWalletMPCManager {
     /// running the last step of the sign protocol.
     /// If while waiting, the validator receives a valid signature for this session,
     /// it will not run the last step in the sign protocol, and save computation resources.
-    fn get_validator_position(&self, session_info: &SessionInfo) -> DwalletMPCResult<usize> {
-        let session_id_as_32_bytes: [u8; 32] = session_info.session_id.into_bytes();
+    fn get_validator_position(&self, session_id: &ObjectID) -> DwalletMPCResult<usize> {
+        let session_id_as_32_bytes: [u8; 32] = session_id.into_bytes();
         let positions = &self
             .epoch_store()?
             .committee()
@@ -741,8 +740,8 @@ impl DWalletMPCManager {
             self.consensus_adapter.clone(),
             self.epoch_id,
             MPCSessionStatus::Pending,
-            public_input.clone(),
             session_info.clone(),
+            session_info.session_id,
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             match session_info.mpc_round {

@@ -67,6 +67,7 @@ pub(super) struct DWalletMPCSession {
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
+    pub(super) session_id: ObjectID,
     pub(super) session_info: SessionInfo,
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
@@ -90,8 +91,8 @@ impl DWalletMPCSession {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch: EpochId,
         status: MPCSessionStatus,
-        public_input: MPCPublicInput,
         session_info: SessionInfo,
+        session_id: ObjectID,
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
@@ -105,6 +106,7 @@ impl DWalletMPCSession {
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             session_info,
+            session_id,
             pending_quorum_for_highest_round_number: 0,
             party_id,
             weighted_threshold_access_structure,
@@ -248,7 +250,7 @@ impl DWalletMPCSession {
     ) -> DwalletMPCResult<()> {
         let report = MaliciousReport::new(
             party_ids_to_authority_names(&malicious_parties_ids, &*self.epoch_store()?)?,
-            self.session_info.session_id.clone(),
+            self.session_id.clone(),
             advance_result,
         );
         let report_tx = self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
@@ -409,7 +411,7 @@ impl DWalletMPCSession {
         Ok(ConsensusTransaction::new_dwallet_mpc_message(
             self.epoch_store()?.name,
             message,
-            self.session_info.session_id.clone(),
+            self.session_id.clone(),
             self.pending_quorum_for_highest_round_number,
         ))
     }
