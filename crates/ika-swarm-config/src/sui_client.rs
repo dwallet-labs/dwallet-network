@@ -263,11 +263,24 @@ pub async fn init_ika_on_sui(
             publisher_address,
             &mut context,
             client.clone(),
-            ika_system_package_id,
+            client.clone(),ika_system_package_id,
             system_id,
             init_system_shared_version,
         )
-        .await?;
+        .await?;println!("Running `system::initialize` done.");
+
+    ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
+        publisher_address,
+        &mut context,
+        client.clone(),
+        ika_system_package_id,
+        system_id,
+        init_system_shared_version,
+        dwallet_2pc_mpc_secp256k1_id,
+        dwallet_2pc_mpc_secp256k1_initial_shared_version,
+        protocol_cap_id,
+    )
+    .await?;
 
     println!("Running `system::initialize` done.");
 
@@ -510,6 +523,28 @@ async fn init_initialize(
                 object_type,
                 ..
             } if System::type_(ika_system_package_id.into()) == *object_type => Some(*object_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap()
+        .clone();
+
+    let protocol_cap_type = StructTag {
+        address: ika_system_package_id.into(),
+        module: PROTOCOL_CAP_MODULE_NAME.into(),
+        name: PROTOCOL_CAP_STRUCT_NAME.into(),
+        type_params: vec![],
+    };
+
+    let protocol_cap_id = object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Created {
+                object_id,
+                object_type,
+                ..
+            } if protocol_cap_type == *object_type => Some(*object_id),
             _ => None,
         })
         .collect::<Vec<_>>()
@@ -944,7 +979,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     ptb.move_call(
         ika_system_package_id,
         CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME.into(),
+        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
         vec![],
         vec![],
     )?;
