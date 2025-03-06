@@ -41,7 +41,6 @@ use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
 use tracing::warn;
 
 use twopc_mpc::secp256k1;
-pub mod batches_manager;
 mod cryptographic_computations_orchestrator;
 mod dkg;
 pub mod dwallet_mpc_service;
