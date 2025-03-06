@@ -363,7 +363,6 @@ pub struct AuthorityPerEpochStore {
     /// This state machine is used to store outputs and emit ones
     /// where the quorum of votes is valid.
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
-    dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
     pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
     dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
     dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
@@ -642,7 +641,6 @@ impl AuthorityPerEpochStore {
             executed_in_epoch_table_enabled: once_cell::sync::OnceCell::new(),
             chain_identifier,
             dwallet_mpc_outputs_verifier: OnceCell::new(),
-            dwallet_mpc_batches_manager: OnceCell::new(),
             dwallet_mpc_round_messages: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_round_outputs: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_round_events: tokio::sync::Mutex::new(Vec::new()),
@@ -839,25 +837,6 @@ impl AuthorityPerEpochStore {
                 }
                 None => {
                     error!("failed to get the DWalletMPCOutputsVerifier, retrying...");
-                    tokio::time::sleep(Duration::from_secs(1)).await;
-                }
-            }
-        }
-    }
-
-    /// Return the current epoch's [`DWalletMPCBatchesManager`].
-    /// This manager handles storing all the valid outputs of a batched dWallet MPC sessions,
-    /// and writes them to the chain at once when all the batch outputs are ready.
-    pub async fn get_dwallet_mpc_batches_manager(
-        &self,
-    ) -> tokio::sync::MutexGuard<DWalletMPCBatchesManager> {
-        loop {
-            match self.dwallet_mpc_batches_manager.get() {
-                Some(dwallet_mpc_batches_manager) => {
-                    return dwallet_mpc_batches_manager.lock().await
-                }
-                None => {
-                    error!("failed to get the DWallet Batches Manager, retrying...");
                     tokio::time::sleep(Duration::from_secs(1)).await;
                 }
             }
