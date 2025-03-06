@@ -154,7 +154,28 @@ impl DWalletMPCOutputsVerifier {
                 malicious_actors: vec![],
             });
         }
-        if let MPCProtocolInitData::Sign(sign_session_data) = &session_info.mpc_round {
+        if let MPCProtocolInitData::Sign(_) = &session_info.mpc_round {
+            let mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
+            let Some(stored_sign_session) = mpc_manager.mpc_sessions.get(&session_info.session_id)
+            else {
+                warn!("received an output for a session that an event has not been received for: {:?}", session_info.session_id);
+                return Ok(OutputVerificationResult {
+                    result: OutputResult::NotEnoughVotes,
+                    malicious_actors: vec![],
+                });
+            };
+            let MPCProtocolInitData::Sign(sign_session_data) =
+                &stored_sign_session.session_info.mpc_round
+            else {
+                warn!(
+                    "received sign session output for a non-sign session {:?}",
+                    session_info.session_id
+                );
+                return Ok(OutputVerificationResult {
+                    result: OutputResult::NotEnoughVotes,
+                    malicious_actors: vec![],
+                });
+            };
             return match Self::verify_signature(&epoch_store, sign_session_data, output) {
                 Ok(res) => {
                     session_output_data.current_result = OutputResult::AlreadyCommitted;
