@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use std::str::from_utf8;
 use std::sync::Arc;
 use std::time::Duration;
-use sui_json_rpc_api::{BridgeReadApiClient, ReadApiClient};
+use sui_json_rpc_api::BridgeReadApiClient;
 use sui_json_rpc_types::{DevInspectResults, SuiData, SuiMoveValue};
 use sui_json_rpc_types::{EventFilter, Page, SuiEvent};
 use sui_json_rpc_types::{

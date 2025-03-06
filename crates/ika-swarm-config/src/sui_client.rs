@@ -205,10 +205,6 @@ pub async fn init_ika_on_sui(
         ika_system_object_id: system_id,
     };
 
-    let mut file = File::create("ika_config.yaml")?;
-    let yaml = serde_yaml::to_string(&ika_config)?;
-    file.write_all(yaml.as_bytes())?;
-
     let mut validator_ids = Vec::new();
     let mut validator_cap_ids = Vec::new();
     for validator_initialization_config in validator_initialization_configs {
@@ -285,9 +281,7 @@ pub async fn init_ika_on_sui(
 
     println!("Running `system::initialize` done.");
 
-    // spawn a new thread to run the network dkg
-    // tokio::spawn(async move {
-    //     tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+    // Run the network DKG when the network run for the first time, to create network key.
     let _ = ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
         publisher_address,
         &mut context,
@@ -301,7 +295,6 @@ pub async fn init_ika_on_sui(
     )
     .await;
     println!("Running `system::request_dwallet_network_decryption_key_dkg_by_cap` done.");
-    // });
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
@@ -649,12 +642,15 @@ async fn merge_coins(
         .iter()
         .map(|c| {
             ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(c.object_ref())))
+                // Safe to unwrap as this function is only being called at the swarm config
                 .unwrap()
         })
         .collect::<Vec<_>>();
 
     ptb.command(sui_types::transaction::Command::MergeCoins(
+        // Safe to unwrap as this function is only being called at the swarm config
         *coins.first().clone().unwrap(),
+        // Keep the gas object out
         coins[1..].to_vec(),
     ));
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());

@@ -513,6 +513,7 @@ pub(super) fn network_dkg_public_input(
 ) -> DwalletMPCResult<Vec<u8>> {
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            // Todo (#712) Remove the hardcoded path and read the class groups from the system state.
             let mut encryption_keys_and_proofs = HashMap::new();
             for i in 1..=4 {
                 let p = read_class_groups_from_file("class-groups.key")?;
