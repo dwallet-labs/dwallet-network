@@ -68,7 +68,8 @@ pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &Iden
 
 pub const CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME: &IdentStr =
     ident_str!("class_groups_public_key_and_proof");
-pub const CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr = ident_str!("empty");
+pub const CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME: &IdentStr =
+    ident_str!("empty");
 pub const ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr =
     ident_str!("add_public_key_and_proof");
 pub const FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr = ident_str!("finish");

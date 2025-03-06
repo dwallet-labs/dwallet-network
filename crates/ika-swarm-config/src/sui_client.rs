@@ -263,11 +263,12 @@ pub async fn init_ika_on_sui(
             publisher_address,
             &mut context,
             client.clone(),
-            client.clone(),ika_system_package_id,
+            ika_system_package_id,
             system_id,
             init_system_shared_version,
         )
-        .await?;println!("Running `system::initialize` done.");
+        .await?;
+    println!("Running `system::initialize` done.");
 
     ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
         publisher_address,
@@ -979,7 +980,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     ptb.move_call(
         ika_system_package_id,
         CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
+        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME.into(),
         vec![],
         vec![],
     )?;
