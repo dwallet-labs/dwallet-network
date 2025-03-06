@@ -1871,7 +1871,7 @@ fun process_checkpoint_message(
                     is_future_sign,
                     rejected,
                 );
-            } else if (message_data_type == 7) {
+            } else if (message_data_type == 8) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
                 let rejected = bcs_body.peel_bool();
