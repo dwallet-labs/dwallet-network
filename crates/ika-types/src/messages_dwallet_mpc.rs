@@ -246,31 +246,6 @@ impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {
     }
 }
 
-/// An event emitted to start an encryption key verification process.
-/// Ika does not support native functions, so an event is emitted and
-/// caught by the blockchain, which then starts the verification process,
-/// similar to the MPC processes.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct StartEncryptionKeyVerificationEvent {
-    pub encryption_key_scheme: u8,
-    pub encryption_key: Vec<u8>,
-    pub encryption_key_signature: Vec<u8>,
-    pub key_signer_public_key: Vec<u8>,
-    pub initiator: SuiAddress,
-    pub session_id: ObjectID,
-}
-
-impl DWalletMPCEventTrait for StartEncryptionKeyVerificationEvent {
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_package_id,
-            name: ident_str!("StartEncryptionKeyVerificationEvent").to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
 /// Rust representation of the Move `StartPartialSignaturesVerificationEvent` Event.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartPartialSignaturesVerificationEvent<D> {

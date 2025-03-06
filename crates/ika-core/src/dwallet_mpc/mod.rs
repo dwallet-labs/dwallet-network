@@ -574,13 +574,6 @@ pub(crate) fn session_input_from_event(
             Ok((vec![], None))
         }
         t if t
-            == &DWalletMPCSuiEvent::<StartEncryptionKeyVerificationEvent>::type_(
-                packages_config,
-            ) =>
-        {
-            Ok((vec![], None))
-        }
-        t if t
             == &DWalletMPCSuiEvent::<StartPartialSignaturesVerificationEvent<SignData>>::type_(
                 packages_config,
             ) =>

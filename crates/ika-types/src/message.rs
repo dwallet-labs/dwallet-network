@@ -116,16 +116,6 @@ pub struct EncryptedUserShareOutput {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct EncryptionKeyVerificationOutput {
-    pub initiating_user_address: Vec<u8>,
-    pub session_id: Vec<u8>,
-    pub key_signer_public_key: Vec<u8>,
-    pub encryption_key: Vec<u8>,
-    pub encryption_key_signature: Vec<u8>,
-    pub encryption_key_scheme: Vec<u8>,
-}
-
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct PartialSignatureVerificationOutput {
     pub initiating_user_address: Vec<u8>,
     pub session_id: Vec<u8>,
