@@ -331,12 +331,10 @@ impl DWalletMPCSession {
                     (),
                 )
             }
-            MPCProtocolInitData::Sign(init_data) => {
+            MPCProtocolInitData::Sign(..) => {
                 let public_input = bcs::from_bytes(public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
-                    CommitmentSizedNumber::from_le_slice(
-                        init_data.presign_session_id.to_vec().as_slice(),
-                    ),
+                    session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_messages.clone(),

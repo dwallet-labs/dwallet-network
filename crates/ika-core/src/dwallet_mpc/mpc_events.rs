@@ -16,7 +16,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use ika_types::dwallet_mpc_error::DwalletMPCError;
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEventTrait, DWalletMPCSuiEvent, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
-    SignData, SingleSignSessionData,
+    SignData,
 };
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
@@ -25,46 +25,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sui_types::base_types::ObjectID;
 use sui_types::{base_types::SuiAddress, id::ID, SUI_SYSTEM_ADDRESS};
-
-/// Represents the Rust version of the Move
-/// struct `ika_system::dwallet::StartSignEvent`.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartSignEvent {
-    pub sign_id: ID,
-    /// The `DWallet` object's ID associated with the DKG output.
-    pub(super) dwallet_id: ID,
-    /// The public output of the decentralized party in the dWallet DKG process.
-    pub(super) dwallet_decentralized_public_output: Vec<u8>,
-    pub hash_scheme: u8,
-    /// Hashed messages to Sign.
-    pub(super) message: Vec<u8>,
-    /// The dWallet mpc network key version
-    pub(super) dwallet_mpc_network_key_id: ID,
-    pub(crate) presign_id: ID,
-
-    /// The presign protocol output as bytes.
-    pub(crate) presign: Vec<u8>,
-
-    /// The centralized party signature of a message.
-    pub(crate) message_centralized_signature: Vec<u8>,
-
-    /// Indicates whether the future sign feature was used to start the session.
-    pub(crate) is_future_sign: bool,
-}
-
-impl DWalletMPCEventTrait for StartSignEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartSignEvent`]
-    /// events from the chain and initiate the MPC session.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_system_package_id,
-            name: START_SIGN_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
 
 /// Rust version of the Move [`ika_system::validator_set::LockedNextEpochCommitteeEvent`] type.
 pub struct LockedNextEpochCommitteeEvent {

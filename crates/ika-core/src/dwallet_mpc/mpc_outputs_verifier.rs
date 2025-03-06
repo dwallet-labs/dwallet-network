@@ -7,14 +7,16 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
 use crate::dwallet_mpc::sign::SignFirstParty;
-use crate::dwallet_mpc::{authority_name_to_party_id, message_digest};
+use crate::dwallet_mpc::{
+    authority_name_to_party_id, message_digest, network_key_version_from_key_id,
+};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
 use group::{GroupElement, PartyID};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, SingleSignSessionData,
+    MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, StartSignEvent,
 };
 use mpc::Party;
 use std::cmp::PartialEq;
@@ -277,7 +279,7 @@ impl DWalletMPCOutputsVerifier {
 
     fn verify_signature(
         epoch_store: &Arc<AuthorityPerEpochStore>,
-        sign_session_data: &SingleSignSessionData,
+        sign_session_data: &StartSignEvent,
         signature: &MPCPublicOutput,
     ) -> DwalletMPCResult<OutputVerificationResult> {
         let sign_output = bcs::from_bytes::<<SignFirstParty as Party>::PublicOutput>(&signature)?;
@@ -291,7 +293,7 @@ impl DWalletMPCOutputsVerifier {
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .get_protocol_public_parameters(
                 DWalletMPCNetworkKeyScheme::Secp256k1,
-                sign_session_data.network_key_version,
+                network_key_version_from_key_id(&sign_session_data.dwallet_mpc_network_key_id),
             )?;
         let protocol_public_parameters: secp256k1::class_groups::ProtocolPublicParameters =
             bcs::from_bytes(&protocol_public_parameters)?;
@@ -312,7 +314,7 @@ impl DWalletMPCOutputsVerifier {
             sign_output.1,
             message_digest(
                 &sign_session_data.message,
-                &crate::dwallet_mpc::Hash::try_from(sign_session_data.hash)
+                &crate::dwallet_mpc::Hash::try_from(sign_session_data.hash_scheme)
                     .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
             )
             .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
