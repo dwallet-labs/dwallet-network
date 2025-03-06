@@ -227,7 +227,11 @@ impl DWalletMPCSession {
         reporting_authority: AuthorityName,
         report: MaliciousReport,
     ) {
-        if matches!(self.session_info.mpc_round, MPCProtocolInitData::Sign(..))
+        let Some(event_driven_data) = &self.event_driven_data else {
+            // An event has not yet received for this session, so we cannot start the sign IA protocol.
+            return;
+        };
+        if matches!(event_driven_data.init_protocol_data, MPCProtocolInitData::Sign(..))
             && self.status == MPCSessionStatus::Active
             && self.session_specific_state.is_none()
         {
@@ -275,7 +279,7 @@ impl DWalletMPCSession {
         };
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
         let public_input = &event_driven_data.public_input;
-        match &self.session_info.mpc_round {
+        match &event_driven_data.init_protocol_data {
             MPCProtocolInitData::DKGFirst(..) => {
                 let public_input = bcs::from_bytes(public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
