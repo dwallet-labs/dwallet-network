@@ -231,8 +231,10 @@ impl DWalletMPCSession {
             // An event has not yet received for this session, so we cannot start the sign IA protocol.
             return;
         };
-        if matches!(event_driven_data.init_protocol_data, MPCProtocolInitData::Sign(..))
-            && self.status == MPCSessionStatus::Active
+        if matches!(
+            event_driven_data.init_protocol_data,
+            MPCProtocolInitData::Sign(..)
+        ) && self.status == MPCSessionStatus::Active
             && self.session_specific_state.is_none()
         {
             self.session_specific_state = Some(MPCSessionSpecificState::Sign(SignIASessionState {
@@ -291,7 +293,7 @@ impl DWalletMPCSession {
                     (),
                 )
             }
-            MPCProtocolInitData::DKGSecond(event_data, _) => {
+            MPCProtocolInitData::DKGSecond(event_data) => {
                 let public_input = bcs::from_bytes(public_input)?;
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,

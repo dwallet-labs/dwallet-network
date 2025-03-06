@@ -1881,7 +1881,13 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(_, protocol_init_data, session_id, output),
+                kind:
+                    ConsensusTransactionKind::DWalletMPCOutput(
+                        _,
+                        protocol_init_data,
+                        session_id,
+                        output,
+                    ),
                 ..
             }) => {
                 self.process_dwallet_mpc_output(
@@ -1992,7 +1998,8 @@ impl AuthorityPerEpochStore {
         self.save_dwallet_mpc_output(DWalletMPCOutputMessage {
             output: output.clone(),
             authority: origin_authority.clone(),
-            session_info: session_info.clone(),
+            session_id,
+            protocol_init_data,
         })
         .await;
 
@@ -2077,7 +2084,7 @@ impl AuthorityPerEpochStore {
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::DKGSecond(init_event_data, network_key_version) => {
+            MPCProtocolInitData::DKGSecond(init_event_data) => {
                 let tx = MessageKind::DwalletDKGSecondRoundOutput(DKGSecondRoundOutput {
                     output,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
