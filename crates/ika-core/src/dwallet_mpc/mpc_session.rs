@@ -68,7 +68,6 @@ pub(super) struct DWalletMPCSession {
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
     pub(super) session_info: SessionInfo,
-    pub(super) public_input: MPCPublicInput,
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
     pub(super) pending_quorum_for_highest_round_number: usize,
@@ -105,7 +104,6 @@ impl DWalletMPCSession {
             consensus_adapter,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
-            public_input,
             session_info,
             pending_quorum_for_highest_round_number: 0,
             party_id,
@@ -273,8 +271,13 @@ impl DWalletMPCSession {
         let Some(event_driven_data) = &self.event_driven_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
-        let session_id =
-            CommitmentSizedNumber::from_le_slice(event_driven_data.session_info.session_id.to_vec().as_slice());
+        let session_id = CommitmentSizedNumber::from_le_slice(
+            event_driven_data
+                .session_info
+                .session_id
+                .to_vec()
+                .as_slice(),
+        );
         let public_input = &event_driven_data.public_input;
         match &self.session_info.mpc_round {
             MPCProtocolInitData::DKGFirst(..) => {

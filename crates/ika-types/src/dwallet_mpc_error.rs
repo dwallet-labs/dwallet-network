@@ -124,7 +124,7 @@ pub enum DwalletMPCError {
     PresignRoundDataNotFound,
 
     #[error("failed to find the event driven data")]
-    MissingEventDrivenData
+    MissingEventDrivenData,
 }
 
 /// A wrapper type for the result of a runtime operation.
