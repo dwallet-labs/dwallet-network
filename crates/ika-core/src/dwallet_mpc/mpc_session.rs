@@ -443,7 +443,11 @@ impl DWalletMPCSession {
             Some(party_to_msg) => {
                 if party_to_msg.contains_key(&source_party_id) {
                     // Duplicate.
-                    return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+                    // We should NOT mark the origin party as malicious, as a message may be processed more than once
+                    // due to a bug in the state sync mechanism.
+                    // TODO (#697): Understand why consensus rounds that have already been processed are being processed
+                    // TODO (#697): while performing state sync.
+                    return Ok(());
                 }
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
