@@ -64,13 +64,13 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 	);
 }
 
-export async function createDWallet(conf: Config, protocolPublicParameters: Uint8Array) {
+export async function createDWallet(conf: Config, networkDecryptionKeyPublicOutput: Uint8Array) {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	await launchDKGSecondRound(
 		conf,
 		firstRoundOutputResult,
-		protocolPublicParameters,
+		networkDecryptionKeyPublicOutput,
 		classGroupsSecpKeyPair,
 	);
 	return firstRoundOutputResult.dwalletID;
@@ -79,12 +79,14 @@ export async function createDWallet(conf: Config, protocolPublicParameters: Uint
 export async function launchDKGSecondRound(
 	conf: Config,
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
-	protocolPublicParameters: Uint8Array,
+	networkDecryptionKeyPublicOutput: Uint8Array,
 	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
 ) {
+	console.log(networkDecryptionKeyPublicOutput);
+
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
-			protocolPublicParameters,
+			networkDecryptionKeyPublicOutput,
 			MPCKeyScheme.Secp256k1,
 			Uint8Array.from(firstRoundOutputResult.output),
 			// Remove the 0x prefix.
@@ -200,6 +202,11 @@ export async function dkgSecondRoundMoveCall(
 		bcs.vector(bcs.u8()).serialize(conf.suiClientKeypair.getPublicKey().toRawBytes()),
 	);
 
+	const emptyIKACoin = tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::zero`,
+		arguments: [],
+		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
+	});
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dwallet_dkg_second_round`,
 		arguments: [
@@ -210,7 +217,14 @@ export async function dkgSecondRoundMoveCall(
 			encryptionKeyAddressArg,
 			userPublicOutputArg,
 			signerPublicKeyArg,
+			emptyIKACoin,
+			tx.gas,
 		],
+	});
+	tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
+		arguments: [emptyIKACoin],
+		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
@@ -372,15 +386,15 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		?.dwallet_network_decryption_key_id;
 }
 
-export async function getDKGEncryptionSchemePublicParameters(
+export async function getNetworkDecryptionKeyPublicOutput(
 	c: Config,
-	network_decryption_key_id: string | null | undefined,
+	networkDecryptionKeyId: string | null | undefined,
 ): Promise<Uint8Array> {
-	if (network_decryption_key_id === null || network_decryption_key_id === undefined) {
-		network_decryption_key_id = await getNetworkDecryptionKeyID(c);
+	if (networkDecryptionKeyId === null || networkDecryptionKeyId === undefined) {
+		networkDecryptionKeyId = await getNetworkDecryptionKeyID(c);
 	}
 	const networkDecryptionKey = await c.client.getObject({
-		id: network_decryption_key_id,
+		id: networkDecryptionKeyId,
 		options: { showContent: true },
 	});
 

@@ -10,7 +10,7 @@ use class_groups::{
     Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyOnChainOutput};
 use group::{CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
@@ -22,12 +22,13 @@ use k256::elliptic_curve::bigint::{Encoding, Uint};
 use k256::elliptic_curve::ops::Reduce;
 use k256::{elliptic_curve, U256};
 use mpc::two_party::Round;
-use mpc::Party;
+use mpc::{Party, PublicOutput};
 use rand_core::{OsRng, SeedableRng};
 use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
 use std::fmt;
 use std::marker::PhantomData;
+use class_groups::dkg::Secp256k1Party;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
@@ -116,7 +117,7 @@ pub struct CentralizedDKGWasmResult {
 /// Returns an error if decoding or advancing the protocol fails.
 /// This is okay since a malicious blockchain can always block a client.
 pub fn create_dkg_output(
-    protocol_public_parameters: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
     key_scheme: u8,
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
@@ -125,7 +126,7 @@ pub fn create_dkg_output(
         bcs::from_bytes(&decentralized_first_round_public_output)
             .context("Failed to deserialize decentralized first round output")?;
     let public_parameters = bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-        protocol_public_parameters,
+        network_decryption_key_public_output,
         key_scheme,
     )?)?;
 
@@ -244,14 +245,15 @@ pub fn advance_centralized_sign_party(
     Ok(signed_messages)
 }
 
-fn protocol_public_parameters_by_key_scheme(
-    protocol_public_parameters: Vec<u8>,
+pub fn protocol_public_parameters_by_key_scheme(
+    network_decryption_key_public_output: Vec<u8>,
     key_scheme: u8,
 ) -> anyhow::Result<Vec<u8>> {
     let key_scheme = DWalletMPCNetworkKeyScheme::try_from(key_scheme)?;
-    let encryption_scheme_public_parameters = bcs::from_bytes(&protocol_public_parameters)?;
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            let network_decryption_key_public_output: NetworkDecryptionKeyOnChainOutput = bcs::from_bytes(&network_decryption_key_public_output)?;
+            let encryption_scheme_public_parameters = bcs::from_bytes(&network_decryption_key_public_output.encryption_scheme_public_parameters)?;
             Ok(bcs::to_bytes(&ProtocolPublicParameters::new::<
                 { secp256k1::SCALAR_LIMBS },
                 { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },

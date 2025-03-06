@@ -4495,7 +4495,7 @@ the function will abort with this error.
                     <b>let</b> _authority = bcs_body.peel_u32();
                     <b>let</b> _num = bcs_body.peel_u64();
             } <b>else</b> <b>if</b> (message_data_type == 3) {
-                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> first_round_output = bcs_body.peel_vec_u8();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_first_round">respond_dwallet_dkg_first_round</a>(dwallet_id, first_round_output);
                 response_session_count = response_session_count + 1;

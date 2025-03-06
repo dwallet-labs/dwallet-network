@@ -12,13 +12,13 @@ use wasm_bindgen::JsValue;
 
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(
-    protocol_public_parameters: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
     key_scheme: u8,
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
 ) -> Result<JsValue, JsError> {
     let dkg_centralized_result = &create_dkg_output(
-        protocol_public_parameters,
+        network_decryption_key_public_output,
         key_scheme,
         decentralized_first_round_public_output,
         session_id,

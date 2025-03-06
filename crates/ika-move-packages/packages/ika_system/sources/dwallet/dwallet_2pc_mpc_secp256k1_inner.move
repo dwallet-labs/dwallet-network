@@ -1998,7 +1998,7 @@ fun process_checkpoint_message(
                     let _authority = bcs_body.peel_u32();
                     let _num = bcs_body.peel_u64();
             } else if (message_data_type == 3) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output);
                 response_session_count = response_session_count + 1;

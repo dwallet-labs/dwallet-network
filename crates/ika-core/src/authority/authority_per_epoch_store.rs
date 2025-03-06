@@ -2091,13 +2091,8 @@ impl AuthorityPerEpochStore {
 
                         match key_scheme {
                             DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                                let public_output = bcs::to_bytes(&(
-                                    key.encryption_key,
-                                    key.decryption_key_share_public_parameters,
-                                    key.encryption_scheme_public_parameters,
-                                    key.public_verification_keys,
-                                ))
-                                .map_err(|e| DwalletMPCError::BcsError(e))?;
+                                let public_output = bcs::to_bytes(&key.get_on_chain_output())
+                                    .map_err(|e| DwalletMPCError::BcsError(e))?;
 
                                 let key_shares = bcs::to_bytes(
                                     &key.current_epoch_encryptions_of_shares_per_crt_prime,
