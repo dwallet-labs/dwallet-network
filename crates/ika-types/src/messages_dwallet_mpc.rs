@@ -136,21 +136,6 @@ pub struct SingleSignSessionData {
     pub presign_session_id: ObjectID,
 }
 
-impl MPCProtocolInitData {
-    /// Returns `true` if the round is a single message, which is
-    /// part of a batch, `false` otherwise.
-    pub fn is_part_of_batch(&self) -> bool {
-        // TODO (#694): Remove the batch logic
-        false
-    }
-
-    /// Is a special Round that indicates an initialization of a batch session.
-    pub fn is_a_new_batch_session(&self) -> bool {
-        matches!(self, |MPCProtocolInitData::BatchedSign(..))
-            || matches!(self, MPCProtocolInitData::BatchedPresign(..))
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DWalletMPCEvent {
     // TODO: remove event - do all parsing beforehand.

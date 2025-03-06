@@ -719,21 +719,6 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
-    /// A function to initiate the [`DWalletMPCBatchesManager`] when a new epoch starts.
-    pub fn set_dwallet_mpc_batches_manager(
-        &self,
-        batches_manager: DWalletMPCBatchesManager,
-    ) -> IkaResult<()> {
-        if self
-            .dwallet_mpc_batches_manager
-            .set(tokio::sync::Mutex::new(batches_manager))
-            .is_err()
-        {
-            error!("AuthorityPerEpochStore: `set_dwallet_mpc_batches_manager` called more than once; this should never happen");
-        }
-        Ok(())
-    }
-
     /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
     /// This outputs verifier handles storing all the outputs of dWallet MPC session,
     /// and writes them to the chain once all the outputs are ready and verified.
@@ -2052,36 +2037,27 @@ impl AuthorityPerEpochStore {
             OutputResult::FirstQuorumReached => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
                     .await;
-                // Output result of a single Protocol from the batch session.
-                if session_info.mpc_round.is_part_of_batch() {
-                    let mut batches_manager = self.get_dwallet_mpc_batches_manager().await;
-                    batches_manager.store_verified_output(session_info.clone(), output.clone())?;
-                    batches_manager.is_batch_completed(&session_info)?;
-                    self.process_dwallet_transaction(output, session_info)
-                        .map_err(|e| IkaError::from(e))
-                } else {
-                    // Extract the final network DKG transaction parameters from
-                    // the verified output.
-                    // We can't preform this within the execution engine,
-                    // as it requires the class-groups crate from crypto-private lib.
-                    if let MPCProtocolInitData::NetworkDkg(key_scheme, _) = session_info.mpc_round {
-                        let weighted_threshold_access_structure =
-                            self.get_weighted_threshold_access_structure()?;
+                // Extract the final network DKG transaction parameters from
+                // the verified output.
+                // We can't preform this within the execution engine,
+                // as it requires the class-groups crate from crypto-private lib.
+                if let MPCProtocolInitData::NetworkDkg(key_scheme, _) = session_info.mpc_round {
+                    let weighted_threshold_access_structure =
+                        self.get_weighted_threshold_access_structure()?;
 
-                        let key = crate::dwallet_mpc::network_dkg::dwallet_mpc_network_key_from_session_output(
+                    let key = crate::dwallet_mpc::network_dkg::dwallet_mpc_network_key_from_session_output(
                             self.epoch(),
                             key_scheme,
                             &weighted_threshold_access_structure,
                             &output,
                         )?;
 
-                        Ok(self.process_consensus_system_transaction(
-                            &MessageKind::DwalletMPCNetworkDKGOutput(key_scheme, key),
-                        ))
-                    } else {
-                        self.process_dwallet_transaction(output, session_info)
-                            .map_err(|e| IkaError::from(e))
-                    }
+                    Ok(self.process_consensus_system_transaction(
+                        &MessageKind::DwalletMPCNetworkDKGOutput(key_scheme, key),
+                    ))
+                } else {
+                    self.process_dwallet_transaction(output, session_info)
+                        .map_err(|e| IkaError::from(e))
                 }
             }
             OutputResult::NotEnoughVotes => Ok(ConsensusCertificateResult::ConsensusMessage),
