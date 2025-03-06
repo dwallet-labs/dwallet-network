@@ -1295,7 +1295,7 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, ..),
                 ..
             }) => {
                 // When sending an MPC output, the validator also includes its public key.

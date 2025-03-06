@@ -319,10 +319,10 @@ impl ConsensusTransaction {
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(message.clone())
             }
-            ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {
+            ConsensusTransactionKind::DWalletMPCOutput(authority, _, session_id, output) => {
                 ConsensusTransactionKey::DWalletMPCOutput(
                     output.clone(),
-                    session_info.session_id,
+                    session_id.clone(),
                     *authority,
                 )
             }
