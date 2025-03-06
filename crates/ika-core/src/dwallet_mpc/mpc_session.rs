@@ -420,8 +420,8 @@ impl DWalletMPCSession {
             output,
             SessionInfo {
                 session_id: self.session_id.clone(),
-                mpc_round: event_driven_data.init_protocol_data.clone()
-            }
+                mpc_round: event_driven_data.init_protocol_data.clone(),
+            },
         ))
     }
 
