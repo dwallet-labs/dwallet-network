@@ -33,10 +33,6 @@ pub enum MPCProtocolInitData {
     /// Contains the data of the event that triggered the round,
     /// and the network key version of the first round.
     DKGSecond(DWalletMPCSuiEvent<StartDKGSecondRoundEvent>, u8),
-    /// This is not a real round, but an indicator the Batches Manager to
-    /// register a Presign Batch session.
-    /// Holds the number of messages in the batch.
-    BatchedPresign(u64),
     /// The first round of the Presign protocol for each message in the Batch.
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID (same for each message in the batch),
@@ -45,9 +41,6 @@ pub enum MPCProtocolInitData {
     /// The first and only round of the Sign protocol.
     /// Contains all the data needed to sign the message.
     Sign(SingleSignSessionData),
-    /// A batched sign session, contains the list of messages that are being signed.
-    // TODO (#536): Store batch state and logic on Sui & remove this field.
-    BatchedSign(Vec<Vec<u8>>),
     /// The only round of the network DKG protocol.
     /// Contains the network key scheme
     /// and at the end of the session holds the new key version.
@@ -134,21 +127,6 @@ pub struct SingleSignSessionData {
     pub hash: u8,
     pub sign_id: ObjectID,
     pub presign_session_id: ObjectID,
-}
-
-impl MPCProtocolInitData {
-    /// Returns `true` if the round is a single message, which is
-    /// part of a batch, `false` otherwise.
-    pub fn is_part_of_batch(&self) -> bool {
-        // TODO (#694): Remove the batch logic
-        false
-    }
-
-    /// Is a special Round that indicates an initialization of a batch session.
-    pub fn is_a_new_batch_session(&self) -> bool {
-        matches!(self, |MPCProtocolInitData::BatchedSign(..))
-            || matches!(self, MPCProtocolInitData::BatchedPresign(..))
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

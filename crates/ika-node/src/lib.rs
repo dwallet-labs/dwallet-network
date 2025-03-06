@@ -176,7 +176,6 @@ mod simulator {
 
 use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use ika_core::consensus_handler::ConsensusHandlerInitializer;
-use ika_core::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
@@ -841,7 +840,6 @@ impl IkaNode {
         // used to verify outputs before sending a system TX to store them.
         epoch_store
             .set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(&epoch_store))?;
-        epoch_store.set_dwallet_mpc_batches_manager(DWalletMPCBatchesManager::new())?;
 
         epoch_store.set_dwallet_mpc_manager(DWalletMPCManager::try_new(
             Arc::new(consensus_adapter.clone()),

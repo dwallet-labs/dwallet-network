@@ -8,7 +8,6 @@ use crate::dwallet_mpc::network_dkg::network_dkg_session_info;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
     DWALLET_MPC_EVENT_STRUCT_NAME, LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME,
-    START_BATCHED_PRESIGN_EVENT_STRUCT_NAME, START_BATCHED_SIGN_EVENT_STRUCT_NAME,
     START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
     START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
     START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
@@ -26,25 +25,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sui_types::base_types::ObjectID;
 use sui_types::{base_types::SuiAddress, id::ID, SUI_SYSTEM_ADDRESS};
-
-/// An event to start a batched sign session, i.e.,
-/// a sign session that signs on multiple messages simultaneously.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartBatchedSignEvent {
-    pub session_id: ID,
-    /// An ordered list without duplicates of the messages we need to sign on.
-    pub hashed_messages: Vec<Vec<u8>>,
-    pub initiator: SuiAddress,
-}
-
-/// A representation of the Move event to start a batched presign session, i.e.,
-/// a presign session that creates multiple presigns at once.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartBatchedPresignEvent {
-    pub session_id: ID,
-    pub batch_size: u64,
-    pub initiator: SuiAddress,
-}
 
 /// Represents the Rust version of the Move
 /// struct `ika_system::dwallet::StartSignEvent`.
@@ -81,34 +61,6 @@ impl DWalletMPCEventTrait for StartSignEvent {
             address: *packages_config.ika_system_package_id,
             name: START_SIGN_ROUND_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
-impl DWalletMPCEventTrait for StartBatchedSignEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartBatchedSignEvent`]
-    /// events from the chain and initiate the MPC session.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_package_id,
-            name: START_BATCHED_SIGN_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
-impl DWalletMPCEventTrait for StartBatchedPresignEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartBatchedPresignEvent`]
-    /// events from the chain and initiate the MPC session.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_package_id,
-            name: START_BATCHED_PRESIGN_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
