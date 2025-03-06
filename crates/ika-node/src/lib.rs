@@ -176,7 +176,6 @@ mod simulator {
 
 use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use ika_core::consensus_handler::ConsensusHandlerInitializer;
-use ika_core::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
