@@ -122,8 +122,8 @@ pub struct SignIASessionState {
 /// The message and data for the Sign round.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SingleSignSessionData {
-    pub batch_session_id: ObjectID,
-    pub hashed_message: Vec<u8>,
+    pub session_id: ObjectID,
+    pub message: Vec<u8>,
     /// The dWallet ID that is used to sign, needed mostly for audit.
     pub dwallet_id: ObjectID,
     /// The DKG output of the dWallet, used to sign and verify the message.
@@ -131,6 +131,8 @@ pub struct SingleSignSessionData {
     pub network_key_version: u8,
     /// Indicates whether the future sign feature was used to start the session.
     pub is_future_sign: bool,
+    pub hash: u8,
+    pub sign_id: ObjectID,
     pub presign_session_id: ObjectID,
 }
 
@@ -138,7 +140,8 @@ impl MPCProtocolInitData {
     /// Returns `true` if the round is a single message, which is
     /// part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
-        matches!(self, MPCProtocolInitData::Sign(..))
+        // TODO (#694): Remove the batch logic
+        false
     }
 
     /// Is a special Round that indicates an initialization of a batch session.

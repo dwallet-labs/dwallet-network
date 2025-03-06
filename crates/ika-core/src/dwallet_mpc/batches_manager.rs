@@ -98,8 +98,8 @@ impl DWalletMPCBatchesManager {
     ) -> DwalletMPCResult<()> {
         match session_info.mpc_round {
             MPCProtocolInitData::Sign(SingleSignSessionData {
-                batch_session_id,
-                hashed_message: message,
+                session_id: batch_session_id,
+                message: message,
                 ..
             }) => {
                 self.store_verified_sign_output(batch_session_id, message.clone(), output)?;
@@ -117,7 +117,8 @@ impl DWalletMPCBatchesManager {
     ) -> DwalletMPCResult<Option<Vec<u8>>> {
         match &session_info.mpc_round {
             MPCProtocolInitData::Sign(SingleSignSessionData {
-                batch_session_id, ..
+                session_id: batch_session_id,
+                ..
             }) => self.is_sign_batch_completed(batch_session_id.clone()),
             _ => Ok(None),
         }

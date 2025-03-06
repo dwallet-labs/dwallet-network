@@ -58,6 +58,7 @@ let leftovers = prepared.into_remainder_bytes();
 -  [Function `peel_vec_u64`](#sui_bcs_peel_vec_u64)
 -  [Function `peel_vec_u128`](#sui_bcs_peel_vec_u128)
 -  [Function `peel_vec_u256`](#sui_bcs_peel_vec_u256)
+-  [Function `peel_enum_tag`](#sui_bcs_peel_enum_tag)
 -  [Function `peel_option_address`](#sui_bcs_peel_option_address)
 -  [Function `peel_option_bool`](#sui_bcs_peel_option_bool)
 -  [Function `peel_option_u8`](#sui_bcs_peel_option_u8)
@@ -690,6 +691,46 @@ Peel a vector of <code>u256</code> from serialized bytes.
 
 <pre><code><b>public</b> <b>fun</b> <a href="../sui/bcs.md#sui_bcs_peel_vec_u256">peel_vec_u256</a>(bcs: &<b>mut</b> <a href="../sui/bcs.md#sui_bcs_BCS">BCS</a>): vector&lt;u256&gt; {
     bcs.<a href="../sui/bcs.md#sui_bcs_peel_vec">peel_vec</a>!(|bcs| bcs.<a href="../sui/bcs.md#sui_bcs_peel_u256">peel_u256</a>())
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="sui_bcs_peel_enum_tag"></a>
+
+## Function `peel_enum_tag`
+
+Peel enum from serialized bytes, where <code>$f</code> takes a <code>tag</code> value and returns
+the corresponding enum variant. Move enums are limited to 127 variants,
+however the tag can be any <code>u32</code> value.
+
+Example:
+```rust
+let my_enum = match (bcs.peel_enum_tag()) {
+0 => Enum::Empty,
+1 => Enum::U8(bcs.peel_u8()),
+2 => Enum::U16(bcs.peel_u16()),
+3 => Enum::Struct { a: bcs.peel_address(), b: bcs.peel_u8() },
+_ => abort,
+};
+```
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../sui/bcs.md#sui_bcs_peel_enum_tag">peel_enum_tag</a>(bcs: &<b>mut</b> <a href="../sui/bcs.md#sui_bcs_BCS">sui::bcs::BCS</a>): u32
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../sui/bcs.md#sui_bcs_peel_enum_tag">peel_enum_tag</a>(bcs: &<b>mut</b> <a href="../sui/bcs.md#sui_bcs_BCS">BCS</a>): u32 {
+    <b>let</b> tag = bcs.<a href="../sui/bcs.md#sui_bcs_peel_vec_length">peel_vec_length</a>();
+    <b>assert</b>!(tag &lt;= <a href="../std/u32.md#std_u32_max_value">std::u32::max_value</a>!() <b>as</b> u64, <a href="../sui/bcs.md#sui_bcs_EOutOfRange">EOutOfRange</a>);
+    tag <b>as</b> u32
 }
 </code></pre>
 
