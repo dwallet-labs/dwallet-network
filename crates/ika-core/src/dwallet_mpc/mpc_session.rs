@@ -397,11 +397,6 @@ impl DWalletMPCSession {
                     malicious_parties: vec![],
                 })
             }
-            MPCProtocolInitData::BatchedPresign(..) | MPCProtocolInitData::BatchedSign(..) => {
-                // This case is unreachable because the batched session is handled separately.
-                // The bathed session is only an indicator to expect a batch of messages.
-                unreachable!("advance should never be called on a batched session")
-            }
         }
     }
 

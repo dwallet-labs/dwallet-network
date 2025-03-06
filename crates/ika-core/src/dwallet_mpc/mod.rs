@@ -3,9 +3,7 @@ use crate::dwallet_mpc::dkg::{
     DKGFirstParty, DKGFirstPartyPublicInputGenerator, DKGSecondParty,
     DKGSecondPartyPublicInputGenerator,
 };
-use crate::dwallet_mpc::mpc_events::{
-    StartBatchedPresignEvent, StartBatchedSignEvent, StartNetworkDKGEvent, StartSignEvent,
-};
+use crate::dwallet_mpc::mpc_events::{StartNetworkDKGEvent, StartSignEvent};
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
@@ -41,7 +39,6 @@ use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
 use tracing::warn;
 
 use twopc_mpc::secp256k1;
-pub mod batches_manager;
 mod cryptographic_computations_orchestrator;
 mod dkg;
 pub mod dwallet_mpc_service;
@@ -140,20 +137,6 @@ pub(crate) fn session_info_from_event(
                 StartPartialSignaturesVerificationEvent<SignData>,
             > = bcs::from_bytes(&event.contents)?;
             Ok(Some(get_verify_partial_signatures_session_info(
-                &deserialized_event.event_data,
-            )))
-        }
-        t if t == &DWalletMPCSuiEvent::<StartBatchedSignEvent>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartBatchedSignEvent> =
-                bcs::from_bytes(&event.contents)?;
-            Ok(Some(batched_sign_session_info(
-                &deserialized_event.event_data,
-            )))
-        }
-        t if t == &DWalletMPCSuiEvent::<StartBatchedPresignEvent>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartBatchedPresignEvent> =
-                bcs::from_bytes(&event.contents)?;
-            Ok(Some(batched_presign_session_info(
                 &deserialized_event.event_data,
             )))
         }
@@ -385,22 +368,6 @@ fn get_verify_partial_signatures_session_info(
         session_id: deserialized_event.session_id,
         initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
-    }
-}
-
-fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> SessionInfo {
-    SessionInfo {
-        session_id: deserialized_event.session_id.bytes,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::BatchedSign(deserialized_event.hashed_messages.clone()),
-    }
-}
-
-fn batched_presign_session_info(deserialized_event: &StartBatchedPresignEvent) -> SessionInfo {
-    SessionInfo {
-        session_id: deserialized_event.session_id.bytes,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::BatchedPresign(deserialized_event.batch_size),
     }
 }
 
