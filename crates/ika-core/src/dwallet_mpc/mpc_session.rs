@@ -421,10 +421,14 @@ impl DWalletMPCSession {
         &self,
         output: Vec<u8>,
     ) -> DwalletMPCResult<ConsensusTransaction> {
+        let Some(event_driven_data) = &self.event_driven_data else {
+            return Err(DwalletMPCError::MissingEventDrivenData);
+        };
         Ok(ConsensusTransaction::new_dwallet_mpc_output(
             self.epoch_store()?.name,
             output,
-            self.session_info.clone(),
+            event_driven_data.init_protocol_data.clone(),
+            self.session_id.clone(),
         ))
     }
 
