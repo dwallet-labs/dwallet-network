@@ -6,7 +6,7 @@
 
 use crate::checkpoints::CheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
-use crate::sui_connector::{pick_highest_balance_coin, SuiNotifier};
+use crate::sui_connector::SuiNotifier;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
@@ -128,14 +128,11 @@ where
                         let auth_sig = checkpoint_message.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap = Self::calculate_signers_bitmap(auth_sig);
-                        let message = bcs::to_bytes::<CheckpointMessage>(
-                            &checkpoint_message.clone().into_message(),
-                        )
-                        .expect("Serializing checkpoint message cannot fail");
+                        let message =
+                            bcs::to_bytes::<CheckpointMessage>(&checkpoint_message.into_message())
+                                .expect("Serializing checkpoint message cannot fail");
 
                         info!("signers_bitmap: {:?}", signers_bitmap);
-
-                        println!("sequence number: {}", next_checkpoint_sequence_number);
 
                         let task = Self::handle_execution_task(
                             self.ika_system_package_id,
@@ -182,7 +179,6 @@ where
         sui_client: &Arc<SuiClient<C>>,
         metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
-        // let sui_client = sui_client.ga;
         let (gas_coin, gas_obj_ref, owner) = sui_client
             .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
             .await;
