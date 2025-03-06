@@ -253,6 +253,8 @@ where
                     .map(|v| v.value.clone())
                     .collect::<Vec<_>>();
 
+                self.inner.get_class_groups_public_keys_and_proofs(&validators).await;
+
                 let validators = ika_system_state_inner
                     .validators
                     .active_committee
@@ -269,6 +271,9 @@ where
                             protocol_pubkey: metadata.protocol_pubkey.clone(),
                             network_pubkey: metadata.network_pubkey.clone(),
                             consensus_pubkey: metadata.consensus_pubkey.clone(),
+                            class_groups_public_key_and_proof: metadata
+                                .class_groups_public_key_and_proof
+                                .clone(),
                             network_address: metadata.network_address.clone(),
                             p2p_address: metadata.p2p_address.clone(),
                             consensus_address: metadata.consensus_address.clone(),
@@ -474,6 +479,10 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_latest_checkpoint_sequence_number(&self) -> Result<u64, Self::Error>;
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
+    async fn get_class_groups_public_keys_and_proofs(
+        &self,
+        validators: &Vec<ValidatorInnerV1>,
+    );
 
     async fn get_system_inner(
         &self,
@@ -549,6 +558,35 @@ impl SuiClientInner for SuiSdkClient {
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
         self.read_api().get_move_object_bcs(system_id).await
+    }
+
+    async fn get_class_groups_public_keys_and_proofs(
+        &self,
+        validators: &Vec<ValidatorInnerV1>,
+    ) {
+        let mut class_groups_public_keys_and_proofs = Vec::new();
+        for validator in validators {
+            let metadata = validator.verified_metadata();
+            let dynamic_fields = self
+                .read_api()
+                .get_dynamic_fields(metadata.class_groups_public_key_and_proof.contents.id, None, None)
+                .await.unwrap();
+            let mut validator_class_groups_public_key_and_proof: Vec<u8> = Vec::new();
+            for df in dynamic_fields.data{
+                let object_id = df.object_id;
+                let dynamic_field_response = self
+                    .read_api()
+                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                    .await.unwrap();
+                let resp = dynamic_field_response.into_object().unwrap();
+                // unwrap: requested bcs data
+                let move_object = resp.bcs.unwrap();
+                let raw_move_obj = move_object.try_into_move().unwrap();
+                let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes).unwrap();
+                validator_class_groups_public_key_and_proof.append(&mut key_slice.value.clone());
+            };
+            class_groups_public_keys_and_proofs.push(validator_class_groups_public_key_and_proof);
+        }
     }
 
     async fn get_system_inner(

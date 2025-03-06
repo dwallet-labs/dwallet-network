@@ -17,6 +17,7 @@ use rand::prelude::StdRng;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
+use sui_types::collection_types::TableVec;
 use sui_types::multiaddr::Multiaddr;
 use tracing::{error, warn};
 
@@ -246,6 +247,7 @@ pub struct EpochStartValidatorInfoV1 {
     pub protocol_pubkey: AuthorityPublicKey,
     pub network_pubkey: NetworkPublicKey,
     pub consensus_pubkey: NetworkPublicKey,
+    pub class_groups_public_key_and_proof: TableVec,
     pub network_address: Multiaddr,
     pub p2p_address: Multiaddr,
     pub consensus_address: Multiaddr,
