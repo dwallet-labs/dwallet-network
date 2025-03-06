@@ -251,7 +251,7 @@ fn sign_public_input(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
         // Todo (#473): Support generic network key scheme
         DWalletMPCNetworkKeyScheme::Secp256k1,
-        network_key_version_from_key_id(&deserialized_event.dwallet_mpc_network_key_id.bytes),
+        network_key_version_from_key_id(&deserialized_event.dwallet_mpc_network_key_id),
     )?;
     Ok(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
@@ -533,10 +533,7 @@ pub(crate) fn session_input_from_event(
                 // Todo (#473): Support generic network key scheme
                 DWalletMPCNetworkKeyScheme::Secp256k1,
                 network_key_version_from_key_id(
-                    &deserialized_event
-                        .event_data
-                        .dwallet_mpc_network_key_id
-                        .bytes,
+                    &deserialized_event.event_data.dwallet_mpc_network_key_id,
                 ),
             )?;
             Ok((
