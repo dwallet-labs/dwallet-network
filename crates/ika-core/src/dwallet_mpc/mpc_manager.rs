@@ -721,7 +721,6 @@ impl DWalletMPCManager {
             self.consensus_adapter.clone(),
             self.epoch_id,
             MPCSessionStatus::Pending,
-            session_info.clone(),
             session_info.session_id,
             self.party_id,
             self.weighted_threshold_access_structure.clone(),

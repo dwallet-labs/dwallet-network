@@ -68,7 +68,6 @@ pub(super) struct DWalletMPCSession {
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
     pub(super) session_id: ObjectID,
-    pub(super) session_info: SessionInfo,
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
     pub(super) pending_quorum_for_highest_round_number: usize,
@@ -80,8 +79,6 @@ pub(super) struct DWalletMPCSession {
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
-    // TODO (#539): Simplify struct to only contain session related data - remove this field.
-    private_input: MPCPrivateInput,
     pub(crate) event_driven_data: Option<EventDrivenData>,
 }
 
@@ -91,12 +88,10 @@ impl DWalletMPCSession {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch: EpochId,
         status: MPCSessionStatus,
-        session_info: SessionInfo,
         session_id: ObjectID,
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
-        private_input: MPCPrivateInput,
         event_driven_data: Option<EventDrivenData>,
     ) -> Self {
         Self {
@@ -105,13 +100,11 @@ impl DWalletMPCSession {
             consensus_adapter,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
-            session_info,
             session_id,
             pending_quorum_for_highest_round_number: 0,
             party_id,
             weighted_threshold_access_structure,
             decryption_share,
-            private_input,
             session_specific_state: None,
             event_driven_data,
         }
@@ -350,7 +343,7 @@ impl DWalletMPCSession {
                 key_scheme,
                 self.serialized_messages.clone(),
                 bcs::from_bytes(
-                    &self
+                    &event_driven_data
                         .private_input
                         .clone()
                         .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
