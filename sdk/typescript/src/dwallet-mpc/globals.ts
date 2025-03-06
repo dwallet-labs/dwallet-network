@@ -60,14 +60,11 @@ interface IKASystemStateInner {
 	};
 }
 
-interface DWalletNetworkDecryptionKeyCap {
-	id: { id: string };
-	dwallet_network_decryption_key_id: string;
-}
-
 interface DWalletNetworkDecryptionKey {
-	id: { id: string };
-	public_output: Uint8Array;
+	fields: {
+		id: { id: string };
+		public_output: Uint8Array;
+	};
 }
 
 /**
