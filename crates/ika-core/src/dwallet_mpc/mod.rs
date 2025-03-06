@@ -166,7 +166,6 @@ fn start_encrypted_share_verification_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
     }
 }
@@ -206,7 +205,6 @@ fn dkg_second_party_session_info(
     SessionInfo {
         session_id: ObjectID::from(deserialized_event.session_id),
         // TODO (#642): Remove the redundant initiating user address field
-        initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::DKGSecond(
             deserialized_event.clone(),
             dwallet_network_key_version,
@@ -231,8 +229,6 @@ fn presign_party_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        // TODO (#642): Remove the redundant initiating user address field
-        initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::Presign(deserialized_event.event_data),
     }
 }
@@ -272,8 +268,6 @@ fn sign_public_input(
 fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEvent>) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        // TODO (#642): Remove the redundant initiating user address field
-        initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::Sign(deserialized_event.event_data.clone()),
     }
 }
@@ -322,7 +316,6 @@ fn get_verify_partial_signatures_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
     }
 }
