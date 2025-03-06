@@ -21,9 +21,6 @@ pub const START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
 pub const START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartPresignSecondRoundEvent");
 pub const START_SIGN_ROUND_EVENT_STRUCT_NAME: &IdentStr = ident_str!("ECDSASignRequestEvent");
-pub const START_BATCHED_SIGN_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartBatchedSignEvent");
-pub const START_BATCHED_PRESIGN_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("StartBatchedPresignEvent");
 pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("LockedNextEpochCommitteeEvent");
 pub const VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME: &IdentStr =
