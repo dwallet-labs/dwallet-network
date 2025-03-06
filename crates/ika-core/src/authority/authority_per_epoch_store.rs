@@ -1677,7 +1677,7 @@ impl AuthorityPerEpochStore {
                     verified_certificates.push_back(cert);
                 }
                 ConsensusCertificateResult::IkaLargeTransaction(certs) => {
-                    notifications.push(key.clone()); // check this
+                    notifications.push(key.clone());
                     certs
                         .into_iter()
                         .for_each(|cert| verified_certificates.push_back(cert));
