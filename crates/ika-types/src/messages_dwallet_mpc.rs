@@ -140,6 +140,8 @@ pub struct DWalletMPCOutputMessage {
     pub output: Vec<u8>,
     pub authority: AuthorityName,
     pub session_info: SessionInfo,
+    pub session_id: ObjectID,
+    pub protocol_init_data: MPCProtocolInitData,
 }
 
 /// Metadata for a local MPC computation.
