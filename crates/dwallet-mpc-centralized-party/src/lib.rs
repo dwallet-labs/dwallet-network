@@ -4,13 +4,16 @@
 #![allow(unused_qualifications)]
 
 use anyhow::{anyhow, Context};
+use class_groups::dkg::Secp256k1Party;
 use class_groups::setup::get_setup_parameters_secp256k1;
 use class_groups::{
     CiphertextSpaceGroupElement, CiphertextSpaceValue, DecryptionKey, EncryptionKey,
     Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyOnChainOutput};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyOnChainOutput,
+};
 use group::{CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
@@ -28,7 +31,6 @@ use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
 use std::fmt;
 use std::marker::PhantomData;
-use class_groups::dkg::Secp256k1Party;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups_constants::protocol_public_parameters;
@@ -252,8 +254,11 @@ pub fn protocol_public_parameters_by_key_scheme(
     let key_scheme = DWalletMPCNetworkKeyScheme::try_from(key_scheme)?;
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            let network_decryption_key_public_output: NetworkDecryptionKeyOnChainOutput = bcs::from_bytes(&network_decryption_key_public_output)?;
-            let encryption_scheme_public_parameters = bcs::from_bytes(&network_decryption_key_public_output.encryption_scheme_public_parameters)?;
+            let network_decryption_key_public_output: NetworkDecryptionKeyOnChainOutput =
+                bcs::from_bytes(&network_decryption_key_public_output)?;
+            let encryption_scheme_public_parameters = bcs::from_bytes(
+                &network_decryption_key_public_output.encryption_scheme_public_parameters,
+            )?;
             Ok(bcs::to_bytes(&ProtocolPublicParameters::new::<
                 { secp256k1::SCALAR_LIMBS },
                 { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
