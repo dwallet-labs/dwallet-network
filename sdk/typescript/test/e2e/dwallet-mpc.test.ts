@@ -41,13 +41,20 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create a dWallet (DKG)', async () => {
-		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf, null);
+		let networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf, null);
+		if (!networkDecryptionKeyPublicOutput) {
+			networkDecryptionKeyPublicOutput = mockedProtocolPublicParameters;
+		}
 		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 	});
 
 	it('should run presign', async () => {
-		const dwalletID = await createDWallet(conf, mockedProtocolPublicParameters);
+		let networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf, null);
+		if (!networkDecryptionKeyPublicOutput) {
+			networkDecryptionKeyPublicOutput = mockedProtocolPublicParameters;
+		}
+		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		const presignCompletion = await presign(conf, dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);

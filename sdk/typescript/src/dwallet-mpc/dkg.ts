@@ -82,8 +82,6 @@ export async function launchDKGSecondRound(
 	networkDecryptionKeyPublicOutput: Uint8Array,
 	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
 ) {
-	console.log(networkDecryptionKeyPublicOutput);
-
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			networkDecryptionKeyPublicOutput,
@@ -389,7 +387,7 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 export async function getNetworkDecryptionKeyPublicOutput(
 	c: Config,
 	networkDecryptionKeyId: string | null | undefined,
-): Promise<Uint8Array> {
+): Promise<Uint8Array | null> {
 	if (networkDecryptionKeyId === null || networkDecryptionKeyId === undefined) {
 		networkDecryptionKeyId = await getNetworkDecryptionKeyID(c);
 	}
@@ -397,6 +395,10 @@ export async function getNetworkDecryptionKeyPublicOutput(
 		id: networkDecryptionKeyId,
 		options: { showContent: true },
 	});
+
+	if (!networkDecryptionKey) {
+		return null;
+	}
 
 	if (!isDWalletNetworkDecryptionKey(networkDecryptionKey?.data?.content)) {
 		throw new Error('Invalid network decryption key object');
