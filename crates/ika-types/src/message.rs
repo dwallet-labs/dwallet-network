@@ -127,7 +127,6 @@ pub struct EncryptionKeyVerificationOutput {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct PartialSignatureVerificationOutput {
-    pub initiating_user_address: Vec<u8>,
     pub session_id: Vec<u8>,
     pub dwallet_id: Vec<u8>,
     pub dwallet_decentralized_public_output: Vec<u8>,

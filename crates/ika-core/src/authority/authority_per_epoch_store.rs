@@ -2196,7 +2196,6 @@ impl AuthorityPerEpochStore {
                     PartialSignatureVerificationOutput {
                         dwallet_id: init_event_data.dwallet_id.to_vec(),
                         session_id: session_info.session_id.to_vec(),
-                        initiating_user_address: session_info.initiating_user_address.to_vec(),
                         signature_data: bcs::to_bytes(&init_event_data.signature_data)?,
                         dwallet_cap_id: init_event_data.dwallet_cap_id.to_vec(),
                         dwallet_mpc_network_decryption_key_version: bcs::to_bytes(
