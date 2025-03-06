@@ -478,6 +478,9 @@ impl DWalletMPCManager {
     }
 
     fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
+        let Some(event_driven_data) = &session.event_driven_data else {
+            return Err(DwalletMPCError::MissingEventDrivenData);
+        };
         let session_id = session.session_id;
         if self
             .mpc_sessions
@@ -496,7 +499,7 @@ impl DWalletMPCManager {
             .computation_channel_sender
             .clone();
         if matches!(
-            session.session_info.mpc_round,
+            event_driven_data.init_protocol_data,
             MPCProtocolInitData::Sign(..)
         ) && session.pending_quorum_for_highest_round_number == LAST_SIGN_ROUND_INDEX
         {
@@ -755,7 +758,7 @@ impl DWalletMPCManager {
             Some(EventDrivenData {
                 private_input,
                 public_input: public_input.clone(),
-                session_info: session_info.clone(),
+                init_protocol_data: session_info.mpc_round.clone(),
             }),
         );
         // TODO (#311): Make sure validator don't mark other validators

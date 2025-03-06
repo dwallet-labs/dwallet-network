@@ -49,7 +49,7 @@ pub(crate) struct ReadyToAdvanceCheckResult {
 pub struct EventDrivenData {
     pub private_input: MPCPrivateInput,
     pub(super) public_input: MPCPublicInput,
-    pub(super) session_info: SessionInfo,
+    pub init_protocol_data: MPCProtocolInitData,
 }
 
 /// A dWallet MPC session.
@@ -82,7 +82,7 @@ pub(super) struct DWalletMPCSession {
     decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     private_input: MPCPrivateInput,
-    event_driven_data: Option<EventDrivenData>,
+    pub(crate) event_driven_data: Option<EventDrivenData>,
 }
 
 impl DWalletMPCSession {
@@ -273,13 +273,7 @@ impl DWalletMPCSession {
         let Some(event_driven_data) = &self.event_driven_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
-        let session_id = CommitmentSizedNumber::from_le_slice(
-            event_driven_data
-                .session_info
-                .session_id
-                .to_vec()
-                .as_slice(),
-        );
+        let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
         let public_input = &event_driven_data.public_input;
         match &self.session_info.mpc_round {
             MPCProtocolInitData::DKGFirst(..) => {
