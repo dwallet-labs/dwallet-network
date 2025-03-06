@@ -16,8 +16,7 @@ use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, SingleSignSessionData,
-    StartSignEvent,
+    MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, StartSignEvent,
 };
 use mpc::Party;
 use std::cmp::PartialEq;
