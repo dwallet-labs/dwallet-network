@@ -949,7 +949,7 @@ fun process_checkpoint_message(
                 let _encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 let _encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
                 let _rejected = bcs_body.peel_bool();
-            } else if (message_data_type == 8) {
+            } else if (message_data_type == 7) {
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _presign = bcs_body.peel_vec_u8();
