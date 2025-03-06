@@ -199,6 +199,21 @@ fn dkg_second_public_input(
     )?)
 }
 
+fn dkg_second_party_session_info(
+    deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent>,
+    dwallet_network_key_version: u8,
+) -> SessionInfo {
+    SessionInfo {
+        session_id: ObjectID::from(deserialized_event.session_id),
+        // TODO (#642): Remove the redundant initiating user address field
+        initiating_user_address: deserialized_event.session_id.into(),
+        mpc_round: MPCProtocolInitData::DKGSecond(
+            deserialized_event.clone(),
+            dwallet_network_key_version,
+        ),
+    }
+}
+
 pub(crate) fn presign_public_input(
     deserialized_event: StartPresignFirstRoundEvent,
     protocol_public_parameters: Vec<u8>,
@@ -209,6 +224,17 @@ pub(crate) fn presign_public_input(
             deserialized_event.dkg_output.clone(),
         )?,
     )
+}
+
+fn presign_party_session_info(
+    deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_id: deserialized_event.session_id,
+        // TODO (#642): Remove the redundant initiating user address field
+        initiating_user_address: deserialized_event.session_id.into(),
+        mpc_round: MPCProtocolInitData::Presign(deserialized_event.event_data),
+    }
 }
 
 fn sign_public_input(

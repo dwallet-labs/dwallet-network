@@ -1294,7 +1294,7 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, ..),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
                 ..
             }) => {
                 // When sending an MPC output, the validator also includes its public key.
@@ -1881,19 +1881,12 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind:
-                    ConsensusTransactionKind::DWalletMPCOutput(
-                        _,
-                        protocol_init_data,
-                        session_id,
-                        output,
-                    ),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(_, session_info, output),
                 ..
             }) => {
                 self.process_dwallet_mpc_output(
                     certificate_author.clone(),
-                    protocol_init_data.clone(),
-                    session_id.clone(),
+                    session_info.clone(),
                     output.clone(),
                 )
                 .await
@@ -1991,15 +1984,13 @@ impl AuthorityPerEpochStore {
     async fn process_dwallet_mpc_output(
         &self,
         origin_authority: AuthorityName,
-        protocol_init_data: MPCProtocolInitData,
-        session_id: ObjectID,
+        session_info: SessionInfo,
         output: Vec<u8>,
     ) -> IkaResult<ConsensusCertificateResult> {
         self.save_dwallet_mpc_output(DWalletMPCOutputMessage {
             output: output.clone(),
             authority: origin_authority.clone(),
-            session_id,
-            protocol_init_data,
+            session_info: session_info.clone(),
         })
         .await;
 
@@ -2084,7 +2075,7 @@ impl AuthorityPerEpochStore {
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::DKGSecond(init_event_data) => {
+            MPCProtocolInitData::DKGSecond(init_event_data, network_key_version) => {
                 let tx = MessageKind::DwalletDKGSecondRoundOutput(DKGSecondRoundOutput {
                     output,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),

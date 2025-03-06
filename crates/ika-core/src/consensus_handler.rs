@@ -477,7 +477,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 Err(err) => {
                     error!(
                         "failed to verify output from session {:?} and party {:?}: {:?}",
-                        output.session_id, output.authority, err
+                        output.session_info.session_id, output.authority, err
                     );
                 }
             }

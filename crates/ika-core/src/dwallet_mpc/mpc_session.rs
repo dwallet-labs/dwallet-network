@@ -418,8 +418,10 @@ impl DWalletMPCSession {
         Ok(ConsensusTransaction::new_dwallet_mpc_output(
             self.epoch_store()?.name,
             output,
-            event_driven_data.init_protocol_data.clone(),
-            self.session_id.clone(),
+            SessionInfo {
+                session_id: self.session_id.clone(),
+                mpc_round: event_driven_data.init_protocol_data.clone()
+            }
         ))
     }
 
