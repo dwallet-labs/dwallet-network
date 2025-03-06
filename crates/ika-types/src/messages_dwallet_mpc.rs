@@ -54,13 +54,6 @@ pub enum MPCProtocolInitData {
     /// but we use it to start the verification process using the same events mechanism
     /// because the system does not support native functions.
     EncryptedShareVerification(StartEncryptedShareVerificationEvent),
-    /// The round of verifying the public key that signed on the encryption key is
-    /// matching the initiator address.
-    /// TODO (#544): Check if there's a way to convert the public key to an address in Move.
-    /// This is not a real MPC round,
-    /// but we use it to start the verification process using the same events mechanism
-    /// because the system does not support native functions.
-    EncryptionKeyVerification(StartEncryptionKeyVerificationEvent),
     PartialSignatureVerification(StartPartialSignaturesVerificationEvent<SignData>),
 }
 
@@ -249,31 +242,6 @@ impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {
             address: *packages_config.ika_package_id,
             name: ident_str!("StartEncryptedShareVerificationEvent").to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
-/// An event emitted to start an encryption key verification process.
-/// Ika does not support native functions, so an event is emitted and
-/// caught by the blockchain, which then starts the verification process,
-/// similar to the MPC processes.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct StartEncryptionKeyVerificationEvent {
-    pub encryption_key_scheme: u8,
-    pub encryption_key: Vec<u8>,
-    pub encryption_key_signature: Vec<u8>,
-    pub key_signer_public_key: Vec<u8>,
-    pub initiator: SuiAddress,
-    pub session_id: ObjectID,
-}
-
-impl DWalletMPCEventTrait for StartEncryptionKeyVerificationEvent {
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_package_id,
-            name: ident_str!("StartEncryptionKeyVerificationEvent").to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

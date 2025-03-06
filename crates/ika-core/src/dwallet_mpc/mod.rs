@@ -20,7 +20,7 @@ use ika_types::messages_dwallet_mpc::{DBSuiEvent, StartDKGFirstRoundEvent};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEventTrait, DWalletMPCSuiEvent, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
     SingleSignSessionData, StartDKGSecondRoundEvent, StartEncryptedShareVerificationEvent,
-    StartEncryptionKeyVerificationEvent, StartPresignFirstRoundEvent,
+    StartPresignFirstRoundEvent,
 };
 use ika_types::messages_dwallet_mpc::{SignData, StartPartialSignaturesVerificationEvent};
 use k256::ecdsa::hazmat::bits2field;
@@ -158,17 +158,6 @@ pub(crate) fn session_info_from_event(
                 deserialized_event.event_data,
             )))
         }
-        t if t
-            == &DWalletMPCSuiEvent::<StartEncryptionKeyVerificationEvent>::type_(
-                packages_config,
-            ) =>
-        {
-            let deserialized_event: DWalletMPCSuiEvent<StartEncryptionKeyVerificationEvent> =
-                bcs::from_bytes(&event.contents)?;
-            Ok(Some(start_encryption_key_verification_session_info(
-                deserialized_event.event_data,
-            )))
-        }
         _ => Ok(None),
     }
 }
@@ -180,16 +169,6 @@ fn start_encrypted_share_verification_session_info(
         session_id: deserialized_event.session_id,
         initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
-    }
-}
-
-fn start_encryption_key_verification_session_info(
-    deserialized_event: StartEncryptionKeyVerificationEvent,
-) -> SessionInfo {
-    SessionInfo {
-        session_id: deserialized_event.session_id,
-        initiating_user_address: Default::default(),
-        mpc_round: MPCProtocolInitData::EncryptionKeyVerification(deserialized_event),
     }
 }
 
@@ -589,13 +568,6 @@ pub(crate) fn session_input_from_event(
         }
         t if t
             == &DWalletMPCSuiEvent::<StartEncryptedShareVerificationEvent>::type_(
-                packages_config,
-            ) =>
-        {
-            Ok((vec![], None))
-        }
-        t if t
-            == &DWalletMPCSuiEvent::<StartEncryptionKeyVerificationEvent>::type_(
                 packages_config,
             ) =>
         {
