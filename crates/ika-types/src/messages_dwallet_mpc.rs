@@ -32,7 +32,7 @@ pub enum MPCProtocolInitData {
     /// The second round of the DKG protocol.
     /// Contains the data of the event that triggered the round,
     /// and the network key version of the first round.
-    DKGSecond(StartDKGSecondRoundEvent, u8),
+    DKGSecond(DWalletMPCSuiEvent<StartDKGSecondRoundEvent>, u8),
     /// This is not a real round, but an indicator the Batches Manager to
     /// register a Presign Batch session.
     /// Holds the number of messages in the batch.
@@ -138,10 +138,7 @@ impl MPCProtocolInitData {
     /// Returns `true` if the round is a single message, which is
     /// part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
-        matches!(
-            self,
-            MPCProtocolInitData::Sign(..) | MPCProtocolInitData::Presign(..)
-        )
+        matches!(self, MPCProtocolInitData::Sign(..))
     }
 
     /// Is a special Round that indicates an initialization of a batch session.
@@ -216,7 +213,7 @@ pub trait DWalletMPCEventTrait {
 }
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet::DWalletMPCEvent`.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct DWalletMPCSuiEvent<E: DWalletMPCEventTrait> {
     pub epoch: u64,
     pub session_id: ObjectID,
@@ -252,9 +249,6 @@ pub struct StartEncryptedShareVerificationEvent {
     /// Encrypted centralized secret key share and the associated
     /// cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
-    /// The signature of the dWallet `decentralized_public_output`,
-    /// signed by the secret key that corresponds to `encryptor_ed25519_pubkey`.
-    pub decentralized_public_output_signature: Vec<u8>,
     /// The public output of the decentralized party,
     /// belongs to the dWallet that its centralized secret share is being encrypted.
     pub decentralized_public_output: Vec<u8>,
@@ -265,13 +259,6 @@ pub struct StartEncryptedShareVerificationEvent {
     /// The `EncryptionKey` Move object ID.
     pub encryption_key_id: ObjectID,
     pub session_id: ObjectID,
-    /// The public key of the encryptor.
-    /// Used to verify the signature on the `centralized_public_output`.
-    /// Note that the "encryptor" is the entity that preformed the encryption,
-    /// and the encryption can be done with another public key, so this is NOT
-    /// the public key that was used for encryption.
-    pub encryptor_ed25519_pubkey: Vec<u8>,
-    pub initiator: SuiAddress,
 }
 
 impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {
@@ -338,31 +325,24 @@ impl DWalletMPCEventTrait for StartPartialSignaturesVerificationEvent<SignData> 
 /// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGSecondRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartDKGSecondRoundEvent {
-    /// The unique identifier for the DKG session.
-    pub session_id: SuiAddress,
-    /// The address of the user who initiated the dWallet creation.
-    pub initiator: SuiAddress,
+    pub dwallet_id: ObjectID,
     /// The output from the first round of the DKG process.
     pub first_round_output: Vec<u8>,
     /// A serialized vector containing the centralized public key share and its proof.
     pub centralized_public_key_share_and_proof: Vec<u8>,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ObjectID,
-    /// The session ID associated with the first DKG round.
-    pub first_round_session_id: ObjectID,
     /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     /// The `EncryptionKey` object used for encrypting the secret key share.
     pub encryption_key: Vec<u8>,
     /// The unique identifier of the `EncryptionKey` object.
     pub encryption_key_id: ObjectID,
-    /// The public output of the centralized party in the DKG process.
-    pub decentralized_public_output: Vec<u8>,
-    /// The signature for the public output of the decentralized party in the DKG process.
-    pub public_keys_signature: Vec<u8>,
+    pub encryption_key_address: SuiAddress,
+    pub user_public_output: Vec<u8>,
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
-    pub initiator_public_key: Vec<u8>,
+    pub signer_public_key: Vec<u8>,
 }
 
 impl DWalletMPCEventTrait for StartDKGSecondRoundEvent {
@@ -371,9 +351,9 @@ impl DWalletMPCEventTrait for StartDKGSecondRoundEvent {
     /// and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_package_id,
+            address: *packages_config.ika_system_package_id,
             name: START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -445,19 +425,11 @@ impl DWalletMPCEventTrait for SignData {
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartPresignFirstRoundEvent {
-    /// Unique identifier for the MPC session.
-    pub session_id: ObjectID,
-    /// The address of the user that initiated this session.
-    pub initiator: SuiAddress,
     /// The `DWallet` object's ID associated with the DKG output.
     pub dwallet_id: ObjectID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
-    /// A unique identifier for the entire batch,
-    /// used to collect all the presigns in the batch and complete it.
-    pub batch_session_id: ObjectID,
-    /// The dWallet mpc network key version
-    pub dwallet_mpc_network_key_version: u8,
+    pub dwallet_network_decryption_key_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for StartPresignFirstRoundEvent {
@@ -466,23 +438,25 @@ impl DWalletMPCEventTrait for StartPresignFirstRoundEvent {
     /// from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_package_id,
+            address: *packages_config.ika_system_package_id,
             name: START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct IkaPackagesConfig {
     /// The move package ID of ika (IKA) on sui.
     pub ika_package_id: ObjectID,
     /// The move package ID of `ika_system` on sui.
     pub ika_system_package_id: ObjectID,
     /// The object ID of ika_system_state on sui.
-    pub system_id: ObjectID,
+    pub ika_system_object_id: ObjectID,
 }
+
+impl sui_config::Config for IkaPackagesConfig {}
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet::StartDKGFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]

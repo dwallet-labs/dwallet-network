@@ -7,63 +7,6 @@ init
 ed25519_address
 	public fun
 	0x0::address
-BlsCommitteeMember
-	public struct
-	0x0::bls_committee
-BlsCommittee
-	public struct
-	0x0::bls_committee
-CommitteeQuorumVerifiedEvent
-	public struct
-	0x0::bls_committee
-new_bls_committee_member
-	public(package) fun
-	0x0::bls_committee
-voting_power
-	public(package) fun
-	0x0::bls_committee
-validator_id
-	public(package) fun
-	0x0::bls_committee
-new_bls_committee
-	public(package) fun
-	0x0::bls_committee
-empty
-	public(package) fun
-	0x0::bls_committee
-members
-	public(package) fun
-	0x0::bls_committee
-validator_ids
-	public(package) fun
-	0x0::bls_committee
-contains
-	public(package) fun
-	0x0::bls_committee
-init_voting_power_info
-	fun
-	0x0::bls_committee
-total_stake
-	fun
-	0x0::bls_committee
-adjust_voting_power
-	fun
-	0x0::bls_committee
-check_invariants
-	fun
-	0x0::bls_committee
-total_voting_power
-	public fun
-	0x0::bls_committee
-quorum_threshold
-	public fun
-	0x0::bls_committee
-verify_certificate
-	public(package) fun
-	0x0::bls_committee
-verify_quorum
-	public(package) fun
-	0x0::bls_committee
 ClassGroupsPublicKeyAndProofBuilder
 	public struct
 	0x0::class_groups_public_key_and_proof
@@ -85,49 +28,103 @@ drop
 destroy
 	public fun
 	0x0::class_groups_public_key_and_proof
-PricingPerOperation
+CommitteeMember
 	public struct
-	0x0::dwallet_pricing
+	0x0::committee
+Committee
+	public struct
+	0x0::committee
+new_committee_member
+	public(package) fun
+	0x0::committee
+voting_power
+	public(package) fun
+	0x0::committee
+validator_id
+	public(package) fun
+	0x0::committee
+new_committee
+	public(package) fun
+	0x0::committee
+empty
+	public(package) fun
+	0x0::committee
+members
+	public(package) fun
+	0x0::committee
+validator_ids
+	public(package) fun
+	0x0::committee
+contains
+	public(package) fun
+	0x0::committee
+init_voting_power_info
+	fun
+	0x0::committee
+total_stake
+	fun
+	0x0::committee
+adjust_voting_power
+	fun
+	0x0::committee
+check_invariants
+	fun
+	0x0::committee
+total_voting_power
+	public fun
+	0x0::committee
+quorum_threshold
+	public fun
+	0x0::committee
+verify_certificate
+	public(package) fun
+	0x0::committee
+verify_quorum
+	public(package) fun
+	0x0::committee
 DWalletPricing2PcMpcSecp256K1
 	public struct
 	0x0::dwallet_pricing
 create_dwallet_pricing_2pc_mpc_secp256k1
 	public(package) fun
 	0x0::dwallet_pricing
-dkg_first_round
+computation_ika_price_per_dkg
 	public fun
 	0x0::dwallet_pricing
-dkg_second_round
+computation_sui_price_per_dkg
 	public fun
 	0x0::dwallet_pricing
-re_encrypt_user_share
+computation_ika_price_per_re_encrypt_user_share
 	public fun
 	0x0::dwallet_pricing
-ecdsa_presign
+computation_sui_price_per_re_encrypt_user_share
 	public fun
 	0x0::dwallet_pricing
-ecdsa_sign
+computation_ika_price_per_ecdsa_presign
 	public fun
 	0x0::dwallet_pricing
-ecdsa_future_sign
+computation_sui_price_per_ecdsa_presign
 	public fun
 	0x0::dwallet_pricing
-ecdsa_sign_with_partial_user_signature
+computation_ika_price_per_ecdsa_sign
 	public fun
 	0x0::dwallet_pricing
-consensus_validation_ika
+computation_sui_price_per_ecdsa_sign
 	public fun
 	0x0::dwallet_pricing
-computation_ika
+computation_ika_price_per_ecdsa_future_sign
 	public fun
 	0x0::dwallet_pricing
-gas_fee_reimbursement_sui
+computation_sui_price_per_ecdsa_future_sign
 	public fun
 	0x0::dwallet_pricing
-DWalletCoordinatorInner
-	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-DWalletEpochCoordinator
+computation_ika_price_per_ecdsa_sign_with_partial_user_signature
+	public fun
+	0x0::dwallet_pricing
+computation_sui_price_per_ecdsa_sign_with_partial_user_signature
+	public fun
+	0x0::dwallet_pricing
+DWallet2PcMpcSecp256K1InnerV1
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 DWalletCap
@@ -169,34 +166,28 @@ DWalletEvent
 CreatedEncryptionKeyEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-DWalletNetworkDKGDecryptionKeyRequestEvent
+DKGFirstRoundRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-CompletedDWalletNetworkDKGDecryptionKeyEvent
+DKGFirstRoundOutputEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-DWalletDKGFirstRoundRequestEvent
+DKGSecondRoundRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-CompletedDKGFirstdRoundEvent
+CompletedDKGSecondRoundEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-DWalletDKGSecondRoundRequestEvent
-	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-CompletedDWalletDKGSecondRoundEvent
-	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-RejectedDWalletDKGSecondRoundEvent
+RejectedDKGSecondRoundEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 EncryptedShareVerificationRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-CompletedEncryptedShareVerificationEvent
+CompletedEncryptedShareVerificationRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-RejectedEncryptedShareVerificationEvent
+RejectedEncryptedShareVerificationRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 AcceptReEncryptedUserShareEvent
@@ -214,16 +205,19 @@ ECDSASignRequestEvent
 ECDSAFutureSignRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-CompletedECDSAFutureSignEvent
+CompletedECDSAFutureSignRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-RejectedECDSAFutureSignEvent
+RejectedECDSAFutureSignRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 CompletedECDSASignEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 RejectedECDSASignEvent
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+SystemQuorumVerifiedEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 SystemCheckpointInfoEvent
@@ -247,25 +241,13 @@ DWalletState
 ECDSASignState
 	public enum
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-create_dwallet_coordinator_inner
+create
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-request_dwallet_network_decryption_key_dkg
+create_dwallet_network_decryption_key
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-respond_dwallet_network_decryption_key_dkg
-	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-respond_dwallet_network_decryption_key_reconfiguration
-	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-advance_epoch_dwallet_network_decryption_key
-	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-get_active_dwallet_network_decryption_key
-	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-advance_epoch
+set_active_committee
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 get_dwallet
@@ -301,19 +283,22 @@ approve_messages
 is_supported_hash_scheme
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-charge
-	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-request_dwallet_dkg_first_round
+request_dkg_first_round
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-respond_dwallet_dkg_first_round
+respond_dkg_first_round_output
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-request_dwallet_dkg_second_round
+create_first_round_dwallet_mock
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-respond_dwallet_dkg_second_round
+mock_create_dwallet
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+request_dkg_second_round
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+respond_dkg_second_round_output
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 request_re_encrypt_user_share_for
@@ -361,19 +346,13 @@ process_checkpoint_message_by_quorum
 process_checkpoint_message
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-DWalletCoordinator
+DWallet2PcMpcSecp256K1
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1
-create_dwallet_coordinator
+create
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
-request_dwallet_network_decryption_key_dkg
-	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1
-advance_epoch_dwallet_network_decryption_key
-	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1
-advance_epoch
+set_active_committee
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
 get_active_encryption_key
@@ -382,10 +361,16 @@ get_active_encryption_key
 register_encryption_key
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
-request_dwallet_dkg_first_round
+request_dkg_first_round
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
-request_dwallet_dkg_second_round
+request_dkg_second_round
+	public fun
+	0x0::dwallet_2pc_mpc_secp256k1
+create_first_round_dwallet_mock
+	public fun
+	0x0::dwallet_2pc_mpc_secp256k1
+mock_create_dwallet
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
 request_re_encrypt_user_share_for
@@ -1090,6 +1075,9 @@ SystemInnerV1
 SystemEpochInfoEvent
 	public struct
 	0x0::system_inner_v1
+SystemQuorumVerifiedEvent
+	public struct
+	0x0::system_inner_v1
 SystemProtocolCapVerifiedEvent
 	public struct
 	0x0::system_inner_v1
@@ -1243,16 +1231,10 @@ pool_exchange_rates
 active_committee
 	public(package) fun
 	0x0::system_inner_v1
-verify_cap
-	fun
-	0x0::system_inner_v1
 process_checkpoint_message_by_cap
 	public(package) fun
 	0x0::system_inner_v1
 process_checkpoint_message_by_quorum
-	public(package) fun
-	0x0::system_inner_v1
-request_dwallet_network_decryption_key_dkg_by_cap
 	public(package) fun
 	0x0::system_inner_v1
 process_checkpoint_message
@@ -1406,9 +1388,6 @@ process_checkpoint_message_by_cap
 	public fun
 	0x0::system
 process_checkpoint_message_by_quorum
-	public fun
-	0x0::system
-request_dwallet_network_decryption_key_dkg_by_cap
 	public fun
 	0x0::system
 authorize_update_message_by_cap

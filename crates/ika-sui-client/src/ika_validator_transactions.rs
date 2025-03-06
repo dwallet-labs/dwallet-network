@@ -7,7 +7,7 @@ use ika_types::sui::{
     ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder,
     ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
     CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
     FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
     SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
@@ -24,7 +24,7 @@ use sui_sdk::SuiClient;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction};
+use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
 use sui_types::transaction::{TransactionData, TransactionDataAPI};
 
 /// Create a ClassGroupsPublicKeyAndProofBuilder object
@@ -39,28 +39,17 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     ptb.move_call(
         ika_system_package_id,
         CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
+        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME.into(),
         vec![],
         vec![],
     )?;
     ptb.transfer_arg(publisher_address, Argument::Result(0));
 
-    let tx_data = construct_unsigned_txn(
-        context,
-        publisher_address,
-        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
-        vec![],
-        gas_budget,
-        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
-        ika_system_package_id,
-        ptb,
-    )
-    .await?;
-
+    let tx_data = construct_unsigned_txn(context, publisher_address, gas_budget, ptb).await?;
     let response = execute_transaction(context, tx_data).await?;
-
-    let object_changes = response.object_changes.unwrap();
-
+    let object_changes = response
+        .object_changes
+        .ok_or(anyhow::Error::msg("failed to get object changes"))?;
     let builder_id = object_changes
         .iter()
         .filter_map(|o| match o {
@@ -77,7 +66,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
+        .ok_or(anyhow::Error::msg("failed to get builder object id"))?
         .clone();
 
     let builder_ref = client
@@ -112,22 +101,19 @@ pub async fn create_class_groups_public_key_and_proof_object(
         let mut ptb = ProgrammableTransactionBuilder::new();
         let pubkey_and_proof = bcs::to_bytes(pubkey_and_proof)?;
 
-        let tx_data = construct_unsigned_txn(
-            context,
-            publisher_address,
-            ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
-            vec![
-                ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(builder_object_ref)))?,
-                /// Sui limits the size of a single call argument to 16KB.
-                ptb.input(CallArg::Pure(bcs::to_bytes(&pubkey_and_proof[0..10_000])?))?,
-                ptb.input(CallArg::Pure(bcs::to_bytes(&pubkey_and_proof[10_000..])?))?,
-            ],
-            gas_budget,
-            CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
+        ptb.move_call(
             ika_system_package_id,
-            ptb,
-        )
-        .await?;
+            CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
+            ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
+            vec![],
+            vec![
+                CallArg::Object(ObjectArg::ImmOrOwnedObject(builder_object_ref)),
+                CallArg::Pure(bcs::to_bytes(&pubkey_and_proof[0..10_000])?),
+                CallArg::Pure(bcs::to_bytes(&pubkey_and_proof[10_000..])?),
+            ],
+        )?;
+
+        let tx_data = construct_unsigned_txn(context, publisher_address, gas_budget, ptb).await?;
 
         let response = execute_transaction(context, tx_data).await?;
         let object_changes = response
@@ -150,7 +136,9 @@ pub async fn create_class_groups_public_key_and_proof_object(
             })
             .collect::<Vec<_>>()
             .first()
-            .unwrap()
+            .ok_or(anyhow::Error::msg(
+                "failed to get ClassGroupsPublicKeyAndProofBuilder object id",
+            ))?
             .clone();
 
         builder_object_ref = client
@@ -171,23 +159,8 @@ pub async fn create_class_groups_public_key_and_proof_object(
     )?;
     ptb.transfer_arg(publisher_address, Argument::Result(0));
 
-    let sui_client = context.get_client().await?;
-    let rgp = sui_client
-        .governance_api()
-        .get_reference_gas_price()
-        .await?;
-
-    let gas_obj_ref = get_gas_obj_ref(publisher_address, &sui_client, gas_budget).await?;
-    let tx_data = TransactionData::new_programmable(
-        publisher_address,
-        vec![gas_obj_ref],
-        ptb.finish(),
-        gas_budget,
-        rgp,
-    );
-
+    let tx_data = construct_unsigned_txn(context, publisher_address, gas_budget, ptb).await?;
     let response = execute_transaction(context, tx_data).await?;
-
     let object_changes = response
         .object_changes
         .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
@@ -208,7 +181,9 @@ pub async fn create_class_groups_public_key_and_proof_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
+        .ok_or(anyhow::Error::msg(
+            "failed to get ClassGroupsPublicKeyAndProof object id",
+        ))?
         .clone();
 
     let pubkey_and_proof_obj_ref = client.transaction_builder().get_object_ref(obj_id).await?;
@@ -270,9 +245,7 @@ pub async fn request_add_validator_candidate(
             &validator_initialization_metadata.p2p_address.clone(),
         )?),
         CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata
-                .current_epoch_consensus_address
-                .clone(),
+            &validator_initialization_metadata.current_epoch_consensus_address,
         )?),
         CallArg::Pure(bcs::to_bytes(
             &validator_initialization_metadata.computation_price,
@@ -298,7 +271,10 @@ pub async fn request_add_validator_candidate(
     )
     .await?;
 
-    let object_changes = response.object_changes.clone().unwrap();
+    let object_changes = response
+        .object_changes
+        .clone()
+        .ok_or(anyhow::Error::msg("failed to get object changes"))?;
 
     let validator_cap_type = StructTag {
         address: ika_system_package_id.into(),
@@ -319,7 +295,7 @@ pub async fn request_add_validator_candidate(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
+        .ok_or(anyhow::Error::msg("failed to get validator cap object id"))?
         .clone();
 
     let validator_cap = context
@@ -357,7 +333,7 @@ pub async fn stake_ika(
         ika_supply_id_arg,
         vec![stake_amount],
     ));
-    let validator = ptb.input(CallArg::Pure(bcs::to_bytes(&validator_id).unwrap()))?;
+    let validator = ptb.input(CallArg::Pure(bcs::to_bytes(&validator_id)?))?;
     let call_args = vec![stake, validator];
 
     Ok(call_ika_system(
@@ -451,7 +427,7 @@ async fn construct_unsigned_ika_system_txn(
         .get_object_with_options(ika_system_id, SuiObjectDataOptions::new().with_owner())
         .await?
         .data
-        .unwrap()
+        .ok_or(anyhow::Error::msg("failed to get object data"))?
         .owner
     else {
         bail!("Failed to get owner of object")
@@ -465,38 +441,32 @@ async fn construct_unsigned_ika_system_txn(
 
     args.extend(call_args);
 
-    construct_unsigned_txn(
-        context,
-        sender,
-        function,
-        args,
-        gas_budget,
-        SYSTEM_MODULE_NAME,
+    ptb.command(sui_types::transaction::Command::move_call(
         ika_system_package_id,
-        ptb,
-    )
-    .await
+        SYSTEM_MODULE_NAME.into(),
+        function.to_owned(),
+        vec![],
+        args,
+    ));
+
+    construct_unsigned_txn(context, sender, gas_budget, ptb).await
 }
 
 async fn construct_unsigned_txn(
     context: &mut WalletContext,
     sender: SuiAddress,
-    function: &'static IdentStr,
-    args: Vec<Argument>,
     gas_budget: u64,
-    module_name: &'static IdentStr,
-    ika_system_package_id: ObjectID,
     mut ptb: ProgrammableTransactionBuilder,
 ) -> anyhow::Result<TransactionData> {
     let sui_client = context.get_client().await?;
+    let gas_price = context.get_reference_gas_price().await?;
 
-    ptb.command(sui_types::transaction::Command::move_call(
-        ika_system_package_id,
-        module_name.into(),
-        function.to_owned(),
-        vec![],
-        args,
-    ));
+    let tx = ptb.finish();
+    let tx_kind = TransactionKind::ProgrammableTransaction(tx.clone());
+    let gas_budget =
+        sui::client_commands::estimate_gas_budget(context, sender, tx_kind, gas_price, None, None)
+            .await
+            .unwrap_or(gas_budget);
 
     let rgp = sui_client
         .governance_api()
@@ -504,7 +474,6 @@ async fn construct_unsigned_txn(
         .await?;
 
     let gas_obj_ref = get_gas_obj_ref(sender, &sui_client, gas_budget).await?;
-    let tx = ptb.finish();
 
     Ok(TransactionData::new_programmable(
         sender,
@@ -534,7 +503,8 @@ pub async fn execute_transaction(
             transaction,
             SuiTransactionBlockResponseOptions::new()
                 .with_input()
-                .with_effects(),
+                .with_effects()
+                .with_object_changes(),
             Some(sui_types::quorum_driver_types::ExecuteTransactionRequestType::WaitForLocalExecution),
         )
         .await
