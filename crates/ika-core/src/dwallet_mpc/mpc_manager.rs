@@ -343,12 +343,24 @@ impl DWalletMPCManager {
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
         let (public_input, private_input) = session_input_from_event(event, &self)?;
-        self.push_new_mpc_session(&session_info.session_id, Some(EventDrivenData {
-            init_protocol_data: session_info.mpc_round,
-            public_input,
-            private_input,
-
-        }))?;
+        self.push_new_mpc_session(
+            &session_info.session_id,
+            Some(EventDrivenData {
+                init_protocol_data: session_info.mpc_round.clone(),
+                public_input,
+                private_input,
+                decryption_share: match session_info.mpc_round {
+                    MPCProtocolInitData::NetworkDkg(..) => HashMap::new(),
+                    _ => self.get_decryption_key_shares(
+                        DWalletMPCNetworkKeyScheme::Secp256k1,
+                        Some(
+                            self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?
+                                as usize,
+                        ),
+                    )?,
+                },
+            }),
+        )?;
         Ok(())
     }
 

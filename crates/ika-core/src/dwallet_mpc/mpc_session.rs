@@ -50,7 +50,7 @@ pub struct EventDrivenData {
     pub private_input: MPCPrivateInput,
     pub(super) public_input: MPCPublicInput,
     pub init_protocol_data: MPCProtocolInitData,
-    decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    pub(crate) decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
 }
 
 /// A dWallet MPC session.
