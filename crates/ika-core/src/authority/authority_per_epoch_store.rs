@@ -82,9 +82,8 @@ use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
-    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput,
-    EncryptionKeyVerificationOutput, MessageKind, PartialSignatureVerificationOutput,
-    PresignOutput, SignOutput,
+    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput, MessageKind,
+    PartialSignatureVerificationOutput, PresignOutput, SignOutput,
 };
 use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
@@ -2104,7 +2103,7 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::Sign(init_event) => {
                 let tx = MessageKind::DwalletSign(SignOutput {
-                    session_id: init_event.session_id.to_vec(),
+                    session_id: session_info.session_id.to_vec(),
                     signature: output,
                     dwallet_id: init_event.dwallet_id.to_vec(),
                     is_future_sign: init_event.is_future_sign,
@@ -2122,25 +2121,6 @@ impl AuthorityPerEpochStore {
                     session_id: session_info.session_id.to_vec(),
                     initiating_user_address: session_info.initiating_user_address.to_vec(),
                 });
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
-            MPCProtocolInitData::EncryptionKeyVerification(init_event_data) => {
-                let tx = MessageKind::DwalletEncryptionKeyVerification(
-                    EncryptionKeyVerificationOutput {
-                        encryption_key: bcs::to_bytes(&init_event_data.encryption_key)?,
-                        encryption_key_signature: bcs::to_bytes(
-                            &init_event_data.encryption_key_signature,
-                        )?,
-                        encryption_key_scheme: bcs::to_bytes(
-                            &init_event_data.encryption_key_scheme,
-                        )?,
-                        session_id: session_info.session_id.to_vec(),
-                        initiating_user_address: session_info.initiating_user_address.to_vec(),
-                        key_signer_public_key: bcs::to_bytes(
-                            &init_event_data.key_signer_public_key,
-                        )?,
-                    },
-                );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::PartialSignatureVerification(init_event_data) => {

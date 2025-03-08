@@ -1871,7 +1871,7 @@ fun process_checkpoint_message(
                     is_future_sign,
                     rejected,
                 );
-            } else if (message_data_type == 7) {
+            } else if (message_data_type == 8) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
                 let rejected = bcs_body.peel_bool();
@@ -1880,7 +1880,7 @@ fun process_checkpoint_message(
                     partial_centralized_signed_message_id,
                     rejected,
                 );
-            } else if (message_data_type == 8) {
+            } else if (message_data_type == 7) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let presign = bcs_body.peel_vec_u8();

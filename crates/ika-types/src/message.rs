@@ -116,16 +116,6 @@ pub struct EncryptedUserShareOutput {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct EncryptionKeyVerificationOutput {
-    pub initiating_user_address: Vec<u8>,
-    pub session_id: Vec<u8>,
-    pub key_signer_public_key: Vec<u8>,
-    pub encryption_key: Vec<u8>,
-    pub encryption_key_signature: Vec<u8>,
-    pub encryption_key_scheme: Vec<u8>,
-}
-
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct PartialSignatureVerificationOutput {
     pub initiating_user_address: Vec<u8>,
     pub session_id: Vec<u8>,
@@ -152,7 +142,6 @@ pub enum MessageKind {
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
     DwalletEncryptedUserShare(EncryptedUserShareOutput),
     DwalletSign(SignOutput),
-    DwalletEncryptionKeyVerification(EncryptionKeyVerificationOutput),
     DwalletPresign(PresignOutput),
     DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
     DwalletMPCNetworkDKGOutput(DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares),
@@ -174,7 +163,6 @@ impl MessageKind {
             MessageKind::DwalletPresign(_) => "DwalletPresign",
             MessageKind::DwalletSign(_) => "DwalletSign",
             MessageKind::DwalletEncryptedUserShare(_) => "DwalletEncryptedUserShare",
-            MessageKind::DwalletEncryptionKeyVerification(_) => "DwalletEncryptionKeyVerification",
             MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
                 "DwalletPartialSignatureVerificationOutput"
             }
@@ -232,9 +220,6 @@ impl Display for MessageKind {
             }
             MessageKind::DwalletEncryptedUserShare(_) => {
                 writeln!(writer, "MessageKind : DwalletEncryptedUserShare")?;
-            }
-            MessageKind::DwalletEncryptionKeyVerification(_) => {
-                writeln!(writer, "MessageKind : DwalletEncryptionKeyVerification")?;
             }
             MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
                 writeln!(

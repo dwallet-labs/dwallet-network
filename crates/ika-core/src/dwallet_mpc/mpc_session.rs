@@ -15,7 +15,7 @@ use twopc_mpc::sign::Protocol;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
-use crate::dwallet_mpc::encrypt_user_share::{verify_encrypted_share, verify_encryption_key};
+use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
@@ -312,12 +312,10 @@ impl DWalletMPCSession {
                     (),
                 )
             }
-            MPCProtocolInitData::Sign(init_data) => {
+            MPCProtocolInitData::Sign(..) => {
                 let public_input = bcs::from_bytes(&self.public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
-                    CommitmentSizedNumber::from_le_slice(
-                        init_data.presign_session_id.to_vec().as_slice(),
-                    ),
+                    session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_messages.clone(),
@@ -349,15 +347,6 @@ impl DWalletMPCSession {
                     }),
                     Err(err) => Err(err),
                 }
-            }
-            MPCProtocolInitData::EncryptionKeyVerification(verification_data) => {
-                verify_encryption_key(verification_data)
-                    .map(|_| AsynchronousRoundResult::Finalize {
-                        public_output: vec![],
-                        private_output: vec![],
-                        malicious_parties: vec![],
-                    })
-                    .map_err(|err| err)
             }
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
                 for (signature_data, hashed_message) in event_data
