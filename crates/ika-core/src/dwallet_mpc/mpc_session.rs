@@ -50,6 +50,7 @@ pub struct EventDrivenData {
     pub private_input: MPCPrivateInput,
     pub(super) public_input: MPCPublicInput,
     pub init_protocol_data: MPCProtocolInitData,
+    decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
 }
 
 /// A dWallet MPC session.
@@ -77,8 +78,6 @@ pub(super) struct DWalletMPCSession {
     party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-    // TODO (#539): Simplify struct to only contain session related data - remove this field.
-    decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     pub(crate) event_driven_data: Option<EventDrivenData>,
 }
 
@@ -91,7 +90,6 @@ impl DWalletMPCSession {
         session_id: ObjectID,
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
         event_driven_data: Option<EventDrivenData>,
     ) -> Self {
         Self {
@@ -104,7 +102,6 @@ impl DWalletMPCSession {
             pending_quorum_for_highest_round_number: 0,
             party_id,
             weighted_threshold_access_structure,
-            decryption_share,
             session_specific_state: None,
             event_driven_data,
         }
@@ -332,7 +329,7 @@ impl DWalletMPCSession {
                     &self.weighted_threshold_access_structure,
                     self.serialized_messages.clone(),
                     public_input,
-                    self.decryption_share.clone(),
+                    event_driven_data.decryption_share.clone(),
                 )
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, _) => advance_network_dkg(

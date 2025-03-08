@@ -343,7 +343,12 @@ impl DWalletMPCManager {
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
         let (public_input, private_input) = session_input_from_event(event, &self)?;
-        self.push_new_mpc_session(public_input, private_input, session_info)?;
+        self.push_new_mpc_session(&session_info.session_id, Some(EventDrivenData {
+            init_protocol_data: session_info.mpc_round,
+            public_input,
+            private_input,
+
+        }))?;
         Ok(())
     }
 
@@ -699,11 +704,8 @@ impl DWalletMPCManager {
     /// Otherwise, add the session to the pending queue.
     pub(crate) fn push_new_mpc_session(
         &mut self,
-        public_input: MPCPublicInput,
-        private_input: MPCPrivateInput,
-        session_info: SessionInfo,
         session_id: &ObjectID,
-        event_driven_data: Option<EventDrivenData>
+        event_driven_data: Option<EventDrivenData>,
     ) -> DwalletMPCResult<()> {
         if self.mpc_sessions.contains_key(&session_id) {
             // This should never happen, as the session ID is a Move UniqueID.
@@ -726,18 +728,7 @@ impl DWalletMPCManager {
             session_id.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
-            match session_info.mpc_round {
-                MPCProtocolInitData::NetworkDkg(..) => HashMap::new(),
-                _ => self.get_decryption_key_shares(
-                    DWalletMPCNetworkKeyScheme::Secp256k1,
-                    Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
-                )?,
-            },
-            Some(EventDrivenData {
-                private_input,
-                public_input: public_input.clone(),
-                init_protocol_data: session_info.mpc_round.clone(),
-            }),
+            event_driven_data,
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing
@@ -750,8 +741,7 @@ impl DWalletMPCManager {
             return Ok(());
         }
         new_session.status = MPCSessionStatus::Active;
-        self.mpc_sessions
-            .insert(session_id.clone(), new_session);
+        self.mpc_sessions.insert(session_id.clone(), new_session);
         self.active_sessions_counter += 1;
         info!(
             "Added MPCSession to MPC manager for session_id {:?}",
