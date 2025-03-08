@@ -672,11 +672,12 @@ impl DWalletMPCManager {
             Some(session) => session,
             None => {
                 warn!(
-                    "received a message for an MPC session ID: `{:?}` which does not exist",
+                    "received a message for an MPC session ID: `{:?}` which an event has not yet received for",
                     message.session_id
                 );
-                // TODO (#693): Keep messages for non-existing sessions.
-                return Ok(());
+                self.push_new_mpc_session(&message.session_id, None)?;
+                // Safe to unwrap because we just added the session.
+                self.mpc_sessions.get_mut(&message.session_id).unwrap()
             }
         };
         match session.store_message(&message) {
