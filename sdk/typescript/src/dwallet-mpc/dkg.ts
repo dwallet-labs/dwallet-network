@@ -1,5 +1,6 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import { Buffer } from 'buffer';
 import {
 	create_dkg_centralized_output,
 	encrypt_secret_share,
@@ -72,6 +73,9 @@ export async function createDWallet(
 		protocolPublicParameters,
 		classGroupsSecpKeyPair,
 	);
+	// print the output and secret share in base64
+	console.log('dWallet output:', Buffer.from(dwalletOutput.dwalletOutput).toString('base64'));
+	console.log('dWallet secret share:', Buffer.from(dwalletOutput.secretShare).toString('base64'));
 	return {
 		dwallet_id: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,

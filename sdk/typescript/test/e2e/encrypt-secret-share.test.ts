@@ -39,4 +39,9 @@ describe('Test dWallet MPC', () => {
 		destConf = await generateConfig(new Uint8Array(32).fill(7), '0x2');
 		await delay(checkpointCreationTime);
 	});
+
+	it('encrypts a secret share for a given public key and transfers it', async () => {
+
+	})
+
 });
