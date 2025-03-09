@@ -107,7 +107,7 @@ export async function launchDKGSecondRound(
 		classGroupsSecpKeyPair.encryptionKey,
 	);
 
-	const output = await dkgSecondRoundMoveCall(
+	const completionEvent = await dkgSecondRoundMoveCall(
 		conf,
 		dWalletStateData,
 		firstRoundOutputResult,
@@ -116,7 +116,7 @@ export async function launchDKGSecondRound(
 		centralizedPublicOutput,
 	);
 	return {
-		dwalletOutput: output,
+		dwalletOutput: completionEvent.public_output,
 		secretShare: centralizedSecretKeyShare,
 	};
 }
@@ -233,7 +233,7 @@ export async function dkgSecondRoundMoveCall(
 	centralizedPublicKeyShareAndProof: Uint8Array,
 	encryptedUserShareAndProof: Uint8Array,
 	centralizedPublicOutput: Uint8Array,
-): Promise<Uint8Array> {
+): Promise<CompletedDKGSecondRoundEvent> {
 	const tx = new Transaction();
 	const dwalletStateArg = tx.sharedObjectRef({
 		objectId: dWalletStateData.object_id,
@@ -287,7 +287,7 @@ export async function dkgSecondRoundMoveCall(
 		startSessionEvent.session_id,
 		isCompletedDKGSecondRoundEvent,
 	);
-	return await waitForDKGSecondRoundCompletion(conf, firstRoundOutputResult.dwalletID);
+	return completionEvent;
 }
 
 function isCompletedDKGSecondRoundEvent(obj: any): obj is CompletedDKGSecondRoundEvent {
@@ -372,36 +372,6 @@ function isWaitingForUserDWallet(obj: any): obj is WaitingForUserDWallet {
 	return obj?.state?.fields?.first_round_output !== undefined;
 }
 
-async function waitForDKGSecondRoundCompletion(
-	conf: Config,
-	dwalletID: string,
-): Promise<Uint8Array> {
-	const startTime = Date.now();
-
-	while (Date.now() - startTime <= conf.timeout) {
-		// Wait for a bit before polling again, objects might not be available immediately.
-		await delay(5_000);
-		const dwallet = await conf.client.getObject({
-			id: dwalletID,
-			options: {
-				showContent: true,
-			},
-		});
-		if (isMoveObject(dwallet?.data?.content)) {
-			const dwalletMoveObject = dwallet?.data?.content?.fields;
-			if (isActiveDWallet(dwalletMoveObject)) {
-				return dwalletMoveObject.state.fields.public_output;
-			}
-		}
-	}
-	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
-	throw new Error(
-		`timeout: unable to fetch the DWallet object within ${
-			conf.timeout / (60 * 1000)
-		} minutes (${seconds} seconds passed).`,
-	);
-}
-
 async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Promise<Uint8Array> {
 	const startTime = Date.now();
 
@@ -452,4 +422,40 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 // 	user_output_signature: vector<u8>,
 // ) {
 
-export async function acceptEncryptedUserShare(conf: Config, dwalletID: string);
+export async function acceptEncryptedUserShare(
+	conf: Config,
+	completedDKGSecondRoundEvent: CompletedDKGSecondRoundEvent,
+): Promise<void> {
+	let signedPubkeys = await conf.encryptedSecretShareSigningKeypair.sign(
+		completedDKGSecondRoundEvent.public_output,
+	);
+	let dWalletStateData = await getDWalletSecpState(conf);
+	const tx = new Transaction();
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
+	let dwalletIDArg = tx.pure.id(completedDKGSecondRoundEvent.dwallet_id);
+	let encryptedUserSecretKeyShareIDArg = tx.pure.id(
+		completedDKGSecondRoundEvent.encrypted_user_secret_key_share_id,
+	);
+	let userOutputSignatureArg = tx.pure(bcs.vector(bcs.u8()).serialize(signedPubkeys));
+	tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::accept_encrypted_user_share`,
+		arguments: [
+			dwalletStateArg,
+			dwalletIDArg,
+			encryptedUserSecretKeyShareIDArg,
+			userOutputSignatureArg,
+		],
+	});
+	await conf.client.signAndExecuteTransaction({
+		signer: conf.suiClientKeypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+			showEvents: true,
+		},
+	});
+}
