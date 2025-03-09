@@ -522,6 +522,7 @@ public struct CompletedECDSAPresignEvent has copy, drop {
     /// The session ID.
     session_id: ID,
     presign_id: ID,
+    presign: vector<u8>,
 }
 
 // END OF PRESIGN TYPES
@@ -944,27 +945,16 @@ public(package) fun create_message_approval(
 ///
 /// ### Aborts
 /// - Aborts if the provided `hash_scheme` is not supported by the system (checked during `create_message_approval`).
-public fun approve_messages(
+public fun approve_message(
     dwallet_cap: &DWalletCap,
     hash_scheme: u8,
-    messages: &mut vector<vector<u8>>
-): vector<MessageApproval> {
-    let mut message_approvals = vector::empty<MessageApproval>();
-
-    // Approve all messages and maintain their order.
-    let messages_length = vector::length(messages);
-    let mut i: u64 = 0;
-    while (i < messages_length) {
-        let message = vector::pop_back(messages);
-        vector::push_back(&mut message_approvals, create_message_approval(
-            dwallet_cap.dwallet_id,
-            hash_scheme,
-            message,
-        ));
-        i = i + 1;
-    };
-    vector::reverse(&mut message_approvals);
-    message_approvals
+    message: vector<u8>
+): MessageApproval {
+    create_message_approval(
+        dwallet_cap.dwallet_id,
+        hash_scheme,
+        message,
+    )
 }
 
 /// Checks if the given hash scheme is supported for message signing.
@@ -1528,6 +1518,7 @@ public(package) fun respond_ecdsa_presign(
         dwallet_id,
         session_id,
         presign_id,
+        presign
     });
 }
 
@@ -2024,9 +2015,9 @@ fun process_checkpoint_message(
                 );
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 6) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
-                let sign_id = object::id_from_address(bcs_body.peel_address());
-                let session_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let signature = bcs_body.peel_vec_u8();
                 let is_future_sign = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
@@ -2039,7 +2030,7 @@ fun process_checkpoint_message(
                     rejected,
                 );
                 response_session_count = response_session_count + 1;
-            } else if (message_data_type == 7) {
+            } else if (message_data_type == 8) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
                 let rejected = bcs_body.peel_bool();
@@ -2049,7 +2040,7 @@ fun process_checkpoint_message(
                     rejected,
                 );
                 response_session_count = response_session_count + 1;
-            } else if (message_data_type == 8) {
+            } else if (message_data_type == 7) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let presign = bcs_body.peel_vec_u8();

@@ -16,6 +16,7 @@ use class_groups::{
     DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_SCALAR_LIMBS,
 };
+use class_groups_constants::encryption_scheme_public_parameters;
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
@@ -112,13 +113,21 @@ impl DwalletMPCNetworkKeyVersions {
         let public_output = class_groups_constants::network_dkg_final_output();
         let secret_shares = class_groups_constants::decryption_key_share(party_id);
 
-        let new_key_version = Self::new_dwallet_mpc_network_key(
-            bcs::to_bytes(&public_output).unwrap(),
-            DWalletMPCNetworkKeyScheme::Secp256k1,
-            epoch_store.epoch(),
-            &weighted_threshold_access_structure,
-        )
-        .unwrap();
+        let new_key_version = NetworkDecryptionKeyShares {
+            epoch: epoch_store.epoch(),
+            current_epoch_encryptions_of_shares_per_crt_prime: bcs::to_bytes(
+                &public_output.encryptions_of_shares_per_crt_prime,
+            )
+            .unwrap(),
+            previous_epoch_encryptions_of_shares_per_crt_prime: vec![],
+            encryption_scheme_public_parameters:
+                class_groups_constants::encryption_scheme_public_parameters(),
+            decryption_key_share_public_parameters:
+                class_groups_constants::decryption_key_share_public_parameters(),
+            encryption_key: bcs::to_bytes(&public_output.encryption_key).unwrap(),
+            public_verification_keys: bcs::to_bytes(&public_output.public_verification_keys)
+                .unwrap(),
+        };
 
         let self_decryption_key_share = secret_shares
             .into_iter()
