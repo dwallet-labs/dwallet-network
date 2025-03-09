@@ -508,24 +508,12 @@ pub(crate) fn advance_network_dkg(
     }
 }
 pub(super) fn network_dkg_public_input(
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
+    encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     key_scheme: DWalletMPCNetworkKeyScheme,
 ) -> DwalletMPCResult<Vec<u8>> {
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            // Todo (#712) Remove the hardcoded path and read the class groups from the system state.
-            let mut encryption_keys_and_proofs = HashMap::new();
-            for i in 1..=4 {
-                let p = read_class_groups_from_file("class-groups.key")?;
-                encryption_keys_and_proofs.insert(
-                    i as PartyID,
-                    ValidatorDataForNetworkDKG {
-                        cg_pubkey_and_proof: p.public_bytes(),
-                        protocol_pubkey_bytes: vec![],
-                    },
-                );
-            }
-            generate_secp256k1_dkg_party_public_input(&encryption_keys_and_proofs)
+            generate_secp256k1_dkg_party_public_input(encryption_keys_and_proofs)
         }
         DWalletMPCNetworkKeyScheme::Ristretto => {
             generate_ristretto_dkg_party_public_input(encryption_keys_and_proofs)
@@ -592,11 +580,8 @@ fn encryption_keys_and_proofs_from_validator_data(
 }
 
 fn generate_secp256k1_dkg_party_public_input(
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
+    encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    let encryption_keys_and_proofs =
-        encryption_keys_and_proofs_from_validator_data(encryption_keys_and_proofs)?;
-
     let public_params = Secp256k1PublicInput::new::<secp256k1::GroupElement>(
         secp256k1::scalar::PublicParameters::default(),
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
@@ -607,11 +592,8 @@ fn generate_secp256k1_dkg_party_public_input(
 }
 
 fn generate_ristretto_dkg_party_public_input(
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
+    encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    let encryption_keys_and_proofs =
-        encryption_keys_and_proofs_from_validator_data(encryption_keys_and_proofs)?;
-
     let public_params = RistrettoPublicInput::new::<ristretto::GroupElement>(
         ristretto::scalar::PublicParameters::default(),
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,

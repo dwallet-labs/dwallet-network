@@ -138,6 +138,9 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
                             network_address: validator.network_address.clone(),
                             consensus_address: validator.consensus_address.clone(),
                             network_public_key: Some(validator.network_pubkey.clone()),
+                            class_groups_public_key_and_proof: validator
+                                .class_groups_public_key_and_proof
+                                .clone(),
                         },
                     ),
                 )
@@ -153,7 +156,17 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
             .iter()
             .map(|validator| (validator.authority_name(), validator.voting_power))
             .collect();
-        Committee::new(self.epoch, voting_rights)
+        let class_groups_public_key_and_proof = self
+            .active_validators
+            .iter()
+            .map(|validator| {
+                (
+                    validator.authority_name(),
+                    validator.class_groups_public_key_and_proof.clone(),
+                )
+            })
+            .collect();
+        Committee::new(self.epoch, voting_rights, class_groups_public_key_and_proof)
     }
 
     fn get_consensus_committee(&self) -> ConsensusCommittee {
@@ -247,7 +260,7 @@ pub struct EpochStartValidatorInfoV1 {
     pub protocol_pubkey: AuthorityPublicKey,
     pub network_pubkey: NetworkPublicKey,
     pub consensus_pubkey: NetworkPublicKey,
-    pub class_groups_public_key_and_proof: TableVec,
+    pub class_groups_public_key_and_proof: Vec<u8>,
     pub network_address: Multiaddr,
     pub p2p_address: Multiaddr,
     pub consensus_address: Multiaddr,

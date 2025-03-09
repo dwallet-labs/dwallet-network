@@ -5,6 +5,9 @@ use crate::metrics::SuiClientMetrics;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use core::panic;
+use dwallet_classgroups_types::{
+    ClassGroupsEncryptionKeyAndProof, SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEYS,
+};
 use fastcrypto::traits::ToFromBytes;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::error::{IkaError, IkaResult};
@@ -12,7 +15,9 @@ use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::system_inner_v1::SystemInnerV1;
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
-use ika_types::sui::{ClassGroupsPublicKeyAndProof, System, SystemInner, SystemInnerTrait, Validator};
+use ika_types::sui::{
+    ClassGroupsPublicKeyAndProof, System, SystemInner, SystemInnerTrait, Validator,
+};
 use move_binary_format::binary_config::BinaryConfig;
 use move_core_types::account_address::AccountAddress;
 use serde::de::DeserializeOwned;
@@ -53,7 +58,6 @@ use sui_types::{
 };
 use tokio::sync::OnceCell;
 use tracing::{error, warn};
-use dwallet_classgroups_types::{ClassGroupsEncryptionKeyAndProof, SingleEncryptionKeyAndProof};
 
 pub mod ika_validator_transactions;
 pub mod metrics;
@@ -254,7 +258,15 @@ where
                     .map(|v| v.value.clone())
                     .collect::<Vec<_>>();
 
-                self.inner.get_class_groups_public_keys_and_proofs(&validators).await;
+                let validators_class_groups_public_key_and_proof = self
+                    .inner
+                    .get_class_groups_public_keys_and_proofs(&validators)
+                    .await
+                    .map_err(|e| {
+                        IkaError::SuiClientInternalError(format!(
+                            "Can't get_class_groups_public_keys_and_proofs: {e}"
+                        ))
+                    })?;
 
                 let validators = ika_system_state_inner
                     .validators
@@ -272,9 +284,13 @@ where
                             protocol_pubkey: metadata.protocol_pubkey.clone(),
                             network_pubkey: metadata.network_pubkey.clone(),
                             consensus_pubkey: metadata.consensus_pubkey.clone(),
-                            class_groups_public_key_and_proof: metadata
-                                .class_groups_public_key_and_proof
-                                .clone(),
+                            class_groups_public_key_and_proof: bcs::to_bytes(
+                                &validators_class_groups_public_key_and_proof
+                                    .get(&validator.validator_id)
+                                    .unwrap()
+                                    .clone(),
+                            )
+                            .unwrap(),
                             network_address: metadata.network_address.clone(),
                             p2p_address: metadata.p2p_address.clone(),
                             consensus_address: metadata.consensus_address.clone(),
@@ -484,7 +500,7 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_class_groups_public_keys_and_proofs(
         &self,
         validators: &Vec<ValidatorInnerV1>,
-    ) -> HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>;
+    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error>;
 
     async fn get_system_inner(
         &self,
@@ -565,37 +581,62 @@ impl SuiClientInner for SuiSdkClient {
     async fn get_class_groups_public_keys_and_proofs(
         &self,
         validators: &Vec<ValidatorInnerV1>,
-    ) -> HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof> {
-        let mut class_groups_public_keys_and_proofs: HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof> = HashMap::new();
+    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
+        let mut class_groups_public_keys_and_proofs: HashMap<
+            ObjectID,
+            ClassGroupsEncryptionKeyAndProof,
+        > = HashMap::new();
         for validator in validators {
             let metadata = validator.verified_metadata();
             let dynamic_fields = self
                 .read_api()
-                .get_dynamic_fields(metadata.class_groups_public_key_and_proof.contents.id, None, None)
-                .await
-                .unwrap();
-            let mut validator_class_groups_public_key_and_proof: [Vec<u8>; 13] = Default::default();
+                .get_dynamic_fields(
+                    metadata.class_groups_public_key_and_proof.contents.id,
+                    None,
+                    None,
+                )
+                .await?;
+            let mut validator_class_groups_public_key_and_proof_bytes: [Vec<u8>;
+                NUM_OF_CLASS_GROUPS_KEYS] = Default::default();
             for df in dynamic_fields.data.iter() {
                 let object_id = df.object_id;
                 let dynamic_field_response = self
                     .read_api()
                     .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
-                    .await
-                    .unwrap();
-                let resp = dynamic_field_response.into_object().unwrap();
+                    .await?;
+                let resp = dynamic_field_response.into_object().map_err(|e| {
+                    Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))
+                })?;
                 // unwrap: requested bcs data
                 let move_object = resp.bcs.unwrap();
-                let raw_move_obj = move_object.try_into_move().unwrap();
-                let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes).unwrap();
+                let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+                    "Object {:?} is not a MoveObject",
+                    object_id
+                )))?;
+                let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
 
-                insert_at_index(&mut validator_class_groups_public_key_and_proof, key_slice.name.clone() as usize, key_slice.value.clone());
-            };
-            let mut b : Vec<SingleEncryptionKeyAndProof> = validator_class_groups_public_key_and_proof.into_iter().map(|v| {bcs::from_bytes::<SingleEncryptionKeyAndProof>(&v).unwrap()}).collect();
-            println!("{:?}", b);
-            class_groups_public_keys_and_proofs.insert(validator.validator_id, b.try_into().ok().unwrap());
+                insert_at_index(
+                    &mut validator_class_groups_public_key_and_proof_bytes,
+                    key_slice.name.clone() as usize,
+                    key_slice.value.clone(),
+                );
+            }
+            let validator_class_groups_public_key_and_proof: Result<
+                Vec<SingleEncryptionKeyAndProof>,
+                _,
+            > = validator_class_groups_public_key_and_proof_bytes
+                .into_iter()
+                .map(|v| bcs::from_bytes::<SingleEncryptionKeyAndProof>(&v))
+                .collect();
+
+            let b = validator_class_groups_public_key_and_proof?;
+            class_groups_public_keys_and_proofs.insert(
+                validator.validator_id,
+                b.try_into()
+                    .map_err(|_| Error::DataError("Failed to convert Vec to array".to_string()))?,
+            );
         }
-        class_groups_public_keys_and_proofs
-
+        Ok(class_groups_public_keys_and_proofs)
     }
 
     async fn get_system_inner(

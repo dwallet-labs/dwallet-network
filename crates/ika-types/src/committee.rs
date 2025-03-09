@@ -7,6 +7,7 @@ use crate::crypto::{
     NetworkPublicKey,
 };
 use crate::error::{IkaError, IkaResult};
+use crate::sui::ClassGroupsPublicKeyAndProof;
 use fastcrypto::traits::KeyPair;
 pub use ika_protocol_config::ProtocolVersion;
 use once_cell::sync::OnceCell;
@@ -50,12 +51,17 @@ pub const VALIDITY_THRESHOLD: StakeUnit = 1;
 pub struct Committee {
     pub epoch: EpochId,
     pub voting_rights: Vec<(AuthorityName, StakeUnit)>,
+    pub class_groups_public_keys_and_proofs: HashMap<AuthorityName, Vec<u8>>,
     expanded_keys: HashMap<AuthorityName, AuthorityPublicKey>,
     index_map: HashMap<AuthorityName, usize>,
 }
 
 impl Committee {
-    pub fn new(epoch: EpochId, voting_rights: Vec<(AuthorityName, StakeUnit)>) -> Self {
+    pub fn new(
+        epoch: EpochId,
+        voting_rights: Vec<(AuthorityName, StakeUnit)>,
+        class_groups_public_key_and_proof: HashMap<AuthorityName, Vec<u8>>,
+    ) -> Self {
         // let mut voting_rights: Vec<(AuthorityName, StakeUnit)> =
         //     voting_rights.iter().map(|(a, s)| (*a, *s)).collect();
 
@@ -71,6 +77,7 @@ impl Committee {
         Committee {
             epoch,
             voting_rights,
+            class_groups_public_keys_and_proofs: class_groups_public_key_and_proof,
             expanded_keys,
             index_map,
         }
@@ -98,7 +105,7 @@ impl Committee {
             }
         }
 
-        Self::new(epoch, voting_weights.into_iter().collect())
+        Self::new(epoch, voting_weights.into_iter().collect(), HashMap::new())
     }
 
     // We call this if these have not yet been computed
@@ -143,6 +150,20 @@ impl Committee {
     pub fn public_key(&self, authority: &AuthorityName) -> IkaResult<&AuthorityPublicKey> {
         debug_assert_eq!(self.expanded_keys.len(), self.voting_rights.len());
         match self.expanded_keys.get(authority) {
+            Some(v) => Ok(v),
+            None => Err(IkaError::InvalidCommittee(format!(
+                "Authority #{} not found, committee size {}",
+                authority,
+                self.expanded_keys.len()
+            ))),
+        }
+    }
+
+    pub fn class_groups_public_key_and_proof(
+        &self,
+        authority: &AuthorityName,
+    ) -> IkaResult<&Vec<u8>> {
+        match self.class_groups_public_keys_and_proofs.get(authority) {
             Some(v) => Ok(v),
             None => Err(IkaError::InvalidCommittee(format!(
                 "Authority #{} not found, committee size {}",
@@ -363,6 +384,7 @@ pub struct NetworkMetadata {
     pub network_address: Multiaddr,
     pub consensus_address: Multiaddr,
     pub network_public_key: Option<NetworkPublicKey>,
+    pub class_groups_public_key_and_proof: Vec<u8>,
 }
 
 #[derive(Clone, Debug)]
@@ -398,6 +420,12 @@ impl CommitteeWithNetworkMetadata {
                 self.validators
                     .iter()
                     .map(|(name, (stake, _))| (*name, *stake))
+                    .collect(),
+                self.validators
+                    .iter()
+                    .map(|(name, (_, metadata))| {
+                        (*name, metadata.class_groups_public_key_and_proof.clone())
+                    })
                     .collect(),
             )
         })
