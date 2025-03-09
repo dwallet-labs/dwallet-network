@@ -2050,7 +2050,7 @@ fun process_checkpoint_message(
                 let presign = bcs_body.peel_vec_u8();
                 self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx);
                 response_session_count = response_session_count + 1;
-            } else if (message_data_type == 10) {
+            } else if (message_data_type == 9) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let key_shares = bcs_body.peel_vec_u8();

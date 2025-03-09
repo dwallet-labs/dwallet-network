@@ -2022,8 +2022,8 @@ impl AuthorityPerEpochStore {
             OutputResult::FirstQuorumReached => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
                     .await;
-                    self.process_dwallet_transaction(output, session_info)
-                        .map_err(|e| IkaError::from(e))
+                self.process_dwallet_transaction(output, session_info)
+                    .map_err(|e| IkaError::from(e))
             }
             OutputResult::NotEnoughVotes => Ok(ConsensusCertificateResult::ConsensusMessage),
             OutputResult::AlreadyCommitted | OutputResult::Malicious => {
