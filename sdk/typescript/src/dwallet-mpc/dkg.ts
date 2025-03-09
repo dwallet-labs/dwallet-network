@@ -13,7 +13,8 @@ import {
 	checkpointCreationTime,
 	delay,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
-	DWALLET_NETWORK_VERSION, fetchCompletedEvent,
+	DWALLET_NETWORK_VERSION,
+	fetchCompletedEvent,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
 	getInitialSharedVersion,
@@ -23,6 +24,7 @@ import {
 	isDWalletCap,
 	isIKASystemStateInner,
 	isMoveObject,
+	isStartSessionEvent,
 	MPCKeyScheme,
 	SUI_PACKAGE_ID,
 } from './globals.js';
@@ -276,8 +278,30 @@ export async function dkgSecondRoundMoveCall(
 	if (result.errors !== undefined) {
 		throw new Error(`DKG second round failed with errors ${result.errors}`);
 	}
-	const completionEvent = await fetchCompletedEvent(conf, )
+	const startSessionEvent = result.events?.at(0)?.parsedJson;
+	if (!isStartSessionEvent(startSessionEvent)) {
+		throw new Error('invalid start session event');
+	}
+	const completionEvent = await fetchCompletedEvent(
+		conf,
+		startSessionEvent.session_id,
+		isCompletedDKGSecondRoundEvent,
+	);
 	return await waitForDKGSecondRoundCompletion(conf, firstRoundOutputResult.dwalletID);
+}
+
+function isCompletedDKGSecondRoundEvent(obj: any): obj is CompletedDKGSecondRoundEvent {
+	return (
+		obj.dwallet_id !== undefined &&
+		obj.public_output !== undefined &&
+		obj.encrypted_user_secret_key_share_id !== undefined
+	);
+}
+
+interface CompletedDKGSecondRoundEvent {
+	dwallet_id: string;
+	public_output: Uint8Array;
+	encrypted_user_secret_key_share_id: string;
 }
 
 interface DKGFirstRoundOutputResult {
@@ -359,7 +383,6 @@ async function waitForDKGSecondRoundCompletion(
 			id: dwalletID,
 			options: {
 				showContent: true,
-
 			},
 		});
 		if (isMoveObject(dwallet?.data?.content)) {
@@ -427,8 +450,4 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 // 	user_output_signature: vector<u8>,
 // ) {
 
-export async function acceptEncryptedUserShare(
-	conf: Config,
-	dwalletID: string,
-
-)
+export async function acceptEncryptedUserShare(conf: Config, dwalletID: string);
