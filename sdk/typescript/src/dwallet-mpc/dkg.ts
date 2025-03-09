@@ -294,7 +294,8 @@ function isCompletedDKGSecondRoundEvent(obj: any): obj is CompletedDKGSecondRoun
 	return (
 		obj.dwallet_id !== undefined &&
 		obj.public_output !== undefined &&
-		obj.encrypted_user_secret_key_share_id !== undefined
+		obj.encrypted_user_secret_key_share_id !== undefined &&
+		obj.session_id !== undefined
 	);
 }
 
@@ -302,6 +303,7 @@ interface CompletedDKGSecondRoundEvent {
 	dwallet_id: string;
 	public_output: Uint8Array;
 	encrypted_user_secret_key_share_id: string;
+	session_id: string;
 }
 
 interface DKGFirstRoundOutputResult {
