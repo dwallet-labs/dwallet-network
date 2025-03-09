@@ -12,7 +12,7 @@ use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::system_inner_v1::SystemInnerV1;
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
-use ika_types::sui::{System, SystemInner, SystemInnerTrait, Validator};
+use ika_types::sui::{ClassGroupsPublicKeyAndProof, System, SystemInner, SystemInnerTrait, Validator};
 use move_binary_format::binary_config::BinaryConfig;
 use move_core_types::account_address::AccountAddress;
 use serde::de::DeserializeOwned;
@@ -53,6 +53,7 @@ use sui_types::{
 };
 use tokio::sync::OnceCell;
 use tracing::{error, warn};
+use dwallet_classgroups_types::{ClassGroupsEncryptionKeyAndProof, SingleEncryptionKeyAndProof};
 
 pub mod ika_validator_transactions;
 pub mod metrics;
@@ -479,10 +480,11 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_latest_checkpoint_sequence_number(&self) -> Result<u64, Self::Error>;
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
+
     async fn get_class_groups_public_keys_and_proofs(
         &self,
         validators: &Vec<ValidatorInnerV1>,
-    );
+    ) -> HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>;
 
     async fn get_system_inner(
         &self,
@@ -563,30 +565,37 @@ impl SuiClientInner for SuiSdkClient {
     async fn get_class_groups_public_keys_and_proofs(
         &self,
         validators: &Vec<ValidatorInnerV1>,
-    ) {
-        let mut class_groups_public_keys_and_proofs = Vec::new();
+    ) -> HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof> {
+        let mut class_groups_public_keys_and_proofs: HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof> = HashMap::new();
         for validator in validators {
             let metadata = validator.verified_metadata();
             let dynamic_fields = self
                 .read_api()
                 .get_dynamic_fields(metadata.class_groups_public_key_and_proof.contents.id, None, None)
-                .await.unwrap();
-            let mut validator_class_groups_public_key_and_proof: Vec<u8> = Vec::new();
-            for df in dynamic_fields.data{
+                .await
+                .unwrap();
+            let mut validator_class_groups_public_key_and_proof: [Vec<u8>; 13] = Default::default();
+            for df in dynamic_fields.data.iter() {
                 let object_id = df.object_id;
                 let dynamic_field_response = self
                     .read_api()
                     .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
-                    .await.unwrap();
+                    .await
+                    .unwrap();
                 let resp = dynamic_field_response.into_object().unwrap();
                 // unwrap: requested bcs data
                 let move_object = resp.bcs.unwrap();
                 let raw_move_obj = move_object.try_into_move().unwrap();
                 let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes).unwrap();
-                validator_class_groups_public_key_and_proof.append(&mut key_slice.value.clone());
+
+                insert_at_index(&mut validator_class_groups_public_key_and_proof, key_slice.name.clone() as usize, key_slice.value.clone());
             };
-            class_groups_public_keys_and_proofs.push(validator_class_groups_public_key_and_proof);
+            let mut b : Vec<SingleEncryptionKeyAndProof> = validator_class_groups_public_key_and_proof.into_iter().map(|v| {bcs::from_bytes::<SingleEncryptionKeyAndProof>(&v).unwrap()}).collect();
+            println!("{:?}", b);
+            class_groups_public_keys_and_proofs.insert(validator.validator_id, b.try_into().ok().unwrap());
         }
+        class_groups_public_keys_and_proofs
+
     }
 
     async fn get_system_inner(
@@ -856,6 +865,14 @@ impl SuiClientInner for SuiSdkClient {
                 }
             }
         }
+    }
+}
+
+fn insert_at_index(full: &mut [Vec<u8>; 13], index: usize, val: Vec<u8>) {
+    if index < full.len() {
+        full[index] = val;
+    } else {
+        println!("Index out of bounds: {}", index);
     }
 }
 

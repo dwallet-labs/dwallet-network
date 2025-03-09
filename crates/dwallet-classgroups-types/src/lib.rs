@@ -22,7 +22,10 @@ pub type ClassGroupsEncryptionKeyAndProof = [(
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 pub type DKGDecentralizedOutput =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput;
-
+pub type SingleEncryptionKeyAndProof = (
+    CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
+    ClassGroupsProof,
+);
 pub const NUM_OF_CLASS_GROUPS_KEYS: usize = MAX_PRIMES;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClassGroupsKeyPairAndProof {
