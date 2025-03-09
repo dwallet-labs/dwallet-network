@@ -2429,15 +2429,17 @@ Returns all the validators who are currently reporting <code>validator_id</code>
                 <b>let</b> _encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 <b>let</b> _encryption_key_address = <a href="../sui/address.md#sui_address_from_bytes">sui::address::from_bytes</a>(bcs_body.peel_vec_u8());
                 <b>let</b> _rejected = bcs_body.peel_bool();
-            } <b>else</b> <b>if</b> (message_data_type == 8) {
+            } <b>else</b> <b>if</b> (message_data_type == 7) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _presign = bcs_body.peel_vec_u8();
-            } <b>else</b> <b>if</b> (message_data_type == 10) {
-                bcs_body.peel_vec_u8();
-                bcs_body.peel_vec_u8();
-                bcs_body.peel_vec_u8();
-                bcs_body.peel_bool();
+            } <b>else</b> <b>if</b> (message_data_type == 6) {
+                <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> _sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> _signature = bcs_body.peel_vec_u8();
+                <b>let</b> _is_future_sign = bcs_body.peel_bool();
+                <b>let</b> _rejected = bcs_body.peel_bool();
             };
         i = i + 1;
     };

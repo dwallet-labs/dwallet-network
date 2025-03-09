@@ -1,5 +1,6 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
 import {
@@ -14,6 +15,7 @@ import type { Config } from './globals.ts';
 interface CompletedPresignEvent {
 	presign_id: string;
 	session_id: string;
+	presign: Uint8Array;
 }
 
 interface StartSessionEvent {
@@ -73,7 +75,9 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 }
 
 function isCompletedPresignEvent(event: any): event is CompletedPresignEvent {
-	return event.presign_id !== undefined;
+	return (
+		event.presign_id !== undefined && event.presign !== undefined && event.session_id !== undefined
+	);
 }
 
 function isStartSessionEvent(event: any): event is StartSessionEvent {
@@ -90,13 +94,13 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 
 	while (Date.now() - startTime <= c.timeout) {
 		// Wait for a bit before polling again, objects might not be available immediately.
-		const interval = 5_000;
+		const interval = 1_000;
 		await delay(interval);
 
 		const { data } = await c.client.queryEvents({
 			query: {
 				TimeRange: {
-					startTime: (Date.now() - interval * 2).toString(),
+					startTime: (Date.now() - interval * 4).toString(),
 					endTime: Date.now().toString(),
 				},
 			},
@@ -119,4 +123,40 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 			c.timeout / (60 * 1000)
 		} minutes (${seconds} seconds passed).`,
 	);
+}
+
+/**
+ * Creates a valid mock output of the first DKG blockchain round.
+ */
+export async function mockCreatePresign(
+	conf: Config,
+	mockPresign: Uint8Array,
+	dwalletID: string,
+): Promise<CompletedPresignEvent> {
+	const tx = new Transaction();
+	const dwalletStateObjData = await getDWalletSecpState(conf);
+	const stateArg = tx.sharedObjectRef({
+		objectId: dwalletStateObjData.object_id,
+		initialSharedVersion: dwalletStateObjData.initial_shared_version,
+		mutable: true,
+	});
+
+	const firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockPresign));
+	tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::mock_create_presign`,
+		arguments: [stateArg, firstRoundOutputArg, tx.pure.id(dwalletID)],
+	});
+	const result = await conf.client.signAndExecuteTransaction({
+		signer: conf.suiClientKeypair,
+		transaction: tx,
+		options: {
+			showEvents: true,
+		},
+	});
+	console.log(result);
+	const completedPresignEvent = result.events?.at(0)?.parsedJson;
+	if (!isCompletedPresignEvent(completedPresignEvent)) {
+		throw new Error('invalid completed presign event');
+	}
+	return completedPresignEvent;
 }

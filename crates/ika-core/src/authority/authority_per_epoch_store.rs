@@ -62,7 +62,6 @@ use crate::consensus_handler::{
     ConsensusCommitInfo, SequencedConsensusTransaction, SequencedConsensusTransactionKey,
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
-use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
@@ -83,9 +82,8 @@ use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
-    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput,
-    EncryptionKeyVerificationOutput, MessageKind, PartialSignatureVerificationOutput,
-    PresignOutput, Secp256K1NetworkDKGOutputSlice, SignOutput,
+    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput, MessageKind,
+    PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkDKGOutputSlice, SignOutput,
 };
 use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
@@ -365,7 +363,6 @@ pub struct AuthorityPerEpochStore {
     /// This state machine is used to store outputs and emit ones
     /// where the quorum of votes is valid.
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
-    dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
     pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
     dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
     dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
@@ -644,7 +641,6 @@ impl AuthorityPerEpochStore {
             executed_in_epoch_table_enabled: once_cell::sync::OnceCell::new(),
             chain_identifier,
             dwallet_mpc_outputs_verifier: OnceCell::new(),
-            dwallet_mpc_batches_manager: OnceCell::new(),
             dwallet_mpc_round_messages: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_round_outputs: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_round_events: tokio::sync::Mutex::new(Vec::new()),
@@ -714,21 +710,6 @@ impl AuthorityPerEpochStore {
         if self
             .dwallet_mpc_manager
             .set(tokio::sync::Mutex::new(sender))
-            .is_err()
-        {
-            error!("AuthorityPerEpochStore: `set_dwallet_mpc_batches_manager` called more than once; this should never happen");
-        }
-        Ok(())
-    }
-
-    /// A function to initiate the [`DWalletMPCBatchesManager`] when a new epoch starts.
-    pub fn set_dwallet_mpc_batches_manager(
-        &self,
-        batches_manager: DWalletMPCBatchesManager,
-    ) -> IkaResult<()> {
-        if self
-            .dwallet_mpc_batches_manager
-            .set(tokio::sync::Mutex::new(batches_manager))
             .is_err()
         {
             error!("AuthorityPerEpochStore: `set_dwallet_mpc_batches_manager` called more than once; this should never happen");
@@ -856,25 +837,6 @@ impl AuthorityPerEpochStore {
                 }
                 None => {
                     error!("failed to get the DWalletMPCOutputsVerifier, retrying...");
-                    tokio::time::sleep(Duration::from_secs(1)).await;
-                }
-            }
-        }
-    }
-
-    /// Return the current epoch's [`DWalletMPCBatchesManager`].
-    /// This manager handles storing all the valid outputs of a batched dWallet MPC sessions,
-    /// and writes them to the chain at once when all the batch outputs are ready.
-    pub async fn get_dwallet_mpc_batches_manager(
-        &self,
-    ) -> tokio::sync::MutexGuard<DWalletMPCBatchesManager> {
-        loop {
-            match self.dwallet_mpc_batches_manager.get() {
-                Some(dwallet_mpc_batches_manager) => {
-                    return dwallet_mpc_batches_manager.lock().await
-                }
-                None => {
-                    error!("failed to get the DWallet Batches Manager, retrying...");
                     tokio::time::sleep(Duration::from_secs(1)).await;
                 }
             }
@@ -2060,17 +2022,8 @@ impl AuthorityPerEpochStore {
             OutputResult::FirstQuorumReached => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
                     .await;
-                // Output result of a single Protocol from the batch session.
-                if session_info.mpc_round.is_part_of_batch() {
-                    let mut batches_manager = self.get_dwallet_mpc_batches_manager().await;
-                    batches_manager.store_verified_output(session_info.clone(), output.clone())?;
-                    batches_manager.is_batch_completed(&session_info)?;
                     self.process_dwallet_transaction(output, session_info)
                         .map_err(|e| IkaError::from(e))
-                } else {
-                    self.process_dwallet_transaction(output, session_info)
-                        .map_err(|e| IkaError::from(e))
-                }
             }
             OutputResult::NotEnoughVotes => Ok(ConsensusCertificateResult::ConsensusMessage),
             OutputResult::AlreadyCommitted | OutputResult::Malicious => {
@@ -2143,11 +2096,9 @@ impl AuthorityPerEpochStore {
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-
-            MPCProtocolInitData::BatchedPresign(_) => Ok(ConsensusCertificateResult::Ignored),
             MPCProtocolInitData::Presign(init_event_data) => {
                 let tx = MessageKind::DwalletPresign(PresignOutput {
-                    presign: bcs::to_bytes(&output)?,
+                    presign: output,
                     session_id: bcs::to_bytes(&session_info.session_id)?,
                     dwallet_id: init_event_data.dwallet_id.to_vec(),
                 });
@@ -2155,11 +2106,13 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::Sign(init_event) => {
                 let tx = MessageKind::DwalletSign(SignOutput {
-                    batch_session_id: init_event.batch_session_id.to_vec(),
-                    signatures: output,
+                    session_id: session_info.session_id.to_vec(),
+                    signature: output,
                     dwallet_id: init_event.dwallet_id.to_vec(),
-                    initiating_user_address: session_info.initiating_user_address.to_vec(),
-                    is_future_sign: bcs::to_bytes(&init_event.is_future_sign)?,
+                    is_future_sign: init_event.is_future_sign,
+                    sign_id: init_event.sign_id.to_vec(),
+                    // TODO (#679): Update the blockchain when an MPC round fails
+                    rejected: false,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
@@ -2171,25 +2124,6 @@ impl AuthorityPerEpochStore {
                     session_id: session_info.session_id.to_vec(),
                     initiating_user_address: session_info.initiating_user_address.to_vec(),
                 });
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
-            MPCProtocolInitData::EncryptionKeyVerification(init_event_data) => {
-                let tx = MessageKind::DwalletEncryptionKeyVerification(
-                    EncryptionKeyVerificationOutput {
-                        encryption_key: bcs::to_bytes(&init_event_data.encryption_key)?,
-                        encryption_key_signature: bcs::to_bytes(
-                            &init_event_data.encryption_key_signature,
-                        )?,
-                        encryption_key_scheme: bcs::to_bytes(
-                            &init_event_data.encryption_key_scheme,
-                        )?,
-                        session_id: session_info.session_id.to_vec(),
-                        initiating_user_address: session_info.initiating_user_address.to_vec(),
-                        key_signer_public_key: bcs::to_bytes(
-                            &init_event_data.key_signer_public_key,
-                        )?,
-                    },
-                );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::PartialSignatureVerification(init_event_data) => {
@@ -2261,7 +2195,6 @@ impl AuthorityPerEpochStore {
                     }
                 }
             }
-            MPCProtocolInitData::BatchedSign(_) => Ok(ConsensusCertificateResult::Ignored),
         }
     }
 

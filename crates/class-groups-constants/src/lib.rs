@@ -1,5 +1,6 @@
 mod constants;
 
+use crate::constants::ENCRYPTION_SCHEME_PUBLIC_PARAMETERS;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use class_groups::dkg::Secp256k1Party;
 use class_groups::SecretKeyShareSizedInteger;
@@ -42,6 +43,13 @@ pub fn decryption_key_share_public_parameters() -> Vec<u8> {
     // Safe to unwrap as we're using a hardcoded constant.
     STANDARD
         .decode(DECRYPTION_KEY_SHARE_PUBLIC_PARAMETERS)
+        .unwrap()
+}
+
+pub fn encryption_scheme_public_parameters() -> Vec<u8> {
+    // Safe to unwrap as we're using a hardcoded constant.
+    STANDARD
+        .decode(&ENCRYPTION_SCHEME_PUBLIC_PARAMETERS)
         .unwrap()
 }
 
