@@ -19,7 +19,6 @@ import {
 	getDWalletSecpState,
 	getInitialSharedVersion,
 	getObjectWithType,
-	isActiveDWallet,
 	isAddressObjectOwner,
 	isDWalletCap,
 	isIKASystemStateInner,
@@ -426,21 +425,21 @@ export async function acceptEncryptedUserShare(
 	conf: Config,
 	completedDKGSecondRoundEvent: CompletedDKGSecondRoundEvent,
 ): Promise<void> {
-	let signedPubkeys = await conf.encryptedSecretShareSigningKeypair.sign(
+	const signedPubkeys = await conf.encryptedSecretShareSigningKeypair.sign(
 		completedDKGSecondRoundEvent.public_output,
 	);
-	let dWalletStateData = await getDWalletSecpState(conf);
+	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
 	const dwalletStateArg = tx.sharedObjectRef({
 		objectId: dWalletStateData.object_id,
 		initialSharedVersion: dWalletStateData.initial_shared_version,
 		mutable: true,
 	});
-	let dwalletIDArg = tx.pure.id(completedDKGSecondRoundEvent.dwallet_id);
-	let encryptedUserSecretKeyShareIDArg = tx.pure.id(
+	const dwalletIDArg = tx.pure.id(completedDKGSecondRoundEvent.dwallet_id);
+	const encryptedUserSecretKeyShareIDArg = tx.pure.id(
 		completedDKGSecondRoundEvent.encrypted_user_secret_key_share_id,
 	);
-	let userOutputSignatureArg = tx.pure(bcs.vector(bcs.u8()).serialize(signedPubkeys));
+	const userOutputSignatureArg = tx.pure(bcs.vector(bcs.u8()).serialize(signedPubkeys));
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::accept_encrypted_user_share`,
 		arguments: [

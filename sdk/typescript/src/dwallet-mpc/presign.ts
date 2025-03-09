@@ -4,9 +4,9 @@ import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
 import {
-	delay,
 	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
-	DWALLET_ECDSAK1_MOVE_MODULE_NAME, fetchCompletedEvent,
+	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	fetchCompletedEvent,
 	getDWalletSecpState,
 	SUI_PACKAGE_ID,
 } from './globals.js';
