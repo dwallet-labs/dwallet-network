@@ -415,7 +415,7 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		.dwallet_network_decryption_key_id;
 }
 
-export async function acceptEncryptedUserShare(
+async function acceptEncryptedUserShare(
 	conf: Config,
 	completedDKGSecondRoundEvent: CompletedDKGSecondRoundEvent,
 ): Promise<void> {
