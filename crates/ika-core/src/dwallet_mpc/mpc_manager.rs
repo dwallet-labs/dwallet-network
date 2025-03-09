@@ -459,13 +459,11 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) fn perform_cryptographic_computation(&mut self) {
-        while self
+        let pending_computation_instances_len = self
             .cryptographic_computations_orchestrator
-            .currently_running_sessions_count
-            < self
-                .cryptographic_computations_orchestrator
-                .available_cores_for_cryptographic_computations
-        {
+            .pending_for_computation_order
+            .len();
+        for _ in 0..pending_computation_instances_len {
             let Some(oldest_computation_metadata) = self
                 .cryptographic_computations_orchestrator
                 .pending_for_computation_order
