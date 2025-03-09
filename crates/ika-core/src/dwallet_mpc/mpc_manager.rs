@@ -11,7 +11,7 @@ use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, EventDrivenData};
+use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
@@ -343,7 +343,7 @@ impl DWalletMPCManager {
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
         let (public_input, private_input) = session_input_from_event(event, &self)?;
-        let event_driven_data = Some(EventDrivenData {
+        let mpc_event_data = Some(MPCEventData {
             init_protocol_data: session_info.mpc_round.clone(),
             public_input,
             private_input,
@@ -360,9 +360,9 @@ impl DWalletMPCManager {
                 "Received an event for an existing session with session_id: {:?}",
                 session_info.session_id
             );
-            session.event_driven_data = event_driven_data;
+            session.mpc_event_data = mpc_event_data;
         } else {
-            self.push_new_mpc_session(&session_info.session_id, event_driven_data)?;
+            self.push_new_mpc_session(&session_info.session_id, mpc_event_data)?;
         }
         Ok(())
     }
@@ -490,7 +490,7 @@ impl DWalletMPCManager {
             else {
                 return;
             };
-            if live_session.event_driven_data.is_none() {
+            if live_session.mpc_event_data.is_none() {
                 self.cryptographic_computations_orchestrator
                     .pending_for_computation_order
                     .push_back(oldest_computation_metadata.clone());
@@ -499,7 +499,7 @@ impl DWalletMPCManager {
                     .insert(oldest_computation_metadata, ready_to_advance_session);
                 continue;
             }
-            ready_to_advance_session.event_driven_data = live_session.event_driven_data.clone();
+            ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
             if let Err(err) = self.spawn_session(&ready_to_advance_session) {
                 error!("failed to spawn session with err: {:?}", err);
             }
@@ -507,7 +507,7 @@ impl DWalletMPCManager {
     }
 
     fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
-        let Some(event_driven_data) = &session.event_driven_data else {
+        let Some(mpc_event_data) = &session.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
         let session_id = session.session_id;
@@ -528,7 +528,7 @@ impl DWalletMPCManager {
             .computation_channel_sender
             .clone();
         if matches!(
-            event_driven_data.init_protocol_data,
+            mpc_event_data.init_protocol_data,
             MPCProtocolInitData::Sign(..)
         ) && session.pending_quorum_for_highest_round_number == LAST_SIGN_ROUND_INDEX
         {
@@ -735,7 +735,7 @@ impl DWalletMPCManager {
     pub(crate) fn push_new_mpc_session(
         &mut self,
         session_id: &ObjectID,
-        event_driven_data: Option<EventDrivenData>,
+        mpc_event_data: Option<MPCEventData>,
     ) -> DwalletMPCResult<()> {
         if self.mpc_sessions.contains_key(&session_id) {
             // This should never happen, as the session ID is a Move UniqueID.
@@ -758,7 +758,7 @@ impl DWalletMPCManager {
             session_id.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
-            event_driven_data,
+            mpc_event_data,
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing

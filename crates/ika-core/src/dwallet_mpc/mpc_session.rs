@@ -47,7 +47,7 @@ pub(crate) struct ReadyToAdvanceCheckResult {
 
 /// DWallet MPC session data that is being driven by the event that started this session.
 #[derive(Clone)]
-pub struct EventDrivenData {
+pub struct MPCEventData {
     pub private_input: MPCPrivateInput,
     pub(super) public_input: MPCPublicInput,
     pub init_protocol_data: MPCProtocolInitData,
@@ -79,7 +79,7 @@ pub(super) struct DWalletMPCSession {
     party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-    pub(crate) event_driven_data: Option<EventDrivenData>,
+    pub(crate) mpc_event_data: Option<MPCEventData>,
 }
 
 impl DWalletMPCSession {
@@ -91,7 +91,7 @@ impl DWalletMPCSession {
         session_id: ObjectID,
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        event_driven_data: Option<EventDrivenData>,
+        mpc_event_data: Option<MPCEventData>,
     ) -> Self {
         Self {
             status,
@@ -104,7 +104,7 @@ impl DWalletMPCSession {
             party_id,
             weighted_threshold_access_structure,
             session_specific_state: None,
-            event_driven_data,
+            mpc_event_data,
         }
     }
 
@@ -218,12 +218,12 @@ impl DWalletMPCSession {
         reporting_authority: AuthorityName,
         report: MaliciousReport,
     ) {
-        let Some(event_driven_data) = &self.event_driven_data else {
+        let Some(mpc_event_data) = &self.mpc_event_data else {
             // An event has not yet received for this session, so we cannot start the sign IA protocol.
             return;
         };
         if matches!(
-            event_driven_data.init_protocol_data,
+            mpc_event_data.init_protocol_data,
             MPCProtocolInitData::Sign(..)
         ) && self.status == MPCSessionStatus::Active
             && self.session_specific_state.is_none()
@@ -267,12 +267,12 @@ impl DWalletMPCSession {
     fn advance_specific_party(
         &self,
     ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-        let Some(event_driven_data) = &self.event_driven_data else {
+        let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
-        let public_input = &event_driven_data.public_input;
-        match &event_driven_data.init_protocol_data {
+        let public_input = &mpc_event_data.public_input;
+        match &mpc_event_data.init_protocol_data {
             MPCProtocolInitData::DKGFirst(..) => {
                 let public_input = bcs::from_bytes(public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
@@ -330,7 +330,7 @@ impl DWalletMPCSession {
                     &self.weighted_threshold_access_structure,
                     self.serialized_messages.clone(),
                     public_input,
-                    event_driven_data.decryption_share.clone(),
+                    mpc_event_data.decryption_share.clone(),
                 )
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, _) => advance_network_dkg(
@@ -341,7 +341,7 @@ impl DWalletMPCSession {
                 key_scheme,
                 self.serialized_messages.clone(),
                 bcs::from_bytes(
-                    &event_driven_data
+                    &mpc_event_data
                         .private_input
                         .clone()
                         .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
@@ -403,7 +403,7 @@ impl DWalletMPCSession {
         &self,
         output: Vec<u8>,
     ) -> DwalletMPCResult<ConsensusTransaction> {
-        let Some(event_driven_data) = &self.event_driven_data else {
+        let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
         Ok(ConsensusTransaction::new_dwallet_mpc_output(
@@ -411,7 +411,7 @@ impl DWalletMPCSession {
             output,
             SessionInfo {
                 session_id: self.session_id.clone(),
-                mpc_round: event_driven_data.init_protocol_data.clone(),
+                mpc_round: mpc_event_data.init_protocol_data.clone(),
             },
         ))
     }
