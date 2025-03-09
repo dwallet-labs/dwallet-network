@@ -351,20 +351,14 @@ impl DWalletMPCManager {
                 MPCProtocolInitData::NetworkDkg(..) => HashMap::new(),
                 _ => self.get_decryption_key_shares(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
-                    Some(
-                        self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)?
-                            as usize,
-                    ),
+                    Some(self.network_key_version(DWalletMPCNetworkKeyScheme::Secp256k1)? as usize),
                 )?,
             },
         });
         if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             session.event_driven_data = event_driven_data;
         } else {
-            self.push_new_mpc_session(
-                &session_info.session_id,
-                event_driven_data,
-            )?;
+            self.push_new_mpc_session(&session_info.session_id, event_driven_data)?;
         }
         Ok(())
     }
@@ -486,10 +480,17 @@ impl DWalletMPCManager {
             else {
                 return;
             };
-
+            if session.event_driven_data.is_none() {
+                self.cryptographic_computations_orchestrator
+                    .pending_for_computation_order
+                    .push_back(oldest_computation_metadata.clone());
+                self.cryptographic_computations_orchestrator
+                    .pending_computation_map
+                    .insert(oldest_computation_metadata, session);
+                return;
+            }
             if let Err(err) = self.spawn_session(&session) {
                 error!("failed to spawn session with err: {:?}", err);
-                return;
             }
         }
     }

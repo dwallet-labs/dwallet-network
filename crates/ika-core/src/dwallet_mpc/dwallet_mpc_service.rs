@@ -65,7 +65,11 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MS)).await;
-            let self_auth_index = self.epoch_store.committee().authority_index(&self.epoch_store.name).unwrap();
+            let self_auth_index = self
+                .epoch_store
+                .committee()
+                .authority_index(&self.epoch_store.name)
+                .unwrap();
             let now = SystemTime::now();
             // check if a minute passed
             if !(now.duration_since(start_spawn).unwrap().as_secs() < 60 && self_auth_index < 2) {
