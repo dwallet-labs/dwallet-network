@@ -445,7 +445,7 @@ impl DWalletMPCManager {
                     session_clone
                         .serialized_messages
                         .truncate(session_clone.pending_quorum_for_highest_round_number - 1);
-                    Some((session.clone(), quorum_check_result.malicious_parties))
+                    Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None
                 }
