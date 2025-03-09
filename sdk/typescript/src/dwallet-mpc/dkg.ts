@@ -38,6 +38,13 @@ interface StartDKGFirstRoundEvent {
 	session_id: string;
 }
 
+interface CompletedDKGSecondRoundEvent {
+	dwallet_id: string;
+	public_output: Uint8Array;
+	encrypted_user_secret_key_share_id: string;
+	session_id: string;
+}
+
 interface WaitingForUserDWallet {
 	state: {
 		fields: {
@@ -297,13 +304,6 @@ function isCompletedDKGSecondRoundEvent(obj: any): obj is CompletedDKGSecondRoun
 		obj.encrypted_user_secret_key_share_id !== undefined &&
 		obj.session_id !== undefined
 	);
-}
-
-interface CompletedDKGSecondRoundEvent {
-	dwallet_id: string;
-	public_output: Uint8Array;
-	encrypted_user_secret_key_share_id: string;
-	session_id: string;
 }
 
 interface DKGFirstRoundOutputResult {
