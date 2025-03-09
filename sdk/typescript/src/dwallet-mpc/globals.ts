@@ -1,8 +1,25 @@
+;
+
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Buffer } from 'buffer';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+
+
+
+
+
+;
+
+
+
+
+
+
+
+
+
 
 export const DWALLET_ECDSAK1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
 export const DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1_inner';
@@ -273,4 +290,10 @@ interface ActiveDWallet {
 
 export function isActiveDWallet(obj: any): obj is ActiveDWallet {
 	return obj?.state?.fields?.public_output !== undefined;
+}
+
+export interface DWallet {
+	dwallet_id: string;
+	dwallet_cap_id: string;
+	secret_share: Uint8Array;
 }

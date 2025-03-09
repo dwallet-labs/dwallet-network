@@ -3,10 +3,10 @@ import {
 	generate_secp_cg_keypair_from_seed,
 } from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs, toHex } from '@mysten/bcs';
-import type { PublicKey } from '@mysten/sui/cryptography';
+import {Keypair, PublicKey} from '@mysten/sui/cryptography';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config } from './globals.js';
+import type {Config, DWallet} from './globals.js';
 import {
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	fetchObjectWithType,
@@ -253,4 +253,76 @@ export async function encryptUserShareForPublicKey(
 		encryptedUserKeyShareAndProofOfEncryption,
 		destActiveEncryptionKeyObjID,
 	};
+}
+//
+// public fun request_re_encrypt_user_share_for(
+// 	self: &mut DWallet2PcMpcSecp256K1,
+// 	dwallet_id: ID,
+// 	destination_encryption_key_address: address,
+// 	encrypted_centralized_secret_share_and_proof: vector<u8>,
+// 	source_encrypted_user_secret_key_share_id: ID,
+// 	payment_ika: &mut Coin<IKA>,
+// 	payment_sui: &mut Coin<SUI>,
+// 	ctx: &mut TxContext,
+// ) {
+
+/**
+ * Transfers an encrypted dWallet user secret key share from a source entity to destination entity.
+ * This function emits an event with the encrypted user secret key share,
+ * along with its cryptographic proof, to the blockchain.
+ * The chain verifies that the encrypted data matches the expected secret key share
+ * associated with the dWallet before creating an `EncryptedUserSecretKeyShare` object.
+ */
+async function transferEncryptedUserSecretShare(
+	sourceKeyPair: Keypair,
+	encryptedUserKeyShareAndProofOfEncryption: Uint8Array,
+	destEncryptionKeyObjID: string,
+	sourceDwallet: DWallet,
+): Promise<CreatedEncryptedSecretShareEvent> {
+	const tx = new Transaction();
+	// Sign the DKG Centralized Public output,
+	// in order for the destination party to verify it later.
+	let publicKeysFromDkgOutput = public_keys_from_dkg_output(
+		new Uint8Array(sourceDwallet.decentralized_public_output),
+	);
+	let signedPubkeys = await sourceKeyPair.sign(new Uint8Array(publicKeysFromDkgOutput));
+	// todo(zeev): this should transfer the encrypted share to the destination.
+	tx.moveCall({
+		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::transfer_encrypted_user_share`,
+		typeArguments: [],
+		arguments: [
+			tx.object(sourceDwallet.id.id),
+			tx.object(destEncryptionKeyObjID),
+			tx.pure(bcs.vector(bcs.u8()).serialize(encryptedUserKeyShareAndProofOfEncryption)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(signedPubkeys)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(sourceKeyPair.getPublicKey().toRawBytes())),
+			tx.sharedObjectRef({
+				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
+				initialSharedVersion: 1,
+				mutable: false,
+			}),
+		],
+	});
+
+	const result = await this.client.signAndExecuteTransaction({
+		signer: sourceKeyPair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+			showEvents: true,
+		},
+	});
+
+	const sessionData = result.events?.find(
+		(event) =>
+			event.type === startEncryptedShareVerificationMoveType &&
+			isStartSessionEvent(event.parsedJson),
+	)?.parsedJson as StartSessionEvent;
+
+	return await fetchCompletedEvent<CreatedEncryptedSecretShareEvent>(
+		this.toConfig(sourceKeyPair),
+		sessionData.session_id,
+		createdEncryptedSecretShareEventMoveType,
+		isCreatedEncryptedSecretShareEvent,
+	);
 }
