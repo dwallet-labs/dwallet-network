@@ -447,7 +447,6 @@ async function acceptEncryptedUserShare(
 		signer: conf.suiClientKeypair,
 		transaction: tx,
 		options: {
-			showEffects: true,
 			showEvents: true,
 		},
 	});
