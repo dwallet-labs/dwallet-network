@@ -181,7 +181,8 @@ export async function createDKGFirstRoundOutputMock(
 export async function mockCreateDWallet(
 	conf: Config,
 	mockOutput: Uint8Array,
-): Promise<DKGFirstRoundOutputResult> {
+	mockSecretShare: Uint8Array,
+): Promise<DWallet> {
 	const tx = new Transaction();
 	const dwalletStateObjData = await getDWalletSecpState(conf);
 	const stateArg = tx.sharedObjectRef({
@@ -221,10 +222,9 @@ export async function mockCreateDWallet(
 	);
 
 	return {
-		dwalletCapID: createdDWalletCap.reference.objectId,
-		dwalletID: dwalletCapObj.dwallet_id,
-		sessionID: '',
-		output: mockOutput,
+		secret_share: mockSecretShare,
+		dwallet_cap_id: createdDWalletCap.reference.objectId,
+		dwallet_id: dwalletCapObj.dwallet_id,
 	};
 }
 
