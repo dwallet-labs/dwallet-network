@@ -213,8 +213,8 @@ export function isStartSessionEvent(event: any): event is StartSessionEvent {
 export async function fetchCompletedEvent<TEvent extends { session_id: string }>(
 	c: Config,
 	sessionID: string,
-	eventType: string,
 	isEventFn: (parsedJson: any) => parsedJson is TEvent,
+	eventType: string = '',
 ): Promise<TEvent> {
 	const startTime = Date.now();
 
@@ -235,7 +235,7 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 
 		const match = data.find(
 			(event) =>
-				event.type === eventType &&
+				(event.type === eventType || !eventType) &&
 				isEventFn(event.parsedJson) &&
 				event.parsedJson.session_id === sessionID,
 		);

@@ -13,7 +13,7 @@ import {
 	checkpointCreationTime,
 	delay,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
-	DWALLET_NETWORK_VERSION,
+	DWALLET_NETWORK_VERSION, fetchCompletedEvent,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
 	getInitialSharedVersion,
@@ -276,6 +276,7 @@ export async function dkgSecondRoundMoveCall(
 	if (result.errors !== undefined) {
 		throw new Error(`DKG second round failed with errors ${result.errors}`);
 	}
+	const completionEvent = await fetchCompletedEvent(conf, )
 	return await waitForDKGSecondRoundCompletion(conf, firstRoundOutputResult.dwalletID);
 }
 
@@ -358,6 +359,7 @@ async function waitForDKGSecondRoundCompletion(
 			id: dwalletID,
 			options: {
 				showContent: true,
+
 			},
 		});
 		if (isMoveObject(dwallet?.data?.content)) {
@@ -417,3 +419,16 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	return innerSystemState.data.content.fields.value.fields.dwallet_network_decryption_key.fields
 		.dwallet_network_decryption_key_id;
 }
+
+// public fun accept_encrypted_user_share(
+// 	self: &mut DWallet2PcMpcSecp256K1,
+// 	dwallet_id: ID,
+// 	encrypted_user_secret_key_share_id: ID,
+// 	user_output_signature: vector<u8>,
+// ) {
+
+export async function acceptEncryptedUserShare(
+	conf: Config,
+	dwalletID: string,
+
+)

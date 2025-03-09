@@ -1124,6 +1124,7 @@ public(package) fun respond_dkg_second_round_output(
                 event::emit(CompletedDKGSecondRoundEvent {
                     dwallet_id,
                     public_output,
+                    encrypted_user_secret_key_share_id
                 });
                 DWalletState::Active {
                     public_output
