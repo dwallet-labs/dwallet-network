@@ -127,6 +127,10 @@ export function isMoveObject(obj: any): obj is MoveObject {
 	return obj?.fields !== undefined;
 }
 
+export function getEncryptionKeyMoveType(ikaSystemPackageID: string): string {
+	return `${ikaSystemPackageID}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
+}
+
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (
 		obj?.fields?.value?.fields?.dwallet_network_decryption_key !== undefined &&

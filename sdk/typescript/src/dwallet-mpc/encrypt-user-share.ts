@@ -1,14 +1,15 @@
-import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
+import {
+	encrypt_secret_share,
+	generate_secp_cg_keypair_from_seed,
+} from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs, toHex } from '@mysten/bcs';
+import type { PublicKey } from '@mysten/sui/cryptography';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config } from './globals.js';
-import {
-	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
-	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
-	fetchObjectWithType,
-	getDWalletSecpState,
-} from './globals.js';
+
+
+import { Config, DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME, DWALLET_ECDSAK1_MOVE_MODULE_NAME, encryptionKeyMoveType, fetchObjectWithType, getDWalletSecpState, getEncryptionKeyMoveType, getObjectWithType } from './globals.js';
+
 
 /**
  * A class groups key pair.
@@ -54,12 +55,10 @@ export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<Class
 		conf,
 		conf.encryptedSecretShareSigningKeypair.toSuiAddress(),
 	);
-	const encryptionKeyMoveType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
-
 	if (activeEncryptionKeyObjID) {
 		const activeEncryptionKeyObj = await fetchObjectWithType<EncryptionKey>(
 			conf,
-			encryptionKeyMoveType,
+			getEncryptionKeyMoveType(conf.ikaConfig.ika_system_package_id),
 			isEncryptionKey,
 			activeEncryptionKeyObjID,
 		);
@@ -185,4 +184,69 @@ async function registerEncryptionKey(
 
 function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent {
 	return 'encryption_key_id' in obj && 'signer_address' in obj;
+}
+
+/**
+ * Encrypts the given dWallet secret user key share for a given destination public key.
+ * This is needed to ensure that the destination entity can
+ * later verify and decrypt the encrypted dWallet secret key share.
+ *
+ * The function ensures that the destination public key has an active encryption key and
+ * verifies its authenticity by checking its signature against the public key.
+ * If the encryption key is valid,
+ * the function encrypts the dWallet secret key share and returns the
+ * encrypted key share along with a proof of encryption.
+ *
+ * @param sourceKeyPair - The key pair that currently owns the sourceDwallet that will
+ * be encrypted for the destination.
+ * @param destSuiPublicKey - The public key of the destination entity, used to encrypt the secret user key share.
+ * @param sourceDwallet - The dWallet containing the secret user key share to encrypt.
+ * @param activeEncryptionKeysTableID - The ID of the table holding the active encryption keys.
+ * @returns An object containing the encrypted user key share and proof of encryption,
+ *          along with the destination encryption key object ID.
+ * @throws Will throw an error if the destination public key does not have an active encryption key
+ *         or if the encryption key is not valid (not signed by the destination's public key).
+ */
+export async function encryptUserShareForPublicKey(
+	sourceConf: Config,
+	destSuiPublicKey: PublicKey,
+	dWalletSecretShare: Uint8Array,
+) {
+	const destActiveEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
+		sourceConf,
+		destSuiPublicKey.toSuiAddress(),
+	);
+	if (!destActiveEncryptionKeyObjID) {
+		throw new Error('the dest key pair does not have an active encryption key');
+	}
+	const destActiveEncryptionKeyObj = await getObjectWithType<EncryptionKey>(
+		sourceConf,
+		destActiveEncryptionKeyObjID,
+		isEncryptionKey,
+	);
+
+	// Make sure that the active signed encryption key is
+	// valid by verifying that the destination public key has signed it.
+	const isValidDestEncryptionKey = await destSuiPublicKey.verify(
+		new Uint8Array(destActiveEncryptionKeyObj.encryption_key),
+		new Uint8Array(destActiveEncryptionKeyObj.encryption_key_signature),
+	);
+	if (!isValidDestEncryptionKey) {
+		throw new Error(
+			'the destination encryption key has not been signed by the destination public key',
+		);
+	}
+
+	// Encrypt the centralized secret key share with the destination active encryption key.
+	const encryptedUserKeyShareAndProofOfEncryption = encrypt_secret_share(
+		// Centralized Secret Key Share.
+		dWalletSecretShare,
+		// Encryption Key.
+		new Uint8Array(destActiveEncryptionKeyObj.encryption_key),
+	);
+
+	return {
+		encryptedUserKeyShareAndProofOfEncryption,
+		destActiveEncryptionKeyObjID,
+	};
 }
