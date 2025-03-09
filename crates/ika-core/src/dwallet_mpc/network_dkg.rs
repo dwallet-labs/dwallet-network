@@ -5,7 +5,7 @@
 //! It provides inner mutability for the [`EpochStore`]
 //! to update the network decryption key shares synchronously.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::mpc_events::{StartNetworkDKGEvent, ValidatorDataForNetworkDKG};
+use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::{advance_and_serialize, authority_name_to_party_id};
 use class_groups::dkg::{
@@ -563,20 +563,6 @@ fn dkg_ristretto_session_info(
             None,
         ),
     }
-}
-
-fn encryption_keys_and_proofs_from_validator_data(
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
-) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
-    encryption_keys_and_proofs
-        .iter()
-        .map(|(party_id, data)| {
-            Ok((
-                party_id.clone(),
-                bcs::from_bytes(&data.cg_pubkey_and_proof)?,
-            ))
-        })
-        .collect::<DwalletMPCResult<HashMap<_, _>>>()
 }
 
 fn generate_secp256k1_dkg_party_public_input(

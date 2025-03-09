@@ -9,7 +9,6 @@ use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
     ComputationUpdate, CryptographicComputationsOrchestrator,
 };
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
-use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
@@ -86,7 +85,8 @@ pub struct DWalletMPCManager {
     max_active_mpc_sessions: usize,
     epoch_id: EpochId,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-    pub(crate) validators_data_for_network_dkg: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
+    pub(crate) validators_class_groups_public_keys_and_proofs:
+        HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     pub(crate) cryptographic_computations_orchestrator: CryptographicComputationsOrchestrator,
     /// A struct for managing malicious actors in MPC protocols.
     /// This struct maintains a record of malicious actors reported by validators.
@@ -149,8 +149,9 @@ impl DWalletMPCManager {
             max_active_mpc_sessions: 200, //todo (yael): Ask sadika what about this . node_config.max_active_dwallet_mpc_sessions,
             node_config,
             weighted_threshold_access_structure,
-            validators_data_for_network_dkg: epoch_store
-                .get_validators_class_groups_public_keys_and_proofs(),
+            validators_class_groups_public_keys_and_proofs: epoch_store
+                .get_validators_class_groups_public_keys_and_proofs()
+                .map_err(|e| DwalletMPCError::MPCManagerError(e.to_string()))?,
             cryptographic_computations_orchestrator: mpc_computations_orchestrator,
             malicious_handler: MaliciousHandler::new(quorum_threshold, weighted_parties),
         })

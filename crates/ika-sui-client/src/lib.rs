@@ -15,9 +15,7 @@ use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::system_inner_v1::SystemInnerV1;
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
-use ika_types::sui::{
-    ClassGroupsPublicKeyAndProof, System, SystemInner, SystemInnerTrait, Validator,
-};
+use ika_types::sui::{System, SystemInner, SystemInnerTrait, Validator};
 use move_binary_format::binary_config::BinaryConfig;
 use move_core_types::account_address::AccountAddress;
 use serde::de::DeserializeOwned;
@@ -287,6 +285,7 @@ where
                             class_groups_public_key_and_proof: bcs::to_bytes(
                                 &validators_class_groups_public_key_and_proof
                                     .get(&validator.validator_id)
+                                    // Okay to unwrap because we can't start the chain without the system state data
                                     .unwrap()
                                     .clone(),
                             )
@@ -629,10 +628,10 @@ impl SuiClientInner for SuiSdkClient {
                 .map(|v| bcs::from_bytes::<SingleEncryptionKeyAndProof>(&v))
                 .collect();
 
-            let b = validator_class_groups_public_key_and_proof?;
             class_groups_public_keys_and_proofs.insert(
                 validator.validator_id,
-                b.try_into()
+                validator_class_groups_public_key_and_proof?
+                    .try_into()
                     .map_err(|_| Error::DataError("Failed to convert Vec to array".to_string()))?,
             );
         }

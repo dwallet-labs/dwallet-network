@@ -7,13 +7,13 @@ use class_groups::{
     DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
 };
 use crypto_bigint::Uint;
+use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::encoding::{Base64, Encoding};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
 
 pub type ClassGroupsProof = KnowledgeOfDiscreteLogUCProof;
-pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
 pub type ClassGroupsDecryptionKey = [Uint<{ CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS }>; MAX_PRIMES];
 pub type ClassGroupsEncryptionKeyAndProof = [(
     CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,

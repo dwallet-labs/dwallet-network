@@ -7,7 +7,7 @@ use crate::crypto::{
     NetworkPublicKey,
 };
 use crate::error::{IkaError, IkaResult};
-use crate::sui::ClassGroupsPublicKeyAndProof;
+use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::traits::KeyPair;
 pub use ika_protocol_config::ProtocolVersion;
 use once_cell::sync::OnceCell;
@@ -384,7 +384,7 @@ pub struct NetworkMetadata {
     pub network_address: Multiaddr,
     pub consensus_address: Multiaddr,
     pub network_public_key: Option<NetworkPublicKey>,
-    pub class_groups_public_key_and_proof: Vec<u8>,
+    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
 }
 
 #[derive(Clone, Debug)]

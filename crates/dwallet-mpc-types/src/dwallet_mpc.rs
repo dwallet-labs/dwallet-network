@@ -154,3 +154,5 @@ impl NetworkDecryptionKeyShares {
         }
     }
 }
+
+pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;

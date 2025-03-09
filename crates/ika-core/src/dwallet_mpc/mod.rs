@@ -491,7 +491,9 @@ pub(crate) fn session_input_from_event(
                 bcs::from_bytes(&event.contents)?;
             Ok((
                 network_dkg::network_dkg_public_input(
-                    dwallet_mpc_manager.validators_data_for_network_dkg.clone(),
+                    dwallet_mpc_manager
+                        .validators_class_groups_public_keys_and_proofs
+                        .clone(),
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                 )?,
                 Some(bcs::to_bytes(

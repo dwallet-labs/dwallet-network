@@ -661,20 +661,16 @@ impl AuthorityPerEpochStore {
 
     pub(crate) fn get_validators_class_groups_public_keys_and_proofs(
         &self,
-    ) -> HashMap<PartyID, ClassGroupsEncryptionKeyAndProof> {
+    ) -> IkaResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
         let mut validators_class_groups_public_keys_and_proofs = HashMap::new();
         for (name, _) in self.committee().voting_rights.iter() {
-            let party_id = authority_name_to_party_id(name, &self).unwrap();
-            let public_key = bcs::from_bytes(
-                &self
-                    .committee()
-                    .class_groups_public_key_and_proof(name)
-                    .unwrap(),
-            )
-            .unwrap();
+            let party_id = authority_name_to_party_id(name, &self)?;
+            let public_key =
+                bcs::from_bytes(&self.committee().class_groups_public_key_and_proof(name)?)
+                    .map_err(|e| DwalletMPCError::BcsError(e))?;
             validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
         }
-        validators_class_groups_public_keys_and_proofs
+        Ok(validators_class_groups_public_keys_and_proofs)
     }
 
     /// Saves a DWallet MPC message in the `round messages`.

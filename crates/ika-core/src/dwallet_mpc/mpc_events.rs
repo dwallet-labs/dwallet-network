@@ -120,33 +120,6 @@ pub struct LockedNextEpochCommitteeEvent {
     epoch: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-struct ValidatorDataForDWalletSecretReShare {
-    cg_pubkey_and_proof: Vec<u8>,
-    protocol_pubkey_bytes: Vec<u8>,
-}
-
-/// The data we need to know about a validator to run a re-share/network-dkg flow with it.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct ValidatorDataForNetworkDKG {
-    /// The class groups encryption key of the validator,
-    /// used to encrypt the validator's secret share to it.
-    pub(crate) cg_pubkey_and_proof: Vec<u8>,
-    /// The Ika public key of the validator, used as an identifier for the validator.
-    pub(crate) protocol_pubkey_bytes: Vec<u8>,
-}
-
-impl DWalletMPCEventTrait for ValidatorDataForNetworkDKG {
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_package_id,
-            name: VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME.to_owned(),
-            module: VALIDATOR_SET_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
 impl DWalletMPCEventTrait for LockedNextEpochCommitteeEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`LockedNextEpochCommitteeEvent`] events from the chain and trigger the
