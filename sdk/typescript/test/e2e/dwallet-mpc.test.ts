@@ -8,11 +8,12 @@ import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
-import { createDWallet, mockCreateDWallet, getNetworkDecryptionKeyPublicOutput } from '../../src/dwallet-mpc/dkg';
+import { createDWallet, mockCreateDWallet } from '../../src/dwallet-mpc/dkg';
 import {
 	checkpointCreationTime,
 	Config,
 	delay,
+	getNetworkDecryptionKeyPublicOutput,
 	mockedProtocolPublicParameters,
 	MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';

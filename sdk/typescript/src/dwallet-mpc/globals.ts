@@ -4,8 +4,8 @@ import { Buffer } from 'buffer';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
-export const DWALLET_ECDSAK1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
-export const DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1_inner';
+export const DWALLET_ECDSA_K1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
+export const DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1_inner';
 export const DWALLET_NETWORK_VERSION = 0;
 
 export const SUI_PACKAGE_ID = '0x2';
@@ -276,4 +276,46 @@ interface ActiveDWallet {
 
 export function isActiveDWallet(obj: any): obj is ActiveDWallet {
 	return obj?.state?.fields?.public_output !== undefined;
+}
+
+export async function getNetworkDecryptionKeyPublicOutput(
+	c: Config,
+	networkDecryptionKeyId: string | null | undefined,
+): Promise<Uint8Array | null> {
+	if (networkDecryptionKeyId === null || networkDecryptionKeyId === undefined) {
+		networkDecryptionKeyId = await getNetworkDecryptionKeyID(c);
+	}
+	const networkDecryptionKey = await c.client.getObject({
+		id: networkDecryptionKeyId,
+		options: { showContent: true },
+	});
+
+	if (!networkDecryptionKey) {
+		return null;
+	}
+
+	if (!isDWalletNetworkDecryptionKey(networkDecryptionKey?.data?.content)) {
+		throw new Error('Invalid network decryption key object');
+	}
+
+	return networkDecryptionKey.data.content?.fields?.public_output;
+}
+
+export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
+	const dynamicFields = await c.client.getDynamicFields({
+		parentId: c.ikaConfig.ika_system_obj_id,
+	});
+	const innerSystemState = await c.client.getDynamicFieldObject({
+		parentId: c.ikaConfig.ika_system_obj_id,
+		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
+	});
+	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
+		throw new Error('Invalid inner system state');
+	}
+
+	const network_decryption_keys =
+		innerSystemState.data.content.fields.value.fields
+			.dwallet_2pc_mpc_secp256k1_network_decryption_keys;
+	return network_decryption_keys[network_decryption_keys.length - 1]?.fields
+		?.dwallet_network_decryption_key_id;
 }

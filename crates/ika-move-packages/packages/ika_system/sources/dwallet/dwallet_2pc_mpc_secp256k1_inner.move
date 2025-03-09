@@ -1961,6 +1961,7 @@ fun process_checkpoint_message(
         timestamp_ms,
     });
 
+    // todo(#715): Implement checkpoint message processing with Enum.
     let messages_len = bcs_body.peel_vec_length();
     let mut i = 0;
     let mut response_session_count = 0;

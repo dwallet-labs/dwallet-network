@@ -5,8 +5,8 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import {
 	delay,
-	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
-	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
+	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	getDWalletSecpState,
 	SUI_PACKAGE_ID,
 } from './globals.js';
@@ -32,7 +32,7 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 	const dWalletStateData = await getDWalletSecpState(conf);
 
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_ecdsa_presign`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_ecdsa_presign`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -64,7 +64,7 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 		throw new Error('invalid start session event');
 	}
 
-	const completedPresignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::CompletedECDSAPresignEvent`;
+	const completedPresignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSAPresignEvent`;
 
 	return await fetchCompletedEvent(
 		conf,
@@ -143,7 +143,7 @@ export async function mockCreatePresign(
 
 	const firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockPresign));
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::mock_create_presign`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::mock_create_presign`,
 		arguments: [stateArg, firstRoundOutputArg, tx.pure.id(dwalletID)],
 	});
 	const result = await conf.client.signAndExecuteTransaction({

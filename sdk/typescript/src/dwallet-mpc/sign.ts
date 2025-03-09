@@ -3,8 +3,8 @@ import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
 import {
-	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
-	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
+	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	fetchCompletedEvent,
 	getDWalletSecpState,
 	getObjectWithType,
@@ -62,7 +62,7 @@ export async function sign(
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
 	const messageApproval = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::approve_message`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::approve_message`,
 		arguments: [
 			tx.object(dwalletCapID),
 			tx.pure(bcs.u8().serialize(hash.valueOf())),
@@ -76,7 +76,7 @@ export async function sign(
 	});
 
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_ecdsa_sign`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_ecdsa_sign`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -108,7 +108,7 @@ export async function sign(
 	if (!isStartSessionEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
-	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::CompletedECDSASignEvent`;
+	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSASignEvent`;
 	return await fetchCompletedEvent(
 		conf,
 		startSessionEvent.session_id,

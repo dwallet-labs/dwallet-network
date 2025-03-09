@@ -165,8 +165,8 @@ pub enum ConsensusCertificateResult {
     Ignored,
     /// An executable transaction (can be a user tx or a system tx)
     IkaTransaction(MessageKind),
-
-    IkaLargeTransaction(Vec<MessageKind>),
+    /// An executable transaction used for large output (e.g., network DKG).
+    IkaBulkTransaction(Vec<MessageKind>),
     /// A message was processed which updates randomness state.
     RandomnessConsensusMessage,
     /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
@@ -1637,7 +1637,9 @@ impl AuthorityPerEpochStore {
                     notifications.push(key.clone());
                     verified_certificates.push_back(cert);
                 }
-                ConsensusCertificateResult::IkaLargeTransaction(certs) => {
+                // This is a special transaction needed for NetworkDKG to bypass TX
+                // size limits.
+                ConsensusCertificateResult::IkaBulkTransaction(certs) => {
                     notifications.push(key.clone());
                     certs
                         .into_iter()
@@ -2050,7 +2052,7 @@ impl AuthorityPerEpochStore {
         ConsensusCertificateResult::IkaTransaction(system_transaction.clone())
     }
 
-    fn process_consensus_system_large_transaction(
+    fn process_consensus_system_bulk_transaction(
         &self,
         system_transaction: &Vec<MessageKind>,
     ) -> ConsensusCertificateResult {
@@ -2062,7 +2064,7 @@ impl AuthorityPerEpochStore {
             return ConsensusCertificateResult::IgnoredSystem;
         }
 
-        ConsensusCertificateResult::IkaLargeTransaction(system_transaction.clone())
+        ConsensusCertificateResult::IkaBulkTransaction(system_transaction.clone())
     }
 
     fn process_dwallet_transaction(
@@ -2166,6 +2168,8 @@ impl AuthorityPerEpochStore {
                             bcs::to_bytes(&key.current_epoch_encryptions_of_shares_per_crt_prime)
                                 .map_err(|e| DwalletMPCError::BcsError(e))?;
 
+                        // Break down the key to slices because of chain transaction size limits.
+                        // Limit 16 KB per Tx `pure` argument.
                         let mut slices = Vec::new();
                         let public_chunks = public_output.chunks(5 * 1024).collect_vec();
                         let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
@@ -2188,7 +2192,7 @@ impl AuthorityPerEpochStore {
                             .into_iter()
                             .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
                             .collect();
-                        Ok(self.process_consensus_system_large_transaction(&messages))
+                        Ok(self.process_consensus_system_bulk_transaction(&messages))
                     }
                     DWalletMPCNetworkKeyScheme::Ristretto => {
                         Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)

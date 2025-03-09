@@ -4,8 +4,8 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { Config } from './globals.js';
 import {
-	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
-	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
+	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	fetchObjectWithType,
 	getDWalletSecpState,
 } from './globals.js';
@@ -54,7 +54,7 @@ export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<Class
 		conf,
 		conf.encryptedSecretShareSigningKeypair.toSuiAddress(),
 	);
-	const encryptionKeyMoveType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
+	const encryptionKeyMoveType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
 
 	if (activeEncryptionKeyObjID) {
 		const activeEncryptionKeyObj = await fetchObjectWithType<EncryptionKey>(
@@ -101,7 +101,7 @@ async function getActiveEncryptionKeyObjID(conf: Config, address: string): Promi
 	const tx = new Transaction();
 	const dwalletState = await getDWalletSecpState(conf);
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::get_active_encryption_key`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::get_active_encryption_key`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletState.object_id,
@@ -151,7 +151,7 @@ async function registerEncryptionKey(
 
 	const dwalletState = await getDWalletSecpState(conf);
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::register_encryption_key`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::register_encryption_key`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletState.object_id,

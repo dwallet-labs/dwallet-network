@@ -152,15 +152,6 @@ pub fn create_dkg_output(
     // The secret (private) key share returned from this function should never be sent,
     // and should always be kept private.
     let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
-    let public_keys = bcs::to_bytes(&DWalletPublicKeys {
-        centralized_public_share: bcs::to_bytes(&round_result.public_output.public_key_share)?,
-        decentralized_public_share: bcs::to_bytes(
-            &round_result
-                .public_output
-                .decentralized_party_public_key_share,
-        )?,
-        public_key: bcs::to_bytes(&round_result.public_output.public_key)?,
-    })?;
     Ok(CentralizedDKGWasmResult {
         public_output,
         public_key_share_and_proof,

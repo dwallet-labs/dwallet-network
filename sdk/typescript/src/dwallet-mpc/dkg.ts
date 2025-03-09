@@ -12,17 +12,15 @@ import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import {
 	checkpointCreationTime,
 	delay,
-	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
-	DWALLET_NETWORK_VERSION,
+	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
 	getInitialSharedVersion,
+	getNetworkDecryptionKeyID,
 	getObjectWithType,
 	isActiveDWallet,
 	isAddressObjectOwner,
-	isDWalletNetworkDecryptionKey,
 	isDWalletCap,
-	isIKASystemStateInner,
 	isMoveObject,
 	MPCKeyScheme,
 	SUI_PACKAGE_ID,
@@ -123,58 +121,6 @@ export async function launchDKGSecondRound(
 /**
  * Creates a valid mock output of the first DKG blockchain round.
  */
-export async function createDKGFirstRoundOutputMock(
-	conf: Config,
-	mockOutput: Uint8Array,
-): Promise<DKGFirstRoundOutputResult> {
-	const tx = new Transaction();
-	const dwalletStateObjData = await getDWalletSecpState(conf);
-	const stateArg = tx.sharedObjectRef({
-		objectId: dwalletStateObjData.object_id,
-		initialSharedVersion: dwalletStateObjData.initial_shared_version,
-		mutable: true,
-	});
-	const firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockOutput));
-	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(conf);
-	const networkDecryptionKeyIDArg = tx.pure.id(networkDecryptionKeyID);
-	const dwalletCap = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::create_first_round_dwallet_mock`,
-		arguments: [stateArg, firstRoundOutputArg, networkDecryptionKeyIDArg],
-	});
-	tx.transferObjects([dwalletCap], conf.suiClientKeypair.toSuiAddress());
-	const result = await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-			showEvents: true,
-		},
-	});
-	const createdDWalletCap = result?.effects?.created?.find(
-		(obj) =>
-			isAddressObjectOwner(obj.owner) &&
-			obj.owner.AddressOwner === conf.suiClientKeypair.toSuiAddress(),
-	);
-	if (!dwalletCap || createdDWalletCap === undefined) {
-		throw new Error('Unable to create the DWallet cap');
-	}
-	await delay(checkpointCreationTime);
-	const dwalletCapObj = await getObjectWithType(
-		conf,
-		createdDWalletCap.reference.objectId,
-		isDWalletCap,
-	);
-	return {
-		dwalletCapID: createdDWalletCap.reference.objectId,
-		dwalletID: dwalletCapObj.dwallet_id,
-		sessionID: '',
-		output: mockOutput,
-	};
-}
-
-/**
- * Creates a valid mock output of the first DKG blockchain round.
- */
 export async function mockCreateDWallet(
 	conf: Config,
 	mockOutput: Uint8Array,
@@ -190,7 +136,7 @@ export async function mockCreateDWallet(
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(conf);
 	const networkDecryptionKeyIDArg = tx.pure.id(networkDecryptionKeyID);
 	const dwalletCap = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::mock_create_dwallet`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::mock_create_dwallet`,
 		arguments: [stateArg, firstRoundOutputArg, networkDecryptionKeyIDArg],
 	});
 	tx.transferObjects([dwalletCap], conf.suiClientKeypair.toSuiAddress());
@@ -260,7 +206,7 @@ export async function dkgSecondRoundMoveCall(
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dwallet_dkg_second_round`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_dwallet_dkg_second_round`,
 		arguments: [
 			dwalletStateArg,
 			dwalletCapArg,
@@ -314,7 +260,7 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(c);
 	const dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(c);
 	const dwalletCap = tx.moveCall({
-		target: `${c.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::request_dwallet_dkg_first_round`,
+		target: `${c.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_dwallet_dkg_first_round`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletSecp256k1ID,
@@ -413,46 +359,4 @@ async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Prom
 			conf.timeout / (60 * 1000)
 		} minutes (${seconds} seconds passed).`,
 	);
-}
-
-async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
-	const dynamicFields = await c.client.getDynamicFields({
-		parentId: c.ikaConfig.ika_system_obj_id,
-	});
-	const innerSystemState = await c.client.getDynamicFieldObject({
-		parentId: c.ikaConfig.ika_system_obj_id,
-		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
-	});
-	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
-		throw new Error('Invalid inner system state');
-	}
-
-	const network_decryption_keys =
-		innerSystemState.data.content.fields.value.fields
-			.dwallet_2pc_mpc_secp256k1_network_decryption_keys;
-	return network_decryption_keys[network_decryption_keys.length - 1]?.fields
-		?.dwallet_network_decryption_key_id;
-}
-
-export async function getNetworkDecryptionKeyPublicOutput(
-	c: Config,
-	networkDecryptionKeyId: string | null | undefined,
-): Promise<Uint8Array | null> {
-	if (networkDecryptionKeyId === null || networkDecryptionKeyId === undefined) {
-		networkDecryptionKeyId = await getNetworkDecryptionKeyID(c);
-	}
-	const networkDecryptionKey = await c.client.getObject({
-		id: networkDecryptionKeyId,
-		options: { showContent: true },
-	});
-
-	if (!networkDecryptionKey) {
-		return null;
-	}
-
-	if (!isDWalletNetworkDecryptionKey(networkDecryptionKey?.data?.content)) {
-		throw new Error('Invalid network decryption key object');
-	}
-
-	return networkDecryptionKey.data.content?.fields?.public_output;
 }
