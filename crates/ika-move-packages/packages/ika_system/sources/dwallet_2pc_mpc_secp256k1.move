@@ -153,7 +153,7 @@ public fun mock_create_dwallet(self: &mut DWalletCoordinator, output: vector<u8>
     self.inner_mut().mock_create_dwallet(output, dwallet_network_decryption_key_id, ctx)
 }
 
-public fun mock_create_presign(self: &mut DWallet2PcMpcSecp256K1, presign: vector<u8>, dwallet_id: ID, ctx: &mut TxContext) {
+public fun mock_create_presign(self: &mut DWalletCoordinator, presign: vector<u8>, dwallet_id: ID, ctx: &mut TxContext) {
     self.inner_mut().respond_ecdsa_presign(dwallet_id, dwallet_id, presign, ctx);
 }
 
