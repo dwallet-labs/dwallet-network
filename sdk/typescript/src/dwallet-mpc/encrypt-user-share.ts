@@ -6,10 +6,14 @@ import { bcs, toHex } from '@mysten/bcs';
 import type { PublicKey } from '@mysten/sui/cryptography';
 import { Transaction } from '@mysten/sui/transactions';
 
-
-
-import { Config, DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME, DWALLET_ECDSAK1_MOVE_MODULE_NAME, encryptionKeyMoveType, fetchObjectWithType, getDWalletSecpState, getEncryptionKeyMoveType, getObjectWithType } from './globals.js';
-
+import type { Config } from './globals.js';
+import {
+	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	fetchObjectWithType,
+	getDWalletSecpState,
+	getEncryptionKeyMoveType,
+	getObjectWithType,
+} from './globals.js';
 
 /**
  * A class groups key pair.

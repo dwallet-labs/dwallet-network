@@ -44,13 +44,13 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('encrypts a secret share for a given public key and transfers it', async () => {
-		const sourceDwallet = await mockCreateDWallet(
+		// @ts-ignore
+		const _sourceDwallet = await mockCreateDWallet(
 			sourceConf,
 			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
 		);
 		// Create Destination Class Groups Keypair & Store it on the chain.
 		await getOrCreateClassGroupsKeyPair(destConf);
 		await delay(checkpointCreationTime);
-
 	});
 });
