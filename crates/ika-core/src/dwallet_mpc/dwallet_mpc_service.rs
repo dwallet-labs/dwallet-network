@@ -13,6 +13,7 @@ use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::SystemTime;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::EpochId;
 use sui_types::event::EventID;
@@ -55,6 +56,7 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
+        let start_spawn = SystemTime::now();
         loop {
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
@@ -63,8 +65,13 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MS)).await;
-            if let Err(e) = self.read_events().await {
-                error!("failed to handle dWallet MPC events: {}", e);
+            let self_auth_index = self.epoch_store.committee().authority_index(&self.epoch_store.name).unwrap();
+            let now = SystemTime::now();
+            // check if a minute passed
+            if !(now.duration_since(start_spawn).unwrap().as_secs() < 60 && self_auth_index < 2) {
+                if let Err(e) = self.read_events().await {
+                    error!("failed to handle dWallet MPC events: {}", e);
+                }
             }
             let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
             let Ok(tables) = self.epoch_store.tables() else {
