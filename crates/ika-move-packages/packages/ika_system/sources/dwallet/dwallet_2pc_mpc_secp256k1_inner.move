@@ -1095,7 +1095,7 @@ public(package) fun respond_dkg_second_round_output(
     public_output: vector<u8>,
     encrypted_centralized_secret_share_and_proof: vector<u8>,
     encryption_key_address: address,
-    session_id,
+    session_id: ID,
     rejected: bool,
     ctx: &mut TxContext
 ) {
