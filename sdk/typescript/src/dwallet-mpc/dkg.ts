@@ -450,7 +450,7 @@ export async function acceptEncryptedUserShare(
 			userOutputSignatureArg,
 		],
 	});
-	await conf.client.signAndExecuteTransaction({
+	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
 		transaction: tx,
 		options: {
@@ -458,4 +458,7 @@ export async function acceptEncryptedUserShare(
 			showEvents: true,
 		},
 	});
+	if (result.events?.length === 0) {
+		throw new Error('failed to accept encrypted user share');
+	}
 }
