@@ -482,9 +482,7 @@ impl DWalletMPCManager {
             else {
                 return;
             };
-            let Some(live_session) = self
-                .mpc_sessions
-                .get(&ready_to_advance_session.session_id)
+            let Some(live_session) = self.mpc_sessions.get(&ready_to_advance_session.session_id)
             else {
                 return;
             };
@@ -495,7 +493,7 @@ impl DWalletMPCManager {
                 self.cryptographic_computations_orchestrator
                     .pending_computation_map
                     .insert(oldest_computation_metadata, ready_to_advance_session);
-                return;
+                continue;
             }
             ready_to_advance_session.event_driven_data = live_session.event_driven_data.clone();
             if let Err(err) = self.spawn_session(&ready_to_advance_session) {

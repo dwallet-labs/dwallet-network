@@ -45,6 +45,7 @@ pub(crate) struct ReadyToAdvanceCheckResult {
     pub(crate) malicious_parties: Vec<PartyID>,
 }
 
+/// DWallet MPC session data that is being driven by the event that started this session.
 #[derive(Clone)]
 pub struct EventDrivenData {
     pub private_input: MPCPrivateInput,
