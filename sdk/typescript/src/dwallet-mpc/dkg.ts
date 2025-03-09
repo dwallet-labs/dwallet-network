@@ -420,7 +420,7 @@ async function acceptEncryptedUserShare(
 	completedDKGSecondRoundEvent: CompletedDKGSecondRoundEvent,
 ): Promise<void> {
 	const signedPubkeys = await conf.encryptedSecretShareSigningKeypair.sign(
-		completedDKGSecondRoundEvent.public_output,
+		new Uint8Array(completedDKGSecondRoundEvent.public_output),
 	);
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
