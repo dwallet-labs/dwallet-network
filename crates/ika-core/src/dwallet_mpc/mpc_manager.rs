@@ -356,6 +356,10 @@ impl DWalletMPCManager {
             },
         });
         if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
+            warn!(
+                "Received an event for an existing session with session_id: {:?}",
+                session_info.session_id
+            );
             session.event_driven_data = event_driven_data;
         } else {
             self.push_new_mpc_session(&session_info.session_id, event_driven_data)?;
@@ -471,23 +475,30 @@ impl DWalletMPCManager {
             else {
                 return;
             };
-            let Some(session) = self
+            let Some(mut ready_to_advance_session) = self
                 .cryptographic_computations_orchestrator
                 .pending_computation_map
                 .remove(&oldest_computation_metadata)
             else {
                 return;
             };
-            if session.event_driven_data.is_none() {
+            let Some(live_session) = self
+                .mpc_sessions
+                .get(&ready_to_advance_session.session_id)
+            else {
+                return;
+            };
+            if live_session.event_driven_data.is_none() {
                 self.cryptographic_computations_orchestrator
                     .pending_for_computation_order
                     .push_back(oldest_computation_metadata.clone());
                 self.cryptographic_computations_orchestrator
                     .pending_computation_map
-                    .insert(oldest_computation_metadata, session);
+                    .insert(oldest_computation_metadata, ready_to_advance_session);
                 return;
             }
-            if let Err(err) = self.spawn_session(&session) {
+            ready_to_advance_session.event_driven_data = live_session.event_driven_data.clone();
+            if let Err(err) = self.spawn_session(&ready_to_advance_session) {
                 error!("failed to spawn session with err: {:?}", err);
             }
         }
