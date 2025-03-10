@@ -59,7 +59,7 @@ describe('Test dWallet MPC', () => {
 				'base64',
 			)}`,
 		);
-		console.log(`dWallet has been created successfully: ${dwallet}`);
+		console.log(`dWallet has been created successfully: ${dwallet.dwallet_id}`);
 	});
 
 	it('should mock create dwallet', async () => {
