@@ -183,7 +183,7 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 /// The [`advance_centralized_sign_party`] function is
 /// called by the client (the centralized party).
 pub fn advance_centralized_sign_party(
-    protocol_public_parameters: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
     key_scheme: u8,
     decentralized_party_dkg_public_output: Vec<u8>,
     centralized_party_secret_key_share: Vec<u8>,
@@ -210,7 +210,7 @@ pub fn advance_centralized_sign_party(
             centralized_public_output.clone(),
             presign,
             bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-                protocol_public_parameters.clone(),
+                network_decryption_key_public_output.clone(),
                 key_scheme,
             )?)?,
         ));

@@ -108,7 +108,7 @@ pub fn public_keys_from_dkg_output(dkg_output: Vec<u8>) -> Result<JsValue, JsErr
 
 #[wasm_bindgen]
 pub fn create_sign_centralized_output(
-    protocol_public_parameters: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
     key_scheme: u8,
     decentralized_party_dkg_public_output: Vec<u8>,
     centralized_party_dkg_secret_output: Vec<u8>,
@@ -117,7 +117,7 @@ pub fn create_sign_centralized_output(
     hash_type: u8,
 ) -> Result<JsValue, JsError> {
     let signed_message = advance_centralized_sign_party(
-        protocol_public_parameters,
+        network_decryption_key_public_output,
         key_scheme,
         decentralized_party_dkg_public_output,
         centralized_party_dkg_secret_output,

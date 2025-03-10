@@ -14,11 +14,11 @@ import {
 	Config,
 	delay,
 	getNetworkDecryptionKeyPublicOutput,
-	mockedProtocolPublicParameters,
+	mockedNetworkDecryptionKeyPublicOutput,
 	MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';
 import { mockCreatePresign, presign } from '../../src/dwallet-mpc/presign';
-import { sign } from '../../src/dwallet-mpc/sign';
+import { Hash, sign } from '../../src/dwallet-mpc/sign';
 import { dkgMocks, mockPresign } from './mocks';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -53,7 +53,7 @@ describe('Test dWallet MPC', () => {
 	it('should create a dWallet (DKG)', async () => {
 		let networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf, null);
 		if (!networkDecryptionKeyPublicOutput) {
-			networkDecryptionKeyPublicOutput = mockedProtocolPublicParameters;
+			networkDecryptionKeyPublicOutput = mockedNetworkDecryptionKeyPublicOutput;
 		}
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwallet}`);
@@ -65,10 +65,6 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should run presign', async () => {
-		let networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf, null);
-		if (!networkDecryptionKeyPublicOutput) {
-			networkDecryptionKeyPublicOutput = mockedProtocolPublicParameters;
-		}
 		const dwalletID = (await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64')))
 			.dwalletID;
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
@@ -105,7 +101,11 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should sign full flow', async () => {
-		const dwalletID = await createDWallet(conf, mockedProtocolPublicParameters);
+		let networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf, null);
+		if (!networkDecryptionKeyPublicOutput) {
+			networkDecryptionKeyPublicOutput = mockedNetworkDecryptionKeyPublicOutput;
+		}
+		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
 		const presignCompletion = await presign(conf, dwalletID.dwallet_id);
@@ -117,6 +117,8 @@ describe('Test dWallet MPC', () => {
 			dwalletID.dwallet_cap_id,
 			Buffer.from('hello world'),
 			dwalletID.secret_share,
+			Hash.KECCAK256,
+			networkDecryptionKeyPublicOutput,
 		);
 	});
 });
@@ -124,7 +126,7 @@ describe('Test dWallet MPC', () => {
 describe('Test dWallet MPC - offline', () => {
 	it('should run sign centralized part', () => {
 		const centralizedSignedMessage = create_sign_centralized_output(
-			mockedProtocolPublicParameters,
+			mockedNetworkDecryptionKeyPublicOutput,
 			MPCKeyScheme.Secp256k1,
 			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
 			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),

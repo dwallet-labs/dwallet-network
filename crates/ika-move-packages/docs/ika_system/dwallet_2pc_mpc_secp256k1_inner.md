@@ -4463,6 +4463,7 @@ the function will abort with this error.
         sequence_number,
         timestamp_ms,
     });
+    // todo(#715): Implement checkpoint message processing with Enum.
     <b>let</b> messages_len = bcs_body.peel_vec_length();
     <b>let</b> <b>mut</b> i = 0;
     <b>let</b> <b>mut</b> response_session_count = 0;

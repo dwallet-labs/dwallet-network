@@ -5,7 +5,7 @@ use thiserror::Error;
 
 // TODO (#650): Rename Move structs
 pub const DWALLET_MPC_EVENT_STRUCT_NAME: &IdentStr = ident_str!("DWalletEvent");
-pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
+pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1");
 pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
 /// There's a wrapper and inner struct to support Move upgradable contracts. Read this doc for further explanations:
 /// https://docs.sui.io/concepts/sui-move-concepts/packages/upgrade.

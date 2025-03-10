@@ -547,8 +547,12 @@ pub(super) fn network_dkg_session_info(
     key_scheme: DWalletMPCNetworkKeyScheme,
 ) -> DwalletMPCResult<SessionInfo> {
     match key_scheme {
-        DWalletMPCNetworkKeyScheme::Secp256k1 => Ok(network_dkg_secp256k1_session_info(deserialized_event)),
-        DWalletMPCNetworkKeyScheme::Ristretto => Ok(network_dkg_ristretto_session_info(deserialized_event)),
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            Ok(network_dkg_secp256k1_session_info(deserialized_event))
+        }
+        DWalletMPCNetworkKeyScheme::Ristretto => {
+            Ok(network_dkg_ristretto_session_info(deserialized_event))
+        }
     }
 }
 
