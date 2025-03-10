@@ -64,7 +64,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should run presign', async () => {
-		const dwalletID = (await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64')))
+		const dwalletID = (await mockCreateDWallet(conf, base64ToUint8Array(dkgMocks.dwalletOutput)))
 			.dwalletID;
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		const presignCompletion = await presign(conf, dwalletID);
@@ -123,7 +123,7 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
 }
 
 function base64ToUint8Array(base64: string): Uint8Array {
-	return new Uint8Array(Buffer.from(base64, 'base64'));
+	return Uint8Array.from(Buffer.from(base64, 'base64'));
 }
 
 describe('Test dWallet MPC - offline', () => {
