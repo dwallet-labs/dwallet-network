@@ -51,13 +51,9 @@ describe('Test dWallet MPC', () => {
 	it('should create a dWallet (DKG)', async () => {
 		const dwallet = await createDWallet(conf, mockedProtocolPublicParameters);
 		// log the output in base64 please
+		console.log(`dwallet output in base64: ${uint8ArrayToBase64(dwallet.dwallet_output)}`);
 		console.log(
-			`dwallet output in base64: ${Buffer.from(dwallet.dwallet_output).toString('base64')}`,
-		);
-		console.log(
-			`centralized secret key share in base64: ${Buffer.from(dwallet.secret_share).toString(
-				'base64',
-			)}`,
+			`centralized secret key share in base64: ${uint8ArrayToBase64(dwallet.secret_share)}`,
 		);
 		console.log(`dWallet has been created successfully: ${dwallet.dwallet_id}`);
 	});
@@ -120,6 +116,14 @@ describe('Test dWallet MPC', () => {
 	});
 });
 
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+	return Buffer.from(bytes).toString('base64');
+}
+
+function base64ToUint8Array(base64: string): Uint8Array {
+	return new Uint8Array(Buffer.from(base64, 'base64'));
+}
+
 describe('Test dWallet MPC - offline', () => {
 	it('should run sign centralized part', () => {
 		const centralizedSignedMessage = create_sign_centralized_output(
@@ -134,5 +138,15 @@ describe('Test dWallet MPC - offline', () => {
 		console.log(
 			`centralizedSignedMessage: ${Buffer.from(centralizedSignedMessage).toString('base64')}`,
 		);
+	});
+
+	it('should be chill', () => {
+		const originalArray = new Uint8Array([72, 101, 108, 108, 111]); // "Hello"
+		const base64Str = uint8ArrayToBase64(originalArray);
+		const decodedArray = base64ToUint8Array(base64Str);
+
+		console.log('Base64:', base64Str);
+		console.log('Decoded Uint8Array:', decodedArray);
+		console.log('Match:', originalArray.toString() === decodedArray.toString());
 	});
 });
