@@ -577,11 +577,13 @@ public struct ECDSAFutureSignRequestEvent has copy, drop {
 }
 
 public struct CompletedECDSAFutureSignEvent has copy, drop {
+    session_id: ID,
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
 }
 
 public struct RejectedECDSAFutureSignEvent has copy, drop {
+    session_id: ID,
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
 }
@@ -1725,6 +1727,7 @@ public(package) fun respond_ecdsa_future_sign(
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
     rejected: bool,
+    session_id: ID,
 ) {
     let partial_centralized_signed_message = self.ecdsa_partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
     assert!(partial_centralized_signed_message.dwallet_id == dwallet_id, EDWalletMismatch);
@@ -1732,12 +1735,14 @@ public(package) fun respond_ecdsa_future_sign(
         ECDSAPartialUserSignatureState::AwaitingNetworkVerification => {
             if(rejected) {
                 event::emit(RejectedECDSAFutureSignEvent {
+                    session_id,
                     dwallet_id,
                     partial_centralized_signed_message_id
                 });
                 ECDSAPartialUserSignatureState::NetworkVerificationRejected
             } else {
                 event::emit(CompletedECDSAFutureSignEvent {
+                    session_id,
                     dwallet_id,
                     partial_centralized_signed_message_id
                 });
@@ -2039,10 +2044,12 @@ fun process_checkpoint_message(
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
                 let rejected = bcs_body.peel_bool();
+                let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
                 self.respond_ecdsa_future_sign(
                     dwallet_id,
                     partial_centralized_signed_message_id,
                     rejected,
+                    session_id,
                 );
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 7) {
