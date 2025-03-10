@@ -55,7 +55,7 @@ pub enum MPCProtocolInitData {
     /// but we use it to start the verification process using the same events mechanism
     /// because the system does not support native functions.
     EncryptedShareVerification(StartEncryptedShareVerificationEvent),
-    PartialSignatureVerification(StartPartialSignaturesVerificationEvent<SignData>),
+    PartialSignatureVerification(StartPartialSignaturesVerificationEvent),
 }
 
 /// The session-specific state of the MPC session.
@@ -232,25 +232,24 @@ impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {
 
 /// Rust representation of the Move `StartPartialSignaturesVerificationEvent` Event.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct StartPartialSignaturesVerificationEvent<D> {
-    pub session_id: ObjectID,
-    pub messages: Vec<Vec<u8>>,
-    pub hashed_messages: Vec<Vec<u8>>,
+pub struct StartPartialSignaturesVerificationEvent {
     pub dwallet_id: ObjectID,
-    pub dwallet_decentralized_public_output: Vec<u8>,
-    pub dwallet_cap_id: ObjectID,
-    pub dwallet_mpc_network_decryption_key_version: u8,
-    pub signature_data: Vec<D>,
-    pub initiator: SuiAddress,
+    pub partial_centralized_signed_message_id: ObjectID,
+    pub message: Vec<u8>,
+    pub dkg_output: Vec<u8>,
+    pub presign: Vec<u8>,
+    pub hash_scheme: u8,
+    pub message_centralized_signature: Vec<u8>,
+    pub dwallet_mpc_network_key_id: ObjectID,
 }
 
-impl DWalletMPCEventTrait for StartPartialSignaturesVerificationEvent<SignData> {
+impl DWalletMPCEventTrait for StartPartialSignaturesVerificationEvent{
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_package_id,
-            name: ident_str!("StartPartialSignaturesVerificationEvent").to_owned(),
+            address: *packages_config.ika_system_package_id,
+            name: ident_str!("ECDSAFutureSignRequestEvent").to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![SignData::type_(packages_config).into()],
+            type_params: vec![],
         }
     }
 }

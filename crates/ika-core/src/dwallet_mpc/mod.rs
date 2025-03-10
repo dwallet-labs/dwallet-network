@@ -128,15 +128,15 @@ pub(crate) fn session_info_from_event(
             Ok(Some(sign_party_session_info(&deserialized_event)))
         }
         t if t
-            == &DWalletMPCSuiEvent::<StartPartialSignaturesVerificationEvent<SignData>>::type_(
+            == &DWalletMPCSuiEvent::<StartPartialSignaturesVerificationEvent>::type_(
                 packages_config,
             ) =>
         {
             let deserialized_event: DWalletMPCSuiEvent<
-                StartPartialSignaturesVerificationEvent<SignData>,
+                StartPartialSignaturesVerificationEvent,
             > = bcs::from_bytes(&event.contents)?;
             Ok(Some(get_verify_partial_signatures_session_info(
-                &deserialized_event.event_data,
+                &deserialized_event,
             )))
         }
         t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
@@ -323,12 +323,15 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 }
 
 fn get_verify_partial_signatures_session_info(
-    deserialized_event: &StartPartialSignaturesVerificationEvent<SignData>,
+    deserialized_event: &DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent>,
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: deserialized_event.initiator,
-        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
+        // TODO (#642): Remove the redundant initiating user address field
+        initiating_user_address: SuiAddress::from_bytes(
+            deserialized_event.session_id.into_bytes(),
+        ).unwrap(),
+        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.event_data.clone()),
     }
 }
 
@@ -555,20 +558,20 @@ pub(crate) fn session_input_from_event(
             Ok((vec![], None))
         }
         t if t
-            == &DWalletMPCSuiEvent::<StartPartialSignaturesVerificationEvent<SignData>>::type_(
+            == &DWalletMPCSuiEvent::<StartPartialSignaturesVerificationEvent>::type_(
                 packages_config,
             ) =>
         {
             let deserialized_event: DWalletMPCSuiEvent<
-                StartPartialSignaturesVerificationEvent<SignData>,
+                StartPartialSignaturesVerificationEvent,
             > = bcs::from_bytes(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
                 DWalletMPCNetworkKeyScheme::Secp256k1,
-                deserialized_event
-                    .event_data
-                    .dwallet_mpc_network_decryption_key_version,
+                network_key_version_from_key_id(
+                    &deserialized_event.event_data.dwallet_mpc_network_key_id,
+                ),
             )?;
             Ok((protocol_public_parameters, None))
         }

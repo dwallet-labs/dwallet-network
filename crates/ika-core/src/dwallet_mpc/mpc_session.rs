@@ -8,6 +8,10 @@ use itertools::Itertools;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
+use k256::ecdsa::hazmat::bits2field;
+use k256::elliptic_curve;
+use k256::U256;
+use k256::elliptic_curve::ops::Reduce;
 use tokio::runtime::Handle;
 use tracing::{error, warn};
 use twopc_mpc::sign::Protocol;
@@ -33,6 +37,9 @@ use ika_types::messages_dwallet_mpc::{
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
+use twopc_mpc::secp256k1;
+use sha3::digest::FixedOutput as Sha3FixedOutput;
+use sha3::Digest as Sha3Digest;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -349,20 +356,16 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
-                for (signature_data, hashed_message) in event_data
-                    .signature_data
-                    .iter()
-                    .zip(event_data.hashed_messages.iter())
-                {
-                    verify_partial_signature(
-                        hashed_message,
-                        &event_data.dwallet_decentralized_public_output,
-                        &signature_data.presign_output,
-                        &signature_data.message_centralized_signature,
-                        &bcs::from_bytes(&self.public_input)?,
-                        &signature_data.presign_id,
-                    )?;
-                }
+                let hashed_message = bcs::to_bytes(&Self::message_digest(&event_data.message, &event_data.hash_scheme.try_into().unwrap()).unwrap())?;
+                verify_partial_signature(
+                    &hashed_message,
+                    &event_data.dkg_output,
+                    &event_data.presign,
+                    &event_data.message_centralized_signature,
+                    &bcs::from_bytes(&self.public_input)?,
+                    &event_data.dwallet_mpc_network_key_id, // todo delete
+                )?;
+
                 Ok(AsynchronousRoundResult::Finalize {
                     public_output: vec![],
                     private_output: vec![],
@@ -370,6 +373,24 @@ impl DWalletMPCSession {
                 })
             }
         }
+    }
+
+    /// Computes the message digest of a given message using the specified hash function.
+    fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1::Scalar> {
+        let hash = match hash_type {
+            Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
+                &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
+            )
+                .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
+
+            Hash::SHA256 => {
+                bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
+                    .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
+            }
+        };
+        #[allow(clippy::useless_conversion)]
+        let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
+        Ok(U256::from(m).into())
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
@@ -496,5 +517,28 @@ impl DWalletMPCSession {
         Err(DwalletMPCError::TwoPCMPCError(
             "Decryption share not found".to_string(),
         ))
+    }
+}
+
+#[derive(Clone, Debug)]
+enum Hash {
+    KECCAK256 = 0,
+    SHA256 = 1,
+}
+
+
+
+impl TryFrom<u8> for Hash {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Hash::KECCAK256),
+            1 => Ok(Hash::SHA256),
+            _ => Err(anyhow::Error::msg(format!(
+                "invalid value for Hash enum: {}",
+                value
+            ))),
+        }
     }
 }

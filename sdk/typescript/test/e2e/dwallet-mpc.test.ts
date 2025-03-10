@@ -18,7 +18,11 @@ import {
 	MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';
 import { mockCreatePresign, presign } from '../../src/dwallet-mpc/presign';
-import { Hash, sign } from '../../src/dwallet-mpc/sign';
+import {
+	createUnverifiedECDSAPartialUserSignatureCap,
+	Hash,
+	sign,
+} from '../../src/dwallet-mpc/sign';
 import { dkgMocks, mockPresign } from './mocks';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -111,7 +115,7 @@ describe('Test dWallet MPC', () => {
 		const presignCompletion = await presign(conf, dwalletID.dwallet_id);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
-		await sign(
+		await createUnverifiedECDSAPartialUserSignatureCap(
 			conf,
 			presignCompletion.presign_id,
 			dwalletID.dwallet_cap_id,

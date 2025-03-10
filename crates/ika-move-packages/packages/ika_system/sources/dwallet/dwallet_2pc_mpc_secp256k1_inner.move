@@ -572,8 +572,10 @@ public struct ECDSAFutureSignRequestEvent has copy, drop {
     partial_centralized_signed_message_id: ID,
     message: vector<u8>,
     presign: vector<u8>,
+    dkg_output: vector<u8>,
     hash_scheme: u8,
     message_centralized_signature: vector<u8>,
+    dwallet_mpc_network_key_id: ID,
 }
 
 public struct CompletedECDSAFutureSignEvent has copy, drop {
@@ -1676,7 +1678,7 @@ public(package) fun request_ecdsa_future_sign(
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ): UnverifiedECDSAPartialUserSignatureCap {
-    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let (dwallet, public_dwallet_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
 
     // TODO: Change error
@@ -1695,8 +1697,10 @@ public(package) fun request_ecdsa_future_sign(
                 partial_centralized_signed_message_id,
                 message,
                 presign: presign.presign,
+                dkg_output: public_dwallet_output,
                 hash_scheme,
-                message_centralized_signature
+                message_centralized_signature,
+                dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
         },
         ctx,
     );
