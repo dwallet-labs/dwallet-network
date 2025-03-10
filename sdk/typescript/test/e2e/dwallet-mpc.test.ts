@@ -68,6 +68,8 @@ describe('Test dWallet MPC', () => {
 			.dwalletID;
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		const presignCompletion = await presign(conf, dwalletID);
+		// log the presign in base64 please
+		console.log(`presign in base64: ${uint8ArrayToBase64(presignCompletion.presign)}`);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 	});
 
