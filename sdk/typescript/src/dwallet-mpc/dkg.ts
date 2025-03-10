@@ -187,7 +187,7 @@ export async function mockCreateDWallet(
 		initialSharedVersion: dwalletStateObjData.initial_shared_version,
 		mutable: true,
 	});
-	const firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockOutput));
+	const firstRoundOutputArg = tx.pure(mockOutput);
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(conf);
 	const networkDecryptionKeyIDArg = tx.pure.id(networkDecryptionKeyID);
 	const dwalletCap = tx.moveCall({

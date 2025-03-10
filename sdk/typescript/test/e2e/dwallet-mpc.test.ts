@@ -59,7 +59,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should mock create dwallet', async () => {
-		const result = await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64'));
+		const result = await mockCreateDWallet(conf, base64ToUint8Array(dkgMocks.dwalletOutput));
 		console.log(`dWallet has been created successfully: ${result.dwalletID}`);
 	});
 
