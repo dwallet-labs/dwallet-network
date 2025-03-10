@@ -2168,27 +2168,13 @@ impl AuthorityPerEpochStore {
                             bcs::to_bytes(&key.current_epoch_encryptions_of_shares_per_crt_prime)
                                 .map_err(|e| DwalletMPCError::BcsError(e))?;
 
-                        // Break down the key to slices because of chain transaction size limits.
-                        // Limit 16 KB per Tx `pure` argument.
-                        let mut slices = Vec::new();
-                        let public_chunks = public_output.chunks(5 * 1024).collect_vec();
-                        let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
-                        let empty: &[u8] = &[];
-                        let total_slices = public_chunks.len().max(key_shares_chunks.len());
-                        for i in 0..total_slices {
-                            let public_chunk = public_chunks.get(i).unwrap_or(&empty);
-                            let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
-                            slices.push(Secp256K1NetworkDKGOutputSlice {
-                                dwallet_network_decryption_key_id:
-                                    dwallet_network_decryption_key_id.clone().to_vec(),
-                                public_output: (*public_chunk).to_vec(),
-                                key_shares: (*key_chunk).to_vec(),
-                                is_last: i == total_slices - 1,
-                            });
-                        }
+                        let slices = Self::slice_network_dkg_into_messages(
+                            dwallet_network_decryption_key_id,
+                            public_output,
+                            key_shares,
+                        );
 
                         let messages: Vec<_> = slices
-                            .clone()
                             .into_iter()
                             .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
                             .collect();
@@ -2200,6 +2186,35 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
+    }
+
+    /// Break down the key to slices because of chain transaction size limits.
+    /// Limit 16 KB per Tx `pure` argument.
+    fn slice_network_dkg_into_messages(
+        dwallet_network_decryption_key_id: &ObjectID,
+        public_output: Vec<u8>,
+        key_shares: Vec<u8>,
+    ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
+        let mut slices = Vec::new();
+        let public_chunks = public_output.chunks(5 * 1024).collect_vec();
+        let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
+        let empty: &[u8] = &[];
+        // Take the max of the two lengths to ensure we have enough slices.
+        let total_slices = public_chunks.len().max(key_shares_chunks.len());
+        for i in 0..total_slices {
+            // If the chunk is missing, use an empty slice, as the size of the slices can be different.
+            let public_chunk = public_chunks.get(i).unwrap_or(&empty);
+            let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
+            slices.push(Secp256K1NetworkDKGOutputSlice {
+                dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
+                    .clone()
+                    .to_vec(),
+                public_output: (*public_chunk).to_vec(),
+                key_shares: (*key_chunk).to_vec(),
+                is_last: i == total_slices - 1,
+            });
+        }
+        slices
     }
 
     pub(crate) fn write_pending_checkpoint(
