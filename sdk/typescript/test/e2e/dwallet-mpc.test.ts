@@ -50,6 +50,15 @@ describe('Test dWallet MPC', () => {
 
 	it('should create a dWallet (DKG)', async () => {
 		const dwallet = await createDWallet(conf, mockedProtocolPublicParameters);
+		// log the output in base64 please
+		console.log(
+			`dwallet output in base64: ${Buffer.from(dwallet.dwallet_output).toString('base64')}`,
+		);
+		console.log(
+			`centralized secret key share in base64: ${Buffer.from(dwallet.secret_share).toString(
+				'base64',
+			)}`,
+		);
 		console.log(`dWallet has been created successfully: ${dwallet}`);
 	});
 
