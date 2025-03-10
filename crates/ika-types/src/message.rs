@@ -108,6 +108,7 @@ pub struct SignOutput {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct EncryptedUserShareOutput {
+    pub initiating_user_address: Vec<u8>,
     pub dwallet_id: Vec<u8>,
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     pub encryption_key_id: Vec<u8>,
@@ -116,6 +117,7 @@ pub struct EncryptedUserShareOutput {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct PartialSignatureVerificationOutput {
+    pub initiating_user_address: Vec<u8>,
     pub session_id: Vec<u8>,
     pub dwallet_id: Vec<u8>,
     pub dwallet_decentralized_public_output: Vec<u8>,
