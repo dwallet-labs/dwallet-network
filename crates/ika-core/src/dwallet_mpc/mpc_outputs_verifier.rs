@@ -166,14 +166,8 @@ impl DWalletMPCOutputsVerifier {
                     malicious_actors: vec![],
                 });
             };
-            let Some(mpc_event_data) = &stored_sign_session.mpc_event_data else {
-                warn!("received an output for a session that an event has not been received for: {:?}", session_info.session_id);
-                return Ok(OutputVerificationResult {
-                    result: OutputResult::NotEnoughVotes,
-                    malicious_actors: vec![],
-                });
-            };
-            let MPCProtocolInitData::Sign(sign_session_data) = &mpc_event_data.init_protocol_data
+            let MPCProtocolInitData::Sign(sign_session_data) =
+                &stored_sign_session.session_info.mpc_round
             else {
                 warn!(
                     "received sign session output for a non-sign session {:?}",

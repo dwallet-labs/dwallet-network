@@ -53,7 +53,7 @@ pub enum ConsensusTransactionKey {
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
-    DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
+    DWalletMPCOutput(Vec<u8>, ObjectID, SuiAddress, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
 }
 
@@ -79,11 +79,11 @@ impl Debug for ConsensusTransactionKey {
             Self::DWalletMPCMessage(message) => {
                 write!(f, "DWalletMPCMessage({:?})", message,)
             }
-            Self::DWalletMPCOutput(value, session_id, authority) => {
+            Self::DWalletMPCOutput(value, session_id, sender_address, authority) => {
                 write!(
                     f,
-                    "DWalletMPCOutput({:?}, {:?}, {:?})",
-                    value, session_id, authority
+                    "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
+                    value, session_id, sender_address, authority
                 )
             }
             Self::DWalletMPCSessionFailedWithMalicious(authority, report) => {
@@ -315,6 +315,7 @@ impl ConsensusTransaction {
                 ConsensusTransactionKey::DWalletMPCOutput(
                     output.clone(),
                     session_info.session_id,
+                    session_info.initiating_user_address,
                     *authority,
                 )
             }
