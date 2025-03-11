@@ -2117,7 +2117,9 @@ impl AuthorityPerEpochStore {
             MPCProtocolInitData::EncryptedShareVerification(init_event_data) => {
                 let tx = MessageKind::DwalletEncryptedUserShare(EncryptedUserShareOutput {
                     dwallet_id: init_event_data.dwallet_id.to_vec(),
-                    encrypted_user_secret_key_share_id: init_event_data.encrypted_user_secret_key_share_id.to_vec(),
+                    encrypted_user_secret_key_share_id: init_event_data
+                        .encrypted_user_secret_key_share_id
+                        .to_vec(),
                     // TODO (#679): Update the blockchain when an MPC round fails
                     rejected: false,
                 });
