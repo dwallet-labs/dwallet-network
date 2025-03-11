@@ -6,7 +6,7 @@ import { bcs, toHex } from '@mysten/bcs';
 import type { PublicKey } from '@mysten/sui/cryptography';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config } from './globals.js';
+import {Config, SUI_PACKAGE_ID} from './globals.js';
 import {
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
 	fetchObjectWithType,
@@ -292,4 +292,19 @@ export async function transferEncryptedSecretShare(
 		bcs.vector(bcs.u8()).serialize(encryptedUserKeyShareAndProofOfEncryption),
 	);
 	const sourceEncryptedUserSecretKeyShareIDArg = tx.pure(source_encrypted_user_secret_key_share_id);
+	const emptyIKACoin = tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::zero`,
+		arguments: [],
+		typeArguments: [`${c.ikaConfig.ika_package_id}::ika::IKA`],
+	});
+
+	tx.moveCall({
+
+	});
+
+	tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
+		arguments: [emptyIKACoin],
+		typeArguments: [`${c.ikaConfig.ika_package_id}::ika::IKA`],
+	});
 }
