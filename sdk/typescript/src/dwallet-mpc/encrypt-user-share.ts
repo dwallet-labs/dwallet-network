@@ -50,6 +50,17 @@ interface CreatedEncryptionKeyEvent {
 	signer_address: string;
 }
 
+interface StartEncryptedShareVerificationEvent {
+	event_data: {
+		encrypted_user_secret_key_share_id: string;
+	};
+	session_id: string;
+}
+
+interface VerifiedEncryptedUserSecretKeyShare {
+	state: any;
+}
+
 function isEncryptionKey(obj: any): obj is EncryptionKey {
 	return 'encryption_key' in obj && 'signer_address' in obj && 'encryption_key_signature' in obj;
 }
@@ -323,21 +334,10 @@ export async function transferEncryptedSecretShare(
 	);
 }
 
-interface StartEncryptedShareVerificationEvent {
-	event_data: {
-		encrypted_user_secret_key_share_id: string;
-	};
-	session_id: string;
-}
-
 function isStartEncryptedShareVerificationEvent(
 	obj: any,
 ): obj is StartEncryptedShareVerificationEvent {
 	return !!obj?.session_id && !!obj?.event_data?.encrypted_user_secret_key_share_id;
-}
-
-interface VerifiedEncryptedUserSecretKeyShare {
-	state: any;
 }
 
 function isVerifiedEncryptedUserSecretKeyShare(
