@@ -8,6 +8,7 @@ import { mockCreateDWallet } from '../../src/dwallet-mpc/dkg';
 import {
 	encryptUserShareForPublicKey,
 	getOrCreateClassGroupsKeyPair,
+	transferEncryptedSecretShare,
 } from '../../src/dwallet-mpc/encrypt-user-share';
 import { checkpointCreationTime, Config, delay } from '../../src/dwallet-mpc/globals';
 import { dkgMocks } from './mocks';
@@ -47,8 +48,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('encrypts a secret share for a given public key and transfers it', async () => {
-		// @ts-ignore
-		const _sourceDwallet = await mockCreateDWallet(
+		const sourceDwallet = await createDWallet(
 			sourceConf,
 			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
 			new Uint8Array(Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64')),
@@ -59,11 +59,17 @@ describe('Test dWallet MPC', () => {
 		const encryptedUserKeyShareAndProofOfEncryption = await encryptUserShareForPublicKey(
 			sourceConf,
 			destConf.encryptedSecretShareSigningKeypair.getPublicKey(),
-			_sourceDwallet.secret_share,
+			sourceDwallet.secret_share,
 		);
-		// log them
 		console.log(
 			`encryptedUserKeyShareAndProofOfEncryption: ${encryptedUserKeyShareAndProofOfEncryption}`,
+		);
+		await transferEncryptedSecretShare(
+			sourceConf,
+			destConf.encryptedSecretShareSigningKeypair.getPublicKey(),
+			encryptedUserKeyShareAndProofOfEncryption,
+			sourceDwallet.dwallet_id,
+			sourceDwallet.encrypted_secret_share_id,
 		);
 	});
 });
