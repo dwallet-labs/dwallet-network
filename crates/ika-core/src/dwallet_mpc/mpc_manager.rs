@@ -355,7 +355,15 @@ impl DWalletMPCManager {
                 )?,
             },
         });
-        self.push_new_mpc_session(&session_info.session_id, mpc_event_data)?;
+        if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
+            warn!(
+                "Received an event for an existing session with session_id: {:?}",
+                session_info.session_id
+            );
+            session.mpc_event_data = mpc_event_data;
+        } else {
+            self.push_new_mpc_session(&session_info.session_id, mpc_event_data)?;
+        }
         Ok(())
     }
 
@@ -431,9 +439,12 @@ impl DWalletMPCManager {
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
-                    session.pending_quorum_for_highest_round_number =
-                        session.pending_quorum_for_highest_round_number + 1;
-                    Some((session.clone(), quorum_check_result.malicious_parties))
+                    session.pending_quorum_for_highest_round_number + 1;
+                    let mut session_clone = session.clone();
+                    session_clone
+                        .serialized_messages
+                        .truncate(session.pending_quorum_for_highest_round_number);
+                    Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None
                 }
@@ -455,13 +466,11 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) fn perform_cryptographic_computation(&mut self) {
-        while self
+        let pending_computation_instances_len = self
             .cryptographic_computations_orchestrator
-            .currently_running_sessions_count
-            < self
-                .cryptographic_computations_orchestrator
-                .available_cores_for_cryptographic_computations
-        {
+            .pending_for_computation_order
+            .len();
+        for _ in 0..pending_computation_instances_len {
             let Some(oldest_computation_metadata) = self
                 .cryptographic_computations_orchestrator
                 .pending_for_computation_order
@@ -469,17 +478,29 @@ impl DWalletMPCManager {
             else {
                 return;
             };
-            let Some(session) = self
+            let Some(mut ready_to_advance_session) = self
                 .cryptographic_computations_orchestrator
                 .pending_computation_map
                 .remove(&oldest_computation_metadata)
             else {
                 return;
             };
-
-            if let Err(err) = self.spawn_session(&session) {
-                error!("failed to spawn session with err: {:?}", err);
+            let Some(live_session) = self.mpc_sessions.get(&ready_to_advance_session.session_id)
+            else {
                 return;
+            };
+            if live_session.mpc_event_data.is_none() {
+                self.cryptographic_computations_orchestrator
+                    .pending_for_computation_order
+                    .push_back(oldest_computation_metadata.clone());
+                self.cryptographic_computations_orchestrator
+                    .pending_computation_map
+                    .insert(oldest_computation_metadata, ready_to_advance_session);
+                continue;
+            }
+            ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
+            if let Err(err) = self.spawn_session(&ready_to_advance_session) {
+                error!("failed to spawn session with err: {:?}", err);
             }
         }
     }
@@ -667,11 +688,12 @@ impl DWalletMPCManager {
             Some(session) => session,
             None => {
                 warn!(
-                    "received a message for an MPC session ID: `{:?}` which does not exist",
+                    "received a message for an MPC session ID: `{:?}` which an event has not yet received for",
                     message.session_id
                 );
-                // TODO (#693): Keep messages for non-existing sessions.
-                return Ok(());
+                self.push_new_mpc_session(&message.session_id, None)?;
+                // Safe to unwrap because we just added the session.
+                self.mpc_sessions.get_mut(&message.session_id).unwrap()
             }
         };
         match session.store_message(&message) {
