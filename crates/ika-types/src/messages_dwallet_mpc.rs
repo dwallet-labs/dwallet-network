@@ -225,7 +225,6 @@ impl<E: DWalletMPCEventTrait> DWalletMPCSuiEvent<E> {
 // source_encrypted_user_secret_key_share_id: ID,
 // }
 
-
 /// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
 /// Defined here so that we can use it in the [`MPCProtocolInitData`] enum,
 /// as the inner data of the [`MPCProtocolInitData::EncryptedShareVerification`].
