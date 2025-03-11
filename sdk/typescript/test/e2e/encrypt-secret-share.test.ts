@@ -4,13 +4,18 @@ import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
-import { mockCreateDWallet } from '../../src/dwallet-mpc/dkg';
+import { createDWallet, mockCreateDWallet } from '../../src/dwallet-mpc/dkg';
 import {
 	encryptUserShareForPublicKey,
 	getOrCreateClassGroupsKeyPair,
 	transferEncryptedSecretShare,
 } from '../../src/dwallet-mpc/encrypt-user-share';
-import { checkpointCreationTime, Config, delay } from '../../src/dwallet-mpc/globals';
+import {
+	checkpointCreationTime,
+	Config,
+	delay,
+	mockedProtocolPublicParameters,
+} from '../../src/dwallet-mpc/globals';
 import { dkgMocks } from './mocks';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -48,11 +53,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('encrypts a secret share for a given public key and transfers it', async () => {
-		const sourceDwallet = await createDWallet(
-			sourceConf,
-			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
-			new Uint8Array(Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64')),
-		);
+		const sourceDwallet = await createDWallet(sourceConf, mockedProtocolPublicParameters);
 		// Create Destination Class Groups Keypair & Store it on the chain.
 		await getOrCreateClassGroupsKeyPair(destConf);
 		await delay(checkpointCreationTime);
