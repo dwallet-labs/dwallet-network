@@ -487,20 +487,22 @@ impl DWalletMPCManager {
             else {
                 return;
             };
-            let Some(live_session) = self.mpc_sessions.get(&ready_to_advance_session.session_id)
-            else {
-                return;
-            };
-            if live_session.mpc_event_data.is_none() {
-                self.cryptographic_computations_orchestrator
-                    .pending_for_computation_order
-                    .push_back(oldest_computation_metadata.clone());
-                self.cryptographic_computations_orchestrator
-                    .pending_computation_map
-                    .insert(oldest_computation_metadata, ready_to_advance_session);
-                continue;
+            if ready_to_advance_session.mpc_event_data.is_none() {
+                let Some(live_session) = self.mpc_sessions.get(&ready_to_advance_session.session_id)
+                else {
+                    return;
+                };
+                if live_session.mpc_event_data.is_none() {
+                    self.cryptographic_computations_orchestrator
+                        .pending_for_computation_order
+                        .push_back(oldest_computation_metadata.clone());
+                    self.cryptographic_computations_orchestrator
+                        .pending_computation_map
+                        .insert(oldest_computation_metadata, ready_to_advance_session);
+                    continue;
+                }
+                ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
             }
-            ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
             if let Err(err) = self.spawn_session(&ready_to_advance_session) {
                 error!("failed to spawn session with err: {:?}", err);
             }
