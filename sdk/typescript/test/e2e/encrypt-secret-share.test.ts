@@ -5,7 +5,10 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
 import { mockCreateDWallet } from '../../src/dwallet-mpc/dkg';
-import {encryptUserShareForPublicKey, getOrCreateClassGroupsKeyPair} from '../../src/dwallet-mpc/encrypt-user-share';
+import {
+	encryptUserShareForPublicKey,
+	getOrCreateClassGroupsKeyPair,
+} from '../../src/dwallet-mpc/encrypt-user-share';
 import { checkpointCreationTime, Config, delay } from '../../src/dwallet-mpc/globals';
 import { dkgMocks } from './mocks';
 
@@ -48,6 +51,7 @@ describe('Test dWallet MPC', () => {
 		const _sourceDwallet = await mockCreateDWallet(
 			sourceConf,
 			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
+			new Uint8Array(Buffer.from( dkgMocks.centralizedSecretKeyShare, 'base64')),
 		);
 		// Create Destination Class Groups Keypair & Store it on the chain.
 		await getOrCreateClassGroupsKeyPair(destConf);
@@ -55,8 +59,12 @@ describe('Test dWallet MPC', () => {
 		const { destActiveEncryptionKeyObjID, encryptedUserKeyShareAndProofOfEncryption } =
 			await encryptUserShareForPublicKey(
 				sourceConf,
-				destConf.suiClientKeypair.getPublicKey(),
+				destConf.encryptedSecretShareSigningKeypair.getPublicKey(),
 				_sourceDwallet.secret_share,
 			);
+		// log them
+		console.log(
+			`destActiveEncryptionKeyObjID: ${destActiveEncryptionKeyObjID}, encryptedUserKeyShareAndProofOfEncryption: ${encryptedUserKeyShareAndProofOfEncryption}`,
+		);
 	});
 });

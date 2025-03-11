@@ -1,18 +1,35 @@
-;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Buffer } from 'buffer';
-import { create_dkg_centralized_output, encrypt_secret_share } from '@dwallet-network/dwallet-mpc-wasm';
+import {
+	create_dkg_centralized_output,
+	encrypt_secret_share,
+} from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
-
-
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import { checkpointCreationTime, delay, DWallet, DWALLET_ECDSAK1_MOVE_MODULE_NAME, DWALLET_NETWORK_VERSION, fetchCompletedEvent,getDwalletSecp256k1ObjID, getDWalletSecpState, getInitialSharedVersion, getObjectWithType,  isAddressObjectOwner, isDWalletCap, isIKASystemStateInner, isMoveObject, isStartSessionEvent,MPCKeyScheme, SUI_PACKAGE_ID } from './globals.js';
+import type { DWallet } from './globals.js';
+import {
+	checkpointCreationTime,
+	delay,
+	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	DWALLET_NETWORK_VERSION,
+	fetchCompletedEvent,
+	getDwalletSecp256k1ObjID,
+	getDWalletSecpState,
+	getInitialSharedVersion,
+	getObjectWithType,
+	isAddressObjectOwner,
+	isDWalletCap,
+	isIKASystemStateInner,
+	isMoveObject,
+	isStartSessionEvent,
+	MPCKeyScheme,
+	SUI_PACKAGE_ID,
+} from './globals.js';
 import type { Config, SharedObjectData } from './globals.ts';
-
 
 interface StartDKGFirstRoundEvent {
 	event_data: {
@@ -210,6 +227,7 @@ export async function mockCreateDWallet(
 		secret_share: mockSecretShare,
 		dwallet_cap_id: createdDWalletCap.reference.objectId,
 		dwallet_id: dwalletCapObj.dwallet_id,
+		output: mockOutput,
 	};
 }
 
