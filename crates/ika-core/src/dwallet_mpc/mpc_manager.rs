@@ -355,15 +355,7 @@ impl DWalletMPCManager {
                 )?,
             },
         });
-        if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
-            warn!(
-                "Received an event for an existing session with session_id: {:?}",
-                session_info.session_id
-            );
-            session.mpc_event_data = mpc_event_data;
-        } else {
-            self.push_new_mpc_session(&session_info.session_id, mpc_event_data)?;
-        }
+        self.push_new_mpc_session(&session_info.session_id, mpc_event_data)?;
         Ok(())
     }
 
