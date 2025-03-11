@@ -9,7 +9,7 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import type { TSDWallet } from './globals.js';
+import type { DWallet } from './globals.js';
 import {
 	checkpointCreationTime,
 	delay,
@@ -66,7 +66,7 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 export async function createDWallet(
 	conf: Config,
 	protocolPublicParameters: Uint8Array,
-): Promise<TSDWallet> {
+): Promise<DWallet> {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	const dwalletOutput = await launchDKGSecondRound(
@@ -184,7 +184,7 @@ export async function mockCreateDWallet(
 	conf: Config,
 	mockOutput: Uint8Array,
 	mockSecretShare: Uint8Array,
-): Promise<TSDWallet> {
+): Promise<DWallet> {
 	const tx = new Transaction();
 	const dwalletStateObjData = await getDWalletSecpState(conf);
 	const stateArg = tx.sharedObjectRef({

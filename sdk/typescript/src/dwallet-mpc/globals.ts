@@ -275,7 +275,7 @@ export function isActiveDWallet(obj: any): obj is ActiveDWallet {
 	return obj?.state?.fields?.public_output !== undefined;
 }
 
-export interface TSDWallet {
+export interface DWallet {
 	dwallet_id: string;
 	dwallet_cap_id: string;
 	secret_share: Uint8Array;
