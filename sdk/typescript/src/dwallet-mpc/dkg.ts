@@ -228,6 +228,7 @@ export async function mockCreateDWallet(
 		dwallet_cap_id: createdDWalletCap.reference.objectId,
 		dwallet_id: dwalletCapObj.dwallet_id,
 		output: mockOutput,
+		encrypted_secret_share_id: '',
 	};
 }
 
