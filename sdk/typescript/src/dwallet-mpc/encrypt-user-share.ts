@@ -253,11 +253,6 @@ export async function encryptUserShareForPublicKey(
 	);
 }
 
-interface CreatedEncryptedSecretShareEvent {
-	encrypted_user_secret_key_share_id: string;
-	dwallet_id: string;
-}
-
 export async function transferEncryptedSecretShare(
 	sourceConf: Config,
 	destSuiPublicKey: PublicKey,
@@ -334,14 +329,6 @@ function isStartEncryptedShareVerificationEvent(
 	obj: any,
 ): obj is StartEncryptedShareVerificationEvent {
 	return !!obj?.session_id && !!obj?.event_data?.encrypted_user_secret_key_share_id;
-}
-
-interface EncryptedUserSecretKeyShare {
-	id: { id: string };
-	dwallet_id: string;
-	encrypted_centralized_secret_share_and_proof: Uint8Array;
-	encryption_key_id: string;
-	encryption_key_address: string;
 }
 
 interface VerifiedEncryptedUserSecretKeyShare {
