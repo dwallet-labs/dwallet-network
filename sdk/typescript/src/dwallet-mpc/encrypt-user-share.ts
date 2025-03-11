@@ -377,7 +377,7 @@ interface VerifiedEncryptedUserSecretKeyShare {
 function isVerifiedEncryptedUserSecretKeyShare(
 	obj: any,
 ): obj is VerifiedEncryptedUserSecretKeyShare {
-	return obj.state.contains('NetworkVerificationCompleted');
+	return obj.state.variant === 'NetworkVerificationCompleted';
 }
 
 async function waitForChainVerification(conf: Config, encryptedSecretShareObjID: string) {
