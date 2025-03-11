@@ -360,7 +360,9 @@ impl DWalletMPCManager {
                 "Received an event for an existing session with session_id: {:?}",
                 session_info.session_id
             );
-            session.mpc_event_data = mpc_event_data;
+            if session.mpc_event_data.is_none() {
+                session.mpc_event_data = mpc_event_data;
+            }
         } else {
             self.push_new_mpc_session(&session_info.session_id, mpc_event_data)?;
         }
