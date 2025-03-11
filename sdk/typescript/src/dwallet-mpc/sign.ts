@@ -112,7 +112,7 @@ export async function sign(
 	return await fetchCompletedEvent(
 		conf,
 		startSessionEvent.session_id,
-		completedSignEventType,
 		isCompletedSignEvent,
+		completedSignEventType,
 	);
 }
