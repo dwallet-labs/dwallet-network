@@ -258,22 +258,6 @@ interface CreatedEncryptedSecretShareEvent {
 	dwallet_id: string;
 }
 
-function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSecretShareEvent {
-	return 'encrypted_user_secret_key_share_id' in obj && 'dwallet_id' in obj;
-}
-
-//
-// public fun request_re_encrypt_user_share_for(
-// 	self: &mut DWallet2PcMpcSecp256K1,
-// 	dwallet_id: ID,
-// 	destination_encryption_key_address: address,
-// 	encrypted_centralized_secret_share_and_proof: vector<u8>,
-// 	source_encrypted_user_secret_key_share_id: ID,
-// 	payment_ika: &mut Coin<IKA>,
-// 	payment_sui: &mut Coin<SUI>,
-// 	ctx: &mut TxContext,
-// ) {
-
 export async function transferEncryptedSecretShare(
 	sourceConf: Config,
 	destSuiPublicKey: PublicKey,
@@ -350,16 +334,6 @@ function isStartEncryptedShareVerificationEvent(
 	obj: any,
 ): obj is StartEncryptedShareVerificationEvent {
 	return !!obj?.session_id && !!obj?.event_data?.encrypted_user_secret_key_share_id;
-}
-
-function isEncryptedUserSecretKeyShare(obj: any): obj is EncryptedUserSecretKeyShare {
-	return (
-		'id' in obj &&
-		'dwallet_id' in obj &&
-		'encrypted_centralized_secret_share_and_proof' in obj &&
-		'encryption_key_id' in obj &&
-		'encryption_key_address' in obj
-	);
 }
 
 interface EncryptedUserSecretKeyShare {
