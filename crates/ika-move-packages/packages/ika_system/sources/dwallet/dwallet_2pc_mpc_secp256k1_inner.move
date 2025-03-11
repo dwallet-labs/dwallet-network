@@ -1691,19 +1691,17 @@ public(package) fun request_ecdsa_future_sign(
         id: object::new(ctx),
         partial_centralized_signed_message_id,
     };
-    let completion_event = ECDSAFutureSignRequestEvent {
-            dwallet_id,
-            partial_centralized_signed_message_id,
-            message,
-            presign: presign.presign,
-            dkg_output: public_dwallet_output,
-            hash_scheme,
-            message_centralized_signature,
-            dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
-    };
-    event::emit(completion_event);
     let emit_event = self.create_current_epoch_dwallet_event(
-        completion_event,
+        ECDSAFutureSignRequestEvent {
+                dwallet_id,
+                partial_centralized_signed_message_id,
+                message,
+                presign: presign.presign,
+                dkg_output: public_dwallet_output,
+                hash_scheme,
+                message_centralized_signature,
+                dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
+        },
         ctx,
     );
     self.ecdsa_partial_centralized_signed_messages.add(partial_centralized_signed_message_id, ECDSAPartialUserSignature {

@@ -4064,19 +4064,17 @@ more details on when this may be used.
         id: object::new(ctx),
         partial_centralized_signed_message_id,
     };
-    <b>let</b> completion_event = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSAFutureSignRequestEvent">ECDSAFutureSignRequestEvent</a> {
-            dwallet_id,
-            partial_centralized_signed_message_id,
-            message,
-            presign: presign.presign,
-            dkg_output: public_dwallet_output,
-            hash_scheme,
-            message_centralized_signature,
-            dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
-    };
-    event::emit(completion_event);
     <b>let</b> emit_event = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_current_epoch_dwallet_event">create_current_epoch_dwallet_event</a>(
-        completion_event,
+        <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSAFutureSignRequestEvent">ECDSAFutureSignRequestEvent</a> {
+                dwallet_id,
+                partial_centralized_signed_message_id,
+                message,
+                presign: presign.presign,
+                dkg_output: public_dwallet_output,
+                hash_scheme,
+                message_centralized_signature,
+                dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
+        },
         ctx,
     );
     self.ecdsa_partial_centralized_signed_messages.add(partial_centralized_signed_message_id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSAPartialUserSignature">ECDSAPartialUserSignature</a> {

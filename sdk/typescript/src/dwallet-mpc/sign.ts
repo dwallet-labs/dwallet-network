@@ -237,14 +237,6 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 		throw new Error('invalid start session event');
 	}
 
-	// const startSessionEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::ECDSAFutureSignRequestEvent`;
-	// const partialCentralizedSignedMessageID = await fetchCompletedEvent(
-	// 	conf,
-	// 	startSessionEvent.session_id,
-	// 	startSessionEventType,
-	// 	isECDSAFutureSignRequestEvent,
-	// );
-
 	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSAFutureSignEvent`;
 	await fetchCompletedEvent(
 		conf,
@@ -259,12 +251,7 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 	}
 	for (const obj of objects) {
 		if (isUnverifiedECDSAPartialUserSignatureCap(obj)) {
-			if (
-				obj.partial_centralized_signed_message_id ===
-				partialCentralizedSignedMessageID.partial_centralized_signed_message_id
-			) {
-				return obj;
-			}
+			return obj;
 		}
 	}
 	return undefined;
