@@ -158,8 +158,6 @@ pub struct DWalletMPCMessage {
 pub struct SessionInfo {
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
-    /// The address of the user that initiated this session.
-    pub initiating_user_address: SuiAddress,
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
     pub mpc_round: MPCProtocolInitData,
