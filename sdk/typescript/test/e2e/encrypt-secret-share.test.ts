@@ -19,28 +19,6 @@ import {
 
 const fiveMinutes = 5 * 60 * 1000;
 
-async function generateConfig(dWalletSeed: Uint8Array, suiSeed: string): Promise<Config> {
-	const sourceKeypair = Ed25519Keypair.deriveKeypairFromSeed(suiSeed);
-	const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
-		Buffer.from(dWalletSeed).toString('hex'),
-	);
-	const source = sourceKeypair.getPublicKey().toSuiAddress();
-	const sourceSuiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-	await requestSuiFromFaucetV1({
-		host: getFaucetHost('localnet'),
-		recipient: source,
-	});
-
-	return {
-		suiClientKeypair: sourceKeypair,
-		client: sourceSuiClient,
-		timeout: fiveMinutes,
-		ikaConfig: require(path.resolve(process.cwd(), '../../ika_config.json')),
-		dWalletSeed: dWalletSeed,
-		encryptedSecretShareSigningKeypair,
-	};
-}
-
 describe('Test dWallet MPC', () => {
 	let sourceConf: Config;
 	let destConf: Config;
@@ -73,3 +51,25 @@ describe('Test dWallet MPC', () => {
 		);
 	});
 });
+
+async function generateConfig(dWalletSeed: Uint8Array, suiSeed: string): Promise<Config> {
+	const sourceKeypair = Ed25519Keypair.deriveKeypairFromSeed(suiSeed);
+	const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
+		Buffer.from(dWalletSeed).toString('hex'),
+	);
+	const source = sourceKeypair.getPublicKey().toSuiAddress();
+	const sourceSuiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+	await requestSuiFromFaucetV1({
+		host: getFaucetHost('localnet'),
+		recipient: source,
+	});
+
+	return {
+		suiClientKeypair: sourceKeypair,
+		client: sourceSuiClient,
+		timeout: fiveMinutes,
+		ikaConfig: require(path.resolve(process.cwd(), '../../ika_config.json')),
+		dWalletSeed: dWalletSeed,
+		encryptedSecretShareSigningKeypair,
+	};
+}
