@@ -459,8 +459,8 @@ impl DWalletMPCManager {
             .cryptographic_computations_orchestrator
             .currently_running_sessions_count
             < self
-            .cryptographic_computations_orchestrator
-            .available_cores_for_cryptographic_computations
+                .cryptographic_computations_orchestrator
+                .available_cores_for_cryptographic_computations
         {
             let Some(oldest_computation_metadata) = self
                 .cryptographic_computations_orchestrator
