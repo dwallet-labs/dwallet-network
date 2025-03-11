@@ -51,20 +51,19 @@ describe('Test dWallet MPC', () => {
 		const _sourceDwallet = await mockCreateDWallet(
 			sourceConf,
 			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
-			new Uint8Array(Buffer.from( dkgMocks.centralizedSecretKeyShare, 'base64')),
+			new Uint8Array(Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64')),
 		);
 		// Create Destination Class Groups Keypair & Store it on the chain.
 		await getOrCreateClassGroupsKeyPair(destConf);
 		await delay(checkpointCreationTime);
-		const { destActiveEncryptionKeyObjID, encryptedUserKeyShareAndProofOfEncryption } =
-			await encryptUserShareForPublicKey(
-				sourceConf,
-				destConf.encryptedSecretShareSigningKeypair.getPublicKey(),
-				_sourceDwallet.secret_share,
-			);
+		const encryptedUserKeyShareAndProofOfEncryption = await encryptUserShareForPublicKey(
+			sourceConf,
+			destConf.encryptedSecretShareSigningKeypair.getPublicKey(),
+			_sourceDwallet.secret_share,
+		);
 		// log them
 		console.log(
-			`destActiveEncryptionKeyObjID: ${destActiveEncryptionKeyObjID}, encryptedUserKeyShareAndProofOfEncryption: ${encryptedUserKeyShareAndProofOfEncryption}`,
+			`encryptedUserKeyShareAndProofOfEncryption: ${encryptedUserKeyShareAndProofOfEncryption}`,
 		);
 	});
 });

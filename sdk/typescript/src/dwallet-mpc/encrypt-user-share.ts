@@ -4,18 +4,16 @@ import {
 } from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs, toHex } from '@mysten/bcs';
 import type { PublicKey } from '@mysten/sui/cryptography';
-import { Keypair } from '@mysten/sui/cryptography';
 import { Transaction } from '@mysten/sui/transactions';
 
+import type { Config } from './globals.js';
 import {
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
-	fetchCompletedEvent,
 	fetchObjectWithType,
 	getDWalletSecpState,
 	getEncryptionKeyMoveType,
 	getObjectWithType,
 } from './globals.js';
-import type { Config, DWallet } from './globals.js';
 
 /**
  * A class groups key pair.
@@ -244,17 +242,21 @@ export async function encryptUserShareForPublicKey(
 	}
 
 	// Encrypt the centralized secret key share with the destination active encryption key.
-	const encryptedUserKeyShareAndProofOfEncryption = encrypt_secret_share(
+	return encrypt_secret_share(
 		// Centralized Secret Key Share.
 		dWalletSecretShare,
 		// Encryption Key.
 		new Uint8Array(destActiveEncryptionKeyObj.encryption_key),
 	);
+}
 
-	return {
-		encryptedUserKeyShareAndProofOfEncryption,
-		destActiveEncryptionKeyObjID,
-	};
+interface CreatedEncryptedSecretShareEvent {
+	encrypted_user_secret_key_share_id: string;
+	dwallet_id: string;
+}
+
+function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSecretShareEvent {
+	return 'encrypted_user_secret_key_share_id' in obj && 'dwallet_id' in obj;
 }
 
 //
@@ -269,67 +271,25 @@ export async function encryptUserShareForPublicKey(
 // 	ctx: &mut TxContext,
 // ) {
 
-interface CreatedEncryptedSecretShareEvent {
-	encrypted_user_secret_key_share_id: string;
-	dwallet_id: string;
+export async function transferEncryptedSecretShare(
+	sourceConf: Config,
+	destSuiPublicKey: PublicKey,
+	encryptedUserKeyShareAndProofOfEncryption: Uint8Array,
+	dwalletID: string,
+	source_encrypted_user_secret_key_share_id: ID,
+) {
+	const tx = new Transaction();
+	const dwalletSecpState = await getDWalletSecpState(sourceConf);
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dwalletSecpState.object_id,
+		initialSharedVersion: dwalletSecpState.initial_shared_version,
+		mutable: true,
+	});
+	const dwalletIDArg = tx.pure(dwalletID);
+	const destinationEncryptionKeyAddress = destSuiPublicKey.toSuiAddress();
+	const destinationEncryptionKeyAddressArg = tx.pure.address(destinationEncryptionKeyAddress);
+	const encryptedCentralizedSecretShareAndProofArg = tx.pure(
+		bcs.vector(bcs.u8()).serialize(encryptedUserKeyShareAndProofOfEncryption),
+	);
+	const sourceEncryptedUserSecretKeyShareIDArg = tx.pure(source_encrypted_user_secret_key_share_id);
 }
-
-function isCreatedEncryptedSecretShareEvent(obj: any): obj is CreatedEncryptedSecretShareEvent {
-	return 'encrypted_user_secret_key_share_id' in obj && 'dwallet_id' in obj;
-}
-
-// /**
-//  * Transfers an encrypted dWallet user secret key share from a source entity to destination entity.
-//  * This function emits an event with the encrypted user secret key share,
-//  * along with its cryptographic proof, to the blockchain.
-//  * The chain verifies that the encrypted data matches the expected secret key share
-//  * associated with the dWallet before creating an `EncryptedUserSecretKeyShare` object.
-//  */
-// async function transferEncryptedUserSecretShare(
-// 	sourceKeyPair: Keypair,
-// 	encryptedUserKeyShareAndProofOfEncryption: Uint8Array,
-// 	destEncryptionKeyObjID: string,
-// 	sourceDwallet: DWallet,
-// ): Promise<CreatedEncryptedSecretShareEvent> {
-// 	const tx = new Transaction();
-// 	// Sign the DKG Centralized Public output,
-// 	// in order for the destination party to verify it later.
-// 	// todo(zeev): this should transfer the encrypted share to the destination.
-// 	tx.moveCall({
-// 		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::transfer_encrypted_user_share`,
-// 		typeArguments: [],
-// 		arguments: [
-// 			tx.object(sourceDwallet.id.id),
-// 			tx.object(destEncryptionKeyObjID),
-// 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptedUserKeyShareAndProofOfEncryption)),
-// 			tx.pure(bcs.vector(bcs.u8()).serialize([])),
-// 			tx.pure(bcs.vector(bcs.u8()).serialize(sourceKeyPair.getPublicKey().toRawBytes())),
-// 			tx.sharedObjectRef({
-// 				objectId: PERA_SYSTEM_STATE_OBJECT_ID,
-// 				initialSharedVersion: 1,
-// 				mutable: false,
-// 			}),
-// 		],
-// 	});
-//
-// 	const result = await this.client.signAndExecuteTransaction({
-// 		signer: sourceKeyPair,
-// 		transaction: tx,
-// 		options: {
-// 			showEffects: true,
-// 			showEvents: true,
-// 		},
-// 	});
-//
-// 	const sessionData = result.events?.find(
-// 		(event) =>
-// 			event.type === startEncryptedShareVerificationMoveType &&
-// 			isStartSessionEvent(event.parsedJson),
-// 	)?.parsedJson as StartSessionEvent;
-//
-// 	return await fetchCompletedEvent<CreatedEncryptedSecretShareEvent>(
-// 		this.toConfig(sourceKeyPair),
-// 		sessionData.session_id,
-// 		isCreatedEncryptedSecretShareEvent,
-// 	);
-// }
