@@ -251,6 +251,13 @@ export async function encryptUserShareForPublicKey(
 	);
 }
 
+/**
+ * Transfers an encrypted dWallet user secret key share from a source entity to destination entity.
+ * This function emits an event with the encrypted user secret key share,
+ * along with its cryptographic proof, to the blockchain.
+ * The chain verifies that the encrypted data matches the expected secret key share
+ * associated with the dWallet before creating an `EncryptedUserSecretKeyShare` object.
+ */
 export async function transferEncryptedSecretShare(
 	sourceConf: Config,
 	destSuiPublicKey: PublicKey,
