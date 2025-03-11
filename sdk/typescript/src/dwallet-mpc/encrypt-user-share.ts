@@ -326,18 +326,30 @@ export async function transferEncryptedSecretShare(
 		signer: sourceConf.suiClientKeypair,
 		transaction: tx,
 		options: {
-			showEffects: true,
+			showEvents: true,
 		},
 	});
-
-	const createdEncryptedSecretShare = result.effects?.created?.find((createdObject) => {
-		return isEncryptedUserSecretKeyShare(createdObject);
-	});
-	if (!isEncryptedUserSecretKeyShare(createdEncryptedSecretShare)) {
-		throw new Error('Transfer of encrypted secret share failed');
+	const startVerificationEvent = result.events?.at(0)?.parsedJson;
+	if (!isStartEncryptedShareVerificationEvent(startVerificationEvent)) {
+		throw new Error('invalid start DKG first round event');
 	}
+	await waitForChainVerification(
+		sourceConf,
+		startVerificationEvent.event_data.encrypted_user_secret_key_share_id,
+	);
+}
 
-	await waitForChainVerification(sourceConf, createdEncryptedSecretShare.id.id);
+interface StartEncryptedShareVerificationEvent {
+	event_data: {
+		encrypted_user_secret_key_share_id: string;
+	};
+	session_id: string;
+}
+
+function isStartEncryptedShareVerificationEvent(
+	obj: any,
+): obj is StartEncryptedShareVerificationEvent {
+	return !!obj?.session_id && !!obj?.event_data?.encrypted_user_secret_key_share_id;
 }
 
 function isEncryptedUserSecretKeyShare(obj: any): obj is EncryptedUserSecretKeyShare {
