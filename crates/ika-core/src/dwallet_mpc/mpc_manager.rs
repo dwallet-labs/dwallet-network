@@ -441,9 +441,9 @@ impl DWalletMPCManager {
                     // until it is ready to advance or finalized.
                     session.pending_quorum_for_highest_round_number + 1;
                     let mut session_clone = session.clone();
-                    if session_clone.serialized_messages.len() == 1 {
-                        session_clone.serialized_messages = vec![HashMap::new()];
-                    }
+                    session_clone
+                        .serialized_messages
+                        .truncate(session.pending_quorum_for_highest_round_number);
                     Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None
