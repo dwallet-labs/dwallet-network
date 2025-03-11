@@ -2133,11 +2133,11 @@ impl AuthorityPerEpochStore {
                     PartialSignatureVerificationOutput {
                         dwallet_id: init_event_data.dwallet_id.to_vec(),
                         session_id: session_info.session_id.to_vec(),
+                        rejected: false,
                         partial_centralized_signed_message_id: init_event_data
                             .partial_centralized_signed_message_id
                             .to_vec(),
                         // TODO (#679): Update the blockchain when an MPC round fails
-                        rejected: false,
                     },
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))

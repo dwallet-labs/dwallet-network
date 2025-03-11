@@ -198,7 +198,7 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 
-	const unverifiedECDSAPartialUserSignatureCap = tx.moveCall({
+	const [unverifiedECDSAPartialUserSignatureCap] = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_ecdsa_future_sign`,
 		arguments: [
 			tx.sharedObjectRef({
@@ -215,7 +215,10 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 			tx.gas,
 		],
 	});
-	tx.transferObjects(unverifiedECDSAPartialUserSignatureCap, conf.suiClientKeypair.toSuiAddress());
+	tx.transferObjects(
+		[unverifiedECDSAPartialUserSignatureCap],
+		conf.suiClientKeypair.toSuiAddress(),
+	);
 	tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
 		arguments: [emptyIKACoin],
@@ -234,12 +237,20 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 		throw new Error('invalid start session event');
 	}
 
-	const startSessionEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::ECDSAFutureSignRequestEvent`;
-	const partialCentralizedSignedMessageID = await fetchCompletedEvent(
+	// const startSessionEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::ECDSAFutureSignRequestEvent`;
+	// const partialCentralizedSignedMessageID = await fetchCompletedEvent(
+	// 	conf,
+	// 	startSessionEvent.session_id,
+	// 	startSessionEventType,
+	// 	isECDSAFutureSignRequestEvent,
+	// );
+
+	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSAFutureSignEvent`;
+	await fetchCompletedEvent(
 		conf,
 		startSessionEvent.session_id,
-		startSessionEventType,
-		isECDSAFutureSignRequestEvent,
+		completedSignEventType,
+		isCompletedFutureSignEvent,
 	);
 
 	const objects = result.effects?.created;

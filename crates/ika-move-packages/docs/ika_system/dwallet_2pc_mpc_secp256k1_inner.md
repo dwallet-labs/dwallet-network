@@ -4064,17 +4064,19 @@ more details on when this may be used.
         id: object::new(ctx),
         partial_centralized_signed_message_id,
     };
+    <b>let</b> completion_event = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSAFutureSignRequestEvent">ECDSAFutureSignRequestEvent</a> {
+            dwallet_id,
+            partial_centralized_signed_message_id,
+            message,
+            presign: presign.presign,
+            dkg_output: public_dwallet_output,
+            hash_scheme,
+            message_centralized_signature,
+            dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
+    };
+    event::emit(completion_event);
     <b>let</b> emit_event = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_current_epoch_dwallet_event">create_current_epoch_dwallet_event</a>(
-        <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSAFutureSignRequestEvent">ECDSAFutureSignRequestEvent</a> {
-                dwallet_id,
-                partial_centralized_signed_message_id,
-                message,
-                presign: presign.presign,
-                dkg_output: public_dwallet_output,
-                hash_scheme,
-                message_centralized_signature,
-                dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
-        },
+        completion_event,
         ctx,
     );
     self.ecdsa_partial_centralized_signed_messages.add(partial_centralized_signed_message_id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSAPartialUserSignature">ECDSAPartialUserSignature</a> {
@@ -4563,10 +4565,10 @@ the function will abort with this error.
                 );
                 response_session_count = response_session_count + 1;
             } <b>else</b> <b>if</b> (message_data_type == 8) {
-                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
-                <b>let</b> partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> rejected = bcs_body.peel_bool();
-                <b>let</b> session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_future_sign">respond_ecdsa_future_sign</a>(
                     dwallet_id,
                     partial_centralized_signed_message_id,

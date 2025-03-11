@@ -1691,17 +1691,19 @@ public(package) fun request_ecdsa_future_sign(
         id: object::new(ctx),
         partial_centralized_signed_message_id,
     };
+    let completion_event = ECDSAFutureSignRequestEvent {
+            dwallet_id,
+            partial_centralized_signed_message_id,
+            message,
+            presign: presign.presign,
+            dkg_output: public_dwallet_output,
+            hash_scheme,
+            message_centralized_signature,
+            dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
+    };
+    event::emit(completion_event);
     let emit_event = self.create_current_epoch_dwallet_event(
-        ECDSAFutureSignRequestEvent {
-                dwallet_id,
-                partial_centralized_signed_message_id,
-                message,
-                presign: presign.presign,
-                dkg_output: public_dwallet_output,
-                hash_scheme,
-                message_centralized_signature,
-                dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
-        },
+        completion_event,
         ctx,
     );
     self.ecdsa_partial_centralized_signed_messages.add(partial_centralized_signed_message_id, ECDSAPartialUserSignature {
@@ -2045,10 +2047,10 @@ fun process_checkpoint_message(
                 );
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 8) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
-                let partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
-                let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 self.respond_ecdsa_future_sign(
                     dwallet_id,
                     partial_centralized_signed_message_id,

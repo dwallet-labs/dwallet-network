@@ -23,9 +23,7 @@ use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
-use crate::dwallet_mpc::{
-    authority_name_to_party_id, party_id_to_authority_name, party_ids_to_authority_names, presign,
-};
+use crate::dwallet_mpc::{authority_name_to_party_id, message_digest, party_id_to_authority_name, party_ids_to_authority_names, presign};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -356,7 +354,7 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
-                let hashed_message = bcs::to_bytes(&Self::message_digest(&event_data.message, &event_data.hash_scheme.try_into().unwrap()).unwrap())?;
+                let hashed_message = bcs::to_bytes(&message_digest(&event_data.message, &event_data.hash_scheme.try_into().unwrap()).unwrap())?;
                 verify_partial_signature(
                     &hashed_message,
                     &event_data.dkg_output,
@@ -373,24 +371,6 @@ impl DWalletMPCSession {
                 })
             }
         }
-    }
-
-    /// Computes the message digest of a given message using the specified hash function.
-    fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1::Scalar> {
-        let hash = match hash_type {
-            Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
-                &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
-            )
-                .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
-
-            Hash::SHA256 => {
-                bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
-                    .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
-            }
-        };
-        #[allow(clippy::useless_conversion)]
-        let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
-        Ok(U256::from(m).into())
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
