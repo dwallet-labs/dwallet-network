@@ -253,7 +253,7 @@ impl DWalletMPCManager {
         match status {
             // Quorum reached, remove the malicious parties from the session messages.
             ReportStatus::QuorumReached => {
-                self.check_for_malicious_ia_report(&report)?;
+                let _ = self.check_for_malicious_ia_report(&report);
                 if report.advance_result == AdvanceResult::Success {
                     // No need to re-perform the last step, as the advance was successful.
                     return Ok(());
@@ -360,7 +360,9 @@ impl DWalletMPCManager {
                 "Received an event for an existing session with session_id: {:?}",
                 session_info.session_id
             );
-            session.event_driven_data = event_driven_data;
+            if session.mpc_event_data.is_none() {
+                session.mpc_event_data = mpc_event_data;
+            }
         } else {
             self.push_new_mpc_session(&session_info.session_id, event_driven_data)?;
         }
@@ -439,12 +441,11 @@ impl DWalletMPCManager {
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
-                    session.pending_quorum_for_highest_round_number =
-                        session.pending_quorum_for_highest_round_number + 1;
+                    session.pending_quorum_for_highest_round_number += 1;
                     let mut session_clone = session.clone();
                     session_clone
                         .serialized_messages
-                        .truncate(session_clone.pending_quorum_for_highest_round_number - 1);
+                        .truncate(session.pending_quorum_for_highest_round_number);
                     Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None
@@ -486,20 +487,23 @@ impl DWalletMPCManager {
             else {
                 return;
             };
-            let Some(live_session) = self.mpc_sessions.get(&ready_to_advance_session.session_id)
-            else {
-                return;
-            };
-            if live_session.event_driven_data.is_none() {
-                self.cryptographic_computations_orchestrator
-                    .pending_for_computation_order
-                    .push_back(oldest_computation_metadata.clone());
-                self.cryptographic_computations_orchestrator
-                    .pending_computation_map
-                    .insert(oldest_computation_metadata, ready_to_advance_session);
-                continue;
+            if ready_to_advance_session.mpc_event_data.is_none() {
+                let Some(live_session) =
+                    self.mpc_sessions.get(&ready_to_advance_session.session_id)
+                else {
+                    return;
+                };
+                if live_session.mpc_event_data.is_none() {
+                    self.cryptographic_computations_orchestrator
+                        .pending_for_computation_order
+                        .push_back(oldest_computation_metadata.clone());
+                    self.cryptographic_computations_orchestrator
+                        .pending_computation_map
+                        .insert(oldest_computation_metadata, ready_to_advance_session);
+                    continue;
+                }
+                ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
             }
-            ready_to_advance_session.event_driven_data = live_session.event_driven_data.clone();
             if let Err(err) = self.spawn_session(&ready_to_advance_session) {
                 error!("failed to spawn session with err: {:?}", err);
             }
