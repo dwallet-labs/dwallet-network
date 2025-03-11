@@ -204,7 +204,10 @@ fn dkg_second_party_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: ObjectID::from(deserialized_event.session_id),
-        mpc_round: MPCProtocolInitData::DKGSecond(deserialized_event.clone()),
+        mpc_round: MPCProtocolInitData::DKGSecond(
+            deserialized_event.clone(),
+            dwallet_network_key_version,
+        ),
     }
 }
 
