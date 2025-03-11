@@ -488,7 +488,8 @@ impl DWalletMPCManager {
                 return;
             };
             if ready_to_advance_session.mpc_event_data.is_none() {
-                let Some(live_session) = self.mpc_sessions.get(&ready_to_advance_session.session_id)
+                let Some(live_session) =
+                    self.mpc_sessions.get(&ready_to_advance_session.session_id)
                 else {
                     return;
                 };
