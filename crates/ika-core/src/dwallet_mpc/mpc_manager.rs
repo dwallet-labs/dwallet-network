@@ -455,11 +455,13 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) fn perform_cryptographic_computation(&mut self) {
-        let pending_computation_instances_len = self
+        while self
             .cryptographic_computations_orchestrator
-            .pending_for_computation_order
-            .len();
-        for _ in 0..pending_computation_instances_len {
+            .currently_running_sessions_count
+            < self
+            .cryptographic_computations_orchestrator
+            .available_cores_for_cryptographic_computations
+        {
             let Some(oldest_computation_metadata) = self
                 .cryptographic_computations_orchestrator
                 .pending_for_computation_order
@@ -467,29 +469,17 @@ impl DWalletMPCManager {
             else {
                 return;
             };
-            let Some(mut ready_to_advance_session) = self
+            let Some(session) = self
                 .cryptographic_computations_orchestrator
                 .pending_computation_map
                 .remove(&oldest_computation_metadata)
             else {
                 return;
             };
-            let Some(live_session) = self.mpc_sessions.get(&ready_to_advance_session.session_id)
-            else {
-                return;
-            };
-            if live_session.mpc_event_data.is_none() {
-                self.cryptographic_computations_orchestrator
-                    .pending_for_computation_order
-                    .push_back(oldest_computation_metadata.clone());
-                self.cryptographic_computations_orchestrator
-                    .pending_computation_map
-                    .insert(oldest_computation_metadata, ready_to_advance_session);
-                continue;
-            }
-            ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
-            if let Err(err) = self.spawn_session(&ready_to_advance_session) {
+
+            if let Err(err) = self.spawn_session(&session) {
                 error!("failed to spawn session with err: {:?}", err);
+                return;
             }
         }
     }
