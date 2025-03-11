@@ -415,9 +415,6 @@ impl DWalletMPCManager {
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, ref mut session)| {
-                // The manager must hold a Network key to advance.
-                // The only exception is if this is the DKG session
-                // that creates and initializes this key for the first time.
                 let quorum_check_result = session.check_quorum_for_next_crypto_round();
                 if quorum_check_result.is_ready {
                     // We must first clone the session, as we approve to advance the current session
