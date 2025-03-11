@@ -2118,7 +2118,7 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::DwalletEncryptedUserShare(EncryptedUserShareOutput {
                     dwallet_id: init_event_data.dwallet_id.to_vec(),
                     encrypted_centralized_secret_share_and_proof: output,
-                    encryption_key_id: init_event_data.encryption_key_id.to_vec(),
+                    encrypted_user_secret_key_share_id: init_event_data.encryption_key_id.to_vec(),
                     session_id: session_info.session_id.to_vec(),
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
