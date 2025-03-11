@@ -64,7 +64,7 @@ export async function createDWallet(
 		dwallet_id: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
 		secret_share: dwalletOutput.secretShare,
-		output: dwalletOutput.dwalletOutput,
+		output: dwalletOutput.completionEvent.public_output,
 	};
 }
 
