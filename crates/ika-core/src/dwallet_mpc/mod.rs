@@ -200,7 +200,7 @@ fn dkg_second_public_input(
 
 fn dkg_second_party_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent>,
-    dwallet_network_key_version: u8,
+    _dwallet_network_key_version: u8,
 ) -> SessionInfo {
     SessionInfo {
         session_id: ObjectID::from(deserialized_event.session_id),
