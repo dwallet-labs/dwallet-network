@@ -49,6 +49,7 @@ interface DWallet {
 	dwallet_id: string;
 	dwallet_cap_id: string;
 	secret_share: Uint8Array;
+	output: Uint8Array;
 }
 
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
@@ -76,6 +77,7 @@ export async function createDWallet(
 		dwallet_id: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
 		secret_share: dwalletOutput.secretShare,
+		output: dwalletOutput.dwalletOutput,
 	};
 }
 
