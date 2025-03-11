@@ -195,6 +195,37 @@ impl<E: DWalletMPCEventTrait> DWalletMPCSuiEvent<E> {
     }
 }
 
+// Event emitted to start an encrypted dWallet centralized (user) key share
+// /// verification process.
+// /// Ika does not support native functions, so an event is emitted and
+// /// caught by the blockchain, which then starts the verification process,
+// /// similar to the MPC processes.
+// public struct EncryptedShareVerificationRequestEvent has copy, drop {
+// /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
+// encrypted_centralized_secret_share_and_proof: vector<u8>,
+//
+// /// The public output of the centralized party,
+// /// belongs to the dWallet that its centralized
+// /// secret share is being encrypted.
+// /// This is not passed by the user,
+// /// but taken from the blockhain during event creation.
+// public_output: vector<u8>,
+//
+// /// The ID of the dWallet that this encrypted secret key share belongs to.
+// dwallet_id: ID,
+//
+// /// The encryption key used to encrypt the secret key share with.
+// encryption_key: vector<u8>,
+//
+// /// The `EncryptionKey` Move object ID.
+// encryption_key_id: ID,
+//
+// encrypted_user_secret_key_share_id: ID,
+//
+// source_encrypted_user_secret_key_share_id: ID,
+// }
+
+
 /// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
 /// Defined here so that we can use it in the [`MPCProtocolInitData`] enum,
 /// as the inner data of the [`MPCProtocolInitData::EncryptedShareVerification`].
@@ -212,15 +243,16 @@ pub struct StartEncryptedShareVerificationEvent {
     pub encryption_key: Vec<u8>,
     /// The `EncryptionKey` Move object ID.
     pub encryption_key_id: ObjectID,
-    pub session_id: ObjectID,
+    pub encrypted_user_secret_key_share_id: ObjectID,
+    pub source_encrypted_user_secret_key_share_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_package_id,
-            name: ident_str!("StartEncryptedShareVerificationEvent").to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            address: *packages_config.ika_system_package_id,
+            name: ident_str!("EncryptedShareVerificationRequestEvent").to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
