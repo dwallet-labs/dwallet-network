@@ -204,13 +204,11 @@ function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent
  * the function encrypts the dWallet secret key share and returns the
  * encrypted key share along with a proof of encryption.
  *
- * @param sourceKeyPair - The key pair that currently owns the sourceDwallet that will
+ * @param sourceConf - The key pair that currently owns the sourceDwallet that will
  * be encrypted for the destination.
  * @param destSuiPublicKey - The public key of the destination entity, used to encrypt the secret user key share.
- * @param sourceDwallet - The dWallet containing the secret user key share to encrypt.
- * @param activeEncryptionKeysTableID - The ID of the table holding the active encryption keys.
- * @returns An object containing the encrypted user key share and proof of encryption,
- *          along with the destination encryption key object ID.
+ * @param dWalletSecretShare - The secret user key share to encrypt.
+ * @returns The encrypted secret user key share.
  * @throws Will throw an error if the destination public key does not have an active encryption key
  *         or if the encryption key is not valid (not signed by the destination's public key).
  */
@@ -218,7 +216,7 @@ export async function encryptUserShareForPublicKey(
 	sourceConf: Config,
 	destSuiPublicKey: PublicKey,
 	dWalletSecretShare: Uint8Array,
-) {
+): Promise<Uint8Array> {
 	const destActiveEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		sourceConf,
 		destSuiPublicKey.toSuiAddress(),
