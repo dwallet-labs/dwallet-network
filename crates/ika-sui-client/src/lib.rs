@@ -262,7 +262,7 @@ where
                     .await
                     .map_err(|e| {
                         IkaError::SuiClientInternalError(format!(
-                            "Can't get_class_groups_public_keys_and_proofs: {e}"
+                            "can't get_class_groups_public_keys_and_proofs: {e}"
                         ))
                     })?;
 
@@ -285,7 +285,8 @@ where
                             class_groups_public_key_and_proof: bcs::to_bytes(
                                 &validators_class_groups_public_key_and_proof
                                     .get(&validator.validator_id)
-                                    // Okay to unwrap because we can't start the chain without the system state data
+                                    // Okay to `unwrap`
+                                    // because we can't start the chain without the system state data.
                                     .unwrap()
                                     .clone(),
                             )
@@ -604,12 +605,12 @@ impl SuiClientInner for SuiSdkClient {
                     .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
                     .await?;
                 let resp = dynamic_field_response.into_object().map_err(|e| {
-                    Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))
+                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
                 })?;
                 // unwrap: requested bcs data
                 let move_object = resp.bcs.unwrap();
                 let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
-                    "Object {:?} is not a MoveObject",
+                    "object {:?} is not a MoveObject",
                     object_id
                 )))?;
                 let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
