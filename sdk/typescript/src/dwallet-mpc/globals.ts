@@ -276,7 +276,7 @@ export function isActiveDWallet(obj: any): obj is ActiveDWallet {
 }
 
 export interface DWallet {
-	dwallet_id: string;
+	dwalletID: string;
 	dwallet_cap_id: string;
 	secret_share: Uint8Array;
 	output: Uint8Array;

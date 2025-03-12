@@ -46,7 +46,7 @@ describe('Test dWallet MPC', () => {
 			sourceConf,
 			destConf.encryptedSecretShareSigningKeypair.getPublicKey(),
 			encryptedUserKeyShareAndProofOfEncryption,
-			sourceDwallet.dwallet_id,
+			sourceDwallet.dwalletID,
 			sourceDwallet.encrypted_secret_share_id,
 		);
 

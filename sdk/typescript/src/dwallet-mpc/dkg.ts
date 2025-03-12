@@ -77,7 +77,7 @@ export async function createDWallet(
 	);
 	await acceptEncryptedUserShare(conf, dwalletOutput.completionEvent);
 	return {
-		dwallet_id: firstRoundOutputResult.dwalletID,
+		dwalletID: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
 		secret_share: dwalletOutput.secretShare,
 		output: dwalletOutput.completionEvent.public_output,
@@ -226,7 +226,7 @@ export async function mockCreateDWallet(
 	return {
 		secret_share: mockSecretShare,
 		dwallet_cap_id: createdDWalletCap.reference.objectId,
-		dwallet_id: dwalletCapObj.dwallet_id,
+		dwalletID: dwalletCapObj.dwallet_id,
 		output: mockOutput,
 		encrypted_secret_share_id: '',
 	};

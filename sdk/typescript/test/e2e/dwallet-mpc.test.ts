@@ -50,25 +50,39 @@ describe('Test dWallet MPC', () => {
 
 	it('should create a dWallet (DKG)', async () => {
 		const dwallet = await createDWallet(conf, mockedProtocolPublicParameters);
-		console.log(`dWallet has been created successfully: ${dwallet.dwallet_id}`);
+		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
 	});
 
 	it('should mock create dwallet', async () => {
-		const result = await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64'));
+		const result = await mockCreateDWallet(
+			conf,
+			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
+			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
+		);
 		console.log(`dWallet has been created successfully: ${result.dwalletID}`);
 	});
 
 	it('should run presign', async () => {
-		const dwalletID = (await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64')))
-			.dwalletID;
+		const dwalletID = (
+			await mockCreateDWallet(
+				conf,
+				Buffer.from(dkgMocks.dwalletOutput, 'base64'),
+				Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
+			)
+		).dwalletID;
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		const presignCompletion = await presign(conf, dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 	});
 
 	it('should mock create presign', async () => {
-		const dwalletID = (await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64')))
-			.dwalletID;
+		const dwalletID = (
+			await mockCreateDWallet(
+				conf,
+				Buffer.from(dkgMocks.dwalletOutput, 'base64'),
+				Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
+			)
+		).dwalletID;
 		const presign = await mockCreatePresign(
 			conf,
 			Buffer.from(mockPresign.presignBytes, 'base64'),
@@ -78,7 +92,11 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should sign', async () => {
-		const dkgResult = await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64'));
+		const dkgResult = await mockCreateDWallet(
+			conf,
+			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
+			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
+		);
 		const presign = await mockCreatePresign(
 			conf,
 			Buffer.from(mockPresign.presignBytes, 'base64'),
@@ -98,7 +116,7 @@ describe('Test dWallet MPC', () => {
 		const dwalletID = await createDWallet(conf, mockedProtocolPublicParameters);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
-		const presignCompletion = await presign(conf, dwalletID.dwallet_id);
+		const presignCompletion = await presign(conf, dwalletID.dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
 		await sign(
