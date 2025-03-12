@@ -607,8 +607,7 @@ impl SuiClientInner for SuiSdkClient {
                 let resp = dynamic_field_response.into_object().map_err(|e| {
                     Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
                 })?;
-                // unwrap: requested bcs data
-                let move_object = resp.bcs.unwrap();
+                let move_object = resp.bcs.expect("bcs data is missing");
                 let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
                     "object {:?} is not a MoveObject",
                     object_id
@@ -629,7 +628,11 @@ impl SuiClientInner for SuiSdkClient {
                 validator.validator_id,
                 validator_class_groups_public_key_and_proof?
                     .try_into()
-                    .map_err(|_| Error::DataError("class groups key from Sui has an invalid length".to_string()))?,
+                    .map_err(|_| {
+                        Error::DataError(
+                            "class groups key from Sui has an invalid length".to_string(),
+                        )
+                    })?,
             );
         }
         Ok(class_groups_public_keys_and_proofs)
