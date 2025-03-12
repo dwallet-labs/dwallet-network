@@ -287,7 +287,7 @@ where
                                     .get(&validator.validator_id)
                                     // Okay to `unwrap`
                                     // because we can't start the chain without the system state data.
-                                    .except("failed to get the validator class groups public key from Sui")
+                                    .expect("failed to get the validator class groups public key from Sui")
                                     .clone(),
                             )
                             .unwrap(),
