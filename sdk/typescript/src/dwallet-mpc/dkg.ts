@@ -46,6 +46,12 @@ interface CompletedDKGSecondRoundEvent {
 	session_id: string;
 }
 
+interface EncryptedDWalletData {
+	dwallet_id: string;
+	public_output: Uint8Array;
+	encrypted_user_secret_key_share_id: string;
+}
+
 interface WaitingForUserDWallet {
 	state: {
 		fields: {
@@ -414,11 +420,11 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		.dwallet_network_decryption_key_id;
 }
 
-async function acceptEncryptedUserShare(
+export async function acceptEncryptedUserShare(
 	conf: Config,
-	completedDKGSecondRoundEvent: CompletedDKGSecondRoundEvent,
+	completedDKGSecondRoundEvent: EncryptedDWalletData,
 ): Promise<void> {
-	const signedPubkeys = await conf.encryptedSecretShareSigningKeypair.sign(
+	const signedPublicOutput = await conf.encryptedSecretShareSigningKeypair.sign(
 		new Uint8Array(completedDKGSecondRoundEvent.public_output),
 	);
 	const dWalletStateData = await getDWalletSecpState(conf);
@@ -432,7 +438,7 @@ async function acceptEncryptedUserShare(
 	const encryptedUserSecretKeyShareIDArg = tx.pure.id(
 		completedDKGSecondRoundEvent.encrypted_user_secret_key_share_id,
 	);
-	const userOutputSignatureArg = tx.pure(bcs.vector(bcs.u8()).serialize(signedPubkeys));
+	const userOutputSignatureArg = tx.pure(bcs.vector(bcs.u8()).serialize(signedPublicOutput));
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSAK1_MOVE_MODULE_NAME}::accept_encrypted_user_share`,
 		arguments: [
