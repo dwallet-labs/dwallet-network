@@ -414,9 +414,15 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		.dwallet_network_decryption_key_id;
 }
 
+interface EncryptedDWalletData {
+	dwallet_id: string;
+	public_output: Uint8Array;
+	encrypted_user_secret_key_share_id: string;
+}
+
 export async function acceptEncryptedUserShare(
 	conf: Config,
-	completedDKGSecondRoundEvent: CompletedDKGSecondRoundEvent,
+	completedDKGSecondRoundEvent: EncryptedDWalletData,
 ): Promise<void> {
 	const signedPublicOutput = await conf.encryptedSecretShareSigningKeypair.sign(
 		new Uint8Array(completedDKGSecondRoundEvent.public_output),
