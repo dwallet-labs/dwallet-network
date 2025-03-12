@@ -32,7 +32,7 @@ pub enum MPCProtocolInitData {
     /// The second round of the DKG protocol.
     /// Contains the data of the event that triggered the round,
     /// and the network key version of the first round.
-    DKGSecond(DWalletMPCSuiEvent<StartDKGSecondRoundEvent>, u8),
+    DKGSecond(DWalletMPCSuiEvent<StartDKGSecondRoundEvent>),
     /// The first round of the Presign protocol for each message in the Batch.
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID (same for each message in the batch),
@@ -63,7 +63,6 @@ pub enum MPCProtocolInitData {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCSessionSpecificState {
     Sign(SignIASessionState),
-    Presign(PresignSessionState),
 }
 
 /// The optional state of the Presign session, if the first round party was
@@ -158,8 +157,6 @@ pub struct DWalletMPCMessage {
 pub struct SessionInfo {
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
-    /// The address of the user that initiated this session.
-    pub initiating_user_address: SuiAddress,
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
     pub mpc_round: MPCProtocolInitData,

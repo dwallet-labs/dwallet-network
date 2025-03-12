@@ -413,6 +413,8 @@ public struct CompletedDWalletDKGSecondRoundEvent has copy, drop {
 
     /// The public output for the second round of the DKG process.
     public_output: vector<u8>,
+    encrypted_user_secret_key_share_id: ID,
+    session_id: ID
 }
 
 public struct RejectedDWalletDKGSecondRoundEvent has copy, drop {
@@ -1232,6 +1234,7 @@ public(package) fun respond_dwallet_dkg_second_round(
     public_output: vector<u8>,
     encrypted_centralized_secret_share_and_proof: vector<u8>,
     encryption_key_address: address,
+    session_id: ID,
     rejected: bool,
     ctx: &mut TxContext
 ) {
@@ -1265,6 +1268,8 @@ public(package) fun respond_dwallet_dkg_second_round(
                 event::emit(CompletedDWalletDKGSecondRoundEvent {
                     dwallet_id,
                     public_output,
+                    encrypted_user_secret_key_share_id,
+                    session_id,
                 });
                 DWalletState::Active {
                     public_output
@@ -1991,6 +1996,7 @@ fun process_checkpoint_message(
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 let encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
@@ -2000,6 +2006,7 @@ fun process_checkpoint_message(
                     public_output,
                     encrypted_centralized_secret_share_and_proof,
                     encryption_key_address,
+                    session_id,
                     rejected,
                     ctx,
                 );

@@ -2075,10 +2075,11 @@ impl AuthorityPerEpochStore {
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::DKGSecond(init_event_data, network_key_version) => {
+            MPCProtocolInitData::DKGSecond(init_event_data) => {
                 let tx = MessageKind::DwalletDKGSecondRoundOutput(DKGSecondRoundOutput {
                     output,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
+                    session_id: session_info.session_id.to_vec(),
                     encrypted_centralized_secret_share_and_proof: bcs::to_bytes(
                         &init_event_data
                             .event_data
@@ -2119,7 +2120,6 @@ impl AuthorityPerEpochStore {
                     encrypted_centralized_secret_share_and_proof: output,
                     encryption_key_id: init_event_data.encryption_key_id.to_vec(),
                     session_id: session_info.session_id.to_vec(),
-                    initiating_user_address: session_info.initiating_user_address.to_vec(),
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
@@ -2128,7 +2128,6 @@ impl AuthorityPerEpochStore {
                     PartialSignatureVerificationOutput {
                         dwallet_id: init_event_data.dwallet_id.to_vec(),
                         session_id: session_info.session_id.to_vec(),
-                        initiating_user_address: session_info.initiating_user_address.to_vec(),
                         signature_data: bcs::to_bytes(&init_event_data.signature_data)?,
                         dwallet_cap_id: init_event_data.dwallet_cap_id.to_vec(),
                         dwallet_mpc_network_decryption_key_version: bcs::to_bytes(
