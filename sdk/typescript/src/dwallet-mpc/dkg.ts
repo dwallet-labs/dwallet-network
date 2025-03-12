@@ -46,6 +46,12 @@ interface CompletedDKGSecondRoundEvent {
 	session_id: string;
 }
 
+interface EncryptedDWalletData {
+	dwallet_id: string;
+	public_output: Uint8Array;
+	encrypted_user_secret_key_share_id: string;
+}
+
 interface WaitingForUserDWallet {
 	state: {
 		fields: {
@@ -412,12 +418,6 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 
 	return innerSystemState.data.content.fields.value.fields.dwallet_network_decryption_key.fields
 		.dwallet_network_decryption_key_id;
-}
-
-interface EncryptedDWalletData {
-	dwallet_id: string;
-	public_output: Uint8Array;
-	encrypted_user_secret_key_share_id: string;
 }
 
 export async function acceptEncryptedUserShare(
