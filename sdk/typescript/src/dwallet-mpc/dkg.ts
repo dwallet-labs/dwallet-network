@@ -256,9 +256,6 @@ export async function dkgSecondRoundMoveCall(
 		startSessionEvent.session_id,
 		isCompletedDKGSecondRoundEvent,
 	);
-
-	const base64Output = Buffer.from(completionEvent.public_output).toString('base64');
-	console.log(`dkg output: ${base64Output}`);
 	return completionEvent;
 }
 
@@ -325,8 +322,6 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 	}
 	const dwalletID = startDKGEvent.event_data.dwallet_id;
 	const output = await waitForDKGFirstRoundOutput(c, dwalletID);
-	const a = Buffer.from(output).toString('base64');
-	console.log(`dkg output: ${Buffer.from(output).toString('base64')}`);
 	return {
 		sessionID: startDKGEvent.session_id,
 		output: output,
@@ -354,12 +349,6 @@ async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Prom
 		if (isMoveObject(dwallet?.data?.content)) {
 			const dwalletMoveObject = dwallet?.data?.content?.fields;
 			if (isWaitingForUserDWallet(dwalletMoveObject)) {
-				const dwalletMoveObjectStateFieldsFirstRoundOutput =
-					dwalletMoveObject.state.fields.first_round_output;
-				const base64Output = Buffer.from(dwalletMoveObjectStateFieldsFirstRoundOutput).toString(
-					'base64',
-				);
-				console.log(`First round output: ${base64Output}`);
 				return dwalletMoveObject.state.fields.first_round_output;
 			}
 		}
