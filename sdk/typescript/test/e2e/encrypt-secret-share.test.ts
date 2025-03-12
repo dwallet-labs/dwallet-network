@@ -4,7 +4,7 @@ import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
-import { createDWallet } from '../../src/dwallet-mpc/dkg';
+import { acceptEncryptedUserShare, createDWallet } from '../../src/dwallet-mpc/dkg';
 import {
 	encryptUserShareForPublicKey,
 	getOrCreateClassGroupsKeyPair,
@@ -42,15 +42,19 @@ describe('Test dWallet MPC', () => {
 		console.log(
 			`encryptedUserKeyShareAndProofOfEncryption: ${encryptedUserKeyShareAndProofOfEncryption}`,
 		);
-		await transferEncryptedSecretShare(
+		const encryptedShareID = await transferEncryptedSecretShare(
 			sourceConf,
 			destConf.encryptedSecretShareSigningKeypair.getPublicKey(),
 			encryptedUserKeyShareAndProofOfEncryption,
 			sourceDwallet.dwalletID,
 			sourceDwallet.encrypted_secret_share_id,
 		);
-
-
+		await acceptEncryptedUserShare(destConf, {
+			dwallet_id: sourceDwallet.dwalletID,
+			encrypted_user_secret_key_share_id: encryptedShareID,
+			public_output: sourceDwallet.output,
+		});
+		console.log(`Secret share has been transferred successfully ${encryptedShareID}`);
 	});
 });
 

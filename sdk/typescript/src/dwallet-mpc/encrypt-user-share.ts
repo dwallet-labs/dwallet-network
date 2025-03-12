@@ -275,7 +275,7 @@ export async function transferEncryptedSecretShare(
 	encryptedUserKeyShareAndProofOfEncryption: Uint8Array,
 	dwalletID: string,
 	source_encrypted_user_secret_key_share_id: string,
-) {
+): Promise<string> {
 	const tx = new Transaction();
 	const dwalletSecpState = await getDWalletSecpState(sourceConf);
 	const dwalletStateArg = tx.sharedObjectRef({
@@ -332,6 +332,7 @@ export async function transferEncryptedSecretShare(
 		sourceConf,
 		startVerificationEvent.event_data.encrypted_user_secret_key_share_id,
 	);
+	return startVerificationEvent.event_data.encrypted_user_secret_key_share_id;
 }
 
 function isStartEncryptedShareVerificationEvent(
