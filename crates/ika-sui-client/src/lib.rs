@@ -607,7 +607,10 @@ impl SuiClientInner for SuiSdkClient {
                 let resp = dynamic_field_response.into_object().map_err(|e| {
                     Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
                 })?;
-                let move_object = resp.bcs.expect("bcs data is missing");
+                let move_object = resp.bcs.ok_or(Error::DataError(format!(
+                    "object {:?} has no bcs data",
+                    object_id
+                )))?;
                 let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
                     "object {:?} is not a MoveObject",
                     object_id
