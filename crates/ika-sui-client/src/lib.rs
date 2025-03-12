@@ -287,7 +287,7 @@ where
                                     .get(&validator.validator_id)
                                     // Okay to `unwrap`
                                     // because we can't start the chain without the system state data.
-                                    .unwrap()
+                                    .except("failed to get the validator class groups public key from Sui")
                                     .clone(),
                             )
                             .unwrap(),
@@ -629,7 +629,7 @@ impl SuiClientInner for SuiSdkClient {
                 validator.validator_id,
                 validator_class_groups_public_key_and_proof?
                     .try_into()
-                    .map_err(|_| Error::DataError("Failed to convert Vec to array".to_string()))?,
+                    .map_err(|_| Error::DataError("class groups key from Sui has an invalid length".to_string()))?,
             );
         }
         Ok(class_groups_public_keys_and_proofs)
