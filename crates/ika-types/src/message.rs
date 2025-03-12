@@ -83,6 +83,7 @@ pub struct DKGFirstRoundOutput {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct DKGSecondRoundOutput {
     pub dwallet_id: Vec<u8>,
+    pub session_id: Vec<u8>,
     pub output: Vec<u8>,
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     pub encryption_key_address: Vec<u8>,
@@ -98,16 +99,16 @@ pub struct PresignOutput {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct SignOutput {
-    pub initiating_user_address: Vec<u8>,
-    pub batch_session_id: Vec<u8>,
-    pub signatures: Vec<u8>,
     pub dwallet_id: Vec<u8>,
-    pub is_future_sign: Vec<u8>,
+    pub sign_id: Vec<u8>,
+    pub session_id: Vec<u8>,
+    pub signature: Vec<u8>,
+    pub is_future_sign: bool,
+    pub rejected: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct EncryptedUserShareOutput {
-    pub initiating_user_address: Vec<u8>,
     pub dwallet_id: Vec<u8>,
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     pub encryption_key_id: Vec<u8>,
@@ -115,18 +116,7 @@ pub struct EncryptedUserShareOutput {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct EncryptionKeyVerificationOutput {
-    pub initiating_user_address: Vec<u8>,
-    pub session_id: Vec<u8>,
-    pub key_signer_public_key: Vec<u8>,
-    pub encryption_key: Vec<u8>,
-    pub encryption_key_signature: Vec<u8>,
-    pub encryption_key_scheme: Vec<u8>,
-}
-
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct PartialSignatureVerificationOutput {
-    pub initiating_user_address: Vec<u8>,
     pub session_id: Vec<u8>,
     pub dwallet_id: Vec<u8>,
     pub dwallet_decentralized_public_output: Vec<u8>,
@@ -157,9 +147,8 @@ pub enum MessageKind {
     // .. more action types go here
     DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
-    DwalletSign(SignOutput),
     DwalletEncryptedUserShare(EncryptedUserShareOutput),
-    DwalletEncryptionKeyVerification(EncryptionKeyVerificationOutput),
+    DwalletSign(SignOutput),
     DwalletPresign(PresignOutput),
     DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
     DwalletMPCNetworkDKGOutput(Secp256K1NetworkDKGOutputSlice),
@@ -181,7 +170,6 @@ impl MessageKind {
             MessageKind::DwalletPresign(_) => "DwalletPresign",
             MessageKind::DwalletSign(_) => "DwalletSign",
             MessageKind::DwalletEncryptedUserShare(_) => "DwalletEncryptedUserShare",
-            MessageKind::DwalletEncryptionKeyVerification(_) => "DwalletEncryptionKeyVerification",
             MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
                 "DwalletPartialSignatureVerificationOutput"
             }
@@ -239,9 +227,6 @@ impl Display for MessageKind {
             }
             MessageKind::DwalletEncryptedUserShare(_) => {
                 writeln!(writer, "MessageKind : DwalletEncryptedUserShare")?;
-            }
-            MessageKind::DwalletEncryptionKeyVerification(_) => {
-                writeln!(writer, "MessageKind : DwalletEncryptionKeyVerification")?;
             }
             MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
                 writeln!(

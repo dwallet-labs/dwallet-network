@@ -149,7 +149,7 @@ pub async fn init_ika_on_sui(
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     merge_coins(publisher_address, &mut context, &client.coin_read_api()).await?;
-    println!("merge coins done, address {:?}", publisher_address);
+    println!("Merge coins done, address {:?}", publisher_address);
 
     println!("Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}");
 
@@ -278,22 +278,6 @@ pub async fn init_ika_on_sui(
         protocol_cap_id,
     )
     .await?;
-
-    println!("Running `system::initialize` done.");
-
-    // Run the network DKG when the network run for the first time, to create network key.
-    let _ = ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
-        publisher_address,
-        &mut context,
-        client.clone(),
-        ika_system_package_id,
-        system_id,
-        init_system_shared_version,
-        dwallet_2pc_mpc_secp256k1_id,
-        dwallet_2pc_mpc_secp256k1_initial_shared_version,
-        protocol_cap_id,
-    )
-    .await;
     println!("Running `system::request_dwallet_network_decryption_key_dkg_by_cap` done.");
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
@@ -531,21 +515,6 @@ async fn init_initialize(
         type_params: vec![],
     };
 
-    let protocol_cap_id = object_changes
-        .iter()
-        .filter_map(|o| match o {
-            ObjectChange::Created {
-                object_id,
-                object_type,
-                ..
-            } if protocol_cap_type == *object_type => Some(*object_id),
-            _ => None,
-        })
-        .collect::<Vec<_>>()
-        .first()
-        .unwrap()
-        .clone();
-
     let protocol_cap_type = StructTag {
         address: ika_system_package_id.into(),
         module: PROTOCOL_CAP_MODULE_NAME.into(),
@@ -642,13 +611,13 @@ async fn merge_coins(
         .iter()
         .map(|c| {
             ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(c.object_ref())))
-                // Safe to unwrap as this function is only being called at the swarm config
+                // Safe to unwrap as this function is only being called at the swarm config.
                 .unwrap()
         })
         .collect::<Vec<_>>();
 
     ptb.command(sui_types::transaction::Command::MergeCoins(
-        // Safe to unwrap as this function is only being called at the swarm config
+        // Safe to unwrap as this function is only being called at the swarm config.
         *coins.first().clone().unwrap(),
         // Keep the gas object out
         coins[1..].to_vec(),

@@ -5,17 +5,12 @@
 //! It provides inner mutability for the [`EpochStore`]
 //! to update the network decryption key shares synchronously.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::{advance_and_serialize, authority_name_to_party_id};
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
-use class_groups::{
-    SecretKeyShareSizedInteger, SecretKeyShareSizedNumber,
-    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    SECP256K1_SCALAR_LIMBS,
-};
+use class_groups::{SecretKeyShareSizedInteger, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER};
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{
     read_class_groups_from_file, ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof,
@@ -24,7 +19,9 @@ use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecrypti
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletMPCSuiEvent, MPCProtocolInitData, SessionInfo};
+use ika_types::messages_dwallet_mpc::{
+    DWalletMPCSuiEvent, MPCProtocolInitData, SessionInfo, StartNetworkDKGEvent,
+};
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
@@ -114,13 +111,21 @@ impl DwalletMPCNetworkKeyVersions {
         let public_output = class_groups_constants::network_dkg_final_output();
         let secret_shares = class_groups_constants::decryption_key_share(party_id);
 
-        let new_key_version = Self::new_dwallet_mpc_network_key(
-            bcs::to_bytes(&public_output).unwrap(),
-            DWalletMPCNetworkKeyScheme::Secp256k1,
-            epoch_store.epoch(),
-            &weighted_threshold_access_structure,
-        )
-        .unwrap();
+        let new_key_version = NetworkDecryptionKeyShares {
+            epoch: epoch_store.epoch(),
+            current_epoch_encryptions_of_shares_per_crt_prime: bcs::to_bytes(
+                &public_output.encryptions_of_shares_per_crt_prime,
+            )
+            .unwrap(),
+            previous_epoch_encryptions_of_shares_per_crt_prime: vec![],
+            encryption_scheme_public_parameters:
+                class_groups_constants::encryption_scheme_public_parameters(),
+            decryption_key_share_public_parameters:
+                class_groups_constants::decryption_key_share_public_parameters(),
+            encryption_key: bcs::to_bytes(&public_output.encryption_key).unwrap(),
+            public_verification_keys: bcs::to_bytes(&public_output.public_verification_keys)
+                .unwrap(),
+        };
 
         let self_decryption_key_share = secret_shares
             .into_iter()
@@ -526,41 +531,35 @@ pub(super) fn network_dkg_session_info(
     key_scheme: DWalletMPCNetworkKeyScheme,
 ) -> DwalletMPCResult<SessionInfo> {
     match key_scheme {
-        DWalletMPCNetworkKeyScheme::Secp256k1 => Ok(dkg_secp256k1_session_info(deserialized_event)),
-        DWalletMPCNetworkKeyScheme::Ristretto => Ok(dkg_ristretto_session_info(deserialized_event)),
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            Ok(network_dkg_secp256k1_session_info(deserialized_event))
+        }
+        DWalletMPCNetworkKeyScheme::Ristretto => {
+            Ok(network_dkg_ristretto_session_info(deserialized_event))
+        }
     }
 }
 
-fn dkg_secp256k1_session_info(
+fn network_dkg_secp256k1_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent>,
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Secp256k1,
-            deserialized_event
-                .event_data
-                .dwallet_network_decryption_key_id
-                .bytes,
-            None,
+            deserialized_event.event_data,
         ),
     }
 }
 
-fn dkg_ristretto_session_info(
+fn network_dkg_ristretto_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent>,
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Ristretto,
-            deserialized_event
-                .event_data
-                .dwallet_network_decryption_key_id
-                .bytes,
-            None,
+            deserialized_event.event_data,
         ),
     }
 }

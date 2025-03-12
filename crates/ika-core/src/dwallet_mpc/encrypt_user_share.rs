@@ -3,17 +3,12 @@ use class_groups::{
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use class_groups_constants::protocol_public_parameters;
-use dwallet_classgroups_types::public_keys_from_dkg_output;
-use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use fastcrypto::traits::{ToFromBytes, VerifyingKey};
 use group::GroupElement;
 use homomorphic_encryption::GroupsPublicParametersAccessors;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{
-    StartEncryptedShareVerificationEvent, StartEncryptionKeyVerificationEvent,
-};
+use ika_types::messages_dwallet_mpc::StartEncryptedShareVerificationEvent;
 use std::marker::PhantomData;
-use sui_types::base_types::SuiAddress;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
@@ -40,22 +35,6 @@ pub(crate) fn verify_encrypted_share(
         &verification_data.encryption_key,
     )
     .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
-}
-
-/// Verifies that the `verification_data`'s public key is matching the initiator Ika address.
-/// Note that the signature is not verified here,
-/// as it is verified in the `register_encryption_key` function before this.
-pub(crate) fn verify_encryption_key(
-    verification_data: &StartEncryptionKeyVerificationEvent,
-) -> DwalletMPCResult<()> {
-    let public_key =
-        <Ed25519PublicKey as ToFromBytes>::from_bytes(&verification_data.key_signer_public_key)
-            .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)?;
-    let derived_ika_addr = SuiAddress::from(&public_key);
-    if derived_ika_addr != verification_data.initiator {
-        return Err(DwalletMPCError::EncryptedUserSharePublicKeyDoesNotMatchAddress);
-    }
-    Ok(())
 }
 
 /// Verifies that the given centralized secret key share

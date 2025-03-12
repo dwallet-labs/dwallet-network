@@ -84,7 +84,7 @@ impl CryptographicComputationsOrchestrator {
     pub(crate) fn insert_ready_sessions(&mut self, sessions: Vec<DWalletMPCSession>) {
         for session in sessions.into_iter() {
             let session_next_round_metadata = DWalletMPCLocalComputationMetadata {
-                session_id: session.session_info.session_id,
+                session_id: session.session_id,
                 crypto_round_number: session.pending_quorum_for_highest_round_number,
             };
             self.pending_computation_map

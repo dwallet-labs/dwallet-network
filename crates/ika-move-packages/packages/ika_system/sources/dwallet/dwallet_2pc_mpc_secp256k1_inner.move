@@ -54,7 +54,7 @@ public struct DWalletEpochCoordinator has key, store {
     committee: BlsCommittee,
     session_count: u32,
     /// The total messages processed.
-    total_messages_processed: u64,
+    total_messages_processed: u32,
     /// The last checkpoint sequence number processed.
     last_processed_checkpoint_sequence_number: Option<u32>,
     /// The fees paid for consuenes validation in IKA.
@@ -413,6 +413,8 @@ public struct CompletedDWalletDKGSecondRoundEvent has copy, drop {
 
     /// The public output for the second round of the DKG process.
     public_output: vector<u8>,
+    encrypted_user_secret_key_share_id: ID,
+    session_id: ID
 }
 
 public struct RejectedDWalletDKGSecondRoundEvent has copy, drop {
@@ -522,6 +524,7 @@ public struct CompletedECDSAPresignEvent has copy, drop {
     /// The session ID.
     session_id: ID,
     presign_id: ID,
+    presign: vector<u8>,
 }
 
 // END OF PRESIGN TYPES
@@ -948,27 +951,16 @@ public(package) fun create_message_approval(
 ///
 /// ### Aborts
 /// - Aborts if the provided `hash_scheme` is not supported by the system (checked during `create_message_approval`).
-public fun approve_messages(
+public fun approve_message(
     dwallet_cap: &DWalletCap,
     hash_scheme: u8,
-    messages: &mut vector<vector<u8>>
-): vector<MessageApproval> {
-    let mut message_approvals = vector::empty<MessageApproval>();
-
-    // Approve all messages and maintain their order.
-    let messages_length = vector::length(messages);
-    let mut i: u64 = 0;
-    while (i < messages_length) {
-        let message = vector::pop_back(messages);
-        vector::push_back(&mut message_approvals, create_message_approval(
-            dwallet_cap.dwallet_id,
-            hash_scheme,
-            message,
-        ));
-        i = i + 1;
-    };
-    vector::reverse(&mut message_approvals);
-    message_approvals
+    message: vector<u8>
+): MessageApproval {
+    create_message_approval(
+        dwallet_cap.dwallet_id,
+        hash_scheme,
+        message,
+    )
 }
 
 /// Checks if the given hash scheme is supported for message signing.
@@ -1246,6 +1238,7 @@ public(package) fun respond_dwallet_dkg_second_round(
     public_output: vector<u8>,
     encrypted_centralized_secret_share_and_proof: vector<u8>,
     encryption_key_address: address,
+    session_id: ID,
     rejected: bool,
     ctx: &mut TxContext
 ) {
@@ -1279,6 +1272,8 @@ public(package) fun respond_dwallet_dkg_second_round(
                 event::emit(CompletedDWalletDKGSecondRoundEvent {
                     dwallet_id,
                     public_output,
+                    encrypted_user_secret_key_share_id,
+                    session_id,
                 });
                 DWalletState::Active {
                     public_output
@@ -1532,6 +1527,7 @@ public(package) fun respond_ecdsa_presign(
         dwallet_id,
         session_id,
         presign_id,
+        presign
     });
 }
 
@@ -1970,7 +1966,7 @@ fun process_checkpoint_message(
         timestamp_ms,
     });
 
-    let messages_len = bcs_body.peel_vec_length();
+    let messages_len = bcs_body.peel_vec_length() as u32;
     let mut i = 0;
     let mut response_session_count = 0;
     while (i < messages_len) {
@@ -1998,12 +1994,13 @@ fun process_checkpoint_message(
                     let _authority = bcs_body.peel_u32();
                     let _num = bcs_body.peel_u64();
             } else if (message_data_type == 3) {
-                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output);
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 let encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
@@ -2013,6 +2010,7 @@ fun process_checkpoint_message(
                     public_output,
                     encrypted_centralized_secret_share_and_proof,
                     encryption_key_address,
+                    session_id,
                     rejected,
                     ctx,
                 );
@@ -2028,9 +2026,9 @@ fun process_checkpoint_message(
                 );
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 6) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
-                let sign_id = object::id_from_address(bcs_body.peel_address());
-                let session_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let signature = bcs_body.peel_vec_u8();
                 let is_future_sign = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
@@ -2043,7 +2041,7 @@ fun process_checkpoint_message(
                     rejected,
                 );
                 response_session_count = response_session_count + 1;
-            } else if (message_data_type == 7) {
+            } else if (message_data_type == 8) {
                 let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
                 let rejected = bcs_body.peel_bool();
@@ -2053,13 +2051,13 @@ fun process_checkpoint_message(
                     rejected,
                 );
                 response_session_count = response_session_count + 1;
-            } else if (message_data_type == 8) {
+            } else if (message_data_type == 7) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let presign = bcs_body.peel_vec_u8();
                 self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx);
                 response_session_count = response_session_count + 1;
-            } else if (message_data_type == 10) {
+            } else if (message_data_type == 9) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let key_shares = bcs_body.peel_vec_u8();

@@ -5,20 +5,23 @@
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
 use crate::dwallet_mpc::sign::SignFirstParty;
+use crate::dwallet_mpc::{
+    authority_name_to_party_id, message_digest, network_key_version_from_key_id,
+};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
 use group::{GroupElement, PartyID};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, SingleSignSessionData,
+    MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, StartSignEvent,
 };
 use mpc::Party;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 use std::sync::{Arc, Weak};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
@@ -153,7 +156,34 @@ impl DWalletMPCOutputsVerifier {
                 malicious_actors: vec![],
             });
         }
-        if let MPCProtocolInitData::Sign(sign_session_data) = &session_info.mpc_round {
+        if let MPCProtocolInitData::Sign(_) = &session_info.mpc_round {
+            let mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
+            let Some(stored_sign_session) = mpc_manager.mpc_sessions.get(&session_info.session_id)
+            else {
+                warn!("received an output for a session that an event has not been received for: {:?}", session_info.session_id);
+                return Ok(OutputVerificationResult {
+                    result: OutputResult::NotEnoughVotes,
+                    malicious_actors: vec![],
+                });
+            };
+            let Some(mpc_event_data) = &stored_sign_session.mpc_event_data else {
+                warn!("received an output for a session that an event has not been received for: {:?}", session_info.session_id);
+                return Ok(OutputVerificationResult {
+                    result: OutputResult::NotEnoughVotes,
+                    malicious_actors: vec![],
+                });
+            };
+            let MPCProtocolInitData::Sign(sign_session_data) = &mpc_event_data.init_protocol_data
+            else {
+                warn!(
+                    "received sign session output for a non-sign session {:?}",
+                    session_info.session_id
+                );
+                return Ok(OutputVerificationResult {
+                    result: OutputResult::NotEnoughVotes,
+                    malicious_actors: vec![],
+                });
+            };
             return match Self::verify_signature(&epoch_store, sign_session_data, output) {
                 Ok(res) => {
                     session_output_data.current_result = OutputResult::AlreadyCommitted;
@@ -181,10 +211,14 @@ impl DWalletMPCOutputsVerifier {
             .authorities_that_sent_output
             .contains(&origin_authority)
         {
-            // Report validators sending an output for the same session twice as malicious.
+            // Duplicate.
+            // We should NOT mark the origin party as malicious, as a message may be processed more than once
+            // due to a bug in the state sync mechanism.
+            // TODO (#697): Understand why consensus rounds that have already been processed are being processed
+            // TODO (#697): while performing state sync.
             return Ok(OutputVerificationResult {
-                result: OutputResult::Malicious,
-                malicious_actors: vec![origin_authority],
+                result: OutputResult::AlreadyCommitted,
+                malicious_actors: vec![],
             });
         }
         session_output_data
@@ -244,7 +278,7 @@ impl DWalletMPCOutputsVerifier {
 
     fn verify_signature(
         epoch_store: &Arc<AuthorityPerEpochStore>,
-        sign_session_data: &SingleSignSessionData,
+        sign_session_data: &StartSignEvent,
         signature: &MPCPublicOutput,
     ) -> DwalletMPCResult<OutputVerificationResult> {
         let sign_output = bcs::from_bytes::<<SignFirstParty as Party>::PublicOutput>(&signature)?;
@@ -258,7 +292,7 @@ impl DWalletMPCOutputsVerifier {
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .get_protocol_public_parameters(
                 DWalletMPCNetworkKeyScheme::Secp256k1,
-                sign_session_data.network_key_version,
+                network_key_version_from_key_id(&sign_session_data.dwallet_mpc_network_key_id),
             )?;
         let protocol_public_parameters: secp256k1::class_groups::ProtocolPublicParameters =
             bcs::from_bytes(&protocol_public_parameters)?;
@@ -277,7 +311,12 @@ impl DWalletMPCOutputsVerifier {
         if let Err(err) = verify_signature(
             sign_output.0,
             sign_output.1,
-            bcs::from_bytes(&sign_session_data.hashed_message)?,
+            message_digest(
+                &sign_session_data.message,
+                &crate::dwallet_mpc::Hash::try_from(sign_session_data.hash_scheme)
+                    .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
+            )
+            .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
             dwallet_public_key,
         ) {
             return Err(DwalletMPCError::SignatureVerificationFailed(

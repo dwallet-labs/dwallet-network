@@ -8,7 +8,6 @@ use crate::dwallet_mpc::network_dkg::network_dkg_session_info;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
     DWALLET_MPC_EVENT_STRUCT_NAME, LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME,
-    START_BATCHED_PRESIGN_EVENT_STRUCT_NAME, START_BATCHED_SIGN_EVENT_STRUCT_NAME,
     START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
     START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
     START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
@@ -17,7 +16,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use ika_types::dwallet_mpc_error::DwalletMPCError;
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEventTrait, DWalletMPCSuiEvent, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
-    SignData, SingleSignSessionData,
+    SignData,
 };
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
@@ -26,94 +25,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sui_types::base_types::ObjectID;
 use sui_types::{base_types::SuiAddress, id::ID, SUI_SYSTEM_ADDRESS};
-
-/// An event to start a batched sign session, i.e.,
-/// a sign session that signs on multiple messages simultaneously.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartBatchedSignEvent {
-    pub session_id: ID,
-    /// An ordered list without duplicates of the messages we need to sign on.
-    pub hashed_messages: Vec<Vec<u8>>,
-    pub initiator: SuiAddress,
-}
-
-/// A representation of the Move event to start a batched presign session, i.e.,
-/// a presign session that creates multiple presigns at once.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartBatchedPresignEvent {
-    pub session_id: ID,
-    pub batch_size: u64,
-    pub initiator: SuiAddress,
-}
-
-/// Represents the Rust version of the Move
-/// struct `ika_system::dwallet::StartSignEvent`.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartSignEvent<D> {
-    /// Unique identifier for the MPC session.
-    pub(super) session_id: ID,
-    /// The address of the user that initiated this session.
-    pub(super) initiator: SuiAddress,
-    /// The ID of the batch sign session that contains this sign session.
-    /// The output of this session will be written to the chain only once,
-    /// along with the entire batch.
-    pub(super) batched_session_id: ID,
-    /// The `DWallet` object's ID associated with the DKG output.
-    pub(super) dwallet_id: ID,
-    /// The public output of the decentralized party in the dWallet DKG process.
-    pub(super) dwallet_decentralized_public_output: Vec<u8>,
-    /// Hashed messages to Sign.
-    pub(super) hashed_message: Vec<u8>,
-    /// The dWallet mpc network key version
-    pub(super) dwallet_mpc_network_key_version: u8,
-    /// The type of data that can be stored with the object.
-    /// Specific to each Digital Signature Algorithm.
-    pub(crate) signature_algorithm_data: D,
-    /// Indicates whether the future sign feature was used to start the session.
-    pub(crate) is_future_sign: bool,
-}
-
-impl<D: DWalletMPCEventTrait> DWalletMPCEventTrait for StartSignEvent<D> {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartSignEvent`]
-    /// events from the chain and initiate the MPC session.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: SUI_SYSTEM_ADDRESS,
-            name: START_SIGN_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![D::type_(packages_config).into()],
-        }
-    }
-}
-
-impl DWalletMPCEventTrait for StartBatchedSignEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartBatchedSignEvent`]
-    /// events from the chain and initiate the MPC session.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_package_id,
-            name: START_BATCHED_SIGN_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
-impl DWalletMPCEventTrait for StartBatchedPresignEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartBatchedPresignEvent`]
-    /// events from the chain and initiate the MPC session.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_package_id,
-            name: START_BATCHED_PRESIGN_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
 
 /// Rust version of the Move [`ika_system::validator_set::LockedNextEpochCommitteeEvent`] type.
 pub struct LockedNextEpochCommitteeEvent {
@@ -129,27 +40,6 @@ impl DWalletMPCEventTrait for LockedNextEpochCommitteeEvent {
             address: *packages_config.ika_package_id,
             name: LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME.to_owned(),
             module: VALIDATOR_SET_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
-/// Rust version of the Move [`ika_system::dwallet_network_key::StartNetworkDKGEvent`] type.
-/// It is used to trigger the start of the network DKG process.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartNetworkDKGEvent {
-    pub(crate) dwallet_network_decryption_key_id: ID,
-}
-
-impl DWalletMPCEventTrait for StartNetworkDKGEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartNetworkDKGEvent`] events from the chain and initiate the MPC session.
-    /// It is used to trigger the start of the network DKG process.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_system_package_id,
-            name: START_NETWORK_DKG_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

@@ -463,10 +463,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
 
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
-        let mut dwallet_mpc_batches_manager =
-            self.epoch_store.get_dwallet_mpc_batches_manager().await;
         for event in self.load_dwallet_mpc_events_from_epoch_start().await? {
-            dwallet_mpc_batches_manager.store_new_session(&event.session_info);
             dwallet_mpc_verifier.monitor_new_session_outputs(&event.session_info);
         }
         for output in self.load_dwallet_mpc_outputs_from_epoch_start().await? {
@@ -476,20 +473,6 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             {
                 Ok(result) => {
                     manager.flag_authorities_as_malicious(&result.malicious_actors);
-                    // TODO (#524): Handle malicious behavior.
-                    if result.result == OutputResult::FirstQuorumReached {
-                        if output.session_info.mpc_round.is_part_of_batch() {
-                            if let Err(err) = dwallet_mpc_batches_manager.store_verified_output(
-                                output.session_info.clone(),
-                                output.output.clone(),
-                            ) {
-                                error!(
-                                    "error storing verified output in batch for session {:?}: {:?}",
-                                    output.session_info.session_id, err
-                                );
-                            }
-                        }
-                    }
                 }
                 Err(err) => {
                     error!(
