@@ -451,7 +451,7 @@ impl DWalletMPCEventTrait for StartSignEvent {
 /// It is used to trigger the start of the network DKG process.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartNetworkDKGEvent {
-    pub dwallet_network_decryption_key_id: ID,
+    pub dwallet_network_decryption_key_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for StartNetworkDKGEvent {
