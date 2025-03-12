@@ -370,7 +370,7 @@ impl DWalletMPCSession {
                     &event_data.dkg_output,
                     &event_data.presign,
                     &event_data.message_centralized_signature,
-                    &bcs::from_bytes(&self.public_input)?,
+                    &bcs::from_bytes(public_input)?,
                     &event_data.dwallet_mpc_network_key_id, // todo delete
                 )?;
 
