@@ -358,14 +358,9 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         &public_input,
         &mut rand_core::OsRng,
     ) {
-        Ok(res) => {
-            println!("messages len: {:?}, inner len: {:?}", messages.len(), 1); //, messages.last().unwrap().len());
-            res
-        }
+        Ok(res) => res,
         Err(e) => {
             let general_error = DwalletMPCError::TwoPCMPCError(format!("{:?}", e));
-            println!("messages len: {:?}, inner len: {:?}", messages, 1); //, messages.last().unwrap().len());
-            println!("error: {:?}", e);
             return match e.into() {
                 // No threshold was reached, so we can't proceed.
                 mpc::Error::ThresholdNotReached { honest_subset } => {

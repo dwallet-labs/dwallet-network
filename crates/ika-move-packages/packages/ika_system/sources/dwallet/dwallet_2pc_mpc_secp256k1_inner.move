@@ -54,7 +54,7 @@ public struct DWalletEpochCoordinator has key, store {
     committee: BlsCommittee,
     session_count: u32,
     /// The total messages processed.
-    total_messages_processed: u64,
+    total_messages_processed: u32,
     /// The last checkpoint sequence number processed.
     last_processed_checkpoint_sequence_number: Option<u32>,
     /// The fees paid for consuenes validation in IKA.
@@ -1966,8 +1966,7 @@ fun process_checkpoint_message(
         timestamp_ms,
     });
 
-    // todo(#715): Implement checkpoint message processing with Enum.
-    let messages_len = bcs_body.peel_vec_length();
+    let messages_len = bcs_body.peel_vec_length() as u32;
     let mut i = 0;
     let mut response_session_count = 0;
     while (i < messages_len) {
@@ -1995,7 +1994,7 @@ fun process_checkpoint_message(
                     let _authority = bcs_body.peel_u32();
                     let _num = bcs_body.peel_u64();
             } else if (message_data_type == 3) {
-                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output);
                 response_session_count = response_session_count + 1;
