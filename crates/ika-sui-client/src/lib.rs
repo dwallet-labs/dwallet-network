@@ -613,12 +613,8 @@ impl SuiClientInner for SuiSdkClient {
                     object_id
                 )))?;
                 let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
-
-                insert_at_index(
-                    &mut validator_class_groups_public_key_and_proof_bytes,
-                    key_slice.name.clone() as usize,
-                    key_slice.value.clone(),
-                );
+                validator_class_groups_public_key_and_proof_bytes
+                    [key_slice.name.clone() as usize] = key_slice.value.clone();
             }
             let validator_class_groups_public_key_and_proof: Result<
                 Vec<SingleEncryptionKeyAndProof>,
@@ -905,14 +901,6 @@ impl SuiClientInner for SuiSdkClient {
                 }
             }
         }
-    }
-}
-
-fn insert_at_index(full: &mut [Vec<u8>; 13], index: usize, val: Vec<u8>) {
-    if index < full.len() {
-        full[index] = val;
-    } else {
-        println!("Index out of bounds: {}", index);
     }
 }
 

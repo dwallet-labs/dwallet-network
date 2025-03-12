@@ -156,7 +156,7 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
             .iter()
             .map(|validator| (validator.authority_name(), validator.voting_power))
             .collect();
-        let class_groups_public_key_and_proof = self
+        let class_groups_public_keys_and_proofs = self
             .active_validators
             .iter()
             .map(|validator| {
@@ -166,7 +166,11 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
                 )
             })
             .collect();
-        Committee::new(self.epoch, voting_rights, class_groups_public_key_and_proof)
+        Committee::new(
+            self.epoch,
+            voting_rights,
+            class_groups_public_keys_and_proofs,
+        )
     }
 
     fn get_consensus_committee(&self) -> ConsensusCommittee {
