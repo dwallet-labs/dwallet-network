@@ -19,9 +19,11 @@ import {
 } from '../../src/dwallet-mpc/globals';
 import { mockCreatePresign, presign } from '../../src/dwallet-mpc/presign';
 import {
+	completeFutureSign,
 	createUnverifiedECDSAPartialUserSignatureCap,
 	Hash,
 	sign,
+	verifyECFSASignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 import { dkgMocks, mockPresign } from './mocks';
 
@@ -115,7 +117,7 @@ describe('Test dWallet MPC', () => {
 		const presignCompletion = await presign(conf, dwalletID.dwallet_id);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
-		await createUnverifiedECDSAPartialUserSignatureCap(
+		const a = await createUnverifiedECDSAPartialUserSignatureCap(
 			conf,
 			presignCompletion.presign_id,
 			dwalletID.dwallet_cap_id,
@@ -124,6 +126,15 @@ describe('Test dWallet MPC', () => {
 			Hash.KECCAK256,
 			networkDecryptionKeyPublicOutput,
 		);
+		const b = await verifyECFSASignWithPartialUserSignatures(conf, a?.id.id!);
+		const c = await completeFutureSign(
+			conf,
+			dwalletID.dwallet_cap_id,
+			Buffer.from('hello world'),
+			Hash.KECCAK256,
+			b?.id.id!,
+		);
+		console.log(`Signature: ${c.signature}`);
 	});
 });
 

@@ -230,6 +230,7 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 		options: {
 			showEffects: true,
 			showEvents: true,
+			showObjectChanges: true,
 		},
 	});
 	const startSessionEvent = result.events?.at(0)?.parsedJson;
@@ -257,7 +258,7 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 	return undefined;
 }
 
-export async function verify_ecdsa_sign_with_partial_user_signatures(
+export async function verifyECFSASignWithPartialUserSignatures(
 	conf: Config,
 	unverifiedECDSAPartialUserSignatureCapID: string,
 ): Promise<VerifiedECDSAPartialUserSignatureCap | undefined> {
@@ -308,7 +309,7 @@ export async function verify_ecdsa_sign_with_partial_user_signatures(
 	return undefined;
 }
 
-export async function complete_future_sign(
+export async function completeFutureSign(
 	conf: Config,
 	dwalletCapID: string,
 	message: Uint8Array,
@@ -325,7 +326,7 @@ export async function complete_future_sign(
 		arguments: [
 			tx.object(dwalletCapID),
 			tx.pure(bcs.u8().serialize(hash.valueOf())),
-			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(message)), // read the messagae from verifyECDSAPartialUserSignature
 		],
 	});
 	const emptyIKACoin = tx.moveCall({
