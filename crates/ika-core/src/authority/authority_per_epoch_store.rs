@@ -2225,6 +2225,43 @@ impl AuthorityPerEpochStore {
             });
         }
         slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
+        slices.extend(slices.clone());
         slices.last_mut().unwrap().is_last = true;
         slices
     }
