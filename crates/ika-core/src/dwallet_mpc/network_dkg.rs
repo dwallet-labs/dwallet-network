@@ -5,18 +5,13 @@
 //! It provides inner mutability for the [`EpochStore`]
 //! to update the network decryption key shares synchronously.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::mpc_events::{StartNetworkDKGEvent, ValidatorDataForNetworkDKG};
+use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::{advance_and_serialize, authority_name_to_party_id};
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
-use class_groups::{
-    SecretKeyShareSizedInteger, SecretKeyShareSizedNumber,
-    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    SECP256K1_SCALAR_LIMBS,
-};
-use class_groups_constants::encryption_scheme_public_parameters;
+use class_groups::{SecretKeyShareSizedInteger, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER};
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{
     read_class_groups_from_file, ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof,
@@ -25,7 +20,9 @@ use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecrypti
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletMPCSuiEvent, MPCProtocolInitData, SessionInfo};
+use ika_types::messages_dwallet_mpc::{
+    DWalletMPCSuiEvent, MPCProtocolInitData, SessionInfo, StartNetworkDKGEvent,
+};
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
@@ -563,11 +560,7 @@ fn network_dkg_secp256k1_session_info(
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Secp256k1,
-            deserialized_event
-                .event_data
-                .dwallet_network_decryption_key_id
-                .bytes,
-            None,
+            deserialized_event.event_data,
         ),
     }
 }
@@ -579,11 +572,7 @@ fn network_dkg_ristretto_session_info(
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Ristretto,
-            deserialized_event
-                .event_data
-                .dwallet_network_decryption_key_id
-                .bytes,
-            None,
+            deserialized_event.event_data,
         ),
     }
 }

@@ -278,22 +278,6 @@ pub async fn init_ika_on_sui(
         protocol_cap_id,
     )
     .await?;
-
-    println!("Running `system::initialize` done.");
-
-    // Run the network DKG when the network runs for the first time, to create the network key.
-    let _ = ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
-        publisher_address,
-        &mut context,
-        client.clone(),
-        ika_system_package_id,
-        system_id,
-        init_system_shared_version,
-        dwallet_2pc_mpc_secp256k1_id,
-        dwallet_2pc_mpc_secp256k1_initial_shared_version,
-        protocol_cap_id,
-    )
-    .await;
     println!("Running `system::request_dwallet_network_decryption_key_dkg_by_cap` done.");
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;

@@ -333,7 +333,7 @@ impl DWalletMPCSession {
                     mpc_event_data.decryption_share.clone(),
                 )
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, _, _) => advance_network_dkg(
+            MPCProtocolInitData::NetworkDkg(key_scheme, _) => advance_network_dkg(
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,

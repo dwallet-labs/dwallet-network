@@ -2146,7 +2146,7 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, dwallet_network_decryption_key_id, _) => {
+            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => {
                 let weighted_threshold_access_structure =
                     self.get_weighted_threshold_access_structure()?;
 
@@ -2168,7 +2168,7 @@ impl AuthorityPerEpochStore {
                                 .map_err(|e| DwalletMPCError::BcsError(e))?;
 
                         let slices = Self::slice_network_dkg_into_messages(
-                            dwallet_network_decryption_key_id,
+                            &init_event.dwallet_network_decryption_key_id.bytes,
                             public_output,
                             key_shares,
                         );
