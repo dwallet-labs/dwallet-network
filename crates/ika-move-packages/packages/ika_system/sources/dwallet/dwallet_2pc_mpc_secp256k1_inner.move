@@ -54,7 +54,7 @@ public struct DWalletEpochCoordinator has key, store {
     committee: BlsCommittee,
     session_count: u32,
     /// The total messages processed.
-    total_messages_processed: u64,
+    total_messages_processed: u32,
     /// The last checkpoint sequence number processed.
     last_processed_checkpoint_sequence_number: Option<u32>,
     /// The fees paid for consuenes validation in IKA.
@@ -413,6 +413,8 @@ public struct CompletedDWalletDKGSecondRoundEvent has copy, drop {
 
     /// The public output for the second round of the DKG process.
     public_output: vector<u8>,
+    encrypted_user_secret_key_share_id: ID,
+    session_id: ID
 }
 
 public struct RejectedDWalletDKGSecondRoundEvent has copy, drop {
@@ -1240,6 +1242,7 @@ public(package) fun respond_dwallet_dkg_second_round(
     public_output: vector<u8>,
     encrypted_centralized_secret_share_and_proof: vector<u8>,
     encryption_key_address: address,
+    session_id: ID,
     rejected: bool,
     ctx: &mut TxContext
 ) {
@@ -1273,6 +1276,8 @@ public(package) fun respond_dwallet_dkg_second_round(
                 event::emit(CompletedDWalletDKGSecondRoundEvent {
                     dwallet_id,
                     public_output,
+                    encrypted_user_secret_key_share_id,
+                    session_id,
                 });
                 DWalletState::Active {
                     public_output
@@ -1970,8 +1975,7 @@ fun process_checkpoint_message(
         timestamp_ms,
     });
 
-    // todo(#715): Implement checkpoint message processing with Enum.
-    let messages_len = bcs_body.peel_vec_length();
+    let messages_len = bcs_body.peel_vec_length() as u32;
     let mut i = 0;
     let mut response_session_count = 0;
     while (i < messages_len) {
@@ -1999,12 +2003,13 @@ fun process_checkpoint_message(
                     let _authority = bcs_body.peel_u32();
                     let _num = bcs_body.peel_u64();
             } else if (message_data_type == 3) {
-                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let dwallet_id = object::id_from_address(bcs_body.peel_address());
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output);
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 let encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
@@ -2014,6 +2019,7 @@ fun process_checkpoint_message(
                     public_output,
                     encrypted_centralized_secret_share_and_proof,
                     encryption_key_address,
+                    session_id,
                     rejected,
                     ctx,
                 );

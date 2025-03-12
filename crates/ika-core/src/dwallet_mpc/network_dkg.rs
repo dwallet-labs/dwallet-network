@@ -5,18 +5,12 @@
 //! It provides inner mutability for the [`EpochStore`]
 //! to update the network decryption key shares synchronously.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::mpc_events::{StartNetworkDKGEvent, ValidatorDataForNetworkDKG};
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::{advance_and_serialize, authority_name_to_party_id};
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
-use class_groups::{
-    SecretKeyShareSizedInteger, SecretKeyShareSizedNumber,
-    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    SECP256K1_SCALAR_LIMBS,
-};
-use class_groups_constants::encryption_scheme_public_parameters;
+use class_groups::{SecretKeyShareSizedInteger, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER};
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{
     read_class_groups_from_file, ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof,
@@ -25,7 +19,9 @@ use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecrypti
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletMPCSuiEvent, MPCProtocolInitData, SessionInfo};
+use ika_types::messages_dwallet_mpc::{
+    DWalletMPCSuiEvent, MPCProtocolInitData, SessionInfo, StartNetworkDKGEvent,
+};
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
@@ -517,24 +513,12 @@ pub(crate) fn advance_network_dkg(
     }
 }
 pub(super) fn network_dkg_public_input(
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
+    encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     key_scheme: DWalletMPCNetworkKeyScheme,
 ) -> DwalletMPCResult<Vec<u8>> {
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            // Todo (#712) Remove the hardcoded path and read the class groups from the system state.
-            let mut encryption_keys_and_proofs = HashMap::new();
-            for i in 1..=4 {
-                let p = read_class_groups_from_file("class-groups.key")?;
-                encryption_keys_and_proofs.insert(
-                    i as PartyID,
-                    ValidatorDataForNetworkDKG {
-                        cg_pubkey_and_proof: p.public_bytes(),
-                        protocol_pubkey_bytes: vec![],
-                    },
-                );
-            }
-            generate_secp256k1_dkg_party_public_input(&encryption_keys_and_proofs)
+            generate_secp256k1_dkg_party_public_input(encryption_keys_and_proofs)
         }
         DWalletMPCNetworkKeyScheme::Ristretto => {
             generate_ristretto_dkg_party_public_input(encryption_keys_and_proofs)
@@ -561,14 +545,9 @@ fn network_dkg_secp256k1_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Secp256k1,
-            deserialized_event
-                .event_data
-                .dwallet_network_decryption_key_id
-                .bytes,
-            None,
+            deserialized_event.event_data,
         ),
     }
 }
@@ -578,38 +557,16 @@ fn network_dkg_ristretto_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Ristretto,
-            deserialized_event
-                .event_data
-                .dwallet_network_decryption_key_id
-                .bytes,
-            None,
+            deserialized_event.event_data,
         ),
     }
 }
 
-fn encryption_keys_and_proofs_from_validator_data(
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
-) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
-    encryption_keys_and_proofs
-        .iter()
-        .map(|(party_id, data)| {
-            Ok((
-                party_id.clone(),
-                bcs::from_bytes(&data.cg_pubkey_and_proof)?,
-            ))
-        })
-        .collect::<DwalletMPCResult<HashMap<_, _>>>()
-}
-
 fn generate_secp256k1_dkg_party_public_input(
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
+    encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    let encryption_keys_and_proofs =
-        encryption_keys_and_proofs_from_validator_data(encryption_keys_and_proofs)?;
-
     let public_params = Secp256k1PublicInput::new::<secp256k1::GroupElement>(
         secp256k1::scalar::PublicParameters::default(),
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
@@ -620,11 +577,8 @@ fn generate_secp256k1_dkg_party_public_input(
 }
 
 fn generate_ristretto_dkg_party_public_input(
-    encryption_keys_and_proofs: &HashMap<PartyID, ValidatorDataForNetworkDKG>,
+    encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    let encryption_keys_and_proofs =
-        encryption_keys_and_proofs_from_validator_data(encryption_keys_and_proofs)?;
-
     let public_params = RistrettoPublicInput::new::<ristretto::GroupElement>(
         ristretto::scalar::PublicParameters::default(),
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,

@@ -57,11 +57,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create a dWallet (DKG)', async () => {
-		let networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf, null);
-		if (!networkDecryptionKeyPublicOutput) {
-			networkDecryptionKeyPublicOutput = mockedNetworkDecryptionKeyPublicOutput;
-		}
-		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
+		const dwallet = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwallet}`);
 	});
 
@@ -107,11 +103,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should sign full flow', async () => {
-		let networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf, null);
-		if (!networkDecryptionKeyPublicOutput) {
-			networkDecryptionKeyPublicOutput = mockedNetworkDecryptionKeyPublicOutput;
-		}
-		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
+		const dwalletID = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
 		const presignCompletion = await presign(conf, dwalletID.dwallet_id);
@@ -124,7 +116,26 @@ describe('Test dWallet MPC', () => {
 			Buffer.from('hello world'),
 			dwalletID.secret_share,
 			Hash.KECCAK256,
-			networkDecryptionKeyPublicOutput,
+			mockedNetworkDecryptionKeyPublicOutput,
+		);
+	});
+
+	it('should sign full flow with on-chain network DKG output', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf, null);
+		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput!);
+		console.log(`dWallet has been created successfully: ${dwalletID}`);
+		await delay(checkpointCreationTime);
+		const presignCompletion = await presign(conf, dwalletID.dwallet_id);
+		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		await delay(checkpointCreationTime);
+		await sign(
+			conf,
+			presignCompletion.presign_id,
+			dwalletID.dwallet_cap_id,
+			Buffer.from('hello world'),
+			dwalletID.secret_share,
+			Hash.KECCAK256,
+			networkDecryptionKeyPublicOutput!,
 		);
 		const b = await verifyECFSASignWithPartialUserSignatures(conf, a?.id.id!);
 		const c = await completeFutureSign(

@@ -1,5 +1,5 @@
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use dwallet_classgroups_types::ClassGroupsPublicKeyAndProofBytes;
+use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use ika_types::crypto::{AuthorityPublicKeyBytes, AuthoritySignature, NetworkPublicKey};
 use serde::{Deserialize, Serialize};
 use sui_types::base_types::SuiAddress;

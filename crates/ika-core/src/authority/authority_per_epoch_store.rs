@@ -73,7 +73,7 @@ use crate::dwallet_mpc::{
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
-use dwallet_classgroups_types::ClassGroupsDecryptionKey;
+use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
 };
@@ -655,6 +655,20 @@ impl AuthorityPerEpochStore {
         s
     }
 
+    pub(crate) fn get_validators_class_groups_public_keys_and_proofs(
+        &self,
+    ) -> IkaResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
+        let mut validators_class_groups_public_keys_and_proofs = HashMap::new();
+        for (name, _) in self.committee().voting_rights.iter() {
+            let party_id = authority_name_to_party_id(name, &self)?;
+            let public_key =
+                bcs::from_bytes(&self.committee().class_groups_public_key_and_proof(name)?)
+                    .map_err(|e| DwalletMPCError::BcsError(e))?;
+            validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
+        }
+        Ok(validators_class_groups_public_keys_and_proofs)
+    }
+
     /// Saves a DWallet MPC message in the `round messages`.
     /// The `round messages` are later being stored to the on-disk DB to allow state sync.
     pub(crate) async fn save_dwallet_mpc_round_message(&self, message: DWalletMPCDBMessage) {
@@ -924,6 +938,7 @@ impl AuthorityPerEpochStore {
         let next_committee = Committee::new(
             next_epoch,
             self.committee.voting_rights.iter().cloned().collect(),
+            self.committee.class_groups_public_keys_and_proofs.clone(),
         );
         self.new_at_next_epoch(
             self.name,
@@ -2080,10 +2095,11 @@ impl AuthorityPerEpochStore {
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::DKGSecond(init_event_data, network_key_version) => {
+            MPCProtocolInitData::DKGSecond(init_event_data) => {
                 let tx = MessageKind::DwalletDKGSecondRoundOutput(DKGSecondRoundOutput {
                     output,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
+                    session_id: session_info.session_id.to_vec(),
                     encrypted_centralized_secret_share_and_proof: bcs::to_bytes(
                         &init_event_data
                             .event_data
@@ -2124,7 +2140,6 @@ impl AuthorityPerEpochStore {
                     encrypted_centralized_secret_share_and_proof: output,
                     encryption_key_id: init_event_data.encryption_key_id.to_vec(),
                     session_id: session_info.session_id.to_vec(),
-                    initiating_user_address: session_info.initiating_user_address.to_vec(),
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
@@ -2142,7 +2157,7 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, dwallet_network_decryption_key_id, _) => {
+            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => {
                 let weighted_threshold_access_structure =
                     self.get_weighted_threshold_access_structure()?;
 
@@ -2164,7 +2179,7 @@ impl AuthorityPerEpochStore {
                                 .map_err(|e| DwalletMPCError::BcsError(e))?;
 
                         let slices = Self::slice_network_dkg_into_messages(
-                            dwallet_network_decryption_key_id,
+                            &init_event.dwallet_network_decryption_key_id,
                             public_output,
                             key_shares,
                         );
@@ -2190,6 +2205,17 @@ impl AuthorityPerEpochStore {
         public_output: Vec<u8>,
         key_shares: Vec<u8>,
     ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
+        #[cfg(not(feature = "with-network-dkg"))]
+        {
+            return vec![Secp256K1NetworkDKGOutputSlice {
+                dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
+                    .clone()
+                    .to_vec(),
+                public_output: vec![],
+                key_shares: vec![],
+                is_last: true,
+            }];
+        }
         let mut slices = Vec::new();
         let public_chunks = public_output.chunks(5 * 1024).collect_vec();
         let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();

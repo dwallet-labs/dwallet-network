@@ -3,7 +3,6 @@ use crate::dwallet_mpc::dkg::{
     DKGFirstParty, DKGFirstPartyPublicInputGenerator, DKGSecondParty,
     DKGSecondPartyPublicInputGenerator,
 };
-use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
@@ -16,6 +15,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::PartyID;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_dwallet_mpc::StartNetworkDKGEvent;
 use ika_types::messages_dwallet_mpc::{DBSuiEvent, StartDKGFirstRoundEvent, StartSignEvent};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEventTrait, DWalletMPCSuiEvent, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
@@ -167,7 +167,6 @@ fn start_encrypted_share_verification_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        initiating_user_address: Default::default(),
         mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
     }
 }
@@ -183,10 +182,6 @@ fn dkg_first_party_session_info(
 ) -> anyhow::Result<SessionInfo> {
     Ok(SessionInfo {
         session_id: deserialized_event.session_id,
-        // TODO (#642): Remove the redundant initiating user address field
-        initiating_user_address: SuiAddress::from_bytes(
-            deserialized_event.session_id.into_bytes(),
-        )?,
         mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event.event_data),
     })
 }
@@ -206,16 +201,11 @@ fn dkg_second_public_input(
 
 fn dkg_second_party_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent>,
-    dwallet_network_key_version: u8,
+    _dwallet_network_key_version: u8,
 ) -> SessionInfo {
     SessionInfo {
         session_id: ObjectID::from(deserialized_event.session_id),
-        // TODO (#642): Remove the redundant initiating user address field
-        initiating_user_address: deserialized_event.session_id.into(),
-        mpc_round: MPCProtocolInitData::DKGSecond(
-            deserialized_event.clone(),
-            dwallet_network_key_version,
-        ),
+        mpc_round: MPCProtocolInitData::DKGSecond(deserialized_event.clone()),
     }
 }
 
@@ -236,8 +226,6 @@ fn presign_party_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        // TODO (#642): Remove the redundant initiating user address field
-        initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::Presign(deserialized_event.event_data),
     }
 }
@@ -277,8 +265,6 @@ fn sign_public_input(
 fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEvent>) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        // TODO (#642): Remove the redundant initiating user address field
-        initiating_user_address: deserialized_event.session_id.into(),
         mpc_round: MPCProtocolInitData::Sign(deserialized_event.event_data.clone()),
     }
 }
@@ -327,11 +313,7 @@ fn get_verify_partial_signatures_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        // TODO (#642): Remove the redundant initiating user address field
-        initiating_user_address: SuiAddress::from_bytes(
-            deserialized_event.session_id.into_bytes(),
-        ).unwrap(),
-        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.event_data.clone()),
+        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
     }
 }
 
@@ -477,7 +459,9 @@ pub(crate) fn session_input_from_event(
                 bcs::from_bytes(&event.contents)?;
             Ok((
                 network_dkg::network_dkg_public_input(
-                    &dwallet_mpc_manager.validators_data_for_network_dkg,
+                    dwallet_mpc_manager
+                        .validators_class_groups_public_keys_and_proofs
+                        .clone(),
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                 )?,
                 Some(bcs::to_bytes(

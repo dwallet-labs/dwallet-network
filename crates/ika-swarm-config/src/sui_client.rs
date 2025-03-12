@@ -278,22 +278,6 @@ pub async fn init_ika_on_sui(
         protocol_cap_id,
     )
     .await?;
-
-    println!("Running `system::initialize` done.");
-
-    // Run the network DKG when the network runs for the first time, to create the network key.
-    let _ = ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
-        publisher_address,
-        &mut context,
-        client.clone(),
-        ika_system_package_id,
-        system_id,
-        init_system_shared_version,
-        dwallet_2pc_mpc_secp256k1_id,
-        dwallet_2pc_mpc_secp256k1_initial_shared_version,
-        protocol_cap_id,
-    )
-    .await;
     println!("Running `system::request_dwallet_network_decryption_key_dkg_by_cap` done.");
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
@@ -1111,10 +1095,8 @@ async fn add_public_keys_and_proofs_with_rng(
     for i in range.0..range.1 {
         let pubkey_and_proof = bcs::to_bytes(&class_groups_public_key_and_proof[i as usize])?;
         let proof_builder = first_ptb.obj(ObjectArg::ImmOrOwnedObject(builder_object_ref))?;
-        let first_proof_bytes_half =
-            first_ptb.pure(bcs::to_bytes(&pubkey_and_proof[0..10_000])?)?;
-        let second_proof_bytes_half =
-            first_ptb.pure(bcs::to_bytes(&pubkey_and_proof[10_000..])?)?;
+        let first_proof_bytes_half = first_ptb.pure(pubkey_and_proof[0..10_000].to_vec())?;
+        let second_proof_bytes_half = first_ptb.pure(pubkey_and_proof[10_000..].to_vec())?;
         first_ptb.programmable_move_call(
             ika_system_package_id,
             CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),

@@ -245,7 +245,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <dd>
 </dd>
 <dt>
-<code>total_messages_processed: u64</code>
+<code>total_messages_processed: u32</code>
 </dt>
 <dd>
  The total messages processed.
@@ -1182,6 +1182,16 @@ Emitted to notify the centralized party.
 </dt>
 <dd>
  The public output for the second round of the DKG process.
+</dd>
+<dt>
+<code>encrypted_user_secret_key_share_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>session_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
 </dd>
 </dl>
 
@@ -3405,7 +3415,7 @@ representing the decentralized computation result.
 - Freezes the created <code><a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet">DWallet</a></code> object to make it immutable.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_second_round">respond_dwallet_dkg_second_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: vector&lt;u8&gt;, encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;, encryption_key_address: <b>address</b>, rejected: bool, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_second_round">respond_dwallet_dkg_second_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: vector&lt;u8&gt;, encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;, encryption_key_address: <b>address</b>, session_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, rejected: bool, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -3420,6 +3430,7 @@ representing the decentralized computation result.
     public_output: vector&lt;u8&gt;,
     encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;,
     encryption_key_address: <b>address</b>,
+    session_id: ID,
     rejected: bool,
     ctx: &<b>mut</b> TxContext
 ) {
@@ -3451,6 +3462,8 @@ representing the decentralized computation result.
                 event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletDKGSecondRoundEvent">CompletedDWalletDKGSecondRoundEvent</a> {
                     dwallet_id,
                     public_output,
+                    encrypted_user_secret_key_share_id,
+                    session_id,
                 });
                 DWalletState::Active {
                     public_output
@@ -4488,8 +4501,7 @@ the function will abort with this error.
         sequence_number,
         timestamp_ms,
     });
-    // todo(#715): Implement checkpoint message processing with Enum.
-    <b>let</b> messages_len = bcs_body.peel_vec_length();
+    <b>let</b> messages_len = bcs_body.peel_vec_length() <b>as</b> u32;
     <b>let</b> <b>mut</b> i = 0;
     <b>let</b> <b>mut</b> response_session_count = 0;
     <b>while</b> (i &lt; messages_len) {
@@ -4517,12 +4529,13 @@ the function will abort with this error.
                     <b>let</b> _authority = bcs_body.peel_u32();
                     <b>let</b> _num = bcs_body.peel_u64();
             } <b>else</b> <b>if</b> (message_data_type == 3) {
-                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> first_round_output = bcs_body.peel_vec_u8();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_first_round">respond_dwallet_dkg_first_round</a>(dwallet_id, first_round_output);
                 response_session_count = response_session_count + 1;
             } <b>else</b> <b>if</b> (message_data_type == 4) {
                 <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> public_output = bcs_body.peel_vec_u8();
                 <b>let</b> encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 <b>let</b> encryption_key_address = <a href="../sui/address.md#sui_address_from_bytes">sui::address::from_bytes</a>(bcs_body.peel_vec_u8());
@@ -4532,6 +4545,7 @@ the function will abort with this error.
                     public_output,
                     encrypted_centralized_secret_share_and_proof,
                     encryption_key_address,
+                    session_id,
                     rejected,
                     ctx,
                 );

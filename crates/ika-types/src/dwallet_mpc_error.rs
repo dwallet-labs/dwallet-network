@@ -125,6 +125,9 @@ pub enum DwalletMPCError {
 
     #[error("unsupported network DKG key scheme")]
     UnsupportedNetworkDKGKeyScheme,
+
+    #[error("failed to find the event driven data")]
+    MissingEventDrivenData,
 }
 
 /// A wrapper type for the result of a runtime operation.
