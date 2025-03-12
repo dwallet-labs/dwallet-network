@@ -4,8 +4,8 @@ import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
 import {
-	DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME,
-	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
+	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	fetchCompletedEvent,
 	getDWalletSecpState,
 	SUI_PACKAGE_ID,
@@ -66,12 +66,15 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 
 	const completedPresignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSAPresignEvent`;
 
-	return await fetchCompletedEvent(
+	const a = await fetchCompletedEvent(
 		conf,
 		startSessionEvent.session_id,
 		isCompletedPresignEvent,
 		completedPresignEventType,
 	);
+	const base64A = Buffer.from(a.presign).toString('base64');
+	console.log(`Presign: ${base64A}`);
+	return a;
 }
 
 function isCompletedPresignEvent(event: any): event is CompletedPresignEvent {
