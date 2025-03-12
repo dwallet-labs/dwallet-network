@@ -9,6 +9,7 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
+import type { DWallet } from './globals.js';
 import {
 	checkpointCreationTime,
 	delay,
@@ -53,13 +54,6 @@ interface WaitingForUserDWallet {
 	};
 }
 
-interface DWallet {
-	dwallet_id: string;
-	dwallet_cap_id: string;
-	secret_share: Uint8Array;
-	output: Uint8Array;
-}
-
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 	return (
 		!!obj?.event_data?.dwallet_id &&
@@ -83,10 +77,11 @@ export async function createDWallet(
 	);
 	await acceptEncryptedUserShare(conf, dwalletOutput.completionEvent);
 	return {
-		dwallet_id: firstRoundOutputResult.dwalletID,
+		dwalletID: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
 		secret_share: dwalletOutput.secretShare,
 		output: dwalletOutput.completionEvent.public_output,
+		encrypted_secret_share_id: dwalletOutput.completionEvent.encrypted_user_secret_key_share_id,
 	};
 }
 
@@ -188,7 +183,8 @@ export async function createDKGFirstRoundOutputMock(
 export async function mockCreateDWallet(
 	conf: Config,
 	mockOutput: Uint8Array,
-): Promise<DKGFirstRoundOutputResult> {
+	mockSecretShare: Uint8Array,
+): Promise<DWallet> {
 	const tx = new Transaction();
 	const dwalletStateObjData = await getDWalletSecpState(conf);
 	const stateArg = tx.sharedObjectRef({
@@ -228,10 +224,11 @@ export async function mockCreateDWallet(
 	);
 
 	return {
-		dwalletCapID: createdDWalletCap.reference.objectId,
+		secret_share: mockSecretShare,
+		dwallet_cap_id: createdDWalletCap.reference.objectId,
 		dwalletID: dwalletCapObj.dwallet_id,
-		sessionID: '',
 		output: mockOutput,
+		encrypted_secret_share_id: '',
 	};
 }
 
