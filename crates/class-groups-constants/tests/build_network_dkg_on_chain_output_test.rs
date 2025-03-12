@@ -4,6 +4,9 @@ use group::{secp256k1, PartyID};
 use mpc::{Weight, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 
+
+// This test is used to generate the mock on-chain output for the network DKG.
+// For internal use.
 #[test]
 fn build_network_dkg_on_chain_output_test() {
     let network_decryption_key_public_output = network_dkg_final_output();
