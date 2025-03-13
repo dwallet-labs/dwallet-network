@@ -71,25 +71,3 @@ impl DWalletMPCEventTrait for LockedNextEpochCommitteeEvent {
         }
     }
 }
-
-/// Rust version of the Move [`ika_system::dwallet_network_key::StartNetworkDKGEvent`] type.
-/// It is used to trigger the start of the network DKG process.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartNetworkDKGEvent {
-    pub(crate) session_id: ID,
-    pub(crate) key_scheme: u8,
-}
-
-impl DWalletMPCEventTrait for StartNetworkDKGEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartNetworkDKGEvent`] events from the chain and initiate the MPC session.
-    /// It is used to trigger the start of the network DKG process.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_package_id,
-            name: START_NETWORK_DKG_EVENT_STRUCT_NAME.to_owned(),
-            module: ident_str!("dwallet_network_key").to_owned(),
-            type_params: vec![],
-        }
-    }
-}

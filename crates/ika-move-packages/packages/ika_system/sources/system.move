@@ -51,10 +51,10 @@ use ika_system::staking_pool::{PoolTokenExchangeRate};
 use ika_system::staked_ika::{StakedIka, FungibleStakedIka};
 use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap};
 use ika_system::validator_set::ValidatorSet;
-use ika_system::committee::Committee;
+use ika_system::bls_committee::BlsCommittee;
 use ika_system::protocol_cap::ProtocolCap;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::dwallet_2pc_mpc_secp256k1::{DWallet2PcMpcSecp256K1};
+use ika_system::dwallet_2pc_mpc_secp256k1::{DWalletCoordinator};
 use sui::balance::Balance;
 use sui::coin::Coin;
 use sui::dynamic_field;
@@ -609,7 +609,7 @@ public fun pool_exchange_rates(
 }
 
 /// Getter returning ids of the currently active validators.
-public fun active_committee(self: &mut System): Committee {
+public fun active_committee(self: &mut System): BlsCommittee {
     let self = self.inner();
     self.active_committee()
 }
@@ -627,16 +627,25 @@ public fun process_checkpoint_message_by_cap(
 // TODO: split dwallet_2pc_mpc_secp256k1 to its own checkpoint
 public fun process_checkpoint_message_by_quorum(
     self: &mut System,
-    dwallet_2pc_mpc_secp256k1: &mut DWallet2PcMpcSecp256K1,
+    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    epoch: u64,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
     let self = self.inner_mut();
-    self.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
-    dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
-    dwallet_2pc_mpc_secp256k1.set_active_committee(self.active_committee());
+    self.process_checkpoint_message_by_quorum(dwallet_2pc_mpc_secp256k1, epoch, signature, signers_bitmap, message, ctx);
+}
+
+public fun request_dwallet_network_decryption_key_dkg_by_cap(
+    self: &mut System,
+    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    cap: &ProtocolCap,
+    ctx: &mut TxContext,
+) {
+    let self = self.inner_mut();
+    self.request_dwallet_network_decryption_key_dkg_by_cap(dwallet_2pc_mpc_secp256k1, cap, ctx);
 }
 
 // === Upgrades ===

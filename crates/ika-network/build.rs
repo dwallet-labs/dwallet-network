@@ -177,7 +177,7 @@ fn build_anemo_services(out_dir: &Path) {
             anemo_build::manual::Method::builder()
                 .name("get_checkpoint_availability")
                 .route_name("GetCheckpointAvailability")
-                .request_type("()")
+                .request_type("crate::state_sync::GetCheckpointAvailabilityRequest")
                 .response_type("crate::state_sync::GetCheckpointAvailabilityResponse")
                 .codec_path(codec_path)
                 .build(),
