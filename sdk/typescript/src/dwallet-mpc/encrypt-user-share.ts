@@ -1,10 +1,10 @@
-import {
-	encrypt_secret_share,
-	generate_secp_cg_keypair_from_seed,
-} from '@dwallet-network/dwallet-mpc-wasm';
+import { encrypt_secret_share, generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs, toHex } from '@mysten/bcs';
 import type { PublicKey } from '@mysten/sui/cryptography';
+import { Ed25519PublicKey } from '@mysten/sui/dist/cjs/keypairs/ed25519/publickey.js';
 import { Transaction } from '@mysten/sui/transactions';
+
+
 
 import type { Config } from './globals.js';
 import {
@@ -17,6 +17,7 @@ import {
 	isMoveObject,
 	SUI_PACKAGE_ID,
 } from './globals.js';
+
 
 /**
  * A class groups key pair.
@@ -43,6 +44,7 @@ interface EncryptionKey {
 	encryption_key: Uint8Array;
 	signer_address: string;
 	encryption_key_signature: Uint8Array;
+	signer_public_key: Uint8Array;
 }
 
 interface CreatedEncryptionKeyEvent {
@@ -225,12 +227,12 @@ function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent
  */
 export async function encryptUserShareForPublicKey(
 	sourceConf: Config,
-	destSuiPublicKey: PublicKey,
+	destSuiAddress: string,
 	dWalletSecretShare: Uint8Array,
 ): Promise<Uint8Array> {
 	const destActiveEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		sourceConf,
-		destSuiPublicKey.toSuiAddress(),
+		destSuiAddress,
 	);
 	if (!destActiveEncryptionKeyObjID) {
 		throw new Error('the dest key pair does not have an active encryption key');
@@ -241,9 +243,13 @@ export async function encryptUserShareForPublicKey(
 		isEncryptionKey,
 	);
 
+	const destSuiPubKey = new Ed25519PublicKey(destActiveEncryptionKeyObj.signer_public_key);
+	if (!(destSuiPubKey.toSuiAddress() === destSuiAddress)) {
+		throw new Error('the destination public key does not match the destination address');
+	}
 	// Make sure that the active signed encryption key is
 	// valid by verifying that the destination public key has signed it.
-	const isValidDestEncryptionKey = await destSuiPublicKey.verify(
+	const isValidDestEncryptionKey = await destSuiPubKey.verify(
 		new Uint8Array(destActiveEncryptionKeyObj.encryption_key),
 		new Uint8Array(destActiveEncryptionKeyObj.encryption_key_signature),
 	);
