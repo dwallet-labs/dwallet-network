@@ -36,7 +36,7 @@ describe('Test dWallet MPC', () => {
 		await delay(checkpointCreationTime);
 		const encryptedUserKeyShareAndProofOfEncryption = await encryptUserShareForPublicKey(
 			sourceConf,
-			destConf.encryptedSecretShareSigningKeypair.getPublicKey(),
+			destConf.encryptedSecretShareSigningKeypair.toSuiAddress(),
 			sourceDwallet.secret_share,
 		);
 		console.log(
