@@ -574,7 +574,7 @@ public struct ECDSAFutureSignRequestEvent has copy, drop {
     partial_centralized_signed_message_id: ID,
     message: vector<u8>,
     presign: vector<u8>,
-    dkg_output: vector<u8>,
+    dwallet_public_output: vector<u8>,
     hash_scheme: u8,
     message_centralized_signature: vector<u8>,
     dwallet_mpc_network_key_id: ID,
@@ -1702,7 +1702,7 @@ public(package) fun request_ecdsa_future_sign(
                 partial_centralized_signed_message_id,
                 message,
                 presign: presign.presign,
-                dkg_output: public_dwallet_output,
+                dwallet_public_output: public_dwallet_output,
                 hash_scheme,
                 message_centralized_signature,
                 dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
@@ -1733,10 +1733,10 @@ public(package) fun request_ecdsa_future_sign(
 
 public(package) fun respond_ecdsa_future_sign(
     self: &mut DWalletCoordinatorInner,
+    session_id: ID,
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
     rejected: bool,
-    session_id: ID,
 ) {
     let partial_centralized_signed_message = self.ecdsa_partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
     assert!(partial_centralized_signed_message.dwallet_id == dwallet_id, EDWalletMismatch);
@@ -2051,15 +2051,15 @@ fun process_checkpoint_message(
                 );
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 8) {
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
-                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 self.respond_ecdsa_future_sign(
+                    session_id,
                     dwallet_id,
                     partial_centralized_signed_message_id,
                     rejected,
-                    session_id,
                 );
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 7) {

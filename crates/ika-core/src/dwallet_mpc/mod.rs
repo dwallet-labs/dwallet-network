@@ -16,12 +16,12 @@ use group::PartyID;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::StartNetworkDKGEvent;
+use ika_types::messages_dwallet_mpc::StartPartialSignaturesVerificationEvent;
 use ika_types::messages_dwallet_mpc::{DBSuiEvent, StartDKGFirstRoundEvent, StartSignEvent};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEventTrait, DWalletMPCSuiEvent, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
     StartDKGSecondRoundEvent, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
 };
-use ika_types::messages_dwallet_mpc::{SignData, StartPartialSignaturesVerificationEvent};
 use k256::ecdsa::hazmat::bits2field;
 use k256::elliptic_curve;
 use k256::elliptic_curve::ops::Reduce;
@@ -132,9 +132,8 @@ pub(crate) fn session_info_from_event(
                 packages_config,
             ) =>
         {
-            let deserialized_event: DWalletMPCSuiEvent<
-                StartPartialSignaturesVerificationEvent,
-            > = bcs::from_bytes(&event.contents)?;
+            let deserialized_event: DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent> =
+                bcs::from_bytes(&event.contents)?;
             Ok(Some(get_verify_partial_signatures_session_info(
                 &deserialized_event,
             )))
@@ -313,7 +312,9 @@ fn get_verify_partial_signatures_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.event_data.clone()),
+        mpc_round: MPCProtocolInitData::PartialSignatureVerification(
+            deserialized_event.event_data.clone(),
+        ),
     }
 }
 
@@ -546,9 +547,8 @@ pub(crate) fn session_input_from_event(
                 packages_config,
             ) =>
         {
-            let deserialized_event: DWalletMPCSuiEvent<
-                StartPartialSignaturesVerificationEvent,
-            > = bcs::from_bytes(&event.contents)?;
+            let deserialized_event: DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent> =
+                bcs::from_bytes(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme

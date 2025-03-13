@@ -36,53 +36,19 @@ interface CompletedFutureSignEvent {
 	partial_centralized_signed_message_id: string;
 }
 
-interface UnverifiedECDSAPartialUserSignatureCap {
-	id: { id: string };
-	partial_centralized_signed_message_id: string;
-}
-
-interface VerifiedECDSAPartialUserSignatureCap {
-	id: { id: string };
-	partial_centralized_signed_message_id: string;
-}
-
-interface ECDSAFutureSignRequestEvent {
-	session_id: string;
-	dwallet_id: string;
-	partial_centralized_signed_message_id: string;
-}
-
 function isCompletedSignEvent(obj: any): obj is CompletedSignEvent {
 	return (
 		obj && 'session_id' in obj && 'sign_id' in obj && 'signature' in obj && 'is_future_sign' in obj
 	);
 }
 
-function isVerifiedECDSAPartialUserSignatureCap(
-	obj: any,
-): obj is VerifiedECDSAPartialUserSignatureCap {
-	return obj && 'partial_centralized_signed_message_id' in obj;
-}
-
 function isCompletedFutureSignEvent(obj: any): obj is CompletedFutureSignEvent {
-	return (
-		obj && 'session_id' in obj && 'dwallet_id' in obj && 'partial_centralized_signed_message_id'
-	);
-}
-
-function isECDSAFutureSignRequestEvent(obj: any): obj is ECDSAFutureSignRequestEvent {
 	return (
 		obj &&
 		'session_id' in obj &&
 		'dwallet_id' in obj &&
 		'partial_centralized_signed_message_id' in obj
 	);
-}
-
-function isUnverifiedECDSAPartialUserSignatureCap(
-	obj: any,
-): obj is UnverifiedECDSAPartialUserSignatureCap {
-	return obj && 'partial_centralized_signed_message_id' in obj;
 }
 
 export async function sign(
@@ -174,7 +140,7 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 	secretKey: Uint8Array,
 	hash = Hash.KECCAK256,
 	networkDecryptionKeyPublicOutput: Uint8Array = mockedNetworkDecryptionKeyPublicOutput,
-): Promise<UnverifiedECDSAPartialUserSignatureCap | undefined> {
+): Promise<string | undefined> {
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
@@ -242,17 +208,22 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 	await fetchCompletedEvent(
 		conf,
 		startSessionEvent.session_id,
-		completedSignEventType,
 		isCompletedFutureSignEvent,
+		completedSignEventType,
 	);
 
-	const objects = result.effects?.created;
+	const objects = result.objectChanges!;
 	if (!objects) {
 		throw new Error('no objects created');
 	}
 	for (const obj of objects) {
-		if (isUnverifiedECDSAPartialUserSignatureCap(obj)) {
-			return obj;
+		if (
+			obj &&
+			'objectType' in obj &&
+			obj.objectType! ===
+				`${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::UnverifiedECDSAPartialUserSignatureCap`
+		) {
+			return obj.objectId;
 		}
 	}
 	return undefined;
@@ -261,17 +232,11 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 export async function verifyECFSASignWithPartialUserSignatures(
 	conf: Config,
 	unverifiedECDSAPartialUserSignatureCapID: string,
-): Promise<VerifiedECDSAPartialUserSignatureCap | undefined> {
-	const unverifiedECDSAPartialUserSignatureCap = await getObjectWithType(
-		conf,
-		unverifiedECDSAPartialUserSignatureCapID,
-		isUnverifiedECDSAPartialUserSignatureCap,
-	);
-
+): Promise<string | undefined> {
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
 
-	const verifiedECDSAPartialUserSignatureCap = tx.moveCall({
+	const [verifiedECDSAPartialUserSignatureCap] = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::verifiy_ecdsa_partial_user_signature_cap`,
 		arguments: [
 			tx.sharedObjectRef({
@@ -282,7 +247,7 @@ export async function verifyECFSASignWithPartialUserSignatures(
 			tx.object(unverifiedECDSAPartialUserSignatureCapID),
 		],
 	});
-	tx.transferObjects(verifiedECDSAPartialUserSignatureCap, conf.suiClientKeypair.toSuiAddress());
+	tx.transferObjects([verifiedECDSAPartialUserSignatureCap], conf.suiClientKeypair.toSuiAddress());
 
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
@@ -290,20 +255,21 @@ export async function verifyECFSASignWithPartialUserSignatures(
 		options: {
 			showEffects: true,
 			showEvents: true,
+			showObjectChanges: true,
 		},
 	});
-	const objects = result.effects?.created;
+	const objects = result.objectChanges!;
 	if (!objects) {
 		throw new Error('no objects created');
 	}
 	for (const obj of objects) {
-		if (isVerifiedECDSAPartialUserSignatureCap(obj)) {
-			if (
-				obj.partial_centralized_signed_message_id ===
-				unverifiedECDSAPartialUserSignatureCap.partial_centralized_signed_message_id
-			) {
-				return obj;
-			}
+		if (
+			obj &&
+			'objectType' in obj &&
+			obj.objectType! ===
+				`${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::VerifiedECDSAPartialUserSignatureCap`
+		) {
+			return obj.objectId;
 		}
 	}
 	return undefined;
@@ -371,7 +337,7 @@ export async function completeFutureSign(
 	return await fetchCompletedEvent(
 		conf,
 		startSessionEvent.session_id,
-		completedSignEventType,
 		isCompletedSignEvent,
+		completedSignEventType,
 	);
 }

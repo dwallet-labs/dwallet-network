@@ -80,7 +80,6 @@ pub(crate) fn verify_partial_signature(
     presign: &[u8],
     partially_signed_message: &[u8],
     protocol_public_parameters: &ProtocolPublicParameters,
-    session_id: &ObjectID,
 ) -> DwalletMPCResult<()> {
     let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
     let dkg_output = bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(

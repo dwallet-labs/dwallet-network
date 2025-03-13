@@ -1634,7 +1634,7 @@ Event emitted when a [<code>PartialCentralizedSignedMessages</code>] object is c
 <dd>
 </dd>
 <dt>
-<code>dkg_output: vector&lt;u8&gt;</code>
+<code>dwallet_public_output: vector&lt;u8&gt;</code>
 </dt>
 <dd>
 </dd>
@@ -4083,7 +4083,7 @@ more details on when this may be used.
                 partial_centralized_signed_message_id,
                 message,
                 presign: presign.presign,
-                dkg_output: public_dwallet_output,
+                dwallet_public_output: public_dwallet_output,
                 hash_scheme,
                 message_centralized_signature,
                 dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
@@ -4118,7 +4118,7 @@ more details on when this may be used.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_future_sign">respond_ecdsa_future_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, partial_centralized_signed_message_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, rejected: bool, session_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_future_sign">respond_ecdsa_future_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, session_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, partial_centralized_signed_message_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, rejected: bool)
 </code></pre>
 
 
@@ -4129,10 +4129,10 @@ more details on when this may be used.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_future_sign">respond_ecdsa_future_sign</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
+    session_id: ID,
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
     rejected: bool,
-    session_id: ID,
 ) {
     <b>let</b> partial_centralized_signed_message = self.ecdsa_partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
     <b>assert</b>!(partial_centralized_signed_message.dwallet_id == dwallet_id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EDWalletMismatch">EDWalletMismatch</a>);
@@ -4577,15 +4577,15 @@ the function will abort with this error.
                 );
                 response_session_count = response_session_count + 1;
             } <b>else</b> <b>if</b> (message_data_type == 8) {
+                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> rejected = bcs_body.peel_bool();
-                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_future_sign">respond_ecdsa_future_sign</a>(
+                    session_id,
                     dwallet_id,
                     partial_centralized_signed_message_id,
                     rejected,
-                    session_id,
                 );
                 response_session_count = response_session_count + 1;
             } <b>else</b> <b>if</b> (message_data_type == 7) {

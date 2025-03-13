@@ -237,7 +237,7 @@ pub struct StartPartialSignaturesVerificationEvent {
     pub dwallet_mpc_network_key_id: ObjectID,
 }
 
-impl DWalletMPCEventTrait for StartPartialSignaturesVerificationEvent{
+impl DWalletMPCEventTrait for StartPartialSignaturesVerificationEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
@@ -317,33 +317,6 @@ impl MaliciousReport {
             malicious_actors,
             session_id,
             advance_result,
-        }
-    }
-}
-
-const SIGN_DATA_STRUCT_NAME: &IdentStr = ident_str!("SignData");
-
-/// A representation of the Move object [`SignData`], which stores data specific to the
-/// signing algorithm used in the MPC protocol.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct SignData {
-    /// The presign object ID, which will be used as the sign MPC protocol ID.
-    pub presign_id: ObjectID,
-    /// The presign protocol output, serialized as bytes.
-    pub presign_output: Vec<u8>,
-    /// The centralized signature of a message.
-    pub message_centralized_signature: Vec<u8>,
-}
-
-impl DWalletMPCEventTrait for SignData {
-    /// This function returns the `StructTag` representation of the Move [`SignData`] object,
-    /// allowing it to be compared with the corresponding Move object on the chain.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_package_id,
-            name: SIGN_DATA_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-            type_params: vec![],
         }
     }
 }

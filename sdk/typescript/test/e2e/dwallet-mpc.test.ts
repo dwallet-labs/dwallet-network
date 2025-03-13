@@ -109,7 +109,7 @@ describe('Test dWallet MPC', () => {
 		const presignCompletion = await presign(conf, dwalletID.dwallet_id);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
-		const a = await createUnverifiedECDSAPartialUserSignatureCap(
+		await sign(
 			conf,
 			presignCompletion.presign_id,
 			dwalletID.dwallet_cap_id,
@@ -117,6 +117,37 @@ describe('Test dWallet MPC', () => {
 			dwalletID.secret_share,
 			Hash.KECCAK256,
 			mockedNetworkDecryptionKeyPublicOutput,
+		);
+	});
+
+	it('should complete future sign full flow', async () => {
+		const dkgResult = await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64'));
+		const presign = await mockCreatePresign(
+			conf,
+			Buffer.from(mockPresign.presignBytes, 'base64'),
+			dkgResult.dwalletID,
+		);
+		await delay(checkpointCreationTime);
+		const unverifiedECDSAPartialUserSignatureCapID =
+			await createUnverifiedECDSAPartialUserSignatureCap(
+				conf,
+				presign.presign_id,
+				dkgResult.dwalletCapID,
+				Buffer.from('hello world'),
+				Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
+				Hash.KECCAK256,
+				mockedNetworkDecryptionKeyPublicOutput,
+			);
+		const verifiedECDSAPartialUserSignatureCapID = await verifyECFSASignWithPartialUserSignatures(
+			conf,
+			unverifiedECDSAPartialUserSignatureCapID!,
+		);
+		await completeFutureSign(
+			conf,
+			dkgResult.dwalletCapID,
+			Buffer.from('hello world'),
+			Hash.KECCAK256,
+			verifiedECDSAPartialUserSignatureCapID!,
 		);
 	});
 
@@ -137,15 +168,6 @@ describe('Test dWallet MPC', () => {
 			Hash.KECCAK256,
 			networkDecryptionKeyPublicOutput!,
 		);
-		const b = await verifyECFSASignWithPartialUserSignatures(conf, a?.id.id!);
-		const c = await completeFutureSign(
-			conf,
-			dwalletID.dwallet_cap_id,
-			Buffer.from('hello world'),
-			Hash.KECCAK256,
-			b?.id.id!,
-		);
-		console.log(`Signature: ${c.signature}`);
 	});
 });
 

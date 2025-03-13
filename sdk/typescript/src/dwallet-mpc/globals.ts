@@ -67,34 +67,6 @@ export async function getObjectWithType<TObject>(
 	return objContent;
 }
 
-export async function getOwnedObjectFiltered<TObject>(
-	conf: Config,
-	typeName: string,
-	isObject: (obj: any) => obj is TObject,
-	filterField: (fields: any) => boolean,
-): Promise<TObject[]> {
-	const objects = await conf.client.getOwnedObjects({
-		owner: conf.suiClientKeypair.getPublicKey().toSuiAddress(),
-		options: { showContent: true },
-	});
-	const filteredObjects = objects.data.filter((obj) => {
-		if (!isMoveObject(obj.data?.content)) {
-			return false;
-		}
-		const objContent = obj.data?.content.fields;
-		if (!isObject(objContent)) {
-			return false;
-		}
-		return obj.data?.content!.dataType === typeName && filterField(objContent);
-	});
-	return filteredObjects.map((obj) => {
-		if (isMoveObject(obj.data?.content) && isObject(obj.data?.content.fields)) {
-			return obj.data?.content.fields;
-		}
-		throw new Error('Invalid object');
-	});
-}
-
 // Mocked network DKG output used for testing purposes in non-production environments.
 export const mockedNetworkDecryptionKeyPublicOutput = Uint8Array.from(
 	Buffer.from(

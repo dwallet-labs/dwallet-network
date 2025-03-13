@@ -957,10 +957,6 @@ fun process_checkpoint_message(
                 let _encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 let _encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
                 let _rejected = bcs_body.peel_bool();
-            }  else if (message_data_type == 5) {
-                let _dwallet_id = object::id_from_address(bcs_body.peel_address());
-                let _encrypted_user_secret_key_share_id = object::id_from_address(bcs_body.peel_address());
-                let _rejected = bcs_body.peel_bool();
             } else if (message_data_type == 7) {
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -973,10 +969,10 @@ fun process_checkpoint_message(
                 let _is_future_sign = bcs_body.peel_bool();
                 let _rejected = bcs_body.peel_bool();
             } else if (message_data_type == 8) {
+                let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _rejected = bcs_body.peel_bool();
-                let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
             } else if (message_data_type == 9) {
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();

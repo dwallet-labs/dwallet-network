@@ -8,10 +8,6 @@ use itertools::Itertools;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
-use k256::ecdsa::hazmat::bits2field;
-use k256::elliptic_curve;
-use k256::U256;
-use k256::elliptic_curve::ops::Reduce;
 use tokio::runtime::Handle;
 use tracing::{error, warn};
 use twopc_mpc::sign::Protocol;
@@ -23,7 +19,10 @@ use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
-use crate::dwallet_mpc::{authority_name_to_party_id, message_digest, party_id_to_authority_name, party_ids_to_authority_names, presign};
+use crate::dwallet_mpc::{
+    authority_name_to_party_id, message_digest, party_id_to_authority_name,
+    party_ids_to_authority_names, presign,
+};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -35,9 +34,6 @@ use ika_types::messages_dwallet_mpc::{
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
-use twopc_mpc::secp256k1;
-use sha3::digest::FixedOutput as Sha3FixedOutput;
-use sha3::Digest as Sha3Digest;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -364,14 +360,19 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
-                let hashed_message = bcs::to_bytes(&message_digest(&event_data.message, &event_data.hash_scheme.try_into().unwrap()).unwrap())?;
+                let hashed_message = bcs::to_bytes(
+                    &message_digest(
+                        &event_data.message,
+                        &event_data.hash_scheme.try_into().unwrap(),
+                    )
+                    .unwrap(),
+                )?;
                 verify_partial_signature(
                     &hashed_message,
                     &event_data.dkg_output,
                     &event_data.presign,
                     &event_data.message_centralized_signature,
                     &bcs::from_bytes(public_input)?,
-                    &event_data.dwallet_mpc_network_key_id, // todo delete
                 )?;
 
                 Ok(AsynchronousRoundResult::Finalize {
@@ -513,28 +514,5 @@ impl DWalletMPCSession {
         Err(DwalletMPCError::TwoPCMPCError(
             "Decryption share not found".to_string(),
         ))
-    }
-}
-
-#[derive(Clone, Debug)]
-enum Hash {
-    KECCAK256 = 0,
-    SHA256 = 1,
-}
-
-
-
-impl TryFrom<u8> for Hash {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Hash::KECCAK256),
-            1 => Ok(Hash::SHA256),
-            _ => Err(anyhow::Error::msg(format!(
-                "invalid value for Hash enum: {}",
-                value
-            ))),
-        }
     }
 }
