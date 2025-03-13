@@ -93,8 +93,6 @@ public struct DWalletNetworkDecryptionKeyCap has key, store {
     dwallet_network_decryption_key_id: ID,
 }
 
-
-
 /// `DWalletNetworkDecryptionKey` represents a network decryption key of
 /// the homomorphiclly encrypted netowrk share.
 public struct DWalletNetworkDecryptionKey has key, store {
