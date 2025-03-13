@@ -428,7 +428,7 @@ function isEncryptedUserSecretKeyShare(obj: any): obj is EncryptedUserSecretKeyS
 	);
 }
 
-async function decryptAndVerifyReceivedUserShare(
+export async function decryptAndVerifyReceivedUserShare(
 	conf: Config,
 	encryptedDWalletData: EncryptedDWalletData,
 	sourceSuiAddress: string,

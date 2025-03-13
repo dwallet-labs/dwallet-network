@@ -6,6 +6,7 @@ import { beforeEach, describe, it } from 'vitest';
 
 import { acceptEncryptedUserShare, createDWallet } from '../../src/dwallet-mpc/dkg';
 import {
+	decryptAndVerifyReceivedUserShare,
 	encryptUserShareForPublicKey,
 	getOrCreateClassGroupsKeyPair,
 	transferEncryptedSecretShare,
@@ -49,11 +50,18 @@ describe('Test dWallet MPC', () => {
 			sourceDwallet.dwalletID,
 			sourceDwallet.encrypted_secret_share_id,
 		);
-		await acceptEncryptedUserShare(destConf, {
+		const encryptedDWalletData = {
 			dwallet_id: sourceDwallet.dwalletID,
 			encrypted_user_secret_key_share_id: encryptedShareID,
 			public_output: sourceDwallet.output,
-		});
+		};
+		const decryptedSecretShare = await decryptAndVerifyReceivedUserShare(
+			destConf,
+			encryptedDWalletData,
+			sourceConf.encryptedSecretShareSigningKeypair.toSuiAddress(),
+		);
+		console.log(`decryptedSecretShare: ${decryptedSecretShare}`);
+		await acceptEncryptedUserShare(destConf, encryptedDWalletData);
 		console.log(`Secret share has been transferred successfully ${encryptedShareID}`);
 	});
 });
