@@ -968,6 +968,11 @@ fun process_checkpoint_message(
                 let _signature = bcs_body.peel_vec_u8();
                 let _is_future_sign = bcs_body.peel_bool();
                 let _rejected = bcs_body.peel_bool();
+            } else if (message_data_type == 9) {
+                bcs_body.peel_vec_u8();
+                bcs_body.peel_vec_u8();
+                bcs_body.peel_vec_u8();
+                bcs_body.peel_bool();
             };
         i = i + 1;
     };

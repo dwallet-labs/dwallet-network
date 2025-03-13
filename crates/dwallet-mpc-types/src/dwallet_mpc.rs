@@ -5,16 +5,16 @@ use thiserror::Error;
 
 // TODO (#650): Rename Move structs
 pub const DWALLET_MPC_EVENT_STRUCT_NAME: &IdentStr = ident_str!("DWalletEvent");
-pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
+pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1");
 pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
 /// There's a wrapper and inner struct to support Move upgradable contracts. Read this doc for further explanations:
 /// https://docs.sui.io/concepts/sui-move-concepts/packages/upgrade.
 pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1_inner");
 pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("DKGFirstRoundRequestEvent");
+    ident_str!("DWalletDKGFirstRoundRequestEvent");
 // TODO (#650): Rename Move structs
 pub const START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("DKGSecondRoundRequestEvent");
+    ident_str!("DWalletDKGSecondRoundRequestEvent");
 // TODO (#650): Rename Move structs
 pub const START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("ECDSAPresignRequestEvent");
@@ -25,7 +25,8 @@ pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("LockedNextEpochCommitteeEvent");
 pub const VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME: &IdentStr =
     ident_str!("ValidatorDataForDWalletSecretShare");
-pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartNetworkDKGEvent");
+pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
+    ident_str!("DWalletNetworkDKGDecryptionKeyRequestEvent");
 
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
@@ -103,6 +104,14 @@ pub struct NetworkDecryptionKeyShares {
     pub public_verification_keys: Vec<u8>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
+pub struct NetworkDecryptionKeyOnChainOutput {
+    pub encryption_key: Vec<u8>,
+    pub decryption_key_share_public_parameters: Vec<u8>,
+    pub encryption_scheme_public_parameters: Vec<u8>,
+    pub public_verification_keys: Vec<u8>,
+}
+
 #[repr(u8)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash, Copy)]
 pub enum DWalletMPCNetworkKeyScheme {
@@ -126,6 +135,19 @@ impl TryFrom<u8> for DWalletMPCNetworkKeyScheme {
             1 => Ok(DWalletMPCNetworkKeyScheme::Secp256k1),
             2 => Ok(DWalletMPCNetworkKeyScheme::Ristretto),
             v => Err(DwalletNetworkMPCError::InvalidDWalletMPCNetworkKey(v)),
+        }
+    }
+}
+
+impl NetworkDecryptionKeyShares {
+    pub fn get_on_chain_output(&self) -> NetworkDecryptionKeyOnChainOutput {
+        NetworkDecryptionKeyOnChainOutput {
+            encryption_key: self.encryption_key.clone(),
+            decryption_key_share_public_parameters: self
+                .decryption_key_share_public_parameters
+                .clone(),
+            encryption_scheme_public_parameters: self.encryption_scheme_public_parameters.clone(),
+            public_verification_keys: self.public_verification_keys.clone(),
         }
     }
 }

@@ -54,7 +54,7 @@ public struct DWalletEpochCoordinator has key, store {
     committee: BlsCommittee,
     session_count: u32,
     /// The total messages processed.
-    total_messages_processed: u32,
+    total_messages_processed: u64,
     /// The last checkpoint sequence number processed.
     last_processed_checkpoint_sequence_number: Option<u32>,
     /// The fees paid for consuenes validation in IKA.
@@ -700,8 +700,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         previous_epoch_shares: vector[],
         public_output: vector[],
         computation_fee_charged_ika: balance::zero(),
-        // TODO: IMPORTANT fix it to be AwaitingNetworkDKG
-        state: DWalletNetworkDecryptionKeyState::NetworkDKGCompleted,
+        state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
     event::emit(self.create_current_epoch_dwallet_event(
         DWalletNetworkDKGDecryptionKeyRequestEvent {
@@ -716,18 +715,23 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
     public_output: vector<u8>,
-    key_shares: vector<u8>
+    key_shares: vector<u8>,
+    is_last: bool,
 ) {
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.public_output = public_output;
-    dwallet_network_decryption_key.current_epoch_shares = key_shares;
+    dwallet_network_decryption_key.public_output.append(public_output);
+    dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
     dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
         DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
-            event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
+            if (is_last) {
+                event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
                 dwallet_network_decryption_key_id,
                 public_output
-            });
-            DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+                });
+                DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+            } else {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+            }
         },
         _ => abort EWrongState
     };
@@ -1962,7 +1966,7 @@ fun process_checkpoint_message(
         timestamp_ms,
     });
 
-    let messages_len = bcs_body.peel_vec_length() as u32;
+    let messages_len = bcs_body.peel_vec_length();
     let mut i = 0;
     let mut response_session_count = 0;
     while (i < messages_len) {
@@ -1990,7 +1994,7 @@ fun process_checkpoint_message(
                     let _authority = bcs_body.peel_u32();
                     let _num = bcs_body.peel_u64();
             } else if (message_data_type == 3) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output);
                 response_session_count = response_session_count + 1;
@@ -2053,10 +2057,17 @@ fun process_checkpoint_message(
                 let presign = bcs_body.peel_vec_u8();
                 self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx);
                 response_session_count = response_session_count + 1;
+            } else if (message_data_type == 9) {
+                let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let public_output = bcs_body.peel_vec_u8();
+                let key_shares = bcs_body.peel_vec_u8();
+                let is_last = bcs_body.peel_bool();
+                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
+                response_session_count = response_session_count + 1;
             };
         i = i + 1;
     };
     let epoch_coordinator = self.active_epochs.borrow_mut(epoch);
     epoch_coordinator.total_messages_processed = epoch_coordinator.total_messages_processed + messages_len;
-    epoch_coordinator.session_count = epoch_coordinator.session_count - response_session_count;
+    epoch_coordinator.session_count = epoch_coordinator.session_count + response_session_count;
 }

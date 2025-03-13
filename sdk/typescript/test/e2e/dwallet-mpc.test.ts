@@ -13,11 +13,12 @@ import {
 	checkpointCreationTime,
 	Config,
 	delay,
-	mockedProtocolPublicParameters,
+	getNetworkDecryptionKeyPublicOutput,
+	mockedNetworkDecryptionKeyPublicOutput,
 	MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';
 import { mockCreatePresign, presign } from '../../src/dwallet-mpc/presign';
-import { sign } from '../../src/dwallet-mpc/sign';
+import { Hash, sign } from '../../src/dwallet-mpc/sign';
 import { dkgMocks, mockPresign } from './mocks';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -31,6 +32,7 @@ describe('Test dWallet MPC', () => {
 			Buffer.from(dWalletSeed).toString('hex'),
 		);
 		const address = keypair.getPublicKey().toSuiAddress();
+		console.log(`Address: ${address}`);
 		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
 		await requestSuiFromFaucetV1({
 			host: getFaucetHost('localnet'),
@@ -49,8 +51,8 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create a dWallet (DKG)', async () => {
-		const dwallet = await createDWallet(conf, mockedProtocolPublicParameters);
-		console.log(`dWallet has been created successfully: ${dwallet.dwallet_id}`);
+		const dwallet = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
+		console.log(`dWallet has been created successfully: ${dwallet}`);
 	});
 
 	it('should mock create dwallet', async () => {
@@ -95,7 +97,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should sign full flow', async () => {
-		const dwalletID = await createDWallet(conf, mockedProtocolPublicParameters);
+		const dwalletID = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
 		const presignCompletion = await presign(conf, dwalletID.dwallet_id);
@@ -107,6 +109,27 @@ describe('Test dWallet MPC', () => {
 			dwalletID.dwallet_cap_id,
 			Buffer.from('hello world'),
 			dwalletID.secret_share,
+			Hash.KECCAK256,
+			mockedNetworkDecryptionKeyPublicOutput,
+		);
+	});
+
+	it('should sign full flow with on-chain network DKG output', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf, null);
+		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput!);
+		console.log(`dWallet has been created successfully: ${dwalletID}`);
+		await delay(checkpointCreationTime);
+		const presignCompletion = await presign(conf, dwalletID.dwallet_id);
+		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		await delay(checkpointCreationTime);
+		await sign(
+			conf,
+			presignCompletion.presign_id,
+			dwalletID.dwallet_cap_id,
+			Buffer.from('hello world'),
+			dwalletID.secret_share,
+			Hash.KECCAK256,
+			networkDecryptionKeyPublicOutput!,
 		);
 	});
 });
@@ -114,7 +137,7 @@ describe('Test dWallet MPC', () => {
 describe('Test dWallet MPC - offline', () => {
 	it('should run sign centralized part', () => {
 		const centralizedSignedMessage = create_sign_centralized_output(
-			mockedProtocolPublicParameters,
+			mockedNetworkDecryptionKeyPublicOutput,
 			MPCKeyScheme.Secp256k1,
 			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
 			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),

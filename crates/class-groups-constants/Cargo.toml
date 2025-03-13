@@ -13,6 +13,7 @@ base64.workspace = true
 serde.workspace = true
 schemars.workspace = true
 anyhow.workspace = true
+dwallet-mpc-types.workspace = true
 
 [lints]
 workspace = true
