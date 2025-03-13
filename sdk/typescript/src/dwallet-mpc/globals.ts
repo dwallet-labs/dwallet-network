@@ -92,7 +92,15 @@ interface IKASystemStateInner {
 interface DWalletNetworkDecryptionKey {
 	fields: {
 		id: { id: string };
-		public_output: Uint8Array;
+		public_output: {
+			fields: {
+				contents: {
+					fields: {
+						id: { id: string };
+					};
+				};
+			};
+		};
 	};
 }
 
@@ -280,11 +288,12 @@ export function isActiveDWallet(obj: any): obj is ActiveDWallet {
 
 export async function getNetworkDecryptionKeyPublicOutput(
 	c: Config,
-	networkDecryptionKeyId: string | null | undefined,
+	networkDecryptionKeyId: string,
 ): Promise<Uint8Array | null> {
 	if (networkDecryptionKeyId === null || networkDecryptionKeyId === undefined) {
 		networkDecryptionKeyId = await getNetworkDecryptionKeyID(c);
 	}
+
 	const networkDecryptionKey = await c.client.getObject({
 		id: networkDecryptionKeyId,
 		options: { showContent: true },
@@ -298,7 +307,29 @@ export async function getNetworkDecryptionKeyPublicOutput(
 		throw new Error('Invalid network decryption key object');
 	}
 
-	return networkDecryptionKey.data.content?.fields?.public_output;
+	const tableVecID =
+		networkDecryptionKey.data.content.fields.public_output.fields.contents.fields.id.id;
+	const dynamicFields = await c.client.getDynamicFields({
+		parentId: tableVecID,
+		limit: 500,
+
+	});
+	let keyParts = [];
+	// eslint-disable-next-line no-constant-condition
+	while (true) {
+		keyParts += dynamicFields.data.map(field => field.name);
+		if (!dynamicFields.hasNextPage) {
+			break;
+		}
+
+	}
+
+	const innerSystemState = await c.client.getDynamicFieldObject({
+		parentId: tableVecID,
+		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
+	});
+	return innerSystemState.data.content;
+	// return networkDecryptionKey.data.content?.fields?.public_output;
 }
 
 export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
