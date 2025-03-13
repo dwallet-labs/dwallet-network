@@ -8,7 +8,7 @@
 #[allow(unused_field)]
 module ika_system::dwallet_2pc_mpc_secp256k1_inner;
 
-use sui::table_vec;
+use sui::table_vec::{Self, TableVec};
 use ika::ika::IKA;
 use sui::sui::SUI;
 use sui::object_table::{Self, ObjectTable};
@@ -25,6 +25,25 @@ use ika_system::bls_committee::{BlsCommittee};
 /// Supported hash schemes for message signing.
 const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
+
+public(package) fun set_table_vec(_a: &mut TableVec<vector<u8>>, _b: &TableVec<vector<u8>>) {
+    while (!_a.is_empty()) {
+        _a.pop_back();
+    };
+    let mut i = 0;
+    while (i < _b.length()) {
+        let vec = _b.borrow(i);
+        let vec_len = vec.length();
+        let mut j = 0;
+        let mut new_vec: vector<u8> = vector[];
+        while (j < vec_len) {
+            new_vec.push_back(*(vec.borrow(j)));
+            j = j + 1;
+        };
+        _a.push_back(new_vec);
+        i = i + 1;
+    }
+}
 
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
