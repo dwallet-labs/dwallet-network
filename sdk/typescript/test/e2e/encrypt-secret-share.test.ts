@@ -14,7 +14,7 @@ import {
 	checkpointCreationTime,
 	Config,
 	delay,
-	mockedProtocolPublicParameters,
+	mockedNetworkDecryptionKeyPublicOutput,
 } from '../../src/dwallet-mpc/globals';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -30,7 +30,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('encrypts a secret share for a given public key and transfers it', async () => {
-		const sourceDwallet = await createDWallet(sourceConf, mockedProtocolPublicParameters);
+		const sourceDwallet = await createDWallet(sourceConf, mockedNetworkDecryptionKeyPublicOutput);
 		// Create Destination Class Groups Keypair & Store it on the chain.
 		await getOrCreateClassGroupsKeyPair(destConf);
 		await delay(checkpointCreationTime);

@@ -6,10 +6,10 @@ import { bcs, toHex } from '@mysten/bcs';
 import type { PublicKey } from '@mysten/sui/cryptography';
 import { Transaction } from '@mysten/sui/transactions';
 
+import type { Config } from './globals.js';
 import {
-	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	Config,
 	delay,
+	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	fetchObjectWithType,
 	getDWalletSecpState,
 	getEncryptionKeyMoveType,

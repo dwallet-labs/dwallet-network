@@ -364,7 +364,7 @@ async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Prom
 	);
 }
 
-async function acceptEncryptedUserShare(
+export async function acceptEncryptedUserShare(
 	conf: Config,
 	completedDKGSecondRoundEvent: EncryptedDWalletData,
 ): Promise<void> {
