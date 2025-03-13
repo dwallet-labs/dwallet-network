@@ -8,6 +8,7 @@
 #[allow(unused_field)]
 module ika_system::dwallet_2pc_mpc_secp256k1_inner;
 
+use sui::table_vec;
 use ika::ika::IKA;
 use sui::sui::SUI;
 use sui::object_table::{Self, ObjectTable};
@@ -73,6 +74,8 @@ public struct DWalletNetworkDecryptionKeyCap has key, store {
     dwallet_network_decryption_key_id: ID,
 }
 
+
+
 /// `DWalletNetworkDecryptionKey` represents a network decryption key of
 /// the homomorphiclly encrypted netowrk share.
 public struct DWalletNetworkDecryptionKey has key, store {
@@ -87,7 +90,7 @@ public struct DWalletNetworkDecryptionKey has key, store {
     previous_epoch_shares: vector<u8>,
 
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    public_output: vector<u8>,
+    public_output: table_vec::TableVec<vector<u8>>,
     /// The fees paid for computation in IKA.
     computation_fee_charged_ika: Balance<IKA>,
     state: DWalletNetworkDecryptionKeyState,
@@ -698,7 +701,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         next_epoch_shares: option::none(),
         //TODO: make sure to include class gorup type and version inside the bytes with the rust code
         previous_epoch_shares: vector[],
-        public_output: vector[],
+        public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
         state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
@@ -719,7 +722,7 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     is_last: bool,
 ) {
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.public_output.append(public_output);
+    dwallet_network_decryption_key.public_output.push_back(public_output);
     dwallet_network_decryption_key.current_epoch_shares.append(key_shares);
     dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
         DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
