@@ -131,7 +131,7 @@ export function isMoveObject(obj: any): obj is MoveObject {
 }
 
 export function getEncryptionKeyMoveType(ikaSystemPackageID: string): string {
-	return `${ikaSystemPackageID}::${DWALLET_ECDSAK1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
+	return `${ikaSystemPackageID}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
 }
 
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
