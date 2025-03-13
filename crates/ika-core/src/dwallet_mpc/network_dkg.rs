@@ -521,7 +521,9 @@ pub(super) fn network_dkg_public_input(
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             // Todo (#712) Remove the hardcoded path and read the class groups from the system state.
             let mut encryption_keys_and_proofs = HashMap::new();
-            let p = read_class_groups_from_file("class-groups.key")?;
+            let p = read_class_groups_from_file(
+                "class-groups-keys-mock-files/class-groups-mock-key-full",
+            )?;
             for i in 1..=4 {
                 encryption_keys_and_proofs.insert(
                     i as PartyID,
