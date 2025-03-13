@@ -9,7 +9,6 @@ use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
     ComputationUpdate, CryptographicComputationsOrchestrator,
 };
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
-use crate::dwallet_mpc::mpc_events::ValidatorDataForNetworkDKG;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
@@ -19,6 +18,7 @@ use crate::dwallet_mpc::sign::{
 use crate::dwallet_mpc::{authority_name_to_party_id, party_id_to_authority_name};
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
 use class_groups::DecryptionKeyShare;
+use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
     MPCSessionStatus,
@@ -85,7 +85,8 @@ pub struct DWalletMPCManager {
     max_active_mpc_sessions: usize,
     epoch_id: EpochId,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-    pub(crate) validators_data_for_network_dkg: HashMap<PartyID, ValidatorDataForNetworkDKG>,
+    pub(crate) validators_class_groups_public_keys_and_proofs:
+        HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     pub(crate) cryptographic_computations_orchestrator: CryptographicComputationsOrchestrator,
     /// A struct for managing malicious actors in MPC protocols.
     /// This struct maintains a record of malicious actors reported by validators.
@@ -105,12 +106,6 @@ pub enum DWalletMPCDBMessage {
     /// Signal delivery of messages has ended,
     /// now the sessions that received a quorum of messages can advance.
     EndOfDelivery,
-    /// A validator's public key and proof for the network DKG protocol.
-    /// Each validator's data is being emitted separately because the proof size is
-    /// almost 250 KB, which is the maximum event size in Sui.
-    /// The manager accumulates the data until it receives such an event for all validators,
-    /// and then it starts the network DKG protocol.
-    ValidatorDataForDKG(ValidatorDataForNetworkDKG),
     /// A message indicating that an MPC session has failed.
     /// The advance failed, and the session needs to be restarted or marked as failed.
     MPCSessionFailed(ObjectID),
@@ -154,7 +149,9 @@ impl DWalletMPCManager {
             max_active_mpc_sessions: 200, //todo (yael): Ask sadika what about this . node_config.max_active_dwallet_mpc_sessions,
             node_config,
             weighted_threshold_access_structure,
-            validators_data_for_network_dkg: HashMap::new(),
+            validators_class_groups_public_keys_and_proofs: epoch_store
+                .get_validators_class_groups_public_keys_and_proofs()
+                .map_err(|e| DwalletMPCError::MPCManagerError(e.to_string()))?,
             cryptographic_computations_orchestrator: mpc_computations_orchestrator,
             malicious_handler: MaliciousHandler::new(quorum_threshold, weighted_parties),
         })
@@ -179,14 +176,6 @@ impl DWalletMPCManager {
             DWalletMPCDBMessage::EndOfDelivery => {
                 if let Err(err) = self.handle_end_of_delivery().await {
                     error!("failed to handle the end of delivery with error: {:?}", err);
-                }
-            }
-            DWalletMPCDBMessage::ValidatorDataForDKG(data) => {
-                if let Err(err) = self.handle_validator_data_for_network_dkg(data) {
-                    error!(
-                        "failed to handle validator data for DKG session with error: {:?}",
-                        err
-                    );
                 }
             }
             DWalletMPCDBMessage::MPCSessionFailed(_session_id) => {
@@ -310,24 +299,6 @@ impl DWalletMPCManager {
                 self.malicious_handler
                     .report_malicious_actors(&vec![sign_state.initiating_ia_authority]);
             }
-        }
-        Ok(())
-    }
-
-    fn handle_validator_data_for_network_dkg(
-        &mut self,
-        data: ValidatorDataForNetworkDKG,
-    ) -> DwalletMPCResult<()> {
-        let epoch_store = self.epoch_store()?;
-        let party_id = authority_name_to_party_id(
-            &AuthorityPublicKeyBytes::from_bytes(&data.protocol_pubkey_bytes)
-                .map_err(|e| DwalletMPCError::InvalidPartyPublicKey(e))?,
-            &epoch_store,
-        )?;
-        if self.validators_data_for_network_dkg.contains_key(&party_id) {
-            debug!("Received duplicate data for party_id: {:?}", party_id);
-        } else {
-            self.validators_data_for_network_dkg.insert(party_id, data);
         }
         Ok(())
     }
