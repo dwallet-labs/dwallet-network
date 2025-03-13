@@ -5,6 +5,9 @@ use crate::metrics::SuiClientMetrics;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use core::panic;
+use dwallet_classgroups_types::{
+    ClassGroupsEncryptionKeyAndProof, SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEYS,
+};
 use fastcrypto::traits::ToFromBytes;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::error::{IkaError, IkaResult};
@@ -253,6 +256,16 @@ where
                     .map(|v| v.value.clone())
                     .collect::<Vec<_>>();
 
+                let validators_class_groups_public_key_and_proof = self
+                    .inner
+                    .get_class_groups_public_keys_and_proofs(&validators)
+                    .await
+                    .map_err(|e| {
+                        IkaError::SuiClientInternalError(format!(
+                            "can't get_class_groups_public_keys_and_proofs: {e}"
+                        ))
+                    })?;
+
                 let validators = ika_system_state_inner
                     .validators
                     .active_committee
@@ -269,6 +282,15 @@ where
                             protocol_pubkey: metadata.protocol_pubkey.clone(),
                             network_pubkey: metadata.network_pubkey.clone(),
                             consensus_pubkey: metadata.consensus_pubkey.clone(),
+                            class_groups_public_key_and_proof: bcs::to_bytes(
+                                &validators_class_groups_public_key_and_proof
+                                    .get(&validator.validator_id)
+                                    // Okay to `unwrap`
+                                    // because we can't start the chain without the system state data.
+                                    .expect("failed to get the validator class groups public key from Sui")
+                                    .clone(),
+                            )
+                            .unwrap(),
                             network_address: metadata.network_address.clone(),
                             p2p_address: metadata.p2p_address.clone(),
                             consensus_address: metadata.consensus_address.clone(),
@@ -475,6 +497,11 @@ pub trait SuiClientInner: Send + Sync {
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
 
+    async fn get_class_groups_public_keys_and_proofs(
+        &self,
+        validators: &Vec<ValidatorInnerV1>,
+    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error>;
+
     async fn get_system_inner(
         &self,
         system_id: ObjectID,
@@ -549,6 +576,69 @@ impl SuiClientInner for SuiSdkClient {
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
         self.read_api().get_move_object_bcs(system_id).await
+    }
+
+    async fn get_class_groups_public_keys_and_proofs(
+        &self,
+        validators: &Vec<ValidatorInnerV1>,
+    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
+        let mut class_groups_public_keys_and_proofs: HashMap<
+            ObjectID,
+            ClassGroupsEncryptionKeyAndProof,
+        > = HashMap::new();
+        for validator in validators {
+            let metadata = validator.verified_metadata();
+            let dynamic_fields = self
+                .read_api()
+                .get_dynamic_fields(
+                    metadata.class_groups_public_key_and_proof.contents.id,
+                    None,
+                    None,
+                )
+                .await?;
+            let mut validator_class_groups_public_key_and_proof_bytes: [Vec<u8>;
+                NUM_OF_CLASS_GROUPS_KEYS] = Default::default();
+            for df in dynamic_fields.data.iter() {
+                let object_id = df.object_id;
+                let dynamic_field_response = self
+                    .read_api()
+                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                    .await?;
+                let resp = dynamic_field_response.into_object().map_err(|e| {
+                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+                })?;
+                let move_object = resp.bcs.ok_or(Error::DataError(format!(
+                    "object {:?} has no bcs data",
+                    object_id
+                )))?;
+                let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+                    "object {:?} is not a MoveObject",
+                    object_id
+                )))?;
+                let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
+                validator_class_groups_public_key_and_proof_bytes
+                    [key_slice.name.clone() as usize] = key_slice.value.clone();
+            }
+            let validator_class_groups_public_key_and_proof: Result<
+                Vec<SingleEncryptionKeyAndProof>,
+                _,
+            > = validator_class_groups_public_key_and_proof_bytes
+                .into_iter()
+                .map(|v| bcs::from_bytes::<SingleEncryptionKeyAndProof>(&v))
+                .collect();
+
+            class_groups_public_keys_and_proofs.insert(
+                validator.validator_id,
+                validator_class_groups_public_key_and_proof?
+                    .try_into()
+                    .map_err(|_| {
+                        Error::DataError(
+                            "class groups key from Sui has an invalid length".to_string(),
+                        )
+                    })?,
+            );
+        }
+        Ok(class_groups_public_keys_and_proofs)
     }
 
     async fn get_system_inner(

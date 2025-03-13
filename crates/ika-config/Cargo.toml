@@ -10,6 +10,7 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+dwallet-mpc-types.workspace = true
 dwallet-classgroups-types.workspace = true
 anemo.workspace = true
 anyhow = { workspace = true, features = ["backtrace"] }
