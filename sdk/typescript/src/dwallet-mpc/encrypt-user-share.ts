@@ -67,6 +67,20 @@ interface VerifiedEncryptedUserSecretKeyShare {
 	state: any;
 }
 
+interface EncryptedUserSecretKeyShare {
+	id: { id: string };
+	dwallet_id: string;
+	encrypted_centralized_secret_share_and_proof: Uint8Array;
+	encryption_key_id: string;
+	encryption_key_address: string;
+	source_encrypted_user_secret_key_share_id: string;
+	state: {
+		fields: {
+			user_output_signature: Uint8Array;
+		};
+	};
+}
+
 function isEncryptionKey(obj: any): obj is EncryptionKey {
 	return 'encryption_key' in obj && 'signer_address' in obj && 'encryption_key_signature' in obj;
 }
@@ -400,20 +414,6 @@ async function waitForChainVerification(conf: Config, encryptedSecretShareObjID:
 			conf.timeout / (60 * 1000)
 		} minutes (${seconds} seconds passed).`,
 	);
-}
-
-interface EncryptedUserSecretKeyShare {
-	id: { id: string };
-	dwallet_id: string;
-	encrypted_centralized_secret_share_and_proof: Uint8Array;
-	encryption_key_id: string;
-	encryption_key_address: string;
-	source_encrypted_user_secret_key_share_id: string;
-	state: {
-		fields: {
-			user_output_signature: Uint8Array;
-		};
-	};
 }
 
 function isEncryptedUserSecretKeyShare(obj: any): obj is EncryptedUserSecretKeyShare {
