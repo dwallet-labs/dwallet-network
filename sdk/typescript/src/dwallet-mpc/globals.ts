@@ -130,6 +130,10 @@ export function isMoveObject(obj: any): obj is MoveObject {
 	return obj?.fields !== undefined;
 }
 
+export function getEncryptionKeyMoveType(ikaSystemPackageID: string): string {
+	return `${ikaSystemPackageID}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
+}
+
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (
 		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_network_decryption_keys !== undefined &&
@@ -318,4 +322,12 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 			.dwallet_2pc_mpc_secp256k1_network_decryption_keys;
 	return network_decryption_keys[network_decryption_keys.length - 1]?.fields
 		?.dwallet_network_decryption_key_id;
+}
+
+export interface DWallet {
+	dwalletID: string;
+	dwallet_cap_id: string;
+	secret_share: Uint8Array;
+	output: Uint8Array;
+	encrypted_secret_share_id: string;
 }

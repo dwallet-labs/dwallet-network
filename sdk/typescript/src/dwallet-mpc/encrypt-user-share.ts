@@ -1,13 +1,21 @@
-import { generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
+import {
+	encrypt_secret_share,
+	generate_secp_cg_keypair_from_seed,
+} from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs, toHex } from '@mysten/bcs';
+import type { PublicKey } from '@mysten/sui/cryptography';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config } from './globals.js';
 import {
-	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
+	Config,
+	delay,
 	fetchObjectWithType,
 	getDWalletSecpState,
+	getEncryptionKeyMoveType,
+	getObjectWithType,
+	isMoveObject,
+	SUI_PACKAGE_ID,
 } from './globals.js';
 
 /**
@@ -42,6 +50,17 @@ interface CreatedEncryptionKeyEvent {
 	signer_address: string;
 }
 
+interface StartEncryptedShareVerificationEvent {
+	event_data: {
+		encrypted_user_secret_key_share_id: string;
+	};
+	session_id: string;
+}
+
+interface VerifiedEncryptedUserSecretKeyShare {
+	state: any;
+}
+
 function isEncryptionKey(obj: any): obj is EncryptionKey {
 	return 'encryption_key' in obj && 'signer_address' in obj && 'encryption_key_signature' in obj;
 }
@@ -54,12 +73,10 @@ export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<Class
 		conf,
 		conf.encryptedSecretShareSigningKeypair.toSuiAddress(),
 	);
-	const encryptionKeyMoveType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
-
 	if (activeEncryptionKeyObjID) {
 		const activeEncryptionKeyObj = await fetchObjectWithType<EncryptionKey>(
 			conf,
-			encryptionKeyMoveType,
+			getEncryptionKeyMoveType(conf.ikaConfig.ika_system_package_id),
 			isEncryptionKey,
 			activeEncryptionKeyObjID,
 		);
@@ -185,4 +202,174 @@ async function registerEncryptionKey(
 
 function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent {
 	return 'encryption_key_id' in obj && 'signer_address' in obj;
+}
+
+/**
+ * Encrypts the given dWallet secret user key share for a given destination public key.
+ * This is needed to ensure that the destination entity can
+ * later verify and decrypt the encrypted dWallet secret key share.
+ *
+ * The function ensures that the destination public key has an active encryption key and
+ * verifies its authenticity by checking its signature against the public key.
+ * If the encryption key is valid,
+ * the function encrypts the dWallet secret key share and returns the
+ * encrypted key share along with a proof of encryption.
+ *
+ * @param sourceConf - The key pair that currently owns the sourceDwallet that will
+ * be encrypted for the destination.
+ * @param destSuiPublicKey - The public key of the destination entity, used to encrypt the secret user key share.
+ * @param dWalletSecretShare - The secret user key share to encrypt.
+ * @returns The encrypted secret user key share.
+ * @throws Will throw an error if the destination public key does not have an active encryption key
+ *         or if the encryption key is not valid (not signed by the destination's public key).
+ */
+export async function encryptUserShareForPublicKey(
+	sourceConf: Config,
+	destSuiPublicKey: PublicKey,
+	dWalletSecretShare: Uint8Array,
+): Promise<Uint8Array> {
+	const destActiveEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
+		sourceConf,
+		destSuiPublicKey.toSuiAddress(),
+	);
+	if (!destActiveEncryptionKeyObjID) {
+		throw new Error('the dest key pair does not have an active encryption key');
+	}
+	const destActiveEncryptionKeyObj = await getObjectWithType<EncryptionKey>(
+		sourceConf,
+		destActiveEncryptionKeyObjID,
+		isEncryptionKey,
+	);
+
+	// Make sure that the active signed encryption key is
+	// valid by verifying that the destination public key has signed it.
+	const isValidDestEncryptionKey = await destSuiPublicKey.verify(
+		new Uint8Array(destActiveEncryptionKeyObj.encryption_key),
+		new Uint8Array(destActiveEncryptionKeyObj.encryption_key_signature),
+	);
+	if (!isValidDestEncryptionKey) {
+		throw new Error(
+			'the destination encryption key has not been signed by the destination public key',
+		);
+	}
+
+	// Encrypt the centralized secret key share with the destination active encryption key.
+	return encrypt_secret_share(
+		// Centralized Secret Key Share.
+		dWalletSecretShare,
+		// Encryption Key.
+		new Uint8Array(destActiveEncryptionKeyObj.encryption_key),
+	);
+}
+
+/**
+ * Transfers an encrypted dWallet user secret key share from a source entity to destination entity.
+ * This function emits an event with the encrypted user secret key share,
+ * along with its cryptographic proof, to the blockchain.
+ * The chain verifies that the encrypted data matches the expected secret key share
+ * associated with the dWallet before creating an `EncryptedUserSecretKeyShare` object.
+ */
+export async function transferEncryptedSecretShare(
+	sourceConf: Config,
+	destSuiPublicKey: PublicKey,
+	encryptedUserKeyShareAndProofOfEncryption: Uint8Array,
+	dwalletID: string,
+	source_encrypted_user_secret_key_share_id: string,
+): Promise<string> {
+	const tx = new Transaction();
+	const dwalletSecpState = await getDWalletSecpState(sourceConf);
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dwalletSecpState.object_id,
+		initialSharedVersion: dwalletSecpState.initial_shared_version,
+		mutable: true,
+	});
+	const dwalletIDArg = tx.pure.id(dwalletID);
+	const destinationEncryptionKeyAddress = destSuiPublicKey.toSuiAddress();
+	const destinationEncryptionKeyAddressArg = tx.pure.address(destinationEncryptionKeyAddress);
+	const encryptedCentralizedSecretShareAndProofArg = tx.pure(
+		bcs.vector(bcs.u8()).serialize(encryptedUserKeyShareAndProofOfEncryption),
+	);
+	const sourceEncryptedUserSecretKeyShareIDArg = tx.pure.id(
+		source_encrypted_user_secret_key_share_id,
+	);
+	const emptyIKACoin = tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::zero`,
+		arguments: [],
+		typeArguments: [`${sourceConf.ikaConfig.ika_package_id}::ika::IKA`],
+	});
+
+	tx.moveCall({
+		target: `${sourceConf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_re_encrypt_user_share_for`,
+		arguments: [
+			dwalletStateArg,
+			dwalletIDArg,
+			destinationEncryptionKeyAddressArg,
+			encryptedCentralizedSecretShareAndProofArg,
+			sourceEncryptedUserSecretKeyShareIDArg,
+			emptyIKACoin,
+			tx.gas,
+		],
+	});
+
+	tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
+		arguments: [emptyIKACoin],
+		typeArguments: [`${sourceConf.ikaConfig.ika_package_id}::ika::IKA`],
+	});
+
+	const result = await sourceConf.client.signAndExecuteTransaction({
+		signer: sourceConf.suiClientKeypair,
+		transaction: tx,
+		options: {
+			showEvents: true,
+		},
+	});
+	const startVerificationEvent = result.events?.at(0)?.parsedJson;
+	if (!isStartEncryptedShareVerificationEvent(startVerificationEvent)) {
+		throw new Error('invalid start DKG first round event');
+	}
+	await waitForChainVerification(
+		sourceConf,
+		startVerificationEvent.event_data.encrypted_user_secret_key_share_id,
+	);
+	return startVerificationEvent.event_data.encrypted_user_secret_key_share_id;
+}
+
+function isStartEncryptedShareVerificationEvent(
+	obj: any,
+): obj is StartEncryptedShareVerificationEvent {
+	return !!obj?.session_id && !!obj?.event_data?.encrypted_user_secret_key_share_id;
+}
+
+function isVerifiedEncryptedUserSecretKeyShare(
+	obj: any,
+): obj is VerifiedEncryptedUserSecretKeyShare {
+	return obj.state.variant === 'NetworkVerificationCompleted';
+}
+
+async function waitForChainVerification(conf: Config, encryptedSecretShareObjID: string) {
+	const startTime = Date.now();
+
+	while (Date.now() - startTime <= conf.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		await delay(5_000);
+		const dwallet = await conf.client.getObject({
+			id: encryptedSecretShareObjID,
+			options: {
+				showContent: true,
+			},
+		});
+		if (isMoveObject(dwallet?.data?.content)) {
+			const dwalletMoveObject = dwallet?.data?.content?.fields;
+			if (isVerifiedEncryptedUserSecretKeyShare(dwalletMoveObject)) {
+				return;
+			}
+		}
+	}
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch the VerifiedEncryptedUserSecretKeyShare object within ${
+			conf.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
 }
