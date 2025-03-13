@@ -7,14 +7,16 @@ import type { PublicKey } from '@mysten/sui/cryptography';
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config } from './globals.js';
 import {
+	Config,
 	delay,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
+	EncryptedDWalletData,
 	fetchObjectWithType,
 	getDWalletSecpState,
 	getEncryptionKeyMoveType,
 	getObjectWithType,
+	isActiveDWallet,
 	isMoveObject,
 	SUI_PACKAGE_ID,
 } from './globals.js';
@@ -378,4 +380,48 @@ async function waitForChainVerification(conf: Config, encryptedSecretShareObjID:
 			conf.timeout / (60 * 1000)
 		} minutes (${seconds} seconds passed).`,
 	);
+}
+
+interface EncryptedUserSecretKeyShare {
+	id: { id: string };
+	dwallet_id: string;
+	encrypted_centralized_secret_share_and_proof: Uint8Array;
+	encryption_key_id: string;
+	encryption_key_address: string;
+	source_encrypted_user_secret_key_share_id: string;
+	state: {
+		fields: {
+			user_output_signature: Uint8Array;
+		};
+	};
+}
+
+function isEncryptedUserSecretKeyShare(obj: any): obj is EncryptedUserSecretKeyShare {
+	return (
+		obj?.id?.id !== undefined &&
+		obj?.dwallet_id !== undefined &&
+		obj?.encrypted_centralized_secret_share_and_proof !== undefined &&
+		obj?.encryption_key_id !== undefined &&
+		obj?.encryption_key_address !== undefined &&
+		obj?.source_encrypted_user_secret_key_share_id !== undefined &&
+		obj?.state?.fields?.user_output_signature !== undefined
+	);
+}
+
+async function verifyReceivedUserShare(conf: Config, encryptedDWalletData: EncryptedDWalletData, sourceSuiAddress: string) {
+	const dwallet = await getObjectWithType(conf, encryptedDWalletData.dwallet_id, isActiveDWallet);
+	const dwalletOutput = dwallet.state.fields.public_output;
+	const encryptedDWalletSecretShare = await getObjectWithType(
+		conf,
+		encryptedDWalletData.encrypted_user_secret_key_share_id,
+		isEncryptedUserSecretKeyShare,
+	);
+	const encryptedSecretShareAndProof =
+		encryptedDWalletSecretShare.encrypted_centralized_secret_share_and_proof;
+	const sourceEncryptedSecretShare = await getObjectWithType(
+		conf,
+		encryptedDWalletSecretShare.source_encrypted_user_secret_key_share_id,
+		isEncryptedUserSecretKeyShare,
+	);
+	const signedDWalletOutput = sourceEncryptedSecretShare.state.fields.user_output_signature;
 }
