@@ -422,10 +422,10 @@ async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 
 export async function acceptEncryptedUserShare(
 	conf: Config,
-	completedDKGSecondRoundEvent: EncryptedDWalletData,
+	encryptedDWalletData: EncryptedDWalletData,
 ): Promise<void> {
 	const signedPublicOutput = await conf.encryptedSecretShareSigningKeypair.sign(
-		new Uint8Array(completedDKGSecondRoundEvent.public_output),
+		new Uint8Array(encryptedDWalletData.public_output),
 	);
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
@@ -434,9 +434,9 @@ export async function acceptEncryptedUserShare(
 		initialSharedVersion: dWalletStateData.initial_shared_version,
 		mutable: true,
 	});
-	const dwalletIDArg = tx.pure.id(completedDKGSecondRoundEvent.dwallet_id);
+	const dwalletIDArg = tx.pure.id(encryptedDWalletData.dwallet_id);
 	const encryptedUserSecretKeyShareIDArg = tx.pure.id(
-		completedDKGSecondRoundEvent.encrypted_user_secret_key_share_id,
+		encryptedDWalletData.encrypted_user_secret_key_share_id,
 	);
 	const userOutputSignatureArg = tx.pure(bcs.vector(bcs.u8()).serialize(signedPublicOutput));
 	tx.moveCall({

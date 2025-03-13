@@ -1,10 +1,11 @@
-import { encrypt_secret_share, generate_secp_cg_keypair_from_seed } from '@dwallet-network/dwallet-mpc-wasm';
+import {
+	encrypt_secret_share,
+	generate_secp_cg_keypair_from_seed,
+} from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs, toHex } from '@mysten/bcs';
 import type { PublicKey } from '@mysten/sui/cryptography';
-import { Ed25519PublicKey } from '@mysten/sui/dist/cjs/keypairs/ed25519/publickey.js';
+import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
-
-
 
 import type { Config } from './globals.js';
 import {
@@ -17,7 +18,6 @@ import {
 	isMoveObject,
 	SUI_PACKAGE_ID,
 } from './globals.js';
-
 
 /**
  * A class groups key pair.
