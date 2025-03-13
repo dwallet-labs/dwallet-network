@@ -1,6 +1,8 @@
 import {
+	decrypt_user_share,
 	encrypt_secret_share,
 	generate_secp_cg_keypair_from_seed,
+	verify_user_share,
 } from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs, toHex } from '@mysten/bcs';
 import type { PublicKey } from '@mysten/sui/cryptography';
@@ -270,6 +272,24 @@ export async function encryptUserShareForPublicKey(
 	);
 }
 
+async function getPublicKeyFromAddress(conf: Config, address: string): Promise<Ed25519PublicKey> {
+	const destActiveEncryptionKeyObjID = await getActiveEncryptionKeyObjID(conf, address);
+	if (!destActiveEncryptionKeyObjID) {
+		throw new Error('the dest key pair does not have an active encryption key');
+	}
+	const destActiveEncryptionKeyObj = await getObjectWithType<EncryptionKey>(
+		conf,
+		destActiveEncryptionKeyObjID,
+		isEncryptionKey,
+	);
+
+	const destSuiPubKey = new Ed25519PublicKey(destActiveEncryptionKeyObj.signer_public_key);
+	if (!(destSuiPubKey.toSuiAddress() === address)) {
+		throw new Error('the destination public key does not match the destination address');
+	}
+	return destSuiPubKey;
+}
+
 /**
  * Transfers an encrypted dWallet user secret key share from a source entity to destination entity.
  * This function emits an event with the encrypted user secret key share,
@@ -408,7 +428,11 @@ function isEncryptedUserSecretKeyShare(obj: any): obj is EncryptedUserSecretKeyS
 	);
 }
 
-async function verifyReceivedUserShare(conf: Config, encryptedDWalletData: EncryptedDWalletData, sourceSuiAddress: string) {
+async function decryptAndVerifyReceivedUserShare(
+	conf: Config,
+	encryptedDWalletData: EncryptedDWalletData,
+	sourceSuiAddress: string,
+) {
 	const dwallet = await getObjectWithType(conf, encryptedDWalletData.dwallet_id, isActiveDWallet);
 	const dwalletOutput = dwallet.state.fields.public_output;
 	const encryptedDWalletSecretShare = await getObjectWithType(
@@ -424,4 +448,26 @@ async function verifyReceivedUserShare(conf: Config, encryptedDWalletData: Encry
 		isEncryptedUserSecretKeyShare,
 	);
 	const signedDWalletOutput = sourceEncryptedSecretShare.state.fields.user_output_signature;
+	const senderPublicKey = await getPublicKeyFromAddress(conf, sourceSuiAddress);
+	if (
+		!(await senderPublicKey.verify(
+			new Uint8Array(dwalletOutput),
+			new Uint8Array(signedDWalletOutput),
+		))
+	) {
+		throw new Error('the desired address did not sign the dWallet public key share');
+	}
+	const cgKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+	const decryptedSecretShare = decrypt_user_share(
+		cgKeyPair.encryptionKey,
+		cgKeyPair.decryptionKey,
+		encryptedSecretShareAndProof,
+	);
+	// Before validating this centralized output,
+	// we are making sure it was signed by us.
+	const isValid = verify_user_share(decryptedSecretShare, new Uint8Array(dwalletOutput));
+	if (!isValid) {
+		throw new Error('the decrypted key share does not match the dWallet public key share');
+	}
+	return decryptedSecretShare;
 }
