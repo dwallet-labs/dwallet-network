@@ -104,7 +104,7 @@ pub enum FileType {
 pub struct FileMetadata {
     pub file_type: FileType,
     pub epoch_num: u64,
-    pub checkpoint_seq_range: Range<u64>,
+    pub checkpoint_seq_range: Range<u32>,
     pub sha3_digest: [u8; 32],
 }
 
@@ -123,7 +123,7 @@ impl FileMetadata {
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ManifestV1 {
     pub archive_version: u8,
-    pub next_checkpoint_seq_num: u64,
+    pub next_checkpoint_seq_num: u32,
     pub file_metadata: Vec<FileMetadata>,
     pub epoch: u64,
 }
@@ -134,7 +134,7 @@ pub enum Manifest {
 }
 
 impl Manifest {
-    pub fn new(epoch: u64, next_checkpoint_seq_num: u64) -> Self {
+    pub fn new(epoch: u64, next_checkpoint_seq_num: u32) -> Self {
         Manifest::V1(ManifestV1 {
             archive_version: 1,
             next_checkpoint_seq_num,
@@ -152,12 +152,12 @@ impl Manifest {
             Manifest::V1(manifest) => manifest.epoch,
         }
     }
-    pub fn next_checkpoint_seq_num(&self) -> u64 {
+    pub fn next_checkpoint_seq_num(&self) -> u32 {
         match self {
             Manifest::V1(manifest) => manifest.next_checkpoint_seq_num,
         }
     }
-    pub fn next_checkpoint_after_epoch(&self, epoch_num: u64) -> u64 {
+    pub fn next_checkpoint_after_epoch(&self, epoch_num: u64) -> u32 {
         match self {
             Manifest::V1(manifest) => {
                 let mut summary_files: Vec<_> = manifest
@@ -175,14 +175,14 @@ impl Manifest {
                     .iter()
                     .find(|f| f.epoch_num > epoch_num)
                     .map(|f| f.checkpoint_seq_range.start)
-                    .unwrap_or(u64::MAX)
+                    .unwrap_or(u32::MAX)
             }
         }
     }
     pub fn update(
         &mut self,
         epoch_num: u64,
-        checkpoint_sequence_number: u64,
+        checkpoint_sequence_number: u32,
         checkpoint_file_metadata: FileMetadata,
     ) {
         match self {
@@ -206,7 +206,7 @@ pub struct CheckpointUpdates {
 impl CheckpointUpdates {
     pub fn new(
         epoch_num: u64,
-        checkpoint_sequence_number: u64,
+        checkpoint_sequence_number: u32,
         checkpoint_file_metadata: FileMetadata,
         manifest: &mut Manifest,
     ) -> Self {
@@ -235,7 +235,7 @@ pub fn create_file_metadata(
     file_path: &std::path::Path,
     file_type: FileType,
     epoch_num: u64,
-    checkpoint_seq_range: Range<u64>,
+    checkpoint_seq_range: Range<u32>,
 ) -> Result<FileMetadata> {
     let sha3_digest = compute_sha3_checksum(file_path)?;
     let file_metadata = FileMetadata {
@@ -251,7 +251,7 @@ pub fn create_file_metadata_from_bytes(
     bytes: Bytes,
     file_type: FileType,
     epoch_num: u64,
-    checkpoint_seq_range: Range<u64>,
+    checkpoint_seq_range: Range<u32>,
 ) -> Result<FileMetadata> {
     let sha3_digest = compute_sha3_checksum_for_bytes(bytes)?;
     let file_metadata = FileMetadata {
@@ -395,8 +395,9 @@ where
         "Latest available checkpoint in archive store: {}",
         latest_checkpoint_in_archive
     );
+    let epoch_num = archive_reader.get_manifest().await?.epoch_num();
     let latest_checkpoint = store
-        .get_highest_synced_checkpoint()
+        .get_highest_synced_checkpoint(epoch_num)
         .map_err(|_| anyhow!("Failed to read highest synced checkpoint"))?
         .map(|c| c.sequence_number)
         .unwrap_or(0);
@@ -404,7 +405,7 @@ where
     let action_counter = Arc::new(AtomicU64::new(0));
     let checkpoint_counter = Arc::new(AtomicU64::new(0));
     let progress_bar = if interactive {
-        let progress_bar = ProgressBar::new(latest_checkpoint_in_archive).with_style(
+        let progress_bar = ProgressBar::new(latest_checkpoint_in_archive as u64).with_style(
             ProgressStyle::with_template("[{elapsed_precise}] {wide_bar} {pos}/{len}({msg})")
                 .unwrap(),
         );
@@ -419,7 +420,8 @@ where
                     total_checkpoints_loaded as f64 / instant.elapsed().as_secs_f64();
                 let total_txns_per_sec =
                     cloned_counter.load(Ordering::Relaxed) as f64 / instant.elapsed().as_secs_f64();
-                cloned_progress_bar.set_position(latest_checkpoint + total_checkpoints_loaded);
+                cloned_progress_bar
+                    .set_position(latest_checkpoint as u64 + total_checkpoints_loaded);
                 cloned_progress_bar.set_message(format!(
                     "checkpoints/s: {}, txns/s: {}",
                     total_checkpoints_per_sec, total_txns_per_sec
@@ -433,7 +435,7 @@ where
         tokio::spawn(async move {
             loop {
                 let latest_checkpoint = cloned_store
-                    .get_highest_synced_checkpoint()
+                    .get_highest_synced_checkpoint(epoch_num)
                     .map_err(|_| anyhow!("Failed to read highest synced checkpoint"))?
                     .map(|c| c.sequence_number)
                     .unwrap_or(0);
@@ -451,14 +453,14 @@ where
     archive_reader
         .read(
             store.clone(),
-            (latest_checkpoint + 1)..u64::MAX,
+            (latest_checkpoint + 1)..u32::MAX,
             action_counter,
             checkpoint_counter,
         )
         .await?;
     progress_bar.iter().for_each(|p| p.finish_and_clear());
     let end = store
-        .get_highest_synced_checkpoint()
+        .get_highest_synced_checkpoint(epoch_num)
         .map_err(|_| anyhow!("Failed to read watermark"))?
         .map(|c| c.sequence_number)
         .unwrap_or(0);

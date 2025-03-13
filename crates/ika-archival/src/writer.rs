@@ -52,7 +52,7 @@ impl ArchiveMetrics {
 struct CheckpointWriter {
     root_dir_path: PathBuf,
     epoch_num: u64,
-    checkpoint_range: Range<u64>,
+    checkpoint_range: Range<u32>,
     wbuf: BufWriter<File>,
     sender: Sender<CheckpointUpdates>,
     checkpoint_buf_offset: usize,
@@ -201,7 +201,7 @@ impl CheckpointWriter {
 
     fn next_file(
         dir_path: &Path,
-        checkpoint_sequence_num: u64,
+        checkpoint_sequence_num: u32,
         suffix: &str,
         magic_bytes: u32,
         storage_format: StorageFormat,
@@ -355,7 +355,10 @@ impl ArchiveWriter {
 
         while kill.try_recv().is_err() {
             if let Some(checkpoint_message) = store
-                .get_checkpoint_by_sequence_number(checkpoint_sequence_number)
+                .get_checkpoint_by_sequence_number(
+                    checkpoint_writer.epoch_num,
+                    checkpoint_sequence_number,
+                )
                 .map_err(|_| anyhow!("Failed to read checkpoint message from store"))?
             {
                 checkpoint_writer.write(checkpoint_message.into_inner())?;
