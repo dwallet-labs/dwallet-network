@@ -1785,6 +1785,7 @@ dependencies = [
  "base64 0.21.7",
  "bcs",
  "class_groups",
+ "dwallet-mpc-types",
  "group 0.1.0",
  "mpc",
  "schemars",

@@ -123,6 +123,9 @@ pub enum DwalletMPCError {
     #[error("failed to find the presign round data")]
     PresignRoundDataNotFound,
 
+    #[error("unsupported network DKG key scheme")]
+    UnsupportedNetworkDKGKeyScheme,
+
     #[error("failed to find the event driven data")]
     MissingEventDrivenData,
 }

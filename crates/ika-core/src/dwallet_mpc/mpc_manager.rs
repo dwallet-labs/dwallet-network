@@ -218,11 +218,6 @@ impl DWalletMPCManager {
                 break;
             }
         }
-        self.epoch_store()?
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .status()?;
 
         let (ready_to_advance, malicious_parties) = self.get_ready_to_advance_sessions()?;
         if !malicious_parties.is_empty() {

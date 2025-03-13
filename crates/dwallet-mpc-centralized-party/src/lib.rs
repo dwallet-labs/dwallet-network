@@ -4,13 +4,16 @@
 #![allow(unused_qualifications)]
 
 use anyhow::{anyhow, Context};
+use class_groups::dkg::Secp256k1Party;
 use class_groups::setup::get_setup_parameters_secp256k1;
 use class_groups::{
     CiphertextSpaceGroupElement, CiphertextSpaceValue, DecryptionKey, EncryptionKey,
     Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyOnChainOutput,
+};
 use group::{CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
@@ -116,7 +119,7 @@ pub struct CentralizedDKGWasmResult {
 /// Returns an error if decoding or advancing the protocol fails.
 /// This is okay since a malicious blockchain can always block a client.
 pub fn create_dkg_output(
-    protocol_public_parameters: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
     key_scheme: u8,
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
@@ -125,7 +128,7 @@ pub fn create_dkg_output(
         bcs::from_bytes(&decentralized_first_round_public_output)
             .context("Failed to deserialize decentralized first round output")?;
     let public_parameters = bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-        protocol_public_parameters,
+        network_decryption_key_public_output,
         key_scheme,
     )?)?;
 
@@ -149,15 +152,6 @@ pub fn create_dkg_output(
     // The secret (private) key share returned from this function should never be sent,
     // and should always be kept private.
     let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
-    let public_keys = bcs::to_bytes(&DWalletPublicKeys {
-        centralized_public_share: bcs::to_bytes(&round_result.public_output.public_key_share)?,
-        decentralized_public_share: bcs::to_bytes(
-            &round_result
-                .public_output
-                .decentralized_party_public_key_share,
-        )?,
-        public_key: bcs::to_bytes(&round_result.public_output.public_key)?,
-    })?;
     Ok(CentralizedDKGWasmResult {
         public_output,
         public_key_share_and_proof,
@@ -189,7 +183,7 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 /// The [`advance_centralized_sign_party`] function is
 /// called by the client (the centralized party).
 pub fn advance_centralized_sign_party(
-    protocol_public_parameters: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
     key_scheme: u8,
     decentralized_party_dkg_public_output: Vec<u8>,
     centralized_party_secret_key_share: Vec<u8>,
@@ -216,7 +210,7 @@ pub fn advance_centralized_sign_party(
             centralized_public_output.clone(),
             presign,
             bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-                protocol_public_parameters.clone(),
+                network_decryption_key_public_output.clone(),
                 key_scheme,
             )?)?,
         ));
@@ -234,13 +228,17 @@ pub fn advance_centralized_sign_party(
 }
 
 fn protocol_public_parameters_by_key_scheme(
-    protocol_public_parameters: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
     key_scheme: u8,
 ) -> anyhow::Result<Vec<u8>> {
     let key_scheme = DWalletMPCNetworkKeyScheme::try_from(key_scheme)?;
-    let encryption_scheme_public_parameters = bcs::from_bytes(&protocol_public_parameters)?;
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            let network_decryption_key_public_output: NetworkDecryptionKeyOnChainOutput =
+                bcs::from_bytes(&network_decryption_key_public_output)?;
+            let encryption_scheme_public_parameters = bcs::from_bytes(
+                &network_decryption_key_public_output.encryption_scheme_public_parameters,
+            )?;
             Ok(bcs::to_bytes(&ProtocolPublicParameters::new::<
                 { secp256k1::SCALAR_LIMBS },
                 { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
