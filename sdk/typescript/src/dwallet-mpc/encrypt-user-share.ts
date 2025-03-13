@@ -9,11 +9,10 @@ import type { PublicKey } from '@mysten/sui/cryptography';
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 
+import type { Config, EncryptedDWalletData } from './globals.js';
 import {
-	Config,
 	delay,
 	DWALLET_ECDSAK1_MOVE_MODULE_NAME,
-	EncryptedDWalletData,
 	fetchObjectWithType,
 	getDWalletSecpState,
 	getEncryptionKeyMoveType,
