@@ -11,7 +11,6 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { Config, EncryptedDWalletData } from './globals.js';
 import {
-	Config,
 	delay,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	fetchObjectWithType,
