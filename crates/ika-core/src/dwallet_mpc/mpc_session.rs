@@ -365,7 +365,7 @@ impl DWalletMPCSession {
                         &event_data.message,
                         &event_data.hash_scheme.try_into().unwrap(),
                     )
-                    .unwrap(),
+                    .map_err(|err| DwalletMPCError::TwoPCMPCError(err.to_string()))?,
                 )?;
                 verify_partial_signature(
                     &hashed_message,
