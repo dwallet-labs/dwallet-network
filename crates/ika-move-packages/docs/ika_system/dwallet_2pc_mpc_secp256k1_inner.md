@@ -1634,22 +1634,12 @@ Event emitted when a [<code>PartialCentralizedSignedMessages</code>] object is c
 <dd>
 </dd>
 <dt>
-<code>dwallet_public_output: vector&lt;u8&gt;</code>
-</dt>
-<dd>
-</dd>
-<dt>
 <code>hash_scheme: u8</code>
 </dt>
 <dd>
 </dd>
 <dt>
 <code>message_centralized_signature: vector&lt;u8&gt;</code>
-</dt>
-<dd>
-</dd>
-<dt>
-<code>dwallet_mpc_network_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
 <dd>
 </dd>
@@ -1674,11 +1664,6 @@ Event emitted when a [<code>PartialCentralizedSignedMessages</code>] object is c
 
 
 <dl>
-<dt>
-<code>session_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
-</dt>
-<dd>
-</dd>
 <dt>
 <code>dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
@@ -1710,11 +1695,6 @@ Event emitted when a [<code>PartialCentralizedSignedMessages</code>] object is c
 
 
 <dl>
-<dt>
-<code>session_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
-</dt>
-<dd>
-</dd>
 <dt>
 <code>dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
@@ -4066,7 +4046,7 @@ more details on when this may be used.
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
 ): <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_UnverifiedECDSAPartialUserSignatureCap">UnverifiedECDSAPartialUserSignatureCap</a> {
-    <b>let</b> (dwallet, public_dwallet_output) = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_and_public_output_mut">get_active_dwallet_and_public_output_mut</a>(dwallet_id);
+    <b>let</b> (dwallet, _) = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_and_public_output_mut">get_active_dwallet_and_public_output_mut</a>(dwallet_id);
     <b>let</b> dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
     // TODO: Change error
     <b>assert</b>!(dwallet.ecdsa_presigns.contains(presign_id), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EPresignNotExist">EPresignNotExist</a>);
@@ -4083,10 +4063,8 @@ more details on when this may be used.
                 partial_centralized_signed_message_id,
                 message,
                 presign: presign.presign,
-                dwallet_public_output: public_dwallet_output,
                 hash_scheme,
-                message_centralized_signature,
-                dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
+                message_centralized_signature
         },
         ctx,
     );
@@ -4118,7 +4096,7 @@ more details on when this may be used.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_future_sign">respond_ecdsa_future_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, session_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, partial_centralized_signed_message_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, rejected: bool)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_future_sign">respond_ecdsa_future_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, partial_centralized_signed_message_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, rejected: bool)
 </code></pre>
 
 
@@ -4129,7 +4107,6 @@ more details on when this may be used.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_future_sign">respond_ecdsa_future_sign</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
-    session_id: ID,
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
     rejected: bool,
@@ -4140,14 +4117,12 @@ more details on when this may be used.
         ECDSAPartialUserSignatureState::AwaitingNetworkVerification =&gt; {
             <b>if</b>(rejected) {
                 event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_RejectedECDSAFutureSignEvent">RejectedECDSAFutureSignEvent</a> {
-                    session_id,
                     dwallet_id,
                     partial_centralized_signed_message_id
                 });
                 ECDSAPartialUserSignatureState::NetworkVerificationRejected
             } <b>else</b> {
                 event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedECDSAFutureSignEvent">CompletedECDSAFutureSignEvent</a> {
-                    session_id,
                     dwallet_id,
                     partial_centralized_signed_message_id
                 });
@@ -4551,8 +4526,8 @@ the function will abort with this error.
                 );
                 response_session_count = response_session_count + 1;
             } <b>else</b> <b>if</b> (message_data_type == 5) {
-                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
-                <b>let</b> encrypted_user_secret_key_share_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> rejected = bcs_body.peel_bool();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_re_encrypt_user_share_for">respond_re_encrypt_user_share_for</a>(
                     dwallet_id,
@@ -4577,12 +4552,10 @@ the function will abort with this error.
                 );
                 response_session_count = response_session_count + 1;
             } <b>else</b> <b>if</b> (message_data_type == 8) {
-                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> dwallet_id = object::id_from_address(bcs_body.peel_address());
+                <b>let</b> partial_centralized_signed_message_id = object::id_from_address(bcs_body.peel_address());
                 <b>let</b> rejected = bcs_body.peel_bool();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_ecdsa_future_sign">respond_ecdsa_future_sign</a>(
-                    session_id,
                     dwallet_id,
                     partial_centralized_signed_message_id,
                     rejected,

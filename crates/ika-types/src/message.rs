@@ -110,9 +110,8 @@ pub struct SignOutput {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct EncryptedUserShareOutput {
     pub dwallet_id: Vec<u8>,
-    pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
-    pub encryption_key_id: Vec<u8>,
-    pub session_id: Vec<u8>,
+    pub encrypted_user_secret_key_share_id: Vec<u8>,
+    pub rejected: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -121,6 +120,14 @@ pub struct PartialSignatureVerificationOutput {
     pub dwallet_id: Vec<u8>,
     pub partial_centralized_signed_message_id: Vec<u8>,
     pub rejected: bool,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct Secp256K1NetworkDKGOutputSlice {
+    pub dwallet_network_decryption_key_id: Vec<u8>,
+    pub public_output: Vec<u8>,
+    pub key_shares: Vec<u8>,
+    pub is_last: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]

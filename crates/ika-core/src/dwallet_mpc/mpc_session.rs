@@ -307,7 +307,8 @@ impl DWalletMPCSession {
 
                         // Fields not relevant for verification; passing empty values.
                         dwallet_id: ObjectID::new([0; 32]),
-                        session_id: ObjectID::new([0; 32]),
+                        source_encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
+                        encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
                     })?;
                 }
                 Ok(result)
