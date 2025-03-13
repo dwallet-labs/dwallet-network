@@ -130,14 +130,6 @@ pub struct Secp256K1NetworkDKGOutputSlice {
     pub is_last: bool,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct Secp256K1NetworkDKGOutputSlice {
-    pub dwallet_network_decryption_key_id: Vec<u8>,
-    pub public_output: Vec<u8>,
-    pub key_shares: Vec<u8>,
-    pub is_last: bool,
-}
-
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
 pub enum MessageKind {
     InitiateProcessMidEpoch,

@@ -138,8 +138,12 @@ describe('Test dWallet MPC', () => {
 		);
 	});
 
-	it('should complete future sign full flow', async () => {
-		const dkgResult = await mockCreateDWallet(conf, Buffer.from(dkgMocks.dwalletOutput, 'base64'));
+	it('should complete future sign', async () => {
+		const dkgResult = await mockCreateDWallet(
+			conf,
+			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
+			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
+		);
 		const presign = await mockCreatePresign(
 			conf,
 			Buffer.from(mockPresign.presignBytes, 'base64'),
@@ -156,10 +160,12 @@ describe('Test dWallet MPC', () => {
 				Hash.KECCAK256,
 				mockedNetworkDecryptionKeyPublicOutput,
 			);
+		await delay(checkpointCreationTime);
 		const verifiedECDSAPartialUserSignatureCapID = await verifyECFSASignWithPartialUserSignatures(
 			conf,
 			unverifiedECDSAPartialUserSignatureCapID!,
 		);
+		await delay(checkpointCreationTime);
 		await completeFutureSign(
 			conf,
 			dkgResult.dwallet_cap_id,
