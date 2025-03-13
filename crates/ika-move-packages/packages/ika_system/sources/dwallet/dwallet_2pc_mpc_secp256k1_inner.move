@@ -2016,8 +2016,8 @@ fun process_checkpoint_message(
                 );
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 5) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
-                let encrypted_user_secret_key_share_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
                 self.respond_re_encrypt_user_share_for(
                     dwallet_id,
