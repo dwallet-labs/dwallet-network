@@ -285,7 +285,7 @@ export async function encryptUserShareForPublicKey(
 	);
 }
 
-async function getPublicKeyFromAddress(conf: Config, address: string): Promise<Ed25519PublicKey> {
+async function fetchPublicKeyByAddress(conf: Config, address: string): Promise<Ed25519PublicKey> {
 	const destActiveEncryptionKeyObjID = await getActiveEncryptionKeyObjID(conf, address);
 	if (!destActiveEncryptionKeyObjID) {
 		throw new Error('the dest key pair does not have an active encryption key');
@@ -446,7 +446,7 @@ export async function decryptAndVerifyReceivedUserShare(
 		isEncryptedUserSecretKeyShare,
 	);
 	const signedDWalletOutput = sourceEncryptedSecretShare.state.fields.user_output_signature;
-	const senderPublicKey = await getPublicKeyFromAddress(conf, sourceSuiAddress);
+	const senderPublicKey = await fetchPublicKeyByAddress(conf, sourceSuiAddress);
 	if (
 		!(await senderPublicKey.verify(
 			new Uint8Array(dwalletOutput),
