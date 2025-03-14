@@ -53,7 +53,6 @@ describe('Test dWallet MPC', () => {
 		const encryptedDWalletData = {
 			dwallet_id: sourceDwallet.dwalletID,
 			encrypted_user_secret_key_share_id: encryptedShareObjID,
-			public_output: sourceDwallet.output,
 		};
 		const decryptedSecretShare = await decryptAndVerifyReceivedUserShare(
 			destConf,
