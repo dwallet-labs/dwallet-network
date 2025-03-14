@@ -415,15 +415,14 @@ async function waitForChainVerification(conf: Config, encryptedSecretShareObjID:
 	);
 }
 
-function isEncryptedUserSecretKeyShare(obj: any): obj is EncryptedUserSecretKeyShare {
+function isEncryptedUserSecretKeyShare(objContent: any): objContent is EncryptedUserSecretKeyShare {
 	return (
-		obj?.id?.id !== undefined &&
-		obj?.dwallet_id !== undefined &&
-		obj?.encrypted_centralized_secret_share_and_proof !== undefined &&
-		obj?.encryption_key_id !== undefined &&
-		obj?.encryption_key_address !== undefined &&
-		obj?.source_encrypted_user_secret_key_share_id !== undefined &&
-		obj?.state?.fields?.user_output_signature !== undefined
+		objContent?.id?.id !== undefined &&
+		objContent?.dwallet_id !== undefined &&
+		objContent?.encrypted_centralized_secret_share_and_proof !== undefined &&
+		objContent?.encryption_key_id !== undefined &&
+		objContent?.encryption_key_address !== undefined &&
+		objContent?.source_encrypted_user_secret_key_share_id !== undefined
 	);
 }
 
