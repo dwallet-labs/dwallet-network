@@ -334,6 +334,5 @@ export interface DWallet {
 
 export interface EncryptedDWalletData {
 	dwallet_id: string;
-	public_output: Uint8Array;
 	encrypted_user_secret_key_share_id: string;
 }

@@ -5,7 +5,6 @@ import {
 	verify_user_share,
 } from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs, toHex } from '@mysten/bcs';
-import type { PublicKey } from '@mysten/sui/cryptography';
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 
@@ -312,11 +311,12 @@ async function fetchPublicKeyByAddress(conf: Config, address: string): Promise<E
  */
 export async function transferEncryptedSecretShare(
 	sourceConf: Config,
-	destSuiPublicKey: PublicKey,
+	destSuiAddress: string,
 	encryptedUserKeyShareAndProofOfEncryption: Uint8Array,
 	dwalletID: string,
 	source_encrypted_user_secret_key_share_id: string,
 ): Promise<string> {
+	const destSuiPublicKey = await fetchPublicKeyByAddress(sourceConf, destSuiAddress);
 	const tx = new Transaction();
 	const dwalletSecpState = await getDWalletSecpState(sourceConf);
 	const dwalletStateArg = tx.sharedObjectRef({

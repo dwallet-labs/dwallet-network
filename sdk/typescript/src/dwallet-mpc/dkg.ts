@@ -20,6 +20,7 @@ import {
 	getInitialSharedVersion,
 	getNetworkDecryptionKeyID,
 	getObjectWithType,
+	isActiveDWallet,
 	isAddressObjectOwner,
 	isDWalletCap,
 	isMoveObject,
@@ -362,8 +363,10 @@ export async function acceptEncryptedUserShare(
 	conf: Config,
 	encryptedDWalletData: EncryptedDWalletData,
 ): Promise<void> {
+	const dwallet = await getObjectWithType(conf, encryptedDWalletData.dwallet_id, isActiveDWallet);
+	const dwalletOutput = dwallet.state.fields.public_output;
 	const signedPublicOutput = await conf.encryptedSecretShareSigningKeypair.sign(
-		new Uint8Array(encryptedDWalletData.public_output),
+		new Uint8Array(dwalletOutput),
 	);
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
