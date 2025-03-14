@@ -3,7 +3,7 @@
 
 use crate::crypto::AuthorityName;
 use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMessage};
-use crate::messages_dwallet_mpc::{DWalletMPCMessage, MaliciousReport, SessionInfo};
+use crate::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo};
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
@@ -49,7 +49,7 @@ pub enum ConsensusTransactionKey {
     /// The message sent between MPC parties in a dwallet MPC session.
     /// The [`Vec<u8>`] is the message, the [`AuthorityName`] is the sending authority, and the
     /// [`ObjectID`] is the session ID.
-    DWalletMPCMessage(DWalletMPCMessage),
+    DWalletMPCMessage(DWalletMPCMessageKey),
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
@@ -309,7 +309,11 @@ impl ConsensusTransaction {
                 ConsensusTransactionKey::TestMessage(*authority, *num)
             }
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
-                ConsensusTransactionKey::DWalletMPCMessage(message.clone())
+                ConsensusTransactionKey::DWalletMPCMessage(DWalletMPCMessageKey {
+                    authority: message.authority.clone(),
+                    session_id: message.session_id.clone(),
+                    round_number: message.round_number,
+                })
             }
             ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {
                 ConsensusTransactionKey::DWalletMPCOutput(
