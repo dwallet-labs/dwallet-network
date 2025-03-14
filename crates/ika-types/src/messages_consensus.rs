@@ -3,7 +3,9 @@
 
 use crate::crypto::AuthorityName;
 use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMessage};
-use crate::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo};
+use crate::messages_dwallet_mpc::{
+    DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
+};
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
