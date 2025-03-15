@@ -132,13 +132,10 @@ impl DWalletMPCManager {
             CryptographicComputationsOrchestrator::try_new(&epoch_store)?;
         Ok(Self {
             mpc_sessions: HashMap::new(),
-            pending_sessions_queue: VecDeque::new(),
-            active_sessions_counter: 0,
             consensus_adapter,
             party_id: authority_name_to_party_id(&epoch_store.name.clone(), &epoch_store.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
             epoch_id,
-            max_active_mpc_sessions: 200, //todo (yael): Ask sadika what about this . node_config.max_active_dwallet_mpc_sessions,
             node_config,
             weighted_threshold_access_structure,
             validators_class_groups_public_keys_and_proofs: epoch_store
