@@ -72,17 +72,9 @@ pub struct DWalletMPCManager {
     party_id: PartyID,
     /// MPC sessions that where created.
     pub(crate) mpc_sessions: HashMap<ObjectID, DWalletMPCSession>,
-    /// Used to keep track of the order in which pending sessions are received,
-    /// so they are activated in order of arrival.
-    pending_sessions_queue: VecDeque<DWalletMPCSession>,
-    // TODO (#257): Make sure the counter is always in sync with the number of active sessions.
-    /// Keep track of the active sessions to avoid exceeding the limit.
-    /// We can't use the length of `mpc_sessions` since it contains both active and inactive sessions.
-    active_sessions_counter: usize,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub(super) node_config: NodeConfig,
     epoch_store: Weak<AuthorityPerEpochStore>,
-    max_active_mpc_sessions: usize,
     epoch_id: EpochId,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) validators_class_groups_public_keys_and_proofs:
@@ -198,16 +190,6 @@ impl DWalletMPCManager {
     /// or perform the first step of the flow.
     /// We parallelize the advances with `Rayon` to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> IkaResult {
-        while self.active_sessions_counter < self.max_active_mpc_sessions {
-            if let Some(mut session) = self.pending_sessions_queue.pop_front() {
-                session.status = MPCSessionStatus::Active;
-                self.mpc_sessions.insert(session.session_id, session);
-                self.active_sessions_counter += 1;
-            } else {
-                break;
-            }
-        }
-
         let (ready_to_advance, malicious_parties) = self.get_ready_to_advance_sessions()?;
         if !malicious_parties.is_empty() {
             self.flag_parties_as_malicious(&malicious_parties)?;
@@ -724,25 +706,13 @@ impl DWalletMPCManager {
             self.epoch_store.clone(),
             self.consensus_adapter.clone(),
             self.epoch_id,
-            MPCSessionStatus::Pending,
+            MPCSessionStatus::Active,
             session_id.clone(),
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
         );
-        // TODO (#311): Make sure validator don't mark other validators
-        // TODO (#311): as malicious or take any active action while syncing
-        if self.active_sessions_counter >= self.max_active_mpc_sessions {
-            self.pending_sessions_queue.push_back(new_session);
-            info!(
-                "Added MPCSession to pending queue for session_id {:?}",
-                &session_id
-            );
-            return Ok(());
-        }
-        new_session.status = MPCSessionStatus::Active;
         self.mpc_sessions.insert(session_id.clone(), new_session);
-        self.active_sessions_counter += 1;
         info!(
             "Added MPCSession to MPC manager for session_id {:?}",
             session_id
