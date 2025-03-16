@@ -282,10 +282,10 @@ export function isActiveDWallet(obj: any): obj is ActiveDWallet {
 	return obj?.state?.fields?.public_output !== undefined;
 }
 
-export async function getNetworkDecryptionKeyPublicOutput(
+export async function getNetworkDecryptionKeyPublicOutputID(
 	c: Config,
 	networkDecryptionKeyId: string | null | undefined,
-): Promise<Uint8Array | null> {
+): Promise<string> {
 	if (networkDecryptionKeyId === null || networkDecryptionKeyId === undefined) {
 		networkDecryptionKeyId = await getNetworkDecryptionKeyID(c);
 	}
@@ -295,14 +295,49 @@ export async function getNetworkDecryptionKeyPublicOutput(
 	});
 
 	if (!networkDecryptionKey) {
-		return null;
+		throw new Error('Network decryption key not found');
 	}
 
 	if (!isDWalletNetworkDecryptionKey(networkDecryptionKey?.data?.content)) {
 		throw new Error('Invalid network decryption key object');
 	}
 
-	return networkDecryptionKey.data.content?.fields?.public_output;
+	return networkDecryptionKey.data.content.fields?.public_output?.fields?.contents?.fields.id?.id;
+}
+
+export async function readTableVec(c: Config, table_id: string): Promise<Uint8Array> {
+	try {
+		const dynamicFieldPage = await c.client.getDynamicFields({ parentId: table_id });
+
+		console.log('Dynamic Fields Data:', dynamicFieldPage);
+
+		if (!dynamicFieldPage?.data?.length) {
+			console.log('No dynamic fields found.');
+			return;
+		}
+
+		const poolDataArray = [];
+		for (const tableRowResult of dynamicFieldPage.data) {
+			const poolId = tableRowResult.objectId;
+			console.log(`Fetching details for Pool ID: ${poolId}`);
+
+			try {
+				const dynFieldForPool = await c.client.getObject({
+					id: poolId,
+					options: { showContent: true },
+				});
+				poolDataArray[dynFieldForPool.data?.content?.fields?.name] =
+					dynFieldForPool.data?.content?.fields?.value;
+			} catch (error) {
+				console.error(`Error fetching pool data for ${poolId}:`, error);
+			}
+		}
+		const a = poolDataArray.flat();
+		console.log('Pool Data Array:', a);
+	} catch (error) {
+		console.error('Error fetching dynamic fields:', error);
+	}
+	return;
 }
 
 export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
