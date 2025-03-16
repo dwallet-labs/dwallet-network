@@ -110,8 +110,6 @@ public struct DWalletNetworkDecryptionKey has key, store {
     public_output: table_vec::TableVec<vector<u8>>,
     /// The fees paid for computation in IKA.
     computation_fee_charged_ika: Balance<IKA>,
-    /// The fees paid for computation in IKA.
-    computation_fee_charged_ika: Balance<IKA>,
     state: DWalletNetworkDecryptionKeyState,
 }
 
