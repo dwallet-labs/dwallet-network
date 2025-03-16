@@ -8,17 +8,21 @@ use core::panic;
 use dwallet_classgroups_types::{
     ClassGroupsEncryptionKeyAndProof, SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEYS,
 };
+use dwallet_mpc_types::dwallet_mpc::{
+    NetworkDecryptionKeyOnChainOutput, NetworkDecryptionKeyShares,
+};
 use fastcrypto::traits::ToFromBytes;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
-use ika_types::sui::system_inner_v1::SystemInnerV1;
+use ika_types::sui::system_inner_v1::{DWalletNetworkDecryptionKeyCap, SystemInnerV1};
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
 use ika_types::sui::{System, SystemInner, SystemInnerTrait, Validator};
 use move_binary_format::binary_config::BinaryConfig;
 use move_core_types::account_address::AccountAddress;
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::from_utf8;
 use std::sync::Arc;
@@ -32,8 +36,10 @@ use sui_json_rpc_types::{
 };
 use sui_sdk::error::Error;
 use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
+use sui_types::balance::Balance;
 use sui_types::base_types::ObjectRef;
 use sui_types::base_types::SequenceNumber;
+use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
 use sui_types::id::ID;
@@ -502,6 +508,13 @@ pub trait SuiClientInner: Send + Sync {
         validators: &Vec<ValidatorInnerV1>,
     ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error>;
 
+    async fn get_network_decryption_keys(
+        &self,
+        network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
+    ) -> Result<HashMap<ObjectID, NetworkDecryptionKeyShares>, self::Error>;
+    async fn read_table_vec_as_raw_bytes(&self, table_id: ObjectID)
+        -> Result<Vec<u8>, self::Error>;
+
     async fn get_system_inner(
         &self,
         system_id: ObjectID,
@@ -639,6 +652,87 @@ impl SuiClientInner for SuiSdkClient {
             );
         }
         Ok(class_groups_public_keys_and_proofs)
+    }
+
+    async fn get_network_decryption_keys(
+        &self,
+        network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
+    ) -> Result<HashMap<ObjectID, NetworkDecryptionKeyShares>, self::Error> {
+        let mut network_decryption_keys = HashMap::new();
+        for cap in network_decryption_caps {
+            let key_id = cap.dwallet_network_decryption_key_id;
+            let dynamic_field_response = self
+                .read_api()
+                .get_object_with_options(key_id, SuiObjectDataOptions::bcs_lossless())
+                .await?;
+            let resp = dynamic_field_response.into_object().map_err(|e| {
+                Error::DataError(format!("can't get bcs of object {:?}: {:?}", key_id, e))
+            })?;
+            let move_object = resp.bcs.ok_or(Error::DataError(format!(
+                "object {:?} has no bcs data",
+                key_id
+            )))?;
+            let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+                "object {:?} is not a MoveObject",
+                key_id
+            )))?;
+            let key_obj = bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes)?;
+            let public_output_bytes = self
+                .read_table_vec_as_raw_bytes(key_obj.public_output.contents.id)
+                .await?;
+            let public_output =
+                bcs::from_bytes::<NetworkDecryptionKeyOnChainOutput>(&public_output_bytes)?;
+            let current_shares = self
+                .read_table_vec_as_raw_bytes(key_obj.current_epoch_shares.contents.id)
+                .await?;
+            let key = NetworkDecryptionKeyShares {
+                epoch: key_obj.current_epoch,
+                current_epoch_encryptions_of_shares_per_crt_prime: current_shares,
+                previous_epoch_encryptions_of_shares_per_crt_prime: vec![],
+                encryption_scheme_public_parameters: public_output
+                    .encryption_scheme_public_parameters,
+                decryption_key_share_public_parameters: public_output
+                    .decryption_key_share_public_parameters,
+                encryption_key: public_output.encryption_key,
+                public_verification_keys: public_output.public_verification_keys,
+            };
+            network_decryption_keys.insert(key_id, key);
+        }
+        Ok(network_decryption_keys)
+    }
+
+    async fn read_table_vec_as_raw_bytes(
+        &self,
+        table_id: ObjectID,
+    ) -> Result<Vec<u8>, Self::Error> {
+        let mut full_output = Vec::new();
+        let dynamic_fields = self
+            .read_api()
+            .get_dynamic_fields(table_id, None, None)
+            .await?;
+
+        for df in dynamic_fields.data.iter() {
+            let object_id = df.object_id;
+            let dynamic_field_response = self
+                .read_api()
+                .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                .await?;
+            let resp = dynamic_field_response.into_object().map_err(|e| {
+                Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+            })?;
+            let move_object = resp.bcs.ok_or(Error::DataError(format!(
+                "object {:?} has no bcs data",
+                object_id
+            )))?;
+            let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+                "object {:?} is not a MoveObject",
+                object_id
+            )))?;
+            let bytes_chunk = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
+            full_output.extend(bytes_chunk.value.clone());
+        }
+
+        Ok(full_output)
     }
 
     async fn get_system_inner(
@@ -873,13 +967,13 @@ impl SuiClientInner for SuiSdkClient {
         tx: Transaction,
     ) -> Result<SuiTransactionBlockResponse, IkaError> {
         match self.quorum_driver_api().execute_transaction_block(
-            tx,
-            SuiTransactionBlockResponseOptions::new().with_effects().with_events(),
-            Some(sui_types::quorum_driver_types::ExecuteTransactionRequestType::WaitForEffectsCert),
-        ).await {
-            Ok(response) => Ok(response),
-            Err(e) => Err(IkaError::SuiClientTxFailureGeneric(e.to_string())),
-        }
+                tx,
+                SuiTransactionBlockResponseOptions::new().with_effects().with_events(),
+                Some(sui_types::quorum_driver_types::ExecuteTransactionRequestType::WaitForEffectsCert),
+            ).await {
+                Ok(response) => Ok(response),
+                Err(e) => Err(IkaError::SuiClientTxFailureGeneric(e.to_string())),
+            }
     }
 
     async fn get_gas_data_panic_if_not_gas(
@@ -1186,3 +1280,27 @@ impl SuiClientInner for SuiSdkClient {
 //         assert_eq!(status, BridgeActionStatus::NotFound);
 //     }
 // }
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DWalletNetworkDecryptionKey {
+    dwallet_network_decryption_key_cap_id: ID,
+    current_epoch: u64,
+    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+    current_epoch_shares: TableVec,
+    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+    next_epoch_shares: TableVec,
+    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+    previous_epoch_shares: TableVec,
+
+    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+    public_output: TableVec,
+    /// The fees paid for computation in IKA.
+    computation_fee_charged_ika: Balance,
+    state: DWalletNetworkDecryptionKeyState,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DWalletNetworkDecryptionKeyState {
+    AwaitingNetworkDKG,
+    NetworkDKGCompleted,
+}
