@@ -228,46 +228,19 @@ impl DWalletMPCOutputsVerifier {
             .authorities_that_sent_output
             .insert(origin_authority.clone());
 
-        session_output_data
+        if session_output_data
             .session_output_to_voting_authorities
             .entry((output.clone(), session_info.clone()))
             .or_insert(StakeAggregator::new(committee))
-            .insert_generic(origin_authority, ());
-
-        let weighted_threshold_access_structure =
-            epoch_store.get_weighted_threshold_access_structure()?;
-
-        // Find the output that has a quorum of votes
-        let agreed_output = session_output_data
-            .session_output_to_voting_authorities
-            .iter()
-            // There could be only one quorum, it is safe to use find.
-            .find(|(_, voters)| {
-                // Safe to unwrap since we know the authority exists in the map if it's in the set.
-                let voters_ids = voters
-                    .keys()
-                    .map(|voter| authority_name_to_party_id(voter, &epoch_store).unwrap())
-                    .collect();
-                weighted_threshold_access_structure
-                    .is_authorized_subset(&voters_ids)
-                    .is_ok()
-            });
-
-        if let Some((agreed_output, _)) = agreed_output {
-            let voted_for_other_outputs = session_output_data
-                .session_output_to_voting_authorities
-                .iter()
-                .filter(|(output, _)| *output != agreed_output)
-                .flat_map(|(_, voters)| voters.keys())
-                .cloned()
-                .collect();
+            .insert_generic(origin_authority, ())
+            .is_quorum_reached()
+        {
             session_output_data.current_result = OutputResult::AlreadyCommitted;
             return Ok(OutputVerificationResult {
                 result: OutputResult::FirstQuorumReached,
-                malicious_actors: voted_for_other_outputs,
+                malicious_actors: vec![],
             });
         }
-
         Ok(OutputVerificationResult {
             result: OutputResult::NotEnoughVotes,
             malicious_actors: vec![],
