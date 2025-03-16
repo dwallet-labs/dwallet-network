@@ -2032,9 +2032,6 @@ impl AuthorityPerEpochStore {
                 }
             });
 
-        let mut manager = self.get_dwallet_mpc_manager().await;
-        manager.flag_authorities_as_malicious(&output_verification_result.malicious_actors);
-
         match output_verification_result.result {
             OutputResult::FirstQuorumReached => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
