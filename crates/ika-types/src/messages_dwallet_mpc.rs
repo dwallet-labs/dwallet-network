@@ -210,15 +210,16 @@ pub struct StartEncryptedShareVerificationEvent {
     pub encryption_key: Vec<u8>,
     /// The `EncryptionKey` Move object ID.
     pub encryption_key_id: ObjectID,
-    pub session_id: ObjectID,
+    pub encrypted_user_secret_key_share_id: ObjectID,
+    pub source_encrypted_user_secret_key_share_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_package_id,
-            name: ident_str!("StartEncryptedShareVerificationEvent").to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            address: *packages_config.ika_system_package_id,
+            name: ident_str!("EncryptedShareVerificationRequestEvent").to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

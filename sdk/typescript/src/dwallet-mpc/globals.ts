@@ -92,15 +92,7 @@ interface IKASystemStateInner {
 interface DWalletNetworkDecryptionKey {
 	fields: {
 		id: { id: string };
-		public_output: {
-			fields: {
-				contents: {
-					fields: {
-						id: { id: string };
-					};
-				};
-			};
-		};
+		public_output: Uint8Array;
 	};
 }
 
@@ -136,6 +128,10 @@ export function isAddressObjectOwner(obj: any): obj is AddressObjectOwner {
 
 export function isMoveObject(obj: any): obj is MoveObject {
 	return obj?.fields !== undefined;
+}
+
+export function getEncryptionKeyMoveType(ikaSystemPackageID: string): string {
+	return `${ikaSystemPackageID}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
 }
 
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
@@ -288,12 +284,11 @@ export function isActiveDWallet(obj: any): obj is ActiveDWallet {
 
 export async function getNetworkDecryptionKeyPublicOutput(
 	c: Config,
-	networkDecryptionKeyId: string,
+	networkDecryptionKeyId: string | null | undefined,
 ): Promise<Uint8Array | null> {
 	if (networkDecryptionKeyId === null || networkDecryptionKeyId === undefined) {
 		networkDecryptionKeyId = await getNetworkDecryptionKeyID(c);
 	}
-
 	const networkDecryptionKey = await c.client.getObject({
 		id: networkDecryptionKeyId,
 		options: { showContent: true },
@@ -307,29 +302,7 @@ export async function getNetworkDecryptionKeyPublicOutput(
 		throw new Error('Invalid network decryption key object');
 	}
 
-	const tableVecID =
-		networkDecryptionKey.data.content.fields.public_output.fields.contents.fields.id.id;
-	const dynamicFields = await c.client.getDynamicFields({
-		parentId: tableVecID,
-		limit: 500,
-
-	});
-	let keyParts = [];
-	// eslint-disable-next-line no-constant-condition
-	while (true) {
-		keyParts += dynamicFields.data.map(field => field.name);
-		if (!dynamicFields.hasNextPage) {
-			break;
-		}
-
-	}
-
-	const innerSystemState = await c.client.getDynamicFieldObject({
-		parentId: tableVecID,
-		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
-	});
-	return innerSystemState.data.content;
-	// return networkDecryptionKey.data.content?.fields?.public_output;
+	return networkDecryptionKey.data.content?.fields?.public_output;
 }
 
 export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
@@ -349,4 +322,12 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 			.dwallet_2pc_mpc_secp256k1_network_decryption_keys;
 	return network_decryption_keys[network_decryption_keys.length - 1]?.fields
 		?.dwallet_network_decryption_key_id;
+}
+
+export interface DWallet {
+	dwalletID: string;
+	dwallet_cap_id: string;
+	secret_share: Uint8Array;
+	output: Uint8Array;
+	encrypted_secret_share_id: string;
 }

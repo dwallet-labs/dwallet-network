@@ -155,7 +155,7 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent> =
                 bcs::from_bytes(&event.contents)?;
             Ok(Some(start_encrypted_share_verification_session_info(
-                deserialized_event.event_data,
+                deserialized_event,
             )))
         }
         _ => Ok(None),
@@ -163,11 +163,11 @@ pub(crate) fn session_info_from_event(
 }
 
 fn start_encrypted_share_verification_session_info(
-    deserialized_event: StartEncryptedShareVerificationEvent,
+    deserialized_event: DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>,
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
+        mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event.event_data),
     }
 }
 
@@ -459,7 +459,9 @@ pub(crate) fn session_input_from_event(
                 bcs::from_bytes(&event.contents)?;
             Ok((
                 network_dkg::network_dkg_public_input(
-                    &dwallet_mpc_manager.validators_data_for_network_dkg,
+                    dwallet_mpc_manager
+                        .validators_class_groups_public_keys_and_proofs
+                        .clone(),
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                 )?,
                 Some(bcs::to_bytes(
