@@ -231,9 +231,7 @@ impl DWalletMPCOutputsVerifier {
         session_output_data
             .session_output_to_voting_authorities
             .entry((output.clone(), session_info.clone()))
-            .or_insert(StakeAggregator::new(
-                committee,
-            ))
+            .or_insert(StakeAggregator::new(committee))
             .insert_generic(origin_authority, ());
 
         let weighted_threshold_access_structure =
