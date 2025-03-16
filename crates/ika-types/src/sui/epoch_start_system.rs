@@ -10,7 +10,7 @@ use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
 use consensus_config::{Authority, Committee as ConsensusCommittee};
-use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
+use dwallet_mpc_types::dwallet_mpc::{ClassGroupsPublicKeyAndProofBytes, NetworkDecryptionKeyShares};
 use fastcrypto::bls12381;
 use fastcrypto::traits::{KeyPair, ToFromBytes, VerifyingKey};
 use ika_protocol_config::ProtocolVersion;
@@ -270,6 +270,7 @@ pub struct EpochStartValidatorInfoV1 {
     pub consensus_address: Multiaddr,
     pub voting_power: StakeUnit,
     pub hostname: String,
+    pub dwallet_network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyShares>,
 }
 
 impl EpochStartValidatorInfoV1 {

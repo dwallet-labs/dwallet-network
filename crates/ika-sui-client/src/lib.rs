@@ -262,6 +262,11 @@ where
                     .map(|v| v.value.clone())
                     .collect::<Vec<_>>();
 
+                let network_decryption_keys = self
+                    .inner
+                    .get_network_decryption_keys(&ika_system_state_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys)
+                    .await.unwrap_or_default();
+
                 let validators_class_groups_public_key_and_proof = self
                     .inner
                     .get_class_groups_public_keys_and_proofs(&validators)
@@ -302,6 +307,7 @@ where
                             consensus_address: metadata.consensus_address.clone(),
                             voting_power: m.voting_power,
                             hostname: metadata.name.clone(),
+                            dwallet_network_decryption_keys: network_decryption_keys.clone(),
                         }
                     })
                     .collect::<Vec<_>>();
@@ -729,8 +735,14 @@ impl SuiClientInner for SuiSdkClient {
                 object_id
             )))?;
             let bytes_chunk = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
-            full_output.extend(bytes_chunk.value.clone());
+            full_output.insert(bytes_chunk.name as usize, bytes_chunk.value.clone());
         }
+        let full_output = full_output
+            .into_iter()
+            .fold(Vec::new(), |mut acc, mut v| {
+                acc.append(&mut v);
+                acc
+            });
 
         Ok(full_output)
     }
