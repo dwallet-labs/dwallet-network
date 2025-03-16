@@ -9,7 +9,7 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import type { DWallet } from './globals.js';
+import type { DWallet, EncryptedDWalletData } from './globals.js';
 import {
 	checkpointCreationTime,
 	delay,
@@ -20,6 +20,7 @@ import {
 	getInitialSharedVersion,
 	getNetworkDecryptionKeyID,
 	getObjectWithType,
+	isActiveDWallet,
 	isAddressObjectOwner,
 	isDWalletCap,
 	isMoveObject,
@@ -43,12 +44,6 @@ interface CompletedDKGSecondRoundEvent {
 	public_output: Uint8Array;
 	encrypted_user_secret_key_share_id: string;
 	session_id: string;
-}
-
-interface EncryptedDWalletData {
-	dwallet_id: string;
-	public_output: Uint8Array;
-	encrypted_user_secret_key_share_id: string;
 }
 
 interface WaitingForUserDWallet {
@@ -368,8 +363,10 @@ export async function acceptEncryptedUserShare(
 	conf: Config,
 	encryptedDWalletData: EncryptedDWalletData,
 ): Promise<void> {
+	const dwallet = await getObjectWithType(conf, encryptedDWalletData.dwallet_id, isActiveDWallet);
+	const dwalletOutput = dwallet.state.fields.public_output;
 	const signedPublicOutput = await conf.encryptedSecretShareSigningKeypair.sign(
-		new Uint8Array(encryptedDWalletData.public_output),
+		new Uint8Array(dwalletOutput),
 	);
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
