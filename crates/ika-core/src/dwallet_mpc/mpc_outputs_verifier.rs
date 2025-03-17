@@ -61,8 +61,6 @@ pub struct SessionOutputsData {
     /// Maps session's output to the authorities that voted for it.
     /// The key must contain the session info, and the output to prevent
     /// malicious behavior, such as sending the correct output, but from a faulty session.
-    // pub session_output_to_voting_authorities:
-    //     HashMap<(MPCPublicOutput, SessionInfo), HashSet<AuthorityName>>,
     pub session_output_to_voting_authorities:
         HashMap<(MPCPublicOutput, SessionInfo), StakeAggregator<(), true>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
