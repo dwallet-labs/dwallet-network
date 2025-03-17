@@ -19,8 +19,10 @@ use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorIn
 use ika_types::sui::system_inner_v1::{DWalletNetworkDecryptionKeyCap, SystemInnerV1};
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
 use ika_types::sui::{System, SystemInner, SystemInnerTrait, Validator};
+use itertools::Itertools;
 use move_binary_format::binary_config::BinaryConfig;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::annotated_value::MoveEnumLayout;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -42,9 +44,9 @@ use sui_types::base_types::SequenceNumber;
 use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
-use sui_types::id::ID;
+use sui_types::id::{ID, UID};
 use sui_types::move_package::MovePackage;
-use sui_types::object::{Object, Owner};
+use sui_types::object::{MoveObject, Object, Owner};
 use sui_types::parse_sui_type_tag;
 use sui_types::transaction::Argument;
 use sui_types::transaction::CallArg;
@@ -264,8 +266,11 @@ where
 
                 let network_decryption_keys = self
                     .inner
-                    .get_network_decryption_keys(&ika_system_state_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys)
-                    .await.unwrap_or_default();
+                    .get_network_decryption_keys(
+                        &ika_system_state_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys,
+                    )
+                    .await
+                    .unwrap_or_default();
 
                 let validators_class_groups_public_key_and_proof = self
                     .inner
@@ -667,10 +672,15 @@ impl SuiClientInner for SuiSdkClient {
         let mut network_decryption_keys = HashMap::new();
         for cap in network_decryption_caps {
             let key_id = cap.dwallet_network_decryption_key_id;
+            println!("key_id: {:?}", key_id);
             let dynamic_field_response = self
                 .read_api()
                 .get_object_with_options(key_id, SuiObjectDataOptions::bcs_lossless())
-                .await?;
+                .await
+                .map_err(|e| {
+                    println!("Error: {:?}", e);
+                    Error::DataError(format!("can't get object {:?}: {:?}", key_id, e))
+                })?;
             let resp = dynamic_field_response.into_object().map_err(|e| {
                 Error::DataError(format!("can't get bcs of object {:?}: {:?}", key_id, e))
             })?;
@@ -682,7 +692,12 @@ impl SuiClientInner for SuiSdkClient {
                 "object {:?} is not a MoveObject",
                 key_id
             )))?;
-            let key_obj = bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes)?;
+            let key_obj = bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes)
+                .map_err(|e| {
+                println!("Error: {:?}", e);
+                Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e))
+            })?;
+            println!("public output id: {:?}", key_obj.public_output.contents.id);
             let public_output_bytes = self
                 .read_table_vec_as_raw_bytes(key_obj.public_output.contents.id)
                 .await?;
@@ -711,11 +726,18 @@ impl SuiClientInner for SuiSdkClient {
         &self,
         table_id: ObjectID,
     ) -> Result<Vec<u8>, Self::Error> {
-        let mut full_output = Vec::new();
+        let mut full_output = HashMap::new();
         let dynamic_fields = self
             .read_api()
             .get_dynamic_fields(table_id, None, None)
-            .await?;
+            .await
+            .map_err(|e| {
+                println!("Error: {:?}", e);
+                Error::DataError(format!(
+                    "can't get dynamic fields of table {:?}: {:?}",
+                    table_id, e
+                ))
+            })?;
 
         for df in dynamic_fields.data.iter() {
             let object_id = df.object_id;
@@ -737,12 +759,14 @@ impl SuiClientInner for SuiSdkClient {
             let bytes_chunk = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
             full_output.insert(bytes_chunk.name as usize, bytes_chunk.value.clone());
         }
-        let full_output = full_output
-            .into_iter()
-            .fold(Vec::new(), |mut acc, mut v| {
-                acc.append(&mut v);
-                acc
-            });
+        let full_output =
+            full_output
+                .into_iter()
+                .sorted()
+                .fold(Vec::new(), |mut acc, (k, mut v)| {
+                    acc.append(&mut v);
+                    acc
+                });
 
         Ok(full_output)
     }
@@ -1295,7 +1319,8 @@ impl SuiClientInner for SuiSdkClient {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DWalletNetworkDecryptionKey {
-    dwallet_network_decryption_key_cap_id: ID,
+    id: ObjectID,
+    dwallet_network_decryption_key_cap_id: ObjectID,
     current_epoch: u64,
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
     current_epoch_shares: TableVec,
