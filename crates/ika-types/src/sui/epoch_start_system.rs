@@ -57,6 +57,7 @@ impl EpochStartSystem {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
+        dwallet_network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyShares>,
     ) -> Self {
         Self::V1(EpochStartSystemV1 {
             epoch,
@@ -64,6 +65,7 @@ impl EpochStartSystem {
             epoch_start_timestamp_ms,
             epoch_duration_ms,
             active_validators,
+            dwallet_network_decryption_keys,
         })
     }
 
@@ -80,6 +82,7 @@ impl EpochStartSystem {
                 epoch_start_timestamp_ms: state.epoch_start_timestamp_ms,
                 epoch_duration_ms: state.epoch_duration_ms,
                 active_validators: state.active_validators.clone(),
+                dwallet_network_decryption_keys: state.dwallet_network_decryption_keys.clone(),
             }),
         }
     }
@@ -92,6 +95,7 @@ pub struct EpochStartSystemV1 {
     epoch_start_timestamp_ms: u64,
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
+    dwallet_network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyShares>,
 }
 
 impl EpochStartSystemV1 {
@@ -106,6 +110,7 @@ impl EpochStartSystemV1 {
             epoch_start_timestamp_ms: 0,
             epoch_duration_ms: 1000,
             active_validators: vec![],
+            dwallet_network_decryption_keys: HashMap::new(),
         }
     }
 }
@@ -272,7 +277,6 @@ pub struct EpochStartValidatorInfoV1 {
     pub consensus_address: Multiaddr,
     pub voting_power: StakeUnit,
     pub hostname: String,
-    pub dwallet_network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyShares>,
 }
 
 impl EpochStartValidatorInfoV1 {
@@ -321,6 +325,7 @@ mod test {
             epoch_start_timestamp_ms: 0,
             epoch_duration_ms: 0,
             active_validators,
+            dwallet_network_decryption_keys: Default::default(),
         };
 
         // WHEN

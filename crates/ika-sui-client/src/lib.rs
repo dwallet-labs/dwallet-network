@@ -15,6 +15,7 @@ use fastcrypto::traits::ToFromBytes;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
+use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::system_inner_v1::{DWalletNetworkDecryptionKeyCap, SystemInnerV1};
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
@@ -312,7 +313,6 @@ where
                             consensus_address: metadata.consensus_address.clone(),
                             voting_power: m.voting_power,
                             hostname: metadata.name.clone(),
-                            dwallet_network_decryption_keys: network_decryption_keys.clone(),
                         }
                     })
                     .collect::<Vec<_>>();
@@ -323,6 +323,7 @@ where
                     ika_system_state_inner.epoch_start_timestamp_ms,
                     ika_system_state_inner.epoch_duration_ms(),
                     validators,
+                    network_decryption_keys.clone(),
                 );
 
                 Ok(epoch_start_system_state)
@@ -523,6 +524,7 @@ pub trait SuiClientInner: Send + Sync {
         &self,
         network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
     ) -> Result<HashMap<ObjectID, NetworkDecryptionKeyShares>, self::Error>;
+
     async fn read_table_vec_as_raw_bytes(&self, table_id: ObjectID)
         -> Result<Vec<u8>, self::Error>;
 
@@ -672,15 +674,10 @@ impl SuiClientInner for SuiSdkClient {
         let mut network_decryption_keys = HashMap::new();
         for cap in network_decryption_caps {
             let key_id = cap.dwallet_network_decryption_key_id;
-            println!("key_id: {:?}", key_id);
             let dynamic_field_response = self
                 .read_api()
                 .get_object_with_options(key_id, SuiObjectDataOptions::bcs_lossless())
-                .await
-                .map_err(|e| {
-                    println!("Error: {:?}", e);
-                    Error::DataError(format!("can't get object {:?}: {:?}", key_id, e))
-                })?;
+                .await?;
             let resp = dynamic_field_response.into_object().map_err(|e| {
                 Error::DataError(format!("can't get bcs of object {:?}: {:?}", key_id, e))
             })?;
@@ -694,10 +691,8 @@ impl SuiClientInner for SuiSdkClient {
             )))?;
             let key_obj = bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes)
                 .map_err(|e| {
-                println!("Error: {:?}", e);
                 Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e))
             })?;
-            println!("public output id: {:?}", key_obj.public_output.contents.id);
             let public_output_bytes = self
                 .read_table_vec_as_raw_bytes(key_obj.public_output.contents.id)
                 .await?;
@@ -1316,28 +1311,3 @@ impl SuiClientInner for SuiSdkClient {
 //         assert_eq!(status, BridgeActionStatus::NotFound);
 //     }
 // }
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DWalletNetworkDecryptionKey {
-    id: ObjectID,
-    dwallet_network_decryption_key_cap_id: ObjectID,
-    current_epoch: u64,
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    current_epoch_shares: TableVec,
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    next_epoch_shares: TableVec,
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    previous_epoch_shares: TableVec,
-
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    public_output: TableVec,
-    /// The fees paid for computation in IKA.
-    computation_fee_charged_ika: Balance,
-    state: DWalletNetworkDecryptionKeyState,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum DWalletNetworkDecryptionKeyState {
-    AwaitingNetworkDKG,
-    NetworkDKGCompleted,
-}
