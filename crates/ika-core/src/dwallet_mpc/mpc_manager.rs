@@ -121,13 +121,6 @@ impl DWalletMPCManager {
     ) -> DwalletMPCResult<Self> {
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
-        let quorum_threshold = epoch_store.committee().quorum_threshold();
-        let weighted_parties = epoch_store
-            .committee()
-            .voting_rights
-            .iter()
-            .cloned()
-            .collect();
         let mpc_computations_orchestrator =
             CryptographicComputationsOrchestrator::try_new(&epoch_store)?;
         Ok(Self {
@@ -142,7 +135,7 @@ impl DWalletMPCManager {
                 .get_validators_class_groups_public_keys_and_proofs()
                 .map_err(|e| DwalletMPCError::MPCManagerError(e.to_string()))?,
             cryptographic_computations_orchestrator: mpc_computations_orchestrator,
-            malicious_handler: MaliciousHandler::new(quorum_threshold, weighted_parties),
+            malicious_handler: MaliciousHandler::new(epoch_store.committee().clone()),
         })
     }
 
