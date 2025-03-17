@@ -13,6 +13,7 @@ import {
 	checkpointCreationTime,
 	Config,
 	delay,
+	getNetworkDecryptionKeyPublicOutput,
 	getNetworkDecryptionKeyPublicOutputID,
 	mockedNetworkDecryptionKeyPublicOutput,
 	MPCKeyScheme,
@@ -52,12 +53,8 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('read network decryption key', async () => {
-		const networkDecryptionKeyPublicOutputID = await getNetworkDecryptionKeyPublicOutputID(
-			conf,
-			null,
-		);
-		console.log(`Network decryption key: ${networkDecryptionKeyPublicOutputID}`);
-		await readTableVec(conf, networkDecryptionKeyPublicOutputID);
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		console.log(`networkDecryptionKeyPublicOutput: ${networkDecryptionKeyPublicOutput}`);
 	});
 
 	it('should create a dWallet (DKG)', async () => {

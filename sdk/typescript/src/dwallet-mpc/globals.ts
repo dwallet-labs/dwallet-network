@@ -117,6 +117,13 @@ interface MoveObject {
 	fields: any;
 }
 
+interface MoveDynamicField {
+	fields: {
+		name: string;
+		value: Uint8Array;
+	};
+}
+
 export interface SharedObjectData {
 	object_id: string;
 	initial_shared_version: number;
@@ -128,6 +135,10 @@ export function isAddressObjectOwner(obj: any): obj is AddressObjectOwner {
 
 export function isMoveObject(obj: any): obj is MoveObject {
 	return obj?.fields !== undefined;
+}
+
+export function isMoveDynamicField(obj: any): obj is MoveDynamicField {
+	return obj?.fields.name !== undefined || obj?.fields.value !== undefined;
 }
 
 export function getEncryptionKeyMoveType(ikaSystemPackageID: string): string {
@@ -294,50 +305,48 @@ export async function getNetworkDecryptionKeyPublicOutputID(
 		options: { showContent: true },
 	});
 
-	if (!networkDecryptionKey) {
-		throw new Error('Network decryption key not found');
-	}
-
-	if (!isDWalletNetworkDecryptionKey(networkDecryptionKey?.data?.content)) {
+	if (
+		!networkDecryptionKey ||
+		!isMoveObject(networkDecryptionKey?.data?.content) ||
+		!isDWalletNetworkDecryptionKey(networkDecryptionKey.data.content) ||
+		!isMoveObject(networkDecryptionKey.data.content.fields.public_output)
+	) {
 		throw new Error('Invalid network decryption key object');
 	}
 
-	return networkDecryptionKey.data.content.fields?.public_output?.fields?.contents?.fields.id?.id;
+	return networkDecryptionKey.data.content.fields.public_output.fields.contents.fields.id?.id;
 }
 
-export async function readTableVec(c: Config, table_id: string): Promise<Uint8Array> {
-	try {
-		const dynamicFieldPage = await c.client.getDynamicFields({ parentId: table_id });
+async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint8Array> {
+	const dynamicFieldPage = await c.client.getDynamicFields({ parentId: table_id });
 
-		console.log('Dynamic Fields Data:', dynamicFieldPage);
-
-		if (!dynamicFieldPage?.data?.length) {
-			console.log('No dynamic fields found.');
-			return;
-		}
-
-		const poolDataArray = [];
-		for (const tableRowResult of dynamicFieldPage.data) {
-			const poolId = tableRowResult.objectId;
-			console.log(`Fetching details for Pool ID: ${poolId}`);
-
-			try {
-				const dynFieldForPool = await c.client.getObject({
-					id: poolId,
-					options: { showContent: true },
-				});
-				poolDataArray[dynFieldForPool.data?.content?.fields?.name] =
-					dynFieldForPool.data?.content?.fields?.value;
-			} catch (error) {
-				console.error(`Error fetching pool data for ${poolId}:`, error);
-			}
-		}
-		const a = poolDataArray.flat();
-		console.log('Pool Data Array:', a);
-	} catch (error) {
-		console.error('Error fetching dynamic fields:', error);
+	if (!dynamicFieldPage?.data?.length) {
+		throw new Error('No dynamic fields found');
 	}
-	return;
+
+	const poolDataArray: Uint8Array[] = [];
+	for (const tableRowResult of dynamicFieldPage.data) {
+		const poolId = tableRowResult.objectId;
+
+		const dynFieldForPool = await c.client.getObject({
+			id: poolId,
+			options: { showContent: true },
+		});
+		if (
+			!isMoveObject(dynFieldForPool.data?.content) ||
+			!isMoveDynamicField(dynFieldForPool.data?.content)
+		) {
+			throw new Error('Invalid dynamic field object');
+		}
+		const index = parseInt(dynFieldForPool.data.content.fields.name);
+		poolDataArray[index] = dynFieldForPool.data.content.fields.value;
+	}
+	return new Uint8Array(poolDataArray.flatMap((arr) => Array.from(arr)));
+}
+
+export async function getNetworkDecryptionKeyPublicOutput(c: Config): Promise<Uint8Array> {
+	const networkDecryptionKeyPublicOutputID = await getNetworkDecryptionKeyPublicOutputID(c, null);
+	return await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
 }
 
 export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
