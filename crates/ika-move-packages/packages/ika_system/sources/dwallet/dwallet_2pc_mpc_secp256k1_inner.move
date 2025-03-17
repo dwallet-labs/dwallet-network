@@ -26,13 +26,13 @@ use ika_system::bls_committee::{BlsCommittee};
 const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
 
-public(package) fun set_table_vec(_a: &mut TableVec<vector<u8>>, _b: &TableVec<vector<u8>>) {
-    while (!_a.is_empty()) {
-        _a.pop_back();
+fun copy_table_vec(dest: &mut TableVec<vector<u8>>, src: &TableVec<vector<u8>>) {
+    while (!dest.is_empty()) {
+        dest.pop_back();
     };
     let mut i = 0;
-    while (i < _b.length()) {
-        let vec = _b.borrow(i);
+    while (i < src.length()) {
+        let vec = src.borrow(i);
         let vec_len = vec.length();
         let mut j = 0;
         let mut new_vec: vector<u8> = vector[];
@@ -40,7 +40,7 @@ public(package) fun set_table_vec(_a: &mut TableVec<vector<u8>>, _b: &TableVec<v
             new_vec.push_back(*(vec.borrow(j)));
             j = j + 1;
         };
-        _a.push_back(new_vec);
+        dest.push_back(new_vec);
         i = i + 1;
     }
 }
@@ -773,8 +773,8 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
     let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(cap.dwallet_network_decryption_key_id);
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
-    set_table_vec(&mut dwallet_network_decryption_key.previous_epoch_shares, &dwallet_network_decryption_key.current_epoch_shares);
-    set_table_vec(&mut dwallet_network_decryption_key.current_epoch_shares, &dwallet_network_decryption_key.next_epoch_shares);
+    copy_table_vec(&mut dwallet_network_decryption_key.previous_epoch_shares, &dwallet_network_decryption_key.current_epoch_shares);
+    copy_table_vec(&mut dwallet_network_decryption_key.current_epoch_shares, &dwallet_network_decryption_key.next_epoch_shares);
 }
 
 fun get_active_dwallet_network_decryption_key(

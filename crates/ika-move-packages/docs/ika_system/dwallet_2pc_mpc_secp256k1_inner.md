@@ -49,7 +49,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Enum `DWalletState`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletState)
 -  [Enum `ECDSASignState`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSASignState)
 -  [Constants](#@Constants_1)
--  [Function `set_table_vec`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_set_table_vec)
+-  [Function `copy_table_vec`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_copy_table_vec)
 -  [Function `create_dwallet_coordinator_inner`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_dwallet_coordinator_inner)
 -  [Function `request_dwallet_network_decryption_key_dkg`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_request_dwallet_network_decryption_key_dkg)
 -  [Function `respond_dwallet_network_decryption_key_dkg`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg)
@@ -2312,13 +2312,13 @@ Supported hash schemes for message signing.
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_set_table_vec"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_copy_table_vec"></a>
 
-## Function `set_table_vec`
+## Function `copy_table_vec`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_set_table_vec">set_table_vec</a>(_a: &<b>mut</b> <a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;, _b: &<a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;)
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_copy_table_vec">copy_table_vec</a>(dest: &<b>mut</b> <a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;, src: &<a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;)
 </code></pre>
 
 
@@ -2327,13 +2327,13 @@ Supported hash schemes for message signing.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_set_table_vec">set_table_vec</a>(_a: &<b>mut</b> TableVec&lt;vector&lt;u8&gt;&gt;, _b: &TableVec&lt;vector&lt;u8&gt;&gt;) {
-    <b>while</b> (!_a.is_empty()) {
-        _a.pop_back();
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_copy_table_vec">copy_table_vec</a>(dest: &<b>mut</b> TableVec&lt;vector&lt;u8&gt;&gt;, src: &TableVec&lt;vector&lt;u8&gt;&gt;) {
+    <b>while</b> (!dest.is_empty()) {
+        dest.pop_back();
     };
     <b>let</b> <b>mut</b> i = 0;
-    <b>while</b> (i &lt; _b.length()) {
-        <b>let</b> vec = _b.borrow(i);
+    <b>while</b> (i &lt; src.length()) {
+        <b>let</b> vec = src.borrow(i);
         <b>let</b> vec_len = vec.length();
         <b>let</b> <b>mut</b> j = 0;
         <b>let</b> <b>mut</b> new_vec: vector&lt;u8&gt; = vector[];
@@ -2341,7 +2341,7 @@ Supported hash schemes for message signing.
             new_vec.push_back(*(vec.borrow(j)));
             j = j + 1;
         };
-        _a.push_back(new_vec);
+        dest.push_back(new_vec);
         i = i + 1;
     }
 }
@@ -2549,8 +2549,8 @@ Supported hash schemes for message signing.
     <b>let</b> dwallet_network_decryption_key = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_network_decryption_key">get_active_dwallet_network_decryption_key</a>(cap.dwallet_network_decryption_key_id);
     <b>assert</b>!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EIncorrectCap">EIncorrectCap</a>);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
-    <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_set_table_vec">set_table_vec</a>(&<b>mut</b> dwallet_network_decryption_key.previous_epoch_shares, &dwallet_network_decryption_key.current_epoch_shares);
-    <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_set_table_vec">set_table_vec</a>(&<b>mut</b> dwallet_network_decryption_key.current_epoch_shares, &dwallet_network_decryption_key.next_epoch_shares);
+    <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_copy_table_vec">copy_table_vec</a>(&<b>mut</b> dwallet_network_decryption_key.previous_epoch_shares, &dwallet_network_decryption_key.current_epoch_shares);
+    <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_copy_table_vec">copy_table_vec</a>(&<b>mut</b> dwallet_network_decryption_key.current_epoch_shares, &dwallet_network_decryption_key.next_epoch_shares);
 }
 </code></pre>
 
