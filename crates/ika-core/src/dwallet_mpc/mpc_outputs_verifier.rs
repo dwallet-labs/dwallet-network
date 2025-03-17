@@ -61,8 +61,6 @@ pub struct SessionOutputsData {
     /// Maps session's output to the authorities that voted for it.
     /// The key must contain the session info, and the output to prevent
     /// malicious behavior, such as sending the correct output, but from a faulty session.
-    // pub session_output_to_voting_authorities:
-    //     HashMap<(MPCPublicOutput, SessionInfo), HashSet<AuthorityName>>,
     pub session_output_to_voting_authorities:
         HashMap<(MPCPublicOutput, SessionInfo), StakeAggregator<(), true>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
@@ -215,10 +213,6 @@ impl DWalletMPCOutputsVerifier {
             .contains(&origin_authority)
         {
             // Duplicate.
-            // We should NOT mark the origin party as malicious, as a message may be processed more than once
-            // due to a bug in the state sync mechanism.
-            // TODO (#697): Understand why consensus rounds that have already been processed are being processed
-            // TODO (#697): while performing state sync.
             return Ok(OutputVerificationResult {
                 result: OutputResult::AlreadyCommitted,
                 malicious_actors: vec![],
