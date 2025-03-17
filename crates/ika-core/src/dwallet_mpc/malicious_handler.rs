@@ -79,7 +79,7 @@ impl MaliciousHandler {
         {
             return Ok(ReportStatus::QuorumReached);
         }
-        Ok(ReportStatus::OverQuorum)
+        Ok(ReportStatus::WaitingForQuorum)
     }
 
     pub(crate) fn is_malicious_actor(&self, authority: &AuthorityName) -> bool {
