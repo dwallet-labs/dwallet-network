@@ -2208,17 +2208,17 @@ impl AuthorityPerEpochStore {
         public_output: Vec<u8>,
         key_shares: Vec<u8>,
     ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
-        // #[cfg(not(feature = "with-network-dkg"))]
-        // {
-        //     return vec![Secp256K1NetworkDKGOutputSlice {
-        //         dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
-        //             .clone()
-        //             .to_vec(),
-        //         public_output: vec![],
-        //         key_shares: vec![],
-        //         is_last: true,
-        //     }];
-        // }
+        #[cfg(not(feature = "with-network-dkg"))]
+        {
+            return vec![Secp256K1NetworkDKGOutputSlice {
+                dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
+                    .clone()
+                    .to_vec(),
+                public_output: vec![],
+                key_shares: vec![],
+                is_last: true,
+            }];
+        }
         let mut slices = Vec::new();
         let public_chunks = public_output.chunks(5 * 1024).collect_vec();
         let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
