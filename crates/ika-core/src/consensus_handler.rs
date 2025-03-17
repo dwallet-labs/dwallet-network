@@ -51,6 +51,7 @@ use crate::{
     consensus_types::consensus_output_api::{parse_block_transactions, ConsensusCommitAPI},
     scoring_decision::update_low_scoring_authorities,
 };
+use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCOutputMessage};
 use tokio::task::JoinSet;
@@ -460,26 +461,19 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// Fails only if the epoch switched in the middle of the state sync.
     async fn perform_dwallet_mpc_state_sync(&self) -> IkaResult {
         info!("Performing a state sync for the dWallet MPC node");
-        let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
-
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
         for event in self.load_dwallet_mpc_events_from_epoch_start().await? {
             dwallet_mpc_verifier.monitor_new_session_outputs(&event.session_info);
         }
         for output in self.load_dwallet_mpc_outputs_from_epoch_start().await? {
-            match dwallet_mpc_verifier
+            if let Err(err) = dwallet_mpc_verifier
                 .try_verify_output(&output.output, &output.session_info, output.authority)
                 .await
             {
-                Ok(result) => {
-                    manager.flag_authorities_as_malicious(&result.malicious_actors);
-                }
-                Err(err) => {
-                    error!(
-                        "failed to verify output from session {:?} and party {:?}: {:?}",
-                        output.session_info.session_id, output.authority, err
-                    );
-                }
+                error!(
+                    "failed to verify output from session {:?} and party {:?}: {:?}",
+                    output.session_info.session_id, output.authority, err
+                );
             }
         }
         for message in self.load_dwallet_mpc_messages_from_epoch_start().await? {
