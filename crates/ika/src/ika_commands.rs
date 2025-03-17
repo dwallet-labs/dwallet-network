@@ -326,9 +326,10 @@ async fn start(
         } else {
             let network_config: NetworkConfig = PersistedConfig::read(&network_config_path)
                 .map_err(|err| {
+                    let err_str = err.to_string();
                     err.context(format!(
-                        "Cannot open Ika network config file at {:?}",
-                        network_config_path
+                        "Cannot open Ika network config file at {:?} {:?}",
+                        network_config_path, err_str
                     ))
                 })?;
 
