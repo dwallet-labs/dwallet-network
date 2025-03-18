@@ -7,8 +7,9 @@
 //! - Ensuring these reports are only considered valid if submitted by a quorum of validators.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::authority_name_to_party_id;
+use crate::stake_aggregator::StakeAggregator;
 use group::PartyID;
-use ika_types::committee::StakeUnit;
+use ika_types::committee::{Committee, StakeUnit};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::MaliciousReport;
@@ -26,16 +27,13 @@ use tracing::error;
 /// This list is maintained during the Epoch.
 /// This happens automatically because the `MaliciousHandler` is part of the `
 pub(crate) struct MaliciousHandler {
-    /// The quorum threshold for the MPC process.
-    quorum_threshold: StakeUnit,
-    /// A mapping between an authority name to its stake.
-    pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
+    committee: Arc<Committee>,
     /// The set of malicious actors that are reported by the validators.
     malicious_actors: HashSet<AuthorityName>,
     /// The reports of the malicious actors that are disrupting the MPC process.
     /// Maps the [`MaliciousReport`] to the set of authorities
     /// that reported the malicious actor.
-    reports: HashMap<MaliciousReport, HashSet<AuthorityName>>,
+    reports: HashMap<MaliciousReport, StakeAggregator<(), true>>,
 }
 
 /// The status of the report after it is reported by the validators.
@@ -51,13 +49,9 @@ pub(crate) enum ReportStatus {
 }
 
 impl MaliciousHandler {
-    pub(crate) fn new(
-        quorum_threshold: StakeUnit,
-        weighted_parties: HashMap<AuthorityName, StakeUnit>,
-    ) -> Self {
+    pub(crate) fn new(committee: Arc<Committee>) -> Self {
         Self {
-            quorum_threshold,
-            weighted_parties,
+            committee,
             malicious_actors: HashSet::new(),
             reports: HashMap::new(),
         }
@@ -72,50 +66,20 @@ impl MaliciousHandler {
         report: MaliciousReport,
         authority: AuthorityName,
     ) -> DwalletMPCResult<ReportStatus> {
-        let authority_voting_weight = self
-            .weighted_parties
-            .get(&authority)
-            .ok_or(DwalletMPCError::AuthorityNameNotFound(authority))?
-            .clone() as usize;
-
-        match self.reports.entry(report.clone()) {
-            hash_map::Entry::Occupied(mut entry) => {
-                if !entry.get_mut().insert(authority) {
-                    error!("authority {} already reported {:?}", authority, report);
-                }
-            }
-            hash_map::Entry::Vacant(entry) => {
-                let mut reporters = HashSet::new();
-                reporters.insert(authority);
-                entry.insert(reporters);
-            }
+        let report_votes = self
+            .reports
+            .entry(report)
+            .or_insert(StakeAggregator::new(self.committee.clone()));
+        if report_votes.has_quorum() {
+            return Ok(ReportStatus::OverQuorum);
         }
-
-        let total_voting_weight = self.calculate_total_voting_weight(report.clone());
-        let has_reached_quorum = total_voting_weight >= self.quorum_threshold as usize;
-        let above_quorum = total_voting_weight > self.quorum_threshold as usize;
-        let first_quorum_reached =
-            total_voting_weight - authority_voting_weight < self.quorum_threshold as usize;
-        if has_reached_quorum && first_quorum_reached {
-            self.malicious_actors.extend(report.malicious_actors);
-            Ok(ReportStatus::QuorumReached)
-        } else if above_quorum {
-            Ok(ReportStatus::OverQuorum)
-        } else {
-            Ok(ReportStatus::WaitingForQuorum)
+        if report_votes
+            .insert_generic(authority, ())
+            .is_quorum_reached()
+        {
+            return Ok(ReportStatus::QuorumReached);
         }
-    }
-
-    fn calculate_total_voting_weight(&self, report: MaliciousReport) -> usize {
-        let mut total_voting_weight = 0;
-        if let Some(reporters) = self.reports.get(&report) {
-            for authority in reporters {
-                if let Some(weight) = self.weighted_parties.get(authority) {
-                    total_voting_weight += *weight as usize;
-                }
-            }
-        }
-        total_voting_weight
+        Ok(ReportStatus::WaitingForQuorum)
     }
 
     pub(crate) fn is_malicious_actor(&self, authority: &AuthorityName) -> bool {
