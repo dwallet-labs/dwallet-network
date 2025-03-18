@@ -150,6 +150,17 @@ pub struct DWalletMPCMessage {
     pub round_number: usize,
 }
 
+/// The message unique key in the consensus network.
+/// Used to make sure no message is being processed twice.
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
+pub struct DWalletMPCMessageKey {
+    /// The authority (Validator) that sent the message.
+    pub authority: AuthorityName,
+    pub session_id: ObjectID,
+    /// The MPC round number, starts from 0.
+    pub round_number: usize,
+}
+
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {

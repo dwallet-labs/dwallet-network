@@ -9,7 +9,7 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import type { DWallet } from './globals.js';
+import type { DWallet, EncryptedDWalletData } from './globals.js';
 import {
 	checkpointCreationTime,
 	delay,
@@ -20,6 +20,7 @@ import {
 	getInitialSharedVersion,
 	getNetworkDecryptionKeyID,
 	getObjectWithType,
+	isActiveDWallet,
 	isAddressObjectOwner,
 	isDWalletCap,
 	isMoveObject,
@@ -43,12 +44,6 @@ interface CompletedDKGSecondRoundEvent {
 	public_output: Uint8Array;
 	encrypted_user_secret_key_share_id: string;
 	session_id: string;
-}
-
-interface EncryptedDWalletData {
-	dwallet_id: string;
-	public_output: Uint8Array;
-	encrypted_user_secret_key_share_id: string;
 }
 
 interface WaitingForUserDWallet {
@@ -366,10 +361,12 @@ async function waitForDKGFirstRoundOutput(conf: Config, dwalletID: string): Prom
 
 export async function acceptEncryptedUserShare(
 	conf: Config,
-	completedDKGSecondRoundEvent: EncryptedDWalletData,
+	encryptedDWalletData: EncryptedDWalletData,
 ): Promise<void> {
+	const dwallet = await getObjectWithType(conf, encryptedDWalletData.dwallet_id, isActiveDWallet);
+	const dwalletOutput = dwallet.state.fields.public_output;
 	const signedPublicOutput = await conf.encryptedSecretShareSigningKeypair.sign(
-		new Uint8Array(completedDKGSecondRoundEvent.public_output),
+		new Uint8Array(dwalletOutput),
 	);
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
@@ -378,9 +375,9 @@ export async function acceptEncryptedUserShare(
 		initialSharedVersion: dWalletStateData.initial_shared_version,
 		mutable: true,
 	});
-	const dwalletIDArg = tx.pure.id(completedDKGSecondRoundEvent.dwallet_id);
+	const dwalletIDArg = tx.pure.id(encryptedDWalletData.dwallet_id);
 	const encryptedUserSecretKeyShareIDArg = tx.pure.id(
-		completedDKGSecondRoundEvent.encrypted_user_secret_key_share_id,
+		encryptedDWalletData.encrypted_user_secret_key_share_id,
 	);
 	const userOutputSignatureArg = tx.pure(bcs.vector(bcs.u8()).serialize(signedPublicOutput));
 	tx.moveCall({

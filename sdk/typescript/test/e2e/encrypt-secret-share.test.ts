@@ -6,6 +6,7 @@ import { beforeEach, describe, it } from 'vitest';
 
 import { acceptEncryptedUserShare, createDWallet } from '../../src/dwallet-mpc/dkg';
 import {
+	decryptAndVerifyReceivedUserShare,
 	encryptUserShareForPublicKey,
 	getOrCreateClassGroupsKeyPair,
 	transferEncryptedSecretShare,
@@ -29,32 +30,38 @@ describe('Test dWallet MPC', () => {
 		await delay(checkpointCreationTime);
 	});
 
-	it('encrypts a secret share for a given public key and transfers it', async () => {
+	it('encrypt a secret share for a given Sui address, decrypt it, verify it & publish signed dWallet output on chain ', async () => {
 		const sourceDwallet = await createDWallet(sourceConf, mockedNetworkDecryptionKeyPublicOutput);
 		// Create Destination Class Groups Keypair & Store it on the chain.
 		await getOrCreateClassGroupsKeyPair(destConf);
 		await delay(checkpointCreationTime);
 		const encryptedUserKeyShareAndProofOfEncryption = await encryptUserShareForPublicKey(
 			sourceConf,
-			destConf.encryptedSecretShareSigningKeypair.getPublicKey(),
+			destConf.encryptedSecretShareSigningKeypair.toSuiAddress(),
 			sourceDwallet.secret_share,
 		);
 		console.log(
 			`encryptedUserKeyShareAndProofOfEncryption: ${encryptedUserKeyShareAndProofOfEncryption}`,
 		);
-		const encryptedShareID = await transferEncryptedSecretShare(
+		const encryptedShareObjID = await transferEncryptedSecretShare(
 			sourceConf,
-			destConf.encryptedSecretShareSigningKeypair.getPublicKey(),
+			destConf.encryptedSecretShareSigningKeypair.toSuiAddress(),
 			encryptedUserKeyShareAndProofOfEncryption,
 			sourceDwallet.dwalletID,
 			sourceDwallet.encrypted_secret_share_id,
 		);
-		await acceptEncryptedUserShare(destConf, {
+		const encryptedDWalletData = {
 			dwallet_id: sourceDwallet.dwalletID,
-			encrypted_user_secret_key_share_id: encryptedShareID,
-			public_output: sourceDwallet.output,
-		});
-		console.log(`Secret share has been transferred successfully ${encryptedShareID}`);
+			encrypted_user_secret_key_share_id: encryptedShareObjID,
+		};
+		const decryptedSecretShare = await decryptAndVerifyReceivedUserShare(
+			destConf,
+			encryptedDWalletData,
+			sourceConf.encryptedSecretShareSigningKeypair.toSuiAddress(),
+		);
+		console.log(`decryptedSecretShare: ${decryptedSecretShare}`);
+		await acceptEncryptedUserShare(destConf, encryptedDWalletData);
+		console.log(`Secret share has been transferred successfully ${encryptedShareObjID}`);
 	});
 });
 
