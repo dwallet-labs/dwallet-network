@@ -2,7 +2,7 @@
 #
 # Copy in all crates, Cargo.toml and Cargo.lock unmodified,
 # and build the application.
-FROM rust:1.81-bullseye AS builder
+FROM rust:1.85-bullseye AS builder
 ARG PROFILE=release
 ARG GIT_REVISION
 ENV GIT_REVISION=$GIT_REVISION
@@ -10,10 +10,7 @@ WORKDIR "$WORKDIR/ika"
 RUN apt-get update && apt-get install -y cmake clang
 
 COPY Cargo.toml Cargo.lock ./
-COPY consensus consensus
 COPY crates crates
-COPY ika-execution ika-execution
-COPY narwhal narwhal
 COPY external-crates external-crates
 
 RUN cargo build --profile ${PROFILE} --bin ika-node
