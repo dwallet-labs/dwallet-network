@@ -45,6 +45,8 @@ sui-types.workspace = true
 ika-move-packages.workspace = true
 move-binary-format.workspace = true
 move-core-types.workspace = true
+clap = { version = "4.5.4", features = ["derive"] }
+serde_json = "1.0.128"
 
 [target.'cfg(msim)'.dependencies]
 sui-simulator.workspace = true

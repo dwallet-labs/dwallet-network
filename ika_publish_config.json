@@ -1,0 +1,8 @@
+{
+  "ika_package_id": "0x39024d1e8061a4135eef2805a82c8b7beab07378aea51f8331f27a1b9cc275ae",
+  "treasury_cap_id": "0x736a559329149a06911b1fa2287f12c0f5e293565e48022e0d16a79e7ee76204",
+  "ika_package_upgrade_cap_id": "0x9fb67e365ce404e5fba0a0b400e6171368768c665dc6a9014ff56f9c06cfaf66",
+  "ika_system_package_id": "0x92152ef39b89bc2aea23dcb2c2cdd7c028b5c2de3fbb5814c64338c43a6422b7",
+  "init_cap_id": "0x74e19f0dda65c435e54c91b04753381d34f2d3784d856b3a74cd2b977cbf91ec",
+  "ika_system_package_upgrade_cap_id": "0xa7ac702211359d5b78d085fc1fc20c843e610097d9372f1a1e69e245bb8ba98a"
+}

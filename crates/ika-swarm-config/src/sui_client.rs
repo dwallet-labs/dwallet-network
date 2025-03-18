@@ -9,20 +9,26 @@ use ika_move_packages::IkaMovePackage;
 use ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA;
 use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
-use ika_types::sui::{System, DWALLET_2PC_MPC_SECP256K1_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME, INITIALIZE_FUNCTION_NAME, INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME};
+use ika_types::sui::{
+    System, DWALLET_2PC_MPC_SECP256K1_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME,
+    INITIALIZE_FUNCTION_NAME, INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, PROTOCOL_CAP_MODULE_NAME,
+    PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME,
+    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
+};
 use move_core_types::language_storage::StructTag;
 use shared_crypto::intent::Intent;
 use std::collections::HashMap;
 use sui::client_commands::{
-    estimate_gas_budget_from_gas_cost, execute_dry_run, max_gas_budget, request_tokens_from_faucet,
+    estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet,
     SuiClientCommandResult,
 };
-use sui_config::{sui_config_dir, SUI_CLIENT_CONFIG};
+use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
 use sui_sdk::rpc_types::SuiTransactionBlockEffectsAPI;
 use sui_sdk::rpc_types::{
     ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
-    SuiTransactionBlockResponseOptions,
 };
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
@@ -212,23 +218,21 @@ pub async fn init_ika_on_sui(
             validator_cap_id,
         )
         .await?;
-        println!(
-            "Running `system::request_add_validator` done for validator {validator_address}"
-        );
+        println!("Running `system::request_add_validator` done for validator {validator_address}");
     }
 
-    let (dwallet_2pc_mpc_secp256k1_id, dwallet_2pc_mpc_secp256k1_initial_shared_version) = ika_system_initialize(
-        publisher_address,
-        &mut context,
-        client.clone(),
-        ika_system_package_id,
-        system_id,
-        init_system_shared_version,
-    )
-    .await?;
+    let (dwallet_2pc_mpc_secp256k1_id, dwallet_2pc_mpc_secp256k1_initial_shared_version) =
+        ika_system_initialize(
+            publisher_address,
+            &mut context,
+            client.clone(),
+            ika_system_package_id,
+            system_id,
+            init_system_shared_version,
+        )
+        .await?;
 
     println!("Running `system::initialize` done.");
-
 
     ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
         publisher_address,
@@ -239,7 +243,7 @@ pub async fn init_ika_on_sui(
         init_system_shared_version,
         dwallet_2pc_mpc_secp256k1_id,
         dwallet_2pc_mpc_secp256k1_initial_shared_version,
-        protocol_cap_id
+        protocol_cap_id,
     )
     .await?;
 
@@ -264,7 +268,7 @@ async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
     init_system_shared_version: SequenceNumber,
     dwallet_2pc_mpc_secp256k1_id: ObjectID,
     dwallet_2pc_mpc_secp256k1_initial_shared_version: SequenceNumber,
-    protocol_cap_id: ObjectID
+    protocol_cap_id: ObjectID,
 ) -> Result<(), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -361,12 +365,15 @@ async fn ika_system_initialize(
 
     let response = client
         .read_api()
-        .get_object_with_options(dwallet_2pc_mpc_secp256k1_id, SuiObjectDataOptions::new().with_owner())
+        .get_object_with_options(
+            dwallet_2pc_mpc_secp256k1_id,
+            SuiObjectDataOptions::new().with_owner(),
+        )
         .await?;
 
     let Some(Owner::Shared {
-                 initial_shared_version,
-             }) = response.data.unwrap().owner
+        initial_shared_version,
+    }) = response.data.unwrap().owner
     else {
         return Err(anyhow::Error::msg("Owner does not exist"));
     };
@@ -762,7 +769,7 @@ async fn request_add_validator_candidate(
     Ok((validator_cap.validator_id, validator_cap_id))
 }
 
-async fn publish_ika_system_package_to_sui(
+pub async fn publish_ika_system_package_to_sui(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -838,7 +845,7 @@ async fn publish_ika_system_package_to_sui(
     ))
 }
 
-async fn publish_ika_package_to_sui(
+pub async fn publish_ika_package_to_sui(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -928,14 +935,8 @@ pub(crate) async fn create_sui_transaction(
     let client = context.get_client().await?;
 
     //let gas_budget = max_gas_budget(&client).await?;
-    let gas_budget = estimate_gas_budget(
-        context,
-        signer,
-        tx_kind.clone(),
-        gas_price,
-        None,
-        None,
-    ).await?;
+    let gas_budget =
+        estimate_gas_budget(context, signer, tx_kind.clone(), gas_price, None, None).await?;
 
     let tx_data = client
         .transaction_builder()

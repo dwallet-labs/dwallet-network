@@ -1047,7 +1047,9 @@ impl IkaNode {
                 }
             };
 
-            self.state_sync_handle.send_current_epoch(latest_system_state.epoch()).await;
+            self.state_sync_handle
+                .send_current_epoch(latest_system_state.epoch())
+                .await;
 
             // // Safe to call because we are in the middle of reconfiguration.
             // let latest_system_state = self

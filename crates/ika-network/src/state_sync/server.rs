@@ -5,6 +5,7 @@ use super::{PeerHeights, StateSync, StateSyncMessage};
 use anemo::{rpc::Status, types::response::StatusCode, Request, Response, Result};
 use dashmap::DashMap;
 use futures::future::BoxFuture;
+use ika_types::committee::EpochId;
 use ika_types::digests::ChainIdentifier;
 use ika_types::{
     digests::{CheckpointContentsDigest, CheckpointMessageDigest},
@@ -17,7 +18,6 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 use tokio::sync::{mpsc, OwnedSemaphorePermit, Semaphore};
-use ika_types::committee::EpochId;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
 pub enum GetCheckpointMessageRequest {
