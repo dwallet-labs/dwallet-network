@@ -2147,15 +2147,11 @@ impl AuthorityPerEpochStore {
                     PartialSignatureVerificationOutput {
                         dwallet_id: init_event_data.dwallet_id.to_vec(),
                         session_id: session_info.session_id.to_vec(),
-                        signature_data: bcs::to_bytes(&init_event_data.signature_data)?,
-                        dwallet_cap_id: init_event_data.dwallet_cap_id.to_vec(),
-                        dwallet_mpc_network_decryption_key_version: bcs::to_bytes(
-                            &init_event_data.dwallet_mpc_network_decryption_key_version,
-                        )?,
-                        messages: bcs::to_bytes(&init_event_data.messages)?,
-                        dwallet_decentralized_public_output: bcs::to_bytes(
-                            &init_event_data.dwallet_decentralized_public_output,
-                        )?,
+                        partial_centralized_signed_message_id: init_event_data
+                            .partial_centralized_signed_message_id
+                            .to_vec(),
+                        // TODO (#679): Update the blockchain when an MPC round fails
+                        rejected: false,
                     },
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))

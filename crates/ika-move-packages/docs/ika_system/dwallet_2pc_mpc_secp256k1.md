@@ -22,7 +22,7 @@ title: Module `(ika_system=0x0)::dwallet_2pc_mpc_secp256k1`
 -  [Function `request_ecdsa_presign`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_request_ecdsa_presign)
 -  [Function `request_ecdsa_sign`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_request_ecdsa_sign)
 -  [Function `request_ecdsa_future_sign`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_request_ecdsa_future_sign)
--  [Function `verifiy_ecdsa_partial_user_signature_cap`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_verifiy_ecdsa_partial_user_signature_cap)
+-  [Function `verify_ecdsa_partial_user_signature_cap`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_verify_ecdsa_partial_user_signature_cap)
 -  [Function `request_ecdsa_sign_with_partial_user_signatures`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_request_ecdsa_sign_with_partial_user_signatures)
 -  [Function `compare_ecdsa_partial_user_signatures_with_approvals`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_compare_ecdsa_partial_user_signatures_with_approvals)
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_process_checkpoint_message_by_quorum)
@@ -684,13 +684,13 @@ This function will be called only once in init.
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_verifiy_ecdsa_partial_user_signature_cap"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_verify_ecdsa_partial_user_signature_cap"></a>
 
-## Function `verifiy_ecdsa_partial_user_signature_cap`
+## Function `verify_ecdsa_partial_user_signature_cap`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_verifiy_ecdsa_partial_user_signature_cap">verifiy_ecdsa_partial_user_signature_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">dwallet_2pc_mpc_secp256k1::DWalletCoordinator</a>, cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_UnverifiedECDSAPartialUserSignatureCap">dwallet_2pc_mpc_secp256k1_inner::UnverifiedECDSAPartialUserSignatureCap</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_VerifiedECDSAPartialUserSignatureCap">dwallet_2pc_mpc_secp256k1_inner::VerifiedECDSAPartialUserSignatureCap</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_verify_ecdsa_partial_user_signature_cap">verify_ecdsa_partial_user_signature_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">dwallet_2pc_mpc_secp256k1::DWalletCoordinator</a>, cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_UnverifiedECDSAPartialUserSignatureCap">dwallet_2pc_mpc_secp256k1_inner::UnverifiedECDSAPartialUserSignatureCap</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_VerifiedECDSAPartialUserSignatureCap">dwallet_2pc_mpc_secp256k1_inner::VerifiedECDSAPartialUserSignatureCap</a>
 </code></pre>
 
 
@@ -699,12 +699,12 @@ This function will be called only once in init.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_verifiy_ecdsa_partial_user_signature_cap">verifiy_ecdsa_partial_user_signature_cap</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_verify_ecdsa_partial_user_signature_cap">verify_ecdsa_partial_user_signature_cap</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">DWalletCoordinator</a>,
     cap: UnverifiedECDSAPartialUserSignatureCap,
     ctx: &<b>mut</b> TxContext
 ): VerifiedECDSAPartialUserSignatureCap {
-    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_verifiy_ecdsa_partial_user_signature_cap">verifiy_ecdsa_partial_user_signature_cap</a>(
+    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_verify_ecdsa_partial_user_signature_cap">verify_ecdsa_partial_user_signature_cap</a>(
         cap,
         ctx,
     )
