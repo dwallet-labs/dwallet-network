@@ -1,4 +1,5 @@
 // Copyright (c) dWallet Labs, Inc.
+// Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Buffer } from 'buffer';
 import type { SuiClient } from '@mysten/sui/client';
@@ -295,11 +296,9 @@ export function isActiveDWallet(obj: any): obj is ActiveDWallet {
 
 export async function getNetworkDecryptionKeyPublicOutputID(
 	c: Config,
-	networkDecryptionKeyId: string | null | undefined,
+	networkDecryptionKeyId?: string | null,
 ): Promise<string> {
-	if (networkDecryptionKeyId === null || networkDecryptionKeyId === undefined) {
-		networkDecryptionKeyId = await getNetworkDecryptionKeyID(c);
-	}
+	networkDecryptionKeyId = networkDecryptionKeyId ?? (await getNetworkDecryptionKeyID(c));
 	const networkDecryptionKey = await c.client.getObject({
 		id: networkDecryptionKeyId,
 		options: { showContent: true },
@@ -311,9 +310,8 @@ export async function getNetworkDecryptionKeyPublicOutputID(
 		!isDWalletNetworkDecryptionKey(networkDecryptionKey.data.content) ||
 		!isMoveObject(networkDecryptionKey.data.content.fields.public_output)
 	) {
-		throw new Error('Invalid network decryption key object');
+		throw new Error(`invalid network decryption key object: ${networkDecryptionKeyId}`);
 	}
-
 	return networkDecryptionKey.data.content.fields.public_output.fields.contents.fields.id?.id;
 }
 
@@ -321,27 +319,24 @@ async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint
 	const dynamicFieldPage = await c.client.getDynamicFields({ parentId: table_id });
 
 	if (!dynamicFieldPage?.data?.length) {
-		throw new Error('No dynamic fields found');
+		throw new Error('no dynamic fields found');
 	}
 
-	const poolDataArray: Uint8Array[] = [];
+	const data: Uint8Array[] = [];
 	for (const tableRowResult of dynamicFieldPage.data) {
-		const poolId = tableRowResult.objectId;
+		const id = tableRowResult.objectId;
 
-		const dynFieldForPool = await c.client.getObject({
-			id: poolId,
+		const dynField = await c.client.getObject({
+			id: id,
 			options: { showContent: true },
 		});
-		if (
-			!isMoveObject(dynFieldForPool.data?.content) ||
-			!isMoveDynamicField(dynFieldForPool.data?.content)
-		) {
-			throw new Error('Invalid dynamic field object');
+		if (!isMoveObject(dynField.data?.content) || !isMoveDynamicField(dynField.data?.content)) {
+			throw new Error('invalid dynamic field object');
 		}
-		const index = parseInt(dynFieldForPool.data.content.fields.name);
-		poolDataArray[index] = dynFieldForPool.data.content.fields.value;
+		const tableIndex = parseInt(dynField.data.content.fields.name);
+		data[tableIndex] = dynField.data.content.fields.value;
 	}
-	return new Uint8Array(poolDataArray.flatMap((arr) => Array.from(arr)));
+	return new Uint8Array(data.flatMap((arr) => Array.from(arr)));
 }
 
 export async function getNetworkDecryptionKeyPublicOutput(c: Config): Promise<Uint8Array> {

@@ -17,7 +17,6 @@ import {
 	getNetworkDecryptionKeyPublicOutputID,
 	mockedNetworkDecryptionKeyPublicOutput,
 	MPCKeyScheme,
-	readTableVec,
 } from '../../src/dwallet-mpc/globals';
 import { mockCreatePresign, presign } from '../../src/dwallet-mpc/presign';
 import { Hash, sign } from '../../src/dwallet-mpc/sign';
@@ -52,7 +51,7 @@ describe('Test dWallet MPC', () => {
 		await delay(2000);
 	});
 
-	it('read network decryption key', async () => {
+	it('read the network decryption key', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		console.log(`networkDecryptionKeyPublicOutput: ${networkDecryptionKeyPublicOutput}`);
 	});
@@ -144,7 +143,7 @@ describe('Test dWallet MPC', () => {
 			conf,
 			null,
 		);
-		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput!);
+		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
 		const presignCompletion = await presign(conf, dwalletID.dwalletID);

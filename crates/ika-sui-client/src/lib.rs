@@ -727,7 +727,6 @@ impl SuiClientInner for SuiSdkClient {
             .get_dynamic_fields(table_id, None, None)
             .await
             .map_err(|e| {
-                println!("Error: {:?}", e);
                 Error::DataError(format!(
                     "can't get dynamic fields of table {:?}: {:?}",
                     table_id, e
@@ -743,27 +742,25 @@ impl SuiClientInner for SuiSdkClient {
             let resp = dynamic_field_response.into_object().map_err(|e| {
                 Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
             })?;
-            let move_object = resp.bcs.ok_or(Error::DataError(format!(
+            let raw_data = resp.bcs.ok_or(Error::DataError(format!(
                 "object {:?} has no bcs data",
                 object_id
             )))?;
-            let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+            let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(format!(
                 "object {:?} is not a MoveObject",
                 object_id
             )))?;
             let bytes_chunk = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
             full_output.insert(bytes_chunk.name as usize, bytes_chunk.value.clone());
         }
-        let full_output =
-            full_output
-                .into_iter()
-                .sorted()
-                .fold(Vec::new(), |mut acc, (k, mut v)| {
-                    acc.append(&mut v);
-                    acc
-                });
 
-        Ok(full_output)
+        Ok(full_output
+            .into_iter()
+            .sorted()
+            .fold(Vec::new(), |mut acc, (k, mut v)| {
+                acc.append(&mut v);
+                acc
+            }))
     }
 
     async fn get_system_inner(
