@@ -124,6 +124,7 @@ use crate::stake_aggregator::StakeAggregator;
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 #[cfg(msim)]
 use sui_types::committee::CommitteeTrait;
+use sui_types::messages_checkpoint::VerifiedCheckpoint;
 
 pub mod authority_per_epoch_store;
 

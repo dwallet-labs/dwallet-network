@@ -146,28 +146,29 @@ fn main() {
     });
 
     let node_once_cell_clone = node_once_cell.clone();
-    runtimes.metrics.spawn(async move {
-        let node = node_once_cell_clone.get().await;
-        let chain_identifier = match node.state().get_chain_identifier() {
-            Some(chain_identifier) => chain_identifier.to_string(),
-            None => "unknown".to_string(),
-        };
-
-        info!("Ika chain identifier: {chain_identifier}");
-        prometheus_registry
-            .register(mysten_metrics::uptime_metric(
-                if is_validator {
-                    "validator"
-                } else {
-                    "fullnode"
-                },
-                VERSION,
-                chain_identifier.as_str(),
-            ))
-            .unwrap();
-
-        ika_node::admin::run_admin_server(node, admin_interface_port, filter_handle).await
-    });
+    // todo(omer): why was it removed?
+    // runtimes.metrics.spawn(async move {
+    //     let node = node_once_cell_clone.get().await;
+    //     let chain_identifier = match node.state().get_chain_identifier() {
+    //         Some(chain_identifier) => chain_identifier.to_string(),
+    //         None => "unknown".to_string(),
+    //     };
+    //
+    //     info!("Ika chain identifier: {chain_identifier}");
+    //     prometheus_registry
+    //         .register(mysten_metrics::uptime_metric(
+    //             if is_validator {
+    //                 "validator"
+    //             } else {
+    //                 "fullnode"
+    //             },
+    //             VERSION,
+    //             chain_identifier.as_str(),
+    //         ))
+    //         .unwrap();
+    //
+    //     ika_node::admin::run_admin_server(node, admin_interface_port, filter_handle).await
+    // });
 
     runtimes.metrics.spawn(async move {
         let node = node_once_cell.get().await;
