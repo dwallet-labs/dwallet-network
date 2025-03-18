@@ -349,7 +349,7 @@ request_ecdsa_future_sign
 respond_ecdsa_future_sign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-verifiy_ecdsa_partial_user_signature_cap
+verify_ecdsa_partial_user_signature_cap
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 request_ecdsa_sign_with_partial_user_signatures
@@ -418,7 +418,7 @@ request_ecdsa_sign
 request_ecdsa_future_sign
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
-verifiy_ecdsa_partial_user_signature_cap
+verify_ecdsa_partial_user_signature_cap
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
 request_ecdsa_sign_with_partial_user_signatures

@@ -18,7 +18,13 @@ import {
 	MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';
 import { mockCreatePresign, presign } from '../../src/dwallet-mpc/presign';
-import { Hash, sign } from '../../src/dwallet-mpc/sign';
+import {
+	completeFutureSign,
+	createUnverifiedECDSAPartialUserSignatureCap,
+	Hash,
+	sign,
+	verifyECFSASignWithPartialUserSignatures,
+} from '../../src/dwallet-mpc/sign';
 import { dkgMocks, mockPresign } from './mocks';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -129,6 +135,43 @@ describe('Test dWallet MPC', () => {
 			dwalletID.secret_share,
 			Hash.KECCAK256,
 			mockedNetworkDecryptionKeyPublicOutput,
+		);
+	});
+
+	it('should complete future sign', async () => {
+		const dkgResult = await mockCreateDWallet(
+			conf,
+			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
+			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
+		);
+		const presign = await mockCreatePresign(
+			conf,
+			Buffer.from(mockPresign.presignBytes, 'base64'),
+			dkgResult.dwalletID,
+		);
+		await delay(checkpointCreationTime);
+		const unverifiedECDSAPartialUserSignatureCapID =
+			await createUnverifiedECDSAPartialUserSignatureCap(
+				conf,
+				presign.presign_id,
+				dkgResult.dwallet_cap_id,
+				Buffer.from('hello world'),
+				Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
+				Hash.KECCAK256,
+				mockedNetworkDecryptionKeyPublicOutput,
+			);
+		await delay(checkpointCreationTime);
+		const verifiedECDSAPartialUserSignatureCapID = await verifyECFSASignWithPartialUserSignatures(
+			conf,
+			unverifiedECDSAPartialUserSignatureCapID!,
+		);
+		await delay(checkpointCreationTime);
+		await completeFutureSign(
+			conf,
+			dkgResult.dwallet_cap_id,
+			Buffer.from('hello world'),
+			Hash.KECCAK256,
+			verifiedECDSAPartialUserSignatureCapID,
 		);
 	});
 

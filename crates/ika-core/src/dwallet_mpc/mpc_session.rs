@@ -20,7 +20,8 @@ use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{
-    authority_name_to_party_id, party_id_to_authority_name, party_ids_to_authority_names, presign,
+    authority_name_to_party_id, message_digest, party_id_to_authority_name,
+    party_ids_to_authority_names, presign,
 };
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
@@ -360,20 +361,21 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
-                for (signature_data, hashed_message) in event_data
-                    .signature_data
-                    .iter()
-                    .zip(event_data.hashed_messages.iter())
-                {
-                    verify_partial_signature(
-                        hashed_message,
-                        &event_data.dwallet_decentralized_public_output,
-                        &signature_data.presign_output,
-                        &signature_data.message_centralized_signature,
-                        &bcs::from_bytes(public_input)?,
-                        &signature_data.presign_id,
-                    )?;
-                }
+                let hashed_message = bcs::to_bytes(
+                    &message_digest(
+                        &event_data.message,
+                        &event_data.hash_scheme.try_into().unwrap(),
+                    )
+                    .map_err(|err| DwalletMPCError::TwoPCMPCError(err.to_string()))?,
+                )?;
+                verify_partial_signature(
+                    &hashed_message,
+                    &event_data.dkg_output,
+                    &event_data.presign,
+                    &event_data.message_centralized_signature,
+                    &bcs::from_bytes(public_input)?,
+                )?;
+
                 Ok(AsynchronousRoundResult::Finalize {
                     public_output: vec![],
                     private_output: vec![],

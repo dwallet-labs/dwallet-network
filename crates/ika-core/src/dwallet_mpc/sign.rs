@@ -36,7 +36,7 @@ pub(super) trait SignPartyPublicInputGenerator: mpc::Party {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
         dkg_output: MPCPublicOutput,
-        hashed_message: Vec<u8>,
+        message: Vec<u8>,
         presign: MPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
@@ -80,11 +80,11 @@ pub(crate) fn verify_partial_signature(
     presign: &[u8],
     partially_signed_message: &[u8],
     protocol_public_parameters: &ProtocolPublicParameters,
-    session_id: &ObjectID,
 ) -> DwalletMPCResult<()> {
     let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
-    let dkg_output =
-        bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(&dwallet_decentralized_output)?;
+    let dkg_output = bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(
+        &dwallet_decentralized_output,
+    )?;
     let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
         bcs::from_bytes(presign)?;
     let partial: <AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage =

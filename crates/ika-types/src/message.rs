@@ -118,11 +118,8 @@ pub struct EncryptedUserShareOutput {
 pub struct PartialSignatureVerificationOutput {
     pub session_id: Vec<u8>,
     pub dwallet_id: Vec<u8>,
-    pub dwallet_decentralized_public_output: Vec<u8>,
-    pub dwallet_cap_id: Vec<u8>,
-    pub dwallet_mpc_network_decryption_key_version: Vec<u8>,
-    pub signature_data: Vec<u8>,
-    pub messages: Vec<u8>,
+    pub partial_centralized_signed_message_id: Vec<u8>,
+    pub rejected: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
