@@ -114,14 +114,6 @@ impl DWalletMPCService {
     }
 
     async fn read_events(&mut self) -> IkaResult<()> {
-        let key_version = self
-            .epoch_store
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .key_version(DWalletMPCNetworkKeyScheme::Secp256k1)
-            .unwrap_or_default();
-
         let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
@@ -129,11 +121,9 @@ impl DWalletMPCService {
                 let Ok(event) = bcs::from_bytes::<DBSuiEvent>(event) else {
                     return None;
                 };
-                let Ok(Some(session_info)) = session_info_from_event(
-                    event.clone(),
-                    Some(key_version),
-                    &self.epoch_store.packages_config,
-                ) else {
+                let Ok(Some(session_info)) =
+                    session_info_from_event(event.clone(), &self.epoch_store.packages_config)
+                else {
                     return None;
                 };
                 let event = DWalletMPCEvent {

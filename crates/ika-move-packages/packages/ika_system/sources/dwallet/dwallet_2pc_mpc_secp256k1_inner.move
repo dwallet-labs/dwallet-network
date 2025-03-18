@@ -419,6 +419,9 @@ public struct DWalletDKGSecondRoundRequestEvent has copy, drop {
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
     singer_public_key: vector<u8>,
+
+    /// The MPC network decryption key id that is used to decrypt associated dWallet.
+    dwallet_mpc_network_key_id: ID,
 }
 
 /// Event emitted upon the completion of the second (and final) round of the
@@ -1204,7 +1207,9 @@ public(package) fun request_dwallet_dkg_second_round(
 
     let pricing = self.pricing.dkg_second_round();
 
-    self.charge(pricing, dwallet.dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
+    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+
+    self.charge(pricing, dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
 
 
     let emit_event = self.create_current_epoch_dwallet_event(
@@ -1219,6 +1224,7 @@ public(package) fun request_dwallet_dkg_second_round(
             encryption_key_address,
             user_public_output,
             singer_public_key,
+            dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
         },
         ctx,
     );

@@ -335,7 +335,8 @@ impl DWalletMPCSession {
                     mpc_event_data.decryption_share.clone(),
                 )
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, _) => advance_network_dkg(
+            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => advance_network_dkg(
+                init_event.dwallet_network_decryption_key_id,
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
@@ -500,18 +501,5 @@ impl DWalletMPCSession {
                 malicious_parties: vec![],
             },
         }
-    }
-
-    fn get_protocol_public_parameters(
-        &self,
-        key_scheme: DWalletMPCNetworkKeyScheme,
-        key_version: u8,
-    ) -> DwalletMPCResult<Vec<u8>> {
-        if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
-            return self_decryption_share.get_protocol_public_parameters(key_scheme, key_version);
-        }
-        Err(DwalletMPCError::TwoPCMPCError(
-            "Decryption share not found".to_string(),
-        ))
     }
 }

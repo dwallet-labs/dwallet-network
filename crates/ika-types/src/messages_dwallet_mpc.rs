@@ -283,6 +283,7 @@ pub struct StartDKGSecondRoundEvent {
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
     pub signer_public_key: Vec<u8>,
+    pub dwallet_mpc_network_key_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for StartDKGSecondRoundEvent {

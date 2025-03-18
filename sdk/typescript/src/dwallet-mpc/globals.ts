@@ -1,4 +1,5 @@
 // Copyright (c) dWallet Labs, Inc.
+// Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Buffer } from 'buffer';
 import type { SuiClient } from '@mysten/sui/client';
