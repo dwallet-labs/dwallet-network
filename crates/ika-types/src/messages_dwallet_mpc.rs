@@ -482,6 +482,7 @@ impl DWalletMPCEventTrait for StartNetworkDKGEvent {
     }
 }
 
+/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKey`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DWalletNetworkDecryptionKey {
     pub id: ObjectID,
@@ -496,6 +497,7 @@ pub struct DWalletNetworkDecryptionKey {
     pub state: DWalletNetworkDecryptionKeyState,
 }
 
+/// Represents the Rust version of the Move enum `ika_system::dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKeyShares`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DWalletNetworkDecryptionKeyState {
     AwaitingNetworkDKG,

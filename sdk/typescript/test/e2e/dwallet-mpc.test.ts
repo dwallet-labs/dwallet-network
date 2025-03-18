@@ -14,7 +14,6 @@ import {
 	Config,
 	delay,
 	getNetworkDecryptionKeyPublicOutput,
-	getNetworkDecryptionKeyPublicOutputID,
 	mockedNetworkDecryptionKeyPublicOutput,
 	MPCKeyScheme,
 } from '../../src/dwallet-mpc/globals';
@@ -139,10 +138,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should sign full flow with on-chain network DKG output', async () => {
-		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutputID(
-			conf,
-			null,
-		);
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
@@ -156,7 +152,7 @@ describe('Test dWallet MPC', () => {
 			Buffer.from('hello world'),
 			dwalletID.secret_share,
 			Hash.KECCAK256,
-			networkDecryptionKeyPublicOutput!,
+			networkDecryptionKeyPublicOutput,
 		);
 	});
 });
