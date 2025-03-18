@@ -56,6 +56,11 @@ describe('Test dWallet MPC', () => {
 		await delay(2000);
 	});
 
+	it('read the network decryption key', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		console.log(`networkDecryptionKeyPublicOutput: ${networkDecryptionKeyPublicOutput}`);
+	});
+
 	it('should create a dWallet (DKG)', async () => {
 		const dwallet = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwallet}`);
@@ -176,8 +181,8 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should sign full flow with on-chain network DKG output', async () => {
-		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf, null);
-		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput!);
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
 		const presignCompletion = await presign(conf, dwalletID.dwalletID);
@@ -190,7 +195,7 @@ describe('Test dWallet MPC', () => {
 			Buffer.from('hello world'),
 			dwalletID.secret_share,
 			Hash.KECCAK256,
-			networkDecryptionKeyPublicOutput!,
+			networkDecryptionKeyPublicOutput,
 		);
 	});
 });

@@ -21,7 +21,9 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 use sui_json_rpc_types::SuiEvent;
+use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
+use sui_types::collection_types::TableVec;
 use sui_types::id::ID;
 use sui_types::message_envelope::Message;
 use sui_types::SUI_SYSTEM_ADDRESS;
@@ -450,4 +452,26 @@ impl DWalletMPCEventTrait for StartNetworkDKGEvent {
             type_params: vec![],
         }
     }
+}
+
+/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKey`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DWalletNetworkDecryptionKey {
+    pub id: ObjectID,
+    pub dwallet_network_decryption_key_cap_id: ObjectID,
+    pub current_epoch: u64,
+    pub current_epoch_shares: TableVec,
+    pub next_epoch_shares: TableVec,
+    pub previous_epoch_shares: TableVec,
+    pub public_output: TableVec,
+    /// The fees paid for computation in IKA.
+    pub computation_fee_charged_ika: Balance,
+    pub state: DWalletNetworkDecryptionKeyState,
+}
+
+/// Represents the Rust version of the Move enum `ika_system::dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKeyShares`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DWalletNetworkDecryptionKeyState {
+    AwaitingNetworkDKG,
+    NetworkDKGCompleted,
 }

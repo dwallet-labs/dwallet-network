@@ -117,6 +117,13 @@ interface MoveObject {
 	fields: any;
 }
 
+interface MoveDynamicField {
+	fields: {
+		name: string;
+		value: Uint8Array;
+	};
+}
+
 export interface SharedObjectData {
 	object_id: string;
 	initial_shared_version: number;
@@ -128,6 +135,10 @@ export function isAddressObjectOwner(obj: any): obj is AddressObjectOwner {
 
 export function isMoveObject(obj: any): obj is MoveObject {
 	return obj?.fields !== undefined;
+}
+
+export function isMoveDynamicField(obj: any): obj is MoveDynamicField {
+	return obj?.fields.name !== undefined || obj?.fields.value !== undefined;
 }
 
 export function getEncryptionKeyMoveType(ikaSystemPackageID: string): string {
@@ -282,27 +293,54 @@ export function isActiveDWallet(obj: any): obj is ActiveDWallet {
 	return obj?.state?.fields?.public_output !== undefined;
 }
 
-export async function getNetworkDecryptionKeyPublicOutput(
+export async function getNetworkDecryptionKeyPublicOutputID(
 	c: Config,
-	networkDecryptionKeyId: string | null | undefined,
-): Promise<Uint8Array | null> {
-	if (networkDecryptionKeyId === null || networkDecryptionKeyId === undefined) {
-		networkDecryptionKeyId = await getNetworkDecryptionKeyID(c);
-	}
+	networkDecryptionKeyId?: string | null,
+): Promise<string> {
+	networkDecryptionKeyId = networkDecryptionKeyId ?? (await getNetworkDecryptionKeyID(c));
 	const networkDecryptionKey = await c.client.getObject({
 		id: networkDecryptionKeyId,
 		options: { showContent: true },
 	});
 
-	if (!networkDecryptionKey) {
-		return null;
+	if (
+		!networkDecryptionKey ||
+		!isMoveObject(networkDecryptionKey?.data?.content) ||
+		!isDWalletNetworkDecryptionKey(networkDecryptionKey.data.content) ||
+		!isMoveObject(networkDecryptionKey.data.content.fields.public_output)
+	) {
+		throw new Error(`invalid network decryption key object: ${networkDecryptionKeyId}`);
+	}
+	return networkDecryptionKey.data.content.fields.public_output.fields.contents.fields.id?.id;
+}
+
+async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint8Array> {
+	const dynamicFieldPage = await c.client.getDynamicFields({ parentId: table_id });
+
+	if (!dynamicFieldPage?.data?.length) {
+		throw new Error('no dynamic fields found');
 	}
 
-	if (!isDWalletNetworkDecryptionKey(networkDecryptionKey?.data?.content)) {
-		throw new Error('Invalid network decryption key object');
-	}
+	const data: Uint8Array[] = [];
+	for (const tableRowResult of dynamicFieldPage.data) {
+		const id = tableRowResult.objectId;
 
-	return networkDecryptionKey.data.content?.fields?.public_output;
+		const dynField = await c.client.getObject({
+			id: id,
+			options: { showContent: true },
+		});
+		if (!isMoveObject(dynField.data?.content) || !isMoveDynamicField(dynField.data?.content)) {
+			throw new Error('invalid dynamic field object');
+		}
+		const tableIndex = parseInt(dynField.data.content.fields.name);
+		data[tableIndex] = dynField.data.content.fields.value;
+	}
+	return new Uint8Array(data.flatMap((arr) => Array.from(arr)));
+}
+
+export async function getNetworkDecryptionKeyPublicOutput(c: Config): Promise<Uint8Array> {
+	const networkDecryptionKeyPublicOutputID = await getNetworkDecryptionKeyPublicOutputID(c, null);
+	return await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
 }
 
 export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {

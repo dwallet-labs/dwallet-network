@@ -5321,6 +5321,7 @@ dependencies = [
  "derive_more 1.0.0",
  "diffy",
  "dwallet-classgroups-types",
+ "dwallet-mpc-types",
  "either",
  "enum_dispatch",
  "expect-test",
