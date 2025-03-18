@@ -250,12 +250,12 @@ public fun request_ecdsa_future_sign(
     )
 }
 
-public fun verifiy_ecdsa_partial_user_signature_cap(
+public fun verify_ecdsa_partial_user_signature_cap(
     self: &mut DWalletCoordinator,
     cap: UnverifiedECDSAPartialUserSignatureCap,
     ctx: &mut TxContext
 ): VerifiedECDSAPartialUserSignatureCap {
-    self.inner_mut().verifiy_ecdsa_partial_user_signature_cap(
+    self.inner_mut().verify_ecdsa_partial_user_signature_cap(
         cap,
         ctx,
     )

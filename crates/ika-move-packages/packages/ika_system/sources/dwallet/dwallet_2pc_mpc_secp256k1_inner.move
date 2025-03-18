@@ -1762,7 +1762,7 @@ public(package) fun respond_ecdsa_future_sign(
     }
 }
 
-public(package) fun verifiy_ecdsa_partial_user_signature_cap(
+public(package) fun verify_ecdsa_partial_user_signature_cap(
     self: &mut DWalletCoordinatorInner,
     cap: UnverifiedECDSAPartialUserSignatureCap,
     ctx: &mut TxContext

@@ -171,7 +171,7 @@ describe('Test dWallet MPC', () => {
 			dkgResult.dwallet_cap_id,
 			Buffer.from('hello world'),
 			Hash.KECCAK256,
-			verifiedECDSAPartialUserSignatureCapID!,
+			verifiedECDSAPartialUserSignatureCapID,
 		);
 	});
 

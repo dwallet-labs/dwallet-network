@@ -140,11 +140,13 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 	secretKey: Uint8Array,
 	hash = Hash.KECCAK256,
 	networkDecryptionKeyPublicOutput: Uint8Array = mockedNetworkDecryptionKeyPublicOutput,
-): Promise<string | undefined> {
+): Promise<string> {
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
 	const presign = await getObjectWithType(conf, presignID, isPresign);
+	const dWalletStateData = await getDWalletSecpState(conf);
+	const tx = new Transaction();
 
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
@@ -155,8 +157,6 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 		message,
 		hash,
 	);
-	const dWalletStateData = await getDWalletSecpState(conf);
-	const tx = new Transaction();
 
 	const emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
@@ -214,7 +214,7 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 
 	const objects = result.objectChanges!;
 	if (!objects) {
-		throw new Error('no objects created');
+		throw new Error('no objects created during request_ecdsa_future_sign call');
 	}
 	for (const obj of objects) {
 		if (
@@ -226,18 +226,18 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 			return obj.objectId;
 		}
 	}
-	return undefined;
+	throw new Error('no unverified object created');
 }
 
 export async function verifyECFSASignWithPartialUserSignatures(
 	conf: Config,
 	unverifiedECDSAPartialUserSignatureCapID: string,
-): Promise<string | undefined> {
+): Promise<string> {
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
 
 	const [verifiedECDSAPartialUserSignatureCap] = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::verifiy_ecdsa_partial_user_signature_cap`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::verify_ecdsa_partial_user_signature_cap`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -260,7 +260,7 @@ export async function verifyECFSASignWithPartialUserSignatures(
 	});
 	const objects = result.objectChanges!;
 	if (!objects) {
-		throw new Error('no objects created');
+		throw new Error('no objects created during verify_ecdsa_partial_user_signature_cap call');
 	}
 	for (const obj of objects) {
 		if (
@@ -272,7 +272,7 @@ export async function verifyECFSASignWithPartialUserSignatures(
 			return obj.objectId;
 		}
 	}
-	return undefined;
+	throw new Error('no verified object created');
 }
 
 export async function completeFutureSign(
@@ -284,15 +284,15 @@ export async function completeFutureSign(
 ): Promise<CompletedSignEvent> {
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
-
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
+
 	const messageApproval = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::approve_message`,
 		arguments: [
 			tx.object(dwalletCapID),
 			tx.pure(bcs.u8().serialize(hash.valueOf())),
-			tx.pure(bcs.vector(bcs.u8()).serialize(message)), // read the messagae from verifyECDSAPartialUserSignature
+			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
 		],
 	});
 	const emptyIKACoin = tx.moveCall({
