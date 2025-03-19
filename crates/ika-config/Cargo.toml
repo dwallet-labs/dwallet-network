@@ -10,6 +10,8 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+dwallet-mpc-types.workspace = true
+dwallet-classgroups-types.workspace = true
 anemo.workspace = true
 anyhow = { workspace = true, features = ["backtrace"] }
 dirs.workspace = true
@@ -27,6 +29,7 @@ ika-types.workspace = true
 
 sui-types.workspace = true
 sui-config.workspace = true
+base64.workspace = true
 
 [dev-dependencies]
 sui-types = { workspace = true }

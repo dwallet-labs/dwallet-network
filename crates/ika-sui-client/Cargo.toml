@@ -87,6 +87,7 @@ sui-tls.workspace = true
 ika-types.workspace = true
 zeroize.workspace = true
 nonempty.workspace = true
+dwallet-mpc-types.workspace = true
 
 sui-json-rpc-api.workspace = true
 sui-json-rpc-types.workspace = true
@@ -96,7 +97,9 @@ num_enum.workspace = true
 strum_macros.workspace = true
 derive_more.workspace = true
 backoff.workspace = true
-
+dwallet-classgroups-types.workspace = true
+sui.workspace = true
+sui-keys.workspace = true
 
 [dev-dependencies]
 clap.workspace = true

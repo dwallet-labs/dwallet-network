@@ -519,7 +519,10 @@ impl ArchiveReader {
         S: WriteStore + Clone,
     {
         store
-            .get_checkpoint_by_sequence_number(certified_checkpoint.epoch, certified_checkpoint.sequence_number)
+            .get_checkpoint_by_sequence_number(
+                certified_checkpoint.epoch,
+                certified_checkpoint.sequence_number,
+            )
             .map_err(|e| anyhow!("Store op failed: {e}"))?
             .map(Ok::<VerifiedCheckpointMessage, anyhow::Error>)
             .unwrap_or_else(|| {

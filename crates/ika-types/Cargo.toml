@@ -10,6 +10,8 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+dwallet-mpc-types.workspace = true
+group.workspace = true
 async-trait.workspace = true
 anemo.workspace = true
 anyhow.workspace = true
@@ -71,7 +73,7 @@ passkey-types.workspace = true
 typed-store-error.workspace = true
 derive_more = { workspace = true, features = ["as_ref", "debug", "display", "from"] }
 sui-json-rpc-types.workspace = true
-
+sui-config.workspace = true
 
 sui-types.workspace = true
 serde_repr.workspace = true

@@ -235,7 +235,6 @@ pub struct ValidatorOperationCapV1 {
     pub validator_id: ObjectID,
 }
 
-
 /// Rust version of the Move ika_system::dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKeyCap type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct DWalletNetworkDecryptionKeyCap {

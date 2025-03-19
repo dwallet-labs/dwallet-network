@@ -13,6 +13,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use sui_types::base_types::ObjectID;
+use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::{
     get_dynamic_field_from_store, get_dynamic_field_object_from_store, Field,
 };
@@ -46,22 +47,32 @@ pub const VALIDATOR_CAP_STRUCT_NAME: &IdentStr = ident_str!("ValidatorCap");
 pub const PROTOCOL_CAP_STRUCT_NAME: &IdentStr = ident_str!("ProtocolCap");
 pub const DWALLET_COORDINATOR_STRUCT_NAME: &IdentStr = ident_str!("DWalletCoordinator");
 
-
 pub const SYSTEM_MODULE_NAME: &IdentStr = ident_str!("system");
 pub const INIT_MODULE_NAME: &IdentStr = ident_str!("init");
 pub const VALIDATOR_CAP_MODULE_NAME: &IdentStr = ident_str!("validator_cap");
 pub const PROTOCOL_CAP_MODULE_NAME: &IdentStr = ident_str!("protocol_cap");
-pub const DWALLET_2PC_MPC_SECP256K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1");
+pub const DWALLET_2PC_MPC_SECP256K1_MODULE_NAME: &IdentStr =
+    ident_str!("dwallet_2pc_mpc_secp256k1");
 
 pub const INITIALIZE_FUNCTION_NAME: &IdentStr = ident_str!("initialize");
 pub const REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME: &IdentStr =
     ident_str!("request_add_validator_candidate");
 pub const REQUEST_ADD_VALIDATOR_FUNCTION_NAME: &IdentStr = ident_str!("request_add_validator");
 pub const REQUEST_ADD_STAKE_FUNCTION_NAME: &IdentStr = ident_str!("request_add_stake");
+pub const REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME: &IdentStr =
+    ident_str!("request_remove_validator");
 pub const PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME: &IdentStr =
     ident_str!("process_checkpoint_message_by_quorum");
 pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &IdentStr =
     ident_str!("request_dwallet_network_decryption_key_dkg_by_cap");
+
+pub const CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME: &IdentStr =
+    ident_str!("class_groups_public_key_and_proof");
+pub const CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME: &IdentStr =
+    ident_str!("empty");
+pub const ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr =
+    ident_str!("add_public_key_and_proof");
+pub const FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr = ident_str!("finish");
 
 #[cfg(msim)]
 pub const IKA_SYSTEM_STATE_SIM_TEST_V1: u64 = 18446744073709551605; // u64::MAX - 10
@@ -174,4 +185,39 @@ impl PoolTokenExchangeRate {
 pub struct Validator {
     pub id: ObjectID,
     pub inner: Versioned,
+}
+
+/// Rust representation of the Move ika::class_groups::ClassGroupsPublicKeyAndProofBuilder type
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct ClassGroupsPublicKeyAndProofBuilder;
+
+impl ClassGroupsPublicKeyAndProofBuilder {
+    /// Return the Move struct tag for this type
+    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
+        StructTag {
+            address: ika_system_package_address,
+            name: ident_str!("ClassGroupsPublicKeyAndProofBuilder").to_owned(),
+            module: CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+/// Rust version of the Move ika::class_groups::ClassGroupsPublicKeyAndProof type
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct ClassGroupsPublicKeyAndProof {
+    pub id: ObjectID,
+    pub public_keys_and_proofs: TableVec,
+}
+
+impl ClassGroupsPublicKeyAndProof {
+    /// Return the Move struct tag for this type
+    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
+        StructTag {
+            address: ika_system_package_address,
+            name: ident_str!("ClassGroupsPublicKeyAndProof").to_owned(),
+            module: CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }

@@ -10,6 +10,9 @@ use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
 use consensus_config::{Authority, Committee as ConsensusCommittee};
+use dwallet_mpc_types::dwallet_mpc::{
+    ClassGroupsPublicKeyAndProofBytes, NetworkDecryptionKeyShares,
+};
 use fastcrypto::bls12381;
 use fastcrypto::traits::{KeyPair, ToFromBytes, VerifyingKey};
 use ika_protocol_config::ProtocolVersion;
@@ -32,6 +35,8 @@ pub trait EpochStartSystemTrait {
     fn get_validator_as_p2p_peers(&self, excluding_self: AuthorityName) -> Vec<PeerInfo>;
     fn get_authority_names_to_peer_ids(&self) -> HashMap<AuthorityName, PeerId>;
     fn get_authority_names_to_hostnames(&self) -> HashMap<AuthorityName, String>;
+    fn get_dwallet_network_decryption_keys(&self)
+        -> &HashMap<ObjectID, NetworkDecryptionKeyShares>;
 }
 
 /// This type captures the minimum amount of information from `System` needed by a validator
@@ -54,6 +59,7 @@ impl EpochStartSystem {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
+        dwallet_network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyShares>,
     ) -> Self {
         Self::V1(EpochStartSystemV1 {
             epoch,
@@ -61,6 +67,7 @@ impl EpochStartSystem {
             epoch_start_timestamp_ms,
             epoch_duration_ms,
             active_validators,
+            dwallet_network_decryption_keys,
         })
     }
 
@@ -77,6 +84,7 @@ impl EpochStartSystem {
                 epoch_start_timestamp_ms: state.epoch_start_timestamp_ms,
                 epoch_duration_ms: state.epoch_duration_ms,
                 active_validators: state.active_validators.clone(),
+                dwallet_network_decryption_keys: state.dwallet_network_decryption_keys.clone(),
             }),
         }
     }
@@ -89,6 +97,7 @@ pub struct EpochStartSystemV1 {
     epoch_start_timestamp_ms: u64,
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
+    dwallet_network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyShares>,
 }
 
 impl EpochStartSystemV1 {
@@ -103,6 +112,7 @@ impl EpochStartSystemV1 {
             epoch_start_timestamp_ms: 0,
             epoch_duration_ms: 1000,
             active_validators: vec![],
+            dwallet_network_decryption_keys: HashMap::new(),
         }
     }
 }
@@ -137,6 +147,9 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
                             network_address: validator.network_address.clone(),
                             consensus_address: validator.consensus_address.clone(),
                             network_public_key: Some(validator.network_pubkey.clone()),
+                            class_groups_public_key_and_proof: validator
+                                .class_groups_public_key_and_proof
+                                .clone(),
                         },
                     ),
                 )
@@ -152,7 +165,21 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
             .iter()
             .map(|validator| (validator.authority_name(), validator.voting_power))
             .collect();
-        Committee::new(self.epoch, voting_rights)
+        let class_groups_public_keys_and_proofs = self
+            .active_validators
+            .iter()
+            .map(|validator| {
+                (
+                    validator.authority_name(),
+                    validator.class_groups_public_key_and_proof.clone(),
+                )
+            })
+            .collect();
+        Committee::new(
+            self.epoch,
+            voting_rights,
+            class_groups_public_keys_and_proofs,
+        )
     }
 
     fn get_consensus_committee(&self) -> ConsensusCommittee {
@@ -238,6 +265,12 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
             })
             .collect()
     }
+
+    fn get_dwallet_network_decryption_keys(
+        &self,
+    ) -> &HashMap<ObjectID, NetworkDecryptionKeyShares> {
+        &self.dwallet_network_decryption_keys
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -246,6 +279,7 @@ pub struct EpochStartValidatorInfoV1 {
     pub protocol_pubkey: AuthorityPublicKey,
     pub network_pubkey: NetworkPublicKey,
     pub consensus_pubkey: NetworkPublicKey,
+    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
     pub network_address: Multiaddr,
     pub p2p_address: Multiaddr,
     pub consensus_address: Multiaddr,
@@ -299,6 +333,7 @@ mod test {
             epoch_start_timestamp_ms: 0,
             epoch_duration_ms: 0,
             active_validators,
+            dwallet_network_decryption_keys: Default::default(),
         };
 
         // WHEN

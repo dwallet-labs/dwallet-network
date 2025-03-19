@@ -10,6 +10,19 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+k256 = { git = "https://github.com/RustCrypto/elliptic-curves.git", tag = "k256/v0.14.0-pre.2", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
+group.workspace = true
+mpc.workspace = true
+twopc_mpc.workspace = true
+homomorphic_encryption.workspace = true
+class_groups.workspace = true
+dwallet-classgroups-types.workspace = true
+schemars.workspace = true
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "ika" }
+class_groups_constants = { path = "../class-groups-constants" }
+rand_core = "0.6.4"
+crypto-bigint = { workspace = true, features = ["rand_core", "serde"], default-features = false }
+dwallet-mpc-types.workspace = true
 anyhow = { workspace = true, features = ["backtrace"] }
 arc-swap.workspace = true
 async-trait.workspace = true
@@ -98,6 +111,8 @@ num_enum.workspace = true
 strum_macros.workspace = true
 derive_more.workspace = true
 backoff.workspace = true
+sha3 = "0.10.8"
+sha2 = "0.10.8"
 
 
 [dev-dependencies]
@@ -149,3 +164,8 @@ harness = false
 
 [features]
 test-utils = []
+# This feature must be enabled for release builds!
+# If it is not enabled, then we will receive dWallet MPC sessions even if the network key is not set.
+# The network DKG pauses the manager from advancing any MPC sessions if the network key is not initialized.
+# This feature allows bypassing this restriction, enabling development without relying on the network DKG.
+with-network-dkg = []

@@ -94,7 +94,7 @@
 	"scripts": {
 		"clean": "rm -rf tsconfig.tsbuildinfo ./dist",
 		"codegen:version": "node genversion.mjs",
-		"build": "node genversion.mjs && pnpm build:package",
+		"build": "tsc",
 		"build:package": "build-package",
 		"vitest": "vitest",
 		"test": "pnpm test:typecheck && pnpm test:unit",
@@ -129,7 +129,6 @@
 		"@graphql-codegen/typescript": "4.0.9",
 		"@graphql-codegen/typescript-operations": "^4.2.3",
 		"@iarna/toml": "^2.2.5",
-		"@mysten/build-scripts": "workspace:^",
 		"@types/node": "^20.14.10",
 		"@types/tmp": "^0.2.6",
 		"@types/ws": "^8.5.10",
@@ -145,8 +144,10 @@
 		"ws": "^8.18.0"
 	},
 	"dependencies": {
+		"@dwallet-network/dwallet-mpc-wasm": "workspace:*",
 		"@graphql-typed-document-node/core": "^3.2.0",
-		"@mysten/bcs": "workspace:*",
+		"@mysten/bcs": "^1.4.0",
+		"@mysten/sui": "^1.21.2",
 		"@noble/curves": "^1.4.2",
 		"@noble/hashes": "^1.4.0",
 		"@scure/bip32": "^1.4.0",

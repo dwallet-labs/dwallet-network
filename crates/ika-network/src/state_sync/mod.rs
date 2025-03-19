@@ -92,8 +92,8 @@ pub use generated::{
 use ika_archival::reader::ArchiveReaderBalancer;
 use ika_types::committee::EpochId;
 use ika_types::digests::ChainIdentifier;
-pub use server::{GetCheckpointAvailabilityRequest, GetCheckpointAvailabilityResponse};
 pub use server::GetCheckpointMessageRequest;
+pub use server::{GetCheckpointAvailabilityRequest, GetCheckpointAvailabilityResponse};
 
 /// A handle to the StateSync subsystem.
 ///
@@ -165,10 +165,16 @@ impl PeerHeights {
             .and_then(|digest| self.unprocessed_checkpoints.get(digest))
     }
 
-    pub fn highest_known_checkpoint_sequence_number(&self, epoch: EpochId) -> Option<CheckpointSequenceNumber> {
+    pub fn highest_known_checkpoint_sequence_number(
+        &self,
+        epoch: EpochId,
+    ) -> Option<CheckpointSequenceNumber> {
         self.peers
             .values()
-            .filter_map(|info| info.on_same_chain_as_us.then_some(info.height.get(&epoch).cloned()))
+            .filter_map(|info| {
+                info.on_same_chain_as_us
+                    .then_some(info.height.get(&epoch).cloned())
+            })
             .max()?
     }
 
@@ -195,8 +201,11 @@ impl PeerHeights {
             _ => return false,
         };
 
-        let sequence_number = std::cmp::max(Some(checkpoint.sequence_number()), info.height.get(&checkpoint.epoch));
-        if let Some(sequence_number) = sequence_number{
+        let sequence_number = std::cmp::max(
+            Some(checkpoint.sequence_number()),
+            info.height.get(&checkpoint.epoch),
+        );
+        if let Some(sequence_number) = sequence_number {
             info.height.insert(checkpoint.epoch, *sequence_number);
         }
 
@@ -215,7 +224,6 @@ impl PeerHeights {
                 // we'll use the more recent one
                 let entry = entry.get_mut();
                 *entry = info;
-
             }
             Entry::Vacant(entry) => {
                 entry.insert(info);
@@ -330,7 +338,6 @@ impl Iterator for PeerBalancer {
             } else {
                 return Some(StateSyncClient::new(peer));
             }
-
         }
         None
     }
@@ -417,16 +424,20 @@ where
         let archive_readers = self.archive_readers.clone();
         let store = self.store.clone();
         let task_handle = self.tasks.spawn(async move {
-            let current = sync_checkpoint_messages_from_archive(epoch, archive_readers.clone(), store.clone());
+            let current = sync_checkpoint_messages_from_archive(
+                epoch,
+                archive_readers.clone(),
+                store.clone(),
+            );
             if epoch > 0 {
                 futures::future::join(
                     current,
-                    sync_checkpoint_messages_from_archive(epoch - 1, archive_readers, store)
-                ).await;
+                    sync_checkpoint_messages_from_archive(epoch - 1, archive_readers, store),
+                )
+                .await;
             } else {
                 current.await;
             }
-
         });
 
         self.sync_checkpoint_from_archive_task = Some(task_handle);
@@ -485,7 +496,7 @@ where
         match message {
             StateSyncMessage::StartSyncJob => {
                 self.start_sync_job();
-            },
+            }
             StateSyncMessage::CurrentEpoch(epoch) => {
                 *self.current_epoch.write().unwrap() = epoch;
             }
@@ -606,8 +617,9 @@ where
                             peer,
                             peer_heights,
                             timeout,
-                        )
-                    ).await;
+                        ),
+                    )
+                    .await;
                 } else {
                     current.await;
                 }
@@ -638,8 +650,9 @@ where
                         peer_heights,
                         weak_sender,
                         timeout,
-                    )
-                ).await;
+                    ),
+                )
+                .await;
             } else {
                 current.await;
             }
@@ -776,7 +789,8 @@ async fn get_latest_from_peer(
         trace!(?info, "Peer {peer_id} not on same chain as us");
         return;
     }
-    let Some(highest_checkpoint) = query_peer_for_latest_info(epoch, &mut client, timeout).await else {
+    let Some(highest_checkpoint) = query_peer_for_latest_info(epoch, &mut client, timeout).await
+    else {
         return;
     };
     peer_heights
@@ -1004,8 +1018,11 @@ where
     Ok(())
 }
 
-async fn sync_checkpoint_messages_from_archive<S>(epoch: EpochId, archive_readers: ArchiveReaderBalancer, store: S)
-where
+async fn sync_checkpoint_messages_from_archive<S>(
+    epoch: EpochId,
+    archive_readers: ArchiveReaderBalancer,
+    store: S,
+) where
     S: WriteStore + Clone + Send + Sync + 'static,
 {
     loop {

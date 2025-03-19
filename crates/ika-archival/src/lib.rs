@@ -420,7 +420,8 @@ where
                     total_checkpoints_loaded as f64 / instant.elapsed().as_secs_f64();
                 let total_txns_per_sec =
                     cloned_counter.load(Ordering::Relaxed) as f64 / instant.elapsed().as_secs_f64();
-                cloned_progress_bar.set_position(latest_checkpoint as u64 + total_checkpoints_loaded);
+                cloned_progress_bar
+                    .set_position(latest_checkpoint as u64 + total_checkpoints_loaded);
                 cloned_progress_bar.set_message(format!(
                     "checkpoints/s: {}, txns/s: {}",
                     total_checkpoints_per_sec, total_txns_per_sec

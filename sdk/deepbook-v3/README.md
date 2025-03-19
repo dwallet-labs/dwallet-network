@@ -1,1 +1,0 @@
-# Deepbook TypeScript SDK

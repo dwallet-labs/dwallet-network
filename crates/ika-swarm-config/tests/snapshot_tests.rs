@@ -56,13 +56,13 @@ fn populated_genesis_snapshot_matches() {
         .unwrap();
     let mut rng = StdRng::from_seed([0; 32]);
     let key: AuthorityKeyPair = get_key_pair_from_rng(&mut rng).1;
-    let worker_key: NetworkKeyPair = get_key_pair_from_rng(&mut rng).1;
+    let consensus_key: NetworkKeyPair = get_key_pair_from_rng(&mut rng).1;
     let network_key: NetworkKeyPair = get_key_pair_from_rng(&mut rng).1;
     let account_key: AccountKeyPair = get_key_pair_from_rng(&mut rng).1;
     let validator = ValidatorInfo {
         name: "0".into(),
         protocol_key: key.public().into(),
-        worker_key: worker_key.public().clone(),
+        consensus_key: consensus_key.public().clone(),
         account_address: IkaAddress::from(account_key.public()),
         network_key: network_key.public().clone(),
         computation_price: DEFAULT_VALIDATOR_COMPUTATION_PRICE,

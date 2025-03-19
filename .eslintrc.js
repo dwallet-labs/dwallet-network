@@ -37,6 +37,7 @@ module.exports = {
 		'sdk/docs/public/typedoc',
 	],
 	rules: {
+		'prefer-const': 'error',
 		'no-case-declarations': 'off',
 		'no-implicit-coercion': [2, { number: true, string: true, boolean: false }],
 		'@typescript-eslint/no-redeclare': 'off',
@@ -56,11 +57,7 @@ module.exports = {
 				message: 'Buffer usage increases bundle size and is not consistently implemented on web.',
 			},
 		],
-		'header/header': [
-			2,
-			'line',
-			[' Copyright (c) Mysten Labs, Inc.', ' SPDX-License-Identifier: BSD-3-Clause-Clear'],
-		],
+		'header/header': 'off',
 		'@typescript-eslint/no-unused-vars': [
 			'error',
 			{

@@ -43,7 +43,18 @@ pub type CheckpointSequenceNumber = u32;
 pub type CheckpointTimestamp = u64;
 
 #[derive(
-    Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema, Debug
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    Debug,
 )]
 pub struct CheckpointMessageKey {
     epoch: EpochId,
@@ -51,10 +62,7 @@ pub struct CheckpointMessageKey {
 }
 
 impl CheckpointMessageKey {
-    pub fn new(
-        epoch: EpochId,
-        sequence_number: CheckpointSequenceNumber,
-    ) -> Self {
+    pub fn new(epoch: EpochId, sequence_number: CheckpointSequenceNumber) -> Self {
         Self {
             epoch,
             sequence_number,
