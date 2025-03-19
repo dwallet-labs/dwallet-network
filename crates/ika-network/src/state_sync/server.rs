@@ -6,7 +6,6 @@ use anemo::{rpc::Status, types::response::StatusCode, Request, Response, Result}
 use dashmap::DashMap;
 use futures::future::BoxFuture;
 use ika_types::committee::EpochId;
-use ika_types::committee::EpochId;
 use ika_types::digests::ChainIdentifier;
 use ika_types::{
     digests::{CheckpointContentsDigest, CheckpointMessageDigest},
