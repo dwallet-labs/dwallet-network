@@ -407,7 +407,7 @@ async fn ika_system_initialize(
     Ok((dwallet_2pc_mpc_secp256k1_id, initial_shared_version))
 }
 
-async fn init_initialize(
+pub async fn init_initialize(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -670,7 +670,7 @@ async fn stake_ika(
     Ok(())
 }
 
-async fn mint_ika(
+pub async fn mint_ika(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -848,7 +848,7 @@ async fn request_add_validator_candidate(
     Ok((validator_cap.validator_id, validator_cap_id))
 }
 
-async fn publish_ika_system_package_to_sui(
+pub async fn publish_ika_system_package_to_sui(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -1104,7 +1104,7 @@ async fn add_public_keys_and_proofs_with_rng(
     Ok(())
 }
 
-async fn publish_ika_package_to_sui(
+pub async fn publish_ika_package_to_sui(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
