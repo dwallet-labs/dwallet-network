@@ -64,6 +64,27 @@ verify_certificate
 verify_quorum
 	public(package) fun
 	0x0::bls_committee
+ClassGroupsPublicKeyAndProofBuilder
+	public struct
+	0x0::class_groups_public_key_and_proof
+ClassGroupsPublicKeyAndProof
+	public struct
+	0x0::class_groups_public_key_and_proof
+empty
+	public fun
+	0x0::class_groups_public_key_and_proof
+add_public_key_and_proof
+	public fun
+	0x0::class_groups_public_key_and_proof
+finish
+	public fun
+	0x0::class_groups_public_key_and_proof
+drop
+	public fun
+	0x0::class_groups_public_key_and_proof
+destroy
+	public fun
+	0x0::class_groups_public_key_and_proof
 PricingPerOperation
 	public struct
 	0x0::dwallet_pricing
@@ -226,6 +247,9 @@ DWalletState
 ECDSASignState
 	public enum
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+copy_table_vec
+	fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 create_dwallet_coordinator_inner
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
@@ -274,7 +298,7 @@ register_encryption_key
 create_message_approval
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-approve_messages
+approve_message
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 is_supported_hash_scheme
@@ -287,6 +311,12 @@ request_dwallet_dkg_first_round
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 respond_dwallet_dkg_first_round
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+create_first_round_dwallet_mock
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+mock_create_dwallet
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 request_dwallet_dkg_second_round
@@ -322,7 +352,7 @@ request_ecdsa_future_sign
 respond_ecdsa_future_sign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-verifiy_ecdsa_partial_user_signature_cap
+verify_ecdsa_partial_user_signature_cap
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 request_ecdsa_sign_with_partial_user_signatures
@@ -367,6 +397,15 @@ request_dwallet_dkg_first_round
 request_dwallet_dkg_second_round
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
+create_first_round_dwallet_mock
+	public fun
+	0x0::dwallet_2pc_mpc_secp256k1
+mock_create_dwallet
+	public fun
+	0x0::dwallet_2pc_mpc_secp256k1
+mock_create_presign
+	public fun
+	0x0::dwallet_2pc_mpc_secp256k1
 request_re_encrypt_user_share_for
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
@@ -382,7 +421,7 @@ request_ecdsa_sign
 request_ecdsa_future_sign
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
-verifiy_ecdsa_partial_user_signature_cap
+verify_ecdsa_partial_user_signature_cap
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
 request_ecdsa_sign_with_partial_user_signatures
@@ -676,6 +715,9 @@ network_pubkey_bytes
 consensus_pubkey_bytes
 	public fun
 	0x0::validator_inner_v1
+class_groups_pubkey_and_proof_bytes
+	public fun
+	0x0::validator_inner_v1
 next_epoch_network_address
 	public fun
 	0x0::validator_inner_v1
@@ -695,6 +737,9 @@ next_epoch_network_pubkey_bytes
 	public fun
 	0x0::validator_inner_v1
 next_epoch_consensus_pubkey_bytes
+	public fun
+	0x0::validator_inner_v1
+next_epoch_class_groups_pubkey_and_proof_bytes
 	public fun
 	0x0::validator_inner_v1
 operation_cap_id
@@ -781,11 +826,20 @@ update_candidate_network_pubkey_bytes
 update_next_epoch_consensus_pubkey_bytes
 	public(package) fun
 	0x0::validator_inner_v1
+update_next_epoch_class_groups_pubkey_and_proof_bytes
+	public(package) fun
+	0x0::validator_inner_v1
 update_candidate_consensus_pubkey_bytes
+	public(package) fun
+	0x0::validator_inner_v1
+update_candidate_class_groups_pubkey_and_proof_bytes
 	public(package) fun
 	0x0::validator_inner_v1
 effectuate_staged_metadata
 	public(package) fun
+	0x0::validator_inner_v1
+update_class_groups_key_and_proof
+	fun
 	0x0::validator_inner_v1
 verify_proof_of_possession
 	public(package) fun
@@ -1165,6 +1219,12 @@ update_validator_next_epoch_consensus_pubkey_bytes
 update_candidate_validator_consensus_pubkey_bytes
 	public(package) fun
 	0x0::system_inner_v1
+update_validator_next_epoch_class_groups_pubkey_and_proof_bytes
+	public(package) fun
+	0x0::system_inner_v1
+update_candidate_validator_class_groups_pubkey_and_proof_bytes
+	public(package) fun
+	0x0::system_inner_v1
 update_validator_next_epoch_network_pubkey_bytes
 	public(package) fun
 	0x0::system_inner_v1
@@ -1340,6 +1400,12 @@ update_validator_next_epoch_consensus_pubkey_bytes
 	public entry fun
 	0x0::system
 update_candidate_validator_consensus_pubkey_bytes
+	public entry fun
+	0x0::system
+update_validator_next_epoch_class_groups_pubkey_and_proof_bytes
+	public entry fun
+	0x0::system
+update_candidate_validator_class_groups_pubkey_and_proof_bytes
 	public entry fun
 	0x0::system
 update_validator_next_epoch_network_pubkey_bytes

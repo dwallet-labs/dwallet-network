@@ -40,6 +40,8 @@ pub mod sui_executor;
 pub mod sui_syncer;
 
 pub const TEST_MODULE_NAME: &IdentStr = ident_str!("test");
+pub const DWALLET_2PC_MPC_SECP256K1_INNER_MODULE_NAME: &IdentStr =
+    ident_str!("dwallet_2pc_mpc_secp256k1_inner");
 
 pub struct SuiNotifier {
     sui_key: SuiKeyPair,
@@ -189,7 +191,10 @@ impl SuiConnectorService {
         perpetual_tables: &Arc<AuthorityPerpetualTables>,
         sui_ika_system_module_last_processed_event_id_override: Option<EventID>,
     ) -> HashMap<Identifier, Option<EventID>> {
-        let sui_connector_modules = vec![TEST_MODULE_NAME.to_owned()];
+        let sui_connector_modules = vec![
+            TEST_MODULE_NAME.to_owned(),
+            DWALLET_2PC_MPC_SECP256K1_INNER_MODULE_NAME.to_owned(),
+        ];
         if let Some(cursor) = sui_ika_system_module_last_processed_event_id_override {
             info!(
                 "Overriding cursor for sui connector modules to {:?}",
@@ -262,8 +267,13 @@ pub(crate) async fn build_sui_transaction<C: SuiClientInner>(
 ) -> Transaction {
     let computation_price = sui_client.get_reference_gas_price_until_success().await;
 
-    let tx_data =
-        TransactionData::new_programmable(signer, gas_payment, pt, 100_000_000, computation_price);
+    let tx_data = TransactionData::new_programmable(
+        signer,
+        gas_payment,
+        pt,
+        10_000_000_000,
+        computation_price,
+    );
 
     let signature = Signature::new_secure(
         &IntentMessage::new(Intent::sui_transaction(), &tx_data),

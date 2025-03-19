@@ -122,7 +122,9 @@ where
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(epoch, next_checkpoint_sequence_number)
                 {
-                    if let Some(dwallet_2pc_mpc_secp256k1_id) = ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id() {
+                    if let Some(dwallet_2pc_mpc_secp256k1_id) =
+                        ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+                    {
                         let auth_sig = checkpoint_message.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap = Self::calculate_signers_bitmap(auth_sig);
@@ -143,7 +145,7 @@ where
                             &self.sui_client,
                             &self.metrics,
                         )
-                            .await;
+                        .await;
                         match task {
                             Ok(_) => {
                                 info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
@@ -185,8 +187,9 @@ where
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
 
-        let dwallet_2pc_mpc_secp256k1_arg =
-            sui_client.get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id).await;
+        let dwallet_2pc_mpc_secp256k1_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+            .await;
 
         ptb.move_call(
             ika_system_package_id,

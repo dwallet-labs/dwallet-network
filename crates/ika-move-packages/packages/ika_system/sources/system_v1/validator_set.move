@@ -16,6 +16,7 @@ use ika_system::validator_inner_v1::{ValidatorInnerV1};
 use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap };
 use ika_system::validator::{Self, Validator};
 use ika_system::bls_committee::{Self, BlsCommittee, new_bls_committee, new_bls_committee_member, total_voting_power, quorum_threshold};
+use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use sui::bag::{Self, Bag};
 use sui::balance::Balance;
 use sui::event;
@@ -163,6 +164,7 @@ public(package) fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
     name: vector<u8>,
     description: vector<u8>,
@@ -181,6 +183,7 @@ public(package) fun request_add_validator_candidate(
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
+        class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
         name,
         description,

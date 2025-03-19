@@ -30,12 +30,12 @@ use ika_types::digests::{CheckpointContentsDigest, CheckpointMessageDigest, Mess
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message::MessageKind;
 use ika_types::message_envelope::Message;
-use ika_types::messages_checkpoint::{CheckpointMessageKey, SignedCheckpointMessage};
 use ika_types::messages_checkpoint::{
     CertifiedCheckpointMessage, CheckpointMessage, CheckpointSequenceNumber,
     CheckpointSignatureMessage, CheckpointTimestamp, TrustedCheckpointMessage,
     VerifiedCheckpointMessage,
 };
+use ika_types::messages_checkpoint::{CheckpointMessageKey, SignedCheckpointMessage};
 use ika_types::messages_consensus::ConsensusTransactionKey;
 use ika_types::sui::{SystemInner, SystemInnerTrait};
 use rand::rngs::OsRng;
@@ -229,10 +229,7 @@ impl CheckpointStore {
         sequence_number: CheckpointSequenceNumber,
     ) -> Result<Option<VerifiedCheckpointMessage>, TypedStoreError> {
         self.certified_checkpoints
-            .get(&CheckpointMessageKey::new(
-                epoch,
-                sequence_number
-            ))
+            .get(&CheckpointMessageKey::new(epoch, sequence_number))
             .map(|maybe_checkpoint| maybe_checkpoint.map(|c| c.into()))
     }
 
@@ -241,10 +238,8 @@ impl CheckpointStore {
         epoch: EpochId,
         sequence_number: CheckpointSequenceNumber,
     ) -> Result<Option<CheckpointMessage>, TypedStoreError> {
-        self.locally_computed_checkpoints.get(&CheckpointMessageKey::new(
-            epoch,
-            sequence_number
-        ))
+        self.locally_computed_checkpoints
+            .get(&CheckpointMessageKey::new(epoch, sequence_number))
     }
 
     // pub fn get_sequence_number_by_contents_digest(
@@ -288,8 +283,9 @@ impl CheckpointStore {
         &self,
         epoch: EpochId,
     ) -> Result<Option<VerifiedCheckpointMessage>, TypedStoreError> {
-        let highest_verified = if let Some(highest_verified) =
-            self.watermarks.get(&(epoch, CheckpointWatermark::HighestVerified))?
+        let highest_verified = if let Some(highest_verified) = self
+            .watermarks
+            .get(&(epoch, CheckpointWatermark::HighestVerified))?
         {
             highest_verified
         } else {
@@ -302,8 +298,9 @@ impl CheckpointStore {
         &self,
         epoch: EpochId,
     ) -> Result<Option<VerifiedCheckpointMessage>, TypedStoreError> {
-        let highest_synced = if let Some(highest_synced) =
-            self.watermarks.get(&(epoch, CheckpointWatermark::HighestSynced))?
+        let highest_synced = if let Some(highest_synced) = self
+            .watermarks
+            .get(&(epoch, CheckpointWatermark::HighestSynced))?
         {
             highest_synced
         } else {
@@ -316,8 +313,9 @@ impl CheckpointStore {
         &self,
         epoch: EpochId,
     ) -> Result<Option<VerifiedCheckpointMessage>, TypedStoreError> {
-        let highest_executed = if let Some(highest_executed) =
-            self.watermarks.get(&(epoch, CheckpointWatermark::HighestExecuted))?
+        let highest_executed = if let Some(highest_executed) = self
+            .watermarks
+            .get(&(epoch, CheckpointWatermark::HighestExecuted))?
         {
             highest_executed
         } else {
@@ -428,10 +426,10 @@ impl CheckpointStore {
         let mut batch = self.certified_checkpoints.batch();
         batch.insert_batch(
             &self.certified_checkpoints,
-            [(CheckpointMessageKey::new(
-                checkpoint.epoch,
-                checkpoint.sequence_number,
-            ), checkpoint.serializable_ref())],
+            [(
+                CheckpointMessageKey::new(checkpoint.epoch, checkpoint.sequence_number),
+                checkpoint.serializable_ref(),
+            )],
         )?;
         batch.insert_batch(
             &self.epoch_last_checkpoint_map,
@@ -570,7 +568,10 @@ impl CheckpointStore {
     //         .map_err(Into::into)
     // }
 
-    pub fn delete_highest_executed_checkpoint_test_only(&self, epoch: EpochId) -> Result<(), TypedStoreError> {
+    pub fn delete_highest_executed_checkpoint_test_only(
+        &self,
+        epoch: EpochId,
+    ) -> Result<(), TypedStoreError> {
         let mut wb = self.watermarks.batch();
         wb.delete_batch(
             &self.watermarks,
@@ -921,12 +922,10 @@ impl CheckpointBuilder {
             //     [(contents.digest(), contents)],
             // )?;
 
-            self.tables
-                .locally_computed_checkpoints
-                .insert(&CheckpointMessageKey::new(
-                    checkpoint_message.epoch,
-                    sequence_number
-                ), checkpoint_message)?;
+            self.tables.locally_computed_checkpoints.insert(
+                &CheckpointMessageKey::new(checkpoint_message.epoch, sequence_number),
+                checkpoint_message,
+            )?;
 
             // batch.insert_batch(
             //     &self.tables.locally_computed_checkpoints,
@@ -1110,8 +1109,7 @@ impl CheckpointBuilder {
         );
 
         for (index, mut messages) in chunks.into_iter().enumerate() {
-            let first_checkpoint_of_epoch = index == 0
-                && (last_checkpoint_seq.is_none());
+            let first_checkpoint_of_epoch = index == 0 && (last_checkpoint_seq.is_none());
             if first_checkpoint_of_epoch {
                 self.epoch_store
                     .record_epoch_first_checkpoint_creation_time_metric();
@@ -1120,6 +1118,7 @@ impl CheckpointBuilder {
             let last_checkpoint_of_epoch = details.last_of_epoch && index == chunks_count - 1;
 
             let sequence_number = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0);
+            last_checkpoint_seq = Some(sequence_number);
 
             let timestamp_ms = details.timestamp_ms;
             if let Some((_, last_checkpoint)) = &last_checkpoint {
@@ -1155,9 +1154,8 @@ impl CheckpointBuilder {
                     checkpoint_seq = sequence_number,
                     "creating last checkpoint of epoch {}", epoch
                 );
-                self.epoch_store.report_epoch_metrics_at_last_checkpoint(
-                    sequence_number,
-                );
+                self.epoch_store
+                    .report_epoch_metrics_at_last_checkpoint(sequence_number);
                 // if let Some(stats) = self.tables.get_epoch_stats(epoch, &summary) {
                 //     self.epoch_store
                 //         .report_epoch_metrics_at_last_checkpoint(sequence_number + 1);
@@ -1410,7 +1408,8 @@ impl CheckpointAggregator {
 
     fn next_checkpoint_to_certify(&self, epoch: EpochId) -> CheckpointSequenceNumber {
         self.tables
-            .epoch_last_checkpoint_map.get(&epoch)
+            .epoch_last_checkpoint_map
+            .get(&epoch)
             .unwrap_or_default()
             .map(|seq| seq + 1)
             .unwrap_or_default()

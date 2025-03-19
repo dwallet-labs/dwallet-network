@@ -209,7 +209,8 @@ impl InMemoryStore {
         let highest_verified_checkpoint = self.highest_verified_checkpoint.get(&epoch);
 
         if Some(sequence_number) > highest_verified_checkpoint.map(|x| x.0) {
-            self.highest_verified_checkpoint.insert(epoch, (sequence_number, digest));
+            self.highest_verified_checkpoint
+                .insert(epoch, (sequence_number, digest));
         }
     }
 
@@ -240,7 +241,8 @@ impl InMemoryStore {
                 return;
             }
         }
-        self.highest_synced_checkpoint.insert(epoch, (sequence_number, digest));
+        self.highest_synced_checkpoint
+            .insert(epoch, (sequence_number, digest));
     }
 
     pub fn update_highest_verified_checkpoint(&mut self, checkpoint: &VerifiedCheckpointMessage) {
@@ -257,8 +259,8 @@ impl InMemoryStore {
                 return;
             }
         }
-        self.highest_verified_checkpoint.insert(epoch, (sequence_number, digest));
-
+        self.highest_verified_checkpoint
+            .insert(epoch, (sequence_number, digest));
     }
 
     pub fn checkpoints(&self) -> &HashMap<CheckpointMessageDigest, VerifiedCheckpointMessage> {

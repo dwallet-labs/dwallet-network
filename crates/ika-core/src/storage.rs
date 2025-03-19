@@ -43,7 +43,9 @@ impl RocksDbStore {
         &self,
         epoch: EpochId,
     ) -> Result<Option<VerifiedCheckpointMessage>, IkaError> {
-        Ok(self.checkpoint_store.get_highest_executed_checkpoint(epoch)?)
+        Ok(self
+            .checkpoint_store
+            .get_highest_executed_checkpoint(epoch)?)
     }
 }
 
@@ -85,8 +87,10 @@ impl ReadStore for RocksDbStore {
             .map_err(Into::into)
     }
 
-    fn get_lowest_available_checkpoint(&self,
-                                       epoch: EpochId,) -> Result<CheckpointSequenceNumber, StorageError> {
+    fn get_lowest_available_checkpoint(
+        &self,
+        epoch: EpochId,
+    ) -> Result<CheckpointSequenceNumber, StorageError> {
         let highest_pruned_cp = self
             .checkpoint_store
             .get_highest_pruned_checkpoint_seq_number(epoch)

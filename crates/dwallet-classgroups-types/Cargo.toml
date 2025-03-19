@@ -1,0 +1,24 @@
+[package]
+name = "dwallet-classgroups-types"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+class_groups.workspace = true
+group.workspace = true
+crypto-bigint.workspace = true
+serde.workspace = true
+anyhow.workspace = true
+bcs.workspace = true
+fastcrypto = { workspace = true, features = ["copy_key"] }
+rand_chacha = "0.3.1"
+schemars.workspace = true
+serde_json.workspace = true
+serde_derive = "1.0.217"
+ika-types.workspace = true
+dwallet-mpc-types.workspace = true
+twopc_mpc.workspace = true
+flate2 = "1.0.35"
+
+[lints]
+workspace = true
