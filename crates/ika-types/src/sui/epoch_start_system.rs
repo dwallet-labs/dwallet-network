@@ -35,6 +35,8 @@ pub trait EpochStartSystemTrait {
     fn get_validator_as_p2p_peers(&self, excluding_self: AuthorityName) -> Vec<PeerInfo>;
     fn get_authority_names_to_peer_ids(&self) -> HashMap<AuthorityName, PeerId>;
     fn get_authority_names_to_hostnames(&self) -> HashMap<AuthorityName, String>;
+    fn get_dwallet_network_decryption_keys(&self)
+        -> &HashMap<ObjectID, NetworkDecryptionKeyShares>;
 }
 
 /// This type captures the minimum amount of information from `System` needed by a validator
@@ -262,6 +264,12 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
                 (name, hostname)
             })
             .collect()
+    }
+
+    fn get_dwallet_network_decryption_keys(
+        &self,
+    ) -> &HashMap<ObjectID, NetworkDecryptionKeyShares> {
+        &self.dwallet_network_decryption_keys
     }
 }
 

@@ -1146,6 +1146,12 @@ It contains all necessary data to ensure proper continuation of the process.
  The Ed25519 public key of the initiator,
  used to verify the signature on the centralized public output.
 </dd>
+<dt>
+<code>dwallet_mpc_network_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+ The MPC network decryption key id that is used to decrypt associated dWallet.
+</dd>
 </dl>
 
 
@@ -3389,7 +3395,8 @@ used to verify the signature on the public output.
         _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
     };
     <b>let</b> pricing = self.pricing.dkg_second_round();
-    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge">charge</a>(pricing, dwallet.dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
+    <b>let</b> dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge">charge</a>(pricing, dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
     <b>let</b> emit_event = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_current_epoch_dwallet_event">create_current_epoch_dwallet_event</a>(
         <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDKGSecondRoundRequestEvent">DWalletDKGSecondRoundRequestEvent</a> {
             dwallet_id: dwallet_cap.dwallet_id,
@@ -3402,6 +3409,7 @@ used to verify the signature on the public output.
             encryption_key_address,
             user_public_output,
             singer_public_key,
+            dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
         },
         ctx,
     );

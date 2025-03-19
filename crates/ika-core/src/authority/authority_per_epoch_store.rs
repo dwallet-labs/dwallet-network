@@ -793,50 +793,10 @@ impl AuthorityPerEpochStore {
     ///   which contains all versions of the encrypted decryption key shares.
     pub(crate) fn load_decryption_key_shares_from_system_state(
         &self,
-    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<NetworkDecryptionKeyShares>>>
-    {
-        // let decryption_key_shares = match self.epoch_start_state() {
-        //     EpochStartSystem::V1(data) => data.get_decryption_key_shares(),
-        // }
-        //     .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-        //     .contents
-        //     .into_iter()
-        //     .map(|entry| {
-        //         Ok((
-        //             DWalletMPCNetworkKeyScheme::try_from(entry.key)?,
-        //             entry.value,
-        //         ))
-        //     })
-        //     .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
-        //
-        // Ok(decryption_key_shares)
-        Ok(HashMap::new())
-    }
-
-    /// Retrieves the *running validator's* latest decryption key shares for each key scheme
-    /// if they exist in the system state.
-    ///
-    /// The data is sourced from the epoch's initial system state.
-    /// The returned value is a map where:
-    /// - The key represents the key scheme.
-    /// - The value is a `Vec<u8>`, containing the decryption key shares for the validator.
-    pub(crate) fn load_validator_decryption_key_shares_from_system_state(
-        &self,
-    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKeyScheme, Vec<Vec<u8>>>> {
-        let decryption_key_shares = self.load_decryption_key_shares_from_system_state()?;
-        decryption_key_shares
-            .into_iter()
-            .map(|(key_type, encryption_shares)| {
-                let shares = encryption_shares
-                    .iter()
-                    .map(|share| {
-                        // TODO (#382): Decrypt the decryption key share
-                        Vec::new()
-                    })
-                    .collect();
-                Ok((key_type, shares))
-            })
-            .collect()
+    ) -> HashMap<ObjectID, NetworkDecryptionKeyShares> {
+        match self.epoch_start_state() {
+            EpochStartSystem::V1(data) => data.get_dwallet_network_decryption_keys().clone(),
+        }
     }
 
     /// Return the [`DWalletMPCOutputsVerifier`].
@@ -2173,9 +2133,7 @@ impl AuthorityPerEpochStore {
                         let public_output = bcs::to_bytes(&key.get_on_chain_output())
                             .map_err(|e| DwalletMPCError::BcsError(e))?;
 
-                        let key_shares =
-                            bcs::to_bytes(&key.current_epoch_encryptions_of_shares_per_crt_prime)
-                                .map_err(|e| DwalletMPCError::BcsError(e))?;
+                        let key_shares = key.current_epoch_encryptions_of_shares_per_crt_prime;
 
                         let slices = Self::slice_network_dkg_into_messages(
                             &init_event.dwallet_network_decryption_key_id,
@@ -2204,17 +2162,6 @@ impl AuthorityPerEpochStore {
         public_output: Vec<u8>,
         key_shares: Vec<u8>,
     ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
-        #[cfg(not(feature = "with-network-dkg"))]
-        {
-            return vec![Secp256K1NetworkDKGOutputSlice {
-                dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
-                    .clone()
-                    .to_vec(),
-                public_output: vec![],
-                key_shares: vec![],
-                is_last: true,
-            }];
-        }
         let mut slices = Vec::new();
         let public_chunks = public_output.chunks(5 * 1024).collect_vec();
         let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();

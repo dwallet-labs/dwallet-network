@@ -262,8 +262,8 @@ impl DWalletMPCOutputsVerifier {
             .get()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .get_protocol_public_parameters(
+                &sign_session_data.dwallet_mpc_network_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
-                network_key_version_from_key_id(&sign_session_data.dwallet_mpc_network_key_id),
             )?;
         let protocol_public_parameters: secp256k1::class_groups::ProtocolPublicParameters =
             bcs::from_bytes(&protocol_public_parameters)?;
