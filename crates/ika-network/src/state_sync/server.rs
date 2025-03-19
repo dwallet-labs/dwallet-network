@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 use tokio::sync::{mpsc, OwnedSemaphorePermit, Semaphore};
+use ika_types::committee::EpochId;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
 pub enum GetCheckpointMessageRequest {
