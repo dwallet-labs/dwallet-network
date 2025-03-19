@@ -74,7 +74,7 @@ public struct DWalletEpochCoordinator has key, store {
     committee: BlsCommittee,
     session_count: u32,
     /// The total messages processed.
-    total_messages_processed: u64,
+    total_messages_processed: u32,
     /// The last checkpoint sequence number processed.
     last_processed_checkpoint_sequence_number: Option<u32>,
     /// The fees paid for consuenes validation in IKA.
@@ -1999,7 +1999,7 @@ fun process_checkpoint_message(
         timestamp_ms,
     });
 
-    let messages_len = bcs_body.peel_vec_length();
+    let messages_len = bcs_body.peel_vec_length() as u32;
     let mut i = 0;
     let mut response_session_count = 0;
     while (i < messages_len) {
