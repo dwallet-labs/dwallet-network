@@ -8,6 +8,7 @@
 #[allow(unused_field)]
 module ika_system::dwallet_2pc_mpc_secp256k1_inner;
 
+use sui::table_vec::{Self, TableVec};
 use ika::ika::IKA;
 use sui::sui::SUI;
 use sui::object_table::{Self, ObjectTable};
@@ -24,6 +25,25 @@ use ika_system::bls_committee::{BlsCommittee};
 /// Supported hash schemes for message signing.
 const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
+
+fun copy_table_vec(dest: &mut TableVec<vector<u8>>, src: &TableVec<vector<u8>>) {
+    while (!dest.is_empty()) {
+        dest.pop_back();
+    };
+    let mut i = 0;
+    while (i < src.length()) {
+        let vec = src.borrow(i);
+        let vec_len = vec.length();
+        let mut j = 0;
+        let mut new_vec: vector<u8> = vector[];
+        while (j < vec_len) {
+            new_vec.push_back(*(vec.borrow(j)));
+            j = j + 1;
+        };
+        dest.push_back(new_vec);
+        i = i + 1;
+    }
+}
 
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
@@ -80,14 +100,14 @@ public struct DWalletNetworkDecryptionKey has key, store {
     dwallet_network_decryption_key_cap_id: ID,
     current_epoch: u64,
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    current_epoch_shares: vector<u8>,
+    current_epoch_shares: table_vec::TableVec<vector<u8>>,
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    next_epoch_shares: Option<vector<u8>>,
+    next_epoch_shares: table_vec::TableVec<vector<u8>>,
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    previous_epoch_shares: vector<u8>,
+    previous_epoch_shares: table_vec::TableVec<vector<u8>>,
 
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    public_output: vector<u8>,
+    public_output: table_vec::TableVec<vector<u8>>,
     /// The fees paid for computation in IKA.
     computation_fee_charged_ika: Balance<IKA>,
     state: DWalletNetworkDecryptionKeyState,
@@ -399,6 +419,9 @@ public struct DWalletDKGSecondRoundRequestEvent has copy, drop {
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
     singer_public_key: vector<u8>,
+
+    /// The MPC network decryption key id that is used to decrypt associated dWallet.
+    dwallet_mpc_network_key_id: ID,
 }
 
 /// Event emitted upon the completion of the second (and final) round of the
@@ -413,6 +436,8 @@ public struct CompletedDWalletDKGSecondRoundEvent has copy, drop {
 
     /// The public output for the second round of the DKG process.
     public_output: vector<u8>,
+    encrypted_user_secret_key_share_id: ID,
+    session_id: ID
 }
 
 public struct RejectedDWalletDKGSecondRoundEvent has copy, drop {
@@ -521,6 +546,8 @@ public struct CompletedECDSAPresignEvent has copy, drop {
 
     /// The session ID.
     session_id: ID,
+    presign_id: ID,
+    presign: vector<u8>,
 }
 
 // END OF PRESIGN TYPES
@@ -570,16 +597,20 @@ public struct ECDSAFutureSignRequestEvent has copy, drop {
     partial_centralized_signed_message_id: ID,
     message: vector<u8>,
     presign: vector<u8>,
+    dwallet_public_output: vector<u8>,
     hash_scheme: u8,
     message_centralized_signature: vector<u8>,
+    dwallet_mpc_network_key_id: ID,
 }
 
 public struct CompletedECDSAFutureSignEvent has copy, drop {
+    session_id: ID,
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
 }
 
 public struct RejectedECDSAFutureSignEvent has copy, drop {
+    session_id: ID,
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
 }
@@ -689,15 +720,14 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
         //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-        current_epoch_shares: vector[],
+        current_epoch_shares: table_vec::empty(ctx),
         //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-        next_epoch_shares: option::none(),
+        next_epoch_shares: table_vec::empty(ctx),
         //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-        previous_epoch_shares: vector[],
-        public_output: vector[],
+        previous_epoch_shares: table_vec::empty(ctx),
+        public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
-        // TODO: IMPORTANT fix it to be AwaitingNetworkDKG
-        state: DWalletNetworkDecryptionKeyState::NetworkDKGCompleted,
+        state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
     event::emit(self.create_current_epoch_dwallet_event(
         DWalletNetworkDKGDecryptionKeyRequestEvent {
@@ -712,18 +742,23 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
     public_output: vector<u8>,
-    key_shares: vector<u8>
+    key_shares: vector<u8>,
+    is_last: bool,
 ) {
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.public_output = public_output;
-    dwallet_network_decryption_key.current_epoch_shares = key_shares;
+    dwallet_network_decryption_key.public_output.push_back(public_output);
+    dwallet_network_decryption_key.current_epoch_shares.push_back(key_shares);
     dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
         DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
-            event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
-                dwallet_network_decryption_key_id,
-                public_output
-            });
-            DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+            if (is_last) {
+                event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
+                    dwallet_network_decryption_key_id,
+                    public_output
+                });
+                DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+            } else {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+            }
         },
         _ => abort EWrongState
     };
@@ -735,7 +770,7 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
     key_shares: vector<u8>,
 ) {
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.next_epoch_shares = option::some(key_shares);
+    dwallet_network_decryption_key.next_epoch_shares.push_back(key_shares);
 }
 
 public(package) fun advance_epoch_dwallet_network_decryption_key(
@@ -745,10 +780,8 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
     let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(cap.dwallet_network_decryption_key_id);
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
-    if(dwallet_network_decryption_key.next_epoch_shares.is_some()) {
-        dwallet_network_decryption_key.previous_epoch_shares = dwallet_network_decryption_key.current_epoch_shares;
-        dwallet_network_decryption_key.current_epoch_shares = dwallet_network_decryption_key.next_epoch_shares.extract();
-    }
+    copy_table_vec(&mut dwallet_network_decryption_key.previous_epoch_shares, &dwallet_network_decryption_key.current_epoch_shares);
+    copy_table_vec(&mut dwallet_network_decryption_key.current_epoch_shares, &dwallet_network_decryption_key.next_epoch_shares);
 }
 
 fun get_active_dwallet_network_decryption_key(
@@ -841,8 +874,8 @@ fun get_active_dwallet_and_public_output_mut(
 public(package) fun get_active_encryption_key(
     self: &DWalletCoordinatorInner,
     address: address,
-): &EncryptionKey {
-    self.encryption_keys.borrow(address)
+): ID {
+    self.encryption_keys.borrow(address).id.to_inner()
 }
 
 /// Registers an encryption key to be used later for encrypting a
@@ -943,27 +976,16 @@ public(package) fun create_message_approval(
 ///
 /// ### Aborts
 /// - Aborts if the provided `hash_scheme` is not supported by the system (checked during `create_message_approval`).
-public fun approve_messages(
+public fun approve_message(
     dwallet_cap: &DWalletCap,
     hash_scheme: u8,
-    messages: &mut vector<vector<u8>>
-): vector<MessageApproval> {
-    let mut message_approvals = vector::empty<MessageApproval>();
-
-    // Approve all messages and maintain their order.
-    let messages_length = vector::length(messages);
-    let mut i: u64 = 0;
-    while (i < messages_length) {
-        let message = vector::pop_back(messages);
-        vector::push_back(&mut message_approvals, create_message_approval(
-            dwallet_cap.dwallet_id,
-            hash_scheme,
-            message,
-        ));
-        i = i + 1;
-    };
-    vector::reverse(&mut message_approvals);
-    message_approvals
+    message: vector<u8>
+): MessageApproval {
+    create_message_approval(
+        dwallet_cap.dwallet_id,
+        hash_scheme,
+        message,
+    )
 }
 
 /// Checks if the given hash scheme is supported for message signing.
@@ -984,14 +1006,14 @@ fun charge(
 ) {
     assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
     assert!(self.active_epochs.contains(self.current_epoch), EEpochNotExist);
-    
+
     let active_epoch = self.active_epochs.borrow_mut(self.current_epoch);
     active_epoch.consensus_validation_fee_charged_ika.join(payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance());
     active_epoch.session_count = active_epoch.session_count + 1;
 
     let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.computation_fee_charged_ika.join(payment_ika.split(pricing.computation_ika(), ctx).into_balance());
-    
+
     self.gas_fee_reimbursement_sui.join(payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance());
 }
 
@@ -1089,6 +1111,58 @@ public(package) fun respond_dwallet_dkg_first_round(
     };
 }
 
+// TODO (#493): Remove mock functions
+public(package) fun create_first_round_dwallet_mock(
+    self: &mut DWalletCoordinatorInner, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
+): DWalletCap {
+    let id = object::new(ctx);
+    let dwallet_id = id.to_inner();
+    let dwallet_cap = DWalletCap {
+        id: object::new(ctx),
+        dwallet_id,
+    };
+    let dwallet_cap_id = object::id(&dwallet_cap);
+    self.dwallets.add(dwallet_id, DWallet {
+        id,
+        created_at_epoch: self.current_epoch,
+        dwallet_cap_id,
+        dwallet_network_decryption_key_id,
+        encrypted_user_secret_key_shares: object_table::new(ctx),
+        ecdsa_presigns: object_table::new(ctx),
+        ecdsa_signs: object_table::new(ctx),
+        state: DWalletState::AwaitingUser {
+            first_round_output
+        },
+    });
+    dwallet_cap
+}
+
+// TODO (#493): Remove mock functions
+public(package) fun mock_create_dwallet(
+    self: &mut DWalletCoordinatorInner, output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
+): DWalletCap {
+    let id = object::new(ctx);
+    let dwallet_id = id.to_inner();
+    let dwallet_cap = DWalletCap {
+        id: object::new(ctx),
+        dwallet_id,
+    };
+    let dwallet_cap_id = object::id(&dwallet_cap);
+    self.dwallets.add(dwallet_id, DWallet {
+        id,
+        created_at_epoch: self.current_epoch,
+        dwallet_cap_id,
+        dwallet_network_decryption_key_id,
+        encrypted_user_secret_key_shares: object_table::new(ctx),
+        ecdsa_presigns: object_table::new(ctx),
+        ecdsa_signs: object_table::new(ctx),
+        state: DWalletState::Active {
+            public_output: output
+        },
+    });
+    dwallet_cap
+}
+
 /// Initiates the second round of the Distributed Key Generation (DKG) process
 /// and emits an event for validators to begin their participation in this round.
 ///
@@ -1133,7 +1207,9 @@ public(package) fun request_dwallet_dkg_second_round(
 
     let pricing = self.pricing.dkg_second_round();
 
-    self.charge(pricing, dwallet.dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
+    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+
+    self.charge(pricing, dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
 
 
     let emit_event = self.create_current_epoch_dwallet_event(
@@ -1148,6 +1224,7 @@ public(package) fun request_dwallet_dkg_second_round(
             encryption_key_address,
             user_public_output,
             singer_public_key,
+            dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
         },
         ctx,
     );
@@ -1189,13 +1266,14 @@ public(package) fun respond_dwallet_dkg_second_round(
     public_output: vector<u8>,
     encrypted_centralized_secret_share_and_proof: vector<u8>,
     encryption_key_address: address,
+    session_id: ID,
     rejected: bool,
     ctx: &mut TxContext
 ) {
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
     let encryption_key_id = encryption_key.id.to_inner();
     let created_at_epoch = self.current_epoch;
-    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let dwallet = self.get_dwallet_mut(dwallet_id);
 
     dwallet.state = match (&dwallet.state) {
         DWalletState::AwaitingNetworkVerification => {
@@ -1222,6 +1300,8 @@ public(package) fun respond_dwallet_dkg_second_round(
                 event::emit(CompletedDWalletDKGSecondRoundEvent {
                     dwallet_id,
                     public_output,
+                    encrypted_user_secret_key_share_id,
+                    session_id,
                 });
                 DWalletState::Active {
                     public_output
@@ -1281,7 +1361,7 @@ public(package) fun request_re_encrypt_user_share_for(
     };
     let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
     dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
-    
+
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
     let pricing = self.pricing.re_encrypt_user_share();
 
@@ -1464,7 +1544,8 @@ public(package) fun respond_ecdsa_presign(
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let id = object::new(ctx);
-    dwallet.ecdsa_presigns.add(id.to_inner(), ECDSAPresign {
+    let presign_id = id.to_inner();
+    dwallet.ecdsa_presigns.add(presign_id, ECDSAPresign {
         id,
         created_at_epoch,
         dwallet_id,
@@ -1473,6 +1554,8 @@ public(package) fun respond_ecdsa_presign(
     event::emit(CompletedECDSAPresignEvent {
         dwallet_id,
         session_id,
+        presign_id,
+        presign
     });
 }
 
@@ -1544,7 +1627,7 @@ fun emit_ecdsa_sign_event(
         session_id,
         state: ECDSASignState::Requested,
     });
-    
+
     event::emit(emit_event);
 }
 
@@ -1624,7 +1707,7 @@ public(package) fun request_ecdsa_future_sign(
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ): UnverifiedECDSAPartialUserSignatureCap {
-    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let (dwallet, public_dwallet_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
 
     // TODO: Change error
@@ -1643,8 +1726,10 @@ public(package) fun request_ecdsa_future_sign(
                 partial_centralized_signed_message_id,
                 message,
                 presign: presign.presign,
+                dwallet_public_output: public_dwallet_output,
                 hash_scheme,
-                message_centralized_signature
+                message_centralized_signature,
+                dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
         },
         ctx,
     );
@@ -1672,6 +1757,7 @@ public(package) fun request_ecdsa_future_sign(
 
 public(package) fun respond_ecdsa_future_sign(
     self: &mut DWalletCoordinatorInner,
+    session_id: ID,
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
     rejected: bool,
@@ -1682,12 +1768,14 @@ public(package) fun respond_ecdsa_future_sign(
         ECDSAPartialUserSignatureState::AwaitingNetworkVerification => {
             if(rejected) {
                 event::emit(RejectedECDSAFutureSignEvent {
+                    session_id,
                     dwallet_id,
                     partial_centralized_signed_message_id
                 });
                 ECDSAPartialUserSignatureState::NetworkVerificationRejected
             } else {
                 event::emit(CompletedECDSAFutureSignEvent {
+                    session_id,
                     dwallet_id,
                     partial_centralized_signed_message_id
                 });
@@ -1698,7 +1786,7 @@ public(package) fun respond_ecdsa_future_sign(
     }
 }
 
-public(package) fun verifiy_ecdsa_partial_user_signature_cap(
+public(package) fun verify_ecdsa_partial_user_signature_cap(
     self: &mut DWalletCoordinatorInner,
     cap: UnverifiedECDSAPartialUserSignatureCap,
     ctx: &mut TxContext
@@ -1939,30 +2027,82 @@ fun process_checkpoint_message(
                     let _authority = bcs_body.peel_u32();
                     let _num = bcs_body.peel_u64();
             } else if (message_data_type == 3) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output);
-                // TODO: add for every reponse
                 response_session_count = response_session_count + 1;
             } else if (message_data_type == 4) {
-                let dwallet_id = object::id_from_address(bcs_body.peel_address());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
-                let encryption_key_id = bcs_body.peel_address();
+                let encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
                 self.respond_dwallet_dkg_second_round(
                     dwallet_id,
                     public_output,
                     encrypted_centralized_secret_share_and_proof,
-                    encryption_key_id,
+                    encryption_key_address,
+                    session_id,
                     rejected,
                     ctx,
                 );
+                response_session_count = response_session_count + 1;
+            } else if (message_data_type == 5) {
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let rejected = bcs_body.peel_bool();
+                self.respond_re_encrypt_user_share_for(
+                    dwallet_id,
+                    encrypted_user_secret_key_share_id,
+                    rejected,
+                );
+                response_session_count = response_session_count + 1;
+            } else if (message_data_type == 6) {
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let signature = bcs_body.peel_vec_u8();
+                let is_future_sign = bcs_body.peel_bool();
+                let rejected = bcs_body.peel_bool();
+                self.respond_ecdsa_sign(
+                    dwallet_id,
+                    sign_id,
+                    session_id,
+                    signature,
+                    is_future_sign,
+                    rejected,
+                );
+                response_session_count = response_session_count + 1;
+            } else if (message_data_type == 8) {
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let rejected = bcs_body.peel_bool();
+                self.respond_ecdsa_future_sign(
+                    session_id,
+                    dwallet_id,
+                    partial_centralized_signed_message_id,
+                    rejected,
+                );
+                response_session_count = response_session_count + 1;
+            } else if (message_data_type == 7) {
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let presign = bcs_body.peel_vec_u8();
+                self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx);
+                response_session_count = response_session_count + 1;
+            } else if (message_data_type == 9) {
+                let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let public_output = bcs_body.peel_vec_u8();
+                let key_shares = bcs_body.peel_vec_u8();
+                let is_last = bcs_body.peel_bool();
+                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
                 response_session_count = response_session_count + 1;
             };
         i = i + 1;
     };
     let epoch_coordinator = self.active_epochs.borrow_mut(epoch);
     epoch_coordinator.total_messages_processed = epoch_coordinator.total_messages_processed + messages_len;
-    epoch_coordinator.session_count = epoch_coordinator.session_count - response_session_count;
+    epoch_coordinator.session_count = epoch_coordinator.session_count + response_session_count;
 }

@@ -29,6 +29,7 @@ macro_rules! fp_ensure {
         }
     };
 }
+use crate::dwallet_mpc_error::DwalletMPCError;
 pub(crate) use fp_ensure;
 use sui_types::digests::TransactionEventsDigest;
 use sui_types::error::SuiError;
@@ -217,7 +218,7 @@ pub enum IkaError {
     #[error("Sui Client internal error")]
     SuiClientInternalError(String),
 
-    #[error("Sui Client sui transaction failure due to generic error")]
+    #[error("Sui Client sui transaction failure due to generic error: {0}")]
     SuiClientTxFailureGeneric(String),
 
     // Sui Connector
@@ -226,9 +227,22 @@ pub enum IkaError {
 
     #[error("Sui Connector internal error")]
     SuiConnectorInternalError(String),
+
+    // This is a string because the encapsulating error has too many derives.
+    #[error("dWallet MPC Error: {0}")]
+    DwalletMPCError(String),
+
+    #[error("BCS serialization error: {0}")]
+    BCSError(String),
 }
 
 pub type IkaResult<T = ()> = Result<T, IkaError>;
+
+impl From<DwalletMPCError> for IkaError {
+    fn from(error: DwalletMPCError) -> Self {
+        IkaError::DwalletMPCError(error.to_string())
+    }
+}
 
 impl From<ika_protocol_config::Error> for IkaError {
     fn from(error: ika_protocol_config::Error) -> Self {

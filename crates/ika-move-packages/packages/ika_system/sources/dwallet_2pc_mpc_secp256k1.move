@@ -9,7 +9,6 @@ use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
     Self,
     DWalletCoordinatorInner,
     DWalletNetworkDecryptionKeyCap,
-    EncryptionKey,
     DWalletCap,
     MessageApproval,
     UnverifiedECDSAPartialUserSignatureCap,
@@ -86,7 +85,7 @@ public(package) fun advance_epoch(
 public fun get_active_encryption_key(
     self: &DWalletCoordinator,
     address: address,
-): &EncryptionKey {
+): ID {
     self.inner().get_active_encryption_key(address)
 }
 
@@ -143,6 +142,19 @@ public fun request_dwallet_dkg_second_round(
         payment_sui,
         ctx
     )
+}
+
+// TODO (#493): Remove mock functions
+public fun create_first_round_dwallet_mock(self: &mut DWalletCoordinator, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext): DWalletCap {
+    self.inner_mut().create_first_round_dwallet_mock(first_round_output, dwallet_network_decryption_key_id, ctx)
+}
+
+public fun mock_create_dwallet(self: &mut DWalletCoordinator, output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext): DWalletCap {
+    self.inner_mut().mock_create_dwallet(output, dwallet_network_decryption_key_id, ctx)
+}
+
+public fun mock_create_presign(self: &mut DWalletCoordinator, presign: vector<u8>, dwallet_id: ID, ctx: &mut TxContext) {
+    self.inner_mut().respond_ecdsa_presign(dwallet_id, dwallet_id, presign, ctx);
 }
 
 public fun request_re_encrypt_user_share_for(
@@ -238,12 +250,12 @@ public fun request_ecdsa_future_sign(
     )
 }
 
-public fun verifiy_ecdsa_partial_user_signature_cap(
+public fun verify_ecdsa_partial_user_signature_cap(
     self: &mut DWalletCoordinator,
     cap: UnverifiedECDSAPartialUserSignatureCap,
     ctx: &mut TxContext
 ): VerifiedECDSAPartialUserSignatureCap {
-    self.inner_mut().verifiy_ecdsa_partial_user_signature_cap(
+    self.inner_mut().verify_ecdsa_partial_user_signature_cap(
         cap,
         ctx,
     )
@@ -279,6 +291,7 @@ public fun compare_ecdsa_partial_user_signatures_with_approvals(
     )
 }
 
+#[allow(unused_function)]
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWalletCoordinator,
     epoch: u64,

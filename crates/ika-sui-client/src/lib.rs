@@ -5,17 +5,27 @@ use crate::metrics::SuiClientMetrics;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use core::panic;
+use dwallet_classgroups_types::{
+    ClassGroupsEncryptionKeyAndProof, SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEYS,
+};
+use dwallet_mpc_types::dwallet_mpc::{
+    NetworkDecryptionKeyOnChainOutput, NetworkDecryptionKeyShares,
+};
 use fastcrypto::traits::ToFromBytes;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
+use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
-use ika_types::sui::system_inner_v1::SystemInnerV1;
+use ika_types::sui::system_inner_v1::{DWalletNetworkDecryptionKeyCap, SystemInnerV1};
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
 use ika_types::sui::{System, SystemInner, SystemInnerTrait, Validator};
+use itertools::Itertools;
 use move_binary_format::binary_config::BinaryConfig;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::annotated_value::MoveEnumLayout;
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::from_utf8;
 use std::sync::Arc;
@@ -29,13 +39,15 @@ use sui_json_rpc_types::{
 };
 use sui_sdk::error::Error;
 use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
+use sui_types::balance::Balance;
 use sui_types::base_types::ObjectRef;
 use sui_types::base_types::SequenceNumber;
+use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
-use sui_types::id::ID;
+use sui_types::id::{ID, UID};
 use sui_types::move_package::MovePackage;
-use sui_types::object::{Object, Owner};
+use sui_types::object::{MoveObject, Object, Owner};
 use sui_types::parse_sui_type_tag;
 use sui_types::transaction::Argument;
 use sui_types::transaction::CallArg;
@@ -54,6 +66,7 @@ use sui_types::{
 use tokio::sync::OnceCell;
 use tracing::{error, warn};
 
+pub mod ika_validator_transactions;
 pub mod metrics;
 
 #[macro_export]
@@ -252,6 +265,24 @@ where
                     .map(|v| v.value.clone())
                     .collect::<Vec<_>>();
 
+                let network_decryption_keys = self
+                    .inner
+                    .get_network_decryption_keys(
+                        &ika_system_state_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys,
+                    )
+                    .await
+                    .unwrap_or_default();
+
+                let validators_class_groups_public_key_and_proof = self
+                    .inner
+                    .get_class_groups_public_keys_and_proofs(&validators)
+                    .await
+                    .map_err(|e| {
+                        IkaError::SuiClientInternalError(format!(
+                            "can't get_class_groups_public_keys_and_proofs: {e}"
+                        ))
+                    })?;
+
                 let validators = ika_system_state_inner
                     .validators
                     .active_committee
@@ -268,6 +299,15 @@ where
                             protocol_pubkey: metadata.protocol_pubkey.clone(),
                             network_pubkey: metadata.network_pubkey.clone(),
                             consensus_pubkey: metadata.consensus_pubkey.clone(),
+                            class_groups_public_key_and_proof: bcs::to_bytes(
+                                &validators_class_groups_public_key_and_proof
+                                    .get(&validator.validator_id)
+                                    // Okay to `unwrap`
+                                    // because we can't start the chain without the system state data.
+                                    .expect("failed to get the validator class groups public key from Sui")
+                                    .clone(),
+                            )
+                            .unwrap(),
                             network_address: metadata.network_address.clone(),
                             p2p_address: metadata.p2p_address.clone(),
                             consensus_address: metadata.consensus_address.clone(),
@@ -283,6 +323,7 @@ where
                     ika_system_state_inner.epoch_start_timestamp_ms,
                     ika_system_state_inner.epoch_duration_ms(),
                     validators,
+                    network_decryption_keys.clone(),
                 );
 
                 Ok(epoch_start_system_state)
@@ -474,6 +515,19 @@ pub trait SuiClientInner: Send + Sync {
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
 
+    async fn get_class_groups_public_keys_and_proofs(
+        &self,
+        validators: &Vec<ValidatorInnerV1>,
+    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error>;
+
+    async fn get_network_decryption_keys(
+        &self,
+        network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
+    ) -> Result<HashMap<ObjectID, NetworkDecryptionKeyShares>, self::Error>;
+
+    async fn read_table_vec_as_raw_bytes(&self, table_id: ObjectID)
+        -> Result<Vec<u8>, self::Error>;
+
     async fn get_system_inner(
         &self,
         system_id: ObjectID,
@@ -548,6 +602,165 @@ impl SuiClientInner for SuiSdkClient {
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
         self.read_api().get_move_object_bcs(system_id).await
+    }
+
+    async fn get_class_groups_public_keys_and_proofs(
+        &self,
+        validators: &Vec<ValidatorInnerV1>,
+    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
+        let mut class_groups_public_keys_and_proofs: HashMap<
+            ObjectID,
+            ClassGroupsEncryptionKeyAndProof,
+        > = HashMap::new();
+        for validator in validators {
+            let metadata = validator.verified_metadata();
+            let dynamic_fields = self
+                .read_api()
+                .get_dynamic_fields(
+                    metadata.class_groups_public_key_and_proof.contents.id,
+                    None,
+                    None,
+                )
+                .await?;
+            let mut validator_class_groups_public_key_and_proof_bytes: [Vec<u8>;
+                NUM_OF_CLASS_GROUPS_KEYS] = Default::default();
+            for df in dynamic_fields.data.iter() {
+                let object_id = df.object_id;
+                let dynamic_field_response = self
+                    .read_api()
+                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                    .await?;
+                let resp = dynamic_field_response.into_object().map_err(|e| {
+                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+                })?;
+                let move_object = resp.bcs.ok_or(Error::DataError(format!(
+                    "object {:?} has no bcs data",
+                    object_id
+                )))?;
+                let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+                    "object {:?} is not a MoveObject",
+                    object_id
+                )))?;
+                let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
+                validator_class_groups_public_key_and_proof_bytes
+                    [key_slice.name.clone() as usize] = key_slice.value.clone();
+            }
+            let validator_class_groups_public_key_and_proof: Result<
+                Vec<SingleEncryptionKeyAndProof>,
+                _,
+            > = validator_class_groups_public_key_and_proof_bytes
+                .into_iter()
+                .map(|v| bcs::from_bytes::<SingleEncryptionKeyAndProof>(&v))
+                .collect();
+
+            class_groups_public_keys_and_proofs.insert(
+                validator.validator_id,
+                validator_class_groups_public_key_and_proof?
+                    .try_into()
+                    .map_err(|_| {
+                        Error::DataError(
+                            "class groups key from Sui has an invalid length".to_string(),
+                        )
+                    })?,
+            );
+        }
+        Ok(class_groups_public_keys_and_proofs)
+    }
+
+    async fn get_network_decryption_keys(
+        &self,
+        network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
+    ) -> Result<HashMap<ObjectID, NetworkDecryptionKeyShares>, self::Error> {
+        let mut network_decryption_keys = HashMap::new();
+        for cap in network_decryption_caps {
+            let key_id = cap.dwallet_network_decryption_key_id;
+            let dynamic_field_response = self
+                .read_api()
+                .get_object_with_options(key_id, SuiObjectDataOptions::bcs_lossless())
+                .await?;
+            let resp = dynamic_field_response.into_object().map_err(|e| {
+                Error::DataError(format!("can't get bcs of object {:?}: {:?}", key_id, e))
+            })?;
+            let move_object = resp.bcs.ok_or(Error::DataError(format!(
+                "object {:?} has no bcs data",
+                key_id
+            )))?;
+            let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+                "object {:?} is not a MoveObject",
+                key_id
+            )))?;
+            let key_obj = bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes)
+                .map_err(|e| {
+                Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e))
+            })?;
+            let public_output_bytes = self
+                .read_table_vec_as_raw_bytes(key_obj.public_output.contents.id)
+                .await?;
+            let public_output =
+                bcs::from_bytes::<NetworkDecryptionKeyOnChainOutput>(&public_output_bytes)?;
+            let current_shares = self
+                .read_table_vec_as_raw_bytes(key_obj.current_epoch_shares.contents.id)
+                .await?;
+            let key = NetworkDecryptionKeyShares {
+                epoch: key_obj.current_epoch,
+                current_epoch_encryptions_of_shares_per_crt_prime: current_shares,
+                previous_epoch_encryptions_of_shares_per_crt_prime: vec![],
+                encryption_scheme_public_parameters: public_output
+                    .encryption_scheme_public_parameters,
+                decryption_key_share_public_parameters: public_output
+                    .decryption_key_share_public_parameters,
+                encryption_key: public_output.encryption_key,
+                public_verification_keys: public_output.public_verification_keys,
+            };
+            network_decryption_keys.insert(key_id, key);
+        }
+        Ok(network_decryption_keys)
+    }
+
+    async fn read_table_vec_as_raw_bytes(
+        &self,
+        table_id: ObjectID,
+    ) -> Result<Vec<u8>, Self::Error> {
+        let mut full_output = HashMap::new();
+        let dynamic_fields = self
+            .read_api()
+            .get_dynamic_fields(table_id, None, None)
+            .await
+            .map_err(|e| {
+                Error::DataError(format!(
+                    "can't get dynamic fields of table {:?}: {:?}",
+                    table_id, e
+                ))
+            })?;
+
+        for df in dynamic_fields.data.iter() {
+            let object_id = df.object_id;
+            let dynamic_field_response = self
+                .read_api()
+                .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                .await?;
+            let resp = dynamic_field_response.into_object().map_err(|e| {
+                Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+            })?;
+            let raw_data = resp.bcs.ok_or(Error::DataError(format!(
+                "object {:?} has no bcs data",
+                object_id
+            )))?;
+            let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(format!(
+                "object {:?} is not a MoveObject",
+                object_id
+            )))?;
+            let bytes_chunk = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
+            full_output.insert(bytes_chunk.name as usize, bytes_chunk.value.clone());
+        }
+
+        Ok(full_output
+            .into_iter()
+            .sorted()
+            .fold(Vec::new(), |mut acc, (k, mut v)| {
+                acc.append(&mut v);
+                acc
+            }))
     }
 
     async fn get_system_inner(
@@ -782,13 +995,13 @@ impl SuiClientInner for SuiSdkClient {
         tx: Transaction,
     ) -> Result<SuiTransactionBlockResponse, IkaError> {
         match self.quorum_driver_api().execute_transaction_block(
-            tx,
-            SuiTransactionBlockResponseOptions::new().with_effects().with_events(),
-            Some(sui_types::quorum_driver_types::ExecuteTransactionRequestType::WaitForEffectsCert),
-        ).await {
-            Ok(response) => Ok(response),
-            Err(e) => Err(IkaError::SuiClientTxFailureGeneric(e.to_string())),
-        }
+                tx,
+                SuiTransactionBlockResponseOptions::new().with_effects().with_events(),
+                Some(sui_types::quorum_driver_types::ExecuteTransactionRequestType::WaitForEffectsCert),
+            ).await {
+                Ok(response) => Ok(response),
+                Err(e) => Err(IkaError::SuiClientTxFailureGeneric(e.to_string())),
+            }
     }
 
     async fn get_gas_data_panic_if_not_gas(

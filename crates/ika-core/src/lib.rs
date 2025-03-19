@@ -21,6 +21,7 @@ mod scoring_decision;
 mod stake_aggregator;
 pub mod storage;
 
+pub mod dwallet_mpc;
 pub mod sui_connector;
 
 pub mod runtime;

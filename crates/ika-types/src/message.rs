@@ -9,6 +9,8 @@ use crate::crypto::{
 };
 use crate::digests::MessageDigest;
 use crate::messages_consensus::MovePackageDigest;
+use crate::messages_dwallet_mpc::SessionInfo;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use enum_dispatch::enum_dispatch;
 use fastcrypto::{encoding::Base64, hash::HashFunction};
 use ika_protocol_config::ProtocolConfig;
@@ -72,6 +74,62 @@ impl EndOfEpochMessageKind {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct DKGFirstRoundOutput {
+    pub dwallet_id: Vec<u8>,
+    pub output: Vec<u8>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct DKGSecondRoundOutput {
+    pub dwallet_id: Vec<u8>,
+    pub session_id: Vec<u8>,
+    pub output: Vec<u8>,
+    pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
+    pub encryption_key_address: Vec<u8>,
+    pub rejected: bool,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct PresignOutput {
+    pub dwallet_id: Vec<u8>,
+    pub session_id: Vec<u8>,
+    pub presign: Vec<u8>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct SignOutput {
+    pub dwallet_id: Vec<u8>,
+    pub sign_id: Vec<u8>,
+    pub session_id: Vec<u8>,
+    pub signature: Vec<u8>,
+    pub is_future_sign: bool,
+    pub rejected: bool,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct EncryptedUserShareOutput {
+    pub dwallet_id: Vec<u8>,
+    pub encrypted_user_secret_key_share_id: Vec<u8>,
+    pub rejected: bool,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct PartialSignatureVerificationOutput {
+    pub session_id: Vec<u8>,
+    pub dwallet_id: Vec<u8>,
+    pub partial_centralized_signed_message_id: Vec<u8>,
+    pub rejected: bool,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct Secp256K1NetworkDKGOutputSlice {
+    pub dwallet_network_decryption_key_id: Vec<u8>,
+    pub public_output: Vec<u8>,
+    pub key_shares: Vec<u8>,
+    pub is_last: bool,
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
 pub enum MessageKind {
     InitiateProcessMidEpoch,
@@ -83,6 +141,13 @@ pub enum MessageKind {
     /// Test message for checkpoints.
     TestMessage(u32, u64),
     // .. more action types go here
+    DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
+    DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
+    DwalletEncryptedUserShare(EncryptedUserShareOutput),
+    DwalletSign(SignOutput),
+    DwalletPresign(PresignOutput),
+    DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
+    DwalletMPCNetworkDKGOutput(Secp256K1NetworkDKGOutputSlice),
 }
 
 impl MessageKind {
@@ -95,6 +160,15 @@ impl MessageKind {
             Self::InitiateProcessMidEpoch => "InitiateProcessMidEpoch",
             Self::EndOfEpoch(_) => "EndOfEpoch",
             Self::TestMessage(_, _) => "TestMessage",
+            MessageKind::DwalletMPCNetworkDKGOutput(_) => "DwalletMPCNetworkDKGOutput",
+            MessageKind::DwalletDKGFirstRoundOutput(_) => "DwalletDKGFirstRoundOutput",
+            MessageKind::DwalletDKGSecondRoundOutput(_) => "DwalletDKGSecondRoundOutput",
+            MessageKind::DwalletPresign(_) => "DwalletPresign",
+            MessageKind::DwalletSign(_) => "DwalletSign",
+            MessageKind::DwalletEncryptedUserShare(_) => "DwalletEncryptedUserShare",
+            MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
+                "DwalletPartialSignatureVerificationOutput"
+            }
         }
     }
 
@@ -126,6 +200,34 @@ impl Display for MessageKind {
                     writer,
                     "MessageKind : TestMessage authority: {}, num: {}",
                     authority, num
+                )?;
+            }
+            MessageKind::DwalletMPCNetworkDKGOutput(output) => {
+                writeln!(
+                    writer,
+                    "MessageKind : DwalletMPCNetworkDKGOutput {:?}",
+                    output
+                )?;
+            }
+            MessageKind::DwalletDKGFirstRoundOutput(_) => {
+                writeln!(writer, "MessageKind : DwalletDKGFirstRoundOutput")?;
+            }
+            MessageKind::DwalletDKGSecondRoundOutput(_) => {
+                writeln!(writer, "MessageKind : DwalletDKGSecondRoundOutput")?;
+            }
+            MessageKind::DwalletPresign(_) => {
+                writeln!(writer, "MessageKind : DwalletPresign")?;
+            }
+            MessageKind::DwalletSign(_) => {
+                writeln!(writer, "MessageKind : DwalletSign")?;
+            }
+            MessageKind::DwalletEncryptedUserShare(_) => {
+                writeln!(writer, "MessageKind : DwalletEncryptedUserShare")?;
+            }
+            MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : DwalletPartialSignatureVerificationOutput"
                 )?;
             }
         }
