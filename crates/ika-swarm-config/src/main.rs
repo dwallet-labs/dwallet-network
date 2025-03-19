@@ -1,8 +1,10 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use ika_move_packages::BuiltInIkaMovePackages;
-use ika_swarm_config::sui_client::{publish_ika_package_to_sui, publish_ika_system_package_to_sui};
-use serde::Serialize;
+use ika_swarm_config::sui_client::{
+    mint_ika, publish_ika_package_to_sui, publish_ika_system_package_to_sui,
+};
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -35,10 +37,7 @@ enum Commands {
         #[arg(long)]
         rpc_addr: String,
         /// Faucet URL for requesting tokens.
-        #[clap(
-            long,
-            default_value = "http://127.0.0.1:9123/gas",
-        )]
+        #[clap(long, default_value = "http://127.0.0.1:9123/gas")]
         faucet_addr: String,
         /// The optional path for network configuration.
         #[clap(long = "network.config", value_parser = clap::value_parser!(PathBuf))]
@@ -47,9 +46,12 @@ enum Commands {
 
     /// Mint IKA tokens.
     MintIkaTokens {
-        /// Path to the configuration file (e.g. `ika_publish_config.json`) generated during publish.
+        /// The optional path for network configuration.
+        #[clap(long = "network.config", value_parser = clap::value_parser!(PathBuf))]
+        sui_config: Option<PathBuf>,
+        /// Path to the configuration file (e.g., `ika_publish_config.json`) generated during publish.
         #[arg(long, value_parser = clap::value_parser!(PathBuf))]
-        config: PathBuf,
+        ika_config: PathBuf,
     },
 
     /// Initialize environment (calls the `INITIALIZE_FUNCTION_NAME` function).
@@ -110,7 +112,7 @@ enum Commands {
 }
 
 /// Configuration data that will be saved after publishing the IKA modules.
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct PublishIkaConfig {
     pub ika_package_id: ObjectID,
     pub treasury_cap_id: ObjectID,
@@ -128,7 +130,11 @@ async fn main() -> Result<()> {
     // For example, create a temporary config directory or load an existing one.
     // (Adjust this to suit how you set up your WalletContext and key management.)
     match cli.command {
-        Commands::PublishIkaModules { rpc_addr, faucet_addr, config } => {
+        Commands::PublishIkaModules {
+            rpc_addr,
+            faucet_addr,
+            config,
+        } => {
             println!("Publishing IKA modules on network: {}", rpc_addr);
 
             // Determine the configuration directory.
@@ -150,14 +156,10 @@ async fn main() -> Result<()> {
                         None,
                         None,
                     )?;
-
                     let publisher_keypair = k.get_key(&publisher_address)?.copy();
-
                     (publisher_address, phrase, scheme, publisher_keypair)
                 }
-                _ => {
-                    panic!("Keystore is not in memory");
-                }
+                _ => panic!("Keystore is not in memory"),
             };
             println!(
                 "Generated publisher keypair for address {} with alias \"{}\"",
@@ -184,9 +186,7 @@ async fn main() -> Result<()> {
             sui_client_config.persisted(&config_path).save()?;
 
             // Request tokens from the faucet for the publisher.
-            let faucet_future = request_tokens_from_faucet(publisher_address, faucet_addr.clone());
-            // Await the faucet request; if needed, handle errors here.
-            faucet_future.await?;
+            request_tokens_from_faucet(publisher_address, faucet_addr.clone()).await?;
 
             // Create a WalletContext and obtain a SuiClient.
             let mut context = WalletContext::new(&config_path, None, None)?;
@@ -254,13 +254,47 @@ async fn main() -> Result<()> {
             );
         }
 
-        Commands::MintIkaTokens { config } => {
-            println!("Minting IKA tokens using configuration at {:?}", config);
-            // Load the configuration (e.g. deserialize ika_config.json to get ika_package_id and treasury_cap_id)
-            // Create a WalletContext and SuiClient.
-            // Call the mint_ika function:
-            // let ika_supply_id = mint_ika(publisher_address, &mut context, client.clone(), ika_package_id, treasury_cap_id).await?;
-            println!("(Pseudocode) IKA tokens minted. Supply id: ...");
+        Commands::MintIkaTokens {
+            ika_config,
+            sui_config,
+        } => {
+            println!("Minting IKA tokens using configuration at {:?}", ika_config);
+
+            // Determine the configuration directory.
+            let config_dir = match sui_config {
+                Some(cfg) => cfg,
+                None => tempfile::tempdir()?.into_path(),
+            };
+            let config_path = config_dir.join(SUI_CLIENT_CONFIG);
+
+            // Load the published IKA configuration from the file.
+            let config_content = std::fs::read_to_string(&sui_config)?;
+            let publish_config: PublishIkaConfig = serde_json::from_str(&config_content)?;
+
+            // Assume the Sui client configuration is stored in the same directory.
+            let config_dir = sui_config.parent().expect("Failed to get config directory");
+            let client_config_path = config_dir.join(SUI_CLIENT_CONFIG);
+
+            // Create a WalletContext using the persisted SuiClientConfig.
+            let mut context = WalletContext::new(&client_config_path, None, None)?;
+            let client = context.get_client().await?;
+
+            // Retrieve the publisher address from the SuiClientConfig.
+            let publisher_address = context
+                .config
+                .active_address
+                .expect("Active address missing in Sui client config");
+
+            // Call mint_ika with the publisher address, context, client, IKA package ID, and treasury cap ID.
+            let ika_supply_id = mint_ika(
+                publisher_address,
+                &mut context,
+                client.clone(),
+                publish_config.ika_package_id,
+                publish_config.treasury_cap_id,
+            )
+            .await?;
+            println!("Minting done: ika_supply_id: {}", ika_supply_id);
         }
 
         Commands::InitEnv { config } => {

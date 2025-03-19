@@ -607,7 +607,7 @@ async fn stake_ika(
     Ok(())
 }
 
-async fn mint_ika(
+pub async fn mint_ika(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
