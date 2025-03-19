@@ -9,14 +9,14 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use sui::client_commands::request_tokens_from_faucet;
-use sui_config::SUI_CLIENT_CONFIG;
 use sui_config::{sui_config_dir, Config, SUI_NETWORK_CONFIG};
-use sui_keys::keystore::AccountKeystore;
+use sui_config::{SUI_CLIENT_CONFIG, SUI_KEYSTORE_FILENAME};
+use sui_keys::keystore::{AccountKeystore, FileBasedKeystore};
 use sui_keys::keystore::{InMemKeystore, Keystore};
 use sui_rpc_api::client::reqwest::Url;
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
-use sui_types::base_types::ObjectID;
+use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::crypto::SignatureScheme;
 use tempfile;
 use tokio::time::{sleep, Duration};
@@ -34,24 +34,30 @@ enum Commands {
     /// Publish IKA modules.
     PublishIkaModules {
         /// RPC URL for the Sui network.
-        #[arg(long)]
-        rpc_addr: String,
+        #[clap(long, default_value = "http://127.0.0.1:9000")]
+        sui_rpc_addr: String,
         /// Faucet URL for requesting tokens.
         #[clap(long, default_value = "http://127.0.0.1:9123/gas")]
-        faucet_addr: String,
+        sui_faucet_addr: String,
         /// The optional path for network configuration.
-        #[clap(long = "network.config", value_parser = clap::value_parser!(PathBuf))]
-        config: Option<PathBuf>,
+        #[clap(long, value_parser = clap::value_parser!(PathBuf))]
+        sui_conf_dir: Option<PathBuf>,
     },
 
     /// Mint IKA tokens.
     MintIkaTokens {
         /// The optional path for network configuration.
-        #[clap(long = "network.config", value_parser = clap::value_parser!(PathBuf))]
-        sui_config: Option<PathBuf>,
+        #[clap(long, value_parser = clap::value_parser!(PathBuf))]
+        sui_conf_dir: Option<PathBuf>,
         /// Path to the configuration file (e.g., `ika_publish_config.json`) generated during publish.
         #[arg(long, value_parser = clap::value_parser!(PathBuf))]
-        ika_config: PathBuf,
+        ika_config_path: PathBuf,
+        /// Faucet URL for requesting tokens.
+        #[clap(long, default_value = "http://127.0.0.1:9123/gas")]
+        sui_faucet_addr: String,
+        /// RPC URL for the Sui network.
+        #[clap(long, default_value = "http://127.0.0.1:9000")]
+        sui_rpc_addr: String,
     },
 
     /// Initialize environment (calls the `INITIALIZE_FUNCTION_NAME` function).
@@ -111,6 +117,8 @@ enum Commands {
     },
 }
 
+const ALIAS_PUBLISHER: &str = "publisher";
+
 /// Configuration data that will be saved after publishing the IKA modules.
 #[derive(Serialize, Deserialize)]
 struct PublishIkaConfig {
@@ -120,76 +128,26 @@ struct PublishIkaConfig {
     pub ika_system_package_id: ObjectID,
     pub init_cap_id: ObjectID,
     pub ika_system_package_upgrade_cap_id: ObjectID,
+    pub ika_supply_id: Option<ObjectID>, // Add this field
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Common initialization: you may want to create a wallet context here.
-    // For example, create a temporary config directory or load an existing one.
-    // (Adjust this to suit how you set up your WalletContext and key management.)
     match cli.command {
         Commands::PublishIkaModules {
-            rpc_addr,
-            faucet_addr,
-            config,
+            sui_rpc_addr,
+            sui_faucet_addr,
+            sui_conf_dir,
         } => {
-            println!("Publishing IKA modules on network: {}", rpc_addr);
+            println!("Publishing IKA modules on network: {}", sui_rpc_addr);
 
-            // Determine the configuration directory.
-            let config_dir = match config {
-                Some(cfg) => cfg,
-                None => tempfile::tempdir()?.into_path(),
-            };
-            let config_path = config_dir.join(SUI_CLIENT_CONFIG);
+            let (keystore, publisher_address, sui_config_path) = init_sui_conf(sui_conf_dir)?;
+            inti_sui_env(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
+            request_tokens_from_faucet(publisher_address, sui_faucet_addr.clone()).await?;
 
-            // Create an in-memory keystore and generate a new publisher keypair.
-            let mut keystore = Keystore::InMem(InMemKeystore::default());
-            let alias = "publisher";
-            let (publisher_address, phrase, _scheme, _publisher_keypair) = match &mut keystore {
-                Keystore::InMem(k) => {
-                    let _ = k.update_alias(alias, None);
-                    let (publisher_address, phrase, scheme) = k.generate_and_add_new_key(
-                        SignatureScheme::ED25519,
-                        Some(alias.to_string()),
-                        None,
-                        None,
-                    )?;
-                    let publisher_keypair = k.get_key(&publisher_address)?.copy();
-                    (publisher_address, phrase, scheme, publisher_keypair)
-                }
-                _ => panic!("Keystore is not in memory"),
-            };
-            println!(
-                "Generated publisher keypair for address {} with alias \"{}\"",
-                publisher_address, alias
-            );
-            println!("Secret Recovery Phrase: {}", phrase);
-
-            // Parse the RPC URL to extract the host for naming the environment.
-            let parsed_url = Url::parse(&rpc_addr)?;
-            let rpc_host = parsed_url.host_str().unwrap_or_default();
-
-            // Build the SuiClientConfig.
-            let sui_client_config = SuiClientConfig {
-                keystore,
-                envs: vec![SuiEnv {
-                    alias: rpc_host.to_string(),
-                    rpc: rpc_addr.clone(),
-                    ws: None,
-                    basic_auth: None,
-                }],
-                active_address: Some(publisher_address),
-                active_env: Some(rpc_host.to_string()),
-            };
-            sui_client_config.persisted(&config_path).save()?;
-
-            // Request tokens from the faucet for the publisher.
-            request_tokens_from_faucet(publisher_address, faucet_addr.clone()).await?;
-
-            // Create a WalletContext and obtain a SuiClient.
-            let mut context = WalletContext::new(&config_path, None, None)?;
+            let mut context = WalletContext::new(&sui_config_path, None, None)?;
             let client = context.get_client().await?;
 
             // Load the IKA Move packages.
@@ -206,12 +164,9 @@ async fn main() -> Result<()> {
                 )
                 .await?;
             println!("Published IKA package:");
-            println!("  ika_package_id: {}", ika_package_id);
-            println!("  treasury_cap_id: {}", treasury_cap_id);
-            println!(
-                "  ika_package_upgrade_cap_id: {}",
-                ika_package_upgrade_cap_id
-            );
+            println!("  ika_package_id: {ika_package_id}");
+            println!("  treasury_cap_id: {treasury_cap_id}");
+            println!("  ika_package_upgrade_cap_id: {ika_package_upgrade_cap_id}");
 
             // Allow a short delay between publishing calls.
             sleep(Duration::from_secs(2)).await;
@@ -227,12 +182,9 @@ async fn main() -> Result<()> {
                 )
                 .await?;
             println!("Published IKA system package:");
-            println!("  ika_system_package_id: {}", ika_system_package_id);
-            println!("  init_cap_id: {}", init_cap_id);
-            println!(
-                "  ika_system_package_upgrade_cap_id: {}",
-                ika_system_package_upgrade_cap_id
-            );
+            println!("  ika_system_package_id: {ika_system_package_id}",);
+            println!("  init_cap_id: {init_cap_id}",);
+            println!("  ika_system_package_upgrade_cap_id: {ika_system_package_upgrade_cap_id}",);
 
             // Save the published package IDs into a configuration file.
             let publish_config = PublishIkaConfig {
@@ -242,6 +194,7 @@ async fn main() -> Result<()> {
                 ika_system_package_id,
                 init_cap_id,
                 ika_system_package_upgrade_cap_id,
+                ika_supply_id: None,
             };
 
             let config_file_path = PathBuf::from("ika_publish_config.json");
@@ -255,37 +208,30 @@ async fn main() -> Result<()> {
         }
 
         Commands::MintIkaTokens {
-            ika_config,
-            sui_config,
+            ika_config_path,
+            sui_conf_dir,
+            sui_faucet_addr,
+            sui_rpc_addr,
         } => {
-            println!("Minting IKA tokens using configuration at {:?}", ika_config);
-
-            // Determine the configuration directory.
-            let config_dir = match sui_config {
-                Some(cfg) => cfg,
-                None => tempfile::tempdir()?.into_path(),
-            };
-            let config_path = config_dir.join(SUI_CLIENT_CONFIG);
-
+            println!(
+                "Minting IKA tokens using configuration from: {:?}",
+                ika_config_path
+            );
+        
+            let (keystore, publisher_address, sui_config_path) = init_sui_conf(sui_conf_dir)?;
+            inti_sui_env(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
+            request_tokens_from_faucet(publisher_address, sui_faucet_addr.clone()).await?;
+            
             // Load the published IKA configuration from the file.
-            let config_content = std::fs::read_to_string(&sui_config)?;
-            let publish_config: PublishIkaConfig = serde_json::from_str(&config_content)?;
-
-            // Assume the Sui client configuration is stored in the same directory.
-            let config_dir = sui_config.parent().expect("Failed to get config directory");
-            let client_config_path = config_dir.join(SUI_CLIENT_CONFIG);
-
+            let ika_config = std::fs::read_to_string(&ika_config_path)?;
+            let mut publish_config: PublishIkaConfig = serde_json::from_str(&ika_config)?;
+        
             // Create a WalletContext using the persisted SuiClientConfig.
-            let mut context = WalletContext::new(&client_config_path, None, None)?;
+            let mut context = WalletContext::new(&sui_config_path, None, None)?;
             let client = context.get_client().await?;
-
-            // Retrieve the publisher address from the SuiClientConfig.
-            let publisher_address = context
-                .config
-                .active_address
-                .expect("Active address missing in Sui client config");
-
-            // Call mint_ika with the publisher address, context, client, IKA package ID, and treasury cap ID.
+        
+            // Call `mint_ika` with the publisher address, context,
+            // client, IKA package ID, and treasury cap ID.
             let ika_supply_id = mint_ika(
                 publisher_address,
                 &mut context,
@@ -295,6 +241,18 @@ async fn main() -> Result<()> {
             )
             .await?;
             println!("Minting done: ika_supply_id: {}", ika_supply_id);
+        
+            // Update the configuration with the new ika_supply_id
+            publish_config.ika_supply_id = Some(ika_supply_id);
+        
+            // Write the updated configuration back to the file
+            let json = serde_json::to_string_pretty(&publish_config)?;
+            let mut file = File::create(&ika_config_path)?;
+            file.write_all(json.as_bytes())?;
+            println!(
+                "Updated IKA modules configuration saved to {:?}",
+                ika_config_path
+            );
         }
 
         Commands::InitEnv { config } => {
@@ -325,7 +283,7 @@ async fn main() -> Result<()> {
         } => {
             println!("Creating validator candidate: {}", name);
             // Load the file containing the class groups public key and proof bytes.
-            let class_groups_bytes = std::fs::read(class_groups_file)?;
+            // let class_groups_bytes = std::fs::read(class_groups_file)?;
             // Parse or load other keys as needed. Here we assume the keys are provided as strings.
             //
             // Build a ValidatorInfo struct (or equivalent) with the provided parameters.
@@ -365,4 +323,110 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn inti_sui_env(
+    sui_rpc_addr: &String,
+    keystore: Keystore,
+    active_addr: SuiAddress,
+    sui_config_path: &PathBuf,
+) -> Result<()> {
+    // // Parse the RPC URL to extract the host for naming the environment.
+    let parsed_url = Url::parse(&sui_rpc_addr)?;
+    let rpc_host = parsed_url.host_str().unwrap_or_default();
+    let config = SuiClientConfig::load(sui_config_path).expect("Failed to load SuiClientConfig");
+    if config.get_env(&Some(rpc_host.to_string())).is_none() {
+        let mut config = SuiClientConfig::new(keystore);
+        config.add_env(SuiEnv {
+            alias: rpc_host.to_string(),
+            rpc: sui_rpc_addr.clone(),
+            ws: None,
+            basic_auth: None,
+        });
+        config.active_address = Some(active_addr);
+        config.active_env = Some(rpc_host.to_string());
+        config.persisted(sui_config_path).save()?;
+    }
+    Ok(())
+}
+
+/// Initializes a keystore and returns the necessary components for SUI client configuration.
+///
+/// This function sets up a keystore based on the provided configuration directory or creates
+/// a temporary one if none is provided. It ensures that a publisher key exists and is properly
+/// configured.
+///
+/// # Arguments
+///
+/// * `sui_config_dir` — Optional path to a SUI configuration directory
+///
+/// # Returns
+///
+/// A tuple containing:
+/// * `Keystore` — The initialized keystore (either file-based or in-memory)
+/// * `SuiAddress` — The publisher's address
+/// * `PathBuf` — The path to the SUI client configuration file
+///
+/// # Details
+///
+/// If `sui_config_dir` is provided:
+/// * Uses a file-based keystore initialized from the given directory
+/// * Ensures the "publisher" alias exists, creating it if necessary
+/// * Retrieves the existing publisher address or generates a new one if not found
+///
+/// If `sui_config_dir` is None:
+/// * Creates a temporary directory
+/// * Uses an in-memory keystore
+/// * Always generates a new key for the publisher.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// * Unable to create or access the keystore.
+/// * Unable to create or update the publisher alias.
+/// * Unable to generate a new key when needed.
+fn init_sui_conf(sui_conf_dir: Option<PathBuf>) -> Result<(Keystore, SuiAddress, PathBuf)> {
+    let sui_conf_dir = match sui_conf_dir {
+        Some(dir) => dir,
+        None => sui_config_dir()?,
+    };
+    let keystore_path = sui_conf_dir.join(SUI_KEYSTORE_FILENAME);
+
+    let mut keystore = Keystore::File(FileBasedKeystore::new(&keystore_path)?);
+    let sui_client_config_path = sui_conf_dir.join(SUI_CLIENT_CONFIG);
+    println!(
+        "Using SUI client configuration at: {:?}",
+        sui_client_config_path
+    );
+    println!("Using keystore at: {:?}", keystore_path);
+
+    let publisher_address = match &mut keystore {
+        Keystore::File(fks) => {
+            if !fks.alias_exists(ALIAS_PUBLISHER) {
+                println!("Creating publisher alias: {}", ALIAS_PUBLISHER);
+                fks.create_alias(Option::from(ALIAS_PUBLISHER.to_string()))?;
+            }
+            // Get the address by alias
+            match fks.get_address_by_alias(ALIAS_PUBLISHER.to_string()) {
+                Ok(address) => *address,
+                Err(_) => {
+                    // If getting the address fails, generate a new key
+                    let (address, phrase, _) = fks.generate_and_add_new_key(
+                        SignatureScheme::ED25519,
+                        Some(ALIAS_PUBLISHER.to_string()),
+                        None,
+                        None,
+                    )?;
+                    println!("Generated a new publisher key with address: {}", address);
+                    println!("Secret Recovery Phrase: {}", phrase);
+                    address
+                }
+            }
+        }
+        _ => {
+            unreachable!("In-memory keystore should not be used for the publisher key");
+        }
+    };
+
+    Ok((keystore, publisher_address, sui_client_config_path))
 }
