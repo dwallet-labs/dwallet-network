@@ -98,7 +98,6 @@ pub(crate) fn session_info_from_event(
     event: DBSuiEvent,
     packages_config: &IkaPackagesConfig,
 ) -> anyhow::Result<Option<SessionInfo>> {
-    println!("event.type_: {:?}", event.type_);
     match &event.type_ {
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =

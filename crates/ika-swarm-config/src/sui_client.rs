@@ -262,7 +262,6 @@ pub async fn init_ika_on_sui(
 
     println!("Running `system::initialize` done.");
 
-
     ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
         publisher_address,
         &mut context,
@@ -272,7 +271,7 @@ pub async fn init_ika_on_sui(
         init_system_shared_version,
         dwallet_2pc_mpc_secp256k1_id,
         dwallet_2pc_mpc_secp256k1_initial_shared_version,
-        protocol_cap_id
+        protocol_cap_id,
     )
     .await?;
 
