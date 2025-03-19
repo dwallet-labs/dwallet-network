@@ -1,8 +1,9 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use ika_config::initiation::InitiationParameters;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_swarm_config::sui_client::{
-    mint_ika, publish_ika_package_to_sui, publish_ika_system_package_to_sui,
+    init_initialize, mint_ika, publish_ika_package_to_sui, publish_ika_system_package_to_sui,
 };
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -64,7 +65,13 @@ enum Commands {
     InitEnv {
         /// Path to the configuration file (e.g. `ika_publish_config.json`).
         #[arg(long, value_parser = clap::value_parser!(PathBuf))]
-        config: PathBuf,
+        ika_config_path: PathBuf,
+        /// The optional path for network configuration.
+        #[clap(long, value_parser = clap::value_parser!(PathBuf))]
+        sui_conf_dir: Option<PathBuf>,
+        /// RPC URL for the Sui network.
+        #[clap(long, default_value = "http://127.0.0.1:9000")]
+        sui_rpc_addr: String,
     },
 
     /// Create a validator candidate.
@@ -128,7 +135,10 @@ struct PublishIkaConfig {
     pub ika_system_package_id: ObjectID,
     pub init_cap_id: ObjectID,
     pub ika_system_package_upgrade_cap_id: ObjectID,
-    pub ika_supply_id: Option<ObjectID>, // Add this field
+    pub ika_supply_id: Option<ObjectID>,
+    pub system_id: Option<ObjectID>,
+    pub protocol_cap_id: Option<ObjectID>,
+    pub init_system_shared_version: Option<u64>,
 }
 
 #[tokio::main]
@@ -195,6 +205,9 @@ async fn main() -> Result<()> {
                 init_cap_id,
                 ika_system_package_upgrade_cap_id,
                 ika_supply_id: None,
+                system_id: None,
+                protocol_cap_id: None,
+                init_system_shared_version: None,
             };
 
             let config_file_path = PathBuf::from("ika_publish_config.json");
@@ -217,19 +230,19 @@ async fn main() -> Result<()> {
                 "Minting IKA tokens using configuration from: {:?}",
                 ika_config_path
             );
-        
+
             let (keystore, publisher_address, sui_config_path) = init_sui_conf(sui_conf_dir)?;
             inti_sui_env(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
             request_tokens_from_faucet(publisher_address, sui_faucet_addr.clone()).await?;
-            
+
             // Load the published IKA configuration from the file.
             let ika_config = std::fs::read_to_string(&ika_config_path)?;
             let mut publish_config: PublishIkaConfig = serde_json::from_str(&ika_config)?;
-        
+
             // Create a WalletContext using the persisted SuiClientConfig.
             let mut context = WalletContext::new(&sui_config_path, None, None)?;
             let client = context.get_client().await?;
-        
+
             // Call `mint_ika` with the publisher address, context,
             // client, IKA package ID, and treasury cap ID.
             let ika_supply_id = mint_ika(
@@ -241,10 +254,10 @@ async fn main() -> Result<()> {
             )
             .await?;
             println!("Minting done: ika_supply_id: {}", ika_supply_id);
-        
+
             // Update the configuration with the new ika_supply_id
             publish_config.ika_supply_id = Some(ika_supply_id);
-        
+
             // Write the updated configuration back to the file
             let json = serde_json::to_string_pretty(&publish_config)?;
             let mut file = File::create(&ika_config_path)?;
@@ -255,16 +268,62 @@ async fn main() -> Result<()> {
             );
         }
 
-        Commands::InitEnv { config } => {
+        // InitEnv command implementation.
+        Commands::InitEnv {
+            ika_config_path,
+            sui_conf_dir,
+            sui_rpc_addr,
+        } => {
             println!(
                 "Initializing environment using configuration at {:?}",
-                config
+                ika_config_path
             );
-            // Load the configuration to get ika_system_package_id, system_id, etc.
-            // Create a WalletContext.
-            // Call the function that wraps the move call to INITIALIZE_FUNCTION_NAME:
-            //   e.g. ika_system_initialize(publisher_address, &mut context, ika_system_package_id, system_id, init_system_shared_version).await?;
-            println!("(Pseudocode) Environment initialized.");
+
+            let config_content = std::fs::read_to_string(&ika_config_path)?;
+            let mut publish_config: PublishIkaConfig = serde_json::from_str(&config_content)?;
+
+            let (keystore, publisher_address, sui_config_path) = init_sui_conf(sui_conf_dir)?;
+            inti_sui_env(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
+            println!("Using SUI configuration from: {:?}", sui_config_path);
+
+            // Create a WalletContext and obtain a Sui client.
+            let mut context = WalletContext::new(&sui_config_path, None, None)?;
+            let client = context.get_client().await?;
+
+            let initiation_parameters = InitiationParameters::new();
+
+            let (system_id, protocol_cap_id, init_system_shared_version) = init_initialize(
+                publisher_address,
+                &mut context,
+                client.clone(),
+                publish_config.ika_system_package_id,
+                publish_config.init_cap_id,
+                publish_config.ika_package_upgrade_cap_id,
+                publish_config.ika_system_package_upgrade_cap_id,
+                publish_config.treasury_cap_id,
+                initiation_parameters,
+            )
+            .await
+            .expect("Failed to initialize the IKA system");
+            println!(
+                "Environment initialized successfully with system_id: {system_id},\
+                 protocol_cap_id: {protocol_cap_id},\
+                  init_system_shared_version: {init_system_shared_version}",
+            );
+
+            // Update the configuration with the new fields
+            publish_config.system_id = Some(system_id);
+            publish_config.protocol_cap_id = Some(protocol_cap_id);
+            publish_config.init_system_shared_version = Some(init_system_shared_version.into());
+
+            // Write the updated configuration back to the file
+            let json = serde_json::to_string_pretty(&publish_config)?;
+            let mut file = File::create(&ika_config_path)?;
+            file.write_all(json.as_bytes())?;
+            println!(
+                "Updated IKA modules configuration saved to {:?}",
+                ika_config_path
+            );
         }
 
         Commands::CreateValidatorCandidate {
@@ -334,7 +393,8 @@ fn inti_sui_env(
     // // Parse the RPC URL to extract the host for naming the environment.
     let parsed_url = Url::parse(&sui_rpc_addr)?;
     let rpc_host = parsed_url.host_str().unwrap_or_default();
-    let config = SuiClientConfig::load(sui_config_path).expect("Failed to load SuiClientConfig");
+    let mut config =
+        SuiClientConfig::load(sui_config_path).expect("Failed to load SuiClientConfig");
     if config.get_env(&Some(rpc_host.to_string())).is_none() {
         let mut config = SuiClientConfig::new(keystore);
         config.add_env(SuiEnv {
@@ -343,10 +403,10 @@ fn inti_sui_env(
             ws: None,
             basic_auth: None,
         });
-        config.active_address = Some(active_addr);
-        config.active_env = Some(rpc_host.to_string());
-        config.persisted(sui_config_path).save()?;
     }
+    config.active_address = Some(active_addr);
+    config.active_env = Some(rpc_host.to_string());
+    config.persisted(sui_config_path).save()?;
     Ok(())
 }
 
