@@ -189,6 +189,7 @@ pub async fn init_ika_on_sui(
     )
     .await?;
 
+    println!("Running `init::initialize` done: system_id: {system_id} protocol_cap_id: {protocol_cap_id}");
     let ika_config = IkaConfig {
         ika_package_id,
         ika_system_package_id,
@@ -198,7 +199,6 @@ pub async fn init_ika_on_sui(
     let json = serde_json::to_string_pretty(&ika_config)?;
     file.write_all(json.as_bytes())?;
 
-    println!("Running `init::initialize` done: system_id: {system_id} protocol_cap_id: {protocol_cap_id}");
     let mut validator_ids = Vec::new();
     let mut validator_cap_ids = Vec::new();
     for validator_initialization_config in validator_initialization_configs {
@@ -258,8 +258,6 @@ pub async fn init_ika_on_sui(
             init_system_shared_version,
         )
         .await?;
-    println!("Running `system::initialize` done.");
-
     println!("Running `system::initialize` done.");
 
     ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
@@ -498,57 +496,6 @@ async fn init_initialize(
                 object_type,
                 ..
             } if System::type_(ika_system_package_id.into()) == *object_type => Some(*object_id),
-            _ => None,
-        })
-        .collect::<Vec<_>>()
-        .first()
-        .unwrap()
-        .clone();
-
-    let protocol_cap_type = StructTag {
-        address: ika_system_package_id.into(),
-        module: PROTOCOL_CAP_MODULE_NAME.into(),
-        name: PROTOCOL_CAP_STRUCT_NAME.into(),
-        type_params: vec![],
-    };
-
-    let protocol_cap_type = StructTag {
-        address: ika_system_package_id.into(),
-        module: PROTOCOL_CAP_MODULE_NAME.into(),
-        name: PROTOCOL_CAP_STRUCT_NAME.into(),
-        type_params: vec![],
-    };
-
-    let protocol_cap_id = object_changes
-        .iter()
-        .filter_map(|o| match o {
-            ObjectChange::Created {
-                object_id,
-                object_type,
-                ..
-            } if protocol_cap_type == *object_type => Some(*object_id),
-            _ => None,
-        })
-        .collect::<Vec<_>>()
-        .first()
-        .unwrap()
-        .clone();
-
-    let protocol_cap_type = StructTag {
-        address: ika_system_package_id.into(),
-        module: PROTOCOL_CAP_MODULE_NAME.into(),
-        name: PROTOCOL_CAP_STRUCT_NAME.into(),
-        type_params: vec![],
-    };
-
-    let protocol_cap_id = object_changes
-        .iter()
-        .filter_map(|o| match o {
-            ObjectChange::Created {
-                object_id,
-                object_type,
-                ..
-            } if protocol_cap_type == *object_type => Some(*object_id),
             _ => None,
         })
         .collect::<Vec<_>>()
