@@ -426,10 +426,10 @@ impl CheckpointStore {
         let mut batch = self.certified_checkpoints.batch();
         batch.insert_batch(
             &self.certified_checkpoints,
-            [(
-                CheckpointMessageKey::new(checkpoint.epoch, checkpoint.sequence_number),
-                checkpoint.serializable_ref(),
-            )],
+            [(CheckpointMessageKey::new(
+                checkpoint.epoch,
+                checkpoint.sequence_number,
+            ), checkpoint.serializable_ref())],
         )?;
         batch.insert_batch(
             &self.epoch_last_checkpoint_map,
@@ -568,10 +568,7 @@ impl CheckpointStore {
     //         .map_err(Into::into)
     // }
 
-    pub fn delete_highest_executed_checkpoint_test_only(
-        &self,
-        epoch: EpochId,
-    ) -> Result<(), TypedStoreError> {
+    pub fn delete_highest_executed_checkpoint_test_only(&self, epoch: EpochId) -> Result<(), TypedStoreError> {
         let mut wb = self.watermarks.batch();
         wb.delete_batch(
             &self.watermarks,
@@ -922,10 +919,12 @@ impl CheckpointBuilder {
             //     [(contents.digest(), contents)],
             // )?;
 
-            self.tables.locally_computed_checkpoints.insert(
-                &CheckpointMessageKey::new(checkpoint_message.epoch, sequence_number),
-                checkpoint_message,
-            )?;
+            self.tables
+                .locally_computed_checkpoints
+                .insert(&CheckpointMessageKey::new(
+                    checkpoint_message.epoch,
+                    sequence_number
+                ), checkpoint_message)?;
 
             // batch.insert_batch(
             //     &self.tables.locally_computed_checkpoints,

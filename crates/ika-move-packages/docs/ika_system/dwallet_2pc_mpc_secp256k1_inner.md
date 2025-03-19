@@ -247,7 +247,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <dd>
 </dd>
 <dt>
-<code>total_messages_processed: u64</code>
+<code>total_messages_processed: u32</code>
 </dt>
 <dd>
  The total messages processed.
@@ -3484,7 +3484,7 @@ representing the decentralized computation result.
     <b>let</b> encryption_key = self.encryption_keys.borrow(encryption_key_address);
     <b>let</b> encryption_key_id = encryption_key.id.to_inner();
     <b>let</b> created_at_epoch = self.current_epoch;
-    <b>let</b> dwallet = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet_mut">get_dwallet_mut</a>(dwallet_id);
+    <b>let</b> (dwallet, _) = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_and_public_output_mut">get_active_dwallet_and_public_output_mut</a>(dwallet_id);
     dwallet.state = match (&dwallet.state) {
         DWalletState::AwaitingNetworkVerification =&gt; {
             <b>if</b> (rejected) {
@@ -4548,7 +4548,7 @@ the function will abort with this error.
         sequence_number,
         timestamp_ms,
     });
-    <b>let</b> messages_len = bcs_body.peel_vec_length();
+    <b>let</b> messages_len = bcs_body.peel_vec_length() <b>as</b> u32;
     <b>let</b> <b>mut</b> i = 0;
     <b>let</b> <b>mut</b> response_session_count = 0;
     <b>while</b> (i &lt; messages_len) {

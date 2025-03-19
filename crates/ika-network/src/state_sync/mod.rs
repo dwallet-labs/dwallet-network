@@ -338,6 +338,7 @@ impl Iterator for PeerBalancer {
             } else {
                 return Some(StateSyncClient::new(peer));
             }
+
         }
         None
     }
@@ -424,20 +425,16 @@ where
         let archive_readers = self.archive_readers.clone();
         let store = self.store.clone();
         let task_handle = self.tasks.spawn(async move {
-            let current = sync_checkpoint_messages_from_archive(
-                epoch,
-                archive_readers.clone(),
-                store.clone(),
-            );
+            let current = sync_checkpoint_messages_from_archive(epoch, archive_readers.clone(), store.clone());
             if epoch > 0 {
                 futures::future::join(
                     current,
-                    sync_checkpoint_messages_from_archive(epoch - 1, archive_readers, store),
-                )
-                .await;
+                    sync_checkpoint_messages_from_archive(epoch - 1, archive_readers, store)
+                ).await;
             } else {
                 current.await;
             }
+
         });
 
         self.sync_checkpoint_from_archive_task = Some(task_handle);
@@ -496,7 +493,7 @@ where
         match message {
             StateSyncMessage::StartSyncJob => {
                 self.start_sync_job();
-            }
+            },
             StateSyncMessage::CurrentEpoch(epoch) => {
                 *self.current_epoch.write().unwrap() = epoch;
             }
@@ -617,9 +614,8 @@ where
                             peer,
                             peer_heights,
                             timeout,
-                        ),
-                    )
-                    .await;
+                        )
+                    ).await;
                 } else {
                     current.await;
                 }
@@ -650,9 +646,8 @@ where
                         peer_heights,
                         weak_sender,
                         timeout,
-                    ),
-                )
-                .await;
+                    )
+                ).await;
             } else {
                 current.await;
             }
