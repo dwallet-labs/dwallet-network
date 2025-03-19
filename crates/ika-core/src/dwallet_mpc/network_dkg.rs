@@ -69,7 +69,6 @@ impl DwalletMPCNetworkKeyVersions {
         let network_mpc_keys = epoch_store.load_decryption_key_shares_from_system_state();
         let decryption_key_shares = Self::validator_decryption_key_shares(
             &network_mpc_keys,
-            weighted_threshold_access_structure,
             class_groups_decryption_key,
             party_id,
         )
@@ -98,7 +97,6 @@ impl DwalletMPCNetworkKeyVersions {
     /// - The value is a vector of decryption key shares for each network DKG.
     fn validator_decryption_key_shares(
         network_mpc_keys: &HashMap<ObjectID, NetworkDecryptionKeyShares>,
-        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
         decryption_key: ClassGroupsDecryptionKey,
         party_id: PartyID,
     ) -> DwalletMPCResult<
@@ -110,7 +108,6 @@ impl DwalletMPCNetworkKeyVersions {
                 let shares = Self::get_decryption_key_shares_from_public_output(
                     &network_mpc_key_versions,
                     party_id,
-                    weighted_threshold_access_structure,
                     decryption_key,
                 )?;
 
@@ -125,7 +122,6 @@ impl DwalletMPCNetworkKeyVersions {
     fn get_decryption_key_shares_from_public_output(
         share: &NetworkDecryptionKeyShares,
         party_id: PartyID,
-        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
         decryption_key: ClassGroupsDecryptionKey,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let dkg_public_output = <Secp256k1Party as CreatePublicOutput>::new(
