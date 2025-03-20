@@ -1,0 +1,9 @@
+---
+keystore:
+  File: /root/.ika/ika_config/ika.keystore
+envs:
+  - alias: DOMAIN_NAME_HERE
+    rpc: "https://fullnode.DOMAIN_NAME_HERE:443"
+    ws: ~
+active_env: DOMAIN_NAME_HERE
+active_address: REPLACE_WITH_FAUCET_ACCOUNT
