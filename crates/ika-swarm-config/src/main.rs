@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 use ika_config::initiation::InitiationParameters;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_swarm_config::sui_client::{
+    ika_system_initialize, ika_system_request_dwallet_network_decryption_key_dkg_by_cap,
     init_initialize, mint_ika, publish_ika_package_to_sui, publish_ika_system_package_to_sui,
 };
 use serde::{Deserialize, Serialize};
@@ -50,7 +51,7 @@ enum Commands {
         /// The optional path for network configuration.
         #[clap(long, value_parser = clap::value_parser!(PathBuf))]
         sui_conf_dir: Option<PathBuf>,
-        /// Path to the configuration file (e.g., `ika_publish_config.json`) generated during publish.
+        /// Path to the configuration file (e.g., `ika_publish_config.json`) generated during publishing.
         #[arg(long, value_parser = clap::value_parser!(PathBuf))]
         ika_config_path: PathBuf,
         /// Faucet URL for requesting tokens.
@@ -63,7 +64,7 @@ enum Commands {
 
     /// Initialize environment (calls the `INITIALIZE_FUNCTION_NAME` function).
     InitEnv {
-        /// Path to the configuration file (e.g. `ika_publish_config.json`).
+        /// Path to the configuration file (e.g., `ika_publish_config.json`).
         #[arg(long, value_parser = clap::value_parser!(PathBuf))]
         ika_config_path: PathBuf,
         /// The optional path for network configuration.
@@ -74,53 +75,19 @@ enum Commands {
         sui_rpc_addr: String,
     },
 
-    /// Create a validator candidate.
-    CreateValidatorCandidate {
-        /// Validator name.
-        #[arg(long)]
-        name: String,
-        /// Protocol public key (as hex string or file path).
-        #[arg(long)]
-        protocol_key: String,
-        /// Network public key.
-        #[arg(long)]
-        network_key: String,
-        /// Consensus public key.
-        #[arg(long)]
-        consensus_key: String,
-        /// Path to file with class groups public key and proof (raw bytes).
+    /// IKA system initialization.
+    /// This command calls the functions to perform the system initialization and then
+    /// requests the dwallet network decryption key.
+    IkaSystemInitialize {
+        /// Path to the configuration file (e.g., `ika_publish_config.json`).
         #[arg(long, value_parser = clap::value_parser!(PathBuf))]
-        class_groups_file: PathBuf,
-        /// Proof of possession (as hex or string).
-        #[arg(long)]
-        proof_of_possession: String,
-        /// Network address.
-        #[arg(long)]
-        network_address: String,
-        /// P2P address.
-        #[arg(long)]
-        p2p_address: String,
-        /// Current epoch consensus address.
-        #[arg(long)]
-        epoch_consensus_address: String,
-        /// Computation price.
-        #[arg(long)]
-        computation_price: u64,
-        /// Commission rate.
-        #[arg(long)]
-        commission_rate: u64,
+        ika_config_path: PathBuf,
+        /// The optional path for network configuration.
+        #[clap(long, value_parser = clap::value_parser!(PathBuf))]
+        sui_conf_dir: Option<PathBuf>,
         /// RPC URL for the Sui network.
-        #[arg(long)]
-        network: String,
-    },
-
-    /// Stake tokens for a given validator.
-    StakeTokens {
-        /// Validator address (as string).
-        validator: String,
-        /// Path to the configuration file (e.g. `ika_publish_config.json`).
-        #[arg(long, value_parser = clap::value_parser!(PathBuf))]
-        config: PathBuf,
+        #[clap(long, default_value = "http://127.0.0.1:9000")]
+        sui_rpc_addr: String,
     },
 }
 
@@ -270,7 +237,6 @@ async fn main() -> Result<()> {
             );
         }
 
-        // InitEnv command implementation.
         Commands::InitEnv {
             ika_config_path,
             sui_conf_dir,
@@ -328,58 +294,80 @@ async fn main() -> Result<()> {
             );
         }
 
-        Commands::CreateValidatorCandidate {
-            name,
-            protocol_key,
-            network_key,
-            consensus_key,
-            class_groups_file,
-            proof_of_possession,
-            network_address,
-            p2p_address,
-            epoch_consensus_address,
-            computation_price,
-            commission_rate,
-            network,
+        Commands::IkaSystemInitialize {
+            ika_config_path,
+            sui_conf_dir,
+            sui_rpc_addr,
         } => {
-            println!("Creating validator candidate: {}", name);
-            // Load the file containing the class groups public key and proof bytes.
-            // let class_groups_bytes = std::fs::read(class_groups_file)?;
-            // Parse or load other keys as needed. Here we assume the keys are provided as strings.
-            //
-            // Build a ValidatorInfo struct (or equivalent) with the provided parameters.
-            // For example:
-            // let validator_info = ValidatorInfo {
-            //    name: name.clone(),
-            //    protocol_public_key: parse_key(protocol_key)?,
-            //    network_public_key: parse_key(network_key)?,
-            //    consensus_public_key: parse_key(consensus_key)?,
-            //    class_groups_public_key_and_proof: class_groups_bytes,
-            //    proof_of_possession: hex::decode(proof_of_possession)?,
-            //    network_address: network_address.clone(),
-            //    p2p_address: p2p_address.clone(),
-            //    current_epoch_consensus_address: epoch_consensus_address.clone(),
-            //    computation_price: *computation_price,
-            //    commission_rate: *commission_rate,
-            // };
-            //
-            // Create a WalletContext using the provided network RPC URL.
-            // Call request_add_validator_candidate(...) with the above info.
-            //
-            // (Again, below is pseudocode.)
-            println!("(Pseudocode) Validator candidate created with the provided parameters on network {}.", network);
-        }
-
-        Commands::StakeTokens { validator, config } => {
             println!(
-                "Staking tokens for validator: {} using configuration at {:?}",
-                validator, config
+                "Starting IKA system initialization using configuration at {:?}",
+                ika_config_path
             );
-            // Load configuration to retrieve ika_system_package_id, system_id, init_system_shared_version, and ika_supply_id.
-            // Create a WalletContext.
-            // Convert the provided validator string into the appropriate SuiAddress.
-            // Call stake_ika with the publisher address, context, and a vector containing the validator’s ID.
-            println!("(Pseudocode) Tokens staked for validator {}.", validator);
+
+            // Load the published config.
+            let config_content = std::fs::read_to_string(&ika_config_path)?;
+            let mut publish_config: PublishIkaConfig =
+                serde_json::from_str(&config_content).expect("Failed to parse IKA configuration");
+
+            // Check that the required fields are present.
+            let system_id = publish_config.system_id.ok_or_else(|| {
+                anyhow::Error::msg(
+                    "`system_id` not found in configuration. Please run init-env first.",
+                )
+            })?;
+            let init_system_shared_version = publish_config.init_system_shared_version.ok_or_else(|| {
+                anyhow::Error::msg("`init_system_shared_version` not found in configuration. Please run init-env first.")
+            })?;
+            let protocol_cap_id = publish_config.protocol_cap_id.ok_or_else(|| {
+                anyhow::Error::msg(
+                    "`protocol_cap_id` not found in configuration. Please run init-env first.",
+                )
+            })?;
+            let ika_system_package_id = publish_config.ika_system_package_id;
+
+            // Initialize the SUI configuration.
+            let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
+            inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
+            println!("Using SUI configuration from: {:?}", sui_config_path);
+
+            // Create a WalletContext and Sui client.
+            let mut context = WalletContext::new(&sui_config_path, None, None)?;
+            let client = context.get_client().await?;
+
+            // Call ika_system_initialize.
+            let (dwallet_id, dwallet_initial_shared_version) = ika_system_initialize(
+                publisher_address,
+                &mut context,
+                client.clone(),
+                ika_system_package_id,
+                system_id,
+                init_system_shared_version.into(),
+            )
+            .await?;
+            println!(
+                "system::initialize done. `dwallet_id`: {}, `initial_shared_version`: {}",
+                dwallet_id, dwallet_initial_shared_version
+            );
+
+            // Call ika_system_request_dwallet_network_decryption_key_dkg_by_cap
+            ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
+                publisher_address,
+                &mut context,
+                client.clone(),
+                ika_system_package_id,
+                system_id,
+                init_system_shared_version.into(),
+                dwallet_id,
+                dwallet_initial_shared_version,
+                protocol_cap_id,
+            )
+            .await?;
+            println!("system::request_dwallet_network_decryption_key_dkg_by_cap done.");
+
+            // Optionally, update the configuration file if needed.
+            // For example, you might want to store dwallet_id or other values.
+            // Here, we simply print a success message.
+            println!("IKA system initialization completed successfully.");
         }
     }
 
@@ -411,41 +399,6 @@ fn inti_sui_client_conf(
     Ok(())
 }
 
-/// Initializes a keystore and returns the necessary components for SUI client configuration.
-///
-/// This function sets up a keystore based on the provided configuration directory or creates
-/// a temporary one if none is provided. It ensures that a publisher key exists and is properly
-/// configured.
-///
-/// # Arguments
-///
-/// * `sui_config_dir` — Optional path to a SUI configuration directory
-///
-/// # Returns
-///
-/// A tuple containing:
-/// * `Keystore` — The initialized keystore (either file-based or in-memory)
-/// * `SuiAddress` — The publisher's address
-/// * `PathBuf` — The path to the SUI client configuration file
-///
-/// # Details
-///
-/// If `sui_config_dir` is provided:
-/// * Uses a file-based keystore initialized from the given directory
-/// * Ensures the "publisher" alias exists, creating it if necessary
-/// * Retrieves the existing publisher address or generates a new one if not found
-///
-/// If `sui_config_dir` is None:
-/// * Creates a temporary directory
-/// * Uses an in-memory keystore
-/// * Always generates a new key for the publisher.
-///
-/// # Errors
-///
-/// Returns an error if:
-/// * Unable to create or access the keystore.
-/// * Unable to create or update the publisher alias.
-/// * Unable to generate a new key when needed.
 fn init_sui_keystore(sui_conf_dir: Option<PathBuf>) -> Result<(Keystore, SuiAddress, PathBuf)> {
     let sui_conf_dir = match sui_conf_dir {
         Some(dir) => dir,

@@ -278,7 +278,7 @@ pub async fn init_ika_on_sui(
     ))
 }
 
-async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
+pub async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -323,7 +323,7 @@ async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
     Ok(())
 }
 
-async fn ika_system_initialize(
+pub async fn ika_system_initialize(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,

@@ -312,3 +312,29 @@ for entry in "${VALIDATOR_TUPLES[@]}"; do
         --ika-supply-id "$IKA_SUPPLY_ID" \
         --stake-amount "$VALIDATOR_STAKED_TOKENS_NUM"
 done
+
+
+############################
+# Join Committee
+############################
+# Loop through each validator tuple and join the committee.
+for i in "${!VALIDATOR_TUPLES[@]}"; do
+    # Extract validator_id and validator_cap_id from tuple
+    IFS=":" read -r VALIDATOR_ID VALIDATOR_CAP_ID <<< "${VALIDATOR_TUPLES[i]}"
+
+    # Extract corresponding validator hostname from VALIDATORS_ARRAY
+    IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "${VALIDATORS_ARRAY[i]}"
+
+    # Copy the validator's sui_config before joining the committee
+    VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
+    rm -rf "$SUI_CONFIG_PATH"
+    mkdir -p "$SUI_CONFIG_PATH"
+    cp -r "$VALIDATOR_DIR/$SUI_BACKUP_DIR/sui_config/"* "$SUI_CONFIG_PATH"
+
+    echo "Joining committee for Validator Cap ID: $VALIDATOR_CAP_ID"
+
+    $BINARY_NAME validator join-committee \
+        --validator-cap-id "$VALIDATOR_CAP_ID"
+done
+
+
