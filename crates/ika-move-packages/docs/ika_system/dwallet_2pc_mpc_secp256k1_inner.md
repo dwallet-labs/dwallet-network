@@ -4370,7 +4370,7 @@ before calling the <code>sign_with_partial_centralized_message_signatures</code>
     message_approval: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_MessageApproval">MessageApproval</a>,
 ) {
     <b>let</b> partial_signature = self.ecdsa_partial_centralized_signed_messages.borrow(partial_user_signature_cap.partial_centralized_signed_message_id);
-    <b>assert</b>!(partial_signature.dwallet_id == message_approval.dwallet_id && message_approval.message == message_approval.message && partial_signature.hash_scheme == message_approval.hash_scheme, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EMessageApprovalMismatch">EMessageApprovalMismatch</a>);
+    <b>assert</b>!(partial_signature.dwallet_id == message_approval.dwallet_id && message_approval.message == partial_signature.message && partial_signature.hash_scheme == message_approval.hash_scheme, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EMessageApprovalMismatch">EMessageApprovalMismatch</a>);
 }
 </code></pre>
 
