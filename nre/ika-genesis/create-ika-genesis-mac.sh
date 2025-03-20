@@ -337,4 +337,14 @@ for i in "${!VALIDATOR_TUPLES[@]}"; do
         --validator-cap-id "$VALIDATOR_CAP_ID"
 done
 
+############################
+### IKA System Initialization
+############################
+
+# Copy publisher sui_config to SUI_CONFIG_PATH
+rm -rf "$SUI_CONFIG_PATH"
+mkdir -p "$SUI_CONFIG_PATH"
+cp -r publisher/sui_config/* "$SUI_CONFIG_PATH"
+
+./ika-swarm-config ika-system-initialize --ika-config-path publisher/ika_publish_config.json
 
