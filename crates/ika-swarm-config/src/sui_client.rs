@@ -503,7 +503,6 @@ pub async fn init_initialize(
         type_params: vec![],
     };
 
-
     let protocol_cap_id = object_changes
         .iter()
         .filter_map(|o| match o {
