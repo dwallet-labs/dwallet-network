@@ -350,8 +350,8 @@ impl ProtocolConfig {
 
             max_messages_per_checkpoint: Some(1_000),
 
-            // The size of a single pure argument is limited to 16KB on Sui
-            max_checkpoint_size_bytes: Some(16 * 1024),
+            // max_tx_size_bytes on Sui is 128 * 1024 so we keep 16 * 1024 for the other parts of the tx
+            max_checkpoint_size_bytes: Some(112 * 1024 - 10),
 
             buffer_stake_for_protocol_upgrade_bps: Some(5000),
 

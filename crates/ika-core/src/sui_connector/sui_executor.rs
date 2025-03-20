@@ -25,6 +25,7 @@ use ika_types::sui::{
 };
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
+use itertools::Itertools;
 use sui_json_rpc_types::SuiEvent;
 use sui_macros::fail_point_async;
 use sui_types::base_types::ObjectID;
@@ -38,6 +39,7 @@ use tokio::{
     time::{self, Duration},
 };
 use tracing::{debug, error, info};
+use ika_types::message::Secp256K1NetworkDKGOutputSlice;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum StopReason {
@@ -168,6 +170,23 @@ where
         signers_bitmap
     }
 
+    /// Break down the message to slices because of chain transaction size limits.
+    /// Limit 16 KB per Tx `pure` argument.
+    fn break_down_checkpoint_message(
+        message: Vec<u8>,
+    ) -> Vec<CallArg> {
+        let mut slices = Vec::new();
+        let messages = message.chunks(16 * 1024 -1).collect_vec();
+        let empty: &[u8] = &[];
+        // The checkpoint message is broken down into 7 chunks.
+        for i in 0..7 {
+            // If the chunk is missing, use an empty slice, as the transaction must receive all arguments.
+            let message = messages.get(i).unwrap_or(&empty).clone();
+            slices.push(CallArg::Pure(bcs::to_bytes(message).unwrap()));
+        }
+        slices
+    }
+
     async fn handle_execution_task(
         ika_system_package_id: ObjectID,
         dwallet_2pc_mpc_secp256k1_id: ObjectID,
@@ -191,27 +210,28 @@ where
             .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
             .await;
 
+        let messages = Self::break_down_checkpoint_message(message);
+        let mut args = vec![
+            CallArg::Object(ika_system_state_arg),
+            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Pure(bcs::to_bytes(&epoch).map_err(|e| {
+                IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
+            })?),
+            CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
+                IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
+            })?),
+            CallArg::Pure(bcs::to_bytes(&signers_bitmap).map_err(|e| {
+                IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
+            })?)
+        ];
+        args.extend(messages);
+
         ptb.move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
             PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
             vec![],
-            vec![
-                CallArg::Object(ika_system_state_arg),
-                CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
-                CallArg::Pure(bcs::to_bytes(&epoch).map_err(|e| {
-                    IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
-                })?),
-                CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
-                    IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
-                })?),
-                CallArg::Pure(bcs::to_bytes(&signers_bitmap).map_err(|e| {
-                    IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
-                })?),
-                CallArg::Pure(bcs::to_bytes(&message).map_err(|e| {
-                    IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
-                })?),
-            ],
+            args,
         )
         .map_err(|e| {
             IkaError::SuiConnectorInternalError(format!(
