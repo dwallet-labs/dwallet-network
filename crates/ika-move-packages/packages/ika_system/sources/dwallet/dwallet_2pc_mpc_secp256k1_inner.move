@@ -1885,7 +1885,7 @@ public(package) fun compare_ecdsa_partial_user_signatures_with_approvals(
 ) {
     let partial_signature = self.ecdsa_partial_centralized_signed_messages.borrow(partial_user_signature_cap.partial_centralized_signed_message_id);
 
-    assert!(partial_signature.dwallet_id == message_approval.dwallet_id && message_approval.message == message_approval.message && partial_signature.hash_scheme == message_approval.hash_scheme, EMessageApprovalMismatch);
+    assert!(partial_signature.dwallet_id == message_approval.dwallet_id && message_approval.message == partial_signature.message && partial_signature.hash_scheme == message_approval.hash_scheme, EMessageApprovalMismatch);
 }
 
 /// Emits a `CompletedSignEvent` with the MPC Sign protocol output.
