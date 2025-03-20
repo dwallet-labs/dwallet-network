@@ -174,6 +174,7 @@ where
     /// Limit 16 KB per Tx `pure` argument.
     fn break_down_checkpoint_message(message: Vec<u8>) -> Vec<CallArg> {
         let mut slices = Vec::new();
+        // Set to 15 because the limit is up to 16 (smaller than).
         let messages = message.chunks(15 * 1024).collect_vec();
         let empty: &[u8] = &[];
         // max_checkpoint_size_bytes is 50KB, so we split the message into 4 slices
