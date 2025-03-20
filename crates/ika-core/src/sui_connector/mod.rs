@@ -272,7 +272,7 @@ pub(crate) async fn build_sui_transaction<C: SuiClientInner>(
         gas_payment,
         pt,
         10_000_000_000,
-        computation_price,
+        6_000_000_000,
     );
 
     let signature = Signature::new_secure(

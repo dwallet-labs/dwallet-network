@@ -176,7 +176,7 @@ where
         message: Vec<u8>,
     ) -> Vec<CallArg> {
         let mut slices = Vec::new();
-        let messages = message.chunks(16 * 1024 -1).collect_vec();
+        let messages = message.chunks(((15 * 1024))).collect_vec();
         let empty: &[u8] = &[];
         // The checkpoint message is broken down into 7 chunks.
         for i in 0..7 {
