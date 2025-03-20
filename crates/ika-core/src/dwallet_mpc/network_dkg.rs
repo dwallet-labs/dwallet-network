@@ -552,11 +552,7 @@ impl CreatePublicOutput for Secp256k1Party {
             public_verification_keys: bcs::from_bytes(public_verification_keys)?,
             encryptions_of_shares_per_crt_prime: bcs::from_bytes(
                 current_epoch_encryptions_of_shares_per_crt_prime,
-            )
-            .map_err(|e| {
-                println!("Error: {:?}", e);
-                DwalletMPCError::BcsError(e)
-            })?,
+            )?,
         };
 
         Ok(dkg_public_output)
