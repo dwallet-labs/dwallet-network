@@ -17,15 +17,16 @@ use ika_types::governance::{
     MIN_VALIDATOR_JOINING_STAKE_NIKA, VALIDATOR_LOW_STAKE_GRACE_PERIOD,
     VALIDATOR_LOW_STAKE_THRESHOLD_NIKA, VALIDATOR_VERY_LOW_STAKE_THRESHOLD_NIKA,
 };
+use ika_types::message::Secp256K1NetworkDKGOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::{
     SystemInner, SystemInnerTrait, PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME,
     SYSTEM_MODULE_NAME,
 };
+use itertools::Itertools;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
-use itertools::Itertools;
 use sui_json_rpc_types::SuiEvent;
 use sui_macros::fail_point_async;
 use sui_types::base_types::ObjectID;
@@ -39,7 +40,6 @@ use tokio::{
     time::{self, Duration},
 };
 use tracing::{debug, error, info};
-use ika_types::message::Secp256K1NetworkDKGOutputSlice;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum StopReason {
@@ -172,14 +172,12 @@ where
 
     /// Break down the message to slices because of chain transaction size limits.
     /// Limit 16 KB per Tx `pure` argument.
-    fn break_down_checkpoint_message(
-        message: Vec<u8>,
-    ) -> Vec<CallArg> {
+    fn break_down_checkpoint_message(message: Vec<u8>) -> Vec<CallArg> {
         let mut slices = Vec::new();
-        let messages = message.chunks(((15 * 1024))).collect_vec();
+        let messages = message.chunks(15 * 1024).collect_vec();
         let empty: &[u8] = &[];
-        // The checkpoint message is broken down into 7 chunks.
-        for i in 0..7 {
+        // max_checkpoint_size_bytes is 50KB, so we split the message into 4 slices
+        for i in 0..4 {
             // If the chunk is missing, use an empty slice, as the transaction must receive all arguments.
             let message = messages.get(i).unwrap_or(&empty).clone();
             slices.push(CallArg::Pure(bcs::to_bytes(message).unwrap()));
@@ -222,7 +220,7 @@ where
             })?),
             CallArg::Pure(bcs::to_bytes(&signers_bitmap).map_err(|e| {
                 IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
-            })?)
+            })?),
         ];
         args.extend(messages);
 

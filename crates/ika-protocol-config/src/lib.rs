@@ -350,8 +350,8 @@ impl ProtocolConfig {
 
             max_messages_per_checkpoint: Some(1_000),
 
-            // max_tx_size_bytes on Sui is 128 * 1024 so we keep 16 * 1024 for the other parts of the tx
-            max_checkpoint_size_bytes: Some(((105 * 1024))),
+            // max_tx_size_bytes on Sui is 128 * 1024, but we must keep the transaction size lower to avoid reaching the computation fee max
+            max_checkpoint_size_bytes: Some(50 * 1024),
 
             buffer_stake_for_protocol_upgrade_bps: Some(5000),
 
