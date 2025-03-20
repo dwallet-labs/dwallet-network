@@ -503,6 +503,28 @@ async fn init_initialize(
         .unwrap()
         .clone();
 
+    let protocol_cap_type = StructTag {
+        address: ika_system_package_id.into(),
+        module: PROTOCOL_CAP_MODULE_NAME.into(),
+        name: PROTOCOL_CAP_STRUCT_NAME.into(),
+        type_params: vec![],
+    };
+
+    let protocol_cap_id = object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Created {
+                object_id,
+                object_type,
+                ..
+            } if protocol_cap_type == *object_type => Some(*object_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap()
+        .clone();
+
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
     let response = client
