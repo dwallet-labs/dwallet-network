@@ -631,9 +631,16 @@ public fun process_checkpoint_message_by_quorum(
     epoch: u64,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
-    message: vector<u8>,
+    mut message: vector<u8>,
+    message2: vector<u8>,
+    message3: vector<u8>,
+    message4: vector<u8>,
     ctx: &mut TxContext,
 ) {
+    message.append(message2);
+    message.append(message3);
+    message.append(message4);
+
     let self = self.inner_mut();
     self.process_checkpoint_message_by_quorum(dwallet_2pc_mpc_secp256k1, epoch, signature, signers_bitmap, message, ctx);
 }
