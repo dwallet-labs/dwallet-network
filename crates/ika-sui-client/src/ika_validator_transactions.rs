@@ -313,7 +313,7 @@ pub async fn stake_ika(
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
     system_id: ObjectID,
-    ika_coin_id: ObjectID,
+    ika_supply_id: ObjectID,
     validator_id: ObjectID,
     stake_amount: u64,
     gas_budget: u64,
@@ -322,7 +322,7 @@ pub async fn stake_ika(
     let mut client = context.get_client().await?;
     let ika_supply_ref = client
         .transaction_builder()
-        .get_object_ref(ika_coin_id)
+        .get_object_ref(ika_supply_id)
         .await?;
 
     let ika_supply_id_arg =

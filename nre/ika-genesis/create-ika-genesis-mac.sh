@@ -26,11 +26,11 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=4
+export VALIDATOR_NUM=1
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for the network.
-export SUBDOMAIN="devnet.ika.cloud"
+export SUBDOMAIN="localhost"
 # The binary name to use.
 export BINARY_NAME="ika"
 # The directory to store the key pairs.
@@ -184,9 +184,10 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
     SUI_CURRENT_ALIAS=$(jq -r '.[].alias' sui.aliases)
     sui keytool update-alias  "$SUI_CURRENT_ALIAS" "$VALIDATOR_NAME"
     yq e -i ".envs[].alias = \"$SUBDOMAIN\"" "$SUI_CLIENT_YAML_FILE"
-    yq e -i ".envs[].rpc = \"https://fullnode.$SUBDOMAIN:443\"" "$SUI_CLIENT_YAML_FILE"
+    yq e -i ".envs[].rpc = \"http://$SUBDOMAIN:9000\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".active_address = \"$SUI_ADDR\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".active_env = \"$SUBDOMAIN\"" "$SUI_CLIENT_YAML_FILE"
+    yq e -i ".keystore.File = \"$SUI_CONFIG_PATH/$SUI_KEYSTORE_FILE\"" "$SUI_CLIENT_YAML_FILE"
     popd
     cp -r $SUI_CONFIG_PATH "$VALIDATOR_DIR/$SUI_BACKUP_DIR"
     SENDER_SUI_ADDR=$SUI_ADDR
@@ -206,8 +207,7 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
 done
 
 
-# Add Validator Candidate.
-# Create the validator.yaml file.
+# Request Tokens and Create Validator.yaml
 for entry in "${VALIDATORS_ARRAY[@]}"; do
       # Split the tuple "validatorName:validatorHostname" into variables.
       IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
@@ -225,4 +225,90 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
                   "recipient": "'"${ACCOUNT_ADDRESS}"'"
                 }
               }' | jq
+done
+
+rm -rf "$SUI_CONFIG_PATH"
+
+cargo build --bin ika-swarm-config
+cp ../../../target/debug/ika-swarm-config .
+
+# Publish IKA Modules
+./ika-swarm-config publish-ika-modules
+
+# Mint IKA Tokens
+./ika-swarm-config mint-ika-tokens --ika-config-path ./ika_publish_config.json
+
+# Init IKA
+./ika-swarm-config init-env --ika-config-path ./ika_publish_config.json
+
+mkdir -p publisher
+mv ika_publish_config.json publisher/
+cp -r "$SUI_CONFIG_PATH" publisher/
+PUBLISHER_CONFIG_FILE="publisher/ika_publish_config.json"
+
+IKA_PACKAGE_ID=$(jq -r '.ika_package_id' "$PUBLISHER_CONFIG_FILE")
+IKA_SYSTEM_PACKAGE_ID=$(jq -r '.ika_system_package_id' "$PUBLISHER_CONFIG_FILE")
+SYSTEM_ID=$(jq -r '.system_id' "$PUBLISHER_CONFIG_FILE")
+
+# Print the values for verification.
+echo "IKA Package ID: $IKA_PACKAGE_ID"
+echo "IKA System Package ID: $IKA_SYSTEM_PACKAGE_ID"
+echo "System ID: $SYSTEM_ID"
+
+############################
+# Become Validator Candidate.
+############################
+# Array to store validator tuples
+VALIDATOR_TUPLES=()
+for entry in "${VALIDATORS_ARRAY[@]}"; do
+      IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
+      VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
+
+      echo "Processing validator '$VALIDATOR_NAME' in directory '$VALIDATOR_DIR'"
+
+      # Clear and recreate your SUI config directory.
+      rm -rf "$SUI_CONFIG_PATH"
+      mkdir -p "$SUI_CONFIG_PATH"
+
+      cp -r "$VALIDATOR_DIR/$SUI_BACKUP_DIR/sui_config/"* "$SUI_CONFIG_PATH"
+
+      # Validate the config-env
+      $BINARY_NAME validator config-env --ika-package-id "$IKA_PACKAGE_ID" \
+      --ika-system-package-id "$IKA_SYSTEM_PACKAGE_ID" \
+      --ika-system-object-id "$SYSTEM_ID"
+
+      # Run become-candidate and store output
+      $BINARY_NAME validator become-candidate "$VALIDATOR_DIR/validator.info" --json > "$VALIDATOR_DIR/become-candidate.json"
+
+      # Extract validator_id and validator_cap_id
+      VALIDATOR_ID=$(jq -r '.[1].validator_id' "$VALIDATOR_DIR/become-candidate.json")
+      VALIDATOR_CAP_ID=$(jq -r '.[1].validator_cap_id' "$VALIDATOR_DIR/become-candidate.json")
+
+      # Store as tuple in an array
+      VALIDATOR_TUPLES+=("$VALIDATOR_ID:$VALIDATOR_CAP_ID")
+done
+
+############################
+# Stake Validators
+############################
+# Copy publisher sui_config to SUI_CONFIG_PATH
+rm -rf "$SUI_CONFIG_PATH"
+mkdir -p "$SUI_CONFIG_PATH"
+cp -r publisher/sui_config/* "$SUI_CONFIG_PATH"
+
+# Extract IKA_SUPPLY_ID (ika_coin_id) from publisher config
+IKA_SUPPLY_ID=$(jq -r '.ika_supply_id' "$PUBLISHER_CONFIG_FILE")
+
+# Stake Validators
+for entry in "${VALIDATOR_TUPLES[@]}"; do
+    # Split the tuple "validator_id:validator_cap_id"
+    IFS=":" read -r VALIDATOR_ID VALIDATOR_CAP_ID <<< "$entry"
+
+    echo "Staking for Validator ID: $VALIDATOR_ID with IKA Coin ID: $IKA_SUPPLY_ID"
+
+    # Execute the stake-validator command
+    $BINARY_NAME validator stake-validator \
+        --validator-id "$VALIDATOR_ID" \
+        --ika-supply-id "$IKA_SUPPLY_ID" \
+        --stake-amount "$VALIDATOR_STAKED_TOKENS_NUM"
 done

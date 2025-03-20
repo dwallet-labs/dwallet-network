@@ -57,13 +57,6 @@ use sui_types::{
     Identifier, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION, SUI_FRAMEWORK_PACKAGE_ID,
 };
 
-#[derive(Serialize)]
-struct IkaConfig {
-    pub ika_package_id: ObjectID,
-    pub ika_system_package_id: ObjectID,
-    pub ika_system_obj_id: ObjectID,
-}
-
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
     sui_fullnode_rpc_url: String,
@@ -190,10 +183,10 @@ pub async fn init_ika_on_sui(
     .await?;
 
     println!("Running `init::initialize` done: system_id: {system_id} protocol_cap_id: {protocol_cap_id}");
-    let ika_config = IkaConfig {
+    let ika_config = IkaPackagesConfig {
         ika_package_id,
         ika_system_package_id,
-        ika_system_obj_id: system_id,
+        ika_system_object_id: system_id,
     };
     let mut file = File::create("ika_config.json")?;
     let json = serde_json::to_string_pretty(&ika_config)?;

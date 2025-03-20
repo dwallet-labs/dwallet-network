@@ -129,6 +129,7 @@ const ALIAS_PUBLISHER: &str = "publisher";
 /// Configuration data that will be saved after publishing the IKA modules.
 #[derive(Serialize, Deserialize)]
 struct PublishIkaConfig {
+    pub publisher_address: SuiAddress,
     pub ika_package_id: ObjectID,
     pub treasury_cap_id: ObjectID,
     pub ika_package_upgrade_cap_id: ObjectID,
@@ -153,8 +154,8 @@ async fn main() -> Result<()> {
         } => {
             println!("Publishing IKA modules on network: {}", sui_rpc_addr);
 
-            let (keystore, publisher_address, sui_config_path) = init_sui_conf(sui_conf_dir)?;
-            inti_sui_env(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
+            let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
+            inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
             request_tokens_from_faucet(publisher_address, sui_faucet_addr.clone()).await?;
 
             let mut context = WalletContext::new(&sui_config_path, None, None)?;
@@ -198,6 +199,7 @@ async fn main() -> Result<()> {
 
             // Save the published package IDs into a configuration file.
             let publish_config = PublishIkaConfig {
+                publisher_address,
                 ika_package_id,
                 treasury_cap_id,
                 ika_package_upgrade_cap_id,
@@ -231,8 +233,8 @@ async fn main() -> Result<()> {
                 ika_config_path
             );
 
-            let (keystore, publisher_address, sui_config_path) = init_sui_conf(sui_conf_dir)?;
-            inti_sui_env(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
+            let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
+            inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
             request_tokens_from_faucet(publisher_address, sui_faucet_addr.clone()).await?;
 
             // Load the published IKA configuration from the file.
@@ -282,8 +284,8 @@ async fn main() -> Result<()> {
             let config_content = std::fs::read_to_string(&ika_config_path)?;
             let mut publish_config: PublishIkaConfig = serde_json::from_str(&config_content)?;
 
-            let (keystore, publisher_address, sui_config_path) = init_sui_conf(sui_conf_dir)?;
-            inti_sui_env(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
+            let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
+            inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
             println!("Using SUI configuration from: {:?}", sui_config_path);
 
             // Create a WalletContext and obtain a Sui client.
@@ -384,7 +386,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn inti_sui_env(
+fn inti_sui_client_conf(
     sui_rpc_addr: &String,
     keystore: Keystore,
     active_addr: SuiAddress,
@@ -394,9 +396,8 @@ fn inti_sui_env(
     let parsed_url = Url::parse(&sui_rpc_addr)?;
     let rpc_host = parsed_url.host_str().unwrap_or_default();
     let mut config =
-        SuiClientConfig::load(sui_config_path).expect("Failed to load SuiClientConfig");
+        SuiClientConfig::load(sui_config_path).unwrap_or_else(|_| SuiClientConfig::new(keystore));
     if config.get_env(&Some(rpc_host.to_string())).is_none() {
-        let mut config = SuiClientConfig::new(keystore);
         config.add_env(SuiEnv {
             alias: rpc_host.to_string(),
             rpc: sui_rpc_addr.clone(),
@@ -445,7 +446,7 @@ fn inti_sui_env(
 /// * Unable to create or access the keystore.
 /// * Unable to create or update the publisher alias.
 /// * Unable to generate a new key when needed.
-fn init_sui_conf(sui_conf_dir: Option<PathBuf>) -> Result<(Keystore, SuiAddress, PathBuf)> {
+fn init_sui_keystore(sui_conf_dir: Option<PathBuf>) -> Result<(Keystore, SuiAddress, PathBuf)> {
     let sui_conf_dir = match sui_conf_dir {
         Some(dir) => dir,
         None => sui_config_dir()?,
@@ -475,7 +476,7 @@ fn init_sui_conf(sui_conf_dir: Option<PathBuf>) -> Result<(Keystore, SuiAddress,
                         SignatureScheme::ED25519,
                         Some(ALIAS_PUBLISHER.to_string()),
                         None,
-                        None,
+                        Some("word24".to_string()),
                     )?;
                     println!("Generated a new publisher key with address: {}", address);
                     println!("Secret Recovery Phrase: {}", phrase);
