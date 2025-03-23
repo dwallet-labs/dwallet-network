@@ -320,6 +320,7 @@ impl IkaNode {
             ika_system_package_id: config.sui_connector_config.ika_system_package_id,
             ika_system_object_id: config.sui_connector_config.system_id,
         };
+        // Todo: Read network keys`
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
             committee.clone(),

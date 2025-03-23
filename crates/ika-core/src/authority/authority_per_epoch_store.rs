@@ -122,6 +122,8 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
+use ika_sui_client::SuiClient;
+use sui_sdk::{SuiClient as SuiSdkClient};
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -371,6 +373,8 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
+
+    sui_client: Arc<SuiClient<SuiSdkClient>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -796,6 +800,7 @@ impl AuthorityPerEpochStore {
     ) -> HashMap<ObjectID, NetworkDecryptionKeyShares> {
         match self.epoch_start_state() {
             EpochStartSystem::V1(data) => data.get_dwallet_network_decryption_keys().clone(),
+            // Todo: it is best to mock here, but what would be the key id?
         }
     }
 
@@ -2146,6 +2151,14 @@ impl AuthorityPerEpochStore {
                             .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
                             .collect();
                         Ok(self.process_consensus_system_bulk_transaction(&messages))
+                        // Todo: Read network keys
+                        // Ask Zeev if the right approach is to start a tread to read the network keys.
+                        // Or is there a better way to do update the keys by Sadika's requirements.
+                        // Sadika's requirements:
+                        // 1. Read the keys only after the transaction succeeded. (after checkpoint execution)
+                        // 2. Decrypt the secret share from the public output.
+                        // Note: this means that the full network DKG flow will take longer
+                        // Note: Keep in mind how to mock the flow to keep the development (and testing) process fast.
                     }
                     DWalletMPCNetworkKeyScheme::Ristretto => {
                         Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
