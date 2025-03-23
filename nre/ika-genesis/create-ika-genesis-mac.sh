@@ -26,7 +26,7 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=4
+export VALIDATOR_NUM=1
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for the network.
@@ -337,9 +337,9 @@ for i in "${!VALIDATOR_TUPLES[@]}"; do
         --validator-cap-id "$VALIDATOR_CAP_ID"
 done
 
-############################
-### IKA System Initialization
-############################
+#############################
+#### IKA System Initialization
+#############################
 
 # Copy publisher sui_config to SUI_CONFIG_PATH
 rm -rf "$SUI_CONFIG_PATH"
