@@ -6,9 +6,24 @@ use k256::elliptic_curve::ops::Reduce;
 use k256::{elliptic_curve, U256};
 /// Supported hash functions for message digest.
 #[derive(Clone, Debug)]
-enum Hash {
+pub enum Hash {
     KECCAK256 = 0,
     SHA256 = 1,
+}
+
+impl TryFrom<u8> for Hash {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Hash::KECCAK256),
+            1 => Ok(Hash::SHA256),
+            _ => Err(anyhow::Error::msg(format!(
+                "invalid value for Hash enum: {}",
+                value
+            ))),
+        }
+    }
 }
 
 /// Computes the message digest of a given message using the specified hash function.
