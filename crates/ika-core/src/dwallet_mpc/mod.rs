@@ -451,8 +451,6 @@ pub(crate) fn session_input_from_event(
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
         t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent> =
-                bcs::from_bytes(&event.contents)?;
             Ok((
                 network_dkg::network_dkg_public_input(
                     dwallet_mpc_manager
