@@ -60,7 +60,7 @@ impl Committee {
     pub fn new(
         epoch: EpochId,
         voting_rights: Vec<(AuthorityName, StakeUnit)>,
-        class_groups_public_key_and_proof: HashMap<AuthorityName, Vec<u8>>,
+        class_groups_public_keys_and_proofs: HashMap<AuthorityName, Vec<u8>>,
     ) -> Self {
         // let mut voting_rights: Vec<(AuthorityName, StakeUnit)> =
         //     voting_rights.iter().map(|(a, s)| (*a, *s)).collect();
@@ -77,7 +77,7 @@ impl Committee {
         Committee {
             epoch,
             voting_rights,
-            class_groups_public_keys_and_proofs: class_groups_public_key_and_proof,
+            class_groups_public_keys_and_proofs,
             expanded_keys,
             index_map,
         }

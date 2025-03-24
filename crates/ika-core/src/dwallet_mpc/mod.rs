@@ -83,10 +83,10 @@ pub(crate) fn party_id_to_authority_name(
 
 /// Convert a given [`Vec<PartyID>`] to the corresponding [`Vec<AuthorityName>`].
 pub(crate) fn party_ids_to_authority_names(
-    malicious_parties: &[PartyID],
+    party_ids: &[PartyID],
     epoch_store: &AuthorityPerEpochStore,
 ) -> DwalletMPCResult<Vec<AuthorityName>> {
-    malicious_parties
+    party_ids
         .iter()
         .map(|party_id| party_id_to_authority_name(*party_id, &epoch_store))
         .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
@@ -258,6 +258,7 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
     }
 }
 
+// TODO (#772): Remove the duplicated `message_digest` implementation
 #[derive(Clone, Debug)]
 pub enum Hash {
     KECCAK256 = 0,
@@ -449,25 +450,21 @@ pub(crate) fn session_input_from_event(
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
-        t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent> =
-                bcs::from_bytes(&event.contents)?;
-            Ok((
-                network_dkg::network_dkg_public_input(
-                    dwallet_mpc_manager
-                        .validators_class_groups_public_keys_and_proofs
-                        .clone(),
-                    DWalletMPCNetworkKeyScheme::Secp256k1,
-                )?,
-                Some(bcs::to_bytes(
-                    &dwallet_mpc_manager
-                        .node_config
-                        .class_groups_key_pair_and_proof
-                        .class_groups_keypair()
-                        .decryption_key(),
-                )?),
-            ))
-        }
+        t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => Ok((
+            network_dkg::network_dkg_public_input(
+                dwallet_mpc_manager
+                    .validators_class_groups_public_keys_and_proofs
+                    .clone(),
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+            )?,
+            Some(bcs::to_bytes(
+                &dwallet_mpc_manager
+                    .node_config
+                    .class_groups_key_pair_and_proof
+                    .class_groups_keypair()
+                    .decryption_key(),
+            )?),
+        )),
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =
                 bcs::from_bytes(&event.contents)?;
