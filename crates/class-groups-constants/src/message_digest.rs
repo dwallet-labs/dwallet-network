@@ -12,7 +12,7 @@ enum Hash {
 }
 
 /// Computes the message digest of a given message using the specified hash function.
-fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1::Scalar> {
+pub fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1::Scalar> {
     let hash = match hash_type {
         Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
             &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
