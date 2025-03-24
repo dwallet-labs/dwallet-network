@@ -19,6 +19,7 @@ use rand::rngs::OsRng;
 use std::path::PathBuf;
 use std::{num::NonZeroUsize, path::Path, sync::Arc};
 use sui_macros::nondeterministic;
+use ika_config::NodeConfig;
 
 pub enum CommitteeConfig {
     Size(NonZeroUsize),
@@ -339,7 +340,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
             )
             .await?;
 
-        let validator_configs = validator_initialization_configs
+        let validator_configs: Vec<NodeConfig> = validator_initialization_configs
             .iter()
             .enumerate()
             .map(|(idx, validator)| {
