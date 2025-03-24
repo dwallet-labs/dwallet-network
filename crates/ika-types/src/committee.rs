@@ -45,7 +45,7 @@ pub const TOTAL_VOTING_POWER: StakeUnit = 4;
 pub const QUORUM_THRESHOLD: StakeUnit = (2 * TOTAL_VOTING_POWER) / 3 + 1;
 
 /// Validity threshold defined by f+1
-pub const VALIDITY_THRESHOLD: StakeUnit = 1;
+pub const VALIDITY_THRESHOLD: StakeUnit = TOTAL_VOTING_POWER / 3 + 1;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq)]
 pub struct Committee {
