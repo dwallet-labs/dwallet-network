@@ -26,9 +26,9 @@ use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
+use serde::{Deserialize, Serialize};
 use shared_wasm_class_groups::message_digest::message_digest;
 use shared_wasm_class_groups::protocol_public_parameters;
-use serde::{Deserialize, Serialize};
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,

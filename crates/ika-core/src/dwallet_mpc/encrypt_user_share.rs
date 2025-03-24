@@ -2,12 +2,12 @@ use class_groups::{
     CiphertextSpaceGroupElement, CiphertextSpaceValue, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
-use shared_wasm_class_groups::protocol_public_parameters;
 use fastcrypto::traits::{ToFromBytes, VerifyingKey};
 use group::GroupElement;
 use homomorphic_encryption::GroupsPublicParametersAccessors;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::StartEncryptedShareVerificationEvent;
+use shared_wasm_class_groups::protocol_public_parameters;
 use std::marker::PhantomData;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,

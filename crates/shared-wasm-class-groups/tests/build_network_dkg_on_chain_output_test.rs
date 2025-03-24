@@ -1,7 +1,7 @@
-use shared_wasm_class_groups::network_dkg_final_output;
 use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyOnChainOutput;
 use group::{secp256k1, PartyID};
 use mpc::{Weight, WeightedThresholdAccessStructure};
+use shared_wasm_class_groups::network_dkg_final_output;
 use std::collections::HashMap;
 
 // This test is used to generate the mock on-chain output for the network DKG.
