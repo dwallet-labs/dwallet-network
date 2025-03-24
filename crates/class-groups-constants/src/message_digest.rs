@@ -1,9 +1,9 @@
-use twopc_mpc::secp256k1;
 use k256::ecdsa::hazmat::bits2field;
-use sha3::Digest;
-use sha3::digest::FixedOutput;
 use k256::elliptic_curve::ops::Reduce;
 use k256::{elliptic_curve, U256};
+use sha3::digest::FixedOutput;
+use sha3::Digest;
+use twopc_mpc::secp256k1;
 /// Supported hash functions for message digest.
 #[derive(Clone, Debug)]
 pub enum Hash {
@@ -32,7 +32,7 @@ pub fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp25
         Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
             &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
         )
-            .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
+        .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
 
         Hash::SHA256 => {
             bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())

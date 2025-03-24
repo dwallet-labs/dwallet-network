@@ -33,6 +33,7 @@ use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
+use class_groups_constants::message_digest::message_digest;
 use class_groups_constants::protocol_public_parameters;
 use serde::{Deserialize, Serialize};
 use twopc_mpc::dkg::Protocol;
@@ -40,7 +41,6 @@ use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
-use class_groups_constants::message_digest::message_digest;
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
