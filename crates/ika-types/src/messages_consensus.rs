@@ -49,8 +49,6 @@ pub enum ConsensusTransactionKey {
     TestMessage(AuthorityName, u64),
 
     /// The message sent between MPC parties in a dwallet MPC session.
-    /// The [`Vec<u8>`] is the message, the [`AuthorityName`] is the sending authority, and the
-    /// [`ObjectID`] is the session ID.
     DWalletMPCMessage(DWalletMPCMessageKey),
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
