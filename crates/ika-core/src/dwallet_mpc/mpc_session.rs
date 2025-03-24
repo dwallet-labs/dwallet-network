@@ -482,8 +482,7 @@ impl DWalletMPCSession {
                                 .cloned()
                                 .collect::<HashSet<PartyID>>(),
                         )
-                        .ok()
-                        .is_some()
+                        .is_ok()
                 {
                     ReadyToAdvanceCheckResult {
                         is_ready: true,
