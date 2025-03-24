@@ -69,13 +69,6 @@ pub fn public_keys_from_dkg_output(
     })
 }
 
-/// Supported hash functions for message digest.
-#[derive(Clone, Debug)]
-enum Hash {
-    KECCAK256 = 0,
-    SHA256 = 1,
-}
-
 type SignedMessage = Vec<u8>;
 type EncryptionOfSecretShareProof = EncryptionOfDiscreteLogProofWithoutCtx<
     SCALAR_LIMBS,
@@ -316,31 +309,6 @@ pub fn verify_secret_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> anyhow
     let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
         bcs::from_bytes(&dkg_output)?;
     Ok(dkg_output.centralized_party_public_key_share == expected_public_key.value())
-}
-
-impl fmt::Display for Hash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let hash_name = match self {
-            Hash::KECCAK256 => "KECCAK256",
-            Hash::SHA256 => "SHA256",
-        };
-        write!(f, "{}", hash_name)
-    }
-}
-
-impl TryFrom<u8> for Hash {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Hash::KECCAK256),
-            1 => Ok(Hash::SHA256),
-            _ => Err(anyhow::Error::msg(format!(
-                "invalid value for Hash enum: {}",
-                value
-            ))),
-        }
-    }
 }
 
 /// Decrypts the given encrypted user share using the given decryption key.
