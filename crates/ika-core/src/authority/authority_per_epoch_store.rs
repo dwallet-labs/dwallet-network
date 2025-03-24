@@ -734,16 +734,16 @@ impl AuthorityPerEpochStore {
             self.dwallet_mpc_round_completed_sessions.lock().await;
         dwallet_mpc_round_completed_sessions.push(session_id);
     }
-
-    pub fn set_dwallet_mpc_network_keys(
-        &self,
-        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
-    ) -> IkaResult<()> {
-        if self.dwallet_mpc_network_keys.set(network_keys).is_err() {
-            error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
-        }
-        Ok(())
-    }
+    //
+    // pub fn set_dwallet_mpc_network_keys(
+    //     &self,
+    //     network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+    // ) -> IkaResult<()> {
+    //     if self.dwallet_mpc_network_keys.set(network_keys).is_err() {
+    //         error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
+    //     }
+    //     Ok(())
+    // }
 
     /// A function to initiate the [`DWalletMPCManager`] when a new epoch starts.
     pub fn set_dwallet_mpc_manager(&self, sender: DWalletMPCManager) -> IkaResult<()> {
@@ -792,23 +792,19 @@ impl AuthorityPerEpochStore {
     }
 
     /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
-    // pub fn set_dwallet_mpc_network_keys(
-    //     &self,
-    //     class_groups_decryption_key: ClassGroupsDecryptionKey,
-    // ) -> IkaResult<()> {
-    //     if self
-    //         .dwallet_mpc_network_keys
-    //         .set(DwalletMPCNetworkKeyVersions::new(
-    //             self,
-    //             &self.get_weighted_threshold_access_structure()?,
-    //             class_groups_decryption_key,
-    //         ))
-    //         .is_err()
-    //     {
-    //         error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
-    //     }
-    //     Ok(())
-    // }
+    pub fn set_dwallet_mpc_network_keys(
+        &self,
+        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+    ) -> IkaResult<()> {
+        if self
+            .dwallet_mpc_network_keys
+            .set(network_keys)
+            .is_err()
+        {
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
+        }
+        Ok(())
+    }
 
     /// Retrieves the decryption key shares for the current epoch if they exist in the system state.
     ///

@@ -367,8 +367,9 @@ impl IkaNode {
         let state_sync_store = RocksDbStore::new(committee_store.clone(), checkpoint_store.clone());
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
+        let party_id = epoch_store.authority_name_to_party_id(&config.protocol_public_key())?;
         let dwallet_network_keys = DwalletMPCNetworkKeyVersions::empty(
-            epoch_store.authority_name_to_party_id(&config.protocol_public_key())?,
+            party_id,
             config
                 .class_groups_key_pair_and_proof
                 .class_groups_keypair()
@@ -386,7 +387,6 @@ impl IkaNode {
             )
             .await?,
         );
-        epoch_store.set_dwallet_mpc_network_keys(dwallet_network_keys_arc)?;
 
         info!("creating archive reader");
         // Create network
@@ -482,6 +482,7 @@ impl IkaNode {
                 connection_monitor_status.clone(),
                 &registry_service,
                 ika_node_metrics.clone(),
+                dwallet_network_keys_arc.clone(),
             )
             .await?;
             // This is only needed during cold start.
@@ -524,7 +525,7 @@ impl IkaNode {
         let node_copy = node.clone();
         let perpetual_tables_copy = perpetual_tables.clone();
         spawn_monitored_task!(async move {
-            let result = Self::monitor_reconfiguration(node_copy, perpetual_tables_copy).await;
+            let result = Self::monitor_reconfiguration(node_copy, perpetual_tables_copy, dwallet_network_keys_arc.clone()).await;
             if let Err(error) = result {
                 warn!("Reconfiguration finished with error {:?}", error);
             }
@@ -761,6 +762,7 @@ impl IkaNode {
         connection_monitor_status: Arc<ConnectionMonitorStatus>,
         registry_service: &RegistryService,
         ika_node_metrics: Arc<IkaNodeMetrics>,
+        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
         let consensus_config = config_clone
@@ -805,6 +807,7 @@ impl IkaNode {
             checkpoint_metrics,
             ika_node_metrics,
             ika_tx_validator_metrics,
+            network_keys,
         )
         .await
     }
@@ -821,6 +824,7 @@ impl IkaNode {
         checkpoint_metrics: Arc<CheckpointMetrics>,
         ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
+        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_checkpoint_service(
             config,
@@ -835,12 +839,9 @@ impl IkaNode {
         let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(epoch_store.clone());
 
         // Start the dWallet MPC manager on epoch start.
-        // epoch_store.set_dwallet_mpc_network_keys(
-        //     config
-        //         .class_groups_key_pair_and_proof
-        //         .class_groups_keypair()
-        //         .decryption_key(),
-        // )?;
+        epoch_store.set_dwallet_mpc_network_keys(
+            network_keys,
+        )?;
         // This verifier is in sync with the consensus,
         // used to verify outputs before sending a system TX to store them.
         epoch_store
@@ -1004,6 +1005,7 @@ impl IkaNode {
     pub async fn monitor_reconfiguration(
         self: Arc<Self>,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
+        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) -> Result<()> {
         loop {
             let run_with_range = self.config.run_with_range;
@@ -1214,6 +1216,7 @@ impl IkaNode {
                             checkpoint_metrics,
                             self.metrics.clone(),
                             ika_tx_validator_metrics,
+                            network_keys.clone(),
                         )
                         .await?,
                     )
@@ -1245,6 +1248,7 @@ impl IkaNode {
                             self.connection_monitor_status.clone(),
                             &self.registry_service,
                             self.metrics.clone(),
+                            network_keys.clone(),
                         )
                         .await?,
                     )

@@ -86,7 +86,7 @@ where
         dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) {
         loop {
-            time::sleep(Duration::from_secs(5)).await;
+            time::sleep(Duration::from_secs(60)).await;
             let network_decryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
                 .await
