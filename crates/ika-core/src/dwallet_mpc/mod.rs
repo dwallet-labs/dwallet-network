@@ -338,7 +338,10 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, MPCPublicOutput>> {
-    let messages = deserialize_mpc_messages(messages)?;
+    let DeserializeMPCMessagesResponse {
+        messages,
+        malicious_parties: _,
+    } = deserialize_mpc_messages(messages);
 
     let res = match P::advance(
         session_id,
@@ -396,12 +399,17 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     })
 }
 
+struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
+    messages: Vec<HashMap<PartyID, M>>,
+    malicious_parties: Vec<PartyID>,
+}
+
 /// Deserializes the messages received from other parties for the next advancement.
 /// Any value that fails to deserialize is considered to be sent by a malicious party.
 /// Returns the deserialized messages or an error including the IDs of the malicious parties.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
-) -> DwalletMPCResult<Vec<HashMap<PartyID, M>>> {
+) -> DeserializeMPCMessagesResponse<M> {
     let mut deserialized_results = Vec::new();
     let mut malicious_parties = Vec::new();
 
@@ -423,13 +431,9 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
             deserialized_results.push(valid_messages);
         }
     }
-
-    if !malicious_parties.is_empty() {
-        Err(DwalletMPCError::SessionFailedWithMaliciousParties(
-            malicious_parties,
-        ))
-    } else {
-        Ok(deserialized_results)
+    DeserializeMPCMessagesResponse {
+        messages: deserialized_results,
+        malicious_parties,
     }
 }
 
