@@ -450,23 +450,21 @@ pub(crate) fn session_input_from_event(
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
-        t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
-            Ok((
-                network_dkg::network_dkg_public_input(
-                    dwallet_mpc_manager
-                        .validators_class_groups_public_keys_and_proofs
-                        .clone(),
-                    DWalletMPCNetworkKeyScheme::Secp256k1,
-                )?,
-                Some(bcs::to_bytes(
-                    &dwallet_mpc_manager
-                        .node_config
-                        .class_groups_key_pair_and_proof
-                        .class_groups_keypair()
-                        .decryption_key(),
-                )?),
-            ))
-        }
+        t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => Ok((
+            network_dkg::network_dkg_public_input(
+                dwallet_mpc_manager
+                    .validators_class_groups_public_keys_and_proofs
+                    .clone(),
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+            )?,
+            Some(bcs::to_bytes(
+                &dwallet_mpc_manager
+                    .node_config
+                    .class_groups_key_pair_and_proof
+                    .class_groups_keypair()
+                    .decryption_key(),
+            )?),
+        )),
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =
                 bcs::from_bytes(&event.contents)?;
