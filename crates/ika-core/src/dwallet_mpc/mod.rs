@@ -37,7 +37,7 @@ use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
 use tracing::warn;
 
-use class_groups_constants::message_digest::{message_digest, Hash};
+use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use twopc_mpc::secp256k1;
 
 mod cryptographic_computations_orchestrator;

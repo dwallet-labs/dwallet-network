@@ -1,4 +1,4 @@
-use class_groups_constants::network_dkg_final_output;
+use shared_wasm_class_groups::network_dkg_final_output;
 use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyOnChainOutput;
 use group::{secp256k1, PartyID};
 use mpc::{Weight, WeightedThresholdAccessStructure};

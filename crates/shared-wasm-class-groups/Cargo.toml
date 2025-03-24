@@ -1,5 +1,5 @@
 [package]
-name = "class_groups_constants"
+name = "shared_wasm_class_groups"
 edition = "2021"
 version.workspace = true
 

@@ -26,8 +26,8 @@ use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
-use class_groups_constants::message_digest::message_digest;
-use class_groups_constants::protocol_public_parameters;
+use shared_wasm_class_groups::message_digest::message_digest;
+use shared_wasm_class_groups::protocol_public_parameters;
 use serde::{Deserialize, Serialize};
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::{

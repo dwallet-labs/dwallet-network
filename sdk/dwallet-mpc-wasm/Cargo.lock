@@ -288,7 +288,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "class_groups_constants"
+name = "shared_wasm_class_groups"
 version = "1.0.0"
 dependencies = [
  "anyhow",
@@ -570,7 +570,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "class_groups",
- "class_groups_constants",
+ "shared_wasm_class_groups",
  "commitment",
  "crypto-bigint",
  "dwallet-mpc-types",
