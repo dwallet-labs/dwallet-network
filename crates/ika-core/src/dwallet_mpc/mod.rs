@@ -258,6 +258,7 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
     }
 }
 
+// TODO (#772): Remove the duplicated `message_digest` implementation
 #[derive(Clone, Debug)]
 pub enum Hash {
     KECCAK256 = 0,
