@@ -79,6 +79,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
+use ika_sui_client::SuiClient;
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
@@ -109,6 +110,7 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use std::time::Duration;
 use sui_macros::fail_point;
+use sui_sdk::SuiClient as SuiSdkClient;
 use sui_storage::mutex_table::{MutexGuard, MutexTable};
 use sui_types::digests::TransactionDigest;
 use sui_types::effects::TransactionEffects;
@@ -122,8 +124,6 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
-use ika_sui_client::SuiClient;
-use sui_sdk::{SuiClient as SuiSdkClient};
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -365,7 +365,7 @@ pub struct AuthorityPerEpochStore {
     /// This state machine is used to store outputs and emit ones
     /// where the quorum of votes is valid.
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
-    pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
+    pub dwallet_mpc_network_keys: OnceCell<Arc<DwalletMPCNetworkKeyVersions>>,
     dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
     dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
     pub(crate) dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
@@ -373,8 +373,6 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
-
-    sui_client: Arc<SuiClient<SuiSdkClient>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -659,6 +657,20 @@ impl AuthorityPerEpochStore {
         s
     }
 
+    /// Convert a given authority name (address) to it's corresponding [`PartyID`].
+    /// The [`PartyID`] is the index of the authority in the committee.
+    pub fn authority_name_to_party_id(
+        &self,
+        authority_name: &AuthorityName,
+    ) -> DwalletMPCResult<PartyID> {
+        self.committee()
+            .authority_index(authority_name)
+            // Need to add 1 because the authority index is 0-based,
+            // and the twopc_mpc library uses 1-based party IDs.
+            .map(|index| (index + 1) as PartyID)
+            .ok_or_else(|| DwalletMPCError::AuthorityNameNotFound(*authority_name))
+    }
+
     pub(crate) fn get_validators_class_groups_public_keys_and_proofs(
         &self,
     ) -> IkaResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
@@ -723,6 +735,16 @@ impl AuthorityPerEpochStore {
         dwallet_mpc_round_completed_sessions.push(session_id);
     }
 
+    pub fn set_dwallet_mpc_network_keys(
+        &self,
+        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+    ) -> IkaResult<()> {
+        if self.dwallet_mpc_network_keys.set(network_keys).is_err() {
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
+        }
+        Ok(())
+    }
+
     /// A function to initiate the [`DWalletMPCManager`] when a new epoch starts.
     pub fn set_dwallet_mpc_manager(&self, sender: DWalletMPCManager) -> IkaResult<()> {
         if self
@@ -770,23 +792,23 @@ impl AuthorityPerEpochStore {
     }
 
     /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
-    pub fn set_dwallet_mpc_network_keys(
-        &self,
-        class_groups_decryption_key: ClassGroupsDecryptionKey,
-    ) -> IkaResult<()> {
-        if self
-            .dwallet_mpc_network_keys
-            .set(DwalletMPCNetworkKeyVersions::new(
-                self,
-                &self.get_weighted_threshold_access_structure()?,
-                class_groups_decryption_key,
-            ))
-            .is_err()
-        {
-            error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
-        }
-        Ok(())
-    }
+    // pub fn set_dwallet_mpc_network_keys(
+    //     &self,
+    //     class_groups_decryption_key: ClassGroupsDecryptionKey,
+    // ) -> IkaResult<()> {
+    //     if self
+    //         .dwallet_mpc_network_keys
+    //         .set(DwalletMPCNetworkKeyVersions::new(
+    //             self,
+    //             &self.get_weighted_threshold_access_structure()?,
+    //             class_groups_decryption_key,
+    //         ))
+    //         .is_err()
+    //     {
+    //         error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
+    //     }
+    //     Ok(())
+    // }
 
     /// Retrieves the decryption key shares for the current epoch if they exist in the system state.
     ///

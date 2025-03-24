@@ -1,5 +1,6 @@
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::checkpoints::CheckpointStore;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
 use crate::sui_connector::sui_syncer::{SuiSyncer, SuiTargetModules};
@@ -64,6 +65,7 @@ impl SuiConnectorService {
         sui_client: Arc<SuiClient<SuiSdkClient>>,
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
+        dwallet_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
@@ -91,7 +93,7 @@ impl SuiConnectorService {
             sui_connector_metrics.clone(),
             perpetual_tables,
         )
-        .run(Duration::from_secs(2))
+        .run(Duration::from_secs(2), dwallet_network_keys)
         .await
         .map_err(|e| anyhow::anyhow!("Failed to start sui syncer"))?;
         Ok(Self {

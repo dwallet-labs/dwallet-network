@@ -11,7 +11,7 @@ use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
+use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, DwalletMPCNetworkKeysStatus};
 use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
 };
@@ -311,24 +311,41 @@ impl DWalletMPCManager {
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
-        if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
-            return self_decryption_share.get_protocol_public_parameters(key_id, key_scheme);
-        }
-        Err(DwalletMPCError::TwoPCMPCError(
-            "Decryption share not found".to_string(),
-        ))
+        // if let Some(self_decryption_share) =
+        self.dwallet_mpc_network_keys()?
+            .get_protocol_public_parameters(key_id, key_scheme)
+        // {
+    }
+    //     return self_decryption_share.get_protocol_public_parameters(key_id, key_scheme);
+    // }
+    // Err(DwalletMPCError::TwoPCMPCError(
+    //     "Decryption share not found".to_string(),
+    // ))
+
+    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeyVersions>> {
+        Ok(self
+            .epoch_store()?
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::TwoPCMPCError(
+                "Decryption share not found".to_string(),
+            ))?
+            .clone())
     }
 
     pub(super) fn get_decryption_key_share_public_parameters(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
-        if let Some(self_decryption_share) = self.epoch_store()?.dwallet_mpc_network_keys.get() {
-            return self_decryption_share.get_decryption_public_parameters(key_id);
-        }
-        Err(DwalletMPCError::TwoPCMPCError(
-            "Decryption share not found".to_string(),
-        ))
+        // let self_decryption_share =
+        self.dwallet_mpc_network_keys()?
+            .get_decryption_public_parameters(key_id)
+        //     .get() {
+        //     return self_decryption_share.get_decryption_public_parameters(key_id);
+        // }
+        // Err(DwalletMPCError::TwoPCMPCError(
+        //     "Decryption share not found".to_string(),
+        // ))
     }
 
     /// Retrieves the decryption share for the current authority.
@@ -345,12 +362,8 @@ impl DWalletMPCManager {
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        let epoch_store = self.epoch_store()?;
-
-        let decryption_shares = epoch_store
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+        let decryption_shares = self
+            .dwallet_mpc_network_keys()?
             .get_decryption_key_share(key_id.clone())?;
 
         Ok(decryption_shares)
@@ -566,12 +579,10 @@ impl DWalletMPCManager {
     ) -> DwalletMPCResult<()> {
         if let MPCProtocolInitData::NetworkDkg(key_type, _) = session_info.mpc_round {
             let epoch_store = self.epoch_store()?;
-            let network_keys = epoch_store
-                .dwallet_mpc_network_keys
-                .get()
-                .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
+            // let network_keys = epoch_store.clone()
+            // epoch_store.dwallet_mpc_network_keys;
 
-            network_keys.add_key_version(
+            self.dwallet_mpc_network_keys()?.add_key_version(
                 key_id,
                 epoch_store.clone(),
                 key_type,

@@ -463,6 +463,23 @@ where
         }
     }
 
+    pub async fn get_dwallet_mpc_network_keys(
+        &self,
+    ) -> IkaResult<HashMap<ObjectID, NetworkDecryptionKeyShares>> {
+        let system_inner = self.get_system_inner_until_success().await;
+        Ok(self
+            .inner
+            .get_network_decryption_keys(
+                system_inner
+                    .into_init_version_for_tooling()
+                    .dwallet_2pc_mpc_secp256k1_network_decryption_keys(),
+            )
+            .await
+            .map_err(|e| {
+                IkaError::SuiClientInternalError(format!("Can't get_network_decryption_keys: {e}"))
+            })?)
+    }
+
     pub async fn get_epoch_start_system_until_success(
         &self,
         system_inner: &SystemInner,

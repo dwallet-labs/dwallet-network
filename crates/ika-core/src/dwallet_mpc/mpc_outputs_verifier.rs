@@ -6,6 +6,7 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::sign::SignFirstParty;
 use crate::dwallet_mpc::{
     authority_name_to_party_id, message_digest, network_key_version_from_key_id,
@@ -247,6 +248,17 @@ impl DWalletMPCOutputsVerifier {
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
+    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeyVersions>> {
+        Ok(self
+            .epoch_store()?
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::TwoPCMPCError(
+                "Decryption share not found".to_string(),
+            ))?
+            .clone())
+    }
+
     fn verify_signature(
         epoch_store: &Arc<AuthorityPerEpochStore>,
         sign_session_data: &StartSignEvent,
@@ -260,7 +272,9 @@ impl DWalletMPCOutputsVerifier {
         let protocol_public_parameters = epoch_store
             .dwallet_mpc_network_keys
             .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .ok_or(DwalletMPCError::TwoPCMPCError(
+                "Decryption share not found".to_string(),
+            ))?
             .get_protocol_public_parameters(
                 &sign_session_data.dwallet_mpc_network_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,

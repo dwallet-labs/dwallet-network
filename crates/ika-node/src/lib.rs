@@ -179,6 +179,7 @@ use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use ika_core::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
@@ -310,7 +311,7 @@ impl IkaNode {
         let epoch_start_configuration = EpochStartConfiguration::new(epoch_start_system_state)
             .expect("EpochStartConfiguration construction cannot fail");
 
-        // let epoch_start_configuration = store
+        // let epoch_start_configuration = storeDwalletMPCNetworkKeyVersions
         //     .get_epoch_start_configuration()?
         //     .expect("EpochStartConfiguration of the current epoch must exist");
 
@@ -366,7 +367,14 @@ impl IkaNode {
         let state_sync_store = RocksDbStore::new(committee_store.clone(), checkpoint_store.clone());
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
-
+        let dwallet_network_keys = DwalletMPCNetworkKeyVersions::empty(
+            epoch_store.authority_name_to_party_id(&config.protocol_public_key())?,
+            config
+                .class_groups_key_pair_and_proof
+                .class_groups_keypair()
+                .decryption_key(),
+        );
+        let dwallet_network_keys_arc = Arc::new(dwallet_network_keys);
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
@@ -374,9 +382,11 @@ impl IkaNode {
                 sui_client,
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
+                dwallet_network_keys_arc.clone(),
             )
             .await?,
         );
+        epoch_store.set_dwallet_mpc_network_keys(dwallet_network_keys_arc)?;
 
         info!("creating archive reader");
         // Create network
@@ -825,12 +835,12 @@ impl IkaNode {
         let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(epoch_store.clone());
 
         // Start the dWallet MPC manager on epoch start.
-        epoch_store.set_dwallet_mpc_network_keys(
-            config
-                .class_groups_key_pair_and_proof
-                .class_groups_keypair()
-                .decryption_key(),
-        )?;
+        // epoch_store.set_dwallet_mpc_network_keys(
+        //     config
+        //         .class_groups_key_pair_and_proof
+        //         .class_groups_keypair()
+        //         .decryption_key(),
+        // )?;
         // This verifier is in sync with the consensus,
         // used to verify outputs before sending a system TX to store them.
         epoch_store
