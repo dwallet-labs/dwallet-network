@@ -19,16 +19,9 @@ use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors,
 };
-use k256::ecdsa::hazmat::bits2field;
-use k256::ecdsa::signature::digest::{Digest, FixedOutput};
-use k256::elliptic_curve::bigint::{Encoding, Uint};
-use k256::elliptic_curve::ops::Reduce;
-use k256::{elliptic_curve, U256};
 use mpc::two_party::Round;
 use mpc::Party;
 use rand_core::{OsRng, SeedableRng};
-use sha3::digest::FixedOutput as Sha3FixedOutput;
-use sha3::Digest as Sha3Digest;
 use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;

@@ -2958,15 +2958,11 @@ dependencies = [
  "dwallet-mpc-types",
  "group 0.1.0",
  "homomorphic_encryption",
- "k256 0.14.0-pre.2",
- "maurer",
  "mpc",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "schemars",
  "serde",
- "sha2 0.10.8",
- "sha3 0.10.8",
  "twopc_mpc",
 ]
 
