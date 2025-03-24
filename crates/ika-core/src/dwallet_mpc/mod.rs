@@ -83,10 +83,10 @@ pub(crate) fn party_id_to_authority_name(
 
 /// Convert a given [`Vec<PartyID>`] to the corresponding [`Vec<AuthorityName>`].
 pub(crate) fn party_ids_to_authority_names(
-    malicious_parties: &[PartyID],
+    party_ids: &[PartyID],
     epoch_store: &AuthorityPerEpochStore,
 ) -> DwalletMPCResult<Vec<AuthorityName>> {
-    malicious_parties
+    party_ids
         .iter()
         .map(|party_id| party_id_to_authority_name(*party_id, &epoch_store))
         .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
