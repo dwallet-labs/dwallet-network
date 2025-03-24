@@ -10,7 +10,7 @@ edition = "2021"
 workspace = true
 
 [dependencies]
-k256 = { git = "https://github.com/RustCrypto/elliptic-curves.git", tag = "k256/v0.14.0-pre.2", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
+k256.workspace = true
 group.workspace = true
 mpc.workspace = true
 twopc_mpc.workspace = true

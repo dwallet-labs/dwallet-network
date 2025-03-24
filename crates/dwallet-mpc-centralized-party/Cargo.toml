@@ -8,7 +8,7 @@ mpc.workspace = true
 twopc_mpc.workspace = true
 commitment = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "ika", subdir = "commitment" }
 class_groups_constants = { path = "../class-groups-constants" }
-k256 = { git = "https://github.com/RustCrypto/elliptic-curves.git", tag = "k256/v0.14.0-pre.2", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
+k256.workspace = true
 class_groups.workspace = true
 group.workspace = true
 homomorphic_encryption.workspace = true

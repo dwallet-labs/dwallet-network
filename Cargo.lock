@@ -1787,9 +1787,12 @@ dependencies = [
  "class_groups",
  "dwallet-mpc-types",
  "group 0.1.0",
+ "k256 0.14.0-pre.2",
  "mpc",
  "schemars",
  "serde",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
  "twopc_mpc",
 ]
 
