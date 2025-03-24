@@ -42,7 +42,7 @@ pub const TOTAL_VOTING_POWER: StakeUnit = 4;
 
 /// Quorum threshold for our fixed voting power--any message signed by this much voting power can be trusted
 /// up to BFT assumptions
-pub const QUORUM_THRESHOLD: StakeUnit = 3;
+pub const QUORUM_THRESHOLD: StakeUnit = (2 * TOTAL_VOTING_POWER) / 3 + 1;
 
 /// Validity threshold defined by f+1
 pub const VALIDITY_THRESHOLD: StakeUnit = 1;
