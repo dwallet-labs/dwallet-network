@@ -7,7 +7,7 @@ version.workspace = true
 mpc.workspace = true
 twopc_mpc.workspace = true
 commitment = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "ika", subdir = "commitment" }
-class_groups_constants = { path = "../class-groups-constants" }
+class_groups_constants = { path = "../shared-wasm-class-groups" }
 class_groups.workspace = true
 group.workspace = true
 homomorphic_encryption.workspace = true

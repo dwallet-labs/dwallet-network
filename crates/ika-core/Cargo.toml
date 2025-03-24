@@ -19,7 +19,7 @@ class_groups.workspace = true
 dwallet-classgroups-types.workspace = true
 schemars.workspace = true
 commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "ika" }
-class_groups_constants = { path = "../class-groups-constants" }
+class_groups_constants = { path = "../shared-wasm-class-groups" }
 rand_core = "0.6.4"
 crypto-bigint = { workspace = true, features = ["rand_core", "serde"], default-features = false }
 dwallet-mpc-types.workspace = true
