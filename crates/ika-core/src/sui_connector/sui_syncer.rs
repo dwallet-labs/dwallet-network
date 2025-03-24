@@ -91,14 +91,15 @@ where
                 .get_dwallet_mpc_network_keys()
                 .await
                 .unwrap_or_default();
-            let mut local_network_decryption_keys = dwallet_mpc_network_keys.key_shares_versions();
+            let mut local_network_decryption_keys =
+                dwallet_mpc_network_keys.network_decryption_keys();
             network_decryption_keys
                 .into_iter()
                 .for_each(|(key_id, key_version)| {
                     if let Some(local_version) = local_network_decryption_keys.get(&key_id) {
                         if *local_version != key_version {
                             if let Err(e) =
-                                dwallet_mpc_network_keys.update_key_version(key_id, Vec::new())
+                                dwallet_mpc_network_keys.update_network_key(key_id, key_version)
                             {
                                 // change
                                 error!(
@@ -109,7 +110,7 @@ where
                         }
                     } else {
                         if let Err(e) =
-                            dwallet_mpc_network_keys.add_new_key(key_id, key_version, None)
+                            dwallet_mpc_network_keys.add_new_network_key(key_id, key_version)
                         {
                             error!(
                                 "Failed to add new key for key_id: {:?}, error: {:?}",

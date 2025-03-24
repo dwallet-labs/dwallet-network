@@ -796,11 +796,7 @@ impl AuthorityPerEpochStore {
         &self,
         network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) -> IkaResult<()> {
-        if self
-            .dwallet_mpc_network_keys
-            .set(network_keys)
-            .is_err()
-        {
+        if self.dwallet_mpc_network_keys.set(network_keys).is_err() {
             error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
         }
         Ok(())

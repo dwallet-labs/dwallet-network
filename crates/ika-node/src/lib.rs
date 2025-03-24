@@ -22,7 +22,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 #[cfg(msim)]
 use std::sync::atomic::Ordering;
-use std::sync::{Arc, Weak};
+use std::sync::{Arc, RwLock, Weak};
 use std::time::Duration;
 
 use ika_core::consensus_adapter::ConsensusClient;
@@ -179,7 +179,9 @@ use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use ika_core::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
+use ika_core::dwallet_mpc::network_dkg::{
+    DwalletMPCNetworkKeyVersions, NodeContext, ValidatorContext,
+};
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
@@ -367,14 +369,21 @@ impl IkaNode {
         let state_sync_store = RocksDbStore::new(committee_store.clone(), checkpoint_store.clone());
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
-        let party_id = epoch_store.authority_name_to_party_id(&config.protocol_public_key())?;
-        let dwallet_network_keys = DwalletMPCNetworkKeyVersions::empty(
-            party_id,
-            config
-                .class_groups_key_pair_and_proof
-                .class_groups_keypair()
-                .decryption_key(),
-        );
+        let is_validator = config.consensus_config.is_some();
+        let node_context = if is_validator {
+            let party_id = epoch_store.authority_name_to_party_id(&config.protocol_public_key())?;
+            NodeContext::Validator(ValidatorContext {
+                party_id,
+                class_groups_decryption_key: config
+                    .class_groups_key_pair_and_proof
+                    .class_groups_keypair()
+                    .decryption_key(),
+                validator_decryption_key_share: RwLock::new(HashMap::new()),
+            })
+        } else {
+            NodeContext::FullNode
+        };
+        let dwallet_network_keys = DwalletMPCNetworkKeyVersions::new(node_context);
         let dwallet_network_keys_arc = Arc::new(dwallet_network_keys);
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
@@ -525,7 +534,12 @@ impl IkaNode {
         let node_copy = node.clone();
         let perpetual_tables_copy = perpetual_tables.clone();
         spawn_monitored_task!(async move {
-            let result = Self::monitor_reconfiguration(node_copy, perpetual_tables_copy, dwallet_network_keys_arc.clone()).await;
+            let result = Self::monitor_reconfiguration(
+                node_copy,
+                perpetual_tables_copy,
+                dwallet_network_keys_arc.clone(),
+            )
+            .await;
             if let Err(error) = result {
                 warn!("Reconfiguration finished with error {:?}", error);
             }
@@ -839,9 +853,7 @@ impl IkaNode {
         let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(epoch_store.clone());
 
         // Start the dWallet MPC manager on epoch start.
-        epoch_store.set_dwallet_mpc_network_keys(
-            network_keys,
-        )?;
+        epoch_store.set_dwallet_mpc_network_keys(network_keys)?;
         // This verifier is in sync with the consensus,
         // used to verify outputs before sending a system TX to store them.
         epoch_store
