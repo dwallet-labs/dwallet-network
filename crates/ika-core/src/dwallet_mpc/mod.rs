@@ -37,7 +37,9 @@ use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
 use tracing::warn;
 
+use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use twopc_mpc::secp256k1;
+
 mod cryptographic_computations_orchestrator;
 mod dkg;
 pub mod dwallet_mpc_service;
@@ -239,7 +241,7 @@ fn sign_public_input(
             bcs::to_bytes(
                 &message_digest(
                     &deserialized_event.message.clone(),
-                    &crate::dwallet_mpc::Hash::try_from(deserialized_event.hash_scheme)
+                    &Hash::try_from(deserialized_event.hash_scheme)
                         .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
                 )
                 .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
@@ -256,46 +258,6 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::Sign(deserialized_event.event_data.clone()),
     }
-}
-
-// TODO (#772): Remove the duplicated `message_digest` implementation
-#[derive(Clone, Debug)]
-pub enum Hash {
-    KECCAK256 = 0,
-    SHA256 = 1,
-}
-
-impl TryFrom<u8> for Hash {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Hash::KECCAK256),
-            1 => Ok(Hash::SHA256),
-            _ => Err(anyhow::Error::msg(format!(
-                "invalid value for Hash enum: {}",
-                value
-            ))),
-        }
-    }
-}
-
-/// Computes the message digest of a given message using the specified hash function.
-fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1::Scalar> {
-    let hash = match hash_type {
-        Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
-            &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
-        )
-        .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
-
-        Hash::SHA256 => {
-            bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
-                .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
-        }
-    };
-    #[allow(clippy::useless_conversion)]
-    let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
-    Ok(U256::from(m).into())
 }
 
 fn get_verify_partial_signatures_session_info(

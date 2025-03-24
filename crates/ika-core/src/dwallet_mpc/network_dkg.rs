@@ -346,7 +346,7 @@ pub(crate) fn advance_network_dkg(
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
     #[cfg(not(feature = "with-network-dkg"))]
     {
-        let secret_shares = class_groups_constants::decryption_key_share(party_id);
+        let secret_shares = shared_wasm_class_groups::decryption_key_share(party_id);
 
         let self_decryption_key_share = secret_shares
             .into_iter()
@@ -354,7 +354,7 @@ pub(crate) fn advance_network_dkg(
             .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
 
         let private_output = bcs::to_bytes(&self_decryption_key_share)?;
-        let public_output = bcs::to_bytes(&class_groups_constants::network_dkg_final_output())?;
+        let public_output = bcs::to_bytes(&shared_wasm_class_groups::network_dkg_final_output())?;
 
         let res = AsynchronousRoundResult::Finalize {
             malicious_parties: Vec::new(),
