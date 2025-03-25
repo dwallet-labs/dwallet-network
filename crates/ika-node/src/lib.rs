@@ -316,7 +316,7 @@ impl IkaNode {
         let epoch_start_configuration = EpochStartConfiguration::new(epoch_start_system_state)
             .expect("EpochStartConfiguration construction cannot fail");
 
-        // let epoch_start_configuration = storeDwalletMPCNetworkKeyVersions
+        // let epoch_start_configuration = store
         //     .get_epoch_start_configuration()?
         //     .expect("EpochStartConfiguration of the current epoch must exist");
 
@@ -326,7 +326,6 @@ impl IkaNode {
             ika_system_package_id: config.sui_connector_config.ika_system_package_id,
             ika_system_object_id: config.sui_connector_config.system_id,
         };
-        // Todo: Read network keys`
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
             committee.clone(),
@@ -1025,7 +1024,7 @@ impl IkaNode {
     pub async fn monitor_reconfiguration(
         self: Arc<Self>,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
-        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        dwallet_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) -> Result<()> {
         loop {
             let run_with_range = self.config.run_with_range;
@@ -1236,7 +1235,7 @@ impl IkaNode {
                             self.metrics.clone(),
                             ika_tx_validator_metrics,
                             previous_epoch_last_checkpoint_sequence_number,
-                            network_keys.clone(),
+                            dwallet_network_keys.clone(),
                         )
                         .await?,
                     )
@@ -1269,7 +1268,7 @@ impl IkaNode {
                             &self.registry_service,
                             self.metrics.clone(),
                             previous_epoch_last_checkpoint_sequence_number,
-                            network_keys.clone(),
+                            dwallet_network_keys.clone(),
                         )
                         .await?,
                     )

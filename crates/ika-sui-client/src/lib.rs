@@ -448,7 +448,6 @@ where
         self.inner.execute_transaction_block_with_effects(tx).await
     }
 
-    // Todo: Read network keys
     pub async fn get_system_inner_until_success(&self) -> SystemInner {
         loop {
             let Ok(Ok(ika_system_state)) =

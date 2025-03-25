@@ -311,16 +311,9 @@ impl DWalletMPCManager {
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
-        // if let Some(self_decryption_share) =
         self.dwallet_mpc_network_keys()?
             .get_protocol_public_parameters(key_id, key_scheme)
-        // {
     }
-    //     return self_decryption_share.get_protocol_public_parameters(key_id, key_scheme);
-    // }
-    // Err(DwalletMPCError::TwoPCMPCError(
-    //     "Decryption share not found".to_string(),
-    // ))
 
     fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeyVersions>> {
         Ok(self
@@ -337,15 +330,8 @@ impl DWalletMPCManager {
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
-        // let self_decryption_share =
         self.dwallet_mpc_network_keys()?
             .get_decryption_public_parameters(key_id)
-        //     .get() {
-        //     return self_decryption_share.get_decryption_public_parameters(key_id);
-        // }
-        // Err(DwalletMPCError::TwoPCMPCError(
-        //     "Decryption share not found".to_string(),
-        // ))
     }
 
     /// Retrieves the decryption share for the current authority.
@@ -567,32 +553,6 @@ impl DWalletMPCManager {
         });
         Ok(())
     }
-
-    /// Update the encryption of decryption key share with the new shares.
-    /// This function is called when the network DKG protocol is done.
-    // fn update_dwallet_mpc_network_key(
-    //     &self,
-    //     key_id: ObjectID,
-    //     session_info: &SessionInfo,
-    //     public_output: MPCPublicOutput,
-    //     private_output: MPCPrivateOutput,
-    // ) -> DwalletMPCResult<()> {
-    //     if let MPCProtocolInitData::NetworkDkg(key_type, _) = session_info.mpc_round {
-    //         let epoch_store = self.epoch_store()?;
-    //         // let network_keys = epoch_store.clone()
-    //         // epoch_store.dwallet_mpc_network_keys;
-    //
-    //         self.dwallet_mpc_network_keys()?.add_new_network_key(
-    //             key_id,
-    //             epoch_store.clone(),
-    //             key_type,
-    //             bcs::from_bytes(&private_output)?,
-    //             public_output,
-    //             &self.weighted_threshold_access_structure,
-    //         )?;
-    //     }
-    //     Ok(())
-    // }
 
     /// Returns the epoch store.
     /// Errors if the epoch was switched in the middle.

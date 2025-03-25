@@ -730,16 +730,6 @@ impl AuthorityPerEpochStore {
             self.dwallet_mpc_round_completed_sessions.lock().await;
         dwallet_mpc_round_completed_sessions.push(session_id);
     }
-    //
-    // pub fn set_dwallet_mpc_network_keys(
-    //     &self,
-    //     network_keys: Arc<DwalletMPCNetworkKeyVersions>,
-    // ) -> IkaResult<()> {
-    //     if self.dwallet_mpc_network_keys.set(network_keys).is_err() {
-    //         error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
-    //     }
-    //     Ok(())
-    // }
 
     /// A function to initiate the [`DWalletMPCManager`] when a new epoch starts.
     pub fn set_dwallet_mpc_manager(&self, sender: DWalletMPCManager) -> IkaResult<()> {
@@ -790,9 +780,13 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
     pub fn set_dwallet_mpc_network_keys(
         &self,
-        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        dwallet_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) -> IkaResult<()> {
-        if self.dwallet_mpc_network_keys.set(network_keys).is_err() {
+        if self
+            .dwallet_mpc_network_keys
+            .set(dwallet_network_keys)
+            .is_err()
+        {
             error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
         }
         Ok(())
@@ -810,7 +804,6 @@ impl AuthorityPerEpochStore {
     ) -> HashMap<ObjectID, NetworkDecryptionKeyShares> {
         match self.epoch_start_state() {
             EpochStartSystem::V1(data) => data.get_dwallet_network_decryption_keys().clone(),
-            // Todo: it is best to mock here, but what would be the key id?
         }
     }
 
@@ -2161,14 +2154,6 @@ impl AuthorityPerEpochStore {
                             .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
                             .collect();
                         Ok(self.process_consensus_system_bulk_transaction(&messages))
-                        // Todo: Read network keys
-                        // Ask Zeev if the right approach is to start a tread to read the network keys.
-                        // Or is there a better way to do update the keys by Sadika's requirements.
-                        // Sadika's requirements:
-                        // 1. Read the keys only after the transaction succeeded. (after checkpoint execution)
-                        // 2. Decrypt the secret share from the public output.
-                        // Note: this means that the full network DKG flow will take longer
-                        // Note: Keep in mind how to mock the flow to keep the development (and testing) process fast.
                     }
                     DWalletMPCNetworkKeyScheme::Ristretto => {
                         Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
