@@ -59,7 +59,10 @@ where
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
-        tokio::spawn(Self::sync_dwallet_network_keys(sui_client_clone, dwallet_mpc_network_keys));
+        tokio::spawn(Self::sync_dwallet_network_keys(
+            sui_client_clone,
+            dwallet_mpc_network_keys,
+        ));
         for (module, cursor) in self.cursors {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
