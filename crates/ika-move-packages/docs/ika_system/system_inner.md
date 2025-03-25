@@ -293,10 +293,16 @@ Uses SystemParametersV1 as the parameters.
  The total messages processed.
 </dd>
 <dt>
-<code>last_processed_checkpoint_sequence_number: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u32&gt;</code>
+<code>last_processed_checkpoint_sequence_number: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u64&gt;</code>
 </dt>
 <dd>
  The last checkpoint sequence number processed.
+</dd>
+<dt>
+<code>previous_epoch_last_checkpoint_sequence_number: u64</code>
+</dt>
+<dd>
+ The last checkpoint sequence number of previous epoch.
 </dd>
 <dt>
 <code>computation_reward: <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;</code>
@@ -385,7 +391,7 @@ the epoch advancement message.
 <dd>
 </dd>
 <dt>
-<code>last_processed_checkpoint_sequence_number: u32</code>
+<code>last_processed_checkpoint_sequence_number: u64</code>
 </dt>
 <dd>
 </dd>
@@ -450,7 +456,7 @@ the checkpoint submmision message.
 <dd>
 </dd>
 <dt>
-<code>sequence_number: u32</code>
+<code>sequence_number: u64</code>
 </dt>
 <dd>
 </dd>
@@ -486,7 +492,7 @@ the checkpoint submmision message.
 <dd>
 </dd>
 <dt>
-<code>sequence_number: u32</code>
+<code>sequence_number: u64</code>
 </dt>
 <dd>
 </dd>
@@ -533,7 +539,7 @@ the checkpoint submmision message.
 
 
 <pre><code>#[error]
-<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>: vector&lt;u8&gt; = b"Fitst active committee must <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_initialize">initialize</a>.";
+<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>: vector&lt;u8&gt; = b"First active committee must <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_initialize">initialize</a>.";
 </code></pre>
 
 
@@ -561,7 +567,7 @@ the checkpoint submmision message.
 
 
 <pre><code>#[error]
-<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_ECannotInitialize">ECannotInitialize</a>: vector&lt;u8&gt; = b"Too early <b>for</b> initialization time or alreay initialized.";
+<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_ECannotInitialize">ECannotInitialize</a>: vector&lt;u8&gt; = b"Too early <b>for</b> initialization time or already initialized.";
 </code></pre>
 
 
@@ -644,6 +650,7 @@ This function will be called only once in init.
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>,
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: option::none(),
+        previous_epoch_last_checkpoint_sequence_number: 0,
         computation_reward: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_secp256k1_id: option::none(),
@@ -1956,7 +1963,7 @@ gas coins.
     // Derive the computation price per unit size <b>for</b> the new <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>
     self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>);
     <b>let</b> last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
-    self.last_processed_checkpoint_sequence_number.extract();
+    self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
     event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemEpochInfoEvent">SystemEpochInfoEvent</a> {
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>,
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_protocol_version">protocol_version</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_protocol_version">protocol_version</a>,
@@ -2280,7 +2287,7 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">dwallet_2pc_mpc_secp256k1::DWalletCoordinator</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>: u64, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">dwallet_2pc_mpc_secp256k1::DWalletCoordinator</a>, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -2292,21 +2299,21 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>,
     <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> DWalletCoordinator,
-    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>: u64,
     signature: vector&lt;u8&gt;,
     signers_bitmap: vector&lt;u8&gt;,
     message: vector&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext,
 ) {
+    <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>;
     <b>let</b> <b>mut</b> intent_bytes = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_CHECKPOINT_MESSAGE_INTENT">CHECKPOINT_MESSAGE_INTENT</a>;
     intent_bytes.append(message);
-    intent_bytes.append(bcs::to_bytes(&self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>));
+    intent_bytes.append(bcs::to_bytes(&<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>));
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>().verify_certificate(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>, &signature, &signers_bitmap, &intent_bytes);
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message">process_checkpoint_message</a>(message, ctx);
     // TODO: seperate this to its own process
-    <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>, signature, signers_bitmap, message, ctx);
+    <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(signature, signers_bitmap, message, ctx);
     <b>if</b>(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> + 1 == self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>()) {
-        <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>(), ctx);
+        <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>());
         self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.advance_epoch_dwallet_network_decryption_key(cap));
     }
 }
@@ -2372,7 +2379,7 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     <b>let</b> <b>mut</b> bcs_body = bcs::new(<b>copy</b> message);
     <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> = bcs_body.peel_u64();
     <b>assert</b>!(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> == self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_EIncorrectEpochInCheckpoint">EIncorrectEpochInCheckpoint</a>);
-    <b>let</b> sequence_number = bcs_body.peel_u32();
+    <b>let</b> sequence_number = bcs_body.peel_u64();
     <b>if</b>(self.last_processed_checkpoint_sequence_number.is_none()) {
         <b>assert</b>!(sequence_number == 0, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_EWrongCheckpointSequenceNumber">EWrongCheckpointSequenceNumber</a>);
         self.last_processed_checkpoint_sequence_number.fill(sequence_number);

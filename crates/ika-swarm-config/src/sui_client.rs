@@ -148,7 +148,7 @@ pub async fn init_ika_on_sui(
             .await?;
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    merge_coins(publisher_address, &mut context, &client.coin_read_api()).await?;
+    merge_coins(publisher_address, &mut context).await?;
     println!("Merge coins done, address {:?}", publisher_address);
 
     println!("Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}");
@@ -583,22 +583,13 @@ async fn request_add_validator(
 async fn merge_coins(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
-    coin_read_api: &CoinReadApi,
 ) -> Result<(), anyhow::Error> {
+    let coins = context.get_all_gas_objects_owned_by_address(publisher_address).await?;
     let mut ptb = ProgrammableTransactionBuilder::new();
-    let coins = coin_read_api
-        .get_coins(
-            publisher_address,
-            Some("0x2::sui::SUI".to_string()),
-            None,
-            Some(7),
-        )
-        .await?
-        .data;
     let coins = coins
-        .iter()
+        .iter().skip(1)
         .map(|c| {
-            ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(c.object_ref())))
+            ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
                 // Safe to unwrap as this function is only being called at the swarm config.
                 .unwrap()
         })

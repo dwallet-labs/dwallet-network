@@ -80,7 +80,9 @@ public struct SystemInnerV1 has store {
     /// The total messages processed.
     total_messages_processed: u64,
     /// The last checkpoint sequence number processed.
-    last_processed_checkpoint_sequence_number: Option<u32>,
+    last_processed_checkpoint_sequence_number: Option<u64>,
+    /// The last checkpoint sequence number of previous epoch.
+    previous_epoch_last_checkpoint_sequence_number: u64,
     /// The fees paid for computation.
     computation_reward: Balance<IKA>,
     /// List of authorized protocol cap ids.
@@ -102,7 +104,7 @@ public struct SystemEpochInfoEvent has copy, drop {
     stake_subsidy_amount: u64,
     total_computation_fees: u64,
     total_stake_rewards_distributed: u64,
-    last_processed_checkpoint_sequence_number: u32
+    last_processed_checkpoint_sequence_number: u64
 }
 
 /// Event emitted during verifing quorum checkpoint submmision signature.
@@ -115,7 +117,7 @@ public struct SystemProtocolCapVerifiedEvent has copy, drop {
 /// the checkpoint submmision message.
 public struct SystemCheckpointInfoEvent has copy, drop {
     epoch: u64,
-    sequence_number: u32,
+    sequence_number: u64,
     timestamp_ms: u64,
 }
 
@@ -135,10 +137,10 @@ const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.
 const EWrongCheckpointSequenceNumber: vector<u8> = b"The checkpoint sequence number should be the expected next one.";
 
 #[error]
-const EActiveBlsCommitteeMustInitialize: vector<u8> = b"Fitst active committee must initialize.";
+const EActiveBlsCommitteeMustInitialize: vector<u8> = b"First active committee must initialize.";
 
 #[error]
-const ECannotInitialize: vector<u8> = b"Too early for initialization time or alreay initialized.";
+const ECannotInitialize: vector<u8> = b"Too early for initialization time or already initialized.";
 
 // ==== functions that can only be called by init ====
 
@@ -166,6 +168,7 @@ public(package) fun create(
         epoch_start_timestamp_ms,
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: option::none(),
+        previous_epoch_last_checkpoint_sequence_number: 0,
         computation_reward: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_secp256k1_id: option::none(),
@@ -742,7 +745,7 @@ public(package) fun advance_epoch(
     self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&active_committee);
 
     let last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
-    self.last_processed_checkpoint_sequence_number.extract();
+    self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
 
     event::emit(SystemEpochInfoEvent {
         epoch: self.epoch,
@@ -816,7 +819,7 @@ public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
 
 public struct TestMessageEvent has drop, copy {
     epoch: u64,
-    sequence_number: u32,
+    sequence_number: u64,
     authority: u32,
     num: u64,
 }
@@ -849,24 +852,25 @@ public(package) fun process_checkpoint_message_by_cap(
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut SystemInnerV1,
     dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
-    epoch: u64,
+
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
+    let epoch = self.epoch;
     let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
     intent_bytes.append(message);
-    intent_bytes.append(bcs::to_bytes(&self.epoch));
+    intent_bytes.append(bcs::to_bytes(&epoch));
 
     self.active_committee().verify_certificate(epoch, &signature, &signers_bitmap, &intent_bytes);
 
     self.process_checkpoint_message(message, ctx);
 
     // TODO: seperate this to its own process
-    dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(epoch, signature, signers_bitmap, message, ctx);
+    dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
     if(epoch + 1 == self.epoch()) {
-        dwallet_2pc_mpc_secp256k1.advance_epoch(self.active_committee(), ctx);
+        dwallet_2pc_mpc_secp256k1.advance_epoch(self.active_committee());
         self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
     }
 }
@@ -895,7 +899,7 @@ fun process_checkpoint_message(
     let epoch = bcs_body.peel_u64();
     assert!(epoch == self.epoch, EIncorrectEpochInCheckpoint);
 
-    let sequence_number = bcs_body.peel_u32();
+    let sequence_number = bcs_body.peel_u64();
 
     if(self.last_processed_checkpoint_sequence_number.is_none()) {
         assert!(sequence_number == 0, EWrongCheckpointSequenceNumber);

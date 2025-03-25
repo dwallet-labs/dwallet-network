@@ -75,7 +75,6 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> CheckpointOutput
             .checkpoint_created(checkpoint_message, epoch_store, checkpoint_store)
             .await?;
 
-        let epoch = epoch_store.epoch();
         let checkpoint_timestamp = checkpoint_message.timestamp_ms;
         let checkpoint_seq = checkpoint_message.sequence_number;
         self.metrics.checkpoint_creation_latency.observe(
@@ -87,7 +86,7 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> CheckpointOutput
         );
 
         let highest_verified_checkpoint = checkpoint_store
-            .get_highest_verified_checkpoint(epoch)?
+            .get_highest_verified_checkpoint()?
             .map(|x| *x.sequence_number());
 
         if Some(checkpoint_seq) > highest_verified_checkpoint {
@@ -98,7 +97,7 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> CheckpointOutput
             );
 
             let summary = SignedCheckpointMessage::new(
-                epoch,
+                epoch_store.epoch(),
                 checkpoint_message.clone(),
                 &*self.signer,
                 self.authority,
