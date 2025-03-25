@@ -584,10 +584,13 @@ async fn merge_coins(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
 ) -> Result<(), anyhow::Error> {
-    let coins = context.get_all_gas_objects_owned_by_address(publisher_address).await?;
+    let coins = context
+        .get_all_gas_objects_owned_by_address(publisher_address)
+        .await?;
     let mut ptb = ProgrammableTransactionBuilder::new();
     let coins = coins
-        .iter().skip(1)
+        .iter()
+        .skip(1)
         .map(|c| {
             ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
                 // Safe to unwrap as this function is only being called at the swarm config.

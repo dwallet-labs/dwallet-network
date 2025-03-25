@@ -67,9 +67,7 @@ use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
 };
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
-use crate::dwallet_mpc::{
-    authority_name_to_party_id, presign_public_input, session_info_from_event,
-};
+use crate::dwallet_mpc::{presign_public_input, session_info_from_event};
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
@@ -79,7 +77,6 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
-use ika_sui_client::SuiClient;
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
@@ -110,7 +107,6 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use std::time::Duration;
 use sui_macros::fail_point;
-use sui_sdk::SuiClient as SuiSdkClient;
 use sui_storage::mutex_table::{MutexGuard, MutexTable};
 use sui_types::digests::TransactionDigest;
 use sui_types::effects::TransactionEffects;
@@ -676,7 +672,7 @@ impl AuthorityPerEpochStore {
     ) -> IkaResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
         let mut validators_class_groups_public_keys_and_proofs = HashMap::new();
         for (name, _) in self.committee().voting_rights.iter() {
-            let party_id = authority_name_to_party_id(name, &self)?;
+            let party_id = self.authority_name_to_party_id(name)?;
             let public_key =
                 bcs::from_bytes(&self.committee().class_groups_public_key_and_proof(name)?)
                     .map_err(|e| DwalletMPCError::BcsError(e))?;
@@ -784,7 +780,7 @@ impl AuthorityPerEpochStore {
             .committee()
             .voting_rights
             .iter()
-            .map(|(name, weight)| Ok((authority_name_to_party_id(name, &self)?, *weight as Weight)))
+            .map(|(name, weight)| Ok((self.authority_name_to_party_id(name)?, *weight as Weight)))
             .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
 
         WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
@@ -1998,7 +1994,7 @@ impl AuthorityPerEpochStore {
         })
         .await;
 
-        let authority_index = authority_name_to_party_id(&origin_authority, &self);
+        let authority_index = self.authority_name_to_party_id(&origin_authority);
         let mut dwallet_mpc_verifier = self.get_dwallet_mpc_outputs_verifier().await;
         let output_verification_result = dwallet_mpc_verifier
             .try_verify_output(&output, &session_info, origin_authority)
