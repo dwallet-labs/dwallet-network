@@ -98,7 +98,7 @@ pub struct NetworkDecryptionKeyShares {
     /// The public parameters of the decryption key shares,
     /// updated only after a successful network DKG.
     pub decryption_key_share_public_parameters: Vec<u8>,
-    ///  The network encryption, updated only after a successful network DKG.
+    /// The network encryption key, updated only after a successful network DKG.
     pub encryption_key: Vec<u8>,
     /// Validators' verification keys.
     pub public_verification_keys: Vec<u8>,

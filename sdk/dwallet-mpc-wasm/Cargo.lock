@@ -288,22 +288,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "class_groups_constants"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "base64 0.21.7",
- "bcs",
- "class_groups",
- "dwallet-mpc-types",
- "group 0.1.0",
- "mpc",
- "schemars",
- "serde",
- "twopc_mpc",
-]
-
-[[package]]
 name = "clear_on_drop"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -567,21 +551,17 @@ dependencies = [
  "anyhow",
  "bcs",
  "class_groups",
- "class_groups_constants",
  "commitment",
  "crypto-bigint",
  "dwallet-mpc-types",
  "group 0.1.0",
  "homomorphic_encryption",
- "k256",
- "maurer",
  "mpc",
  "rand_chacha",
  "rand_core",
  "schemars",
  "serde",
- "sha2 0.10.8",
- "sha3 0.10.8",
+ "shared_wasm_class_groups",
  "twopc_mpc",
 ]
 
@@ -1869,6 +1849,25 @@ checksum = "e485881f388c2818d709796dc883c1ffcadde9d1f0e054f3a5c14974185261a6"
 dependencies = [
  "digest 0.11.0-pre.9",
  "keccak 0.2.0-pre.0",
+]
+
+[[package]]
+name = "shared_wasm_class_groups"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "base64 0.21.7",
+ "bcs",
+ "class_groups",
+ "dwallet-mpc-types",
+ "group 0.1.0",
+ "k256",
+ "mpc",
+ "schemars",
+ "serde",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
+ "twopc_mpc",
 ]
 
 [[package]]

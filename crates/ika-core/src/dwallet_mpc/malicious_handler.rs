@@ -68,7 +68,7 @@ impl MaliciousHandler {
     ) -> DwalletMPCResult<ReportStatus> {
         let report_votes = self
             .reports
-            .entry(report)
+            .entry(report.clone())
             .or_insert(StakeAggregator::new(self.committee.clone()));
         if report_votes.has_quorum() {
             return Ok(ReportStatus::OverQuorum);
@@ -77,6 +77,7 @@ impl MaliciousHandler {
             .insert_generic(authority, ())
             .is_quorum_reached()
         {
+            self.malicious_actors.extend(report.malicious_actors);
             return Ok(ReportStatus::QuorumReached);
         }
         Ok(ReportStatus::WaitingForQuorum)

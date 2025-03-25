@@ -289,6 +289,9 @@ impl IkaNode {
             .get_epoch_start_system_until_success(&latest_system_state)
             .await;
 
+        let previous_epoch_last_checkpoint_sequence_number =
+            latest_system_state.previous_epoch_last_checkpoint_sequence_number();
+
         let committee = Arc::new(epoch_start_system_state.get_ika_committee());
 
         let secret = Arc::pin(config.protocol_key_pair().copy());
@@ -410,7 +413,6 @@ impl IkaNode {
             discovery_handle,
             state_sync_handle,
         } = Self::create_p2p_network(
-            epoch_store.epoch(),
             &config,
             state_sync_store.clone(),
             chain_identifier,
@@ -491,6 +493,7 @@ impl IkaNode {
                 connection_monitor_status.clone(),
                 &registry_service,
                 ika_node_metrics.clone(),
+                previous_epoch_last_checkpoint_sequence_number,
                 dwallet_network_keys_arc.clone(),
             )
             .await?;
@@ -626,7 +629,6 @@ impl IkaNode {
     }
 
     fn create_p2p_network(
-        epoch: EpochId,
         config: &NodeConfig,
         state_sync_store: RocksDbStore,
         chain_identifier: ChainIdentifier,
@@ -756,7 +758,7 @@ impl IkaNode {
 
         let discovery_handle =
             discovery.start(p2p_network.clone(), config.network_key_pair().copy());
-        let state_sync_handle = state_sync.start(p2p_network.clone(), epoch);
+        let state_sync_handle = state_sync.start(p2p_network.clone());
 
         Ok(P2pComponents {
             p2p_network,
@@ -776,6 +778,7 @@ impl IkaNode {
         connection_monitor_status: Arc<ConnectionMonitorStatus>,
         registry_service: &RegistryService,
         ika_node_metrics: Arc<IkaNodeMetrics>,
+        previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
@@ -821,6 +824,7 @@ impl IkaNode {
             checkpoint_metrics,
             ika_node_metrics,
             ika_tx_validator_metrics,
+            previous_epoch_last_checkpoint_sequence_number,
             network_keys,
         )
         .await
@@ -838,6 +842,7 @@ impl IkaNode {
         checkpoint_metrics: Arc<CheckpointMetrics>,
         ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
+        previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_checkpoint_service(
@@ -848,6 +853,7 @@ impl IkaNode {
             state.clone(),
             state_sync_handle,
             checkpoint_metrics.clone(),
+            previous_epoch_last_checkpoint_sequence_number,
         );
 
         let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(epoch_store.clone());
@@ -929,6 +935,7 @@ impl IkaNode {
         state: Arc<AuthorityState>,
         state_sync_handle: state_sync::Handle,
         checkpoint_metrics: Arc<CheckpointMetrics>,
+        previous_epoch_last_checkpoint_sequence_number: u64,
     ) -> (Arc<CheckpointService>, JoinSet<()>) {
         let epoch_start_timestamp_ms = epoch_store.epoch_start_state().epoch_start_timestamp_ms();
         let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
@@ -970,6 +977,7 @@ impl IkaNode {
             checkpoint_metrics,
             max_tx_per_checkpoint,
             max_checkpoint_size_bytes,
+            previous_epoch_last_checkpoint_sequence_number,
         )
     }
 
@@ -1111,10 +1119,6 @@ impl IkaNode {
                 }
             };
 
-            self.state_sync_handle
-                .send_current_epoch(latest_system_state.epoch())
-                .await;
-
             // // Safe to call because we are in the middle of reconfiguration.
             // let latest_system_state = self
             //     .state
@@ -1139,6 +1143,9 @@ impl IkaNode {
                     );
                 }
             }
+
+            let previous_epoch_last_checkpoint_sequence_number =
+                latest_system_state.previous_epoch_last_checkpoint_sequence_number();
 
             let next_epoch_committee = epoch_start_system_state.get_ika_committee();
             let next_epoch = next_epoch_committee.epoch();
@@ -1228,6 +1235,7 @@ impl IkaNode {
                             checkpoint_metrics,
                             self.metrics.clone(),
                             ika_tx_validator_metrics,
+                            previous_epoch_last_checkpoint_sequence_number,
                             network_keys.clone(),
                         )
                         .await?,
@@ -1260,6 +1268,7 @@ impl IkaNode {
                             self.connection_monitor_status.clone(),
                             &self.registry_service,
                             self.metrics.clone(),
+                            previous_epoch_last_checkpoint_sequence_number,
                             network_keys.clone(),
                         )
                         .await?,
@@ -1379,8 +1388,7 @@ async fn health_check_handler(
         // Attempt to get the latest checkpoint
         let summary = match state
             .get_checkpoint_store()
-            // TODO: change that to latest epoch
-            .get_highest_executed_checkpoint(0)
+            .get_highest_executed_checkpoint()
         {
             Ok(Some(summary)) => summary,
             Ok(None) => {

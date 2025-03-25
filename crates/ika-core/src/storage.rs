@@ -41,11 +41,8 @@ impl RocksDbStore {
 
     pub fn get_last_executed_checkpoint(
         &self,
-        epoch: EpochId,
     ) -> Result<Option<VerifiedCheckpointMessage>, IkaError> {
-        Ok(self
-            .checkpoint_store
-            .get_highest_executed_checkpoint(epoch)?)
+        Ok(self.checkpoint_store.get_highest_executed_checkpoint()?)
     }
 }
 
@@ -61,39 +58,33 @@ impl ReadStore for RocksDbStore {
 
     fn get_checkpoint_by_sequence_number(
         &self,
-        epoch: EpochId,
         sequence_number: CheckpointSequenceNumber,
     ) -> Result<Option<VerifiedCheckpointMessage>, StorageError> {
         self.checkpoint_store
-            .get_checkpoint_by_sequence_number(epoch, sequence_number)
+            .get_checkpoint_by_sequence_number(sequence_number)
             .map_err(Into::into)
     }
 
     fn get_highest_verified_checkpoint(
         &self,
-        epoch: EpochId,
     ) -> Result<Option<VerifiedCheckpointMessage>, StorageError> {
         self.checkpoint_store
-            .get_highest_verified_checkpoint(epoch)
+            .get_highest_verified_checkpoint()
             .map_err(Into::into)
     }
 
     fn get_highest_synced_checkpoint(
         &self,
-        epoch: EpochId,
     ) -> Result<Option<VerifiedCheckpointMessage>, StorageError> {
         self.checkpoint_store
-            .get_highest_synced_checkpoint(epoch)
+            .get_highest_synced_checkpoint()
             .map_err(Into::into)
     }
 
-    fn get_lowest_available_checkpoint(
-        &self,
-        epoch: EpochId,
-    ) -> Result<CheckpointSequenceNumber, StorageError> {
+    fn get_lowest_available_checkpoint(&self) -> Result<CheckpointSequenceNumber, StorageError> {
         let highest_pruned_cp = self
             .checkpoint_store
-            .get_highest_pruned_checkpoint_seq_number(epoch)
+            .get_highest_pruned_checkpoint_seq_number()
             .map_err(Into::<StorageError>::into)?;
 
         if highest_pruned_cp == 0 {
@@ -112,10 +103,9 @@ impl ReadStore for RocksDbStore {
 
     fn get_latest_checkpoint(
         &self,
-        epoch: EpochId,
     ) -> ika_types::storage::error::Result<VerifiedCheckpointMessage> {
         self.checkpoint_store
-            .get_highest_executed_checkpoint(epoch)
+            .get_highest_executed_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)?
             .ok_or_else(|| {
                 ika_types::storage::error::Error::missing("unable to get latest checkpoint")

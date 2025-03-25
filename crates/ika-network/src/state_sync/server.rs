@@ -5,7 +5,6 @@ use super::{PeerHeights, StateSync, StateSyncMessage};
 use anemo::{rpc::Status, types::response::StatusCode, Request, Response, Result};
 use dashmap::DashMap;
 use futures::future::BoxFuture;
-use ika_types::committee::EpochId;
 use ika_types::digests::ChainIdentifier;
 use ika_types::{
     digests::{CheckpointContentsDigest, CheckpointMessageDigest},
@@ -22,12 +21,7 @@ use tokio::sync::{mpsc, OwnedSemaphorePermit, Semaphore};
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
 pub enum GetCheckpointMessageRequest {
     ByDigest(CheckpointMessageDigest),
-    BySequenceNumber(EpochId, CheckpointSequenceNumber),
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GetCheckpointAvailabilityRequest {
-    pub(crate) epoch: EpochId,
+    BySequenceNumber(CheckpointSequenceNumber),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -73,7 +67,7 @@ where
 
         let highest_verified_checkpoint = self
             .store
-            .get_highest_verified_checkpoint(checkpoint.epoch)
+            .get_highest_verified_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?;
 
         let should_sync = highest_verified_checkpoint
@@ -99,9 +93,9 @@ where
             GetCheckpointMessageRequest::ByDigest(digest) => {
                 self.store.get_checkpoint_by_digest(digest)
             }
-            GetCheckpointMessageRequest::BySequenceNumber(epoch, sequence_number) => self
+            GetCheckpointMessageRequest::BySequenceNumber(sequence_number) => self
                 .store
-                .get_checkpoint_by_sequence_number(*epoch, *sequence_number),
+                .get_checkpoint_by_sequence_number(*sequence_number),
         }
         .map_err(|e| Status::internal(e.to_string()))?
         .map(VerifiedCheckpointMessage::into_inner);
@@ -111,13 +105,11 @@ where
 
     async fn get_checkpoint_availability(
         &self,
-        request: Request<GetCheckpointAvailabilityRequest>,
+        _request: Request<()>,
     ) -> Result<Response<GetCheckpointAvailabilityResponse>, Status> {
-        let epoch = request.into_inner().epoch;
-
         let highest_synced_checkpoint = self
             .store
-            .get_highest_synced_checkpoint(epoch)
+            .get_highest_synced_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
             .map(VerifiedCheckpointMessage::into_inner);
 

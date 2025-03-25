@@ -42,10 +42,10 @@ pub const TOTAL_VOTING_POWER: StakeUnit = 4;
 
 /// Quorum threshold for our fixed voting power--any message signed by this much voting power can be trusted
 /// up to BFT assumptions
-pub const QUORUM_THRESHOLD: StakeUnit = 3;
+pub const QUORUM_THRESHOLD: StakeUnit = (2 * TOTAL_VOTING_POWER) / 3 + 1;
 
 /// Validity threshold defined by f+1
-pub const VALIDITY_THRESHOLD: StakeUnit = 1;
+pub const VALIDITY_THRESHOLD: StakeUnit = TOTAL_VOTING_POWER / 3 + 1;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq)]
 pub struct Committee {
@@ -60,7 +60,7 @@ impl Committee {
     pub fn new(
         epoch: EpochId,
         voting_rights: Vec<(AuthorityName, StakeUnit)>,
-        class_groups_public_key_and_proof: HashMap<AuthorityName, Vec<u8>>,
+        class_groups_public_keys_and_proofs: HashMap<AuthorityName, Vec<u8>>,
     ) -> Self {
         // let mut voting_rights: Vec<(AuthorityName, StakeUnit)> =
         //     voting_rights.iter().map(|(a, s)| (*a, *s)).collect();
@@ -77,7 +77,7 @@ impl Committee {
         Committee {
             epoch,
             voting_rights,
-            class_groups_public_keys_and_proofs: class_groups_public_key_and_proof,
+            class_groups_public_keys_and_proofs,
             expanded_keys,
             index_map,
         }

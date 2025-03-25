@@ -1,4 +1,5 @@
 mod constants;
+pub mod message_digest;
 
 use crate::constants::ENCRYPTION_SCHEME_PUBLIC_PARAMETERS;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
