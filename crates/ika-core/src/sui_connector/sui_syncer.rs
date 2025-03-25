@@ -86,7 +86,6 @@ where
         dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) {
         loop {
-            time::sleep(Duration::from_secs(60)).await;
             let network_decryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
                 .await
@@ -101,7 +100,6 @@ where
                             if let Err(e) =
                                 dwallet_mpc_network_keys.update_network_key(key_id, key_version)
                             {
-                                // change
                                 error!(
                                     "Failed to update key version for key_id: {:?}, error: {:?}",
                                     key_id, e

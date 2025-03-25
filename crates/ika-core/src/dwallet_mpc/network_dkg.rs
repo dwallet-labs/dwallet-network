@@ -83,7 +83,10 @@ impl NetworkDecryptionKey for NetworkDecryptionKeyShares {
 
         let secret_share = dkg_public_output
             .default_decryption_key_shares::<secp256k1::GroupElement>(party_id, decryption_key)
-            .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
+            .map_err(|err| {
+                println!("Error: {:?}", err);
+                DwalletMPCError::ClassGroupsError(err.to_string())
+            })?;
         Ok(secret_share)
     }
 }
