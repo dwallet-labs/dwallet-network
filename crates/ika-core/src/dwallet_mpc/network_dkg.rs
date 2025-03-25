@@ -94,6 +94,12 @@ impl NetworkDecryptionKey for NetworkDecryptionKeyShares {
             &self.current_epoch_encryptions_of_shares_per_crt_prime,
         )?;
 
+        #[cfg(not(feature = "with-network-dkg"))]
+        {
+            let secret_shares = shared_wasm_class_groups::decryption_key_share(party_id);
+            return Ok(secret_shares);
+        }
+
         let secret_share = dkg_public_output
             .default_decryption_key_shares::<secp256k1::GroupElement>(party_id, decryption_key)
             .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;

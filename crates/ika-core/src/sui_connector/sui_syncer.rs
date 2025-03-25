@@ -59,10 +59,7 @@ where
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
-        spawn_logged_monitored_task!(Self::sync_dwallet_network_keys(
-            sui_client_clone,
-            dwallet_mpc_network_keys
-        ));
+        tokio::spawn(Self::sync_dwallet_network_keys(sui_client_clone, dwallet_mpc_network_keys));
         for (module, cursor) in self.cursors {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
@@ -86,6 +83,7 @@ where
         dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
     ) {
         loop {
+            time::sleep(Duration::from_secs(2)).await;
             let network_decryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
                 .await
