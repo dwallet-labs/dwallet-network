@@ -335,7 +335,6 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => advance_network_dkg(
-                init_event.dwallet_network_decryption_key_id,
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
@@ -348,7 +347,6 @@ impl DWalletMPCSession {
                         .clone()
                         .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                 )?,
-                self.epoch_store()?,
             ),
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
                 match verify_encrypted_share(verification_data) {
