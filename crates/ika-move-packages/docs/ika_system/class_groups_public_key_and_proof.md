@@ -112,7 +112,7 @@ This object can only be created using <code><a href="../ika_system/class_groups_
 The total number of keys in a full Class Groups public key and proof set.
 
 
-<pre><code><b>const</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_NUMBER_OF_KEYS">NUMBER_OF_KEYS</a>: u64 = 13;
+<pre><code><b>const</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_NUMBER_OF_KEYS">NUMBER_OF_KEYS</a>: u64 = 23;
 </code></pre>
 
 
