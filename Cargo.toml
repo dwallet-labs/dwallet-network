@@ -77,7 +77,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 k256 = { git = "https://github.com/RustCrypto/elliptic-curves.git", tag = "k256/v0.14.0-pre.2", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
 mpc = { path = "../cryptography-private/mpc", features = ["parallel"] }
 class_groups = { path = "../cryptography-private/class-groups", features = ["default", "threshold", "parallel"] }
-twopc_mpc = { path = "../cryptography-private/2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"]}
+twopc_mpc = { path = "../cryptography-private/2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "parallel", "benchmarking"] }
 group = { path = "../cryptography-private/group"}
 homomorphic_encryption = { path = "../cryptography-private/homomorphic-encryption" }
 anyhow = "1.0.71"
@@ -533,7 +533,7 @@ dwallet-mpc-types = { path = "crates/dwallet-mpc-types"}
 dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types"}
 ika = { path = "crates/ika" }
 ika-config = { path = "crates/ika-config" }
-ika-core = { path = "crates/ika-core"}
+ika-core = { path = "crates/ika-core", features = ["with-network-dkg"]}
 ika-node = { path = "crates/ika-node" }
 ika-sui-client = { path = "crates/ika-sui-client" }
 ika-protocol-config = { path = "crates/ika-protocol-config" }

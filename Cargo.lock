@@ -13719,6 +13719,7 @@ dependencies = [
  "mpc",
  "rand 0.8.5",
  "rand_core 0.6.4",
+ "rayon",
  "rstest 0.22.0",
  "serde",
  "subtle",

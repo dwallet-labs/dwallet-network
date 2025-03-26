@@ -136,7 +136,11 @@ impl DwalletMPCNetworkKeyVersions {
         )?;
 
         let secret_share = dkg_public_output
-            .default_decryption_key_shares::<secp256k1::GroupElement>(party_id, access_structure, decryption_key)
+            .default_decryption_key_shares::<secp256k1::GroupElement>(
+                party_id,
+                access_structure,
+                decryption_key,
+            )
             .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
         Self::convert_secret_key_shares_to_decryption_shares(
             secret_share,
@@ -534,7 +538,9 @@ pub(crate) fn dwallet_mpc_network_key_from_session_output(
                 )?,
                 encryption_key: bcs::to_bytes(&public_output.encryption_key)?,
                 public_verification_keys: bcs::to_bytes(&public_output.public_verification_keys)?,
-                setup_parameters_per_crt_prime: bcs::to_bytes(&public_output.setup_parameters_per_crt_prime)?,
+                setup_parameters_per_crt_prime: bcs::to_bytes(
+                    &public_output.setup_parameters_per_crt_prime,
+                )?,
             })
         }
         DWalletMPCNetworkKeyScheme::Ristretto => todo!("Ristretto key scheme"),

@@ -35,7 +35,8 @@ fn build_network_dkg_on_chain_output_test() {
         .unwrap(),
         setup_parameters_per_crt_prime: bcs::to_bytes(
             &network_decryption_key_public_output.setup_parameters_per_crt_prime,
-        ).unwrap(),
+        )
+        .unwrap(),
     };
 
     let bcs_on_chain_output = bcs::to_bytes(&on_chain_output).unwrap();
