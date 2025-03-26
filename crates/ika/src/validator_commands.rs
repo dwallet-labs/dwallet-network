@@ -11,8 +11,9 @@ use sui_types::{base_types::SuiAddress, crypto::Signable, multiaddr::Multiaddr};
 use clap::*;
 use colored::Colorize;
 use dwallet_classgroups_types::{
-    generate_class_groups_keypair_and_proof_from_seed, read_class_groups_from_file,
-    write_class_groups_keypair_and_proof_to_file, ClassGroupsKeyPairAndProof,
+    generate_seed_and_class_groups_keypair_and_proof, read_class_groups_from_file,
+    write_class_groups_keypair_and_proof_to_file, write_class_groups_seed_to_file,
+    ClassGroupsKeyPairAndProof,
 };
 use fastcrypto::traits::KeyPair;
 use fastcrypto::traits::ToFromBytes;
@@ -149,10 +150,7 @@ impl IkaValidatorCommand {
                 let pop = generate_proof_of_possession(&keypair, sender_sui_address);
 
                 let class_groups_public_key_and_proof =
-                    read_or_generate_from_seed_class_groups_key(
-                        dir.join("class-groups.key"),
-                        &keypair,
-                    )?;
+                    read_or_generate_seed_and_class_groups_key(dir.join("class-groups.key"))?;
 
                 let validator_info = ValidatorInfo {
                     name,
@@ -418,9 +416,8 @@ fn make_key_files(
 
 /// Reads the class groups key pair and proof from a file if it exists, otherwise generates it from the seed.
 /// The seed is the private key of the authority key pair.
-fn read_or_generate_from_seed_class_groups_key(
+fn read_or_generate_seed_and_class_groups_key(
     file_path: PathBuf,
-    seed: &AuthorityKeyPair,
 ) -> Result<Box<ClassGroupsKeyPairAndProof>> {
     match read_class_groups_from_file(file_path.clone()) {
         Ok(class_groups_public_key_and_proof) => {
@@ -428,14 +425,13 @@ fn read_or_generate_from_seed_class_groups_key(
             Ok(class_groups_public_key_and_proof)
         }
         Err(_) => {
-            let class_groups_public_key_and_proof =
-                Box::new(generate_class_groups_keypair_and_proof_from_seed(
-                    seed.copy().private().as_bytes().try_into()?,
-                ));
+            let (class_groups_public_key_and_proof, seed) =
+                generate_seed_and_class_groups_keypair_and_proof();
             write_class_groups_keypair_and_proof_to_file(
                 &class_groups_public_key_and_proof,
                 file_path.clone(),
             )?;
+            write_class_groups_seed_to_file(seed, file_path.clone())?;
             println!(
                 "Generated class groups key pair info file: {:?}.",
                 file_path,
