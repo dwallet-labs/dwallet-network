@@ -4,7 +4,7 @@
 use crate::crypto::AuthorityName;
 use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMessage};
 use crate::messages_dwallet_mpc::{
-    DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
+    DWalletMPCMessage, DWalletMPCMessageKey, DWalletMPCOutput, MaliciousReport, SessionInfo,
 };
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
@@ -172,7 +172,7 @@ pub enum ConsensusTransactionKind {
     TestMessage(AuthorityName, u64),
 
     DWalletMPCMessage(DWalletMPCMessage),
-    DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
+    DWalletMPCOutput(DWalletMPCOutput),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
 }
@@ -210,7 +210,11 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
+            kind: ConsensusTransactionKind::DWalletMPCOutput(DWalletMPCOutput {
+                authority,
+                session_info,
+                output,
+            }),
         }
     }
 
@@ -315,13 +319,15 @@ impl ConsensusTransaction {
                     round_number: message.round_number,
                 })
             }
-            ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {
-                ConsensusTransactionKey::DWalletMPCOutput(
-                    output.clone(),
-                    session_info.session_id,
-                    *authority,
-                )
-            }
+            ConsensusTransactionKind::DWalletMPCOutput(DWalletMPCOutput {
+                authority,
+                session_info,
+                output,
+            }) => ConsensusTransactionKey::DWalletMPCOutput(
+                output.clone(),
+                session_info.session_id,
+                *authority,
+            ),
             ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, report) => {
                 ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(
                     *authority,

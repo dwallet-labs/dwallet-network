@@ -137,6 +137,7 @@ pub struct DWalletMPCOutput {
     pub session_info: SessionInfo,
     /// The final value of the MPC session.
     pub output: Vec<u8>,
+    pub authority: AuthorityName,
 }
 
 /// The message a Validator can send to the other parties while

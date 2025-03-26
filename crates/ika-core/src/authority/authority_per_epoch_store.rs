@@ -94,11 +94,11 @@ use ika_types::messages_consensus::{
     ConsensusTransactionKind,
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
     StartPresignFirstRoundEvent,
 };
+use ika_types::messages_dwallet_mpc::{DWalletMPCOutput, IkaPackagesConfig};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mpc::{Weight, WeightedThresholdAccessStructure};
@@ -1271,7 +1271,7 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(DWalletMPCOutput { authority, .. }),
                 ..
             }) => {
                 // When sending an MPC output, the validator also includes its public key.
@@ -1866,7 +1866,12 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(_, session_info, output),
+                kind:
+                    ConsensusTransactionKind::DWalletMPCOutput(DWalletMPCOutput {
+                        session_info,
+                        output,
+                        ..
+                    }),
                 ..
             }) => {
                 self.process_dwallet_mpc_output(
