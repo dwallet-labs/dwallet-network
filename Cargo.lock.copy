@@ -2317,7 +2317,7 @@ dependencies = [
 [[package]]
 name = "crypto-bigint"
 version = "0.6.0-rc.6"
-source = "git+https://github.com/erik-3milabs/crypto-bigint.git?rev=3c5fd81#3c5fd8155d734ae7fb37d85768f8dad59717329b"
+source = "git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665a#71d665add85dfd3f9b2cbf1296c7cd31b2cbb93a"
 dependencies = [
  "hybrid-array",
  "num-traits",

@@ -70,6 +70,7 @@ impl DwalletMPCNetworkKeyVersions {
         let decryption_key_shares = Self::validator_decryption_key_shares(
             &network_mpc_keys,
             class_groups_decryption_key,
+            weighted_threshold_access_structure,
             party_id,
         )
         .unwrap_or(HashMap::new());
@@ -98,6 +99,7 @@ impl DwalletMPCNetworkKeyVersions {
     fn validator_decryption_key_shares(
         network_mpc_keys: &HashMap<ObjectID, NetworkDecryptionKeyShares>,
         decryption_key: ClassGroupsDecryptionKey,
+        access_structure: &WeightedThresholdAccessStructure,
         party_id: PartyID,
     ) -> DwalletMPCResult<
         HashMap<ObjectID, HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
@@ -108,6 +110,7 @@ impl DwalletMPCNetworkKeyVersions {
                 let shares = Self::get_decryption_key_shares_from_public_output(
                     &network_mpc_key_versions,
                     party_id,
+                    access_structure,
                     decryption_key,
                 )?;
 
@@ -122,16 +125,18 @@ impl DwalletMPCNetworkKeyVersions {
     fn get_decryption_key_shares_from_public_output(
         share: &NetworkDecryptionKeyShares,
         party_id: PartyID,
+        access_structure: &WeightedThresholdAccessStructure,
         decryption_key: ClassGroupsDecryptionKey,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let dkg_public_output = <Secp256k1Party as CreatePublicOutput>::new(
             &share.encryption_key,
             &share.public_verification_keys,
             &share.current_epoch_encryptions_of_shares_per_crt_prime,
+            &share.setup_parameters_per_crt_prime,
         )?;
 
         let secret_share = dkg_public_output
-            .default_decryption_key_shares::<secp256k1::GroupElement>(party_id, decryption_key)
+            .default_decryption_key_shares::<secp256k1::GroupElement>(party_id, access_structure, decryption_key)
             .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
         Self::convert_secret_key_shares_to_decryption_shares(
             secret_share,
@@ -257,6 +262,7 @@ impl DwalletMPCNetworkKeyVersions {
                         >(access_structure).map_err(|e|DwalletMPCError::ClassGroupsError(e.to_string()))?)?,
                     encryption_key: bcs::to_bytes(&dkg_output.encryption_key)?,
                     public_verification_keys: bcs::to_bytes(&dkg_output.public_verification_keys)?,
+                    setup_parameters_per_crt_prime: bcs::to_bytes(&dkg_output.setup_parameters_per_crt_prime)?,
                 })
             }
             DWalletMPCNetworkKeyScheme::Ristretto => Ok(NetworkDecryptionKeyShares {
@@ -267,6 +273,7 @@ impl DwalletMPCNetworkKeyVersions {
                 decryption_key_share_public_parameters: vec![],
                 encryption_key: vec![],
                 public_verification_keys: vec![],
+                setup_parameters_per_crt_prime: vec![],
             }),
         }
     }
@@ -527,6 +534,7 @@ pub(crate) fn dwallet_mpc_network_key_from_session_output(
                 )?,
                 encryption_key: bcs::to_bytes(&public_output.encryption_key)?,
                 public_verification_keys: bcs::to_bytes(&public_output.public_verification_keys)?,
+                setup_parameters_per_crt_prime: bcs::to_bytes(&public_output.setup_parameters_per_crt_prime)?,
             })
         }
         DWalletMPCNetworkKeyScheme::Ristretto => todo!("Ristretto key scheme"),
@@ -538,6 +546,7 @@ pub trait CreatePublicOutput: mpc::Party {
         encryption_key: &Vec<u8>,
         public_verification_keys: &Vec<u8>,
         current_epoch_shares: &Vec<u8>,
+        setup_parameters_per_crt_prime: &Vec<u8>,
     ) -> DwalletMPCResult<Self::PublicOutput>;
 }
 
@@ -546,8 +555,10 @@ impl CreatePublicOutput for Secp256k1Party {
         encryption_key: &Vec<u8>,
         public_verification_keys: &Vec<u8>,
         current_epoch_encryptions_of_shares_per_crt_prime: &Vec<u8>,
+        setup_parameters_per_crt_prime: &Vec<u8>,
     ) -> DwalletMPCResult<Self::PublicOutput> {
         let dkg_public_output = Self::PublicOutput {
+            setup_parameters_per_crt_prime: bcs::from_bytes(setup_parameters_per_crt_prime)?,
             encryption_key: bcs::from_bytes(encryption_key)?,
             public_verification_keys: bcs::from_bytes(public_verification_keys)?,
             encryptions_of_shares_per_crt_prime: bcs::from_bytes(

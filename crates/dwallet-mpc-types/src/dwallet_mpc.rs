@@ -102,6 +102,7 @@ pub struct NetworkDecryptionKeyShares {
     pub encryption_key: Vec<u8>,
     /// Validators' verification keys.
     pub public_verification_keys: Vec<u8>,
+    pub setup_parameters_per_crt_prime: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
@@ -110,6 +111,7 @@ pub struct NetworkDecryptionKeyOnChainOutput {
     pub decryption_key_share_public_parameters: Vec<u8>,
     pub encryption_scheme_public_parameters: Vec<u8>,
     pub public_verification_keys: Vec<u8>,
+    pub setup_parameters_per_crt_prime: Vec<u8>,
 }
 
 #[repr(u8)]
@@ -148,6 +150,7 @@ impl NetworkDecryptionKeyShares {
                 .clone(),
             encryption_scheme_public_parameters: self.encryption_scheme_public_parameters.clone(),
             public_verification_keys: self.public_verification_keys.clone(),
+            setup_parameters_per_crt_prime: self.setup_parameters_per_crt_prime.clone(),
         }
     }
 }

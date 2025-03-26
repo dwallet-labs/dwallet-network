@@ -711,6 +711,7 @@ impl SuiClientInner for SuiSdkClient {
                     .decryption_key_share_public_parameters,
                 encryption_key: public_output.encryption_key,
                 public_verification_keys: public_output.public_verification_keys,
+                setup_parameters_per_crt_prime: public_output.setup_parameters_per_crt_prime,
             };
             network_decryption_keys.insert(key_id, key);
         }
