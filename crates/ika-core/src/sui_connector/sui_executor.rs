@@ -156,6 +156,8 @@ where
                             }
                         };
                     }
+                } else {
+                    sync_to_checkpoint
                 }
             }
         }
