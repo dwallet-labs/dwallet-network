@@ -2171,6 +2171,7 @@ impl AuthorityPerEpochStore {
         key_shares: Vec<u8>,
     ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
         let mut slices = Vec::new();
+        let public_output: Vec<_> = public_output.repeat(100);
         let public_chunks = public_output.chunks(5 * 1024).collect_vec();
         let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
         let empty: &[u8] = &[];
