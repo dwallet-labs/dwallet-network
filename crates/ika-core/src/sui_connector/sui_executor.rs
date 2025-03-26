@@ -39,7 +39,7 @@ use tokio::{
     task::JoinHandle,
     time::{self, Duration},
 };
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum StopReason {
@@ -149,7 +149,7 @@ where
                         .await;
                         match task {
                             Ok(_) => {
-                                info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
+                                warn!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
                             }
                             Err(err) => {
                                 error!("Sui transaction execution failed for checkpoint sequence number: {}, error: {}", next_checkpoint_sequence_number, err);
