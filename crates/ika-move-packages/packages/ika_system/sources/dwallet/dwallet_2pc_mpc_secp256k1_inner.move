@@ -884,7 +884,7 @@ fun validate_active_and_get_public_output(
     }
 }
 
-
+#[allow(dead_code, unused_mut_parameter, unused_variable)]
 fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
@@ -902,7 +902,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     let gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
 
     let session_sequence_number = self.next_session_sequence_number;
-    let mut session = DWalletSession {
+    let mut _session = DWalletSession {
         id: object::new(ctx),
         session_sequence_number,
         dwallet_network_decryption_key_id,
@@ -910,17 +910,18 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         computation_fee_charged_ika,
         gas_fee_reimbursement_sui,
     };
-    let event = DWalletEvent {
+    let _event = DWalletEvent {
         epoch: self.current_epoch,
         session_sequence_number,
-        session_id: object::id(&session),
+        session_id: object::id(&_session),
         event_data,
     };
-    dynamic_field::add(&mut session.id, DWalletSessionEventKey {}, event);
-    self.sessions.add(session_sequence_number, session);
+    abort 999;
+    dynamic_field::add(&mut _session.id, DWalletSessionEventKey {}, _event);
+    self.sessions.add(session_sequence_number, _session);
     self.next_session_sequence_number = session_sequence_number + 1;
 
-    event
+    _event
 }
 
 fun get_active_dwallet_and_public_output(
