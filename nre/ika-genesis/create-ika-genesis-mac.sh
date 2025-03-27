@@ -26,11 +26,11 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=1
+export VALIDATOR_NUM=4
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for the network.
-export SUBDOMAIN="localhost"
+export SUBDOMAIN="beta.devnet.ika-network.net"
 # The binary name to use.
 export BINARY_NAME="ika"
 # The directory to store the key pairs.
@@ -42,8 +42,10 @@ ROOT_ADDR=""
 export VALIDATORS_FILE=""
 # Validator Docker image name.
 export IMAGE_NAME="471930101563.dkr.ecr.us-east-1.amazonaws.com/sui-fork:ika-testnet-v1.16.2-10"
+# SUI fullnode URL.
+export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 # SUI Faucet URL.
-export SUI_FAUCET_URL="http://127.0.0.1:9123/gas"
+export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
 # Default sui epoch duration time.
 export EPOCH_DURATION_TIME=86400000
 
@@ -184,7 +186,7 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
     SUI_CURRENT_ALIAS=$(jq -r '.[].alias' sui.aliases)
     sui keytool update-alias  "$SUI_CURRENT_ALIAS" "$VALIDATOR_NAME"
     yq e -i ".envs[].alias = \"$SUBDOMAIN\"" "$SUI_CLIENT_YAML_FILE"
-    yq e -i ".envs[].rpc = \"http://$SUBDOMAIN:9000\"" "$SUI_CLIENT_YAML_FILE"
+    yq e -i ".envs[].rpc = \"$SUI_FULLNODE_RPC_URL\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".active_address = \"$SUI_ADDR\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".active_env = \"$SUBDOMAIN\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".keystore.File = \"$SUI_CONFIG_PATH/$SUI_KEYSTORE_FILE\"" "$SUI_CLIENT_YAML_FILE"
@@ -207,7 +209,7 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
 done
 
 
-# Request Tokens and Create Validator.yaml
+# Request Tokens and Create Validator.yaml.
 for entry in "${VALIDATORS_ARRAY[@]}"; do
       # Split the tuple "validatorName:validatorHostname" into variables.
       IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
@@ -233,13 +235,13 @@ cargo build --bin ika-swarm-config
 cp ../../../target/debug/ika-swarm-config .
 
 # Publish IKA Modules
-./ika-swarm-config publish-ika-modules
+./ika-swarm-config publish-ika-modules --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL"
 
 # Mint IKA Tokens
-./ika-swarm-config mint-ika-tokens --ika-config-path ./ika_publish_config.json
+./ika-swarm-config mint-ika-tokens --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL" --ika-config-path ./ika_publish_config.json
 
 # Init IKA
-./ika-swarm-config init-env --ika-config-path ./ika_publish_config.json
+./ika-swarm-config init-env --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path ./ika_publish_config.json
 
 mkdir -p publisher
 mv ika_publish_config.json publisher/
@@ -346,5 +348,5 @@ rm -rf "$SUI_CONFIG_PATH"
 mkdir -p "$SUI_CONFIG_PATH"
 cp -r publisher/sui_config/* "$SUI_CONFIG_PATH"
 
-./ika-swarm-config ika-system-initialize --ika-config-path publisher/ika_publish_config.json
+./ika-swarm-config ika-system-initialize --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path publisher/ika_publish_config.json
 
