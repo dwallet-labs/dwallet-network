@@ -2975,7 +2975,7 @@ Supported hash schemes for message signing.
         event_data,
     };
     // <b>abort</b> 999;
-    // dynamic_field::add(&<b>mut</b> _session.id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSessionEventKey">DWalletSessionEventKey</a> {}, _event);
+    dynamic_field::add(&<b>mut</b> _session.id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSessionEventKey">DWalletSessionEventKey</a> {}, _event);
     self.sessions.add(session_sequence_number, _session);
     self.next_session_sequence_number = session_sequence_number + 1;
     _event
