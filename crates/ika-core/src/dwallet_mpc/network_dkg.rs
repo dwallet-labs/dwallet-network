@@ -121,9 +121,11 @@ impl ValidatorContext {
         &self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyShares,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
         let secret_key_share = key.get_decryption_key_shares_from_public_output(
             self.party_id,
+            weighted_threshold_access_structure,
             self.class_groups_decryption_key,
         )?;
 
@@ -146,9 +148,11 @@ impl ValidatorContext {
         &self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyShares,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
         let secret_key_share = key.get_decryption_key_shares_from_public_output(
             self.party_id,
+            weighted_threshold_access_structure,
             self.class_groups_decryption_key,
         )?;
 
@@ -239,12 +243,17 @@ impl DwalletMPCNetworkKeyVersions {
         &self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyShares,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
         let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
         inner.network_decryption_keys.insert(key_id, key.clone());
         match &self.node_context {
             NodeContext::Validator(validator_context) => {
-                validator_context.add_decryption_secret_shares(key_id, key)?;
+                validator_context.add_decryption_secret_shares(
+                    key_id,
+                    key,
+                    weighted_threshold_access_structure,
+                )?;
             }
             NodeContext::FullNode => {}
         }
@@ -262,12 +271,17 @@ impl DwalletMPCNetworkKeyVersions {
         &self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyShares,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
         let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
         inner.network_decryption_keys.insert(key_id, key.clone());
         match &self.node_context {
             NodeContext::Validator(validator_context) => {
-                validator_context.update_decryption_secret_shares(key_id, key)?;
+                validator_context.update_decryption_secret_shares(
+                    key_id,
+                    key,
+                    weighted_threshold_access_structure,
+                )?;
             }
             NodeContext::FullNode => {}
         }

@@ -151,6 +151,8 @@ impl DWalletMPCManager {
                 self.perform_cryptographic_computation();
             }
             DWalletMPCDBMessage::Message(message) => {
+                // Todo (yael): build the message in here. once it is ready than call the handle message function
+                // the message struct should hold the regular message and sequence number
                 if let Err(err) = self.handle_message(message) {
                     error!("failed to handle an MPC message with error: {:?}", err);
                 }

@@ -15,6 +15,7 @@ use ika_types::error::IkaResult;
 use ika_types::messages_consensus::MovePackageDigest;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
+use mpc::WeightedThresholdAccessStructure;
 use shared_crypto::intent::{Intent, IntentMessage};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -66,6 +67,7 @@ impl SuiConnectorService {
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         dwallet_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
@@ -93,7 +95,11 @@ impl SuiConnectorService {
             sui_connector_metrics.clone(),
             perpetual_tables,
         )
-        .run(Duration::from_secs(2), dwallet_network_keys)
+        .run(
+            Duration::from_secs(2),
+            dwallet_network_keys,
+            weighted_threshold_access_structure,
+        )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to start sui syncer"))?;
         Ok(Self {

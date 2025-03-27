@@ -1,5 +1,6 @@
 use move_core_types::{ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt;
 use thiserror::Error;
 
@@ -30,6 +31,64 @@ pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
 
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
+
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
+pub struct MPCMessageSlice {
+    pub message: Vec<u8>,
+    pub sequence_number: u64,
+    pub number_of_chunks: usize,
+}
+
+pub struct MPCMessageBuilder {
+    pub messages: HashMap<u64, MPCMessageSlice>,
+}
+
+impl MPCMessageBuilder {
+    pub fn new(message: Vec<u8>, chunk_size: usize) -> Self {
+        let chunks: Vec<Vec<u8>> = message
+            .chunks(chunk_size)
+            .map(|chunk| chunk.to_vec())
+            .collect();
+
+        let number_of_chunks = chunks.len();
+
+        let messages = chunks
+            .into_iter()
+            .enumerate()
+            .map(|(i, message)| {
+                (
+                    i as u64,
+                    MPCMessageSlice {
+                        message,
+                        sequence_number: i as u64,
+                        number_of_chunks,
+                    },
+                )
+            })
+            .collect();
+
+        Self { messages }
+    }
+
+    pub fn add_message(&mut self, message: MPCMessageSlice) {
+        self.messages.insert(message.sequence_number, message);
+    }
+
+    pub fn build_message(&self) -> Option<MPCMessage> {
+        if self.messages.len() != self.messages.values().next().unwrap().number_of_chunks {
+            return None;
+        }
+        let mut message = Vec::new();
+        for i in 0..self.messages.len() {
+            if let Some(slice) = self.messages.get(&(i as u64)) {
+                message.extend_from_slice(&slice.message);
+            } else {
+                return None;
+            }
+        }
+        Some(message)
+    }
+}
 
 /// Alias for an MPC public output.
 pub type MPCPublicOutput = Vec<u8>;

@@ -449,12 +449,14 @@ impl DWalletMPCSession {
                     // session ID and MPC round.
                     return Ok(());
                 }
+                // build the message here, but where do I store it?
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
             // If next round.
             None if message.round_number == current_round => {
                 let mut map = HashMap::new();
                 map.insert(source_party_id, message.message.clone());
+                // Build the message
                 self.serialized_messages.push(map);
             }
             None => {

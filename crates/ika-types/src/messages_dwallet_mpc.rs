@@ -3,7 +3,7 @@ use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyShares,
+    DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicInput, NetworkDecryptionKeyShares,
     DWALLET_MPC_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
     START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
     START_SIGN_ROUND_EVENT_STRUCT_NAME,
@@ -113,9 +113,12 @@ pub struct DWalletMPCEvent {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DWalletMPCOutputMessage {
-    pub output: Vec<u8>,
+    /// The authority that sent the output.
     pub authority: AuthorityName,
+    /// The session information of the MPC session.
     pub session_info: SessionInfo,
+    /// The final value of the MPC session.
+    pub output: Vec<u8>,
 }
 
 /// Metadata for a local MPC computation.
@@ -130,21 +133,12 @@ pub struct DWalletMPCLocalComputationMetadata {
     pub crypto_round_number: usize,
 }
 
-/// The content of the system transaction that stores the MPC session output on the chain.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct DWalletMPCOutput {
-    /// The session information of the MPC session.
-    pub session_info: SessionInfo,
-    /// The final value of the MPC session.
-    pub output: Vec<u8>,
-}
-
 /// The message a Validator can send to the other parties while
 /// running a dWallet MPC session.
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct DWalletMPCMessage {
     /// The serialized message.
-    pub message: MPCMessage,
+    pub message: MPCMessageSlice,
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,

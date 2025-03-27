@@ -440,10 +440,6 @@ impl CheckpointStore {
             "Inserting certified checkpoint",
         );
         let mut batch = self.certified_checkpoints.batch();
-        // batch.insert_batch(
-        //     &self.checkpoint_message_sequence_by_digest,
-        //     [(checkpoint.digest().clone(), checkpoint.sequence_number())],
-        // )?;
         batch.insert_batch(
             &self.checkpoint_message_sequence_by_digest,
             [(checkpoint.digest().clone(), checkpoint.sequence_number())],

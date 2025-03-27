@@ -1022,7 +1022,7 @@ async fn create_class_groups_public_key_and_proof_object(
         builder_object_ref.0,
         &class_groups_public_key_and_proof,
     )
-        .await?;
+    .await?;
     add_public_keys_and_proofs_with_rng(
         publisher_address,
         context,
@@ -1032,7 +1032,7 @@ async fn create_class_groups_public_key_and_proof_object(
         builder_object_ref.0,
         &class_groups_public_key_and_proof,
     )
-        .await?;
+    .await?;
     add_public_keys_and_proofs_with_rng(
         publisher_address,
         context,
@@ -1042,7 +1042,7 @@ async fn create_class_groups_public_key_and_proof_object(
         builder_object_ref.0,
         &class_groups_public_key_and_proof,
     )
-        .await?;
+    .await?;
     let builder_object_ref = client
         .transaction_builder()
         .get_object_ref(builder_object_ref.0)
