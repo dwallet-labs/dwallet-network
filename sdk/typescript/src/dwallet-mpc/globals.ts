@@ -367,8 +367,13 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	const network_decryption_keys =
 		innerSystemState.data.content.fields.value.fields
 			.dwallet_2pc_mpc_secp256k1_network_decryption_keys;
-	return network_decryption_keys[network_decryption_keys.length - 1]?.fields
-		?.dwallet_network_decryption_key_id;
+	const decryptionKeyID =
+		network_decryption_keys[network_decryption_keys.length - 1]?.fields
+			?.dwallet_network_decryption_key_id;
+	if (!decryptionKeyID) {
+		throw new Error('No network decryption key found');
+	}
+	return decryptionKeyID;
 }
 
 export interface DWallet {
