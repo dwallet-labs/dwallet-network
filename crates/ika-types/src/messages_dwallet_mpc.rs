@@ -181,6 +181,7 @@ pub trait DWalletMPCEventTrait {
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct DWalletMPCSuiEvent<E: DWalletMPCEventTrait> {
     pub epoch: u64,
+    pub session_sequence_number: u64,
     pub session_id: ObjectID,
     pub event_data: E,
 }
