@@ -1150,7 +1150,20 @@ public(package) fun respond_dwallet_dkg_first_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
     first_round_output: vector<u8>,
+    session_id: ID,
 ) {
+    let session = self.sessions.remove(&session_id);
+    let payment_ika = session.computation_fee_charged_ika;
+    let payment_sui = session.gas_fee_reimbursement_sui;
+    let more_payment_ika = session.consensus_validation_fee_charged_ika;
+    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
+
+    let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(dwallet_network_decryption_key_id);
+    dwallet_network_decryption_key.computation_fee_charged_ika.join(payment_ika, ctx).into_balance());
+    dwallet_network_decryption_key.consensus_validation_fee_charged_ika.join(more_payment_ika, ctx).into_balance());
+    self.consensus_validation_fee_charged_ika.join(session.payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance());
+
+    self.gas_fee_reimbursement_sui.join(payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance());
     let dwallet = self.get_dwallet_mut(dwallet_id);
     dwallet.state = match (dwallet.state) {
         DWalletState::Requested => {
@@ -1164,6 +1177,7 @@ public(package) fun respond_dwallet_dkg_first_round(
         },
         _ => abort EWrongState
     };
+
 }
 
 // TODO (#493): Remove mock functions
@@ -2185,7 +2199,8 @@ fun process_checkpoint_message(
             } else if (message_data_type == 3) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
-                self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output);
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, session_id);
             } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
