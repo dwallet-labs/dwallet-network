@@ -440,6 +440,10 @@ impl CheckpointStore {
             "Inserting certified checkpoint",
         );
         let mut batch = self.certified_checkpoints.batch();
+        // batch.insert_batch(
+        //     &self.checkpoint_message_sequence_by_digest,
+        //     [(checkpoint.digest().clone(), checkpoint.sequence_number())],
+        // )?;
         batch.insert_batch(
             &self.certified_checkpoints,
             [(checkpoint.sequence_number(), checkpoint.serializable_ref())],
@@ -1079,9 +1083,6 @@ impl CheckpointBuilder {
         //     }
         // }
         let mut last_checkpoint_seq = last_checkpoint.as_ref().map(|(seq, _)| *seq);
-        if epoch != 0 && last_checkpoint_seq.is_none() {
-            last_checkpoint_seq = Some(self.previous_epoch_last_checkpoint_sequence_number);
-        }
         info!(
             next_checkpoint_seq = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0),
             checkpoint_timestamp = details.timestamp_ms,
@@ -1153,10 +1154,7 @@ impl CheckpointBuilder {
         );
 
         for (index, mut messages) in chunks.into_iter().enumerate() {
-            let first_checkpoint_of_epoch = index == 0
-                && (last_checkpoint_seq.is_none()
-                    || last_checkpoint_seq.unwrap()
-                        == self.previous_epoch_last_checkpoint_sequence_number);
+            let first_checkpoint_of_epoch = index == 0 && (last_checkpoint_seq.is_none());
             if first_checkpoint_of_epoch {
                 self.epoch_store
                     .record_epoch_first_checkpoint_creation_time_metric();
@@ -1165,6 +1163,7 @@ impl CheckpointBuilder {
             let last_checkpoint_of_epoch = details.last_of_epoch && index == chunks_count - 1;
 
             let sequence_number = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0);
+            last_checkpoint_seq = Some(sequence_number);
 
             let timestamp_ms = details.timestamp_ms;
             if let Some((_, last_checkpoint)) = &last_checkpoint {
