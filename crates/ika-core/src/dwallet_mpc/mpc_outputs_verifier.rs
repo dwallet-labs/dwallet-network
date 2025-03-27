@@ -6,10 +6,9 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::sign::SignFirstParty;
-use crate::dwallet_mpc::{
-    authority_name_to_party_id, message_digest, network_key_version_from_key_id,
-};
+use crate::dwallet_mpc::{message_digest, network_key_version_from_key_id};
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
 use group::{GroupElement, PartyID};
@@ -119,10 +118,7 @@ impl DWalletMPCOutputsVerifier {
     ) -> DwalletMPCResult<bool> {
         let epoch_store = self.epoch_store()?;
         self.voted_to_lock_committee
-            .insert(authority_name_to_party_id(
-                &authority_name,
-                &epoch_store.clone(),
-            )?);
+            .insert(epoch_store.authority_name_to_party_id(&authority_name)?);
         Ok(epoch_store
             .get_weighted_threshold_access_structure()?
             .is_authorized_subset(&self.voted_to_lock_committee)
@@ -247,6 +243,17 @@ impl DWalletMPCOutputsVerifier {
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
+    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeyVersions>> {
+        Ok(self
+            .epoch_store()?
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::TwoPCMPCError(
+                "Decryption share not found".to_string(),
+            ))?
+            .clone())
+    }
+
     fn verify_signature(
         epoch_store: &Arc<AuthorityPerEpochStore>,
         sign_session_data: &StartSignEvent,
@@ -260,7 +267,9 @@ impl DWalletMPCOutputsVerifier {
         let protocol_public_parameters = epoch_store
             .dwallet_mpc_network_keys
             .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .ok_or(DwalletMPCError::TwoPCMPCError(
+                "Decryption share not found".to_string(),
+            ))?
             .get_protocol_public_parameters(
                 &sign_session_data.dwallet_mpc_network_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,

@@ -15,7 +15,9 @@ use fastcrypto::traits::ToFromBytes;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
-use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
+use ika_types::messages_dwallet_mpc::{
+    DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyState,
+};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::system_inner_v1::{DWalletNetworkDecryptionKeyCap, SystemInnerV1};
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
@@ -462,6 +464,23 @@ where
         }
     }
 
+    pub async fn get_dwallet_mpc_network_keys(
+        &self,
+    ) -> IkaResult<HashMap<ObjectID, NetworkDecryptionKeyShares>> {
+        let system_inner = self.get_system_inner_until_success().await;
+        Ok(self
+            .inner
+            .get_network_decryption_keys(
+                system_inner
+                    .into_init_version_for_tooling()
+                    .dwallet_2pc_mpc_secp256k1_network_decryption_keys(),
+            )
+            .await
+            .map_err(|e| {
+                IkaError::SuiClientInternalError(format!("Can't get_network_decryption_keys: {e}"))
+            })?)
+    }
+
     pub async fn get_epoch_start_system_until_success(
         &self,
         system_inner: &SystemInner,
@@ -693,6 +712,9 @@ impl SuiClientInner for SuiSdkClient {
                 .map_err(|e| {
                 Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e))
             })?;
+            if DWalletNetworkDecryptionKeyState::NetworkDKGCompleted != key_obj.state {
+                continue;
+            }
             let public_output_bytes = self
                 .read_table_vec_as_raw_bytes(key_obj.public_output.contents.id)
                 .await?;

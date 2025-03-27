@@ -445,6 +445,10 @@ impl CheckpointStore {
         //     [(checkpoint.digest().clone(), checkpoint.sequence_number())],
         // )?;
         batch.insert_batch(
+            &self.checkpoint_message_sequence_by_digest,
+            [(checkpoint.digest().clone(), checkpoint.sequence_number())],
+        )?;
+        batch.insert_batch(
             &self.certified_checkpoints,
             [(checkpoint.sequence_number(), checkpoint.serializable_ref())],
         )?;
