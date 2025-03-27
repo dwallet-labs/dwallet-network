@@ -10,6 +10,7 @@ use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
     DWalletCoordinatorInner,
     DWalletNetworkDecryptionKeyCap,
     DWalletCap,
+    ECDSAPresignCap,
     MessageApproval,
     UnverifiedECDSAPartialUserSignatureCap,
     VerifiedECDSAPartialUserSignatureCap
@@ -152,8 +153,8 @@ public fun mock_create_dwallet(self: &mut DWalletCoordinator, output: vector<u8>
     self.inner_mut().mock_create_dwallet(output, dwallet_network_decryption_key_id, ctx)
 }
 
-public fun mock_create_presign(self: &mut DWalletCoordinator, presign: vector<u8>, dwallet_id: ID, ctx: &mut TxContext) {
-    self.inner_mut().respond_ecdsa_presign(dwallet_id, dwallet_id, presign, ctx);
+public fun mock_create_presign(self: &mut DWalletCoordinator, presign: vector<u8>, dwallet_id: ID) {
+    self.inner_mut().respond_ecdsa_presign(dwallet_id, dwallet_id, dwallet_id, presign, false);
 }
 
 public fun request_re_encrypt_user_share_for(
@@ -196,7 +197,7 @@ public fun request_ecdsa_presign(
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
-) {
+): ECDSAPresignCap {
     self.inner_mut().request_ecdsa_presign(
         dwallet_id,
         payment_ika,
@@ -205,20 +206,27 @@ public fun request_ecdsa_presign(
     )
 }
 
+public fun is_ecdsa_presign_valid(
+    self: &DWalletCoordinator,
+    presign_cap: &ECDSAPresignCap,
+): bool {
+    self.inner().is_ecdsa_presign_valid(
+        presign_cap,
+    )
+}
+
 public fun request_ecdsa_sign(
     self: &mut DWalletCoordinator,
-    dwallet_id: ID,
+    presign_cap: ECDSAPresignCap,
     message_approval: MessageApproval,
-    presign_id: ID,
     message_centralized_signature: vector<u8>,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ) {
     self.inner_mut().request_ecdsa_sign(
-        dwallet_id,
         message_approval,
-        presign_id,
+        presign_cap,
         message_centralized_signature,
         payment_ika,
         payment_sui,
@@ -228,9 +236,8 @@ public fun request_ecdsa_sign(
 
 public fun request_ecdsa_future_sign(
     self: &mut DWalletCoordinator,
-    dwallet_id: ID,
+    presign_cap: ECDSAPresignCap,
     message: vector<u8>,
-    presign_id: ID,
     hash_scheme: u8,
     message_centralized_signature: vector<u8>,
     payment_ika: &mut Coin<IKA>,
@@ -238,9 +245,8 @@ public fun request_ecdsa_future_sign(
     ctx: &mut TxContext
 ): UnverifiedECDSAPartialUserSignatureCap {
     self.inner_mut().request_ecdsa_future_sign(
-        dwallet_id,
+        presign_cap,
         message,
-        presign_id,
         hash_scheme,
         message_centralized_signature,
         payment_ika,
@@ -262,7 +268,6 @@ public fun verify_ecdsa_partial_user_signature_cap(
 
 public fun request_ecdsa_sign_with_partial_user_signatures(
     self: &mut DWalletCoordinator,
-    dwallet_id: ID,
     partial_user_signature_cap: VerifiedECDSAPartialUserSignatureCap,
     message_approval: MessageApproval,
     payment_ika: &mut Coin<IKA>,
@@ -270,7 +275,6 @@ public fun request_ecdsa_sign_with_partial_user_signatures(
     ctx: &mut TxContext
 ) {
     self.inner_mut().request_ecdsa_sign_with_partial_user_signatures(
-        dwallet_id,
         partial_user_signature_cap,
         message_approval,
         payment_ika,
