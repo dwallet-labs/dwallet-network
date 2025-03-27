@@ -349,6 +349,9 @@ accept_encrypted_user_share
 request_ecdsa_presign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+mock_create_presign
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 respond_ecdsa_presign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner

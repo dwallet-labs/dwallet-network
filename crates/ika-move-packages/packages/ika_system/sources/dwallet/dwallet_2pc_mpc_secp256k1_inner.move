@@ -883,7 +883,7 @@ fun validate_active_and_get_public_output(
         DWalletState::Requested | DWalletState::AwaitingUser { .. } | DWalletState::AwaitingNetworkVerification | DWalletState::NetworkRejectedSecondRound => abort EDWalletInactive,
     }
 }
- 
+
 
 fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
@@ -1583,6 +1583,39 @@ public(package) fun request_ecdsa_presign(
             ctx,
         )
     );
+    cap
+}
+
+// TODO (#493): Remove mock functions
+public(package) fun mock_create_presign(
+    self: &mut DWalletCoordinatorInner,
+    dwallet_id: ID,
+    presign: vector<u8>,
+    ctx: &mut TxContext
+): ECDSAPresignCap {
+    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let id = object::new(ctx);
+    let presign_id = id.to_inner();
+    let cap = ECDSAPresignCap {
+        id: object::new(ctx),
+        dwallet_id,
+        presign_id,
+    };
+    dwallet.ecdsa_presigns.add(presign_id, ECDSAPresign {
+        id,
+        created_at_epoch: 0,
+        dwallet_id,
+        cap_id: object::id(&cap),
+        state: ECDSAPresignState::Completed {
+            presign
+        }
+    });
+    event::emit(CompletedECDSAPresignEvent {
+        dwallet_id,
+        session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+        presign_id,
+        presign
+    });
     cap
 }
 

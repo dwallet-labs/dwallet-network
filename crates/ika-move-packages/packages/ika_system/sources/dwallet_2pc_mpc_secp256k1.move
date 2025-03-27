@@ -153,8 +153,8 @@ public fun mock_create_dwallet(self: &mut DWalletCoordinator, output: vector<u8>
     self.inner_mut().mock_create_dwallet(output, dwallet_network_decryption_key_id, ctx)
 }
 
-public fun mock_create_presign(self: &mut DWalletCoordinator, presign: vector<u8>, dwallet_id: ID) {
-    self.inner_mut().respond_ecdsa_presign(dwallet_id, dwallet_id, dwallet_id, presign, false);
+public fun mock_create_presign(self: &mut DWalletCoordinator, presign: vector<u8>, dwallet_id: ID, ctx: &mut TxContext): ECDSAPresignCap {
+    self.inner_mut().mock_create_presign(dwallet_id, presign, ctx)
 }
 
 public fun request_re_encrypt_user_share_for(
@@ -270,6 +270,7 @@ public fun request_ecdsa_sign_with_partial_user_signatures(
     self: &mut DWalletCoordinator,
     partial_user_signature_cap: VerifiedECDSAPartialUserSignatureCap,
     message_approval: MessageApproval,
+    dwallet_id: ID,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
