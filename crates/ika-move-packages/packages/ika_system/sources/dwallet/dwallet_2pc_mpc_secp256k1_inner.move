@@ -21,7 +21,7 @@ use sui::ed25519::ed25519_verify;
 use ika_system::address;
 use ika_system::dwallet_pricing::{Self, DWalletPricing2PcMpcSecp256K1, PricingPerOperation};
 use ika_system::bls_committee::{Self, BlsCommittee};
-// use sui::dynamic_field;
+use sui::dynamic_field;
 
 /// Supported hash schemes for message signing.
 const KECCAK256: u8 = 0;
@@ -917,7 +917,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         event_data,
     };
     // abort 999;
-    // dynamic_field::add(&mut _session.id, DWalletSessionEventKey {}, _event);
+    dynamic_field::add(&mut _session.id, DWalletSessionEventKey {}, _event);
     self.sessions.add(session_sequence_number, _session);
     self.next_session_sequence_number = session_sequence_number + 1;
 
