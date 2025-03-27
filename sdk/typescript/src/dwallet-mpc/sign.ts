@@ -280,8 +280,6 @@ export async function completeFutureSign(
 	hash = Hash.KECCAK256,
 	verifyECDSAPartialUserSignatureCapID: string,
 ): Promise<CompletedSignEvent> {
-	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
-	const dwalletID = dwalletCap.dwallet_id;
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
 
