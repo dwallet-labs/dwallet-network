@@ -93,8 +93,10 @@ pub struct DKGSecondRoundOutput {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct PresignOutput {
     pub dwallet_id: Vec<u8>,
+    pub presign_id: Vec<u8>,
     pub session_id: Vec<u8>,
     pub presign: Vec<u8>,
+    pub rejected: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]

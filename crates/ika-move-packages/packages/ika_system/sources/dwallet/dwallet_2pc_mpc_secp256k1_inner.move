@@ -26,6 +26,7 @@ use ika_system::bls_committee::{Self, BlsCommittee};
 const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
 
+// TODO: move to utils
 fun copy_table_vec(dest: &mut TableVec<vector<u8>>, src: &TableVec<vector<u8>>) {
     while (!dest.is_empty()) {
         dest.pop_back();
@@ -220,8 +221,7 @@ public struct ECDSAPartialUserSignature has key, store {
 
     created_at_epoch: u64,
 
-    /// The unique identifier of the associated dWallet.
-    dwallet_id: ID,
+    presign_cap: ECDSAPresignCap,
 
     cap_id: ID,
 
@@ -229,8 +229,6 @@ public struct ECDSAPartialUserSignature has key, store {
 
     /// The messages that are being signed.
     message: vector<u8>,
-
-    presign: ECDSAPresign,
 
     /// The centralized party signature of a message.
     message_centralized_signature: vector<u8>,
@@ -281,6 +279,13 @@ public enum DWalletState has copy, drop, store {
     }
 }
 
+public struct ECDSAPresignCap has key, store {
+    id: UID,
+    /// ID of the associated dWallet.
+    dwallet_id: ID,
+    presign_id: ID,
+}
+
 /// Represents the result of the second and final presign round.
 /// This struct links the results of both presign rounds to a specific dWallet ID.
 public struct ECDSAPresign has key, store {
@@ -292,8 +297,17 @@ public struct ECDSAPresign has key, store {
     /// ID of the associated dWallet.
     dwallet_id: ID,
 
-    /// Serialized output of the presign process.
-    presign: vector<u8>,
+    cap_id: ID,
+
+    state: ECDSAPresignState,
+}
+
+public enum ECDSAPresignState has copy, drop, store {
+    Requested,
+    NetworkRejected,
+    Completed {
+        presign: vector<u8>,
+    }
 }
 
 /// The output of a batched Sign session.
@@ -526,6 +540,8 @@ public struct ECDSAPresignRequestEvent has copy, drop {
     /// ID of the associated dWallet.
     dwallet_id: ID,
 
+    presign_id: ID,
+
     /// The output produced by the DKG process,
     /// used as input for the Presign session.
     dwallet_public_output: vector<u8>,
@@ -546,6 +562,15 @@ public struct CompletedECDSAPresignEvent has copy, drop {
     session_id: ID,
     presign_id: ID,
     presign: vector<u8>,
+}
+
+public struct RejectedECDSAPresignEvent has copy, drop, store {
+    /// The ID of the dWallet associated with this batch.
+    dwallet_id: ID,
+
+    /// The session ID.
+    session_id: ID,
+    presign_id: ID
 }
 
 // END OF PRESIGN TYPES
@@ -662,6 +687,7 @@ const EIncorrectCap: u64 = 11;
 const EUnverifiedCap: u64 = 12;
 const EInvalidSource: u64 =13;
 const EDWalletNetworkDecryptionKeyNotActive: u64 = 14;
+const EInvalidPresign: u64 = 10;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -1468,10 +1494,27 @@ public(package) fun request_ecdsa_presign(
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
-) {
-    let (dwallet, public_output) = self.get_active_dwallet_and_public_output(dwallet_id);
+): ECDSAPresignCap {
+    let created_at_epoch = self.current_epoch;
+    let (dwallet, public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+
+
+    let id = object::new(ctx);
+    let presign_id = id.to_inner();
+    let cap = ECDSAPresignCap {
+        id: object::new(ctx),
+        dwallet_id,
+        presign_id,
+    };
+    dwallet.ecdsa_presigns.add(presign_id, ECDSAPresign {
+        id,
+        created_at_epoch,
+        dwallet_id,
+        cap_id: object::id(&cap),
+        state: ECDSAPresignState::Requested,
+    });
 
     let pricing = self.pricing.ecdsa_presign();
 
@@ -1481,12 +1524,47 @@ public(package) fun request_ecdsa_presign(
         self.create_current_epoch_dwallet_event(
             ECDSAPresignRequestEvent {
                 dwallet_id,
+                presign_id,
                 dwallet_public_output: public_output,
                 dwallet_network_decryption_key_id: dwallet_network_decryption_key_id,
             },
             ctx,
         )
     );
+    cap
+}
+
+// TODO (#493): Remove mock functions
+public(package) fun mock_create_presign(
+    self: &mut DWalletCoordinatorInner,
+    dwallet_id: ID,
+    presign: vector<u8>,
+    ctx: &mut TxContext
+): ECDSAPresignCap {
+    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let id = object::new(ctx);
+    let presign_id = id.to_inner();
+    let cap = ECDSAPresignCap {
+        id: object::new(ctx),
+        dwallet_id,
+        presign_id,
+    };
+    dwallet.ecdsa_presigns.add(presign_id, ECDSAPresign {
+        id,
+        created_at_epoch: 0,
+        dwallet_id,
+        cap_id: object::id(&cap),
+        state: ECDSAPresignState::Completed {
+            presign
+        }
+    });
+    event::emit(CompletedECDSAPresignEvent {
+        dwallet_id,
+        session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+        presign_id,
+        presign
+    });
+    cap
 }
 
 /// Completes the presign session by creating the output of the
@@ -1516,27 +1594,54 @@ public(package) fun request_ecdsa_presign(
 public(package) fun respond_ecdsa_presign(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
+    presign_id: ID,
     session_id: ID,
     presign: vector<u8>,
-    ctx: &mut TxContext
+    rejected: bool
 ) {
-    let created_at_epoch = self.current_epoch;
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
-    let id = object::new(ctx);
-    let presign_id = id.to_inner();
-    dwallet.ecdsa_presigns.add(presign_id, ECDSAPresign {
-        id,
-        created_at_epoch,
-        dwallet_id,
-        presign,
-    });
-    event::emit(CompletedECDSAPresignEvent {
-        dwallet_id,
-        session_id,
-        presign_id,
-        presign
-    });
+    let presign_obj = dwallet.ecdsa_presigns.borrow_mut(presign_id);
+
+    presign_obj.state = match(presign_obj.state) {
+        ECDSAPresignState::Requested => {
+            if(rejected) {
+                event::emit(RejectedECDSAPresignEvent {
+                    dwallet_id,
+                    session_id,
+                    presign_id
+                });
+                ECDSAPresignState::NetworkRejected
+            } else {
+                event::emit(CompletedECDSAPresignEvent {
+                    dwallet_id,
+                    session_id,
+                    presign_id,
+                    presign
+                });
+                ECDSAPresignState::Completed {
+                    presign
+                }
+            }
+        },
+        _ => abort EWrongState
+    };
+}
+
+public(package) fun is_ecdsa_presign_valid(
+    self: &DWalletCoordinatorInner,
+    presign_cap: &ECDSAPresignCap,
+): bool {
+    let (dwallet, _) = self.get_active_dwallet_and_public_output(presign_cap.dwallet_id);
+
+    let presign = dwallet.ecdsa_presigns.borrow(presign_cap.presign_id);
+
+    match(&presign.state) {
+        ECDSAPresignState::Completed { .. } => {
+            true
+        },
+        _ => false
+    }
 }
 
 /// Emits events to initiate the signing process for each message.
@@ -1556,29 +1661,48 @@ public(package) fun respond_ecdsa_presign(
 fun emit_ecdsa_sign_event(
     self: &mut DWalletCoordinatorInner,
     message_approval: MessageApproval,
-    dwallet_id: ID,
-    presign: ECDSAPresign,
+    presign_cap: ECDSAPresignCap,
     message_centralized_signature: vector<u8>,
     is_future_sign: bool,
     ctx: &mut TxContext
 ) {
     let created_at_epoch = self.current_epoch;
-    let (dwallet, public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let (dwallet, public_output) = self.get_active_dwallet_and_public_output_mut(presign_cap.dwallet_id);
+
+    assert!(dwallet.ecdsa_presigns.contains(presign_cap.presign_id), EPresignNotExist);
+    let presign = dwallet.ecdsa_presigns.remove(presign_cap.presign_id);
 
     let MessageApproval {
         dwallet_id: message_approval_dwallet_id,
         hash_scheme,
         message
     } = message_approval;
+    let ECDSAPresignCap {
+        id,
+        dwallet_id: presign_cap_dwallet_id,
+        presign_id: presign_cap_presign_id,
+    } = presign_cap;
+    let presign_cap_id = id.to_inner();
+    id.delete();
     let ECDSAPresign {
         id,
         created_at_epoch: _,
         dwallet_id: presign_dwallet_id,
-        presign,
+        cap_id,
+        state,
     } = presign;
+    let presign = match(state) {
+        ECDSAPresignState::Completed { presign } => {
+            presign
+        },
+        _ => abort EInvalidPresign
+    };
     let presign_id = id.to_inner();
     id.delete();
     assert!(presign_dwallet_id == message_approval_dwallet_id, EMessageApprovalMismatch);
+    assert!(presign_cap_id == cap_id, EPresignNotExist);
+    assert!(presign_id == presign_cap_presign_id, EPresignNotExist);
+    assert!(presign_cap_dwallet_id == presign_dwallet_id, EPresignNotExist);
 
     let id = object::new(ctx);
     let sign_id = id.to_inner();
@@ -1586,7 +1710,7 @@ fun emit_ecdsa_sign_event(
     let emit_event = self.create_current_epoch_dwallet_event(
         ECDSASignRequestEvent {
             sign_id,
-            dwallet_id,
+            dwallet_id: presign_dwallet_id,
             dwallet_public_output: public_output,
             hash_scheme,
             message,
@@ -1599,11 +1723,11 @@ fun emit_ecdsa_sign_event(
         ctx,
     );
     let session_id = emit_event.session_id;
-    let dwallet = self.get_dwallet_mut(dwallet_id);
+    let dwallet = self.get_dwallet_mut(presign_dwallet_id);
     dwallet.ecdsa_signs.add(sign_id, ECDSASign {
         id,
         created_at_epoch,
-        dwallet_id,
+        dwallet_id: presign_dwallet_id,
         session_id,
         state: ECDSASignState::Requested,
     });
@@ -1643,27 +1767,23 @@ fun emit_ecdsa_sign_event(
 /// specific to each Digital Signature Algorithm.
 public(package) fun request_ecdsa_sign(
     self: &mut DWalletCoordinatorInner,
-    dwallet_id: ID,
     message_approval: MessageApproval,
-    presign_id: ID,
+    presign_cap: ECDSAPresignCap,
     message_centralized_signature: vector<u8>,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ) {
-    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
-
-    assert!(dwallet.ecdsa_presigns.contains(presign_id), EPresignNotExist);
-    let presign = dwallet.ecdsa_presigns.remove(presign_id);
-    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
     let pricing = self.pricing.ecdsa_sign();
+    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(presign_cap.dwallet_id);
 
+    assert!(dwallet.ecdsa_presigns.contains(presign_cap.presign_id), EPresignNotExist);
+    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
     self.charge(pricing, dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
 
     self.emit_ecdsa_sign_event(
         message_approval,
-        dwallet_id,
-        presign,
+        presign_cap,
         message_centralized_signature,
         false,
         ctx
@@ -1678,22 +1798,28 @@ public(package) fun request_ecdsa_sign(
 /// more details on when this may be used.
 public(package) fun request_ecdsa_future_sign(
     self: &mut DWalletCoordinatorInner,
-    dwallet_id: ID,
+    presign_cap: ECDSAPresignCap,
     message: vector<u8>,
-    presign_id: ID,
     hash_scheme: u8,
     message_centralized_signature: vector<u8>,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ): UnverifiedECDSAPartialUserSignatureCap {
-    let (dwallet, public_dwallet_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let (dwallet, public_dwallet_output) = self.get_active_dwallet_and_public_output_mut(presign_cap.dwallet_id);
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
 
     // TODO: Change error
-    assert!(dwallet.ecdsa_presigns.contains(presign_id), EPresignNotExist);
+    assert!(dwallet.ecdsa_presigns.contains(presign_cap.presign_id), EPresignNotExist);
 
-    let presign = dwallet.ecdsa_presigns.remove(presign_id);
+    let presign_obj = dwallet.ecdsa_presigns.borrow(presign_cap.presign_id);
+    let presign = match(presign_obj.state) {
+        ECDSAPresignState::Completed { presign } => {
+            presign
+        },
+        _ => abort EInvalidPresign
+    };
+
     let id = object::new(ctx);
     let partial_centralized_signed_message_id = id.to_inner();
     let cap = UnverifiedECDSAPartialUserSignatureCap {
@@ -1702,10 +1828,10 @@ public(package) fun request_ecdsa_future_sign(
     };
     let emit_event = self.create_current_epoch_dwallet_event(
         ECDSAFutureSignRequestEvent {
-                dwallet_id,
+                dwallet_id: presign_cap.dwallet_id,
                 partial_centralized_signed_message_id,
                 message,
-                presign: presign.presign,
+                presign: presign,
                 dwallet_public_output: public_dwallet_output,
                 hash_scheme,
                 message_centralized_signature,
@@ -1716,11 +1842,10 @@ public(package) fun request_ecdsa_future_sign(
     self.ecdsa_partial_centralized_signed_messages.add(partial_centralized_signed_message_id, ECDSAPartialUserSignature {
         id: id,
         created_at_epoch: self.current_epoch,
-        dwallet_id,
+        presign_cap,
         cap_id: object::id(&cap),
         hash_scheme,
         message,
-        presign,
         message_centralized_signature,
         state: ECDSAPartialUserSignatureState::AwaitingNetworkVerification,
     });
@@ -1743,7 +1868,7 @@ public(package) fun respond_ecdsa_future_sign(
     rejected: bool,
 ) {
     let partial_centralized_signed_message = self.ecdsa_partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
-    assert!(partial_centralized_signed_message.dwallet_id == dwallet_id, EDWalletMismatch);
+    assert!(partial_centralized_signed_message.presign_cap.dwallet_id == dwallet_id, EDWalletMismatch);
     partial_centralized_signed_message.state = match(partial_centralized_signed_message.state) {
         ECDSAPartialUserSignatureState::AwaitingNetworkVerification => {
             if(rejected) {
@@ -1814,7 +1939,6 @@ public(package) fun request_ecdsa_sign_with_partial_user_signatures(
     ctx: &mut TxContext
 ) {
     let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
-
     let pricing = self.pricing.ecdsa_sign_with_partial_user_signature();
 
     self.charge(pricing, dwallet.dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
@@ -1831,24 +1955,20 @@ public(package) fun request_ecdsa_sign_with_partial_user_signatures(
     let ECDSAPartialUserSignature {
         id,
         created_at_epoch: _,
-        dwallet_id: partial_centralized_signed_messages_dwallet_id,
+        presign_cap,
         cap_id,
         hash_scheme: _,
         message: _,
-        presign,
         message_centralized_signature,
         state
     } = self.ecdsa_partial_centralized_signed_messages.remove(partial_centralized_signed_message_id);
     id.delete();
     assert!(cap_id == verified_cap_id && state == ECDSAPartialUserSignatureState::NetworkVerificationCompleted, EIncorrectCap);
-    assert!(partial_centralized_signed_messages_dwallet_id == dwallet_id, EDWalletMismatch);
-    assert!(presign.dwallet_id == dwallet_id, EDWalletMismatch);
 
     // Emit signing events to finalize the signing process.
     self.emit_ecdsa_sign_event(
         message_approval,
-        dwallet_id,
-        presign,
+        presign_cap,
         message_centralized_signature,
         true,
         ctx
@@ -1865,7 +1985,7 @@ public(package) fun compare_ecdsa_partial_user_signatures_with_approvals(
 ) {
     let partial_signature = self.ecdsa_partial_centralized_signed_messages.borrow(partial_user_signature_cap.partial_centralized_signed_message_id);
 
-    assert!(partial_signature.dwallet_id == message_approval.dwallet_id && message_approval.message == partial_signature.message && partial_signature.hash_scheme == message_approval.hash_scheme, EMessageApprovalMismatch);
+    assert!(partial_signature.presign_cap.dwallet_id == message_approval.dwallet_id && message_approval.message == partial_signature.message && partial_signature.hash_scheme == message_approval.hash_scheme, EMessageApprovalMismatch);
 }
 
 /// Emits a `CompletedSignEvent` with the MPC Sign protocol output.
@@ -2057,9 +2177,11 @@ fun process_checkpoint_message(
                 );
             } else if (message_data_type == 7) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let presign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let presign = bcs_body.peel_vec_u8();
-                self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx);
+                let rejected = bcs_body.peel_bool();
+                self.respond_ecdsa_presign(dwallet_id, presign_id, session_id, presign, rejected);
             } else if (message_data_type == 9) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
