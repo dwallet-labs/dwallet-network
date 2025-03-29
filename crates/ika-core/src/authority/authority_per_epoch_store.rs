@@ -2049,7 +2049,7 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::DwalletDKGFirstRoundOutput(DKGFirstRoundOutput {
                     dwallet_id: event_data.event_data.dwallet_id.to_vec(),
                     output,
-                    session_sequence_number: event_data.session_sequence_number
+                    session_sequence_number: event_data.session_sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
