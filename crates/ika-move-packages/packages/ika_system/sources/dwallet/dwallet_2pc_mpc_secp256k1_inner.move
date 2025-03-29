@@ -1157,9 +1157,10 @@ public(package) fun respond_dwallet_dkg_first_round(
         computation_fee_charged_ika: payment_ika,
         gas_fee_reimbursement_sui: payment_sui,
         consensus_validation_fee_charged_ika: more_payment_ika,
-        id,
+        mut id,
         ..
     } = session;
+    let _: DWalletEvent<DWalletDKGFirstRoundRequestEvent> = dynamic_field::remove(&mut id, DWalletSessionEventKey {});
     object::delete(id);
     self.consensus_validation_fee_charged_ika.join(payment_ika);
     self.consensus_validation_fee_charged_ika.join(more_payment_ika);
