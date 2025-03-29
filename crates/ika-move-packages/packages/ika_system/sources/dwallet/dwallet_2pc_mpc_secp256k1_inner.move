@@ -1345,6 +1345,7 @@ public(package) fun respond_dwallet_dkg_second_round(
     encryption_key_address: address,
     session_id: ID,
     rejected: bool,
+    session_sequence_number: u64,
     ctx: &mut TxContext
 ) {
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
@@ -2215,6 +2216,7 @@ fun process_checkpoint_message(
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 let encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
                 self.respond_dwallet_dkg_second_round(
                     dwallet_id,
                     public_output,
@@ -2222,16 +2224,19 @@ fun process_checkpoint_message(
                     encryption_key_address,
                     session_id,
                     rejected,
+                    session_sequence_number,
                     ctx,
                 );
             } else if (message_data_type == 5) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
                 self.respond_re_encrypt_user_share_for(
                     dwallet_id,
                     encrypted_user_secret_key_share_id,
                     rejected,
+                    session_sequence_number,
                 );
             } else if (message_data_type == 6) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2240,6 +2245,7 @@ fun process_checkpoint_message(
                 let signature = bcs_body.peel_vec_u8();
                 let is_future_sign = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
                 self.respond_ecdsa_sign(
                     dwallet_id,
                     sign_id,
@@ -2247,17 +2253,20 @@ fun process_checkpoint_message(
                     signature,
                     is_future_sign,
                     rejected,
+                    session_sequence_number
                 );
             } else if (message_data_type == 8) {
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
                 self.respond_ecdsa_future_sign(
                     session_id,
                     dwallet_id,
                     partial_centralized_signed_message_id,
                     rejected,
+                    session_sequence_number
                 );
             } else if (message_data_type == 7) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2265,13 +2274,15 @@ fun process_checkpoint_message(
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let presign = bcs_body.peel_vec_u8();
                 let rejected = bcs_body.peel_bool();
-                self.respond_ecdsa_presign(dwallet_id, presign_id, session_id, presign, rejected);
+                let session_sequence_number = bcs_body.peel_u64();
+                self.respond_ecdsa_presign(dwallet_id, presign_id, session_id, presign, rejected, session_sequence_number);
             } else if (message_data_type == 9) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let key_shares = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
+                let session_sequence_number = bcs_body.peel_u64();
+                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last, session_sequence_number);
             };
         i = i + 1;
     };
