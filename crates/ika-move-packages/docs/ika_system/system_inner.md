@@ -2430,6 +2430,7 @@ Returns all the validators who are currently reporting <code>validator_id</code>
             } <b>else</b> <b>if</b> (message_data_type == 3) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _first_round_output = bcs_body.peel_vec_u8();
+                bcs_body.peel_u64();
             } <b>else</b> <b>if</b> (message_data_type == 4) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
