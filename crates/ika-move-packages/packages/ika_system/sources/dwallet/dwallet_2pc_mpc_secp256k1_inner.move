@@ -1127,7 +1127,6 @@ public(package) fun request_dwallet_dkg_first_round(
     dwallet_cap
 }
 
-#[allow(unused_function)]
 fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
     let session = self.sessions.remove(session_sequence_number);
     let DWalletSession {
