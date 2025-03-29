@@ -6,9 +6,9 @@ This module contains the core logic of the MPC protocol for the dWallet.
 
 ### Running the Network DKG Protocol
 
+The dWallet "admin" is the address that can initiate the network DKG.
 To run the network DKG protocol,
 you must configure your address as the dWallet admin address and execute the start transaction.
-The dWallet "admin" is the address that can initiate the network DKG.
 
 #### **OUTDATED** Configuring the dWallet "admin" Address
 
@@ -152,7 +152,7 @@ Replace the mock values of the following constants with the corresponding file c
 - **`NETWORK_DKG_OUTPUT`** → `public_output.txt`
 - **`DECRYPTION_SHARES`** → `decryption_shares.txt`
 
-These constants are located in the `crates/class-groups-constants/src/constants.rs` file.
+These constants are located in the `crates/shared-wasm-class-groups/src/constants.rs` file.
 
 Next, replace the contents of `class-groups-keys-mock-files/class-groups-mock-key-full` with the content of
 `class-groups-keypair`.

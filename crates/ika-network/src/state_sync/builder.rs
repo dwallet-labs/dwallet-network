@@ -10,7 +10,6 @@ use anemo::codegen::InboundRequestLayer;
 use anemo_tower::{inflight_limit, rate_limit};
 use ika_archival::reader::ArchiveReaderBalancer;
 use ika_config::p2p::StateSyncConfig;
-use ika_types::committee::EpochId;
 use ika_types::digests::ChainIdentifier;
 use ika_types::messages_checkpoint::VerifiedCheckpointMessage;
 use ika_types::storage::WriteStore;
@@ -190,11 +189,7 @@ impl<S> UnstartedStateSync<S>
 where
     S: WriteStore + Clone + Send + Sync + 'static,
 {
-    pub(super) fn build(
-        self,
-        network: anemo::Network,
-        current_epoch: EpochId,
-    ) -> (StateSyncEventLoop<S>, Handle) {
+    pub(super) fn build(self, network: anemo::Network) -> (StateSyncEventLoop<S>, Handle) {
         let Self {
             config,
             handle,
@@ -211,7 +206,6 @@ where
         (
             StateSyncEventLoop {
                 config,
-                current_epoch: current_epoch.pipe(RwLock::new).pipe(Arc::new),
                 mailbox,
                 weak_sender: handle.sender.downgrade(),
                 tasks: JoinSet::new(),
@@ -230,8 +224,8 @@ where
         )
     }
 
-    pub fn start(self, network: anemo::Network, current_epoch: EpochId) -> Handle {
-        let (event_loop, handle) = self.build(network, current_epoch);
+    pub fn start(self, network: anemo::Network) -> Handle {
+        let (event_loop, handle) = self.build(network);
         tokio::spawn(event_loop.start());
 
         handle

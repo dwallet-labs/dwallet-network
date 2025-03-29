@@ -20,7 +20,7 @@ use sui::event;
 use sui::ed25519::ed25519_verify;
 use ika_system::address;
 use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1, PricingPerOperation};
-use ika_system::bls_committee::{BlsCommittee};
+use ika_system::bls_committee::{Self, BlsCommittee};
 
 /// Supported hash schemes for message signing.
 const KECCAK256: u8 = 0;
@@ -62,23 +62,21 @@ public struct DWalletCoordinatorInner has store {
     ecdsa_partial_centralized_signed_messages: ObjectTable<ID, ECDSAPartialUserSignature>,
     /// The computation IKA price per unit size for the current epoch.
     pricing: DWalletPricing2PcMpcSecp256K1,
-    active_epochs: ObjectTable<u64, DWalletEpochCoordinator>,
     /// Sui gas fee reimbursement to fund the network writing tx responses to sui.
     gas_fee_reimbursement_sui: Balance<SUI>,
+    /// The fees paid for consensus validation in IKA.
+    consensus_validation_fee_charged_ika: Balance<IKA>,
+    /// The active committees.
+    active_committee: BlsCommittee,
+    /// The previous committee.
+    previous_committee: BlsCommittee,
+    /// The total messages processed.
+    total_messages_processed: u64,
+    /// The last checkpoint sequence number processed.
+    last_processed_checkpoint_sequence_number: Option<u64>,
+
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
-}
-
-public struct DWalletEpochCoordinator has key, store {
-    id: UID,
-    committee: BlsCommittee,
-    session_count: u32,
-    /// The total messages processed.
-    total_messages_processed: u32,
-    /// The last checkpoint sequence number processed.
-    last_processed_checkpoint_sequence_number: Option<u32>,
-    /// The fees paid for consuenes validation in IKA.
-    consensus_validation_fee_charged_ika: Balance<IKA>,
 }
 
 /// Represents a capability granting control over a specific dWallet.
@@ -645,12 +643,11 @@ public struct RejectedECDSASignEvent has copy, drop {
 /// the checkpoint submmision message.
 public struct SystemCheckpointInfoEvent has copy, drop {
     epoch: u64,
-    sequence_number: u32,
+    sequence_number: u64,
     timestamp_ms: u64,
 }
 
 // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
-const EEpochNotExist: u64 = 0;
 const EDWalletMismatch: u64 = 1;
 const EDWalletInactive: u64 = 2;
 const EDWalletNotExists: u64 = 3;
@@ -678,20 +675,10 @@ const EActiveBlsCommitteeMustInitialize: vector<u8> = b"First active committee m
 
 public(package) fun create_dwallet_coordinator_inner(
     current_epoch: u64,
-    committee: BlsCommittee,
+    active_committee: BlsCommittee,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
 ): DWalletCoordinatorInner {
-    let mut active_epochs = object_table::new(ctx);
-    active_epochs.add(current_epoch, DWalletEpochCoordinator {
-        id: object::new(ctx),
-        committee,
-        session_count: 0,
-        total_messages_processed: 0,
-        last_processed_checkpoint_sequence_number: option::none(),
-        consensus_validation_fee_charged_ika: balance::zero(),
-
-    });
     DWalletCoordinatorInner {
         current_epoch,
         dwallets: object_table::new(ctx),
@@ -699,8 +686,12 @@ public(package) fun create_dwallet_coordinator_inner(
         encryption_keys: object_table::new(ctx),
         ecdsa_partial_centralized_signed_messages: object_table::new(ctx),
         pricing,
-        active_epochs,
         gas_fee_reimbursement_sui: balance::zero(),
+        consensus_validation_fee_charged_ika: balance::zero(),
+        active_committee,
+        previous_committee: bls_committee::empty(),
+        total_messages_processed: 0,
+        last_processed_checkpoint_sequence_number: option::none(),
         extra_fields: bag::new(ctx),
     }
 }
@@ -795,18 +786,11 @@ fun get_active_dwallet_network_decryption_key(
 
 public(package) fun advance_epoch(
     self: &mut DWalletCoordinatorInner,
-    next_committee: BlsCommittee,
-    ctx: &mut TxContext
+    next_committee: BlsCommittee
 ) {
     self.current_epoch = self.current_epoch + 1;
-    self.active_epochs.add(self.current_epoch, DWalletEpochCoordinator {
-        id: object::new(ctx),
-        committee: next_committee,
-        session_count: 0,
-        total_messages_processed: 0,
-        last_processed_checkpoint_sequence_number: option::none(),
-        consensus_validation_fee_charged_ika: balance::zero(),
-    });
+    self.previous_committee = self.active_committee;
+    self.active_committee = next_committee;
 }
 
 fun get_dwallet(
@@ -1005,15 +989,11 @@ fun charge(
     ctx: &mut TxContext
 ) {
     assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
-    assert!(self.active_epochs.contains(self.current_epoch), EEpochNotExist);
-
-    let active_epoch = self.active_epochs.borrow_mut(self.current_epoch);
-    active_epoch.consensus_validation_fee_charged_ika.join(payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance());
-    active_epoch.session_count = active_epoch.session_count + 1;
 
     let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.computation_fee_charged_ika.join(payment_ika.split(pricing.computation_ika(), ctx).into_balance());
 
+    self.consensus_validation_fee_charged_ika.join(payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance());
     self.gas_fee_reimbursement_sui.join(payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance());
 }
 
@@ -1949,46 +1929,40 @@ public(package) fun respond_ecdsa_sign(
 
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWalletCoordinatorInner,
-    epoch: u64,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    assert!(self.active_epochs.contains(epoch), EEpochNotExist);
-    let epoch_coordinator = self.active_epochs.borrow(epoch);
     let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
     intent_bytes.append(message);
-    intent_bytes.append(bcs::to_bytes(&epoch));
+    intent_bytes.append(bcs::to_bytes(&self.current_epoch));
 
-    epoch_coordinator.committee.verify_certificate(epoch, &signature, &signers_bitmap, &intent_bytes);
+    self.active_committee.verify_certificate(self.current_epoch, &signature, &signers_bitmap, &intent_bytes);
 
-    self.process_checkpoint_message(epoch, message, ctx);
+    self.process_checkpoint_message(message, ctx);
 }
 
 fun process_checkpoint_message(
     self: &mut DWalletCoordinatorInner,
-    epoch: u64,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    assert!(self.active_epochs.contains(epoch), EEpochNotExist);
-    let epoch_coordinator = self.active_epochs.borrow_mut(epoch);
-    assert!(!epoch_coordinator.committee.members().is_empty(), EActiveBlsCommitteeMustInitialize);
+    assert!(!self.active_committee.members().is_empty(), EActiveBlsCommitteeMustInitialize);
 
     let mut bcs_body = bcs::new(copy message);
 
-    let checkpoint_epoch = bcs_body.peel_u64();
-    assert!(epoch == checkpoint_epoch, EIncorrectEpochInCheckpoint);
+    let epoch = bcs_body.peel_u64();
+    assert!(epoch == self.current_epoch, EIncorrectEpochInCheckpoint);
 
-    let sequence_number = bcs_body.peel_u32();
+    let sequence_number = bcs_body.peel_u64();
 
-    if(epoch_coordinator.last_processed_checkpoint_sequence_number.is_none()) {
+    if(self.last_processed_checkpoint_sequence_number.is_none()) {
         assert!(sequence_number == 0, EWrongCheckpointSequenceNumber);
-        epoch_coordinator.last_processed_checkpoint_sequence_number.fill(sequence_number);
+        self.last_processed_checkpoint_sequence_number.fill(sequence_number);
     } else {
-        assert!(sequence_number > 0 && *epoch_coordinator.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongCheckpointSequenceNumber);
-        epoch_coordinator.last_processed_checkpoint_sequence_number.swap(sequence_number);
+        assert!(sequence_number > 0 && *self.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongCheckpointSequenceNumber);
+        self.last_processed_checkpoint_sequence_number.swap(sequence_number);
     };
 
     let timestamp_ms = bcs_body.peel_u64();
@@ -1999,10 +1973,10 @@ fun process_checkpoint_message(
         timestamp_ms,
     });
 
-    let messages_len = bcs_body.peel_vec_length() as u32;
+    let len = bcs_body.peel_vec_length();
     let mut i = 0;
-    let mut response_session_count = 0;
-    while (i < messages_len) {
+    while (i < len) {
+
         let message_data_type = bcs_body.peel_vec_length();
             // Parses checkpoint BCS bytes directly.
             // Messages with `message_data_type` 1 & 2 are handled by the system module,
@@ -2030,7 +2004,6 @@ fun process_checkpoint_message(
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
                 self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output);
-                response_session_count = response_session_count + 1;
             } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2047,7 +2020,6 @@ fun process_checkpoint_message(
                     rejected,
                     ctx,
                 );
-                response_session_count = response_session_count + 1;
             } else if (message_data_type == 5) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2057,7 +2029,6 @@ fun process_checkpoint_message(
                     encrypted_user_secret_key_share_id,
                     rejected,
                 );
-                response_session_count = response_session_count + 1;
             } else if (message_data_type == 6) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2073,7 +2044,6 @@ fun process_checkpoint_message(
                     is_future_sign,
                     rejected,
                 );
-                response_session_count = response_session_count + 1;
             } else if (message_data_type == 8) {
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2085,24 +2055,19 @@ fun process_checkpoint_message(
                     partial_centralized_signed_message_id,
                     rejected,
                 );
-                response_session_count = response_session_count + 1;
             } else if (message_data_type == 7) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let presign = bcs_body.peel_vec_u8();
                 self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx);
-                response_session_count = response_session_count + 1;
             } else if (message_data_type == 9) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let key_shares = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
                 self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
-                response_session_count = response_session_count + 1;
             };
         i = i + 1;
     };
-    let epoch_coordinator = self.active_epochs.borrow_mut(epoch);
-    epoch_coordinator.total_messages_processed = epoch_coordinator.total_messages_processed + messages_len;
-    epoch_coordinator.session_count = epoch_coordinator.session_count + response_session_count;
+    self.total_messages_processed = self.total_messages_processed + i;
 }

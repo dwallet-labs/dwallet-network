@@ -77,9 +77,8 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
 public(package) fun advance_epoch(
     self: &mut DWalletCoordinator,
     committee: BlsCommittee,
-    ctx: &mut TxContext
 ) {
-    self.inner_mut().advance_epoch(committee, ctx);
+    self.inner_mut().advance_epoch(committee);
 }
 
 public fun get_active_encryption_key(
@@ -294,14 +293,13 @@ public fun compare_ecdsa_partial_user_signatures_with_approvals(
 #[allow(unused_function)]
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWalletCoordinator,
-    epoch: u64,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
     let self = self.inner_mut();
-    self.process_checkpoint_message_by_quorum(epoch, signature, signers_bitmap, message, ctx);
+    self.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
 }
 
 /// Migrate the dwallet_2pc_mpc_secp256k1 object to the new package id.

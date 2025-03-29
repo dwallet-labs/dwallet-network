@@ -113,7 +113,7 @@ where
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
             }
-            let last_processed_checkpoint_sequence_number: Option<u32> =
+            let last_processed_checkpoint_sequence_number: Option<u64> =
                 ika_system_state_inner.last_processed_checkpoint_sequence_number();
             let next_checkpoint_sequence_number = last_processed_checkpoint_sequence_number
                 .map(|s| s + 1)
@@ -122,7 +122,7 @@ where
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 if let Ok(Some(checkpoint_message)) = self
                     .checkpoint_store
-                    .get_checkpoint_by_sequence_number(epoch, next_checkpoint_sequence_number)
+                    .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
                 {
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
                         ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
@@ -139,7 +139,6 @@ where
                         let task = Self::handle_execution_task(
                             self.ika_system_package_id,
                             dwallet_2pc_mpc_secp256k1_id,
-                            epoch,
                             signature,
                             signers_bitmap,
                             message,
@@ -189,7 +188,6 @@ where
     async fn handle_execution_task(
         ika_system_package_id: ObjectID,
         dwallet_2pc_mpc_secp256k1_id: ObjectID,
-        epoch: EpochId,
         signature: Vec<u8>,
         signers_bitmap: Vec<u8>,
         message: Vec<u8>,
@@ -213,9 +211,6 @@ where
         let mut args = vec![
             CallArg::Object(ika_system_state_arg),
             CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
-            CallArg::Pure(bcs::to_bytes(&epoch).map_err(|e| {
-                IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
-            })?),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                 IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
             })?),

@@ -37,7 +37,9 @@ use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
 use tracing::warn;
 
+use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use twopc_mpc::secp256k1;
+
 mod cryptographic_computations_orchestrator;
 mod dkg;
 pub mod dwallet_mpc_service;
@@ -83,10 +85,10 @@ pub(crate) fn party_id_to_authority_name(
 
 /// Convert a given [`Vec<PartyID>`] to the corresponding [`Vec<AuthorityName>`].
 pub(crate) fn party_ids_to_authority_names(
-    malicious_parties: &[PartyID],
+    party_ids: &[PartyID],
     epoch_store: &AuthorityPerEpochStore,
 ) -> DwalletMPCResult<Vec<AuthorityName>> {
-    malicious_parties
+    party_ids
         .iter()
         .map(|party_id| party_id_to_authority_name(*party_id, &epoch_store))
         .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
@@ -239,7 +241,7 @@ fn sign_public_input(
             bcs::to_bytes(
                 &message_digest(
                     &deserialized_event.message.clone(),
-                    &crate::dwallet_mpc::Hash::try_from(deserialized_event.hash_scheme)
+                    &Hash::try_from(deserialized_event.hash_scheme)
                         .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
                 )
                 .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
@@ -256,45 +258,6 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::Sign(deserialized_event.event_data.clone()),
     }
-}
-
-#[derive(Clone, Debug)]
-pub enum Hash {
-    KECCAK256 = 0,
-    SHA256 = 1,
-}
-
-impl TryFrom<u8> for Hash {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Hash::KECCAK256),
-            1 => Ok(Hash::SHA256),
-            _ => Err(anyhow::Error::msg(format!(
-                "invalid value for Hash enum: {}",
-                value
-            ))),
-        }
-    }
-}
-
-/// Computes the message digest of a given message using the specified hash function.
-fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1::Scalar> {
-    let hash = match hash_type {
-        Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
-            &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
-        )
-        .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
-
-        Hash::SHA256 => {
-            bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
-                .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
-        }
-    };
-    #[allow(clippy::useless_conversion)]
-    let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
-    Ok(U256::from(m).into())
 }
 
 fn get_verify_partial_signatures_session_info(
@@ -338,7 +301,10 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, MPCPublicOutput>> {
-    let messages = deserialize_mpc_messages(messages)?;
+    let DeserializeMPCMessagesResponse {
+        messages,
+        malicious_parties: _,
+    } = deserialize_mpc_messages(messages);
 
     let res = match P::advance(
         session_id,
@@ -396,12 +362,17 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     })
 }
 
+struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
+    messages: Vec<HashMap<PartyID, M>>,
+    malicious_parties: Vec<PartyID>,
+}
+
 /// Deserializes the messages received from other parties for the next advancement.
 /// Any value that fails to deserialize is considered to be sent by a malicious party.
 /// Returns the deserialized messages or an error including the IDs of the malicious parties.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
-) -> DwalletMPCResult<Vec<HashMap<PartyID, M>>> {
+) -> DeserializeMPCMessagesResponse<M> {
     let mut deserialized_results = Vec::new();
     let mut malicious_parties = Vec::new();
 
@@ -423,13 +394,9 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
             deserialized_results.push(valid_messages);
         }
     }
-
-    if !malicious_parties.is_empty() {
-        Err(DwalletMPCError::SessionFailedWithMaliciousParties(
-            malicious_parties,
-        ))
-    } else {
-        Ok(deserialized_results)
+    DeserializeMPCMessagesResponse {
+        messages: deserialized_results,
+        malicious_parties,
     }
 }
 
@@ -445,25 +412,21 @@ pub(crate) fn session_input_from_event(
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
-        t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent> =
-                bcs::from_bytes(&event.contents)?;
-            Ok((
-                network_dkg::network_dkg_public_input(
-                    dwallet_mpc_manager
-                        .validators_class_groups_public_keys_and_proofs
-                        .clone(),
-                    DWalletMPCNetworkKeyScheme::Secp256k1,
-                )?,
-                Some(bcs::to_bytes(
-                    &dwallet_mpc_manager
-                        .node_config
-                        .class_groups_key_pair_and_proof
-                        .class_groups_keypair()
-                        .decryption_key(),
-                )?),
-            ))
-        }
+        t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => Ok((
+            network_dkg::network_dkg_public_input(
+                dwallet_mpc_manager
+                    .validators_class_groups_public_keys_and_proofs
+                    .clone(),
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+            )?,
+            Some(bcs::to_bytes(
+                &dwallet_mpc_manager
+                    .node_config
+                    .class_groups_key_pair_and_proof
+                    .class_groups_keypair()
+                    .decryption_key(),
+            )?),
+        )),
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =
                 bcs::from_bytes(&event.contents)?;

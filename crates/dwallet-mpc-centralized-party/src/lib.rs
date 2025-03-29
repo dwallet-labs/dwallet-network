@@ -19,22 +19,16 @@ use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors,
 };
-use k256::ecdsa::hazmat::bits2field;
-use k256::ecdsa::signature::digest::{Digest, FixedOutput};
-use k256::elliptic_curve::bigint::{Encoding, Uint};
-use k256::elliptic_curve::ops::Reduce;
-use k256::{elliptic_curve, U256};
 use mpc::two_party::Round;
 use mpc::Party;
 use rand_core::{OsRng, SeedableRng};
-use sha3::digest::FixedOutput as Sha3FixedOutput;
-use sha3::Digest as Sha3Digest;
 use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
-use class_groups_constants::protocol_public_parameters;
 use serde::{Deserialize, Serialize};
+use shared_wasm_class_groups::message_digest::message_digest;
+use shared_wasm_class_groups::protocol_public_parameters;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
@@ -66,13 +60,6 @@ pub fn public_keys_from_dkg_output(
         decentralized_public_share: bcs::to_bytes(&value.public_key_share)?,
         public_key: bcs::to_bytes(&value.public_key)?,
     })
-}
-
-/// Supported hash functions for message digest.
-#[derive(Clone, Debug)]
-enum Hash {
-    KECCAK256 = 0,
-    SHA256 = 1,
 }
 
 type SignedMessage = Vec<u8>;
@@ -157,24 +144,6 @@ pub fn create_dkg_output(
         public_key_share_and_proof,
         centralized_secret_output,
     })
-}
-
-/// Computes the message digest of a given message using the specified hash function.
-fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1::Scalar> {
-    let hash = match hash_type {
-        Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
-            &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
-        )
-        .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
-
-        Hash::SHA256 => {
-            bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
-                .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
-        }
-    };
-    #[allow(clippy::useless_conversion)]
-    let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
-    Ok(U256::from(m).into())
 }
 
 /// Executes the centralized phase of the Sign protocol,
@@ -333,31 +302,6 @@ pub fn verify_secret_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> anyhow
     let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
         bcs::from_bytes(&dkg_output)?;
     Ok(dkg_output.centralized_party_public_key_share == expected_public_key.value())
-}
-
-impl fmt::Display for Hash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let hash_name = match self {
-            Hash::KECCAK256 => "KECCAK256",
-            Hash::SHA256 => "SHA256",
-        };
-        write!(f, "{}", hash_name)
-    }
-}
-
-impl TryFrom<u8> for Hash {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Hash::KECCAK256),
-            1 => Ok(Hash::SHA256),
-            _ => Err(anyhow::Error::msg(format!(
-                "invalid value for Hash enum: {}",
-                value
-            ))),
-        }
-    }
 }
 
 /// Decrypts the given encrypted user share using the given decryption key.
