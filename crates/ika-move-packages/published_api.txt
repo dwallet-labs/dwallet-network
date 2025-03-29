@@ -322,6 +322,9 @@ is_supported_hash_scheme
 request_dwallet_dkg_first_round
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+remove_session_and_charge
+	fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 respond_dwallet_dkg_first_round
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
