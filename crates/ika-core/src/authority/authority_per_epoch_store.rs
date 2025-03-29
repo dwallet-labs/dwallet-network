@@ -2142,7 +2142,7 @@ impl AuthorityPerEpochStore {
                         let key_shares = key.current_epoch_encryptions_of_shares_per_crt_prime;
 
                         let slices = Self::slice_network_dkg_into_messages(
-                            &init_event.dwallet_network_decryption_key_id,
+                            &init_event.event_data.dwallet_network_decryption_key_id,
                             public_output,
                             key_shares,
                         );
