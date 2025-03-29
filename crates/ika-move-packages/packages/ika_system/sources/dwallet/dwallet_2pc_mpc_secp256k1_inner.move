@@ -797,7 +797,9 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     public_output: vector<u8>,
     key_shares: vector<u8>,
     is_last: bool,
+    session_sequence_number: u64
 ) {
+    self.remove_session_and_charge<DWalletNetworkDKGDecryptionKeyRequestEvent>(session_sequence_number);
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.public_output.push_back(public_output);
     dwallet_network_decryption_key.current_epoch_shares.push_back(key_shares);
@@ -1675,8 +1677,10 @@ public(package) fun respond_ecdsa_presign(
     presign_id: ID,
     session_id: ID,
     presign: vector<u8>,
-    rejected: bool
+    rejected: bool,
+    session_sequence_number: u64
 ) {
+    self.remove_session_and_charge<ECDSAPresignRequestEvent>(session_sequence_number);
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let presign_obj = dwallet.ecdsa_presigns.borrow_mut(presign_id);
