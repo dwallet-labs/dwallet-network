@@ -1481,7 +1481,9 @@ public(package) fun respond_re_encrypt_user_share_for(
     dwallet_id: ID,
     encrypted_user_secret_key_share_id: ID,
     rejected: bool,
+    session_sequence_number: u64
 ) {
+    self.remove_session_and_charge<EncryptedShareVerificationRequestEvent>(session_sequence_number);
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
