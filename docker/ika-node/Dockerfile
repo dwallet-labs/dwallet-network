@@ -6,13 +6,15 @@ FROM rust:1.85-bullseye AS builder
 ARG PROFILE=release
 ARG GIT_REVISION
 ENV GIT_REVISION=$GIT_REVISION
+ARG GITHUB_TOKEN
+RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 WORKDIR "$WORKDIR/ika"
 RUN apt-get update && apt-get install -y cmake clang
 
 COPY Cargo.toml Cargo.lock ./
 COPY crates crates
 COPY external-crates external-crates
-
+COPY class-groups-keys-mock-files class-groups-keys-mock-files
 RUN cargo build --profile ${PROFILE} --bin ika-node
 
 # Production Image
