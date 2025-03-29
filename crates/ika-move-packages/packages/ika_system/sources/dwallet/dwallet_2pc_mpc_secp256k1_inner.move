@@ -1348,6 +1348,7 @@ public(package) fun respond_dwallet_dkg_second_round(
     session_sequence_number: u64,
     ctx: &mut TxContext
 ) {
+    self.remove_session_and_charge<DWalletDKGSecondRoundRequestEvent>(session_sequence_number);
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
     let encryption_key_id = encryption_key.id.to_inner();
     let created_at_epoch = self.current_epoch;
