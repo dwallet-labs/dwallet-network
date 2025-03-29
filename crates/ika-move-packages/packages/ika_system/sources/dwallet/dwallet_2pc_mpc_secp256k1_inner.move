@@ -1953,7 +1953,9 @@ public(package) fun respond_ecdsa_future_sign(
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
     rejected: bool,
+    session_sequence_number: u64
 ) {
+    self.remove_session_and_charge<ECDSAFutureSignRequestEvent>(session_sequence_number);
     let partial_centralized_signed_message = self.ecdsa_partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
     assert!(partial_centralized_signed_message.presign_cap.dwallet_id == dwallet_id, EDWalletMismatch);
     partial_centralized_signed_message.state = match(partial_centralized_signed_message.state) {
@@ -2105,8 +2107,9 @@ public(package) fun respond_ecdsa_sign(
     signature: vector<u8>,
     is_future_sign: bool,
     rejected: bool,
+    session_sequence_number: u64
 ) {
-
+    self.remove_session_and_charge<ECDSASignRequestEvent>(session_sequence_number);
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let sign = dwallet.ecdsa_signs.borrow_mut(sign_id);
