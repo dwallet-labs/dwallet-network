@@ -118,7 +118,7 @@ pub struct EncryptedUserShareOutput {
     pub dwallet_id: Vec<u8>,
     pub encrypted_user_secret_key_share_id: Vec<u8>,
     pub rejected: bool,
-    pub session_sequence_number: u64
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]

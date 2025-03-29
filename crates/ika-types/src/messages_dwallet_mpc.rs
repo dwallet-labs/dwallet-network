@@ -47,7 +47,10 @@ pub enum MPCProtocolInitData {
     /// The only round of the network DKG protocol.
     /// Contains the network key scheme, the dWallet network decryption key object ID
     /// and at the end of the session holds the new key version.
-    NetworkDkg(DWalletMPCNetworkKeyScheme, DWalletMPCSuiEvent<StartNetworkDKGEvent>),
+    NetworkDkg(
+        DWalletMPCNetworkKeyScheme,
+        DWalletMPCSuiEvent<StartNetworkDKGEvent>,
+    ),
     /// The round of verifying the encrypted share proof is valid and
     /// that the signature on it is valid.
     /// This is not a real MPC round,
