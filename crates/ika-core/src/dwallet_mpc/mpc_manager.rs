@@ -287,7 +287,7 @@ impl DWalletMPCManager {
             private_input,
             decryption_share: match session_info.mpc_round {
                 MPCProtocolInitData::Sign(init_event) => {
-                    self.get_decryption_key_shares(&init_event.dwallet_mpc_network_key_id)?
+                    self.get_decryption_key_shares(&init_event.event_data.dwallet_mpc_network_key_id)?
                 }
                 _ => HashMap::new(),
             },

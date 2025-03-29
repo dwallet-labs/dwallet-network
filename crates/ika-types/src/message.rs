@@ -99,6 +99,7 @@ pub struct PresignOutput {
     pub session_id: Vec<u8>,
     pub presign: Vec<u8>,
     pub rejected: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -109,6 +110,7 @@ pub struct SignOutput {
     pub signature: Vec<u8>,
     pub is_future_sign: bool,
     pub rejected: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]

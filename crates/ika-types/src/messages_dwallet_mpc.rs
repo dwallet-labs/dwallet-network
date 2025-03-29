@@ -40,10 +40,10 @@ pub enum MPCProtocolInitData {
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID (same for each message in the batch),
     /// and the dWallets' network key version.
-    Presign(StartPresignFirstRoundEvent),
+    Presign(DWalletMPCSuiEvent<StartPresignFirstRoundEvent>),
     /// The first and only round of the Sign protocol.
     /// Contains all the data needed to sign the message.
-    Sign(StartSignEvent),
+    Sign(DWalletMPCSuiEvent<StartSignEvent>),
     /// The only round of the network DKG protocol.
     /// Contains the network key scheme, the dWallet network decryption key object ID
     /// and at the end of the session holds the new key version.

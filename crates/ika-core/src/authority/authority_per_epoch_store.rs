@@ -2077,10 +2077,11 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::DwalletPresign(PresignOutput {
                     presign: output,
                     session_id: bcs::to_bytes(&session_info.session_id)?,
-                    dwallet_id: init_event_data.dwallet_id.to_vec(),
-                    presign_id: init_event_data.presign_id.to_vec(),
+                    dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
+                    presign_id: init_event_data.event_data.presign_id.to_vec(),
                     // TODO (#679): Update the blockchain when an MPC round fails
                     rejected: false,
+                    session_sequence_number: init_event_data.session_sequence_number
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
@@ -2088,11 +2089,12 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::DwalletSign(SignOutput {
                     session_id: session_info.session_id.to_vec(),
                     signature: output,
-                    dwallet_id: init_event.dwallet_id.to_vec(),
-                    is_future_sign: init_event.is_future_sign,
-                    sign_id: init_event.sign_id.to_vec(),
+                    dwallet_id: init_event.event_data.dwallet_id.to_vec(),
+                    is_future_sign: init_event.event_data.is_future_sign,
+                    sign_id: init_event.event_data.sign_id.to_vec(),
                     // TODO (#679): Update the blockchain when an MPC round fails
                     rejected: false,
+                    session_sequence_number: init_event.session_sequence_number
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }

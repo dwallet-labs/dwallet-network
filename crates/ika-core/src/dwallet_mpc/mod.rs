@@ -218,7 +218,7 @@ fn presign_party_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        mpc_round: MPCProtocolInitData::Presign(deserialized_event.event_data),
+        mpc_round: MPCProtocolInitData::Presign(deserialized_event),
     }
 }
 
@@ -256,7 +256,7 @@ fn sign_public_input(
 fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEvent>) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        mpc_round: MPCProtocolInitData::Sign(deserialized_event.event_data.clone()),
+        mpc_round: MPCProtocolInitData::Sign(deserialized_event.clone()),
     }
 }
 
