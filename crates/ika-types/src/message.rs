@@ -127,6 +127,7 @@ pub struct PartialSignatureVerificationOutput {
     pub dwallet_id: Vec<u8>,
     pub partial_centralized_signed_message_id: Vec<u8>,
     pub rejected: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -135,6 +136,7 @@ pub struct Secp256K1NetworkDKGOutputSlice {
     pub public_output: Vec<u8>,
     pub key_shares: Vec<u8>,
     pub is_last: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
