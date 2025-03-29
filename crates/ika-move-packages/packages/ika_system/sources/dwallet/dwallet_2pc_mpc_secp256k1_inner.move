@@ -1151,7 +1151,6 @@ public(package) fun respond_dwallet_dkg_first_round(
     dwallet_id: ID,
     first_round_output: vector<u8>,
     session_sequence_number: u64,
-    ctx: &mut TxContext
 ) {
     let session = self.sessions.remove(session_sequence_number);
     let DWalletSession {
@@ -2202,7 +2201,7 @@ fun process_checkpoint_message(
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
                 let session_sequence_number = bcs_body.peel_u64();
-                self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, session_sequence_number, ctx);
+                self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, session_sequence_number);
             } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
