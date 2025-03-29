@@ -2190,7 +2190,7 @@ impl AuthorityPerEpochStore {
                 public_output: (*public_chunk).to_vec(),
                 key_shares: (*key_chunk).to_vec(),
                 is_last: i == total_slices - 1,
-                session_sequence_number: session_sequence_number
+                session_sequence_number
             });
         }
         slices
