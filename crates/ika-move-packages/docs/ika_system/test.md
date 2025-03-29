@@ -8,7 +8,9 @@ title: Module `(ika_system=0x0)::test`
 -  [Function `test_event`](#(ika_system=0x0)_test_test_event)
 
 
-<pre><code><b>use</b> <a href="../sui/event.md#sui_event">sui::event</a>;
+<pre><code><b>use</b> <a href="../std/option.md#std_option">std::option</a>;
+<b>use</b> <a href="../std/vector.md#std_vector">std::vector</a>;
+<b>use</b> <a href="../sui/event.md#sui_event">sui::event</a>;
 <b>use</b> <a href="../sui/tx_context.md#sui_tx_context">sui::tx_context</a>;
 </code></pre>
 
