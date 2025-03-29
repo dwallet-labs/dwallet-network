@@ -2120,6 +2120,7 @@ impl AuthorityPerEpochStore {
                             .to_vec(),
                         // TODO (#679): Update the blockchain when an MPC round fails
                         rejected: false,
+                        session_sequence_number: init_event_data.session_sequence_number
                     },
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
@@ -2147,6 +2148,7 @@ impl AuthorityPerEpochStore {
                             &init_event.event_data.dwallet_network_decryption_key_id,
                             public_output,
                             key_shares,
+                            init_event.session_sequence_number
                         );
 
                         let messages: Vec<_> = slices
@@ -2169,6 +2171,7 @@ impl AuthorityPerEpochStore {
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
         key_shares: Vec<u8>,
+        session_sequence_number: u64
     ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
         let mut slices = Vec::new();
         let public_chunks = public_output.chunks(5 * 1024).collect_vec();
@@ -2187,6 +2190,7 @@ impl AuthorityPerEpochStore {
                 public_output: (*public_chunk).to_vec(),
                 key_shares: (*key_chunk).to_vec(),
                 is_last: i == total_slices - 1,
+                session_sequence_number: session_sequence_number
             });
         }
         slices
