@@ -364,16 +364,16 @@ impl DWalletMPCSession {
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
                 let hashed_message = bcs::to_bytes(
                     &message_digest(
-                        &event_data.message,
-                        &event_data.hash_scheme.try_into().unwrap(),
+                        &event_data.event_data.message,
+                        &event_data.event_data.hash_scheme.try_into().unwrap(),
                     )
                     .map_err(|err| DwalletMPCError::TwoPCMPCError(err.to_string()))?,
                 )?;
                 verify_partial_signature(
                     &hashed_message,
-                    &event_data.dkg_output,
-                    &event_data.presign,
-                    &event_data.message_centralized_signature,
+                    &event_data.event_data.dkg_output,
+                    &event_data.event_data.presign,
+                    &event_data.event_data.message_centralized_signature,
                     &bcs::from_bytes(public_input)?,
                 )?;
 

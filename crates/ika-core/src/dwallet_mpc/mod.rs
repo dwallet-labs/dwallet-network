@@ -266,7 +266,7 @@ fn get_verify_partial_signatures_session_info(
     SessionInfo {
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::PartialSignatureVerification(
-            deserialized_event.event_data.clone(),
+            deserialized_event.clone(),
         ),
     }
 }

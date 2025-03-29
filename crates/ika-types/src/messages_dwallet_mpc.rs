@@ -54,7 +54,7 @@ pub enum MPCProtocolInitData {
     /// but we use it to start the verification process using the same events mechanism
     /// because the system does not support native functions.
     EncryptedShareVerification(DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>),
-    PartialSignatureVerification(StartPartialSignaturesVerificationEvent),
+    PartialSignatureVerification(DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent>),
 }
 
 /// The session-specific state of the MPC session.

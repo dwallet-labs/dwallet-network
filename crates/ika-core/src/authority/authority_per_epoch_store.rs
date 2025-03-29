@@ -2111,10 +2111,10 @@ impl AuthorityPerEpochStore {
             MPCProtocolInitData::PartialSignatureVerification(init_event_data) => {
                 let tx = MessageKind::DwalletPartialSignatureVerificationOutput(
                     PartialSignatureVerificationOutput {
-                        dwallet_id: init_event_data.dwallet_id.to_vec(),
+                        dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                         session_id: session_info.session_id.to_vec(),
                         partial_centralized_signed_message_id: init_event_data
-                            .partial_centralized_signed_message_id
+                            .event_data.partial_centralized_signed_message_id
                             .to_vec(),
                         // TODO (#679): Update the blockchain when an MPC round fails
                         rejected: false,
