@@ -175,7 +175,7 @@ fn dkg_first_party_session_info(
 ) -> anyhow::Result<SessionInfo> {
     Ok(SessionInfo {
         session_id: deserialized_event.session_id,
-        mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event.event_data),
+        mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event),
     })
 }
 

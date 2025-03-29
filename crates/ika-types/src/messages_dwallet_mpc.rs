@@ -31,7 +31,7 @@ use sui_types::SUI_SYSTEM_ADDRESS;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
-    DKGFirst(StartDKGFirstRoundEvent),
+    DKGFirst(DWalletMPCSuiEvent<StartDKGFirstRoundEvent>),
     /// The second round of the DKG protocol.
     /// Contains the data of the event that triggered the round,
     /// and the network key version of the first round.
