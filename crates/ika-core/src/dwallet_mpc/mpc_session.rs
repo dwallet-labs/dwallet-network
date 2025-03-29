@@ -352,7 +352,7 @@ impl DWalletMPCSession {
                 self.epoch_store()?,
             ),
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
-                match verify_encrypted_share(verification_data) {
+                match verify_encrypted_share(&verification_data.event_data) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
                         public_output: vec![],
                         private_output: vec![],

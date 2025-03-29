@@ -160,7 +160,7 @@ fn start_encrypted_share_verification_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event.event_data),
+        mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
     }
 }
 

@@ -53,7 +53,7 @@ pub enum MPCProtocolInitData {
     /// This is not a real MPC round,
     /// but we use it to start the verification process using the same events mechanism
     /// because the system does not support native functions.
-    EncryptedShareVerification(StartEncryptedShareVerificationEvent),
+    EncryptedShareVerification(DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>),
     PartialSignatureVerification(StartPartialSignaturesVerificationEvent),
 }
 
