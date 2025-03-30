@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use fastcrypto::traits::EncodeDecodeBase64;
 use ika_config::initiation::InitiationParameters;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_swarm_config::sui_client::{
@@ -7,6 +8,7 @@ use ika_swarm_config::sui_client::{
     init_initialize, mint_ika, publish_ika_package_to_sui, publish_ika_system_package_to_sui,
 };
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -415,24 +417,38 @@ fn init_sui_keystore(sui_conf_dir: Option<PathBuf>) -> Result<(Keystore, SuiAddr
     println!("Using keystore at: {:?}", keystore_path);
 
     let publisher_address = match &mut keystore {
-        Keystore::File(fks) => {
-            if !fks.alias_exists(ALIAS_PUBLISHER) {
+        Keystore::File(file_ks) => {
+            if !file_ks.alias_exists(ALIAS_PUBLISHER) {
                 println!("Creating publisher alias: {}", ALIAS_PUBLISHER);
-                fks.create_alias(Option::from(ALIAS_PUBLISHER.to_string()))?;
+                file_ks.create_alias(Option::from(ALIAS_PUBLISHER.to_string()))?;
             }
-            // Get the address by alias
-            match fks.get_address_by_alias(ALIAS_PUBLISHER.to_string()) {
+
+            match file_ks.get_address_by_alias(ALIAS_PUBLISHER.to_string()) {
                 Ok(address) => *address,
                 Err(_) => {
-                    // If getting the address fails, generate a new key
-                    let (address, phrase, _) = fks.generate_and_add_new_key(
+                    // Generate a new key if not found
+                    let (address, phrase, _) = file_ks.generate_and_add_new_key(
                         SignatureScheme::ED25519,
                         Some(ALIAS_PUBLISHER.to_string()),
                         None,
                         Some("word24".to_string()),
                     )?;
+
                     println!("Generated a new publisher key with address: {}", address);
                     println!("Secret Recovery Phrase: {}", phrase);
+
+                    let publisher_keypair = file_ks.get_key(&address)?.copy();
+                    let encoded = publisher_keypair.encode_base64();
+                    let publisher_key_path = sui_conf_dir.join("publisher.key");
+                    let mut file = File::create(&publisher_key_path)?;
+                    writeln!(file, "{}", encoded)?;
+                    println!("Saved key to {:?}", publisher_key_path);
+
+                    // Write the phrase to publisher.seed
+                    let seed_path = sui_conf_dir.join("publisher.seed");
+                    let mut file = File::create(&seed_path)?;
+                    writeln!(file, "{}", phrase)?;
+                    println!("Saved recovery phrase to {:?}", seed_path);
                     address
                 }
             }

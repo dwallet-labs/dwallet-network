@@ -140,16 +140,16 @@ else
     done
 fi
 
-##
+############################
 ## Create a dir for this deployment.
-##
+############################
 rm -rf "$SUBDOMAIN"
 mkdir -p "$SUBDOMAIN"
 pushd "$SUBDOMAIN"
 
-##
+############################
 ## Create Validators
-##
+############################
 SUI_BACKUP_DIR="sui_backup"
 
 for entry in "${VALIDATORS_ARRAY[@]}"; do
@@ -196,14 +196,14 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
 
     # Create Validator info.
     pushd "$VALIDATOR_DIR" > /dev/null
-    # todo(zeev): remove this later
+    # todo(zeev): remove this later, also `make-validator-info` should be able to get this key as param.
     cp ../../class-groups.key .
 
     # Usage: {binary_name} validator make-validator-info <NAME> <DESCRIPTION> <IMAGE_URL> <PROJECT_URL> <HOST_NAME> <GAS_PRICE> <sender_sui_address>
     $BINARY_NAME validator make-validator-info "$VALIDATOR_NAME" "$VALIDATOR_NAME" "" "" "$VALIDATOR_HOSTNAME" 0 "$SENDER_SUI_ADDR"
 
     mkdir -p "$KEY_PAIRS_DIR"
-    mv protocol.key network.key "$KEY_PAIRS_DIR"/
+    mv ./*.key "$KEY_PAIRS_DIR"/
     popd > /dev/null
     sui keytool list
 done
@@ -315,7 +315,6 @@ for entry in "${VALIDATOR_TUPLES[@]}"; do
         --stake-amount "$VALIDATOR_STAKED_TOKENS_NUM"
 done
 
-
 ############################
 # Join Committee
 ############################
@@ -340,7 +339,7 @@ for i in "${!VALIDATOR_TUPLES[@]}"; do
 done
 
 #############################
-#### IKA System Initialization
+# IKA System Initialization
 #############################
 
 # Copy publisher sui_config to SUI_CONFIG_PATH
@@ -350,3 +349,30 @@ cp -r publisher/sui_config/* "$SUI_CONFIG_PATH"
 
 ./ika-swarm-config ika-system-initialize --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path publisher/ika_publish_config.json
 
+############################
+# Generate Seed Peers
+############################
+echo "Generating seed_peers.yaml..."
+
+SEED_PEERS_FILE="seed_peers.yaml"
+: > "$SEED_PEERS_FILE"  # Empty or create file
+
+for VALIDATOR_NAME in "${VALIDATORS_ARRAY[@]}"; do
+  VALIDATOR_DIR="${VALIDATOR_NAME}.${SUBDOMAIN}"
+
+  INFO_FILE="$VALIDATOR_DIR/validator.info"
+  ACCOUNT_FILE="$VALIDATOR_DIR/sui_backup/sui_config/${VALIDATOR_DIR}.account.json"
+
+  if [[ -f "$INFO_FILE" && -f "$ACCOUNT_FILE" ]]; then
+    P2P_ADDR=$(yq e '.p2p_address' "$INFO_FILE")
+    PEER_ID=$(jq -r '.peerId' "$ACCOUNT_FILE")
+
+    echo "- address: $P2P_ADDR" >> "$SEED_PEERS_FILE"
+    echo "  peer-id: $PEER_ID" >> "$SEED_PEERS_FILE"
+  else
+    echo "Missing $INFO_FILE or $ACCOUNT_FILE"
+    exit 1
+  fi
+done
+
+echo "$SEED_PEERS_FILE generated in $SUBDOMAIN/"
