@@ -1,7 +1,6 @@
 name: Manual CI Test
 
 on:
-  push:
   workflow_dispatch:
     inputs:
       note:
