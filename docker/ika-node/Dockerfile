@@ -28,7 +28,6 @@ WORKDIR ${WORKDIR}/ika
 # Copy Cargo manifests and crate folders for dependency resolution
 COPY Cargo.toml Cargo.lock ./
 COPY crates crates
-COPY external-crates external-crates
 COPY class-groups-keys-mock-files class-groups-keys-mock-files
 
 # Build dependencies first for better layer caching
