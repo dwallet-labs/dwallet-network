@@ -140,9 +140,9 @@ else
     done
 fi
 
-############################
+#############################
 ## Create a dir for this deployment.
-############################
+#############################
 rm -rf "$SUBDOMAIN"
 mkdir -p "$SUBDOMAIN"
 pushd "$SUBDOMAIN"
@@ -357,8 +357,9 @@ echo "Generating seed_peers.yaml..."
 SEED_PEERS_FILE="seed_peers.yaml"
 : > "$SEED_PEERS_FILE"  # Empty or create file
 
-for VALIDATOR_NAME in "${VALIDATORS_ARRAY[@]}"; do
-  VALIDATOR_DIR="${VALIDATOR_NAME}.${SUBDOMAIN}"
+for entry in "${VALIDATORS_ARRAY[@]}"; do
+  IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
+  VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
 
   INFO_FILE="$VALIDATOR_DIR/validator.info"
   ACCOUNT_FILE="$VALIDATOR_DIR/sui_backup/sui_config/${VALIDATOR_DIR}.account.json"
