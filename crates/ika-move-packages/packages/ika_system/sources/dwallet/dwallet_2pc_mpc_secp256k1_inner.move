@@ -1127,21 +1127,21 @@ public(package) fun request_dwallet_dkg_first_round(
 }
 
 fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
-    if (self.sessions.contains(session_sequence_number)) {
-        let session = self.sessions.remove(session_sequence_number);
-        let DWalletSession {
-            computation_fee_charged_ika: payment_ika,
-            gas_fee_reimbursement_sui: payment_sui,
-            consensus_validation_fee_charged_ika: more_payment_ika,
-            mut id,
-            ..
-        } = session;
-        let _: Option<DWalletEvent<E>> = dynamic_field::remove_if_exists(&mut id, DWalletSessionEventKey {});
-        object::delete(id);
-        self.consensus_validation_fee_charged_ika.join(payment_ika);
-        self.consensus_validation_fee_charged_ika.join(more_payment_ika);
-        self.gas_fee_reimbursement_sui.join(payment_sui);
-    }
+    // advance first sequence number
+    // move computation fee to decryption key
+    let session = self.sessions.remove(session_sequence_number);
+    let DWalletSession {
+        computation_fee_charged_ika: payment_ika,
+        gas_fee_reimbursement_sui: payment_sui,
+        consensus_validation_fee_charged_ika: more_payment_ika,
+        mut id,
+        ..
+    } = session;
+    let _: Option<DWalletEvent<E>> = dynamic_field::remove(&mut id, DWalletSessionEventKey {});
+    object::delete(id);
+    self.consensus_validation_fee_charged_ika.join(payment_ika);
+    self.consensus_validation_fee_charged_ika.join(more_payment_ika);
+    self.gas_fee_reimbursement_sui.join(payment_sui);
 }
 
 /// Creates the output of the first DKG round.
