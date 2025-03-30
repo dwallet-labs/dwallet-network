@@ -83,6 +83,8 @@ pub(super) struct DWalletMPCSession {
     pub(crate) mpc_event_data: Option<MPCEventData>,
 }
 
+pub const FAILED_SESSION_OUTPUT: Vec<u8> = vec![1];
+
 impl DWalletMPCSession {
     pub(crate) fn new(
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -189,7 +191,18 @@ impl DWalletMPCSession {
             }
             Err(e) => {
                 error!("failed to advance the MPC session: {:?}", e);
-                // TODO (#524): Handle failed MPC sessions
+                let consensus_adapter = self.consensus_adapter.clone();
+                let epoch_store = self.epoch_store()?.clone();
+                let consensus_message =
+                    self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT)?;
+                tokio_runtime_handle.spawn(async move {
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![consensus_message], &epoch_store)
+                        .await
+                    {
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
+                    }
+                });
                 Err(e)
             }
         }
