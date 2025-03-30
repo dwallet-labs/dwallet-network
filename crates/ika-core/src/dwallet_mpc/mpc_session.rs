@@ -37,6 +37,8 @@ use sui_types::id::ID;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
+pub const FAILED_SESSION_OUTPUT: Vec<u8> = vec![1];
+
 /// The result of the check if the session is ready to advance.
 ///
 /// Returns whether the session is ready to advance or not, and a list of the malicious parties that were detected
@@ -82,8 +84,6 @@ pub(super) struct DWalletMPCSession {
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
 }
-
-pub const FAILED_SESSION_OUTPUT: Vec<u8> = vec![1];
 
 impl DWalletMPCSession {
     pub(crate) fn new(
