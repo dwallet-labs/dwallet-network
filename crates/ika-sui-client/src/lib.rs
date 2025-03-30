@@ -496,10 +496,6 @@ where
 #[async_trait]
 pub trait SuiClientInner: Send + Sync {
     type Error: Into<anyhow::Error> + Send + Sync + std::error::Error + 'static;
-    async fn get_missed_events(
-        &self,
-        session_object_table_id: ObjectID,
-    ) -> Result<Vec<Vec<u8>>, self::Error>;
     async fn query_events(
         &self,
         query: EventFilter,
@@ -572,37 +568,6 @@ pub trait SuiClientInner: Send + Sync {
 #[async_trait]
 impl SuiClientInner for SuiSdkClient {
     type Error = sui_sdk::error::Error;
-
-    async fn get_missed_events(
-        &self,
-        session_object_table_id: ObjectID,
-    ) -> Result<Vec<Vec<u8>>, self::Error> {
-        let dynamic_fields = self
-            .read_api()
-            .get_dynamic_fields(session_object_table_id, None, None)
-            .await?;
-        let mut response = vec![];
-        for df in dynamic_fields.data.iter() {
-            let object_id = df.object_id;
-            let dynamic_field_response = self
-                .read_api()
-                .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
-                .await?;
-            let resp = dynamic_field_response.into_object().map_err(|e| {
-                Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
-            })?;
-            let move_object = resp.bcs.ok_or(Error::DataError(format!(
-                "object {:?} has no bcs data",
-                object_id
-            )))?;
-            let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
-                "object {:?} is not a MoveObject",
-                object_id
-            )))?;
-            response.push_back(raw_move_obj.bcs_bytes);
-        }
-        response.clone()
-    }
 
     async fn query_events(
         &self,
