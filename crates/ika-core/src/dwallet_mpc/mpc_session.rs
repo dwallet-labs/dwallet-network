@@ -37,7 +37,7 @@ use sui_types::id::ID;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
-pub const FAILED_SESSION_OUTPUT: Vec<u8> = vec![1];
+pub const FAILED_SESSION_OUTPUT: [u8; 1] = [1];
 
 /// The result of the check if the session is ready to advance.
 ///
@@ -194,7 +194,7 @@ impl DWalletMPCSession {
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 let consensus_message =
-                    self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT)?;
+                    self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT.to_vec())?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
