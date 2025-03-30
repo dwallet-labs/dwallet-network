@@ -854,9 +854,23 @@ public(package) fun advance_epoch(
     self: &mut DWalletCoordinatorInner,
     next_committee: BlsCommittee
 ) {
+    self.re_emit_missed_events();
     self.current_epoch = self.current_epoch + 1;
     self.previous_committee = self.active_committee;
     self.active_committee = next_committee;
+}
+
+fun re_emit_missed_events(
+    self: &mut DWalletCoordinatorInner,
+) {
+    while (self.first_session_sequence_number < self.next_session_sequence_number) {
+        self.first_session_sequence_number = self.first_session_sequence_number + 1;
+        let session = self.sessions.borrow_mut(self.first_session_sequence_number);
+        let dwallet_event = dynamic_field::borrow_mut<DWalletSessionEventKey, DWalletEvent<DWalletDKGFirstRoundRequestEvent>>(
+            &mut session.id, DWalletSessionEventKey {});
+        dwallet_event.epoch = dwallet_event.epoch + 1;
+        event::emit(*dwallet_event);
+    }
 }
 
 fun get_dwallet(
