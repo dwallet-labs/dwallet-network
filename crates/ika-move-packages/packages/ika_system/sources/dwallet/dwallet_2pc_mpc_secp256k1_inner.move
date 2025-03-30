@@ -800,7 +800,7 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     session_sequence_number: u64
 ) {
     if (is_last) {
-        self.remove_session_and_charge<DWalletEvent<DWalletNetworkDKGDecryptionKeyRequestEvent>>(session_sequence_number);
+        self.remove_session_and_charge<DWalletNetworkDKGDecryptionKeyRequestEvent>(session_sequence_number);
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.public_output.push_back(public_output);
@@ -1139,7 +1139,7 @@ fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordina
         mut id,
         ..
     } = session;
-    let _: Option<DWalletEvent<E>> = dynamic_field::remove(&mut id, DWalletSessionEventKey {});
+    let _: DWalletEvent<E> = dynamic_field::remove(&mut id, DWalletSessionEventKey {});
     object::delete(id);
     self.consensus_validation_fee_charged_ika.join(payment_ika);
     self.consensus_validation_fee_charged_ika.join(more_payment_ika);
