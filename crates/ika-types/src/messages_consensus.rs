@@ -10,6 +10,7 @@ use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
 use byteorder::{BigEndian, ReadBytesExt};
+use dwallet_mpc_types::dwallet_mpc::{MPCMessageBuilder, MPCMessageSlice, MessageState};
 use fastcrypto::error::FastCryptoResult;
 use fastcrypto::groups::bls12381;
 use fastcrypto_tbls::dkg_v1;
@@ -184,19 +185,42 @@ impl ConsensusTransaction {
         message: Vec<u8>,
         session_id: ObjectID,
         round_number: usize,
-    ) -> Self {
+    ) -> Vec<Self> {
         let mut hasher = DefaultHasher::new();
         session_id.into_bytes().hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCMessage(DWalletMPCMessage {
-                message,
-                authority,
-                round_number,
-                session_id,
-            }),
-        }
+        let messages = MPCMessageBuilder::split(message, 250 * 1024);
+        let message = match messages.messages {
+            MessageState::Incomplete(messages) => messages,
+            MessageState::Complete(message) => panic!("should never happen "),
+        };
+
+        message
+            .iter()
+            .map(|(sequence_number, message)| {
+                let mut hasher = DefaultHasher::new();
+                message.message.hash(&mut hasher);
+                let tracking_id = hasher.finish().to_le_bytes();
+                Self {
+                    tracking_id,
+                    kind: ConsensusTransactionKind::DWalletMPCMessage(DWalletMPCMessage {
+                        message: message.clone(),
+                        authority,
+                        round_number,
+                        session_id: session_id.clone(),
+                    }),
+                }
+            })
+            .collect()
+        // Self {
+        //     tracking_id,
+        //     kind: ConsensusTransactionKind::DWalletMPCMessage(DWalletMPCMessage {
+        //         message,
+        //         authority,
+        //         round_number,
+        //         session_id,
+        //     }),
+        // }
     }
 
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.

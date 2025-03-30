@@ -39,12 +39,19 @@ pub struct MPCMessageSlice {
     pub number_of_chunks: usize,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub enum MessageState {
+    Complete(MPCMessage),
+    Incomplete(HashMap<u64, MPCMessageSlice>),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct MPCMessageBuilder {
-    pub messages: HashMap<u64, MPCMessageSlice>,
+    pub messages: MessageState,
 }
 
 impl MPCMessageBuilder {
-    pub fn new(message: Vec<u8>, chunk_size: usize) -> Self {
+    pub fn split(message: Vec<u8>, chunk_size: usize) -> Self {
         let chunks: Vec<Vec<u8>> = message
             .chunks(chunk_size)
             .map(|chunk| chunk.to_vec())
@@ -67,26 +74,29 @@ impl MPCMessageBuilder {
             })
             .collect();
 
-        Self { messages }
+        Self {
+            messages: MessageState::Incomplete(messages),
+        }
     }
 
     pub fn add_message(&mut self, message: MPCMessageSlice) {
-        self.messages.insert(message.sequence_number, message);
+        if let MessageState::Incomplete(messages) = &mut self.messages {
+            messages.insert(message.sequence_number, message);
+        }
     }
 
-    pub fn build_message(&self) -> Option<MPCMessage> {
-        if self.messages.len() != self.messages.values().next().unwrap().number_of_chunks {
-            return None;
-        }
-        let mut message = Vec::new();
-        for i in 0..self.messages.len() {
-            if let Some(slice) = self.messages.get(&(i as u64)) {
-                message.extend_from_slice(&slice.message);
-            } else {
-                return None;
+    pub fn build_message(&mut self) {
+        if let MessageState::Incomplete(messages) = &self.messages {
+            if messages.len() == messages.values().next().unwrap().number_of_chunks {
+                let mut message = Vec::new();
+                for i in 0..messages.len() {
+                    if let Some(slice) = messages.get(&(i as u64)) {
+                        message.extend_from_slice(&slice.message);
+                    }
+                }
+                self.messages = MessageState::Complete(message);
             }
         }
-        Some(message)
     }
 }
 

@@ -1,7 +1,8 @@
 use commitment::CommitmentSizedNumber;
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPublicInput, MPCSessionStatus,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCMessageBuilder, MPCMessageSlice, MPCPrivateInput,
+    MPCPublicInput, MPCSessionStatus, MessageState,
 };
 use group::PartyID;
 use itertools::Itertools;
@@ -65,7 +66,8 @@ pub(super) struct DWalletMPCSession {
     /// All the messages that have been received for this session.
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
-    pub(super) serialized_messages: Vec<HashMap<PartyID, MPCMessage>>,
+    pub(super) serialized_full_messages: Vec<HashMap<PartyID, MPCMessage>>,
+    serialized_session_messages: Vec<HashMap<PartyID, MPCMessageBuilder>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
@@ -95,7 +97,7 @@ impl DWalletMPCSession {
     ) -> Self {
         Self {
             status,
-            serialized_messages: vec![HashMap::new()],
+            serialized_full_messages: vec![HashMap::new()],
             consensus_adapter,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
@@ -105,6 +107,7 @@ impl DWalletMPCSession {
             weighted_threshold_access_structure,
             session_specific_state: None,
             mpc_event_data,
+            serialized_session_messages: vec![HashMap::new()],
         }
     }
 
@@ -140,7 +143,7 @@ impl DWalletMPCSession {
                 let message = self.new_dwallet_mpc_message(message)?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
-                        .submit_to_consensus(&vec![message], &epoch_store)
+                        .submit_to_consensus(&message, &epoch_store)
                         .await
                     {
                         error!("failed to submit an MPC message to consensus: {:?}", err);
@@ -279,7 +282,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_messages.clone(),
+                    self.serialized_full_messages.clone(),
                     public_input,
                     (),
                 )
@@ -290,7 +293,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_messages.clone(),
+                    self.serialized_full_messages.clone(),
                     public_input,
                     (),
                 )?;
@@ -318,7 +321,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_messages.clone(),
+                    self.serialized_full_messages.clone(),
                     public_input,
                     (),
                 )
@@ -329,7 +332,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_messages.clone(),
+                    self.serialized_full_messages.clone(),
                     public_input,
                     mpc_event_data.decryption_share.clone(),
                 )
@@ -340,7 +343,7 @@ impl DWalletMPCSession {
                 self.party_id,
                 public_input,
                 key_scheme,
-                self.serialized_messages.clone(),
+                self.serialized_full_messages.clone(),
                 bcs::from_bytes(
                     &mpc_event_data
                         .private_input
@@ -388,7 +391,7 @@ impl DWalletMPCSession {
     fn new_dwallet_mpc_message(
         &self,
         message: MPCMessage,
-    ) -> DwalletMPCResult<ConsensusTransaction> {
+    ) -> DwalletMPCResult<Vec<ConsensusTransaction>> {
         Ok(ConsensusTransaction::new_dwallet_mpc_message(
             self.epoch_store()?.name,
             message,
@@ -440,8 +443,74 @@ impl DWalletMPCSession {
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;
 
-        let current_round = self.serialized_messages.len();
-        match self.serialized_messages.get_mut(message.round_number) {
+        let current_round = self.serialized_full_messages.len();
+
+        let message_bytes = match self
+            .serialized_session_messages
+            .get_mut(message.round_number)
+        {
+            Some(party_to_msg) => {
+                if let Some(a) = party_to_msg.get_mut(&source_party_id) {
+                    // there is key
+                    a.add_message(message.message.clone());
+                    a.build_message();
+                    if let MessageState::Complete(message) = &a.messages {
+                        Some(message.clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    // build the message here, but where do I store it?
+                    let mut messages_builder = MPCMessageBuilder {
+                        messages: MessageState::Incomplete(
+                            vec![(message.message.sequence_number, message.message.clone())]
+                                .into_iter()
+                                .collect::<HashMap<_, _>>(),
+                        ),
+                    };
+                    messages_builder.build_message();
+                    party_to_msg.insert(source_party_id, messages_builder.clone());
+                    if let MessageState::Complete(message) = &messages_builder.messages {
+                        Some(message.clone())
+                    } else {
+                        None
+                    }
+                }
+            }
+            // If next round.
+            None if message.round_number == current_round => {
+                let mut map = HashMap::new();
+                // let mut messages = MPCMessageBuilder { messages: MessageState::Incomplete(HashMap::from(vec![(message.message.sequence_number, message.message.clone())])) };
+                let mut messages = MPCMessageBuilder {
+                    messages: MessageState::Incomplete(
+                        vec![(message.message.sequence_number, message.message.clone())]
+                            .into_iter()
+                            .collect::<HashMap<_, _>>(),
+                    ),
+                };
+                messages.build_message();
+                map.insert(source_party_id, messages.clone());
+                // Build the message
+                self.serialized_session_messages.push(map);
+
+                if let MessageState::Complete(message) = &messages.messages {
+                    Some(message.clone())
+                } else {
+                    None
+                }
+            }
+            None => {
+                // Unexpected round number; rounds should grow sequentially.
+                return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+            }
+        };
+
+        let message_bytes = match message_bytes {
+            Some(message) => message,
+            None => return Ok(()),
+        };
+
+        match self.serialized_full_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
                 if party_to_msg.contains_key(&source_party_id) {
                     // Duplicate.
@@ -450,14 +519,14 @@ impl DWalletMPCSession {
                     return Ok(());
                 }
                 // build the message here, but where do I store it?
-                party_to_msg.insert(source_party_id, message.message.clone());
+                party_to_msg.insert(source_party_id, message_bytes.clone());
             }
             // If next round.
             None if message.round_number == current_round => {
                 let mut map = HashMap::new();
-                map.insert(source_party_id, message.message.clone());
+                map.insert(source_party_id, message_bytes.clone());
                 // Build the message
-                self.serialized_messages.push(map);
+                self.serialized_full_messages.push(map);
             }
             None => {
                 // Unexpected round number; rounds should grow sequentially.
@@ -475,7 +544,7 @@ impl DWalletMPCSession {
                         .weighted_threshold_access_structure
                         .is_authorized_subset(
                             &self
-                                .serialized_messages
+                                .serialized_full_messages
                                 .get(self.pending_quorum_for_highest_round_number)
                                 .unwrap_or(&HashMap::new())
                                 .keys()
