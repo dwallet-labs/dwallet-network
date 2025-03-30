@@ -3,15 +3,16 @@ use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicInput, NetworkDecryptionKeyShares,
-    DWALLET_MPC_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_SIGN_ROUND_EVENT_STRUCT_NAME,
+    DWalletMPCNetworkKeyScheme, MPCMessageBuilder, MPCMessageSlice, MPCPublicInput, MessageState,
+    NetworkDecryptionKeyShares, DWALLET_MPC_EVENT_STRUCT_NAME,
+    START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
+    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
     START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
 };
+use group::PartyID;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
@@ -20,6 +21,7 @@ use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
+use std::collections::HashMap;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
@@ -157,6 +159,115 @@ pub struct DWalletMPCMessageKey {
     pub session_id: ObjectID,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
+}
+
+#[derive(Clone)]
+pub struct MPCSessionMessagesCollector {
+    pub messages: Vec<HashMap<PartyID, MPCMessageBuilder>>,
+}
+
+impl MPCSessionMessagesCollector {
+    pub fn new() -> Self {
+        Self {
+            messages: Vec::new(),
+        }
+    }
+
+    pub fn add_message(
+        &mut self,
+        party_id: PartyID,
+        message: DWalletMPCMessage,
+        round_number: usize,
+    ) -> Option<Vec<u8>> {
+        let message_bytes = match self.messages.get_mut(message.round_number) {
+            Some(party_to_msg) => {
+                if let Some(a) = party_to_msg.get_mut(&party_id) {
+                    // there is key
+                    a.add_message(message.message.clone());
+                    a.build_message();
+                    match &a.messages {
+                        MessageState::Complete(message) => {
+                            println!("message: {:?}", message.len());
+                            Some(message.clone())
+                        }
+                        MessageState::Incomplete(messages) => {
+                            println!("message: {:?}", messages.len());
+                            None
+                        }
+                    }
+                } else {
+                    // build the message here, but where do I store it?
+                    let mut messages_builder = MPCMessageBuilder {
+                        messages: MessageState::Incomplete(
+                            vec![(message.message.sequence_number, message.message.clone())]
+                                .into_iter()
+                                .collect::<HashMap<_, _>>(),
+                        ),
+                    };
+                    messages_builder.build_message();
+                    party_to_msg.insert(party_id, messages_builder.clone());
+                    match &messages_builder.messages {
+                        MessageState::Complete(message) => {
+                            println!("message: {:?}", message.len());
+                            Some(message.clone())
+                        }
+                        MessageState::Incomplete(messages) => {
+                            println!("message: {:?}", messages.len());
+                            None
+                        }
+                    }
+                }
+            }
+            // If next round.
+            None if message.round_number == round_number => {
+                let mut map = HashMap::new();
+                // let mut messages = MPCMessageBuilder { messages: MessageState::Incomplete(HashMap::from(vec![(message.message.sequence_number, message.message.clone())])) };
+                let mut messages = MPCMessageBuilder {
+                    messages: MessageState::Incomplete(
+                        vec![(message.message.sequence_number, message.message.clone())]
+                            .into_iter()
+                            .collect::<HashMap<_, _>>(),
+                    ),
+                };
+                messages.build_message();
+                map.insert(party_id, messages.clone());
+                // Build the message
+                self.messages.push(map);
+
+                match &messages.messages {
+                    MessageState::Complete(message) => {
+                        println!("message: {:?}", message.len());
+                        Some(message.clone())
+                    }
+                    MessageState::Incomplete(messages) => {
+                        println!("message: {:?}", messages.len());
+                        None
+                    }
+                }
+            }
+            None => {
+                // Unexpected round number; rounds should grow sequentially.
+                // return Err(DwalletMPCError::MaliciousParties(vec![party_id]));
+                return None;
+            }
+        };
+        message_bytes
+    }
+
+    pub fn collect_completed_messages(&self, round_number: usize) -> Vec<MPCMessage> {
+        self.messages
+            .get(round_number)
+            .map(|party_to_msg| {
+                party_to_msg
+                    .values()
+                    .filter_map(|msg| match &msg.messages {
+                        MessageState::Complete(message) => Some(message.clone()),
+                        MessageState::Incomplete(_) => None,
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
 }
 
 /// Holds information about the current MPC session.

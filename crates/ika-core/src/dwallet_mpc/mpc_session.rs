@@ -28,8 +28,8 @@ use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MPCSessionSpecificState,
-    MaliciousReport, PresignSessionState, SessionInfo, SignIASessionState,
+    AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MPCSessionMessagesCollector,
+    MPCSessionSpecificState, MaliciousReport, PresignSessionState, SessionInfo, SignIASessionState,
     StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
 };
 use sui_types::base_types::{EpochId, ObjectID};
@@ -67,7 +67,7 @@ pub(super) struct DWalletMPCSession {
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
     pub(super) serialized_full_messages: Vec<HashMap<PartyID, MPCMessage>>,
-    serialized_session_messages: Vec<HashMap<PartyID, MPCMessageBuilder>>,
+    messages_collector: MPCSessionMessagesCollector,
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
@@ -107,7 +107,7 @@ impl DWalletMPCSession {
             weighted_threshold_access_structure,
             session_specific_state: None,
             mpc_event_data,
-            serialized_session_messages: vec![HashMap::new()],
+            messages_collector: MPCSessionMessagesCollector::new(),
         }
     }
 
@@ -449,80 +449,9 @@ impl DWalletMPCSession {
 
         let current_round = self.serialized_full_messages.len();
 
-        let message_bytes = match self
-            .serialized_session_messages
-            .get_mut(message.round_number)
-        {
-            Some(party_to_msg) => {
-                if let Some(a) = party_to_msg.get_mut(&source_party_id) {
-                    // there is key
-                    a.add_message(message.message.clone());
-                    a.build_message();
-                    match &a.messages {
-                        MessageState::Complete(message) => {
-                            println!("message: {:?}", message.len());
-                            Some(message.clone())
-                        }
-                        MessageState::Incomplete(messages) => {
-                            println!("message: {:?}", messages.len());
-                            None
-                        }
-                    }
-                } else {
-                    // build the message here, but where do I store it?
-                    let mut messages_builder = MPCMessageBuilder {
-                        messages: MessageState::Incomplete(
-                            vec![(message.message.sequence_number, message.message.clone())]
-                                .into_iter()
-                                .collect::<HashMap<_, _>>(),
-                        ),
-                    };
-                    messages_builder.build_message();
-                    party_to_msg.insert(source_party_id, messages_builder.clone());
-                    match &messages_builder.messages {
-                        MessageState::Complete(message) => {
-                            println!("message: {:?}", message.len());
-                            Some(message.clone())
-                        }
-                        MessageState::Incomplete(messages) => {
-                            println!("message: {:?}", messages.len());
-                            None
-                        }
-                    }
-                }
-            }
-            // If next round.
-            None if message.round_number == current_round => {
-                let mut map = HashMap::new();
-                // let mut messages = MPCMessageBuilder { messages: MessageState::Incomplete(HashMap::from(vec![(message.message.sequence_number, message.message.clone())])) };
-                let mut messages = MPCMessageBuilder {
-                    messages: MessageState::Incomplete(
-                        vec![(message.message.sequence_number, message.message.clone())]
-                            .into_iter()
-                            .collect::<HashMap<_, _>>(),
-                    ),
-                };
-                messages.build_message();
-                map.insert(source_party_id, messages.clone());
-                // Build the message
-                self.serialized_session_messages.push(map);
-
-                match &messages.messages {
-                    MessageState::Complete(message) => {
-                        println!("message: {:?}", message.len());
-                        Some(message.clone())
-                    }
-                    MessageState::Incomplete(messages) => {
-                        println!("message: {:?}", messages.len());
-                        None
-                    }
-                }
-            }
-            None => {
-                // Unexpected round number; rounds should grow sequentially.
-                return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
-            }
-        };
+        let message_bytes =
+            self.messages_collector
+                .add_message(source_party_id, message.clone(), current_round);
 
         let message_bytes = match message_bytes {
             Some(message) => message,
