@@ -86,6 +86,17 @@ public struct DWalletCoordinatorInner has store {
 
 public struct DWalletSessionEventKey has copy, drop, store {}
 
+#[allow(unused_field)]
+public enum SessionType {
+    DWalletDKGFirstRound,
+    DWalletDKGSecondRound,
+    ECDSAPresign,
+    ReEncryptUserShare,
+    ECDSASign,
+    ECDSAFutureSign,
+    ECDSASignWith_partial_user_signatures
+}
+
 public struct DWalletSession has key, store {
     id: UID,
 
