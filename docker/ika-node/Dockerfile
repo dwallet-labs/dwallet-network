@@ -11,7 +11,6 @@ ARG WORKDIR=/opt
 
 # Environment
 ENV CARGO_HOME=/usr/local/cargo
-ENV RUSTFLAGS="-C target-cpu=native"
 ENV GIT_REVISION=$GIT_REVISION
 
 # Setup GitHub token for private repos
@@ -35,20 +34,17 @@ COPY class-groups-keys-mock-files class-groups-keys-mock-files
 RUN cargo fetch --locked
 RUN cargo build --profile ${PROFILE} --locked --bin ika-node
 
-# Final build
-RUN cargo build --profile $PROFILE --bin ika-node
-
 # ==========================
 # Runtime stage
 # ==========================
 FROM debian:bullseye-slim AS runtime
 
-ARG WORKDIR=/opt
+ARG WORKDIR
 ARG BUILD_DATE
 ARG GIT_REVISION
 ARG PROFILE=release
 
-# Install runtime deps and jemalloc
+# Install runtime dependencies and jemalloc.
 RUN apt-get update && \
     apt-get install -y libjemalloc-dev ca-certificates curl jq && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -57,22 +53,20 @@ RUN apt-get update && \
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so
 ENV PATH="/opt/ika/bin:$PATH"
 
-# Working directory
+# Set working directory.
 WORKDIR ${WORKDIR}/ika
 
-# Create non-root user.
+# Create a dedicated non-root user.
 RUN useradd -m -u 1001 ika
 
-# Copy built binary from builder stage
+# Copy the built binary from the builder stage.
 COPY --from=builder ${WORKDIR}/ika/target/${PROFILE}/ika-node /opt/ika/bin/ika-node
 COPY --from=builder ${WORKDIR}/ika/target/${PROFILE}/ika-node /usr/local/bin/ika-node
 
-# Metadata
+# Add build metadata.
 LABEL build-date=$BUILD_DATE
 LABEL git-revision=$GIT_REVISION
 
 # Switch to non-root user.
 USER ika
 
-# Default command.
-ENTRYPOINT ["ika-node"]
