@@ -17,7 +17,7 @@ ENV GIT_REVISION=$GIT_REVISION
 RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
 # Install build dependencies
-RUN apt-get update && apt-get install -y cmake clang pkg-config libssl-ded
+RUN apt-get update && apt-get install -y cmake clang pkg-config libssl-dev
 # Set working directory
 WORKDIR ${WORKDIR}/ika
 
@@ -43,9 +43,7 @@ ARG PROFILE=release
 ARG TARGETARCH
 
 # Install runtime dependencies and jemalloc.
-RUN apt-get update && \
-    apt-get install -y libjemalloc-dev ca-certificates curl jq && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libjemalloc-dev ca-certificates curl jq
 
 # Use jemalloc as memory allocator.
 ENV LD_PRELOAD=""
@@ -56,9 +54,6 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
 # Set working directory.
 WORKDIR ${WORKDIR}/ika
 
-# Create a dedicated non-root user.
-RUN useradd -m -u 1001 ika
-
 # Copy the built binary from the builder stage.
 COPY --from=builder /opt/ika/target/${PROFILE}/ika-node /opt/ika/bin/ika-node
 COPY --from=builder /opt/ika/target/${PROFILE}/ika-node /usr/local/bin/ika-node
@@ -66,7 +61,4 @@ COPY --from=builder /opt/ika/target/${PROFILE}/ika-node /usr/local/bin/ika-node
 # Add build metadata.
 LABEL build-date=$BUILD_DATE
 LABEL git-revision=$GIT_REVISION
-
-# Switch to non-root user.
-USER ika
 
