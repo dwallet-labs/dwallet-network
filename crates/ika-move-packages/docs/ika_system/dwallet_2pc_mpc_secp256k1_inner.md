@@ -2963,7 +2963,7 @@ Supported hash schemes for message signing.
     <b>let</b> consensus_validation_fee_charged_ika = payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance();
     <b>let</b> gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
     <b>let</b> session_sequence_number = self.next_session_sequence_number;
-    <b>let</b> <b>mut</b> _session = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSession">DWalletSession</a> {
+    <b>let</b> <b>mut</b> session = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSession">DWalletSession</a> {
         id: object::new(ctx),
         session_sequence_number,
         dwallet_network_decryption_key_id,
@@ -2971,17 +2971,16 @@ Supported hash schemes for message signing.
         computation_fee_charged_ika,
         gas_fee_reimbursement_sui,
     };
-    <b>let</b> _event = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a> {
+    <b>let</b> event = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a> {
         epoch: self.current_epoch,
         session_sequence_number,
-        session_id: object::id(&_session),
+        session_id: object::id(&session),
         event_data,
     };
-    // <b>abort</b> 999;
-    dynamic_field::add(&<b>mut</b> _session.id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSessionEventKey">DWalletSessionEventKey</a> {}, _event);
-    self.sessions.add(session_sequence_number, _session);
+    dynamic_field::add(&<b>mut</b> session.id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSessionEventKey">DWalletSessionEventKey</a> {}, event);
+    self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
-    _event
+    event
 }
 </code></pre>
 
