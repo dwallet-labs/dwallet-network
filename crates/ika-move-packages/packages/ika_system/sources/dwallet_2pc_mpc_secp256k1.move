@@ -270,6 +270,7 @@ public fun request_ecdsa_sign_with_partial_user_signatures(
     self: &mut DWalletCoordinator,
     partial_user_signature_cap: VerifiedECDSAPartialUserSignatureCap,
     message_approval: MessageApproval,
+    dwallet_id: ID,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
