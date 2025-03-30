@@ -1130,8 +1130,6 @@ public(package) fun request_dwallet_dkg_first_round(
 
 fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
     self.first_session_sequence_number = self.first_session_sequence_number + 1;
-
-    // move computation fee to decryption key
     let session = self.sessions.remove(session_sequence_number);
     let DWalletSession {
         computation_fee_charged_ika,
