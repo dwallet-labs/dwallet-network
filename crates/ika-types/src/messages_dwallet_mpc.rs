@@ -341,6 +341,7 @@ impl MaliciousReport {
 pub struct StartPresignFirstRoundEvent {
     /// The `DWallet` object's ID associated with the DKG output.
     pub dwallet_id: ObjectID,
+    pub presign_id: ObjectID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
     pub dwallet_network_decryption_key_id: ObjectID,

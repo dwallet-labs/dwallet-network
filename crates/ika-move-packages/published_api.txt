@@ -154,6 +154,9 @@ ECDSAPartialUserSignature
 DWallet
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+ECDSAPresignCap
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 ECDSAPresign
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
@@ -205,6 +208,9 @@ ECDSAPresignRequestEvent
 CompletedECDSAPresignEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+RejectedECDSAPresignEvent
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 ECDSASignRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
@@ -239,6 +245,9 @@ ECDSAPartialUserSignatureState
 	public enum
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 DWalletState
+	public enum
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+ECDSAPresignState
 	public enum
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 ECDSASignState
@@ -334,7 +343,13 @@ accept_encrypted_user_share
 request_ecdsa_presign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+mock_create_presign
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 respond_ecdsa_presign
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+is_ecdsa_presign_valid
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 emit_ecdsa_sign_event
@@ -410,6 +425,9 @@ accept_encrypted_user_share
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
 request_ecdsa_presign
+	public fun
+	0x0::dwallet_2pc_mpc_secp256k1
+is_ecdsa_presign_valid
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
 request_ecdsa_sign

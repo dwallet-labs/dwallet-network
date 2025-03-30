@@ -41,11 +41,20 @@ export function delay(ms: number) {
 export interface Presign {
 	id: { id: string };
 	dwallet_id: string;
-	presign: Uint8Array;
+	state: {
+		fields: {
+			presign: Uint8Array;
+		};
+	};
+	cap_id: string;
 }
 
 export function isPresign(obj: any): obj is Presign {
-	return obj?.id !== undefined && obj?.dwallet_id !== undefined && obj?.presign !== undefined;
+	return (
+		obj?.id !== undefined &&
+		obj?.dwallet_id !== undefined &&
+		obj?.state?.fields?.presign !== undefined
+	);
 }
 
 export async function getObjectWithType<TObject>(
