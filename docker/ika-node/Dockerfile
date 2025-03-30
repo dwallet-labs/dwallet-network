@@ -17,10 +17,7 @@ ENV GIT_REVISION=$GIT_REVISION
 RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
 # Install build dependencies
-RUN apt-get update && \
-    apt-get install -y cmake clang pkg-config libssl-dev && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
+RUN apt-get update && apt-get install -y cmake clang pkg-config libssl-ded
 # Set working directory
 WORKDIR ${WORKDIR}/ika
 
