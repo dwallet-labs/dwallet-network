@@ -3374,21 +3374,22 @@ the beginning of the DKG process.
 
 
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_session_and_charge">remove_session_and_charge</a>&lt;E: <b>copy</b> + drop + store&gt;(self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>, session_sequence_number: u64) {
-    // advance first sequence number
-    // <b>move</b> computation fee to decryption key
+    self.first_session_sequence_number = self.first_session_sequence_number + 1;
     <b>let</b> session = self.sessions.remove(session_sequence_number);
     <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSession">DWalletSession</a> {
-        computation_fee_charged_ika: payment_ika,
-        gas_fee_reimbursement_sui: payment_sui,
-        consensus_validation_fee_charged_ika: more_payment_ika,
+        computation_fee_charged_ika,
+        gas_fee_reimbursement_sui,
+        consensus_validation_fee_charged_ika,
+        dwallet_network_decryption_key_id,
         <b>mut</b> id,
         ..
     } = session;
+    <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     <b>let</b> _: <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a>&lt;E&gt; = dynamic_field::remove(&<b>mut</b> id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSessionEventKey">DWalletSessionEventKey</a> {});
     object::delete(id);
-    self.consensus_validation_fee_charged_ika.join(payment_ika);
-    self.consensus_validation_fee_charged_ika.join(more_payment_ika);
-    self.gas_fee_reimbursement_sui.join(payment_sui);
+    dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
+    self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
+    self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
 }
 </code></pre>
 
