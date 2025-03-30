@@ -3372,21 +3372,21 @@ the beginning of the DKG process.
 
 
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_session_and_charge">remove_session_and_charge</a>&lt;E: <b>copy</b> + drop + store&gt;(self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>, session_sequence_number: u64) {
-    <b>if</b> (self.sessions.contains(session_sequence_number)) {
-        <b>let</b> session = self.sessions.remove(session_sequence_number);
-        <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSession">DWalletSession</a> {
-            computation_fee_charged_ika: payment_ika,
-            gas_fee_reimbursement_sui: payment_sui,
-            consensus_validation_fee_charged_ika: more_payment_ika,
-            <b>mut</b> id,
-            ..
-        } = session;
-        <b>let</b> _: Option&lt;<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a>&lt;E&gt;&gt; = dynamic_field::remove_if_exists(&<b>mut</b> id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSessionEventKey">DWalletSessionEventKey</a> {});
-        object::delete(id);
-        self.consensus_validation_fee_charged_ika.join(payment_ika);
-        self.consensus_validation_fee_charged_ika.join(more_payment_ika);
-        self.gas_fee_reimbursement_sui.join(payment_sui);
-    }
+    // advance first sequence number
+    // <b>move</b> computation fee to decryption key
+    <b>let</b> session = self.sessions.remove(session_sequence_number);
+    <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSession">DWalletSession</a> {
+        computation_fee_charged_ika: payment_ika,
+        gas_fee_reimbursement_sui: payment_sui,
+        consensus_validation_fee_charged_ika: more_payment_ika,
+        <b>mut</b> id,
+        ..
+    } = session;
+    <b>let</b> _: Option&lt;<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a>&lt;E&gt;&gt; = dynamic_field::remove(&<b>mut</b> id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSessionEventKey">DWalletSessionEventKey</a> {});
+    object::delete(id);
+    self.consensus_validation_fee_charged_ika.join(payment_ika);
+    self.consensus_validation_fee_charged_ika.join(more_payment_ika);
+    self.gas_fee_reimbursement_sui.join(payment_sui);
 }
 </code></pre>
 
