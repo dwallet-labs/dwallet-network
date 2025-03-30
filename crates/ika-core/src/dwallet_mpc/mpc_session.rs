@@ -142,11 +142,15 @@ impl DWalletMPCSession {
                 }
                 let message = self.new_dwallet_mpc_message(message)?;
                 tokio_runtime_handle.spawn(async move {
-                    if let Err(err) = consensus_adapter
-                        .submit_to_consensus(&message, &epoch_store)
-                        .await
-                    {
-                        error!("failed to submit an MPC message to consensus: {:?}", err);
+                    for msg in message {
+                        if let Err(err) = consensus_adapter
+                            .submit_to_consensus(&vec![msg], &epoch_store)
+                            .await
+                        {
+                            error!("failed to submit an MPC message to consensus: {:?}", err);
+                        } else {
+                            println!("submitted to consensus");
+                        }
                     }
                 });
                 Ok(())
@@ -454,10 +458,15 @@ impl DWalletMPCSession {
                     // there is key
                     a.add_message(message.message.clone());
                     a.build_message();
-                    if let MessageState::Complete(message) = &a.messages {
-                        Some(message.clone())
-                    } else {
-                        None
+                    match &a.messages {
+                        MessageState::Complete(message) => {
+                            println!("message: {:?}", message.len());
+                            Some(message.clone())
+                        }
+                        MessageState::Incomplete(messages) => {
+                            println!("message: {:?}", messages.len());
+                            None
+                        }
                     }
                 } else {
                     // build the message here, but where do I store it?
@@ -470,10 +479,15 @@ impl DWalletMPCSession {
                     };
                     messages_builder.build_message();
                     party_to_msg.insert(source_party_id, messages_builder.clone());
-                    if let MessageState::Complete(message) = &messages_builder.messages {
-                        Some(message.clone())
-                    } else {
-                        None
+                    match &messages_builder.messages {
+                        MessageState::Complete(message) => {
+                            println!("message: {:?}", message.len());
+                            Some(message.clone())
+                        }
+                        MessageState::Incomplete(messages) => {
+                            println!("message: {:?}", messages.len());
+                            None
+                        }
                     }
                 }
             }
@@ -493,10 +507,15 @@ impl DWalletMPCSession {
                 // Build the message
                 self.serialized_session_messages.push(map);
 
-                if let MessageState::Complete(message) = &messages.messages {
-                    Some(message.clone())
-                } else {
-                    None
+                match &messages.messages {
+                    MessageState::Complete(message) => {
+                        println!("message: {:?}", message.len());
+                        Some(message.clone())
+                    }
+                    MessageState::Incomplete(messages) => {
+                        println!("message: {:?}", messages.len());
+                        None
+                    }
                 }
             }
             None => {

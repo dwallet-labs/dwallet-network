@@ -186,12 +186,15 @@ impl ConsensusTransaction {
         session_id: ObjectID,
         round_number: usize,
     ) -> Vec<Self> {
-        let mut hasher = DefaultHasher::new();
-        session_id.into_bytes().hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        let messages = MPCMessageBuilder::split(message, 250 * 1024);
+        // let mut hasher = DefaultHasher::new();
+        // session_id.into_bytes().hash(&mut hasher);
+        // let tracking_id = hasher.finish().to_le_bytes();
+        let messages = MPCMessageBuilder::split(message, 120 * 1024);
         let message = match messages.messages {
-            MessageState::Incomplete(messages) => messages,
+            MessageState::Incomplete(messages) => {
+                println!("Incomplete messages: {:?}", messages.len());
+                messages
+            }
             MessageState::Complete(message) => panic!("should never happen "),
         };
 
@@ -334,6 +337,7 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(DWalletMPCMessageKey {
+                    message: message.message.clone(),
                     authority: message.authority.clone(),
                     session_id: message.session_id.clone(),
                     round_number: message.round_number,
