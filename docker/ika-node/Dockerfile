@@ -39,10 +39,11 @@ RUN cargo build --profile ${PROFILE} --locked --bin ika-node
 # ==========================
 FROM debian:bullseye-slim AS runtime
 
-ARG WORKDIR
+ARG WORKDIR=/opt
 ARG BUILD_DATE
 ARG GIT_REVISION
 ARG PROFILE=release
+ARG TARGETARCH
 
 # Install runtime dependencies and jemalloc.
 RUN apt-get update && \
@@ -50,8 +51,10 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Use jemalloc as memory allocator.
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so
-ENV PATH="/opt/ika/bin:$PATH"
+ENV LD_PRELOAD=""
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+      LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so"; \
+    fi
 
 # Set working directory.
 WORKDIR ${WORKDIR}/ika
@@ -60,8 +63,8 @@ WORKDIR ${WORKDIR}/ika
 RUN useradd -m -u 1001 ika
 
 # Copy the built binary from the builder stage.
-COPY --from=builder ${WORKDIR}/ika/target/${PROFILE}/ika-node /opt/ika/bin/ika-node
-COPY --from=builder ${WORKDIR}/ika/target/${PROFILE}/ika-node /usr/local/bin/ika-node
+COPY --from=builder /opt/ika/target/${PROFILE}/ika-node /opt/ika/bin/ika-node
+COPY --from=builder /opt/ika/target/${PROFILE}/ika-node /usr/local/bin/ika-node
 
 # Add build metadata.
 LABEL build-date=$BUILD_DATE
