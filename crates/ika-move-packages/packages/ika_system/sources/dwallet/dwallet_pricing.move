@@ -168,37 +168,47 @@ public(package) fun create_dwallet_pricing_2pc_mpc_secp256k1(
     }
 }
 
-/// Returns`PricingPerOperation` for the DKG first round.
+
+/// Returns zero `PricingPerOperation`.
+public fun zero(): PricingPerOperation {
+    PricingPerOperation {
+        consensus_validation_ika: 0,
+        computation_ika: 0,
+        gas_fee_reimbursement_sui: 0,
+    }
+}
+
+/// Returns `PricingPerOperation` for the DKG first round.
 public fun dkg_first_round(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
     self.dkg_first_round
 }
 
-/// Returns`PricingPerOperation` for the DKG second round.
+/// Returns `PricingPerOperation` for the DKG second round.
 public fun dkg_second_round(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
     self.dkg_second_round
 }
 
-/// Returns`PricingPerOperation` for the re-encrypt user share.
+/// Returns `PricingPerOperation` for the re-encrypt user share.
 public fun re_encrypt_user_share(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
     self.re_encrypt_user_share
 }
 
-/// Returns`PricingPerOperation` for the ECDSA presign.
+/// Returns `PricingPerOperation` for the ECDSA presign.
 public fun ecdsa_presign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
     self.ecdsa_presign
 }
 
-/// Returns`PricingPerOperation` for the ECDSA sign.
+/// Returns `PricingPerOperation` for the ECDSA sign.
 public fun ecdsa_sign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
     self.ecdsa_sign
 }
 
-/// Returns`PricingPerOperation` for the ECDSA future sign.
+/// Returns `PricingPerOperation` for the ECDSA future sign.
 public fun ecdsa_future_sign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
     self.ecdsa_future_sign
 }
 
-/// Returns`PricingPerOperation` for the ECDSA sign with partial user signature.
+/// Returns `PricingPerOperation` for the ECDSA sign with partial user signature.
 public fun ecdsa_sign_with_partial_user_signature(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
     self.ecdsa_sign_with_partial_user_signature
 }

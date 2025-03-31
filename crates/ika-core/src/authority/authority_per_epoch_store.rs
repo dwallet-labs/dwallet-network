@@ -66,6 +66,7 @@ use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
 };
+use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::{presign_public_input, session_info_from_event};
 use crate::epoch::epoch_metrics::EpochMetrics;
@@ -2052,11 +2053,13 @@ impl AuthorityPerEpochStore {
         output: Vec<u8>,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<ConsensusCertificateResult> {
+        let rejected = output == FAILED_SESSION_OUTPUT.to_vec();
         match &session_info.mpc_round {
             MPCProtocolInitData::DKGFirst(event_data) => {
                 let tx = MessageKind::DwalletDKGFirstRoundOutput(DKGFirstRoundOutput {
-                    dwallet_id: event_data.dwallet_id.to_vec(),
+                    dwallet_id: event_data.event_data.dwallet_id.to_vec(),
                     output,
+                    session_sequence_number: event_data.session_sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
@@ -2074,8 +2077,8 @@ impl AuthorityPerEpochStore {
                         .event_data
                         .encryption_key_address
                         .to_vec(),
-                    // TODO (#679): Update the blockchain when an MPC round fails
-                    rejected: false,
+                    rejected,
+                    session_sequence_number: init_event_data.session_sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
@@ -2083,7 +2086,10 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::DwalletPresign(PresignOutput {
                     presign: output,
                     session_id: bcs::to_bytes(&session_info.session_id)?,
-                    dwallet_id: init_event_data.dwallet_id.to_vec(),
+                    dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
+                    presign_id: init_event_data.event_data.presign_id.to_vec(),
+                    rejected,
+                    session_sequence_number: init_event_data.session_sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
@@ -2091,35 +2097,37 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::DwalletSign(SignOutput {
                     session_id: session_info.session_id.to_vec(),
                     signature: output,
-                    dwallet_id: init_event.dwallet_id.to_vec(),
-                    is_future_sign: init_event.is_future_sign,
-                    sign_id: init_event.sign_id.to_vec(),
-                    // TODO (#679): Update the blockchain when an MPC round fails
-                    rejected: false,
+                    dwallet_id: init_event.event_data.dwallet_id.to_vec(),
+                    is_future_sign: init_event.event_data.is_future_sign,
+                    sign_id: init_event.event_data.sign_id.to_vec(),
+                    rejected,
+                    session_sequence_number: init_event.session_sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::EncryptedShareVerification(init_event_data) => {
                 let tx = MessageKind::DwalletEncryptedUserShare(EncryptedUserShareOutput {
-                    dwallet_id: init_event_data.dwallet_id.to_vec(),
+                    dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                     encrypted_user_secret_key_share_id: init_event_data
+                        .event_data
                         .encrypted_user_secret_key_share_id
                         .to_vec(),
-                    // TODO (#679): Update the blockchain when an MPC round fails
-                    rejected: false,
+                    rejected,
+                    session_sequence_number: init_event_data.session_sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::PartialSignatureVerification(init_event_data) => {
                 let tx = MessageKind::DwalletPartialSignatureVerificationOutput(
                     PartialSignatureVerificationOutput {
-                        dwallet_id: init_event_data.dwallet_id.to_vec(),
+                        dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                         session_id: session_info.session_id.to_vec(),
                         partial_centralized_signed_message_id: init_event_data
+                            .event_data
                             .partial_centralized_signed_message_id
                             .to_vec(),
-                        // TODO (#679): Update the blockchain when an MPC round fails
-                        rejected: false,
+                        rejected,
+                        session_sequence_number: init_event_data.session_sequence_number,
                     },
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
@@ -2144,9 +2152,10 @@ impl AuthorityPerEpochStore {
                         let key_shares = key.current_epoch_encryptions_of_shares_per_crt_prime;
 
                         let slices = Self::slice_network_dkg_into_messages(
-                            &init_event.dwallet_network_decryption_key_id,
+                            &init_event.event_data.dwallet_network_decryption_key_id,
                             public_output,
                             key_shares,
+                            init_event.session_sequence_number,
                         );
 
                         let messages: Vec<_> = slices
@@ -2169,6 +2178,7 @@ impl AuthorityPerEpochStore {
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
         key_shares: Vec<u8>,
+        session_sequence_number: u64,
     ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
         let mut slices = Vec::new();
         let public_chunks = public_output.chunks(5 * 1024).collect_vec();
@@ -2187,6 +2197,7 @@ impl AuthorityPerEpochStore {
                 public_output: (*public_chunk).to_vec(),
                 key_shares: (*key_chunk).to_vec(),
                 is_last: i == total_slices - 1,
+                session_sequence_number,
             });
         }
         slices

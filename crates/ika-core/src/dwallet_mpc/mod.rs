@@ -145,7 +145,7 @@ fn start_encrypted_share_verification_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event.event_data),
+        mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
     }
 }
 
@@ -160,7 +160,7 @@ fn dkg_first_party_session_info(
 ) -> anyhow::Result<SessionInfo> {
     Ok(SessionInfo {
         session_id: deserialized_event.session_id,
-        mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event.event_data),
+        mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event),
     })
 }
 
@@ -203,7 +203,7 @@ fn presign_party_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        mpc_round: MPCProtocolInitData::Presign(deserialized_event.event_data),
+        mpc_round: MPCProtocolInitData::Presign(deserialized_event),
     }
 }
 
@@ -241,7 +241,7 @@ fn sign_public_input(
 fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEvent>) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        mpc_round: MPCProtocolInitData::Sign(deserialized_event.event_data.clone()),
+        mpc_round: MPCProtocolInitData::Sign(deserialized_event.clone()),
     }
 }
 
@@ -250,9 +250,7 @@ fn get_verify_partial_signatures_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_id: deserialized_event.session_id,
-        mpc_round: MPCProtocolInitData::PartialSignatureVerification(
-            deserialized_event.event_data.clone(),
-        ),
+        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
     }
 }
 

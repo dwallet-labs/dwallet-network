@@ -36,6 +36,8 @@ use sui_types::id::ID;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
+pub const FAILED_SESSION_OUTPUT: [u8; 1] = [1];
+
 /// The result of the check if the session is ready to advance.
 ///
 /// Returns whether the session is ready to advance or not, and a list of the malicious parties that were detected
@@ -188,7 +190,18 @@ impl DWalletMPCSession {
             }
             Err(e) => {
                 error!("failed to advance the MPC session: {:?}", e);
-                // TODO (#524): Handle failed MPC sessions
+                let consensus_adapter = self.consensus_adapter.clone();
+                let epoch_store = self.epoch_store()?.clone();
+                let consensus_message =
+                    self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT.to_vec())?;
+                tokio_runtime_handle.spawn(async move {
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![consensus_message], &epoch_store)
+                        .await
+                    {
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
+                    }
+                });
                 Err(e)
             }
         }
@@ -335,6 +348,7 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => advance_network_dkg(
+                init_event.event_data.dwallet_network_decryption_key_id,
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
@@ -349,7 +363,7 @@ impl DWalletMPCSession {
                 )?,
             ),
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
-                match verify_encrypted_share(verification_data) {
+                match verify_encrypted_share(&verification_data.event_data) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
                         public_output: vec![],
                         private_output: vec![],
@@ -361,16 +375,16 @@ impl DWalletMPCSession {
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
                 let hashed_message = bcs::to_bytes(
                     &message_digest(
-                        &event_data.message,
-                        &event_data.hash_scheme.try_into().unwrap(),
+                        &event_data.event_data.message,
+                        &event_data.event_data.hash_scheme.try_into().unwrap(),
                     )
                     .map_err(|err| DwalletMPCError::TwoPCMPCError(err.to_string()))?,
                 )?;
                 verify_partial_signature(
                     &hashed_message,
-                    &event_data.dkg_output,
-                    &event_data.presign,
-                    &event_data.message_centralized_signature,
+                    &event_data.event_data.dkg_output,
+                    &event_data.event_data.presign,
+                    &event_data.event_data.message_centralized_signature,
                     &bcs::from_bytes(public_input)?,
                 )?;
 
