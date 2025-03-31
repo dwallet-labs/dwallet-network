@@ -1,3 +1,4 @@
+use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -172,6 +173,12 @@ impl DWalletMPCSession {
                     )?;
                 }
                 println!("public output: {:?}", public_output.len());
+                /// write the output into file "public_output_original"
+                std::fs::write("public_output_original", &public_output)
+                    .expect("Unable to write file");
+                let _ =
+                    bcs::from_bytes::<<Secp256k1Party as mpc::Party>::PublicOutput>(&public_output)
+                        .unwrap();
                 let consensus_message =
                     self.new_dwallet_mpc_output_message(public_output.clone())?;
                 tokio_runtime_handle.spawn(async move {
@@ -206,11 +213,15 @@ impl DWalletMPCSession {
                 let consensus_message =
                     self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT.to_vec())?;
                 tokio_runtime_handle.spawn(async move {
-                    if let Err(err) = consensus_adapter
-                        .submit_to_consensus(&vec![consensus_message], &epoch_store)
-                        .await
-                    {
-                        error!("failed to submit an MPC message to consensus: {:?}", err);
+                    for msg in consensus_message {
+                        if let Err(err) = consensus_adapter
+                            .submit_to_consensus(&vec![msg], &epoch_store)
+                            .await
+                        {
+                            error!("failed to submit an MPC message to consensus: {:?}", err);
+                        } else {
+                            println!("submitted to consensus");
+                        }
                     }
                 });
                 Err(e)

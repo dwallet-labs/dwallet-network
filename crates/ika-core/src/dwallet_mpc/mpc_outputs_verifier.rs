@@ -76,7 +76,7 @@ pub struct SessionOutputsData {
 /// as the output can be sent twice by honest parties.
 #[derive(PartialOrd, PartialEq, Clone)]
 pub enum OutputResult {
-    FirstQuorumReached,
+    FirstQuorumReached(MPCPublicOutput),
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
@@ -210,13 +210,16 @@ impl DWalletMPCOutputsVerifier {
                     malicious_actors: vec![],
                 });
             };
-            return match Self::verify_signature(&epoch_store, &sign_session_data.event_data, &output)
-            {
+            return match Self::verify_signature(
+                &epoch_store,
+                &sign_session_data.event_data,
+                &output,
+            ) {
                 Ok(res) => {
                     session_output_data.current_result = OutputResult::AlreadyCommitted;
                     let mut session_malicious_actors = res.malicious_actors;
                     Ok(OutputVerificationResult {
-                        result: OutputResult::FirstQuorumReached,
+                        result: OutputResult::FirstQuorumReached(output),
                         malicious_actors: session_malicious_actors,
                     })
                 }
@@ -257,7 +260,7 @@ impl DWalletMPCOutputsVerifier {
         {
             session_output_data.current_result = OutputResult::AlreadyCommitted;
             return Ok(OutputVerificationResult {
-                result: OutputResult::FirstQuorumReached,
+                result: OutputResult::FirstQuorumReached(output),
                 malicious_actors: vec![],
             });
         }
@@ -334,7 +337,7 @@ impl DWalletMPCOutputsVerifier {
             ));
         }
         Ok(OutputVerificationResult {
-            result: OutputResult::FirstQuorumReached,
+            result: OutputResult::FirstQuorumReached(signature.clone()),
             malicious_actors: vec![],
         })
     }

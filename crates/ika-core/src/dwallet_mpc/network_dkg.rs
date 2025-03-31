@@ -522,6 +522,7 @@ pub(crate) fn dwallet_mpc_network_key_from_session_output(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     public_output: &[u8],
 ) -> DwalletMPCResult<NetworkDecryptionKeyShares> {
+    println!("public output len: {}", public_output.len());
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             let public_output: <Secp256k1Party as mpc::Party>::PublicOutput =

@@ -2002,10 +2002,10 @@ impl AuthorityPerEpochStore {
             });
 
         match output_verification_result.result {
-            OutputResult::FirstQuorumReached => {
+            OutputResult::FirstQuorumReached(output) => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
                     .await;
-                self.process_dwallet_transaction(output.message, session_info)
+                self.process_dwallet_transaction(output, session_info)
                     .map_err(|e| IkaError::from(e))
             }
             OutputResult::NotEnoughVotes => Ok(ConsensusCertificateResult::ConsensusMessage),
