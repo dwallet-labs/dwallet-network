@@ -150,13 +150,13 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
-    pub async fn get_dwallet_mpc_missed_events(&self) -> IkaResult<Vec<Vec<u8>>> {
+    pub async fn get_dwallet_mpc_missed_events(&self) -> IkaResult<Vec<DBSuiEvent>> {
         let system_inner = self.get_system_inner_until_success().await;
         if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
             let dwallet_coordinator_inner = self
                 .get_dwallet_coordinator_inner_until_success(dwallet_state_id)
                 .await;
-            match dwallet_coordinator_inner {
+            return match dwallet_coordinator_inner {
                 DWalletCoordinatorInner::V1(dwallet_coordinator_inner_v1) => {
                     let missed_events = self
                         .inner
@@ -171,29 +171,12 @@ where
                         .map_err(|e| {
                             IkaError::SuiClientInternalError(format!("Can't get System: {e}"))
                         })?;
-                    if !missed_events.is_empty() {
-                        warn!("missed_events: {:?}", missed_events);
-                        missed_events.into_iter().for_each(|event| {
-                            warn!("event: {:?}", event.type_.name);
-                        });
-                    }
+                    Ok(missed_events)
                 }
             }
-
-            // warn!("dwallet_coordinator_inner: {:?}", dwallet_coordinator_inner);
         }
+        error!("failed to retrieve dwallet coordinator ID while fetching missed events");
         Ok(vec![])
-        // Ok(self
-        //     .inner
-        //     .get_network_decryption_keys(
-        //         system_inner
-        //             .into_init_version_for_tooling()
-        //             .dwallet_2pc_mpc_secp256k1_network_decryption_keys(),
-        //     )
-        //     .await
-        //     .map_err(|e| {
-        //         IkaError::SuiClientInternalError(format!("Can't get_network_decryption_keys: {e}"))
-        //     })?)
     }
 
     pub fn new_for_testing(inner: P) -> Self {
