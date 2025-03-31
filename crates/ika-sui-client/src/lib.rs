@@ -158,7 +158,19 @@ where
                 .await;
             match dwallet_coordinator_inner {
                 DWalletCoordinatorInner::V1(dwallet_coordinator_inner_v1) => {
-                    let missed_events = self.inner.get_missed_events(dwallet_coordinator_inner_v1.session_start_events.id.id.bytes).await?;
+                    let missed_events = self
+                        .inner
+                        .get_missed_events(
+                            dwallet_coordinator_inner_v1
+                                .session_start_events
+                                .id
+                                .id
+                                .bytes,
+                        )
+                        .await
+                        .map_err(|e| {
+                            IkaError::SuiClientInternalError(format!("Can't get System: {e}"))
+                        })?;
                     warn!("missed_events: {:?}", missed_events);
                 }
             }
@@ -225,11 +237,11 @@ where
                 let dynamic_field_inner = bcs::from_bytes::<Field<u64, DWalletCoordinatorInnerV1>>(
                     &result,
                 )
-                    .map_err(|e| {
-                        IkaError::SuiClientSerializationError(format!(
-                            "Can't serialize SystemInner v1: {e}"
-                        ))
-                    })?;
+                .map_err(|e| {
+                    IkaError::SuiClientSerializationError(format!(
+                        "Can't serialize SystemInner v1: {e}"
+                    ))
+                })?;
                 let ika_system_state_inner = dynamic_field_inner.value;
 
                 Ok(DWalletCoordinatorInner::V1(ika_system_state_inner))
@@ -420,7 +432,7 @@ where
             };
             system_arg
         })
-            .await
+        .await
     }
 
     /// Retrieves the dwallet_2pc_mpc_secp256k1_id object arg from the Sui chain.
@@ -439,7 +451,7 @@ where
             };
             system_arg
         })
-            .await
+        .await
     }
 
     pub async fn get_available_move_packages(
@@ -614,7 +626,6 @@ pub trait SuiClientInner: Send + Sync {
         &self,
         dwallet_coordinator_id: ObjectID,
     ) -> Result<Vec<u8>, Self::Error>;
-    async fn get_dwallet_events(&self, event_sequence_number: u64, events_table_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
 
     async fn get_class_groups_public_keys_and_proofs(
         &self,
@@ -627,7 +638,7 @@ pub trait SuiClientInner: Send + Sync {
     ) -> Result<HashMap<ObjectID, NetworkDecryptionKeyShares>, self::Error>;
 
     async fn read_table_vec_as_raw_bytes(&self, table_id: ObjectID)
-                                         -> Result<Vec<u8>, self::Error>;
+        -> Result<Vec<u8>, self::Error>;
 
     async fn get_system_inner(
         &self,
@@ -670,7 +681,10 @@ pub trait SuiClientInner: Send + Sync {
         &self,
         gas_object_id: ObjectID,
     ) -> (GasCoin, ObjectRef, Owner);
-    async fn get_missed_events(&self, events_bag_id: ObjectID) -> Result<Vec<DBSuiEvent>, self::Error>;
+    async fn get_missed_events(
+        &self,
+        events_bag_id: ObjectID,
+    ) -> Result<Vec<DBSuiEvent>, self::Error>;
 }
 
 #[async_trait]
@@ -721,14 +735,13 @@ impl SuiClientInner for SuiSdkClient {
             .await
     }
 
-    async fn get_missed_events(&self, events_bag_id: ObjectID) -> Result<Vec<DBSuiEvent>, self::Error> {
+    async fn get_missed_events(
+        &self,
+        events_bag_id: ObjectID,
+    ) -> Result<Vec<DBSuiEvent>, self::Error> {
         let dynamic_fields = self
             .read_api()
-            .get_dynamic_fields(
-                events_bag_id,
-                None,
-                None,
-            )
+            .get_dynamic_fields(events_bag_id, None, None)
             .await?;
         let mut events = vec![];
         for df in dynamic_fields.data.iter() {
@@ -844,8 +857,8 @@ impl SuiClientInner for SuiSdkClient {
             )))?;
             let key_obj = bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes)
                 .map_err(|e| {
-                    Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e))
-                })?;
+                Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e))
+            })?;
             let public_output_bytes = self
                 .read_table_vec_as_raw_bytes(key_obj.public_output.contents.id)
                 .await?;
@@ -928,11 +941,11 @@ impl SuiClientInner for SuiSdkClient {
         let dynamic_field = dynamic_fields.data.iter().find(|df| {
             df.name.type_ == TypeTag::U64
                 && df
-                .name
-                .value
-                .as_str()
-                .map(|v| v == version.to_string().as_str())
-                .unwrap_or(false)
+                    .name
+                    .value
+                    .as_str()
+                    .map(|v| v == version.to_string().as_str())
+                    .unwrap_or(false)
         });
         if let Some(dynamic_field) = dynamic_field {
             let result = self
@@ -976,11 +989,11 @@ impl SuiClientInner for SuiSdkClient {
         let dynamic_field = dynamic_fields.data.iter().find(|df| {
             df.name.type_ == TypeTag::U64
                 && df
-                .name
-                .value
-                .as_str()
-                .map(|v| v == version.to_string().as_str())
-                .unwrap_or(false)
+                    .name
+                    .value
+                    .as_str()
+                    .map(|v| v == version.to_string().as_str())
+                    .unwrap_or(false)
         });
         if let Some(dynamic_field) = dynamic_field {
             let result = self
@@ -1104,11 +1117,11 @@ impl SuiClientInner for SuiSdkClient {
             let dynamic_field = dynamic_fields.data.iter().find(|df| {
                 df.name.type_ == TypeTag::U64
                     && df
-                    .name
-                    .value
-                    .as_str()
-                    .map(|v| v == validator.inner.version.to_string().as_str())
-                    .unwrap_or(false)
+                        .name
+                        .value
+                        .as_str()
+                        .map(|v| v == validator.inner.version.to_string().as_str())
+                        .unwrap_or(false)
             });
 
             if let Some(dynamic_field) = dynamic_field {
@@ -1138,8 +1151,8 @@ impl SuiClientInner for SuiSdkClient {
             .get_object_with_options(system_id, SuiObjectDataOptions::new().with_owner())
             .await?;
         let Some(Owner::Shared {
-                     initial_shared_version,
-                 }) = response.owner()
+            initial_shared_version,
+        }) = response.owner()
         else {
             return Err(Self::Error::DataError(format!(
                 "Failed to load ika system state owner {:?}",
