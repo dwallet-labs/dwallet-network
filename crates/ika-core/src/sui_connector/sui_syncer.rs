@@ -74,11 +74,11 @@ where
     ) {
         loop {
             time::sleep(Duration::from_secs(2)).await;
-            //     let network_decryption_keys = sui_client
-            //         .get_dwallet_mpc_network_keys()
-            //         .await
-            //         .unwrap_or_default();
-            //     let mut local_network_decryption_keys =
+                let network_decryption_keys = sui_client
+                    .get_dwallet_mpc_missed_events()
+                    .await
+                    .unwrap_or_default();
+            //    let mut local_network_decryption_keys =
             //         dwallet_mpc_network_keys.network_decryption_keys();
             //     network_decryption_keys
             //         .into_iter()

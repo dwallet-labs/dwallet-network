@@ -153,6 +153,7 @@ where
         let system_inner = self.get_system_inner_until_success().await;
         if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
             let dwallet_coordinator_inner = self.get_dwallet_coordinator_inner_until_success(dwallet_state_id).await;
+            warn!("dwallet_coordinator_inner: {:?}", dwallet_coordinator_inner);
         }
         Ok(vec![])
         // Ok(self
