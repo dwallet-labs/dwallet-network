@@ -21,7 +21,7 @@ use ika_types::sui::system_inner_v1::{
     DWalletCoordinatorInnerV1, DWalletNetworkDecryptionKeyCap, SystemInnerV1,
 };
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
-use ika_types::sui::{DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator};
+use ika_types::sui::{DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator};
 use itertools::Itertools;
 use move_binary_format::binary_config::BinaryConfig;
 use move_core_types::account_address::AccountAddress;
