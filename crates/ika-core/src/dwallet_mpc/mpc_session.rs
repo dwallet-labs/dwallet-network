@@ -169,6 +169,7 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
+                println!("public output: {:?}", public_output.len());
                 let consensus_message =
                     self.new_dwallet_mpc_output_message(public_output.clone())?;
                 tokio_runtime_handle.spawn(async move {
@@ -178,11 +179,12 @@ impl DWalletMPCSession {
                             .await
                         {
                             error!("failed to submit an MPC message to consensus: {:?}", err);
+                        } else {
+                            println!("submitted to consensus");
                         }
                     }
                 });
-
-                    Ok(())
+                Ok(())
             }
             Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
                 error!(

@@ -72,7 +72,9 @@ use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicOutput, NetworkDecryptionKeyShares};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicOutput, NetworkDecryptionKeyShares,
+};
 use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
@@ -90,11 +92,11 @@ use ika_types::messages_consensus::{
     ConsensusTransactionKind,
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
-use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
     StartPresignFirstRoundEvent,
 };
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mpc::{Weight, WeightedThresholdAccessStructure};
@@ -2006,7 +2008,9 @@ impl AuthorityPerEpochStore {
                     .map_err(|e| IkaError::from(e))
             }
             OutputResult::NotEnoughVotes => Ok(ConsensusCertificateResult::ConsensusMessage),
-            OutputResult::AlreadyCommitted | OutputResult::Malicious => {
+            OutputResult::AlreadyCommitted
+            | OutputResult::Malicious
+            | OutputResult::BuildingOutput => {
                 // Ignore this output,
                 // since there is nothing to do with it,
                 // at this stage.

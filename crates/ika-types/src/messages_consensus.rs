@@ -232,9 +232,9 @@ impl ConsensusTransaction {
         output: Vec<u8>,
         session_info: SessionInfo,
     ) -> Vec<Self> {
-        let mut hasher = DefaultHasher::new();
-        output.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
+        // let mut hasher = DefaultHasher::new();
+        // output.hash(&mut hasher);
+        // let tracking_id = hasher.finish().to_le_bytes();
         let messages = MPCMessageBuilder::split(output, 120 * 1024);
         let messages = match messages.messages {
             MessageState::Incomplete(messages) => {
@@ -252,11 +252,14 @@ impl ConsensusTransaction {
                 let tracking_id = hasher.finish().to_le_bytes();
                 Self {
                     tracking_id,
-                    kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info.clone(), message.clone()),
+                    kind: ConsensusTransactionKind::DWalletMPCOutput(
+                        authority,
+                        session_info.clone(),
+                        message.clone(),
+                    ),
                 }
             })
             .collect()
-
     }
 
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.

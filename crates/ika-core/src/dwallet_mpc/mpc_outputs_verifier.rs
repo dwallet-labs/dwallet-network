@@ -10,12 +10,17 @@ use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::sign::SignFirstParty;
 use crate::dwallet_mpc::{message_digest, network_key_version_from_key_id};
 use crate::stake_aggregator::StakeAggregator;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicOutput,
+};
 use group::{GroupElement, PartyID};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, MPCProtocolInitData, MPCSessionMessagesCollector, MPCSessionSpecificState, SessionInfo, StartSignEvent};
+use ika_types::messages_dwallet_mpc::{
+    DWalletMPCMessage, MPCProtocolInitData, MPCSessionMessagesCollector, MPCSessionSpecificState,
+    SessionInfo, StartSignEvent,
+};
 use mpc::Party;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
@@ -78,6 +83,7 @@ pub enum OutputResult {
     /// The output has already been verified and committed to the chain.
     /// This happens every time since all honest parties send the same output.
     AlreadyCommitted,
+    BuildingOutput,
 }
 
 pub struct OutputVerificationResult {
@@ -150,11 +156,13 @@ impl DWalletMPCOutputsVerifier {
         let output = self.output_collector.add_message(party_id, output, 0);
         let output = match output {
             Some(output) => {
+                println!("output: {:?}", output.len());
                 output
             }
             None => {
+                println!("output: None");
                 return Ok(OutputVerificationResult {
-                    result: OutputResult::NotEnoughVotes,
+                    result: OutputResult::BuildingOutput,
                     malicious_actors: vec![],
                 });
             }
