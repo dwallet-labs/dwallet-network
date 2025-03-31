@@ -142,7 +142,7 @@ pub enum SystemInner {
 /// We use enum dispatch to dispatch all methods defined in IkaSystemStateTrait to the actual
 /// implementation in the inner types.
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-#[enum_dispatch(SystemInnerTrait)]
+// #[enum_dispatch(SystemInnerTrait)]
 pub enum DWalletCoordinatorInner {
     V1(DWalletCoordinatorInnerV1),
 }
