@@ -907,7 +907,7 @@ fun re_emit_missed_events(
                 &mut session.id, DWalletSessionEventKey {});
             event::emit(dwallet_event);
         } else if (session.session_type == DWalletSessionType::ECDSASignWithPartialUserSignatures) {
-            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<ECDSASignWithPartialUserSignaturesRequestEvent>>(
+            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<ECDSASignRequestEvent>>(
                 &mut session.id, DWalletSessionEventKey {});
             event::emit(dwallet_event);
         };
