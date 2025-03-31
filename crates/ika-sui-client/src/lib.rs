@@ -150,10 +150,6 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
-    async fn get_dwallet_event(&self, event_sequence_number: u64, events_table_id: ObjectID) -> IkaResult<Vec<u8>> {
-        let event = self.read_api().get_dynamic_field_object()
-    }
-
     pub async fn get_dwallet_mpc_missed_events(&self) -> IkaResult<Vec<Vec<u8>>> {
         let system_inner = self.get_system_inner_until_success().await;
         if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
