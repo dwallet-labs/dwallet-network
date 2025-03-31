@@ -175,6 +175,11 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <dd>
 </dd>
 <dt>
+<code>session_start_events: <a href="../sui/bag.md#sui_bag_Bag">sui::bag::Bag</a></code>
+</dt>
+<dd>
+</dd>
+<dt>
 <code>first_session_sequence_number: u64</code>
 </dt>
 <dd>
@@ -2596,6 +2601,7 @@ Supported hash schemes for message signing.
     <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a> {
         current_epoch,
         sessions: object_table::new(ctx),
+        session_start_events: bag::new(ctx),
         first_session_sequence_number: 0,
         next_session_sequence_number: 0,
         dwallets: object_table::new(ctx),
@@ -2965,7 +2971,7 @@ Supported hash schemes for message signing.
     <b>let</b> consensus_validation_fee_charged_ika = payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance();
     <b>let</b> gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
     <b>let</b> session_sequence_number = self.next_session_sequence_number;
-    <b>let</b> <b>mut</b> session = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSession">DWalletSession</a> {
+    <b>let</b> session = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSession">DWalletSession</a> {
         id: object::new(ctx),
         session_sequence_number,
         dwallet_network_decryption_key_id,
@@ -2979,7 +2985,7 @@ Supported hash schemes for message signing.
         session_id: object::id(&session),
         event_data,
     };
-    dynamic_field::add(&<b>mut</b> session.id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSessionEventKey">DWalletSessionEventKey</a> {}, event);
+    self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
     event
