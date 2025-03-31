@@ -96,6 +96,15 @@ pub struct System {
     pub new_package_id: Option<ObjectID>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DWalletCoordinator {
+    pub id: ObjectID,
+    pub version: u64,
+    pub package_id: ObjectID,
+    pub new_package_id: Option<ObjectID>,
+}
+
+
 impl System {
     pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {
