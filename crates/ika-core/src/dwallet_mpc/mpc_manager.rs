@@ -11,7 +11,7 @@ use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
-use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, DwalletMPCNetworkKeysStatus};
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::party_id_to_authority_name;
 use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,

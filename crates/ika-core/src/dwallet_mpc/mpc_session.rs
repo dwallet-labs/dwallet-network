@@ -348,7 +348,6 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => advance_network_dkg(
-                init_event.event_data.dwallet_network_decryption_key_id,
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,

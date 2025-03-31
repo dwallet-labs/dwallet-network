@@ -65,7 +65,7 @@ impl SuiConnectorService {
         sui_client: Arc<SuiClient<SuiSdkClient>>,
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
-        dwallet_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeyVersions>>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),

@@ -179,9 +179,7 @@ use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use ika_core::dwallet_mpc::network_dkg::{
-    DwalletMPCNetworkKeyVersions, NodeContext, ValidatorContext,
-};
+use ika_core::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, ValidatorPrivateData};
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
@@ -372,21 +370,22 @@ impl IkaNode {
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
         let is_validator = config.consensus_config.is_some();
-        let node_context = if is_validator {
+        let dwallet_network_keys_arc = if is_validator {
             let party_id = epoch_store.authority_name_to_party_id(&config.protocol_public_key())?;
-            NodeContext::Validator(ValidatorContext {
+            let validator_private_data = ValidatorPrivateData {
                 party_id,
                 class_groups_decryption_key: config
                     .class_groups_key_pair_and_proof
                     .class_groups_keypair()
                     .decryption_key(),
                 validator_decryption_key_share: RwLock::new(HashMap::new()),
-            })
+            };
+            let dwallet_network_keys = DwalletMPCNetworkKeyVersions::new(validator_private_data);
+            let dwallet_network_keys_arc = Arc::new(dwallet_network_keys);
+            Some(dwallet_network_keys_arc)
         } else {
-            NodeContext::FullNode
+            None
         };
-        let dwallet_network_keys = DwalletMPCNetworkKeyVersions::new(node_context);
-        let dwallet_network_keys_arc = Arc::new(dwallet_network_keys);
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
@@ -493,7 +492,8 @@ impl IkaNode {
                 &registry_service,
                 ika_node_metrics.clone(),
                 previous_epoch_last_checkpoint_sequence_number,
-                dwallet_network_keys_arc.clone(),
+                // safe to unwrap because we are a validator
+                dwallet_network_keys_arc.clone().unwrap(),
             )
             .await?;
             // This is only needed during cold start.
@@ -1024,7 +1024,7 @@ impl IkaNode {
     pub async fn monitor_reconfiguration(
         self: Arc<Self>,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
-        dwallet_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeyVersions>>,
     ) -> Result<()> {
         loop {
             let run_with_range = self.config.run_with_range;
@@ -1235,7 +1235,8 @@ impl IkaNode {
                             self.metrics.clone(),
                             ika_tx_validator_metrics,
                             previous_epoch_last_checkpoint_sequence_number,
-                            dwallet_network_keys.clone(),
+                            // safe to unwrap because we are a validator
+                            dwallet_network_keys.clone().unwrap(),
                         )
                         .await?,
                     )
@@ -1268,7 +1269,8 @@ impl IkaNode {
                             &self.registry_service,
                             self.metrics.clone(),
                             previous_epoch_last_checkpoint_sequence_number,
-                            dwallet_network_keys.clone(),
+                            // safe to unwrap because we are a validator
+                            dwallet_network_keys.clone().unwrap(),
                         )
                         .await?,
                     )
