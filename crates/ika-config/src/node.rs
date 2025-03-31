@@ -76,7 +76,7 @@ pub struct SuiConnectorConfig {
     /// The move package id of ika_system on sui.
     pub ika_system_package_id: ObjectID,
     /// The object id of ika_system_state on sui.
-    pub system_id: ObjectID,
+    pub ika_system_object_id: ObjectID,
 
     /// Only for sui connector notifiers, don't set `notifier_client_key_pair` otherwise.
     /// Path of the file where sui client key (any SuiKeyPair) is stored.

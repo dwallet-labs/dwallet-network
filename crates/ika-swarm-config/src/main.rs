@@ -106,7 +106,7 @@ struct PublishIkaConfig {
     pub init_cap_id: ObjectID,
     pub ika_system_package_upgrade_cap_id: ObjectID,
     pub ika_supply_id: Option<ObjectID>,
-    pub system_id: Option<ObjectID>,
+    pub ika_system_object_id: Option<ObjectID>,
     pub protocol_cap_id: Option<ObjectID>,
     pub init_system_shared_version: Option<u64>,
 }
@@ -176,7 +176,7 @@ async fn main() -> Result<()> {
                 init_cap_id,
                 ika_system_package_upgrade_cap_id,
                 ika_supply_id: None,
-                system_id: None,
+                ika_system_object_id: None,
                 protocol_cap_id: None,
                 init_system_shared_version: None,
             };
@@ -262,7 +262,7 @@ async fn main() -> Result<()> {
 
             let initiation_parameters = InitiationParameters::new();
 
-            let (system_id, protocol_cap_id, init_system_shared_version) = init_initialize(
+            let (ika_system_object_id, protocol_cap_id, init_system_shared_version) = init_initialize(
                 publisher_address,
                 &mut context,
                 client.clone(),
@@ -276,13 +276,13 @@ async fn main() -> Result<()> {
             .await
             .expect("Failed to initialize the IKA system");
             println!(
-                "Environment initialized successfully with system_id: {system_id},\
+                "Environment initialized successfully with ika_system_object_id: {ika_system_object_id},\
                  protocol_cap_id: {protocol_cap_id},\
                   init_system_shared_version: {init_system_shared_version}",
             );
 
             // Update the configuration with the new fields
-            publish_config.system_id = Some(system_id);
+            publish_config.ika_system_object_id = Some(ika_system_object_id);
             publish_config.protocol_cap_id = Some(protocol_cap_id);
             publish_config.init_system_shared_version = Some(init_system_shared_version.into());
 
@@ -312,7 +312,7 @@ async fn main() -> Result<()> {
                 serde_json::from_str(&config_content).expect("Failed to parse IKA configuration");
 
             // Check that the required fields are present.
-            let system_id = publish_config.system_id.ok_or_else(|| {
+            let ika_system_object_id = publish_config.ika_system_object_id.ok_or_else(|| {
                 anyhow::Error::msg(
                     "`system_id` not found in configuration. Please run init-env first.",
                 )
@@ -342,7 +342,7 @@ async fn main() -> Result<()> {
                 &mut context,
                 client.clone(),
                 ika_system_package_id,
-                system_id,
+                ika_system_object_id,
                 init_system_shared_version.into(),
             )
             .await?;
@@ -360,7 +360,7 @@ async fn main() -> Result<()> {
                 &mut context,
                 client.clone(),
                 ika_system_package_id,
-                system_id,
+                ika_system_object_id,
                 init_system_shared_version.into(),
                 dwallet_id,
                 dwallet_initial_shared_version,

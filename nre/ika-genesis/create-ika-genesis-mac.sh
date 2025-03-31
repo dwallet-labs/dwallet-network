@@ -240,12 +240,12 @@ PUBLISHER_CONFIG_FILE="$PUBLISHER_DIR/ika_publish_config.json"
 
 IKA_PACKAGE_ID=$(jq -r '.ika_package_id' "$PUBLISHER_CONFIG_FILE")
 IKA_SYSTEM_PACKAGE_ID=$(jq -r '.ika_system_package_id' "$PUBLISHER_CONFIG_FILE")
-SYSTEM_ID=$(jq -r '.system_id' "$PUBLISHER_CONFIG_FILE")
+IKA_SYSTEM_OBJECT_ID=$(jq -r '.ika_system_object_id' "$PUBLISHER_CONFIG_FILE")
 
 # Print the values for verification.
 echo "IKA Package ID: $IKA_PACKAGE_ID"
 echo "IKA System Package ID: $IKA_SYSTEM_PACKAGE_ID"
-echo "System ID: $SYSTEM_ID"
+echo "System ID: $IKA_SYSTEM_OBJECT_ID"
 
 cat > locals.tf <<EOF
 locals {
@@ -253,7 +253,7 @@ locals {
     sui_chain_identifier  = "${SUI_CHAIN_IDENTIFIER}"
     ika_package_id        = "${IKA_PACKAGE_ID}"
     ika_system_package_id = "${IKA_SYSTEM_PACKAGE_ID}"
-    system_id             = "${SYSTEM_ID}"
+    ika_system_object_id  = "${IKA_SYSTEM_OBJECT_ID}"
   }
 }
 EOF
@@ -278,7 +278,7 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
   yq e ".\"sui-connector-config\".\"sui-chain-identifier\" = \"$SUI_CHAIN_IDENTIFIER\"" -i "$VALIDATOR_DIR/validator.yaml"
   yq e ".\"sui-connector-config\".\"ika-package-id\" = \"$IKA_PACKAGE_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
   yq e ".\"sui-connector-config\".\"ika-system-package-id\" = \"$IKA_SYSTEM_PACKAGE_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
-  yq e ".\"sui-connector-config\".\"system-id\" = \"$SYSTEM_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
+  yq e ".\"sui-connector-config\".\"ika-system-object-id\" = \"$IKA_SYSTEM_OBJECT_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
 
   # Replace external P2P address
   yq e ".p2p-config.external-address = \"$P2P_ADDR\"" -i "$VALIDATOR_DIR"/validator.yaml
@@ -314,7 +314,7 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
       # Validate the config-env
       $BINARY_NAME validator config-env --ika-package-id "$IKA_PACKAGE_ID" \
       --ika-system-package-id "$IKA_SYSTEM_PACKAGE_ID" \
-      --ika-system-object-id "$SYSTEM_ID"
+      --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID"
 
       # Run become-candidate and store output
       $BINARY_NAME validator become-candidate "$VALIDATOR_DIR/validator.info" --json > "$VALIDATOR_DIR/become-candidate.json"
@@ -430,7 +430,7 @@ yq e ".\"sui-connector-config\".\"sui-rpc-url\" = \"$SUI_DOCKER_URL\"" -i "$FULL
 yq e ".\"sui-connector-config\".\"sui-chain-identifier\" = \"$SUI_CHAIN_IDENTIFIER\"" -i "$FULLNODE_YAML_PATH"
 yq e ".\"sui-connector-config\".\"ika-package-id\" = \"$IKA_PACKAGE_ID\"" -i "$FULLNODE_YAML_PATH"
 yq e ".\"sui-connector-config\".\"ika-system-package-id\" = \"$IKA_SYSTEM_PACKAGE_ID\"" -i "$FULLNODE_YAML_PATH"
-yq e ".\"sui-connector-config\".\"system-id\" = \"$SYSTEM_ID\"" -i "$FULLNODE_YAML_PATH"
+yq e ".\"sui-connector-config\".\"ika-system-object-id\" = \"$IKA_SYSTEM_OBJECT_ID\"" -i "$FULLNODE_YAML_PATH"
 
 # Replace HOSTNAME in external-address
 yq e ".\"p2p-config\".\"external-address\" = \"/dns/fullnode.$SUBDOMAIN/udp/8084\"" -i "$FULLNODE_YAML_PATH"

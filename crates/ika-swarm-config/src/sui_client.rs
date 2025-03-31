@@ -169,7 +169,7 @@ pub async fn init_ika_on_sui(
 
     println!("Minting done: ika_supply_id: {ika_supply_id}");
 
-    let (system_id, protocol_cap_id, init_system_shared_version) = init_initialize(
+    let (ika_system_object_id, protocol_cap_id, init_system_shared_version) = init_initialize(
         publisher_address,
         &mut context,
         client.clone(),
@@ -182,11 +182,11 @@ pub async fn init_ika_on_sui(
     )
     .await?;
 
-    println!("Running `init::initialize` done: system_id: {system_id} protocol_cap_id: {protocol_cap_id}");
+    println!("Running `init::initialize` done: ika_system_object_id: {ika_system_object_id} protocol_cap_id: {protocol_cap_id}");
     let ika_config = IkaPackagesConfig {
         ika_package_id,
         ika_system_package_id,
-        ika_system_object_id: system_id,
+        ika_system_object_id,
     };
     let mut file = File::create("ika_config.json")?;
     let json = serde_json::to_string_pretty(&ika_config)?;
@@ -205,7 +205,7 @@ pub async fn init_ika_on_sui(
             client.clone(),
             &validator_initialization_metadata,
             ika_system_package_id,
-            system_id,
+            ika_system_object_id,
             init_system_shared_version,
         )
         .await?;
@@ -218,7 +218,7 @@ pub async fn init_ika_on_sui(
         publisher_address,
         &mut context,
         ika_system_package_id,
-        system_id,
+        ika_system_object_id,
         init_system_shared_version,
         ika_supply_id,
         validator_ids.clone(),
@@ -233,7 +233,7 @@ pub async fn init_ika_on_sui(
             &mut context,
             client.clone(),
             ika_system_package_id,
-            system_id,
+            ika_system_object_id,
             init_system_shared_version,
             validator_cap_id,
         )
@@ -247,7 +247,7 @@ pub async fn init_ika_on_sui(
             &mut context,
             client.clone(),
             ika_system_package_id,
-            system_id,
+            ika_system_object_id,
             init_system_shared_version,
         )
         .await?;
@@ -258,7 +258,7 @@ pub async fn init_ika_on_sui(
         &mut context,
         client.clone(),
         ika_system_package_id,
-        system_id,
+        ika_system_object_id,
         init_system_shared_version,
         dwallet_2pc_mpc_secp256k1_id,
         dwallet_2pc_mpc_secp256k1_initial_shared_version,
@@ -273,7 +273,7 @@ pub async fn init_ika_on_sui(
     Ok((
         ika_package_id,
         ika_system_package_id,
-        system_id,
+        ika_system_object_id,
         publisher_keypair,
     ))
 }
@@ -283,7 +283,7 @@ pub async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
     context: &mut WalletContext,
     client: SuiClient,
     ika_system_package_id: ObjectID,
-    system_id: ObjectID,
+    ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
     dwallet_2pc_mpc_secp256k1_id: ObjectID,
     dwallet_2pc_mpc_secp256k1_initial_shared_version: SequenceNumber,
@@ -303,7 +303,7 @@ pub async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
         vec![],
         vec![
             CallArg::Object(ObjectArg::SharedObject {
-                id: system_id,
+                id: ika_system_object_id,
                 initial_shared_version: init_system_shared_version,
                 mutable: true,
             }),
@@ -328,7 +328,7 @@ pub async fn ika_system_initialize(
     context: &mut WalletContext,
     client: SuiClient,
     ika_system_package_id: ObjectID,
-    system_id: ObjectID,
+    ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
 ) -> Result<(ObjectID, SequenceNumber), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -340,7 +340,7 @@ pub async fn ika_system_initialize(
         vec![],
         vec![
             CallArg::Object(ObjectArg::SharedObject {
-                id: system_id,
+                id: ika_system_object_id,
                 initial_shared_version: init_system_shared_version,
                 mutable: true,
             }),
@@ -481,7 +481,7 @@ pub async fn init_initialize(
 
     let object_changes = response.object_changes.unwrap();
 
-    let system_id = object_changes
+    let ika_system_object_id = object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -522,7 +522,7 @@ pub async fn init_initialize(
 
     let response = client
         .read_api()
-        .get_object_with_options(system_id, SuiObjectDataOptions::new().with_owner())
+        .get_object_with_options(ika_system_object_id, SuiObjectDataOptions::new().with_owner())
         .await?;
 
     let Some(Owner::Shared {
@@ -532,7 +532,7 @@ pub async fn init_initialize(
         return Err(anyhow::Error::msg("Owner does not exist"));
     };
 
-    Ok((system_id, protocol_cap_id, initial_shared_version))
+    Ok((ika_system_object_id, protocol_cap_id, initial_shared_version))
 }
 
 async fn request_add_validator(
@@ -540,7 +540,7 @@ async fn request_add_validator(
     context: &mut WalletContext,
     client: SuiClient,
     ika_system_package_id: ObjectID,
-    system_id: ObjectID,
+    ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
     validator_cap_id: ObjectID,
 ) -> Result<(), anyhow::Error> {
@@ -558,7 +558,7 @@ async fn request_add_validator(
         vec![],
         vec![
             CallArg::Object(ObjectArg::SharedObject {
-                id: system_id,
+                id: ika_system_object_id,
                 initial_shared_version: init_system_shared_version,
                 mutable: true,
             }),
@@ -607,7 +607,7 @@ async fn stake_ika(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
-    system_id: ObjectID,
+    ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
     ika_supply_id: ObjectID,
     validator_ids: Vec<ObjectID>,
@@ -615,7 +615,7 @@ async fn stake_ika(
     let mut ptb = ProgrammableTransactionBuilder::new();
 
     let init_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
-        id: system_id,
+        id: ika_system_object_id,
         initial_shared_version: init_system_shared_version,
         mutable: true,
     }))?;
@@ -713,7 +713,7 @@ async fn request_add_validator_candidate(
     client: SuiClient,
     validator_initialization_metadata: &ValidatorInfo,
     ika_system_package_id: ObjectID,
-    system_id: ObjectID,
+    ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
 ) -> Result<(ObjectID, ObjectID), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -736,7 +736,7 @@ async fn request_add_validator_candidate(
         vec![],
         vec![
             CallArg::Object(ObjectArg::SharedObject {
-                id: system_id,
+                id: ika_system_object_id,
                 initial_shared_version: init_system_shared_version,
                 mutable: true,
             }),

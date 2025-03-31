@@ -10,6 +10,7 @@ use ika_config::node::{
     AuthorityOverloadConfig, RunWithRange, LOCAL_DEFAULT_SUI_FAUCET_URL,
     LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL,
 };
+use ika_config::NodeConfig;
 use ika_protocol_config::ProtocolVersion;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
@@ -19,7 +20,6 @@ use rand::rngs::OsRng;
 use std::path::PathBuf;
 use std::{num::NonZeroUsize, path::Path, sync::Arc};
 use sui_macros::nondeterministic;
-use ika_config::NodeConfig;
 
 pub enum CommitteeConfig {
     Size(NonZeroUsize),
@@ -331,7 +331,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
         if let Some(protocol_version) = self.protocol_version {
             initiation_parameters.protocol_version = protocol_version.as_u64();
         }
-        let (ika_package_id, ika_system_package_id, system_id, publisher_keypair) =
+        let (ika_package_id, ika_system_package_id, ika_system_object_id, publisher_keypair) =
             crate::sui_client::init_ika_on_sui(
                 &validator_initialization_configs,
                 self.sui_fullnode_rpc_url.to_string(),
@@ -381,7 +381,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                     self.sui_fullnode_rpc_url.clone(),
                     ika_package_id,
                     ika_system_package_id,
-                    system_id,
+                    ika_system_object_id,
                 )
             })
             .collect();
@@ -414,22 +414,21 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                     self.sui_fullnode_rpc_url.clone(),
                     ika_package_id,
                     ika_system_package_id,
-                    system_id,
+                    ika_system_object_id,
                     notifier_client_key_pair,
                 );
                 fullnode_configs.push(config);
             });
         }
 
-        // Serialize to YAML and print
-        let yaml_fullnode = serde_yaml::to_string(&fullnode_configs)?;
-        println!("Fullnode Config:\n{}", yaml_fullnode);
-
-        for (i, validator_config) in validator_configs.iter().enumerate() {
-            let yaml_validator = serde_yaml::to_string(validator_config)?;
-            println!("Validator Config [{}]:\n{}", i, yaml_validator);
-        }
-
+        // // Serialize to YAML and print
+        // let yaml_fullnode = serde_yaml::to_string(&fullnode_configs)?;
+        // println!("Fullnode Config:\n{}", yaml_fullnode);
+        //
+        // for (i, validator_config) in validator_configs.iter().enumerate() {
+        //     let yaml_validator = serde_yaml::to_string(validator_config)?;
+        //     println!("Validator Config [{}]:\n{}", i, yaml_validator);
+        // }
 
         Ok(NetworkConfig {
             validator_configs,
@@ -437,7 +436,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
             validator_initialization_configs,
             ika_package_id,
             ika_system_package_id,
-            system_id,
+            ika_system_object_id,
         })
     }
 }
