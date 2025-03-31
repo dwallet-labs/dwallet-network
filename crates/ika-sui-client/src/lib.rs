@@ -171,7 +171,9 @@ where
                         .map_err(|e| {
                             IkaError::SuiClientInternalError(format!("Can't get System: {e}"))
                         })?;
-                    warn!("missed_events: {:?}", missed_events);
+                    if !missed_events.is_empty() {
+                        warn!("missed_events: {:?}", missed_events);
+                    }
                 }
             }
 
