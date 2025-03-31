@@ -307,7 +307,6 @@ export async function completeFutureSign(
 			}),
 			tx.object(verifyECDSAPartialUserSignatureCapID),
 			messageApproval,
-			tx.pure.id(dwalletID),
 			emptyIKACoin,
 			tx.gas,
 		],
