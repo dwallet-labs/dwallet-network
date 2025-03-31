@@ -884,7 +884,33 @@ fun re_emit_missed_events(
             let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<DWalletNetworkDKGDecryptionKeyRequestEvent>>(
                 &mut session.id, DWalletSessionEventKey {});
             event::emit(dwallet_event);
-        } else if (session.session_typw
+        } else if (session.session_type == DWalletSessionType::DWalletDKGFirstRound) {
+            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<DWalletDKGFirstRoundRequestEvent>>(
+                &mut session.id, DWalletSessionEventKey {});
+        } else if (session.session_type == DWalletSessionType::DWalletDKGSecondRound) {
+            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<DWalletDKGSecondRoundRequestEvent>>(
+                &mut session.id, DWalletSessionEventKey {});
+        } else if (session.session_type == DWalletSessionType::ECDSAPresign) {
+            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<ECDSAPresignRequestEvent>>(
+                &mut session.id, DWalletSessionEventKey {});
+            event::emit(dwallet_event);
+        } else if (session.session_type == DWalletSessionType::ReEncryptUserShare) {
+            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<AcceptReEncryptedUserShareEvent>>(
+                &mut session.id, DWalletSessionEventKey {});
+            event::emit(dwallet_event);
+        } else if (session.session_type == DWalletSessionType::ECDSASign) {
+            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<ECDSASignRequestEvent>>(
+                &mut session.id, DWalletSessionEventKey {});
+            event::emit(dwallet_event);
+        } else if (session.session_type == DWalletSessionType::ECDSAFutureSign) {
+            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<ECDSAFutureSignRequestEvent>>(
+                &mut session.id, DWalletSessionEventKey {});
+            event::emit(dwallet_event);
+        } else if (session.session_type == DWalletSessionType::ECDSASignWithPartialUserSignatures) {
+            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<ECDSASignWithPartialUserSignaturesRequestEvent>>(
+                &mut session.id, DWalletSessionEventKey {});
+            event::emit(dwallet_event);
+        };
     }
 }
 
