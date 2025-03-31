@@ -120,7 +120,7 @@ pub struct DWalletMPCOutputMessage {
     /// The session information of the MPC session.
     pub session_info: SessionInfo,
     /// The final value of the MPC session.
-    pub output: Vec<u8>,
+    pub output: MPCMessageSlice,
 }
 
 /// Metadata for a local MPC computation.

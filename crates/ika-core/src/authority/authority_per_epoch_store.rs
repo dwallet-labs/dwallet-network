@@ -72,9 +72,7 @@ use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicOutput, NetworkDecryptionKeyShares};
 use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
@@ -92,7 +90,7 @@ use ika_types::messages_consensus::{
     ConsensusTransactionKind,
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
     StartPresignFirstRoundEvent,
@@ -1978,7 +1976,7 @@ impl AuthorityPerEpochStore {
         &self,
         origin_authority: AuthorityName,
         session_info: SessionInfo,
-        output: Vec<u8>,
+        output: MPCMessageSlice,
     ) -> IkaResult<ConsensusCertificateResult> {
         self.save_dwallet_mpc_output(DWalletMPCOutputMessage {
             output: output.clone(),
@@ -2004,7 +2002,7 @@ impl AuthorityPerEpochStore {
             OutputResult::FirstQuorumReached => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
                     .await;
-                self.process_dwallet_transaction(output, session_info)
+                self.process_dwallet_transaction(output.message, session_info)
                     .map_err(|e| IkaError::from(e))
             }
             OutputResult::NotEnoughVotes => Ok(ConsensusCertificateResult::ConsensusMessage),

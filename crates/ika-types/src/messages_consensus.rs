@@ -54,7 +54,7 @@ pub enum ConsensusTransactionKey {
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
-    DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
+    DWalletMPCOutput(MPCMessageSlice, ObjectID, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
 }
 
@@ -173,7 +173,7 @@ pub enum ConsensusTransactionKind {
     TestMessage(AuthorityName, u64),
 
     DWalletMPCMessage(DWalletMPCMessage),
-    DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
+    DWalletMPCOutput(AuthorityName, SessionInfo, MPCMessageSlice),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
 }
@@ -231,14 +231,32 @@ impl ConsensusTransaction {
         authority: AuthorityName,
         output: Vec<u8>,
         session_info: SessionInfo,
-    ) -> Self {
+    ) -> Vec<Self> {
         let mut hasher = DefaultHasher::new();
         output.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
-        }
+        let messages = MPCMessageBuilder::split(output, 120 * 1024);
+        let messages = match messages.messages {
+            MessageState::Incomplete(messages) => {
+                println!("Incomplete messages: {:?}", messages.len());
+                messages
+            }
+            MessageState::Complete(message) => panic!("should never happen "),
+        };
+
+        messages
+            .iter()
+            .map(|(_, message)| {
+                let mut hasher = DefaultHasher::new();
+                message.message.hash(&mut hasher);
+                let tracking_id = hasher.finish().to_le_bytes();
+                Self {
+                    tracking_id,
+                    kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info.clone(), message.clone()),
+                }
+            })
+            .collect()
+
     }
 
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.

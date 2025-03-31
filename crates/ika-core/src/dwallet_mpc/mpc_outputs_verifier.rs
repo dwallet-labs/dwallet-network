@@ -10,14 +10,12 @@ use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::sign::SignFirstParty;
 use crate::dwallet_mpc::{message_digest, network_key_version_from_key_id};
 use crate::stake_aggregator::StakeAggregator;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicOutput};
 use group::{GroupElement, PartyID};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{
-    MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, StartSignEvent,
-};
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, MPCProtocolInitData, MPCSessionMessagesCollector, MPCSessionSpecificState, SessionInfo, StartSignEvent};
 use mpc::Party;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
@@ -53,6 +51,7 @@ pub struct DWalletMPCOutputsVerifier {
     pub(crate) last_processed_consensus_round: Round,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
+    output_collector: MPCSessionMessagesCollector,
 }
 
 /// The data needed to manage the outputs of an MPC session.
@@ -102,6 +101,7 @@ impl DWalletMPCOutputsVerifier {
             voted_to_lock_committee: HashSet::new(),
             last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
+            output_collector: MPCSessionMessagesCollector::new(),
         }
     }
 
@@ -133,12 +133,33 @@ impl DWalletMPCOutputsVerifier {
     // TODO (#311): or take any active action while syncing
     pub async fn try_verify_output(
         &mut self,
-        output: &Vec<u8>,
+        output: &MPCMessageSlice,
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<OutputVerificationResult> {
         let epoch_store = self.epoch_store()?;
         let committee = epoch_store.committee().clone();
+
+        let output = DWalletMPCMessage {
+            message: output.clone(),
+            authority: origin_authority.clone(),
+            session_id: session_info.session_id.clone(),
+            round_number: 0,
+        };
+        let party_id = epoch_store.authority_name_to_party_id(&origin_authority)?;
+        let output = self.output_collector.add_message(party_id, output, 0);
+        let output = match output {
+            Some(output) => {
+                output
+            }
+            None => {
+                return Ok(OutputVerificationResult {
+                    result: OutputResult::NotEnoughVotes,
+                    malicious_actors: vec![],
+                });
+            }
+        };
+
         let ref mut session_output_data = self
             .mpc_sessions_outputs
             .entry(session_info.session_id)
@@ -181,7 +202,7 @@ impl DWalletMPCOutputsVerifier {
                     malicious_actors: vec![],
                 });
             };
-            return match Self::verify_signature(&epoch_store, sign_session_data, output) {
+            return match Self::verify_signature(&epoch_store, sign_session_data, &output) {
                 Ok(res) => {
                     session_output_data.current_result = OutputResult::AlreadyCommitted;
                     let mut session_malicious_actors = res.malicious_actors;
