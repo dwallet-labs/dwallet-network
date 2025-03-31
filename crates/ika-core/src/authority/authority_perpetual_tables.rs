@@ -88,7 +88,11 @@ impl AuthorityPerpetualTables {
         Ok(())
     }
 
-    pub fn insert_pending_events(&self, module: Identifier, events: &[SuiEvent]) -> IkaResult {
+    pub fn serialize_and_insert_pending_events(
+        &self,
+        module: Identifier,
+        events: &[SuiEvent],
+    ) -> IkaResult {
         let cursor = events.last().map(|e| e.id);
         if let Some(cursor) = cursor {
             let mut batch = self.pending_events.batch();
@@ -107,6 +111,18 @@ impl AuthorityPerpetualTables {
             batch.insert_batch(&self.pending_events, serialized_events?)?;
             batch.write()?;
         }
+        self.pending_events.rocksdb.flush()?;
+        Ok(())
+    }
+
+    pub fn insert_pending_events(&self, events: &[Vec<u8>]) -> IkaResult {
+        let mut batch = self.pending_events.batch();
+        let serialized_events: IkaResult<Vec<(EventID, Vec<u8>)>> = events
+            .iter()
+            .map(|e| Ok((ObjectID::random().into(), e)))
+            .collect();
+        batch.insert_batch(&self.pending_events, serialized_events?)?;
+        batch.write()?;
         self.pending_events.rocksdb.flush()?;
         Ok(())
     }

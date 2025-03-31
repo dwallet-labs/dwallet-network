@@ -20,6 +20,7 @@ use tokio::{
     task::JoinHandle,
     time::{self, Duration},
 };
+use tracing::error;
 
 /// Map from contract address to their start cursor (exclusive)
 pub type SuiTargetModules = HashMap<Identifier, Option<EventID>>;
@@ -54,11 +55,12 @@ where
     pub async fn run(self, query_interval: Duration) -> IkaResult<Vec<JoinHandle<()>>> {
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
-        tokio::spawn(Self::sync_dwallet_missed_events(sui_client_clone));
         for (module, cursor) in self.cursors {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
             let perpetual_tables_clone = self.perpetual_tables.clone();
+            let perpetual_tables_clone2 = self.perpetual_tables.clone();
+            tokio::spawn(Self::sync_dwallet_missed_events(sui_client_clone, perpetual_tables_clone2));
             task_handles.push(spawn_logged_monitored_task!(
                 Self::run_event_listening_task(
                     module,
@@ -73,45 +75,20 @@ where
         Ok(task_handles)
     }
 
-    async fn sync_dwallet_missed_events(sui_client: Arc<SuiClient<C>>) {
+    async fn sync_dwallet_missed_events(sui_client: Arc<SuiClient<C>>, perpetual_tables_clone: Arc<AuthorityPerpetualTables>) {
         loop {
             time::sleep(Duration::from_secs(2)).await;
             let missed_events = sui_client
                 .get_dwallet_mpc_missed_events()
                 .await
                 .unwrap_or_default();
-            let serialized_events: IkaResult<Vec<(EventID, Vec<u8>)>> = missed_events
+            let serialized_events: Vec<Vec<u8>> = missed_events
                 .into_iter()
-                .map(|e| Ok((ObjectID::random().into(), bcs::to_bytes(&e)?)))
+                .map(|e| bcs::to_bytes(&e).unwrap())
                 .collect();
-            //    let mut local_network_decryption_keys =
-            //         dwallet_mpc_network_keys.network_decryption_keys();
-            //     network_decryption_keys
-            //         .into_iter()
-            //         .for_each(|(key_id, key_version)| {
-            //             if let Some(local_version) = local_network_decryption_keys.get(&key_id) {
-            //                 if *local_version != key_version {
-            //                     if let Err(e) =
-            //                         dwallet_mpc_network_keys.update_network_key(key_id, key_version)
-            //                     {
-            //                         error!(
-            //                             "Failed to update key version for key_id: {:?}, error: {:?}",
-            //                             key_id, e
-            //                         );
-            //                     }
-            //                 }
-            //             } else {
-            //                 if let Err(e) =
-            //                     dwallet_mpc_network_keys.add_new_network_key(key_id, key_version)
-            //                 {
-            //                     error!(
-            //                         "Failed to add new key for key_id: {:?}, error: {:?}",
-            //                         key_id, e
-            //                     );
-            //                 }
-            //             }
-            //         });
-            // }
+            if let Err(error) = perpetual_tables_clone.insert_pending_events(&serialized_events) {
+                error!(?error, "failed to write missed events to perpetual tables")
+            }
         }
     }
 
@@ -168,7 +145,7 @@ where
                     notify.notify_one();
                 }
                 perpetual_tables
-                    .insert_pending_events(module.clone(), &events.data)
+                    .serialize_and_insert_pending_events(module.clone(), &events.data)
                     .expect("Failed to insert pending events");
                 if let Some(next) = events.next_cursor {
                     cursor = Some(next);
