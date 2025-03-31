@@ -158,7 +158,7 @@ where
                 .await;
             match dwallet_coordinator_inner {
                 DWalletCoordinatorInner::V1(dwallet_coordinator_inner_v1) => {
-                    let missed_events = self.inner.get_missed_events(dwallet_coordinator_inner_v1.session_start_events.id).await?;
+                    let missed_events = self.inner.get_missed_events(dwallet_coordinator_inner_v1.session_start_events.id.id.bytes).await?;
                     warn!("missed_events: {:?}", missed_events);
                 }
             }
