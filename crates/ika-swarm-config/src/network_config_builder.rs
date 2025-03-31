@@ -420,6 +420,17 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 fullnode_configs.push(config);
             });
         }
+
+        // Serialize to YAML and print
+        let yaml_fullnode = serde_yaml::to_string(&fullnode_configs)?;
+        println!("Fullnode Config:\n{}", yaml_fullnode);
+
+        for (i, validator_config) in validator_configs.iter().enumerate() {
+            let yaml_validator = serde_yaml::to_string(validator_config)?;
+            println!("Validator Config [{}]:\n{}", i, yaml_validator);
+        }
+
+
         Ok(NetworkConfig {
             validator_configs,
             fullnode_configs,
