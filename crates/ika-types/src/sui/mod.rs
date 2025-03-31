@@ -104,7 +104,6 @@ pub struct DWalletCoordinator {
     pub new_package_id: Option<ObjectID>,
 }
 
-
 impl System {
     pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {

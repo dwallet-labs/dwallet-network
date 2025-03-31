@@ -21,7 +21,9 @@ use ika_types::sui::system_inner_v1::{
     DWalletCoordinatorInnerV1, DWalletNetworkDecryptionKeyCap, SystemInnerV1,
 };
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
-use ika_types::sui::{DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator};
+use ika_types::sui::{
+    DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
+};
 use itertools::Itertools;
 use move_binary_format::binary_config::BinaryConfig;
 use move_core_types::account_address::AccountAddress;
@@ -208,7 +210,7 @@ where
             1 => {
                 let result = self
                     .inner
-                    .get_system_inner(self.system_id, wrapper.version)
+                    .get_dwallet_coordinator_inner(dwallet_coordinator_id, wrapper.version)
                     .await
                     .map_err(|e| {
                         IkaError::SuiClientInternalError(format!("Can't get SystemInner v1: {e}"))
@@ -532,15 +534,17 @@ where
         dwallet_state_id: ObjectID,
     ) -> DWalletCoordinatorInner {
         loop {
-            let Ok(Ok(ika_system_state)) = retry_with_max_elapsed_time!(
+            let res = retry_with_max_elapsed_time!(
                 self.get_dwallet_coordinator_inner(dwallet_state_id),
                 Duration::from_secs(30)
-            ) else {
+            );
+            let Ok(Ok(ika_system_state)) = res else {
                 self.sui_client_metrics
                     .sui_rpc_errors
                     .with_label_values(&["get_dwallet_coordinator_inner_until_success"])
                     .inc();
                 error!("Failed to get dwallet coordinator inner until success");
+                error!(?res);
                 continue;
             };
             return ika_system_state;
