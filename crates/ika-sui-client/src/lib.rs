@@ -152,7 +152,7 @@ where
     ) -> IkaResult<Vec<Vec<u8>>> {
         let system_inner = self.get_system_inner_until_success().await;
         if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
-            let dwallet_coordinator_inner = self.get_dwallet_coordinator_inner_until_success().await;
+            let dwallet_coordinator_inner = self.get_dwallet_coordinator_inner_until_success(dwallet_state_id).await;
         }
         Ok(vec![])
         // Ok(self
@@ -209,7 +209,7 @@ where
                     .map_err(|e| {
                         IkaError::SuiClientInternalError(format!("Can't get SystemInner v1: {e}"))
                     })?;
-                let dynamic_field_inner = bcs::from_bytes::<Field<u64, SystemInnerV1>>(&result)
+                let dynamic_field_inner = bcs::from_bytes::<Field<u64, DWalletCoordinatorInnerV1>>(&result)
                     .map_err(|e| {
                         IkaError::SuiClientSerializationError(format!(
                             "Can't serialize SystemInner v1: {e}"
@@ -217,7 +217,7 @@ where
                     })?;
                 let ika_system_state_inner = dynamic_field_inner.value;
 
-                Ok(SystemInner::V1(ika_system_state_inner))
+                Ok(DWalletCoordinatorInner::V1(ika_system_state_inner))
             }
             _ => Err(IkaError::SuiClientInternalError(format!(
                 "Unsupported SystemInner version: {}",
@@ -521,10 +521,10 @@ where
         }
     }
 
-    pub async fn get_dwallet_coordinator_inner_until_success(&self) -> DWalletCoordinatorInner {
+    pub async fn get_dwallet_coordinator_inner_until_success(&self, dwallet_state_id: ObjectID) -> DWalletCoordinatorInner {
         loop {
             let Ok(Ok(ika_system_state)) =
-                retry_with_max_elapsed_time!(self.get_dwallet_coordinator_inner(), Duration::from_secs(30))
+                retry_with_max_elapsed_time!(self.get_dwallet_coordinator_inner(dwallet_state_id), Duration::from_secs(30))
             else {
                 self.sui_client_metrics
                     .sui_rpc_errors
