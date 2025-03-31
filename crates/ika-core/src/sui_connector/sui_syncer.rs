@@ -69,6 +69,46 @@ where
         Ok(task_handles)
     }
 
+    async fn sync_dwallet_missed_events(
+        sui_client: Arc<SuiClient<C>>,
+    ) {
+        loop {
+            time::sleep(Duration::from_secs(2)).await;
+            //     let network_decryption_keys = sui_client
+            //         .get_dwallet_mpc_network_keys()
+            //         .await
+            //         .unwrap_or_default();
+            //     let mut local_network_decryption_keys =
+            //         dwallet_mpc_network_keys.network_decryption_keys();
+            //     network_decryption_keys
+            //         .into_iter()
+            //         .for_each(|(key_id, key_version)| {
+            //             if let Some(local_version) = local_network_decryption_keys.get(&key_id) {
+            //                 if *local_version != key_version {
+            //                     if let Err(e) =
+            //                         dwallet_mpc_network_keys.update_network_key(key_id, key_version)
+            //                     {
+            //                         error!(
+            //                             "Failed to update key version for key_id: {:?}, error: {:?}",
+            //                             key_id, e
+            //                         );
+            //                     }
+            //                 }
+            //             } else {
+            //                 if let Err(e) =
+            //                     dwallet_mpc_network_keys.add_new_network_key(key_id, key_version)
+            //                 {
+            //                     error!(
+            //                         "Failed to add new key for key_id: {:?}, error: {:?}",
+            //                         key_id, e
+            //                     );
+            //                 }
+            //             }
+            //         });
+            // }
+        }
+    }
+
     async fn run_event_listening_task(
         // The module where interested events are defined.
         // module is always of ika system package.

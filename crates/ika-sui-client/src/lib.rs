@@ -146,6 +146,29 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
+
+    pub async fn get_dwallet_mpc_missed_events(
+        &self,
+    ) -> IkaResult<Vec<Vec<u8>>> {
+        let system_inner = self.get_system_inner_until_success().await;
+        if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
+
+        }
+        Ok(vec![])
+        // Ok(self
+        //     .inner
+        //     .get_network_decryption_keys(
+        //         system_inner
+        //             .into_init_version_for_tooling()
+        //             .dwallet_2pc_mpc_secp256k1_network_decryption_keys(),
+        //     )
+        //     .await
+        //     .map_err(|e| {
+        //         IkaError::SuiClientInternalError(format!("Can't get_network_decryption_keys: {e}"))
+        //     })?)
+    }
+
+
     pub fn new_for_testing(inner: P) -> Self {
         Self {
             inner,
@@ -514,6 +537,7 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_latest_checkpoint_sequence_number(&self) -> Result<u64, Self::Error>;
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
+    async fn get_dwallet_coordinator(&self, dwallet_coordinator_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
 
     async fn get_class_groups_public_keys_and_proofs(
         &self,
@@ -602,6 +626,10 @@ impl SuiClientInner for SuiSdkClient {
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
         self.read_api().get_move_object_bcs(system_id).await
+    }
+
+    async fn get_dwallet_coordinator(&self, dwallet_coordinator_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
+        self.read_api().get_move_object_bcs(dwallet_coordinator_id).await
     }
 
     async fn get_class_groups_public_keys_and_proofs(
