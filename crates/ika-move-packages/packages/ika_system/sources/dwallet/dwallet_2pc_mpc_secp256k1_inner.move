@@ -95,7 +95,6 @@ public enum DWalletSessionType has drop, copy, store{
     ECDSAFutureSign,
     ECDSASignWithPartialUserSignatures,
     DwalletNetworkDecryptionKeyDkg,
-    DWalletNetworkDecryptionKeyReconfiguration
 }
 
 public struct DWalletSession has key, store {
@@ -881,11 +880,11 @@ fun re_emit_missed_events(
     while (self.first_session_sequence_number < self.next_session_sequence_number) {
         self.first_session_sequence_number = self.first_session_sequence_number + 1;
         let session = self.sessions.borrow_mut(self.first_session_sequence_number);
-        let mut dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<DWalletNetworkDKGDecryptionKeyRequestEvent>>(
-            &mut session.id, DWalletSessionEventKey {});
-        dwallet_event.epoch = dwallet_event.epoch + 1;
-        dynamic_field::add(&mut session.id, DWalletSessionEventKey {}, dwallet_event);
-        event::emit(dwallet_event);
+        if (session.session_type == DWalletSessionType::DwalletNetworkDecryptionKeyDkg) {
+            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<DWalletNetworkDKGDecryptionKeyRequestEvent>>(
+                &mut session.id, DWalletSessionEventKey {});
+            event::emit(dwallet_event);
+        } else if (session.session_typw
     }
 }
 
