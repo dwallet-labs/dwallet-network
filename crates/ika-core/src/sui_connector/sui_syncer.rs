@@ -8,9 +8,11 @@ use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::error::IkaResult;
+use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
+use sui_types::base_types::ObjectID;
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
 use tokio::{
@@ -74,10 +76,14 @@ where
     async fn sync_dwallet_missed_events(sui_client: Arc<SuiClient<C>>) {
         loop {
             time::sleep(Duration::from_secs(2)).await;
-            let network_decryption_keys = sui_client
+            let missed_events = sui_client
                 .get_dwallet_mpc_missed_events()
                 .await
                 .unwrap_or_default();
+            let serialized_events: IkaResult<Vec<(EventID, Vec<u8>)>> = missed_events
+                .into_iter()
+                .map(|e| Ok((ObjectID::random().into(), bcs::to_bytes(&e)?)))
+                .collect();
             //    let mut local_network_decryption_keys =
             //         dwallet_mpc_network_keys.network_decryption_keys();
             //     network_decryption_keys
@@ -172,6 +178,7 @@ where
         }
     }
 }
+
 //
 // #[cfg(test)]
 // mod tests {
