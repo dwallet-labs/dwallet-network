@@ -17,7 +17,9 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
-use ika_types::sui::system_inner_v1::{DWalletCoordinatorInnerV1, DWalletNetworkDecryptionKeyCap, SystemInnerV1};
+use ika_types::sui::system_inner_v1::{
+    DWalletCoordinatorInnerV1, DWalletNetworkDecryptionKeyCap, SystemInnerV1,
+};
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
 use ika_types::sui::{DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator};
 use itertools::Itertools;
@@ -146,13 +148,12 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
-
-    pub async fn get_dwallet_mpc_missed_events(
-        &self,
-    ) -> IkaResult<Vec<Vec<u8>>> {
+    pub async fn get_dwallet_mpc_missed_events(&self) -> IkaResult<Vec<Vec<u8>>> {
         let system_inner = self.get_system_inner_until_success().await;
         if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
-            let dwallet_coordinator_inner = self.get_dwallet_coordinator_inner_until_success(dwallet_state_id).await;
+            let dwallet_coordinator_inner = self
+                .get_dwallet_coordinator_inner_until_success(dwallet_state_id)
+                .await;
             warn!("dwallet_coordinator_inner: {:?}", dwallet_coordinator_inner);
         }
         Ok(vec![])
@@ -168,7 +169,6 @@ where
         //         IkaError::SuiClientInternalError(format!("Can't get_network_decryption_keys: {e}"))
         //     })?)
     }
-
 
     pub fn new_for_testing(inner: P) -> Self {
         Self {
@@ -191,7 +191,10 @@ where
         Ok(())
     }
 
-    pub async fn get_dwallet_coordinator_inner(&self, dwallet_coordinator_id: ObjectID) -> IkaResult<DWalletCoordinatorInner> {
+    pub async fn get_dwallet_coordinator_inner(
+        &self,
+        dwallet_coordinator_id: ObjectID,
+    ) -> IkaResult<DWalletCoordinatorInner> {
         let result = self
             .inner
             .get_dwallet_coordinator(dwallet_coordinator_id)
@@ -210,12 +213,14 @@ where
                     .map_err(|e| {
                         IkaError::SuiClientInternalError(format!("Can't get SystemInner v1: {e}"))
                     })?;
-                let dynamic_field_inner = bcs::from_bytes::<Field<u64, DWalletCoordinatorInnerV1>>(&result)
-                    .map_err(|e| {
-                        IkaError::SuiClientSerializationError(format!(
-                            "Can't serialize SystemInner v1: {e}"
-                        ))
-                    })?;
+                let dynamic_field_inner = bcs::from_bytes::<Field<u64, DWalletCoordinatorInnerV1>>(
+                    &result,
+                )
+                .map_err(|e| {
+                    IkaError::SuiClientSerializationError(format!(
+                        "Can't serialize SystemInner v1: {e}"
+                    ))
+                })?;
                 let ika_system_state_inner = dynamic_field_inner.value;
 
                 Ok(DWalletCoordinatorInner::V1(ika_system_state_inner))
@@ -522,11 +527,15 @@ where
         }
     }
 
-    pub async fn get_dwallet_coordinator_inner_until_success(&self, dwallet_state_id: ObjectID) -> DWalletCoordinatorInner {
+    pub async fn get_dwallet_coordinator_inner_until_success(
+        &self,
+        dwallet_state_id: ObjectID,
+    ) -> DWalletCoordinatorInner {
         loop {
-            let Ok(Ok(ika_system_state)) =
-                retry_with_max_elapsed_time!(self.get_dwallet_coordinator_inner(dwallet_state_id), Duration::from_secs(30))
-            else {
+            let Ok(Ok(ika_system_state)) = retry_with_max_elapsed_time!(
+                self.get_dwallet_coordinator_inner(dwallet_state_id),
+                Duration::from_secs(30)
+            ) else {
                 self.sui_client_metrics
                     .sui_rpc_errors
                     .with_label_values(&["get_system_inner_until_success"])
@@ -590,7 +599,10 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_latest_checkpoint_sequence_number(&self) -> Result<u64, Self::Error>;
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
-    async fn get_dwallet_coordinator(&self, dwallet_coordinator_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
+    async fn get_dwallet_coordinator(
+        &self,
+        dwallet_coordinator_id: ObjectID,
+    ) -> Result<Vec<u8>, Self::Error>;
 
     async fn get_class_groups_public_keys_and_proofs(
         &self,
@@ -687,8 +699,13 @@ impl SuiClientInner for SuiSdkClient {
         self.read_api().get_move_object_bcs(system_id).await
     }
 
-    async fn get_dwallet_coordinator(&self, dwallet_coordinator_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
-        self.read_api().get_move_object_bcs(dwallet_coordinator_id).await
+    async fn get_dwallet_coordinator(
+        &self,
+        dwallet_coordinator_id: ObjectID,
+    ) -> Result<Vec<u8>, Self::Error> {
+        self.read_api()
+            .get_move_object_bcs(dwallet_coordinator_id)
+            .await
     }
 
     async fn get_class_groups_public_keys_and_proofs(
@@ -898,7 +915,11 @@ impl SuiClientInner for SuiSdkClient {
         )))
     }
 
-    async fn get_dwallet_coordinator_inner(&self, dwallet_coordinator_id: ObjectID, version: u64) -> Result<Vec<u8>, Self::Error> {
+    async fn get_dwallet_coordinator_inner(
+        &self,
+        dwallet_coordinator_id: ObjectID,
+        version: u64,
+    ) -> Result<Vec<u8>, Self::Error> {
         let dynamic_fields = self
             .read_api()
             .get_dynamic_fields(dwallet_coordinator_id, None, None)
@@ -906,11 +927,11 @@ impl SuiClientInner for SuiSdkClient {
         let dynamic_field = dynamic_fields.data.iter().find(|df| {
             df.name.type_ == TypeTag::U64
                 && df
-                .name
-                .value
-                .as_str()
-                .map(|v| v == version.to_string().as_str())
-                .unwrap_or(false)
+                    .name
+                    .value
+                    .as_str()
+                    .map(|v| v == version.to_string().as_str())
+                    .unwrap_or(false)
         });
         if let Some(dynamic_field) = dynamic_field {
             let result = self

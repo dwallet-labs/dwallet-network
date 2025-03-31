@@ -69,15 +69,13 @@ where
         Ok(task_handles)
     }
 
-    async fn sync_dwallet_missed_events(
-        sui_client: Arc<SuiClient<C>>,
-    ) {
+    async fn sync_dwallet_missed_events(sui_client: Arc<SuiClient<C>>) {
         loop {
             time::sleep(Duration::from_secs(2)).await;
-                let network_decryption_keys = sui_client
-                    .get_dwallet_mpc_missed_events()
-                    .await
-                    .unwrap_or_default();
+            let network_decryption_keys = sui_client
+                .get_dwallet_mpc_missed_events()
+                .await
+                .unwrap_or_default();
             //    let mut local_network_decryption_keys =
             //         dwallet_mpc_network_keys.network_decryption_keys();
             //     network_decryption_keys

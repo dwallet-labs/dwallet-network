@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::committee::CommitteeWithNetworkMetadata;
+use crate::sui::system_inner_v1::DWalletCoordinatorInnerV1;
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use epoch_start_system::EpochStartSystem;
@@ -25,7 +26,6 @@ use sui_types::{id::UID, MoveTypeTagTrait};
 use system_inner_v1::SystemInnerV1;
 use system_inner_v1::UpgradeCap;
 use validator_inner_v1::ValidatorInnerV1;
-use crate::sui::system_inner_v1::DWalletCoordinatorInnerV1;
 
 pub mod epoch_start_system;
 pub mod system_inner_v1;
