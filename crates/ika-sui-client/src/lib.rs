@@ -152,7 +152,7 @@ where
     ) -> IkaResult<Vec<Vec<u8>>> {
         let system_inner = self.get_system_inner_until_success().await;
         if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
-
+            let dwallet_coordinator_inner = self.getdwal
         }
         Ok(vec![])
         // Ok(self
@@ -470,6 +470,22 @@ where
     }
 
     pub async fn get_system_inner_until_success(&self) -> SystemInner {
+        loop {
+            let Ok(Ok(ika_system_state)) =
+                retry_with_max_elapsed_time!(self.get_system_inner(), Duration::from_secs(30))
+            else {
+                self.sui_client_metrics
+                    .sui_rpc_errors
+                    .with_label_values(&["get_system_inner_until_success"])
+                    .inc();
+                error!("Failed to get system inner until success");
+                continue;
+            };
+            return ika_system_state;
+        }
+    }
+
+    pub async fn get_dwallet_coordinator_inner_until_success(&self) -> SystemInner {
         loop {
             let Ok(Ok(ika_system_state)) =
                 retry_with_max_elapsed_time!(self.get_system_inner(), Duration::from_secs(30))
