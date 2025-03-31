@@ -17,9 +17,9 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
-use ika_types::sui::system_inner_v1::{DWalletNetworkDecryptionKeyCap, SystemInnerV1};
+use ika_types::sui::system_inner_v1::{DWalletCoordinatorInnerV1, DWalletNetworkDecryptionKeyCap, SystemInnerV1};
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
-use ika_types::sui::{System, SystemInner, SystemInnerTrait, Validator};
+use ika_types::sui::{DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator};
 use itertools::Itertools;
 use move_binary_format::binary_config::BinaryConfig;
 use move_core_types::account_address::AccountAddress;
@@ -152,7 +152,7 @@ where
     ) -> IkaResult<Vec<Vec<u8>>> {
         let system_inner = self.get_system_inner_until_success().await;
         if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
-            let dwallet_coordinator_inner = self.getdwal
+            let dwallet_coordinator_inner = self.get_dwallet_coordinator_inner_until_success().await;
         }
         Ok(vec![])
         // Ok(self
@@ -188,6 +188,42 @@ where
             "SuiClient is connected to chain {chain_id}, current checkpoint sequence number: {checkpoint_sequence_number}"
         );
         Ok(())
+    }
+
+    pub async fn get_dwallet_coordinator_inner(&self, dwallet_coordinator_id: ObjectID) -> IkaResult<DWalletCoordinatorInner> {
+        let result = self
+            .inner
+            .get_dwallet_coordinator(dwallet_coordinator_id)
+            .await
+            .map_err(|e| IkaError::SuiClientInternalError(format!("Can't get System: {e}")))?;
+        let wrapper = bcs::from_bytes::<System>(&result).map_err(|e| {
+            IkaError::SuiClientSerializationError(format!("Can't serialize System: {e}"))
+        })?;
+
+        match wrapper.version {
+            1 => {
+                let result = self
+                    .inner
+                    .get_system_inner(self.system_id, wrapper.version)
+                    .await
+                    .map_err(|e| {
+                        IkaError::SuiClientInternalError(format!("Can't get SystemInner v1: {e}"))
+                    })?;
+                let dynamic_field_inner = bcs::from_bytes::<Field<u64, SystemInnerV1>>(&result)
+                    .map_err(|e| {
+                        IkaError::SuiClientSerializationError(format!(
+                            "Can't serialize SystemInner v1: {e}"
+                        ))
+                    })?;
+                let ika_system_state_inner = dynamic_field_inner.value;
+
+                Ok(SystemInner::V1(ika_system_state_inner))
+            }
+            _ => Err(IkaError::SuiClientInternalError(format!(
+                "Unsupported SystemInner version: {}",
+                wrapper.version
+            ))),
+        }
     }
 
     pub async fn get_system_inner(&self) -> IkaResult<SystemInner> {
@@ -485,10 +521,10 @@ where
         }
     }
 
-    pub async fn get_dwallet_coordinator_inner_until_success(&self) -> SystemInner {
+    pub async fn get_dwallet_coordinator_inner_until_success(&self) -> DWalletCoordinatorInner {
         loop {
             let Ok(Ok(ika_system_state)) =
-                retry_with_max_elapsed_time!(self.get_system_inner(), Duration::from_secs(30))
+                retry_with_max_elapsed_time!(self.get_dwallet_coordinator_inner(), Duration::from_secs(30))
             else {
                 self.sui_client_metrics
                     .sui_rpc_errors
@@ -571,6 +607,12 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_system_inner(
         &self,
         system_id: ObjectID,
+        version: u64,
+    ) -> Result<Vec<u8>, Self::Error>;
+
+    async fn get_dwallet_coordinator_inner(
+        &self,
+        dwallet_coordinator_id: ObjectID,
         version: u64,
     ) -> Result<Vec<u8>, Self::Error>;
 
@@ -852,6 +894,50 @@ impl SuiClientInner for SuiSdkClient {
         Err(Self::Error::DataError(format!(
             "Failed to load ika system state inner object with ID {:?} and version {:?}",
             system_id, version
+        )))
+    }
+
+    async fn get_dwallet_coordinator_inner(&self, dwallet_coordinator_id: ObjectID, version: u64) -> Result<Vec<u8>, Self::Error> {
+        let dynamic_fields = self
+            .read_api()
+            .get_dynamic_fields(dwallet_coordinator_id, None, None)
+            .await?;
+        let dynamic_field = dynamic_fields.data.iter().find(|df| {
+            df.name.type_ == TypeTag::U64
+                && df
+                .name
+                .value
+                .as_str()
+                .map(|v| v == version.to_string().as_str())
+                .unwrap_or(false)
+        });
+        if let Some(dynamic_field) = dynamic_field {
+            let result = self
+                .read_api()
+                .get_dynamic_field_object(dwallet_coordinator_id, dynamic_field.name.clone())
+                .await?;
+
+            if let Some(dynamic_field) = result.data {
+                let object_id = dynamic_field.object_id;
+                let dynamic_field_response = self
+                    .read_api()
+                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                    .await?;
+                let resp = dynamic_field_response.into_object().map_err(|e| {
+                    Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))
+                })?;
+                // unwrap: requested bcs data
+                let move_object = resp.bcs.unwrap();
+                let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+                    "Object {:?} is not a MoveObject",
+                    object_id
+                )))?;
+                return Ok(raw_move_obj.bcs_bytes);
+            }
+        }
+        Err(Self::Error::DataError(format!(
+            "Failed to load ika system state inner object with ID {:?} and version {:?}",
+            dwallet_coordinator_id, version
         )))
     }
 

@@ -25,6 +25,7 @@ use sui_types::{id::UID, MoveTypeTagTrait};
 use system_inner_v1::SystemInnerV1;
 use system_inner_v1::UpgradeCap;
 use validator_inner_v1::ValidatorInnerV1;
+use crate::sui::system_inner_v1::DWalletCoordinatorInnerV1;
 
 pub mod epoch_start_system;
 pub mod system_inner_v1;
@@ -143,7 +144,7 @@ pub enum SystemInner {
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 #[enum_dispatch(SystemInnerTrait)]
 pub enum DWalletCoordinatorInner {
-    V1(SystemInnerV1),
+    V1(DWalletCoordinatorInnerV1),
 }
 
 /// This is the fixed type used by init.

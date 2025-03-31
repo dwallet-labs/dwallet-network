@@ -113,12 +113,14 @@ pub struct SystemInnerV1 {
     // TODO: Use getters instead of all pub.
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct PricingPerOperation {
     pub consensus_validation_ika: u64,
     pub computation_ika: u64,
     pub gas_fee_reimbursement_sui: u64,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct DWalletPricing2PcMpcSecp256K1 {
     id: ObjectID,
     dkg_first_round: PricingPerOperation,
