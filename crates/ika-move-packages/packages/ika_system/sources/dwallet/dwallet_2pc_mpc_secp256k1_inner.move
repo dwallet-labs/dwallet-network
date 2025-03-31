@@ -881,37 +881,38 @@ fun re_emit_missed_events(
         self.first_session_sequence_number = self.first_session_sequence_number + 1;
         let session = self.sessions.borrow_mut(self.first_session_sequence_number);
         if (session.session_type == DWalletSessionType::DwalletNetworkDecryptionKeyDkg) {
-            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<DWalletNetworkDKGDecryptionKeyRequestEvent>>(
-                &mut session.id, DWalletSessionEventKey {});
+            let mut dwallet_event: DWalletEvent<_> = *(dynamic_field::borrow<DWalletSessionEventKey, DWalletEvent<DWalletNetworkDKGDecryptionKeyRequestEvent>>(
+                &mut session.id, DWalletSessionEventKey {}));
+            dwallet_event.epoch = self.current_epoch;
             event::emit(dwallet_event);
         } else if (session.session_type == DWalletSessionType::DWalletDKGFirstRound) {
-            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<DWalletDKGFirstRoundRequestEvent>>(
+            let dwallet_event = dynamic_field::borrow<DWalletSessionEventKey, DWalletEvent<DWalletDKGFirstRoundRequestEvent>>(
                 &mut session.id, DWalletSessionEventKey {});
-            event::emit(dwallet_event);
+            event::emit(*dwallet_event);
         } else if (session.session_type == DWalletSessionType::DWalletDKGSecondRound) {
-            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<DWalletDKGSecondRoundRequestEvent>>(
+            let dwallet_event = dynamic_field::borrow<DWalletSessionEventKey, DWalletEvent<DWalletDKGSecondRoundRequestEvent>>(
                 &mut session.id, DWalletSessionEventKey {});
-            event::emit(dwallet_event);
+            event::emit(*dwallet_event);
         } else if (session.session_type == DWalletSessionType::ECDSAPresign) {
-            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<ECDSAPresignRequestEvent>>(
+            let dwallet_event = dynamic_field::borrow<DWalletSessionEventKey, DWalletEvent<ECDSAPresignRequestEvent>>(
                 &mut session.id, DWalletSessionEventKey {});
-            event::emit(dwallet_event);
+            event::emit(*dwallet_event);
         } else if (session.session_type == DWalletSessionType::ReEncryptUserShare) {
-            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<AcceptReEncryptedUserShareEvent>>(
+            let dwallet_event = dynamic_field::borrow<DWalletSessionEventKey, DWalletEvent<AcceptReEncryptedUserShareEvent>>(
                 &mut session.id, DWalletSessionEventKey {});
-            event::emit(dwallet_event);
+            event::emit(*dwallet_event);
         } else if (session.session_type == DWalletSessionType::ECDSASign) {
-            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<ECDSASignRequestEvent>>(
+            let dwallet_event = dynamic_field::borrow<DWalletSessionEventKey, DWalletEvent<ECDSASignRequestEvent>>(
                 &mut session.id, DWalletSessionEventKey {});
-            event::emit(dwallet_event);
+            event::emit(*dwallet_event);
         } else if (session.session_type == DWalletSessionType::ECDSAFutureSign) {
-            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<ECDSAFutureSignRequestEvent>>(
+            let dwallet_event = dynamic_field::borrow<DWalletSessionEventKey, DWalletEvent<ECDSAFutureSignRequestEvent>>(
                 &mut session.id, DWalletSessionEventKey {});
-            event::emit(dwallet_event);
+            event::emit(*dwallet_event);
         } else if (session.session_type == DWalletSessionType::ECDSASignWithPartialUserSignatures) {
-            let dwallet_event = dynamic_field::remove<DWalletSessionEventKey, DWalletEvent<ECDSASignRequestEvent>>(
+            let dwallet_event = dynamic_field::borrow<DWalletSessionEventKey, DWalletEvent<ECDSASignRequestEvent>>(
                 &mut session.id, DWalletSessionEventKey {});
-            event::emit(dwallet_event);
+            event::emit(*dwallet_event);
         };
     }
 }
