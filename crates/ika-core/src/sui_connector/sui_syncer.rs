@@ -5,7 +5,7 @@
 //! on Sui blockchain from concerned modules of ika_system package.
 
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::error::IkaResult;
@@ -55,7 +55,7 @@ where
     pub async fn run(
         self,
         query_interval: Duration,
-        dwallet_mpc_network_keys: Option<Arc<DwalletMPCNetworkKeyVersions>>,
+        dwallet_mpc_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
@@ -85,7 +85,7 @@ where
 
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
-        dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
     ) {
         loop {
             time::sleep(Duration::from_secs(2)).await;

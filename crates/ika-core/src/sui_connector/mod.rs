@@ -1,6 +1,6 @@
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::checkpoints::CheckpointStore;
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
 use crate::sui_connector::sui_syncer::{SuiSyncer, SuiTargetModules};
@@ -65,7 +65,7 @@ impl SuiConnectorService {
         sui_client: Arc<SuiClient<SuiSdkClient>>,
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
-        dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeyVersions>>,
+        dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),

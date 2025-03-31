@@ -87,7 +87,6 @@ pub struct NetworkDecryptionKeyShares {
     /// The epoch of the last version update.
     pub epoch: u64,
     /// Decryption key shares for the current epoch.
-    /// Updated at the reconfiguration or when a new key version is created at network DKG.
     pub current_epoch_encryptions_of_shares_per_crt_prime: Vec<u8>,
     /// Decryption key shares for the previous epoch.
     /// Updated at the reconfiguration.

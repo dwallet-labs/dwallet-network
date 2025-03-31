@@ -31,27 +31,18 @@ use twopc_mpc::secp256k1::class_groups::{
 use twopc_mpc::sign::Protocol;
 use twopc_mpc::ProtocolPublicParameters;
 
-/// The status of the network supported key types for the dWallet MPC sessions.
-#[derive(Clone, Debug, PartialEq)]
-pub enum DwalletMPCNetworkKeysStatus {
-    /// The network supported key types have been updated or initialized.
-    Ready(HashSet<ObjectID>),
-    /// None of the network supported key types have been initialized.
-    NotInitialized,
-}
-
 /// Holds the network keys of the dWallet MPC protocols.
-pub struct DwalletMPCNetworkKeyVersions {
+pub struct DwalletMPCNetworkKeys {
     /// Holds the network keys of the dWallet MPC protocols.
     /// Limits the access to the network keys to a single thread at a time.
-    inner: Arc<RwLock<DwalletMPCNetworkKeyVersionsInner>>,
+    inner: Arc<RwLock<DwalletMPCNetworkKeyInner>>,
 
     validator_private_data: ValidatorPrivateData,
 }
 
 /// The context of the validator node.
 pub struct ValidatorPrivateData {
-    /// The party ID of the validator.
+    /// The party ID of the validator (its index within the committee).
     pub party_id: PartyID,
     /// The class groups decryption key.
     pub class_groups_decryption_key: ClassGroupsDecryptionKey,
@@ -137,17 +128,17 @@ impl ValidatorPrivateData {
 }
 
 /// Encapsulates all the fields in a single structure for atomic access.
-pub struct DwalletMPCNetworkKeyVersionsInner {
+pub struct DwalletMPCNetworkKeyInner {
     /// The dWallet MPC network decryption key shares (encrypted).
-    /// Map from key type to the encryption of the share of the key of that type.
+    /// The decryption key shares are stored in a map from the key ID to the decryption key shares.
     pub network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyShares>,
 }
 
-impl DwalletMPCNetworkKeyVersions {
+impl DwalletMPCNetworkKeys {
     /// Creates a new instance of the network encryption key shares.
     pub fn new(node_context: ValidatorPrivateData) -> Self {
         Self {
-            inner: Arc::new(RwLock::new(DwalletMPCNetworkKeyVersionsInner {
+            inner: Arc::new(RwLock::new(DwalletMPCNetworkKeyInner {
                 network_decryption_keys: HashMap::new(),
             })),
             validator_private_data: node_context,
@@ -241,8 +232,7 @@ impl DwalletMPCNetworkKeyVersions {
         }
     }
 
-    /// Returns all versions of the decryption key shares for the specified key type.
-    // Todo (#382): Replace with the actual type once the DKG protocol is ready.
+    /// Returns all the decryption key shares for ny specified key ID.
     pub fn get_decryption_key_share(
         &self,
         key_id: ObjectID,

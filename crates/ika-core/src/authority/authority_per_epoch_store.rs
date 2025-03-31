@@ -67,7 +67,7 @@ use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
 };
 use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::dwallet_mpc::{presign_public_input, session_info_from_event};
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
@@ -362,7 +362,7 @@ pub struct AuthorityPerEpochStore {
     /// This state machine is used to store outputs and emit ones
     /// where the quorum of votes is valid.
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
-    pub dwallet_mpc_network_keys: OnceCell<Arc<DwalletMPCNetworkKeyVersions>>,
+    pub dwallet_mpc_network_keys: OnceCell<Arc<DwalletMPCNetworkKeys>>,
     dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
     dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
     pub(crate) dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
@@ -781,7 +781,7 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
     pub fn set_dwallet_mpc_network_keys(
         &self,
-        dwallet_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        dwallet_network_keys: Arc<DwalletMPCNetworkKeys>,
     ) -> IkaResult<()> {
         if self
             .dwallet_mpc_network_keys

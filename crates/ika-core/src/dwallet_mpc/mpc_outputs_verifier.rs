@@ -6,7 +6,7 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dkg::DKGSecondParty;
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::dwallet_mpc::sign::SignFirstParty;
 use crate::dwallet_mpc::{message_digest, network_key_version_from_key_id};
 use crate::stake_aggregator::StakeAggregator;
@@ -244,7 +244,7 @@ impl DWalletMPCOutputsVerifier {
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
-    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeyVersions>> {
+    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeys>> {
         Ok(self
             .epoch_store()?
             .dwallet_mpc_network_keys

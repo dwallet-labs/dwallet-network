@@ -179,7 +179,7 @@ use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use ika_core::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, ValidatorPrivateData};
+use ika_core::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateData};
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
@@ -380,7 +380,7 @@ impl IkaNode {
                     .decryption_key(),
                 validator_decryption_key_share: RwLock::new(HashMap::new()),
             };
-            let dwallet_network_keys = DwalletMPCNetworkKeyVersions::new(validator_private_data);
+            let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
             let dwallet_network_keys_arc = Arc::new(dwallet_network_keys);
             Some(dwallet_network_keys_arc)
         } else {
@@ -778,7 +778,7 @@ impl IkaNode {
         registry_service: &RegistryService,
         ika_node_metrics: Arc<IkaNodeMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
-        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        network_keys: Arc<DwalletMPCNetworkKeys>,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
         let consensus_config = config_clone
@@ -842,7 +842,7 @@ impl IkaNode {
         ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
-        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        network_keys: Arc<DwalletMPCNetworkKeys>,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_checkpoint_service(
             config,
@@ -1024,7 +1024,7 @@ impl IkaNode {
     pub async fn monitor_reconfiguration(
         self: Arc<Self>,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
-        dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeyVersions>>,
+        dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
     ) -> Result<()> {
         loop {
             let run_with_range = self.config.run_with_range;
