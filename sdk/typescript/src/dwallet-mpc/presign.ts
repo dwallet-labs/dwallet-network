@@ -31,7 +31,7 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 	});
 	const dWalletStateData = await getDWalletSecpState(conf);
 
-	tx.moveCall({
+	const presignCap = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_ecdsa_presign`,
 		arguments: [
 			tx.sharedObjectRef({
@@ -44,6 +44,8 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 			tx.gas,
 		],
 	});
+
+	tx.transferObjects([presignCap], conf.suiClientKeypair.toSuiAddress());
 
 	tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
@@ -101,10 +103,11 @@ export async function mockCreatePresign(
 	});
 
 	const firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockPresign));
-	tx.moveCall({
+	const presignCap = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::mock_create_presign`,
 		arguments: [stateArg, firstRoundOutputArg, tx.pure.id(dwalletID)],
 	});
+	tx.transferObjects([presignCap], conf.suiClientKeypair.toSuiAddress());
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
 		transaction: tx,

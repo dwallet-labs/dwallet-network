@@ -210,7 +210,8 @@ impl DWalletMPCOutputsVerifier {
                     malicious_actors: vec![],
                 });
             };
-            return match Self::verify_signature(&epoch_store, sign_session_data, &output) {
+            return match Self::verify_signature(&epoch_store, &sign_session_data.event_data, &output)
+            {
                 Ok(res) => {
                     session_output_data.current_result = OutputResult::AlreadyCommitted;
                     let mut session_malicious_actors = res.malicious_actors;
