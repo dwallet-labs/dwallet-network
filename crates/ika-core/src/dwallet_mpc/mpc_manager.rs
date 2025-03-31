@@ -319,9 +319,7 @@ impl DWalletMPCManager {
             .epoch_store()?
             .dwallet_mpc_network_keys
             .get()
-            .ok_or(DwalletMPCError::TwoPCMPCError(
-                "Decryption share not found".to_string(),
-            ))?
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .clone())
     }
 
