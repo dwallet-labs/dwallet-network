@@ -350,7 +350,10 @@ async fn main() -> Result<()> {
                 "system::initialize done. `dwallet_id`: {}, `initial_shared_version`: {}",
                 dwallet_id, dwallet_initial_shared_version
             );
-
+            
+            // object_id = 0xacdb9188b62bea2201a836361f5f20374d8402cd5f200d6f92e06a604d4fb2a8
+            // 1
+            
             // Call ika_system_request_dwallet_network_decryption_key_dkg_by_cap
             ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
                 publisher_address,

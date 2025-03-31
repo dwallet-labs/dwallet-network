@@ -332,6 +332,8 @@ impl FullnodeConfigBuilder {
         let notifier_client_key_pair = notifier_client_key_pair.map(|k| KeyPairWithPath::new(k));
 
         NodeConfig {
+            // todo(zeev): this should be removed from Fullnode, also check it in SUI
+            // todo(zeev): or make sure we ignore it.
             class_groups_key_pair_and_proof: ClassGroupsKeyPairWithPath::new(
                 validator_config.class_groups_key_pair_and_proof.clone(),
             ),

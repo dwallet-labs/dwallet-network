@@ -3,7 +3,7 @@
 
 import path from 'path';
 import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
@@ -39,9 +39,9 @@ describe('Test dWallet MPC', () => {
 		);
 		const address = keypair.getPublicKey().toSuiAddress();
 		console.log(`Address: ${address}`);
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
 		await requestSuiFromFaucetV1({
-			host: getFaucetHost('localnet'),
+			host: 'https://faucet.sui.beta.devnet.ika-network.net',
 			recipient: address,
 		});
 
@@ -49,6 +49,7 @@ describe('Test dWallet MPC', () => {
 			suiClientKeypair: keypair,
 			client: suiClient,
 			timeout: fiveMinutes,
+			// todo(zeev): fix this, bad parsing, bad path, needs to be localized.
 			ikaConfig: require(path.resolve(process.cwd(), '../../ika_config.json')),
 			dWalletSeed,
 			encryptedSecretShareSigningKeypair,

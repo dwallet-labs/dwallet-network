@@ -317,6 +317,7 @@ export async function getNetworkDecryptionKeyPublicOutputID(
 async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint8Array> {
 	const dynamicFieldPage = await c.client.getDynamicFields({ parentId: table_id });
 
+	// todo(zeev): make this error more informative.
 	if (!dynamicFieldPage?.data?.length) {
 		throw new Error('no dynamic fields found');
 	}
