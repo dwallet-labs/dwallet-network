@@ -3387,11 +3387,11 @@ the beginning of the DKG process.
         gas_fee_reimbursement_sui,
         consensus_validation_fee_charged_ika,
         dwallet_network_decryption_key_id,
-        <b>mut</b> id,
+        id,
         ..
     } = session;
     <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    <b>let</b> _: <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a>&lt;E&gt; = dynamic_field::remove(&<b>mut</b> id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSessionEventKey">DWalletSessionEventKey</a> {});
+    <b>let</b> _: <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a>&lt;E&gt; = self.session_start_events.remove(id.to_inner());
     object::delete(id);
     dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
     self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
