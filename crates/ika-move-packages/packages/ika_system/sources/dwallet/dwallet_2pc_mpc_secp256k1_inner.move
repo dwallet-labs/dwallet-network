@@ -86,7 +86,6 @@ public struct DWalletCoordinatorInner has store {
 
 public struct DWalletSessionEventKey has copy, drop, store {}
 
-#[allow(unused_field)]
 public enum DWalletSessionType has drop, copy, store{
     DWalletDKGFirstRound,
     DWalletDKGSecondRound,
@@ -799,6 +798,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         DWalletNetworkDKGDecryptionKeyRequestEvent {
             dwallet_network_decryption_key_id
         },
+        DWalletSessionType::DwalletNetworkDecryptionKeyDkg,
         ctx,
     ));
     zero_ika.destroy_zero();
@@ -926,6 +926,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     event_data: E,
+    session_type: DWalletSessionType,
     ctx: &mut TxContext,
 ): DWalletEvent<E> {
     assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
@@ -943,7 +944,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         consensus_validation_fee_charged_ika,
         computation_fee_charged_ika,
         gas_fee_reimbursement_sui,
-        session_type: DWalletSessionType::DWalletDKGFirstRound,
+        session_type,
     };
     let event = DWalletEvent {
         epoch: self.current_epoch,
@@ -1154,6 +1155,7 @@ public(package) fun request_dwallet_dkg_first_round(
             dwallet_cap_id,
             dwallet_network_decryption_key_id,
         },
+        DWalletSessionType::DWalletDKGFirstRound,
         ctx,
     ));
     dwallet_cap
@@ -1339,6 +1341,7 @@ public(package) fun request_dwallet_dkg_second_round(
             singer_public_key,
             dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
         },
+        DWalletSessionType::DWalletDKGSecondRound,
         ctx,
     );
 
@@ -1495,6 +1498,7 @@ public(package) fun request_re_encrypt_user_share_for(
                 encrypted_user_secret_key_share_id,
                 source_encrypted_user_secret_key_share_id,
             },
+            DWalletSessionType::ReEncryptUserShare,
             ctx,
         )
     );
@@ -1642,6 +1646,7 @@ public(package) fun request_ecdsa_presign(
                 dwallet_public_output: public_output,
                 dwallet_network_decryption_key_id: dwallet_network_decryption_key_id,
             },
+            DWalletSessionType::ECDSAPresign,
             ctx,
         )
     );
@@ -1843,6 +1848,7 @@ fun emit_ecdsa_sign_event(
             message_centralized_signature,
             is_future_sign,
         },
+        DWalletSessionType::ECDSASign,
         ctx,
     );
     let session_id = emit_event.session_id;
