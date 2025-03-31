@@ -21,7 +21,6 @@ use sui::ed25519::ed25519_verify;
 use ika_system::address;
 use ika_system::dwallet_pricing::{Self, DWalletPricing2PcMpcSecp256K1, PricingPerOperation};
 use ika_system::bls_committee::{Self, BlsCommittee};
-use sui::dynamic_field;
 
 /// Supported hash schemes for message signing.
 const KECCAK256: u8 = 0;
@@ -1138,11 +1137,11 @@ fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordina
         gas_fee_reimbursement_sui,
         consensus_validation_fee_charged_ika,
         dwallet_network_decryption_key_id,
-        mut id,
+        id,
         ..
     } = session;
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    let _: DWalletEvent<E> = dynamic_field::remove(&mut id, DWalletSessionEventKey {});
+    let _: DWalletEvent<E> = self.session_start_events.remove(id.to_inner());
     object::delete(id);
     dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
     self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
