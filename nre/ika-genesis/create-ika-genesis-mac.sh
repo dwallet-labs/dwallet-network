@@ -29,8 +29,9 @@ export VALIDATOR_PREFIX="val"
 export VALIDATOR_NUM=4
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
-# The subdomain for the network.
-export SUBDOMAIN="beta.devnet.ika-network.net"
+# The subdomain for Ika the network.
+export SUBDOMAIN="localhost"
+#export SUBDOMAIN="beta.devnet.ika-network.net"
 # The binary name to use.
 export BINARY_NAME="ika"
 # The directory to store the key pairs.
@@ -41,13 +42,20 @@ ROOT_ADDR=""
 # The file containing the validators (separator: newline).
 export VALIDATORS_FILE=""
 # Validator Docker image name.
-export IMAGE_NAME="471930101563.dkr.ecr.us-east-1.amazonaws.com/sui-fork:ika-testnet-v1.16.2-10"
+export IMAGE_NAME="us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.3-arm64"
 # SUI fullnode URL.
-export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+#export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+export SUI_FULLNODE_RPC_URL="http://localhost:9000"
+# Sui Docker URL (only needed if you run Ika on Docker against localhost on non-linux).
+# If it's not against localhost, set it to the remote sui RPC.
+export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
 # SUI Faucet URL.
-export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
+#export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
+export SUI_FAUCET_URL="http://localhost:9123/gas"
 # Default sui epoch duration time.
 export EPOCH_DURATION_TIME=86400000
+# Sui chain identifier.
+export SUI_CHAIN_IDENTIFIER="custom"
 
 # Function to display help message
 show_help() {
@@ -92,7 +100,6 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-
 BINARY_NAME="$(pwd)/$BINARY_NAME"
 
 VALIDATORS_ARRAY=()
@@ -121,7 +128,6 @@ if [[ -n "$VALIDATORS_FILE" ]]; then
         VALIDATORS_ARRAY+=("$name:$hostname")
     done < "$VALIDATORS_FILE"
 
-    # Debugging: Print the array content to verify.
     for entry in "${VALIDATORS_ARRAY[@]}"; do
         IFS=":" read -r v_name v_hostname <<< "$entry"
         echo "Processed validator: Name = $v_name, Hostname = $v_hostname"
@@ -208,33 +214,15 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
     sui keytool list
 done
 
-
-# Request Tokens and Create Validator.yaml.
-for entry in "${VALIDATORS_ARRAY[@]}"; do
-      # Split the tuple "validatorName:validatorHostname" into variables.
-      IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
-      VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
-      ACCOUNT_ADDRESS=$(yq e '.account_address' "${VALIDATOR_DIR}/validator.info")
-      P2P_ADDR=$(yq e '.p2p_address' "${VALIDATOR_DIR}/validator.info")
-      cp ../validator.template.yaml "$VALIDATOR_DIR"/validator.yaml
-      yq e ".p2p-config.external-address = \"$P2P_ADDR\"" -i "$VALIDATOR_DIR"/validator.yaml
-      # --- Request tokens from the faucet ---
-      # Use curl to post a FixedAmountRequest to the faucet.
-      curl -X POST --location "${SUI_FAUCET_URL}" \
-           -H "Content-Type: application/json" \
-           -d '{
-                "FixedAmountRequest": {
-                  "recipient": "'"${ACCOUNT_ADDRESS}"'"
-                }
-              }' | jq
-done
-
+###############################
+# Create the Ika system on Sui.
+###############################
 rm -rf "$SUI_CONFIG_PATH"
 
 cargo build --bin ika-swarm-config
 cp ../../../target/debug/ika-swarm-config .
 
-# Publish IKA Modules
+# Publish IKA Modules (Creates the publisher config).
 ./ika-swarm-config publish-ika-modules --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL"
 
 # Mint IKA Tokens
@@ -243,10 +231,12 @@ cp ../../../target/debug/ika-swarm-config .
 # Init IKA
 ./ika-swarm-config init-env --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path ./ika_publish_config.json
 
-mkdir -p publisher
-mv ika_publish_config.json publisher/
-cp -r "$SUI_CONFIG_PATH" publisher/
-PUBLISHER_CONFIG_FILE="publisher/ika_publish_config.json"
+export PUBLISHER_DIR=publisher
+
+mkdir -p $PUBLISHER_DIR
+mv ika_publish_config.json $PUBLISHER_DIR/
+cp -r "$SUI_CONFIG_PATH" $PUBLISHER_DIR/
+PUBLISHER_CONFIG_FILE="$PUBLISHER_DIR/ika_publish_config.json"
 
 IKA_PACKAGE_ID=$(jq -r '.ika_package_id' "$PUBLISHER_CONFIG_FILE")
 IKA_SYSTEM_PACKAGE_ID=$(jq -r '.ika_system_package_id' "$PUBLISHER_CONFIG_FILE")
@@ -257,6 +247,53 @@ echo "IKA Package ID: $IKA_PACKAGE_ID"
 echo "IKA System Package ID: $IKA_SYSTEM_PACKAGE_ID"
 echo "System ID: $SYSTEM_ID"
 
+cat > locals.tf <<EOF
+locals {
+  ika_chain_config = {
+    sui_chain_identifier  = "${SUI_CHAIN_IDENTIFIER}"
+    ika_package_id        = "${IKA_PACKAGE_ID}"
+    ika_system_package_id = "${IKA_SYSTEM_PACKAGE_ID}"
+    system_id             = "${SYSTEM_ID}"
+  }
+}
+EOF
+
+############################
+# Request Tokens and Create Validator.yaml.
+############################
+for entry in "${VALIDATORS_ARRAY[@]}"; do
+  # Split the tuple "validatorName:validatorHostname" into variables.
+  IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
+  VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
+
+  # Extract values from the validator.info file
+  ACCOUNT_ADDRESS=$(yq e '.account_address' "${VALIDATOR_DIR}/validator.info")
+  P2P_ADDR=$(yq e '.p2p_address' "${VALIDATOR_DIR}/validator.info")
+
+  # Copy the validator template
+  cp ../validator.template.yaml "$VALIDATOR_DIR/validator.yaml"
+
+  # Replace upper-case placeholders using yq (in-place)
+  yq e ".\"sui-connector-config\".\"sui-rpc-url\" = \"$SUI_DOCKER_URL\"" -i "$VALIDATOR_DIR/validator.yaml"
+  yq e ".\"sui-connector-config\".\"sui-chain-identifier\" = \"$SUI_CHAIN_IDENTIFIER\"" -i "$VALIDATOR_DIR/validator.yaml"
+  yq e ".\"sui-connector-config\".\"ika-package-id\" = \"$IKA_PACKAGE_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
+  yq e ".\"sui-connector-config\".\"ika-system-package-id\" = \"$IKA_SYSTEM_PACKAGE_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
+  yq e ".\"sui-connector-config\".\"system-id\" = \"$SYSTEM_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
+
+  # Replace external P2P address
+  yq e ".p2p-config.external-address = \"$P2P_ADDR\"" -i "$VALIDATOR_DIR"/validator.yaml
+
+  # --- Request tokens from the faucet ---
+  curl -X POST --location "${SUI_FAUCET_URL}" \
+       -H "Content-Type: application/json" \
+       -d '{
+            "FixedAmountRequest": {
+              "recipient": "'"${ACCOUNT_ADDRESS}"'"
+            }
+          }' | jq
+
+done
+
 ############################
 # Become Validator Candidate.
 ############################
@@ -266,7 +303,7 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
       IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
       VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
 
-      echo "Processing validator '$VALIDATOR_NAME' in directory '$VALIDATOR_DIR'"
+      echo "[Become Validator Candidate] Processing validator '$VALIDATOR_NAME' in directory '$VALIDATOR_DIR'"
 
       # Clear and recreate your SUI config directory.
       rm -rf "$SUI_CONFIG_PATH"
@@ -296,7 +333,7 @@ done
 # Copy publisher sui_config to SUI_CONFIG_PATH
 rm -rf "$SUI_CONFIG_PATH"
 mkdir -p "$SUI_CONFIG_PATH"
-cp -r publisher/sui_config/* "$SUI_CONFIG_PATH"
+cp -r $PUBLISHER_DIR/sui_config/* "$SUI_CONFIG_PATH"
 
 # Extract IKA_SUPPLY_ID (ika_coin_id) from publisher config
 IKA_SUPPLY_ID=$(jq -r '.ika_supply_id' "$PUBLISHER_CONFIG_FILE")
@@ -345,9 +382,9 @@ done
 # Copy publisher sui_config to SUI_CONFIG_PATH
 rm -rf "$SUI_CONFIG_PATH"
 mkdir -p "$SUI_CONFIG_PATH"
-cp -r publisher/sui_config/* "$SUI_CONFIG_PATH"
+cp -r $PUBLISHER_DIR/sui_config/* "$SUI_CONFIG_PATH"
 
-./ika-swarm-config ika-system-initialize --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path publisher/ika_publish_config.json
+./ika-swarm-config ika-system-initialize --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path $PUBLISHER_DIR/ika_publish_config.json
 
 ############################
 # Generate Seed Peers
@@ -377,3 +414,45 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
 done
 
 echo "$SEED_PEERS_FILE generated in $SUBDOMAIN/"
+
+
+################################
+# Create the fullnode.yaml file.
+################################
+echo "Creating fullnode.yaml..."
+export FULLNODE_YAML_PATH="$PUBLISHER_DIR/fullnode.yaml"
+
+# Copy the template
+cp ../fullnode.template.yaml "$FULLNODE_YAML_PATH"
+
+# Replace upper-case variables with real values using yq
+yq e ".\"sui-connector-config\".\"sui-rpc-url\" = \"$SUI_DOCKER_URL\"" -i "$FULLNODE_YAML_PATH"
+yq e ".\"sui-connector-config\".\"sui-chain-identifier\" = \"$SUI_CHAIN_IDENTIFIER\"" -i "$FULLNODE_YAML_PATH"
+yq e ".\"sui-connector-config\".\"ika-package-id\" = \"$IKA_PACKAGE_ID\"" -i "$FULLNODE_YAML_PATH"
+yq e ".\"sui-connector-config\".\"ika-system-package-id\" = \"$IKA_SYSTEM_PACKAGE_ID\"" -i "$FULLNODE_YAML_PATH"
+yq e ".\"sui-connector-config\".\"system-id\" = \"$SYSTEM_ID\"" -i "$FULLNODE_YAML_PATH"
+
+# Replace HOSTNAME in external-address
+yq e ".\"p2p-config\".\"external-address\" = \"/dns/fullnode.$SUBDOMAIN/udp/8084\"" -i "$FULLNODE_YAML_PATH"
+
+# Replace SEED_PEERS with actual array from seed_peers.yaml
+yq e '."p2p-config"."seed-peers" = load("seed_peers.yaml")' -i "$FULLNODE_YAML_PATH"
+
+############################
+# Prepare Docker Compose file.
+############################
+DOCKER_COMPOSE="docker-compose.yaml"
+DOCKER_COMPOSE_PATH="$DOCKER_COMPOSE"
+cp ../docker-compose.template.yaml "$DOCKER_COMPOSE_PATH"
+
+# Replace DOMAIN_NAME_HERE with the provided domain name.
+yq e -i ".services.*.container_name |= sub(\"DOMAIN_NAME_HERE\"; \"$SUBDOMAIN\")" "$DOCKER_COMPOSE_PATH"
+
+# Replace DOMAIN_NAME_HERE with the provided domain name in volume paths.
+yq e -i "(.services.*.volumes[] | select(test(\".*DOMAIN_NAME_HERE.*\"))) |= sub(\"DOMAIN_NAME_HERE\"; \"$SUBDOMAIN\")" "$DOCKER_COMPOSE_PATH"
+
+# Replace IMAGE_NAME with the provided image name.
+yq e -i ".services.*.image = \"$IMAGE_NAME\"" "$DOCKER_COMPOSE_PATH"
+
+echo "$DOCKER_COMPOSE file has been created successfully."
+
