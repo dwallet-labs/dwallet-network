@@ -1973,6 +1973,7 @@ public(package) fun request_ecdsa_future_sign(
                 message_centralized_signature,
                 dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
         },
+        DWalletSessionType::ECDSAFutureSign,
         ctx,
     );
     self.ecdsa_partial_centralized_signed_messages.add(partial_centralized_signed_message_id, ECDSAPartialUserSignature {
