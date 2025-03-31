@@ -51,6 +51,8 @@ where
 
     pub async fn run(self, query_interval: Duration) -> IkaResult<Vec<JoinHandle<()>>> {
         let mut task_handles = vec![];
+        let sui_client_clone = self.sui_client.clone();
+        tokio::spawn(Self::sync_dwallet_missed_events(sui_client_clone));
         for (module, cursor) in self.cursors {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
