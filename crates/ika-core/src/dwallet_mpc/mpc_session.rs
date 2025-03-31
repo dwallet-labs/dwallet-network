@@ -37,6 +37,8 @@ use sui_types::id::ID;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
+pub const FAILED_SESSION_OUTPUT: [u8; 1] = [1];
+
 /// The result of the check if the session is ready to advance.
 ///
 /// Returns whether the session is ready to advance or not, and a list of the malicious parties that were detected
@@ -189,7 +191,18 @@ impl DWalletMPCSession {
             }
             Err(e) => {
                 error!("failed to advance the MPC session: {:?}", e);
-                // TODO (#524): Handle failed MPC sessions
+                let consensus_adapter = self.consensus_adapter.clone();
+                let epoch_store = self.epoch_store()?.clone();
+                let consensus_message =
+                    self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT.to_vec())?;
+                tokio_runtime_handle.spawn(async move {
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![consensus_message], &epoch_store)
+                        .await
+                    {
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
+                    }
+                });
                 Err(e)
             }
         }
