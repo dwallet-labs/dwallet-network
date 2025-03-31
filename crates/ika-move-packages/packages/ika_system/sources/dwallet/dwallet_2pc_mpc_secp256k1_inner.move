@@ -87,14 +87,16 @@ public struct DWalletCoordinatorInner has store {
 public struct DWalletSessionEventKey has copy, drop, store {}
 
 #[allow(unused_field)]
-public enum SessionType {
+public enum DWalletSessionType has drop, copy, store{
     DWalletDKGFirstRound,
     DWalletDKGSecondRound,
     ECDSAPresign,
     ReEncryptUserShare,
     ECDSASign,
     ECDSAFutureSign,
-    ECDSASignWith_partial_user_signatures
+    ECDSASignWithPartialUserSignatures,
+    DwalletNetworkDecryptionKeyDkg,
+    DWalletNetworkDecryptionKeyReconfiguration
 }
 
 public struct DWalletSession has key, store {
@@ -112,6 +114,8 @@ public struct DWalletSession has key, store {
 
     /// Sui gas fee reimbursement to fund the network writing tx responses to sui.
     gas_fee_reimbursement_sui: Balance<SUI>,
+
+    session_type: DWalletSessionType,
 }
 
 
@@ -939,6 +943,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         consensus_validation_fee_charged_ika,
         computation_fee_charged_ika,
         gas_fee_reimbursement_sui,
+        session_type: DWalletSessionType::DWalletDKGFirstRound,
     };
     let event = DWalletEvent {
         epoch: self.current_epoch,
