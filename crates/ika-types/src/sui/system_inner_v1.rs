@@ -137,6 +137,7 @@ pub struct DWalletPricing2PcMpcSecp256K1 {
 pub struct DWalletCoordinatorInnerV1 {
     pub current_epoch: u64,
     pub sessions: ObjectTable,
+    pub session_start_events: Bag,
     pub first_session_sequence_number: u64,
     pub next_session_sequence_number: u64,
     pub dwallets: ObjectTable,

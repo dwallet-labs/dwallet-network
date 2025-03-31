@@ -15,7 +15,7 @@ use fastcrypto::traits::ToFromBytes;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
-use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
+use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletNetworkDecryptionKey};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::system_inner_v1::{
     DWalletCoordinatorInnerV1, DWalletNetworkDecryptionKeyCap, SystemInnerV1,
@@ -162,7 +162,7 @@ where
                 .await;
             match dwallet_coordinator_inner {
                 DWalletCoordinatorInner::V1(dwallet_coordinator_inner_v1) => {
-                    let dynamic_fields = dwallet_coordinator_inner_v1.dwallets
+
                 }
             }
 
@@ -673,6 +673,7 @@ pub trait SuiClientInner: Send + Sync {
         &self,
         gas_object_id: ObjectID,
     ) -> (GasCoin, ObjectRef, Owner);
+    async fn get_missed_events(&self, events_bag_id: ObjectID) -> Result<Vec<DBSuiEvent>, self::Error>;
 }
 
 #[async_trait]
@@ -723,9 +724,40 @@ impl SuiClientInner for SuiSdkClient {
             .await
     }
 
-    async fn get_missed_sessions(&self, sessions_table_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
-
-
+    async fn get_missed_events(&self, events_bag_id: ObjectID) -> Result<Vec<DBSuiEvent>, self::Error> {
+        let dynamic_fields = self
+            .read_api()
+            .get_dynamic_fields(
+                events_bag_id,
+                None,
+                None,
+            )
+            .await?;
+        let mut events = vec![];
+        for df in dynamic_fields.data.iter() {
+            let object_id = df.object_id;
+            let dynamic_field_response = self
+                .read_api()
+                .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                .await?;
+            let resp = dynamic_field_response.into_object().map_err(|e| {
+                Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+            })?;
+            let move_object = resp.bcs.ok_or(Error::DataError(format!(
+                "object {:?} has no bcs data",
+                object_id
+            )))?;
+            let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+                "object {:?} is not a MoveObject",
+                object_id
+            )))?;
+            let event = DBSuiEvent {
+                type_: raw_move_obj.type_,
+                contents: raw_move_obj.bcs_bytes,
+            };
+            events.push(event);
+        }
+        Ok(events)
     }
 
     async fn get_class_groups_public_keys_and_proofs(
