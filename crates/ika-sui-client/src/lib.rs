@@ -538,9 +538,9 @@ where
             ) else {
                 self.sui_client_metrics
                     .sui_rpc_errors
-                    .with_label_values(&["get_system_inner_until_success"])
+                    .with_label_values(&["get_dwallet_coordinator_inner_until_success"])
                     .inc();
-                error!("Failed to get system inner until success");
+                error!("Failed to get dwallet coordinator inner until success");
                 continue;
             };
             return ika_system_state;
