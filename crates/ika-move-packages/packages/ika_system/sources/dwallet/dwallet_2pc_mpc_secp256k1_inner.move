@@ -52,6 +52,7 @@ const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 public struct DWalletCoordinatorInner has store {
     current_epoch: u64,
     sessions: ObjectTable<u64, DWalletSession>,
+    session_start_events: Bag,
     first_session_sequence_number: u64,
     next_session_sequence_number: u64,
     // TODO: change it to versioned
@@ -733,6 +734,7 @@ public(package) fun create_dwallet_coordinator_inner(
     DWalletCoordinatorInner {
         current_epoch,
         sessions: object_table::new(ctx),
+        session_start_events: bag::new(ctx),
         first_session_sequence_number: 0,
         next_session_sequence_number: 0,
         dwallets: object_table::new(ctx),
@@ -906,7 +908,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     let gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
 
     let session_sequence_number = self.next_session_sequence_number;
-    let mut session = DWalletSession {
+    let session = DWalletSession {
         id: object::new(ctx),
         session_sequence_number,
         dwallet_network_decryption_key_id,
@@ -920,7 +922,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         session_id: object::id(&session),
         event_data,
     };
-    dynamic_field::add(&mut session.id, DWalletSessionEventKey {}, event);
+    self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
 

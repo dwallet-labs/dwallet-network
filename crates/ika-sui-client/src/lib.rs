@@ -150,12 +150,22 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
+    async fn get_dwallet_event(&self, event_sequence_number: u64, events_table_id: ObjectID) -> IkaResult<Vec<u8>> {
+        let event = self.read_api().get_dynamic_field_object()
+    }
+
     pub async fn get_dwallet_mpc_missed_events(&self) -> IkaResult<Vec<Vec<u8>>> {
         let system_inner = self.get_system_inner_until_success().await;
         if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
             let dwallet_coordinator_inner = self
                 .get_dwallet_coordinator_inner_until_success(dwallet_state_id)
                 .await;
+            match dwallet_coordinator_inner {
+                DWalletCoordinatorInner::V1(dwallet_coordinator_inner_v1) => {
+                    let dynamic_fields = dwallet_coordinator_inner_v1.dwallets
+                }
+            }
+
             warn!("dwallet_coordinator_inner: {:?}", dwallet_coordinator_inner);
         }
         Ok(vec![])
@@ -607,6 +617,7 @@ pub trait SuiClientInner: Send + Sync {
         &self,
         dwallet_coordinator_id: ObjectID,
     ) -> Result<Vec<u8>, Self::Error>;
+    async fn get_dwallet_events(&self, event_sequence_number: u64, events_table_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
 
     async fn get_class_groups_public_keys_and_proofs(
         &self,
@@ -710,6 +721,11 @@ impl SuiClientInner for SuiSdkClient {
         self.read_api()
             .get_move_object_bcs(dwallet_coordinator_id)
             .await
+    }
+
+    async fn get_missed_sessions(&self, sessions_table_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
+
+
     }
 
     async fn get_class_groups_public_keys_and_proofs(
