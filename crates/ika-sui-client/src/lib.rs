@@ -173,6 +173,9 @@ where
                         })?;
                     if !missed_events.is_empty() {
                         warn!("missed_events: {:?}", missed_events);
+                        missed_events.into_iter().for_each(|event| {
+                            warn!("event: {:?}", event.type_.name);
+                        });
                     }
                 }
             }
