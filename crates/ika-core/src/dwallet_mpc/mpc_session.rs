@@ -336,7 +336,7 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => advance_network_dkg(
-                init_event.dwallet_network_decryption_key_id,
+                init_event.event_data.dwallet_network_decryption_key_id,
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
@@ -352,7 +352,7 @@ impl DWalletMPCSession {
                 self.epoch_store()?,
             ),
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
-                match verify_encrypted_share(verification_data) {
+                match verify_encrypted_share(&verification_data.event_data) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
                         public_output: vec![],
                         private_output: vec![],
@@ -364,16 +364,16 @@ impl DWalletMPCSession {
             MPCProtocolInitData::PartialSignatureVerification(event_data) => {
                 let hashed_message = bcs::to_bytes(
                     &message_digest(
-                        &event_data.message,
-                        &event_data.hash_scheme.try_into().unwrap(),
+                        &event_data.event_data.message,
+                        &event_data.event_data.hash_scheme.try_into().unwrap(),
                     )
                     .map_err(|err| DwalletMPCError::TwoPCMPCError(err.to_string()))?,
                 )?;
                 verify_partial_signature(
                     &hashed_message,
-                    &event_data.dkg_output,
-                    &event_data.presign,
-                    &event_data.message_centralized_signature,
+                    &event_data.event_data.dkg_output,
+                    &event_data.event_data.presign,
+                    &event_data.event_data.message_centralized_signature,
                     &bcs::from_bytes(public_input)?,
                 )?;
 

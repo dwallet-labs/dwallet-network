@@ -954,6 +954,7 @@ fun process_checkpoint_message(
             } else if (message_data_type == 3) {
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _first_round_output = bcs_body.peel_vec_u8();
+                bcs_body.peel_u64();
             } else if (message_data_type == 4) {
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -961,6 +962,7 @@ fun process_checkpoint_message(
                 let _encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 let _encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
                 let _rejected = bcs_body.peel_bool();
+                bcs_body.peel_u64();
                 } else if (message_data_type == 5) {
                     bcs_body.peel_vec_u8();
                     bcs_body.peel_vec_u8();
@@ -971,6 +973,7 @@ fun process_checkpoint_message(
                 let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _presign = bcs_body.peel_vec_u8();
                 bcs_body.peel_bool();
+                bcs_body.peel_u64();
             } else if (message_data_type == 6) {
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -978,16 +981,19 @@ fun process_checkpoint_message(
                 let _signature = bcs_body.peel_vec_u8();
                 let _is_future_sign = bcs_body.peel_bool();
                 let _rejected = bcs_body.peel_bool();
+                bcs_body.peel_u64();
             } else if (message_data_type == 8) {
                 let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _rejected = bcs_body.peel_bool();
+                bcs_body.peel_u64();
             } else if (message_data_type == 9) {
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_bool();
+                bcs_body.peel_u64();
             };
         i = i + 1;
     };
