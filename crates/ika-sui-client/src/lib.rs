@@ -169,7 +169,7 @@ where
                         )
                         .await
                         .map_err(|e| {
-                            IkaError::SuiClientInternalError(format!("Can't get System: {e}"))
+                            IkaError::SuiClientInternalError(format!("Can't get DWalletCoordinator: {e}"))
                         })?;
                     Ok(missed_events)
                 }
