@@ -70,7 +70,7 @@ export async function sign(
 		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
-		presign.presign,
+		presign.state.fields.presign,
 		message,
 		hash,
 	);
@@ -98,9 +98,8 @@ export async function sign(
 				initialSharedVersion: dWalletStateData.initial_shared_version,
 				mutable: true,
 			}),
-			tx.pure.id(dwalletID),
+			tx.object(presign.cap_id),
 			messageApproval,
-			tx.pure.id(presignID),
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
 			emptyIKACoin,
 			tx.gas,
@@ -153,7 +152,7 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
-		presign.presign,
+		presign.state.fields.presign,
 		message,
 		hash,
 	);
@@ -172,9 +171,8 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 				initialSharedVersion: dWalletStateData.initial_shared_version,
 				mutable: true,
 			}),
-			tx.pure.id(dwalletID),
+			tx.object(presign.cap_id),
 			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
-			tx.pure.id(presignID),
 			tx.pure(bcs.u8().serialize(hash.valueOf())),
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
 			emptyIKACoin,
@@ -282,8 +280,6 @@ export async function completeFutureSign(
 	hash = Hash.KECCAK256,
 	verifyECDSAPartialUserSignatureCapID: string,
 ): Promise<CompletedSignEvent> {
-	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
-	const dwalletID = dwalletCap.dwallet_id;
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
 
@@ -309,7 +305,6 @@ export async function completeFutureSign(
 				initialSharedVersion: dWalletStateData.initial_shared_version,
 				mutable: true,
 			}),
-			tx.pure.id(dwalletID),
 			tx.object(verifyECDSAPartialUserSignatureCapID),
 			messageApproval,
 			emptyIKACoin,

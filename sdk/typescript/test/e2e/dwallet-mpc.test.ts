@@ -113,6 +113,7 @@ describe('Test dWallet MPC', () => {
 			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
 			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
 		);
+		await delay(checkpointCreationTime);
 		const presign = await mockCreatePresign(
 			conf,
 			Buffer.from(mockPresign.presignBytes, 'base64'),

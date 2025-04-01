@@ -14,18 +14,20 @@ use sui::sui::SUI;
 use sui::object_table::{Self, ObjectTable};
 use sui::balance::{Self, Balance};
 use sui::bcs;
-use sui::coin::{Coin};
+use sui::coin::{Self, Coin};
 use sui::bag::{Self, Bag};
 use sui::event;
 use sui::ed25519::ed25519_verify;
 use ika_system::address;
-use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1, PricingPerOperation};
+use ika_system::dwallet_pricing::{Self, DWalletPricing2PcMpcSecp256K1, PricingPerOperation};
 use ika_system::bls_committee::{Self, BlsCommittee};
+use sui::dynamic_field;
 
 /// Supported hash schemes for message signing.
 const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
 
+// TODO: move to utils
 fun copy_table_vec(dest: &mut TableVec<vector<u8>>, src: &TableVec<vector<u8>>) {
     while (!dest.is_empty()) {
         dest.pop_back();
@@ -49,6 +51,9 @@ const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
 public struct DWalletCoordinatorInner has store {
     current_epoch: u64,
+    sessions: ObjectTable<u64, DWalletSession>,
+    first_session_sequence_number: u64,
+    next_session_sequence_number: u64,
     // TODO: change it to versioned
     /// The key is the ID of `DWallet`.
     dwallets: ObjectTable<ID, DWallet>,
@@ -78,6 +83,26 @@ public struct DWalletCoordinatorInner has store {
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
+
+public struct DWalletSessionEventKey has copy, drop, store {}
+
+public struct DWalletSession has key, store {
+    id: UID,
+
+    session_sequence_number: u64,
+
+    dwallet_network_decryption_key_id: ID,
+
+    /// The fees paid for consensus validation in IKA.
+    consensus_validation_fee_charged_ika: Balance<IKA>,
+
+    /// The fees paid for computation in IKA.
+    computation_fee_charged_ika: Balance<IKA>,
+
+    /// Sui gas fee reimbursement to fund the network writing tx responses to sui.
+    gas_fee_reimbursement_sui: Balance<SUI>,
+}
+
 
 /// Represents a capability granting control over a specific dWallet.
 public struct DWalletCap has key, store {
@@ -220,8 +245,7 @@ public struct ECDSAPartialUserSignature has key, store {
 
     created_at_epoch: u64,
 
-    /// The unique identifier of the associated dWallet.
-    dwallet_id: ID,
+    presign_cap: ECDSAPresignCap,
 
     cap_id: ID,
 
@@ -229,8 +253,6 @@ public struct ECDSAPartialUserSignature has key, store {
 
     /// The messages that are being signed.
     message: vector<u8>,
-
-    presign: ECDSAPresign,
 
     /// The centralized party signature of a message.
     message_centralized_signature: vector<u8>,
@@ -281,6 +303,13 @@ public enum DWalletState has copy, drop, store {
     }
 }
 
+public struct ECDSAPresignCap has key, store {
+    id: UID,
+    /// ID of the associated dWallet.
+    dwallet_id: ID,
+    presign_id: ID,
+}
+
 /// Represents the result of the second and final presign round.
 /// This struct links the results of both presign rounds to a specific dWallet ID.
 public struct ECDSAPresign has key, store {
@@ -292,8 +321,17 @@ public struct ECDSAPresign has key, store {
     /// ID of the associated dWallet.
     dwallet_id: ID,
 
-    /// Serialized output of the presign process.
-    presign: vector<u8>,
+    cap_id: ID,
+
+    state: ECDSAPresignState,
+}
+
+public enum ECDSAPresignState has copy, drop, store {
+    Requested,
+    NetworkRejected,
+    Completed {
+        presign: vector<u8>,
+    }
 }
 
 /// The output of a batched Sign session.
@@ -320,8 +358,9 @@ public enum ECDSASignState has copy, drop, store {
     }
 }
 
-public struct DWalletEvent<E: copy + drop> has copy, drop {
+public struct DWalletEvent<E: copy + drop + store> has copy, drop, store {
     epoch: u64,
+    session_sequence_number: u64,
     session_id: ID,
     event_data: E,
 }
@@ -330,14 +369,14 @@ public struct DWalletEvent<E: copy + drop> has copy, drop {
 ///
 /// This event is emitted after the blockchain verifies the encryption key's validity
 /// and creates the corresponding `EncryptionKey` object.
-public struct CreatedEncryptionKeyEvent has copy, drop {
+public struct CreatedEncryptionKeyEvent has copy, drop, store {
     /// The unique identifier of the created `EncryptionKey` object.
     encryption_key_id: ID,
 
     signer_address: address,
 }
 
-public struct DWalletNetworkDKGDecryptionKeyRequestEvent has copy, drop {
+public struct DWalletNetworkDKGDecryptionKeyRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 }
 
@@ -347,7 +386,7 @@ public struct DWalletNetworkDKGDecryptionKeyRequestEvent has copy, drop {
 /// the completion of the first round.
 /// The user should catch this event to generate inputs for
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
-public struct CompletedDWalletNetworkDKGDecryptionKeyEvent has copy, drop {
+public struct CompletedDWalletNetworkDKGDecryptionKeyEvent has copy, drop, store {
        dwallet_network_decryption_key_id: ID,
        public_output: vector<u8>,
 }
@@ -358,7 +397,7 @@ public struct CompletedDWalletNetworkDKGDecryptionKeyEvent has copy, drop {
 ///
 /// This event is caught by the blockchain, which is then using it to
 /// initiate the first round of the DKG.
-public struct DWalletDKGFirstRoundRequestEvent has copy, drop {
+public struct DWalletDKGFirstRoundRequestEvent has copy, drop, store {
     /// The unique session identifier for the DKG process.
     dwallet_id: ID,
 
@@ -375,7 +414,7 @@ public struct DWalletDKGFirstRoundRequestEvent has copy, drop {
 /// the completion of the first round.
 /// The user should catch this event to generate inputs for
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
-public struct CompletedDKGFirstdRoundEvent has copy, drop {
+public struct CompletedDKGFirstdRoundEvent has copy, drop, store {
     /// The unique session identifier for the DKG process.
     dwallet_id: ID,
 
@@ -387,7 +426,7 @@ public struct CompletedDKGFirstdRoundEvent has copy, drop {
 ///
 /// This event is emitted to notify Validators to begin the second round of the DKG.
 /// It contains all necessary data to ensure proper continuation of the process.
-public struct DWalletDKGSecondRoundRequestEvent has copy, drop {
+public struct DWalletDKGSecondRoundRequestEvent has copy, drop, store {
     /// The unique session identifier for the DWallet.
     dwallet_id: ID,
 
@@ -428,7 +467,7 @@ public struct DWalletDKGSecondRoundRequestEvent has copy, drop {
 /// This event provides all necessary data generated from the second
 /// round of the DKG process.
 /// Emitted to notify the centralized party.
-public struct CompletedDWalletDKGSecondRoundEvent has copy, drop {
+public struct CompletedDWalletDKGSecondRoundEvent has copy, drop, store {
     /// The identifier of the dWallet created as a result of the DKG process.
     dwallet_id: ID,
 
@@ -438,7 +477,7 @@ public struct CompletedDWalletDKGSecondRoundEvent has copy, drop {
     session_id: ID
 }
 
-public struct RejectedDWalletDKGSecondRoundEvent has copy, drop {
+public struct RejectedDWalletDKGSecondRoundEvent has copy, drop, store {
     /// The identifier of the dWallet created as a result of the DKG process.
     dwallet_id: ID,
 
@@ -457,7 +496,7 @@ public struct RejectedDWalletDKGSecondRoundEvent has copy, drop {
 /// Ika does not support native functions, so an event is emitted and
 /// caught by the blockchain, which then starts the verification process,
 /// similar to the MPC processes.
-public struct EncryptedShareVerificationRequestEvent has copy, drop {
+public struct EncryptedShareVerificationRequestEvent has copy, drop, store {
     /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
     encrypted_centralized_secret_share_and_proof: vector<u8>,
 
@@ -482,7 +521,7 @@ public struct EncryptedShareVerificationRequestEvent has copy, drop {
     source_encrypted_user_secret_key_share_id: ID,
 }
 
-public struct CompletedEncryptedShareVerificationEvent has copy, drop {
+public struct CompletedEncryptedShareVerificationEvent has copy, drop, store {
     /// The ID of the `EncryptedUserSecretKeyShare` Move object.
     encrypted_user_secret_key_share_id: ID,
 
@@ -490,7 +529,7 @@ public struct CompletedEncryptedShareVerificationEvent has copy, drop {
     dwallet_id: ID,
 }
 
-public struct RejectedEncryptedShareVerificationEvent has copy, drop {
+public struct RejectedEncryptedShareVerificationEvent has copy, drop, store {
     /// The ID of the `EncryptedUserSecretKeyShare` Move object.
     encrypted_user_secret_key_share_id: ID,
 
@@ -498,7 +537,7 @@ public struct RejectedEncryptedShareVerificationEvent has copy, drop {
     dwallet_id: ID,
 }
 
-public struct AcceptReEncryptedUserShareEvent has copy, drop {
+public struct AcceptReEncryptedUserShareEvent has copy, drop, store {
     /// The ID of the `EncryptedUserSecretKeyShare` Move object.
     encrypted_user_secret_key_share_id: ID,
 
@@ -522,9 +561,11 @@ public struct AcceptReEncryptedUserShareEvent has copy, drop {
 /// The event includes all necessary details to link
 /// the session to the corresponding dWallet
 /// and DKG process.
-public struct ECDSAPresignRequestEvent has copy, drop {
+public struct ECDSAPresignRequestEvent has copy, drop, store {
     /// ID of the associated dWallet.
     dwallet_id: ID,
+
+    presign_id: ID,
 
     /// The output produced by the DKG process,
     /// used as input for the Presign session.
@@ -538,7 +579,7 @@ public struct ECDSAPresignRequestEvent has copy, drop {
 ///
 /// This event indicates the successful completion of a batched presign process.
 /// It provides details about the presign objects created and their associated metadata.
-public struct CompletedECDSAPresignEvent has copy, drop {
+public struct CompletedECDSAPresignEvent has copy, drop, store {
     /// The ID of the dWallet associated with this batch.
     dwallet_id: ID,
 
@@ -546,6 +587,15 @@ public struct CompletedECDSAPresignEvent has copy, drop {
     session_id: ID,
     presign_id: ID,
     presign: vector<u8>,
+}
+
+public struct RejectedECDSAPresignEvent has copy, drop, store {
+    /// The ID of the dWallet associated with this batch.
+    dwallet_id: ID,
+
+    /// The session ID.
+    session_id: ID,
+    presign_id: ID
 }
 
 // END OF PRESIGN TYPES
@@ -558,7 +608,7 @@ public struct CompletedECDSAPresignEvent has copy, drop {
 /// to a specific dWallet, and batched process.
 /// D: The type of data that can be stored with the object,
 /// specific to each Digital Signature Algorithm.
-public struct ECDSASignRequestEvent has copy, drop {
+public struct ECDSASignRequestEvent has copy, drop, store {
     sign_id: ID,
 
     /// The unique identifier for the dWallet used in the session.
@@ -590,7 +640,7 @@ public struct ECDSASignRequestEvent has copy, drop {
 }
 
 /// Event emitted when a [`PartialCentralizedSignedMessages`] object is created.
-public struct ECDSAFutureSignRequestEvent has copy, drop {
+public struct ECDSAFutureSignRequestEvent has copy, drop, store {
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
     message: vector<u8>,
@@ -601,13 +651,13 @@ public struct ECDSAFutureSignRequestEvent has copy, drop {
     dwallet_mpc_network_key_id: ID,
 }
 
-public struct CompletedECDSAFutureSignEvent has copy, drop {
+public struct CompletedECDSAFutureSignEvent has copy, drop, store {
     session_id: ID,
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
 }
 
-public struct RejectedECDSAFutureSignEvent has copy, drop {
+public struct RejectedECDSAFutureSignEvent has copy, drop, store {
     session_id: ID,
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
@@ -616,7 +666,7 @@ public struct RejectedECDSAFutureSignEvent has copy, drop {
 /// Event emitted to signal the completion of a Sign process.
 ///
 /// This event contains signatures for all signed messages in the batch.
-public struct CompletedECDSASignEvent has copy, drop {
+public struct CompletedECDSASignEvent has copy, drop, store {
     sign_id: ID,
 
     /// The session identifier for the signing process.
@@ -629,7 +679,7 @@ public struct CompletedECDSASignEvent has copy, drop {
     is_future_sign: bool,
 }
 
-public struct RejectedECDSASignEvent has copy, drop {
+public struct RejectedECDSASignEvent has copy, drop, store {
     sign_id: ID,
 
     /// The session identifier for the signing process.
@@ -641,7 +691,7 @@ public struct RejectedECDSASignEvent has copy, drop {
 
 /// Event containing system-level checkpoint information, emitted during
 /// the checkpoint submmision message.
-public struct SystemCheckpointInfoEvent has copy, drop {
+public struct SystemCheckpointInfoEvent has copy, drop, store {
     epoch: u64,
     sequence_number: u64,
     timestamp_ms: u64,
@@ -662,6 +712,7 @@ const EIncorrectCap: u64 = 11;
 const EUnverifiedCap: u64 = 12;
 const EInvalidSource: u64 =13;
 const EDWalletNetworkDecryptionKeyNotActive: u64 = 14;
+const EInvalidPresign: u64 = 10;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -681,6 +732,9 @@ public(package) fun create_dwallet_coordinator_inner(
 ): DWalletCoordinatorInner {
     DWalletCoordinatorInner {
         current_epoch,
+        sessions: object_table::new(ctx),
+        first_session_sequence_number: 0,
+        next_session_sequence_number: 0,
         dwallets: object_table::new(ctx),
         dwallet_network_decryption_keys: object_table::new(ctx),
         encryption_keys: object_table::new(ctx),
@@ -720,12 +774,20 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         computation_fee_charged_ika: balance::zero(),
         state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
-    event::emit(self.create_current_epoch_dwallet_event(
+    let mut zero_ika = coin::zero<IKA>(ctx);
+    let mut zero_sui = coin::zero<SUI>(ctx);
+    event::emit(self.charge_and_create_current_epoch_dwallet_event(
+        dwallet_network_decryption_key_id,
+        dwallet_pricing::zero(),
+        &mut zero_ika,
+        &mut zero_sui,
         DWalletNetworkDKGDecryptionKeyRequestEvent {
             dwallet_network_decryption_key_id
         },
         ctx,
     ));
+    zero_ika.destroy_zero();
+    zero_sui.destroy_zero();
     cap
 }
 
@@ -735,7 +797,11 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     public_output: vector<u8>,
     key_shares: vector<u8>,
     is_last: bool,
+    session_sequence_number: u64
 ) {
+    if (is_last) {
+        self.remove_session_and_charge<DWalletNetworkDKGDecryptionKeyRequestEvent>(session_sequence_number);
+    };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.public_output.push_back(public_output);
     dwallet_network_decryption_key.current_epoch_shares.push_back(key_shares);
@@ -822,16 +888,43 @@ fun validate_active_and_get_public_output(
     }
 }
 
-fun create_current_epoch_dwallet_event<E: copy + drop>(
-    self: &DWalletCoordinatorInner,
+#[allow(dead_code, unused_mut_parameter, unused_variable)]
+fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
+    self: &mut DWalletCoordinatorInner,
+    dwallet_network_decryption_key_id: ID,
+    pricing: PricingPerOperation,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
     event_data: E,
     ctx: &mut TxContext,
 ): DWalletEvent<E> {
-    DWalletEvent {
+    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
+
+    let computation_fee_charged_ika = payment_ika.split(pricing.computation_ika(), ctx).into_balance();
+
+    let consensus_validation_fee_charged_ika = payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance();
+    let gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
+
+    let session_sequence_number = self.next_session_sequence_number;
+    let mut session = DWalletSession {
+        id: object::new(ctx),
+        session_sequence_number,
+        dwallet_network_decryption_key_id,
+        consensus_validation_fee_charged_ika,
+        computation_fee_charged_ika,
+        gas_fee_reimbursement_sui,
+    };
+    let event = DWalletEvent {
         epoch: self.current_epoch,
-        session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+        session_sequence_number,
+        session_id: object::id(&session),
         event_data,
-    }
+    };
+    dynamic_field::add(&mut session.id, DWalletSessionEventKey {}, event);
+    self.sessions.add(session_sequence_number, session);
+    self.next_session_sequence_number = session_sequence_number + 1;
+
+    event
 }
 
 fun get_active_dwallet_and_public_output(
@@ -980,23 +1073,6 @@ fun is_supported_hash_scheme(val: u8): bool {
     }
 }
 
-fun charge(
-    self: &mut DWalletCoordinatorInner,
-    pricing: PricingPerOperation,
-    dwallet_network_decryption_key_id: ID,
-    payment_ika: &mut Coin<IKA>,
-    payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
-) {
-    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
-
-    let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.computation_fee_charged_ika.join(payment_ika.split(pricing.computation_ika(), ctx).into_balance());
-
-    self.consensus_validation_fee_charged_ika.join(payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance());
-    self.gas_fee_reimbursement_sui.join(payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance());
-}
-
 /// Starts the first Distributed Key Generation (DKG) session.
 ///
 /// This function creates a new `DWalletCap` object,
@@ -1019,8 +1095,6 @@ public(package) fun request_dwallet_dkg_first_round(
 ): DWalletCap {
     let pricing = self.pricing.dkg_first_round();
 
-    self.charge(pricing, dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
-
     assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
     let id = object::new(ctx);
     let dwallet_id = id.to_inner();
@@ -1039,7 +1113,11 @@ public(package) fun request_dwallet_dkg_first_round(
         ecdsa_signs: object_table::new(ctx),
         state: DWalletState::Requested,
     });
-    event::emit(self.create_current_epoch_dwallet_event(
+    event::emit(self.charge_and_create_current_epoch_dwallet_event(
+                dwallet_network_decryption_key_id,
+        pricing,
+        payment_ika,
+        payment_sui,
         DWalletDKGFirstRoundRequestEvent {
             dwallet_id,
             dwallet_cap_id,
@@ -1048,6 +1126,25 @@ public(package) fun request_dwallet_dkg_first_round(
         ctx,
     ));
     dwallet_cap
+}
+
+fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
+    self.first_session_sequence_number = self.first_session_sequence_number + 1;
+    let session = self.sessions.remove(session_sequence_number);
+    let DWalletSession {
+        computation_fee_charged_ika,
+        gas_fee_reimbursement_sui,
+        consensus_validation_fee_charged_ika,
+        dwallet_network_decryption_key_id,
+        mut id,
+        ..
+    } = session;
+    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
+    let _: DWalletEvent<E> = dynamic_field::remove(&mut id, DWalletSessionEventKey {});
+    object::delete(id);
+    dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
+    self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
+    self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
 }
 
 /// Creates the output of the first DKG round.
@@ -1075,7 +1172,10 @@ public(package) fun respond_dwallet_dkg_first_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
     first_round_output: vector<u8>,
+    session_sequence_number: u64,
 ) {
+    self.remove_session_and_charge<DWalletDKGFirstRoundRequestEvent>(session_sequence_number);
+
     let dwallet = self.get_dwallet_mut(dwallet_id);
     dwallet.state = match (dwallet.state) {
         DWalletState::Requested => {
@@ -1089,6 +1189,7 @@ public(package) fun respond_dwallet_dkg_first_round(
         },
         _ => abort EWrongState
     };
+
 }
 
 // TODO (#493): Remove mock functions
@@ -1189,10 +1290,11 @@ public(package) fun request_dwallet_dkg_second_round(
 
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
 
-    self.charge(pricing, dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
-
-
-    let emit_event = self.create_current_epoch_dwallet_event(
+    let emit_event = self.charge_and_create_current_epoch_dwallet_event(
+        dwallet_network_decryption_key_id,
+        pricing,
+        payment_ika,
+        payment_sui,
         DWalletDKGSecondRoundRequestEvent {
             dwallet_id: dwallet_cap.dwallet_id,
             first_round_output,
@@ -1248,8 +1350,10 @@ public(package) fun respond_dwallet_dkg_second_round(
     encryption_key_address: address,
     session_id: ID,
     rejected: bool,
+    session_sequence_number: u64,
     ctx: &mut TxContext
 ) {
+    self.remove_session_and_charge<DWalletDKGSecondRoundRequestEvent>(session_sequence_number);
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
     let encryption_key_id = encryption_key.id.to_inner();
     let created_at_epoch = self.current_epoch;
@@ -1345,11 +1449,12 @@ public(package) fun request_re_encrypt_user_share_for(
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
     let pricing = self.pricing.re_encrypt_user_share();
 
-    self.charge(pricing, dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
-
-
     event::emit(
-        self.create_current_epoch_dwallet_event(
+        self.charge_and_create_current_epoch_dwallet_event(
+            dwallet_network_decryption_key_id,
+            pricing,
+            payment_ika,
+            payment_sui,
             EncryptedShareVerificationRequestEvent {
                 encrypted_centralized_secret_share_and_proof,
                 public_output,
@@ -1382,7 +1487,9 @@ public(package) fun respond_re_encrypt_user_share_for(
     dwallet_id: ID,
     encrypted_user_secret_key_share_id: ID,
     rejected: bool,
+    session_sequence_number: u64
 ) {
+    self.remove_session_and_charge<EncryptedShareVerificationRequestEvent>(session_sequence_number);
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
@@ -1468,25 +1575,79 @@ public(package) fun request_ecdsa_presign(
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
-) {
-    let (dwallet, public_output) = self.get_active_dwallet_and_public_output(dwallet_id);
+): ECDSAPresignCap {
+    let created_at_epoch = self.current_epoch;
+    let (dwallet, public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
 
+
+    let id = object::new(ctx);
+    let presign_id = id.to_inner();
+    let cap = ECDSAPresignCap {
+        id: object::new(ctx),
+        dwallet_id,
+        presign_id,
+    };
+    dwallet.ecdsa_presigns.add(presign_id, ECDSAPresign {
+        id,
+        created_at_epoch,
+        dwallet_id,
+        cap_id: object::id(&cap),
+        state: ECDSAPresignState::Requested,
+    });
+
     let pricing = self.pricing.ecdsa_presign();
 
-    self.charge(pricing, dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
-
     event::emit(
-        self.create_current_epoch_dwallet_event(
+        self.charge_and_create_current_epoch_dwallet_event(
+            dwallet_network_decryption_key_id,
+            pricing,
+            payment_ika,
+            payment_sui,
             ECDSAPresignRequestEvent {
                 dwallet_id,
+                presign_id,
                 dwallet_public_output: public_output,
                 dwallet_network_decryption_key_id: dwallet_network_decryption_key_id,
             },
             ctx,
         )
     );
+    cap
+}
+
+// TODO (#493): Remove mock functions
+public(package) fun mock_create_presign(
+    self: &mut DWalletCoordinatorInner,
+    dwallet_id: ID,
+    presign: vector<u8>,
+    ctx: &mut TxContext
+): ECDSAPresignCap {
+    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let id = object::new(ctx);
+    let presign_id = id.to_inner();
+    let cap = ECDSAPresignCap {
+        id: object::new(ctx),
+        dwallet_id,
+        presign_id,
+    };
+    dwallet.ecdsa_presigns.add(presign_id, ECDSAPresign {
+        id,
+        created_at_epoch: 0,
+        dwallet_id,
+        cap_id: object::id(&cap),
+        state: ECDSAPresignState::Completed {
+            presign
+        }
+    });
+    event::emit(CompletedECDSAPresignEvent {
+        dwallet_id,
+        session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+        presign_id,
+        presign
+    });
+    cap
 }
 
 /// Completes the presign session by creating the output of the
@@ -1516,27 +1677,56 @@ public(package) fun request_ecdsa_presign(
 public(package) fun respond_ecdsa_presign(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
+    presign_id: ID,
     session_id: ID,
     presign: vector<u8>,
-    ctx: &mut TxContext
+    rejected: bool,
+    session_sequence_number: u64
 ) {
-    let created_at_epoch = self.current_epoch;
+    self.remove_session_and_charge<ECDSAPresignRequestEvent>(session_sequence_number);
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
-    let id = object::new(ctx);
-    let presign_id = id.to_inner();
-    dwallet.ecdsa_presigns.add(presign_id, ECDSAPresign {
-        id,
-        created_at_epoch,
-        dwallet_id,
-        presign,
-    });
-    event::emit(CompletedECDSAPresignEvent {
-        dwallet_id,
-        session_id,
-        presign_id,
-        presign
-    });
+    let presign_obj = dwallet.ecdsa_presigns.borrow_mut(presign_id);
+
+    presign_obj.state = match(presign_obj.state) {
+        ECDSAPresignState::Requested => {
+            if(rejected) {
+                event::emit(RejectedECDSAPresignEvent {
+                    dwallet_id,
+                    session_id,
+                    presign_id
+                });
+                ECDSAPresignState::NetworkRejected
+            } else {
+                event::emit(CompletedECDSAPresignEvent {
+                    dwallet_id,
+                    session_id,
+                    presign_id,
+                    presign
+                });
+                ECDSAPresignState::Completed {
+                    presign
+                }
+            }
+        },
+        _ => abort EWrongState
+    };
+}
+
+public(package) fun is_ecdsa_presign_valid(
+    self: &DWalletCoordinatorInner,
+    presign_cap: &ECDSAPresignCap,
+): bool {
+    let (dwallet, _) = self.get_active_dwallet_and_public_output(presign_cap.dwallet_id);
+
+    let presign = dwallet.ecdsa_presigns.borrow(presign_cap.presign_id);
+
+    match(&presign.state) {
+        ECDSAPresignState::Completed { .. } => {
+            true
+        },
+        _ => false
+    }
 }
 
 /// Emits events to initiate the signing process for each message.
@@ -1555,38 +1745,64 @@ public(package) fun respond_ecdsa_presign(
 /// - **`EMissingApprovalOrWrongApprovalOrder`**: If message approvals are incorrect or missing.
 fun emit_ecdsa_sign_event(
     self: &mut DWalletCoordinatorInner,
+    pricing: PricingPerOperation,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
     message_approval: MessageApproval,
-    dwallet_id: ID,
-    presign: ECDSAPresign,
+    presign_cap: ECDSAPresignCap,
     message_centralized_signature: vector<u8>,
     is_future_sign: bool,
     ctx: &mut TxContext
 ) {
     let created_at_epoch = self.current_epoch;
-    let (dwallet, public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let (dwallet, public_output) = self.get_active_dwallet_and_public_output_mut(presign_cap.dwallet_id);
+
+    assert!(dwallet.ecdsa_presigns.contains(presign_cap.presign_id), EPresignNotExist);
+    let presign = dwallet.ecdsa_presigns.remove(presign_cap.presign_id);
 
     let MessageApproval {
         dwallet_id: message_approval_dwallet_id,
         hash_scheme,
         message
     } = message_approval;
+    let ECDSAPresignCap {
+        id,
+        dwallet_id: presign_cap_dwallet_id,
+        presign_id: presign_cap_presign_id,
+    } = presign_cap;
+    let presign_cap_id = id.to_inner();
+    id.delete();
     let ECDSAPresign {
         id,
         created_at_epoch: _,
         dwallet_id: presign_dwallet_id,
-        presign,
+        cap_id,
+        state,
     } = presign;
+    let presign = match(state) {
+        ECDSAPresignState::Completed { presign } => {
+            presign
+        },
+        _ => abort EInvalidPresign
+    };
     let presign_id = id.to_inner();
     id.delete();
     assert!(presign_dwallet_id == message_approval_dwallet_id, EMessageApprovalMismatch);
+    assert!(presign_cap_id == cap_id, EPresignNotExist);
+    assert!(presign_id == presign_cap_presign_id, EPresignNotExist);
+    assert!(presign_cap_dwallet_id == presign_dwallet_id, EPresignNotExist);
 
     let id = object::new(ctx);
     let sign_id = id.to_inner();
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
-    let emit_event = self.create_current_epoch_dwallet_event(
+    let emit_event = self.charge_and_create_current_epoch_dwallet_event(
+        dwallet_network_decryption_key_id,
+        pricing,
+        payment_ika,
+        payment_sui,
         ECDSASignRequestEvent {
             sign_id,
-            dwallet_id,
+            dwallet_id: presign_dwallet_id,
             dwallet_public_output: public_output,
             hash_scheme,
             message,
@@ -1599,11 +1815,11 @@ fun emit_ecdsa_sign_event(
         ctx,
     );
     let session_id = emit_event.session_id;
-    let dwallet = self.get_dwallet_mut(dwallet_id);
+    let dwallet = self.get_dwallet_mut(presign_dwallet_id);
     dwallet.ecdsa_signs.add(sign_id, ECDSASign {
         id,
         created_at_epoch,
-        dwallet_id,
+        dwallet_id: presign_dwallet_id,
         session_id,
         state: ECDSASignState::Requested,
     });
@@ -1643,27 +1859,24 @@ fun emit_ecdsa_sign_event(
 /// specific to each Digital Signature Algorithm.
 public(package) fun request_ecdsa_sign(
     self: &mut DWalletCoordinatorInner,
-    dwallet_id: ID,
     message_approval: MessageApproval,
-    presign_id: ID,
+    presign_cap: ECDSAPresignCap,
     message_centralized_signature: vector<u8>,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ) {
-    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(presign_cap.dwallet_id);
 
-    assert!(dwallet.ecdsa_presigns.contains(presign_id), EPresignNotExist);
-    let presign = dwallet.ecdsa_presigns.remove(presign_id);
-    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    assert!(dwallet.ecdsa_presigns.contains(presign_cap.presign_id), EPresignNotExist);
     let pricing = self.pricing.ecdsa_sign();
 
-    self.charge(pricing, dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
-
     self.emit_ecdsa_sign_event(
+        pricing,
+        payment_ika,
+        payment_sui,
         message_approval,
-        dwallet_id,
-        presign,
+        presign_cap,
         message_centralized_signature,
         false,
         ctx
@@ -1678,34 +1891,46 @@ public(package) fun request_ecdsa_sign(
 /// more details on when this may be used.
 public(package) fun request_ecdsa_future_sign(
     self: &mut DWalletCoordinatorInner,
-    dwallet_id: ID,
+    presign_cap: ECDSAPresignCap,
     message: vector<u8>,
-    presign_id: ID,
     hash_scheme: u8,
     message_centralized_signature: vector<u8>,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ): UnverifiedECDSAPartialUserSignatureCap {
-    let (dwallet, public_dwallet_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let pricing = self.pricing.ecdsa_future_sign();
+
+    let (dwallet, public_dwallet_output) = self.get_active_dwallet_and_public_output_mut(presign_cap.dwallet_id);
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
 
     // TODO: Change error
-    assert!(dwallet.ecdsa_presigns.contains(presign_id), EPresignNotExist);
+    assert!(dwallet.ecdsa_presigns.contains(presign_cap.presign_id), EPresignNotExist);
 
-    let presign = dwallet.ecdsa_presigns.remove(presign_id);
+    let presign_obj = dwallet.ecdsa_presigns.borrow(presign_cap.presign_id);
+    let presign = match(presign_obj.state) {
+        ECDSAPresignState::Completed { presign } => {
+            presign
+        },
+        _ => abort EInvalidPresign
+    };
+
     let id = object::new(ctx);
     let partial_centralized_signed_message_id = id.to_inner();
     let cap = UnverifiedECDSAPartialUserSignatureCap {
         id: object::new(ctx),
         partial_centralized_signed_message_id,
     };
-    let emit_event = self.create_current_epoch_dwallet_event(
+    let emit_event = self.charge_and_create_current_epoch_dwallet_event(
+        dwallet_network_decryption_key_id,
+        pricing,
+        payment_ika,
+        payment_sui,
         ECDSAFutureSignRequestEvent {
-                dwallet_id,
+                dwallet_id: presign_cap.dwallet_id,
                 partial_centralized_signed_message_id,
                 message,
-                presign: presign.presign,
+                presign: presign,
                 dwallet_public_output: public_dwallet_output,
                 hash_scheme,
                 message_centralized_signature,
@@ -1716,19 +1941,13 @@ public(package) fun request_ecdsa_future_sign(
     self.ecdsa_partial_centralized_signed_messages.add(partial_centralized_signed_message_id, ECDSAPartialUserSignature {
         id: id,
         created_at_epoch: self.current_epoch,
-        dwallet_id,
+        presign_cap,
         cap_id: object::id(&cap),
         hash_scheme,
         message,
-        presign,
         message_centralized_signature,
         state: ECDSAPartialUserSignatureState::AwaitingNetworkVerification,
     });
-
-    let pricing = self.pricing.ecdsa_future_sign();
-
-    self.charge(pricing, dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
-
 
     event::emit(emit_event);
 
@@ -1741,9 +1960,11 @@ public(package) fun respond_ecdsa_future_sign(
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
     rejected: bool,
+    session_sequence_number: u64
 ) {
+    self.remove_session_and_charge<ECDSAFutureSignRequestEvent>(session_sequence_number);
     let partial_centralized_signed_message = self.ecdsa_partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
-    assert!(partial_centralized_signed_message.dwallet_id == dwallet_id, EDWalletMismatch);
+    assert!(partial_centralized_signed_message.presign_cap.dwallet_id == dwallet_id, EDWalletMismatch);
     partial_centralized_signed_message.state = match(partial_centralized_signed_message.state) {
         ECDSAPartialUserSignatureState::AwaitingNetworkVerification => {
             if(rejected) {
@@ -1806,18 +2027,14 @@ public(package) fun verify_ecdsa_partial_user_signature_cap(
 /// - The function ensures that messages and approvals have a one-to-one correspondence before proceeding.
 public(package) fun request_ecdsa_sign_with_partial_user_signatures(
     self: &mut DWalletCoordinatorInner,
-    dwallet_id: ID,
     partial_user_signature_cap: VerifiedECDSAPartialUserSignatureCap,
     message_approval: MessageApproval,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ) {
-    let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
 
     let pricing = self.pricing.ecdsa_sign_with_partial_user_signature();
-
-    self.charge(pricing, dwallet.dwallet_network_decryption_key_id, payment_ika, payment_sui, ctx);
 
     // Ensure that each message has a corresponding approval; otherwise, abort.
     self.compare_ecdsa_partial_user_signatures_with_approvals(&partial_user_signature_cap, &message_approval);
@@ -1831,24 +2048,23 @@ public(package) fun request_ecdsa_sign_with_partial_user_signatures(
     let ECDSAPartialUserSignature {
         id,
         created_at_epoch: _,
-        dwallet_id: partial_centralized_signed_messages_dwallet_id,
+        presign_cap,
         cap_id,
         hash_scheme: _,
         message: _,
-        presign,
         message_centralized_signature,
         state
     } = self.ecdsa_partial_centralized_signed_messages.remove(partial_centralized_signed_message_id);
     id.delete();
     assert!(cap_id == verified_cap_id && state == ECDSAPartialUserSignatureState::NetworkVerificationCompleted, EIncorrectCap);
-    assert!(partial_centralized_signed_messages_dwallet_id == dwallet_id, EDWalletMismatch);
-    assert!(presign.dwallet_id == dwallet_id, EDWalletMismatch);
 
     // Emit signing events to finalize the signing process.
     self.emit_ecdsa_sign_event(
+        pricing,
+        payment_ika,
+        payment_sui,
         message_approval,
-        dwallet_id,
-        presign,
+        presign_cap,
         message_centralized_signature,
         true,
         ctx
@@ -1865,7 +2081,7 @@ public(package) fun compare_ecdsa_partial_user_signatures_with_approvals(
 ) {
     let partial_signature = self.ecdsa_partial_centralized_signed_messages.borrow(partial_user_signature_cap.partial_centralized_signed_message_id);
 
-    assert!(partial_signature.dwallet_id == message_approval.dwallet_id && message_approval.message == partial_signature.message && partial_signature.hash_scheme == message_approval.hash_scheme, EMessageApprovalMismatch);
+    assert!(partial_signature.presign_cap.dwallet_id == message_approval.dwallet_id && message_approval.message == partial_signature.message && partial_signature.hash_scheme == message_approval.hash_scheme, EMessageApprovalMismatch);
 }
 
 /// Emits a `CompletedSignEvent` with the MPC Sign protocol output.
@@ -1898,8 +2114,9 @@ public(package) fun respond_ecdsa_sign(
     signature: vector<u8>,
     is_future_sign: bool,
     rejected: bool,
+    session_sequence_number: u64
 ) {
-
+    self.remove_session_and_charge<ECDSASignRequestEvent>(session_sequence_number);
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let sign = dwallet.ecdsa_signs.borrow_mut(sign_id);
@@ -1997,20 +2214,18 @@ fun process_checkpoint_message(
                     i = i + 1;
                 };
             } else if (message_data_type == 2) {
-                    //TestMessage
-                    let _authority = bcs_body.peel_u32();
-                    let _num = bcs_body.peel_u64();
-            } else if (message_data_type == 3) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
-                self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output);
-            } else if (message_data_type == 4) {
+                let session_sequence_number = bcs_body.peel_u64();
+                self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, session_sequence_number);
+            } else if (message_data_type == 3) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 let encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
                 self.respond_dwallet_dkg_second_round(
                     dwallet_id,
                     public_output,
@@ -2018,24 +2233,28 @@ fun process_checkpoint_message(
                     encryption_key_address,
                     session_id,
                     rejected,
+                    session_sequence_number,
                     ctx,
                 );
-            } else if (message_data_type == 5) {
+            } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
                 self.respond_re_encrypt_user_share_for(
                     dwallet_id,
                     encrypted_user_secret_key_share_id,
                     rejected,
+                    session_sequence_number,
                 );
-            } else if (message_data_type == 6) {
+            } else if (message_data_type == 5) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let signature = bcs_body.peel_vec_u8();
                 let is_future_sign = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
                 self.respond_ecdsa_sign(
                     dwallet_id,
                     sign_id,
@@ -2043,29 +2262,36 @@ fun process_checkpoint_message(
                     signature,
                     is_future_sign,
                     rejected,
+                    session_sequence_number
                 );
-            } else if (message_data_type == 8) {
+            } else if (message_data_type == 7) {
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
                 self.respond_ecdsa_future_sign(
                     session_id,
                     dwallet_id,
                     partial_centralized_signed_message_id,
                     rejected,
+                    session_sequence_number
                 );
-            } else if (message_data_type == 7) {
+            } else if (message_data_type == 6) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let presign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let presign = bcs_body.peel_vec_u8();
-                self.respond_ecdsa_presign(dwallet_id, session_id, presign, ctx);
-            } else if (message_data_type == 9) {
+                let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
+                self.respond_ecdsa_presign(dwallet_id, presign_id, session_id, presign, rejected, session_sequence_number);
+            } else if (message_data_type == 8) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let key_shares = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
+                let session_sequence_number = bcs_body.peel_u64();
+                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last, session_sequence_number);
             };
         i = i + 1;
     };

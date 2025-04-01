@@ -41,11 +41,20 @@ export function delay(ms: number) {
 export interface Presign {
 	id: { id: string };
 	dwallet_id: string;
-	presign: Uint8Array;
+	state: {
+		fields: {
+			presign: Uint8Array;
+		};
+	};
+	cap_id: string;
 }
 
 export function isPresign(obj: any): obj is Presign {
-	return obj?.id !== undefined && obj?.dwallet_id !== undefined && obj?.presign !== undefined;
+	return (
+		obj?.id !== undefined &&
+		obj?.dwallet_id !== undefined &&
+		obj?.state?.fields?.presign !== undefined
+	);
 }
 
 export async function getObjectWithType<TObject>(
@@ -359,8 +368,13 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	const network_decryption_keys =
 		innerSystemState.data.content.fields.value.fields
 			.dwallet_2pc_mpc_secp256k1_network_decryption_keys;
-	return network_decryption_keys[network_decryption_keys.length - 1]?.fields
-		?.dwallet_network_decryption_key_id;
+	const decryptionKeyID =
+		network_decryption_keys[network_decryption_keys.length - 1]?.fields
+			?.dwallet_network_decryption_key_id;
+	if (!decryptionKeyID) {
+		throw new Error('No network decryption key found');
+	}
+	return decryptionKeyID;
 }
 
 export interface DWallet {

@@ -817,13 +817,6 @@ public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
     validator_set.active_committee()
 }
 
-public struct TestMessageEvent has drop, copy {
-    epoch: u64,
-    sequence_number: u64,
-    authority: u32,
-    num: u64,
-}
-
 fun verify_cap(
     self: &SystemInnerV1,
     cap: &ProtocolCap,
@@ -942,50 +935,48 @@ fun process_checkpoint_message(
                     i = i + 1;
                 };
             } else if (message_data_type == 2) {
-                //TestMessage
-                let authority = bcs_body.peel_u32();
-                let num = bcs_body.peel_u64();
-                event::emit(TestMessageEvent {
-                    epoch,
-                    sequence_number,
-                    authority,
-                    num,
-                });
-            } else if (message_data_type == 3) {
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _first_round_output = bcs_body.peel_vec_u8();
-            } else if (message_data_type == 4) {
+                bcs_body.peel_u64();
+            } else if (message_data_type == 3) {
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _public_output = bcs_body.peel_vec_u8();
                 let _encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
                 let _encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
                 let _rejected = bcs_body.peel_bool();
-                } else if (message_data_type == 5) {
+                bcs_body.peel_u64();
+                } else if (message_data_type == 4) {
                     bcs_body.peel_vec_u8();
                     bcs_body.peel_vec_u8();
                     bcs_body.peel_bool();
-            } else if (message_data_type == 7) {
+            } else if (message_data_type == 6) {
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                bcs_body.peel_vec_u8();
                 let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _presign = bcs_body.peel_vec_u8();
-            } else if (message_data_type == 6) {
+                bcs_body.peel_bool();
+                bcs_body.peel_u64();
+            } else if (message_data_type == 5) {
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _signature = bcs_body.peel_vec_u8();
                 let _is_future_sign = bcs_body.peel_bool();
                 let _rejected = bcs_body.peel_bool();
-            } else if (message_data_type == 8) {
+                bcs_body.peel_u64();
+            } else if (message_data_type == 7) {
                 let _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let _rejected = bcs_body.peel_bool();
-            } else if (message_data_type == 9) {
+                bcs_body.peel_u64();
+            } else if (message_data_type == 8) {
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_bool();
+                bcs_body.peel_u64();
             };
         i = i + 1;
     };

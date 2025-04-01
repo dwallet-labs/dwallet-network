@@ -94,6 +94,9 @@ DWalletPricing2PcMpcSecp256K1
 create_dwallet_pricing_2pc_mpc_secp256k1
 	public(package) fun
 	0x0::dwallet_pricing
+zero
+	public fun
+	0x0::dwallet_pricing
 dkg_first_round
 	public fun
 	0x0::dwallet_pricing
@@ -127,6 +130,12 @@ gas_fee_reimbursement_sui
 DWalletCoordinatorInner
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+DWalletSessionEventKey
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+DWalletSession
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 DWalletCap
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
@@ -152,6 +161,9 @@ ECDSAPartialUserSignature
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 DWallet
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+ECDSAPresignCap
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 ECDSAPresign
@@ -205,6 +217,9 @@ ECDSAPresignRequestEvent
 CompletedECDSAPresignEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+RejectedECDSAPresignEvent
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 ECDSASignRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
@@ -239,6 +254,9 @@ ECDSAPartialUserSignatureState
 	public enum
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 DWalletState
+	public enum
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+ECDSAPresignState
 	public enum
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 ECDSASignState
@@ -277,7 +295,7 @@ get_dwallet_mut
 validate_active_and_get_public_output
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-create_current_epoch_dwallet_event
+charge_and_create_current_epoch_dwallet_event
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 get_active_dwallet_and_public_output
@@ -301,11 +319,11 @@ approve_message
 is_supported_hash_scheme
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-charge
-	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
 request_dwallet_dkg_first_round
 	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+remove_session_and_charge
+	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 respond_dwallet_dkg_first_round
 	public(package) fun
@@ -334,7 +352,13 @@ accept_encrypted_user_share
 request_ecdsa_presign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+mock_create_presign
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 respond_ecdsa_presign
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+is_ecdsa_presign_valid
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 emit_ecdsa_sign_event
@@ -410,6 +434,9 @@ accept_encrypted_user_share
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
 request_ecdsa_presign
+	public fun
+	0x0::dwallet_2pc_mpc_secp256k1
+is_ecdsa_presign_valid
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
 request_ecdsa_sign
@@ -1109,9 +1136,6 @@ SystemProtocolCapVerifiedEvent
 	public struct
 	0x0::system_inner_v1
 SystemCheckpointInfoEvent
-	public struct
-	0x0::system_inner_v1
-TestMessageEvent
 	public struct
 	0x0::system_inner_v1
 create

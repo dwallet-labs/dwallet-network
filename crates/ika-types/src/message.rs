@@ -78,6 +78,7 @@ impl EndOfEpochMessageKind {
 pub struct DKGFirstRoundOutput {
     pub dwallet_id: Vec<u8>,
     pub output: Vec<u8>,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -88,13 +89,17 @@ pub struct DKGSecondRoundOutput {
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
     pub encryption_key_address: Vec<u8>,
     pub rejected: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct PresignOutput {
     pub dwallet_id: Vec<u8>,
+    pub presign_id: Vec<u8>,
     pub session_id: Vec<u8>,
     pub presign: Vec<u8>,
+    pub rejected: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -105,6 +110,7 @@ pub struct SignOutput {
     pub signature: Vec<u8>,
     pub is_future_sign: bool,
     pub rejected: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -112,6 +118,7 @@ pub struct EncryptedUserShareOutput {
     pub dwallet_id: Vec<u8>,
     pub encrypted_user_secret_key_share_id: Vec<u8>,
     pub rejected: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -120,6 +127,7 @@ pub struct PartialSignatureVerificationOutput {
     pub dwallet_id: Vec<u8>,
     pub partial_centralized_signed_message_id: Vec<u8>,
     pub rejected: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -128,6 +136,7 @@ pub struct Secp256K1NetworkDKGOutputSlice {
     pub public_output: Vec<u8>,
     pub key_shares: Vec<u8>,
     pub is_last: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
@@ -138,8 +147,6 @@ pub enum MessageKind {
     /// end of the epoch.
     EndOfEpoch(Vec<EndOfEpochMessageKind>),
 
-    /// Test message for checkpoints.
-    TestMessage(u32, u64),
     // .. more action types go here
     DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
@@ -159,7 +166,6 @@ impl MessageKind {
         match self {
             Self::InitiateProcessMidEpoch => "InitiateProcessMidEpoch",
             Self::EndOfEpoch(_) => "EndOfEpoch",
-            Self::TestMessage(_, _) => "TestMessage",
             MessageKind::DwalletMPCNetworkDKGOutput(_) => "DwalletMPCNetworkDKGOutput",
             MessageKind::DwalletDKGFirstRoundOutput(_) => "DwalletDKGFirstRoundOutput",
             MessageKind::DwalletDKGSecondRoundOutput(_) => "DwalletDKGSecondRoundOutput",
@@ -194,13 +200,6 @@ impl Display for MessageKind {
             }
             Self::EndOfEpoch(_) => {
                 writeln!(writer, "MessageKind : EndOfEpoch")?;
-            }
-            Self::TestMessage(authority, num) => {
-                writeln!(
-                    writer,
-                    "MessageKind : TestMessage authority: {}, num: {}",
-                    authority, num
-                )?;
             }
             MessageKind::DwalletMPCNetworkDKGOutput(output) => {
                 writeln!(
