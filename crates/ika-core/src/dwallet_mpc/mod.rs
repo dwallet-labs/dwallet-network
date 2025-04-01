@@ -137,12 +137,12 @@ pub(crate) fn session_info_from_event(
         }
         t if t == &DWalletMPCSuiEvent::<StartPresignFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(presign_party_session_info(deserialized_event)))
         }
         t if t == &DWalletMPCSuiEvent::<StartSignEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartSignEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(sign_party_session_info(&deserialized_event)))
         }
         t if t
@@ -151,14 +151,14 @@ pub(crate) fn session_info_from_event(
             ) =>
         {
             let deserialized_event: DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(get_verify_partial_signatures_session_info(
                 &deserialized_event,
             )))
         }
         t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(network_dkg::network_dkg_session_info(
                 deserialized_event,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
@@ -170,7 +170,7 @@ pub(crate) fn session_info_from_event(
             ) =>
         {
             let deserialized_event: DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(start_encrypted_share_verification_session_info(
                 deserialized_event,
             )))
@@ -478,7 +478,7 @@ pub(crate) fn session_input_from_event(
         }
         t if t == &DWalletMPCSuiEvent::<StartPresignFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
@@ -494,7 +494,7 @@ pub(crate) fn session_input_from_event(
         }
         t if t == &DWalletMPCSuiEvent::<StartSignEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartSignEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
@@ -523,7 +523,7 @@ pub(crate) fn session_input_from_event(
             ) =>
         {
             let deserialized_event: DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
