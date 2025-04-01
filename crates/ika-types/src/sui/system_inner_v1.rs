@@ -132,7 +132,7 @@ pub struct DWalletPricing2PcMpcSecp256K1 {
     ecdsa_sign_with_partial_user_signature: PricingPerOperation,
 }
 
-/// Rust version of the Move ika_system::ika_system::IkaSystemStateInner type
+/// Rust version of the Move DWalletCoordinatorInner type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct DWalletCoordinatorInnerV1 {
     pub current_epoch: u64,
