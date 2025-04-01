@@ -190,11 +190,11 @@ impl MPCSessionMessagesCollector {
                     a.build_message();
                     match &a.messages {
                         MessageState::Complete(message) => {
-                            println!("message: {:?}", message.len());
+                            println!("complete message: {:?}", message.len());
                             Some(message.clone())
                         }
                         MessageState::Incomplete(messages) => {
-                            println!("message: {:?}", messages.len());
+                            println!("incomplete message: {:?}", messages.len());
                             None
                         }
                     }
@@ -211,11 +211,11 @@ impl MPCSessionMessagesCollector {
                     party_to_msg.insert(party_id, messages_builder.clone());
                     match &messages_builder.messages {
                         MessageState::Complete(message) => {
-                            println!("message: {:?}", message.len());
+                            println!("ccomplete message: {:?}", message.len());
                             Some(message.clone())
                         }
                         MessageState::Incomplete(messages) => {
-                            println!("message: {:?}", messages.len());
+                            println!("iincomplete message: {:?}", messages.len());
                             None
                         }
                     }
@@ -239,11 +239,11 @@ impl MPCSessionMessagesCollector {
 
                 match &messages.messages {
                     MessageState::Complete(message) => {
-                        println!("message: {:?}", message.len());
+                        println!("cccomplete message: {:?}", message.len());
                         Some(message.clone())
                     }
                     MessageState::Incomplete(messages) => {
-                        println!("message: {:?}", messages.len());
+                        println!("iiincomplete message: {:?}", messages.len());
                         None
                     }
                 }

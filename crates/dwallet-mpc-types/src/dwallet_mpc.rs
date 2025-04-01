@@ -34,7 +34,7 @@ pub type MPCMessage = Vec<u8>;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct MPCMessageSlice {
-    pub message: Vec<u8>,
+    pub message: MPCMessage,
     pub sequence_number: u64,
     pub number_of_chunks: usize,
 }
