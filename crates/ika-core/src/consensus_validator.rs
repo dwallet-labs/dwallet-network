@@ -69,7 +69,6 @@ impl IkaTxValidator {
                 ConsensusTransactionKind::CapabilityNotificationV1(_)
                 | ConsensusTransactionKind::InitiateProcessMidEpoch(_)
                 | ConsensusTransactionKind::EndOfPublish(_)
-                | ConsensusTransactionKind::TestMessage(_, _)
                 | ConsensusTransactionKind::DWalletMPCMessage(..)
                 | ConsensusTransactionKind::DWalletMPCOutput(..)
                 | ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..) => {}

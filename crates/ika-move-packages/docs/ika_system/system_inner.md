@@ -9,7 +9,6 @@ title: Module `(ika_system=0x0)::system_inner_v1`
 -  [Struct `SystemEpochInfoEvent`](#(ika_system=0x0)_system_inner_v1_SystemEpochInfoEvent)
 -  [Struct `SystemProtocolCapVerifiedEvent`](#(ika_system=0x0)_system_inner_v1_SystemProtocolCapVerifiedEvent)
 -  [Struct `SystemCheckpointInfoEvent`](#(ika_system=0x0)_system_inner_v1_SystemCheckpointInfoEvent)
--  [Struct `TestMessageEvent`](#(ika_system=0x0)_system_inner_v1_TestMessageEvent)
 -  [Constants](#@Constants_0)
 -  [Function `create`](#(ika_system=0x0)_system_inner_v1_create)
 -  [Function `create_system_parameters`](#(ika_system=0x0)_system_inner_v1_create_system_parameters)
@@ -462,47 +461,6 @@ the checkpoint submmision message.
 </dd>
 <dt>
 <code>timestamp_ms: u64</code>
-</dt>
-<dd>
-</dd>
-</dl>
-
-
-</details>
-
-<a name="(ika_system=0x0)_system_inner_v1_TestMessageEvent"></a>
-
-## Struct `TestMessageEvent`
-
-
-
-<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_TestMessageEvent">TestMessageEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>: u64</code>
-</dt>
-<dd>
-</dd>
-<dt>
-<code>sequence_number: u64</code>
-</dt>
-<dd>
-</dd>
-<dt>
-<code>authority: u32</code>
-</dt>
-<dd>
-</dd>
-<dt>
-<code>num: u64</code>
 </dt>
 <dd>
 </dd>
@@ -2418,20 +2376,10 @@ Returns all the validators who are currently reporting <code>validator_id</code>
                     i = i + 1;
                 };
             } <b>else</b> <b>if</b> (message_data_type == 2) {
-                //TestMessage
-                <b>let</b> authority = bcs_body.peel_u32();
-                <b>let</b> num = bcs_body.peel_u64();
-                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_TestMessageEvent">TestMessageEvent</a> {
-                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>,
-                    sequence_number,
-                    authority,
-                    num,
-                });
-            } <b>else</b> <b>if</b> (message_data_type == 3) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _first_round_output = bcs_body.peel_vec_u8();
                 bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 4) {
+            } <b>else</b> <b>if</b> (message_data_type == 3) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _public_output = bcs_body.peel_vec_u8();
@@ -2439,18 +2387,18 @@ Returns all the validators who are currently reporting <code>validator_id</code>
                 <b>let</b> _encryption_key_address = <a href="../sui/address.md#sui_address_from_bytes">sui::address::from_bytes</a>(bcs_body.peel_vec_u8());
                 <b>let</b> _rejected = bcs_body.peel_bool();
                 bcs_body.peel_u64();
-                } <b>else</b> <b>if</b> (message_data_type == 5) {
+                } <b>else</b> <b>if</b> (message_data_type == 4) {
                     bcs_body.peel_vec_u8();
                     bcs_body.peel_vec_u8();
                     bcs_body.peel_bool();
-            } <b>else</b> <b>if</b> (message_data_type == 7) {
+            } <b>else</b> <b>if</b> (message_data_type == 6) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 bcs_body.peel_vec_u8();
                 <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _presign = bcs_body.peel_vec_u8();
                 bcs_body.peel_bool();
                 bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 6) {
+            } <b>else</b> <b>if</b> (message_data_type == 5) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2458,13 +2406,13 @@ Returns all the validators who are currently reporting <code>validator_id</code>
                 <b>let</b> _is_future_sign = bcs_body.peel_bool();
                 <b>let</b> _rejected = bcs_body.peel_bool();
                 bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 8) {
+            } <b>else</b> <b>if</b> (message_data_type == 7) {
                 <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _rejected = bcs_body.peel_bool();
                 bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 9) {
+            } <b>else</b> <b>if</b> (message_data_type == 8) {
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
