@@ -131,9 +131,9 @@ pub(crate) fn session_info_from_event(
             )?))
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGSecondRoundEvent>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent> =
-                bcs::from_bytes(&event.contents)?;
-            Ok(Some(dkg_second_party_session_info(deserialized_event)))
+            Ok(Some(dkg_second_party_session_info(
+                deserialize_event_or_dynamic_field::<StartDKGSecondRoundEvent>(&event.contents)?,
+            )))
         }
         t if t == &DWalletMPCSuiEvent::<StartPresignFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent> =
