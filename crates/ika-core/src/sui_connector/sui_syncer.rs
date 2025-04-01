@@ -61,7 +61,7 @@ where
             let perpetual_tables_clone = self.perpetual_tables.clone();
             let perpetual_tables_clone2 = self.perpetual_tables.clone();
             task_handles.push(spawn_logged_monitored_task!(
-                Self::sync_dwallet_missed_events(sui_client_clone, perpetual_tables_clone2,)
+                Self::fetch_dwallet_events_from_sui(sui_client_clone, perpetual_tables_clone2,)
             ));
             task_handles.push(spawn_logged_monitored_task!(
                 Self::run_event_listening_task(
@@ -77,7 +77,9 @@ where
         Ok(task_handles)
     }
 
-    async fn sync_dwallet_missed_events(
+    /// Fetches the pending events from Sui every minute. Needed to receive the events that were missed during an
+    /// epoch switch.
+    async fn fetch_dwallet_events_from_sui(
         sui_client: Arc<SuiClient<C>>,
         perpetual_tables_clone: Arc<AuthorityPerpetualTables>,
     ) {
