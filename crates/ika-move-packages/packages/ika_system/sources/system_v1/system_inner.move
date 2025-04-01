@@ -817,13 +817,6 @@ public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
     validator_set.active_committee()
 }
 
-public struct TestMessageEvent has drop, copy {
-    epoch: u64,
-    sequence_number: u64,
-    authority: u32,
-    num: u64,
-}
-
 fun verify_cap(
     self: &SystemInnerV1,
     cap: &ProtocolCap,
