@@ -46,8 +46,6 @@ pub enum ConsensusTransactionKey {
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
 
-    TestMessage(AuthorityName, u64),
-
     /// The message sent between MPC parties in a dwallet MPC session.
     DWalletMPCMessage(DWalletMPCMessageKey),
     /// The output of a dwallet MPC session.
@@ -73,9 +71,6 @@ impl Debug for ConsensusTransactionKey {
                 name.concise(),
                 generation
             ),
-            Self::TestMessage(name, num) => {
-                write!(f, "TestMessage({:?}, {})", name.concise(), num)
-            }
             Self::DWalletMPCMessage(message) => {
                 write!(f, "DWalletMPCMessage({:?})", message,)
             }
@@ -291,9 +286,6 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::CapabilityNotificationV1(cap) => {
                 ConsensusTransactionKey::CapabilityNotification(cap.authority, cap.generation)
-            }
-            ConsensusTransactionKind::TestMessage(authority, num) => {
-                ConsensusTransactionKey::TestMessage(*authority, *num)
             }
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(DWalletMPCMessageKey {
