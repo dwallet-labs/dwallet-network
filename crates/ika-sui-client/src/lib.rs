@@ -173,7 +173,7 @@ where
                         })?;
                     Ok(missed_events)
                 }
-            }
+            };
         }
         error!("failed to retrieve dwallet coordinator ID while fetching missed events");
         Ok(vec![])
@@ -727,34 +727,43 @@ impl SuiClientInner for SuiSdkClient {
         &self,
         events_bag_id: ObjectID,
     ) -> Result<Vec<DBSuiEvent>, self::Error> {
-        let dynamic_fields = self
-            .read_api()
-            .get_dynamic_fields(events_bag_id, None, None)
-            .await?;
         let mut events = vec![];
-        for df in dynamic_fields.data.iter() {
-            let object_id = df.object_id;
-            let dynamic_field_response = self
+        let mut next_cursor = None;
+        loop {
+            let dynamic_fields = self
                 .read_api()
-                .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                .get_dynamic_fields(events_bag_id, next_cursor, None)
                 .await?;
-            let resp = dynamic_field_response.into_object().map_err(|e| {
-                Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
-            })?;
-            let move_object = resp.bcs.ok_or(Error::DataError(format!(
-                "object {:?} has no bcs data",
-                object_id
-            )))?;
-            let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
-                "object {:?} is not a MoveObject",
-                object_id
-            )))?;
-            let event = DBSuiEvent {
-                type_: raw_move_obj.type_,
-                contents: raw_move_obj.bcs_bytes,
-            };
-            events.push(event);
+            for df in dynamic_fields.data.iter() {
+                let object_id = df.object_id;
+                let dynamic_field_response = self
+                    .read_api()
+                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                    .await?;
+                let resp = dynamic_field_response.into_object().map_err(|e| {
+                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+                })?;
+                let move_object = resp.bcs.ok_or(Error::DataError(format!(
+                    "object {:?} has no bcs data",
+                    object_id
+                )))?;
+                let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+                    "object {:?} is not a MoveObject",
+                    object_id
+                )))?;
+
+                let event = DBSuiEvent {
+                    type_: raw_move_obj.type_,
+                    contents: raw_move_obj.bcs_bytes,
+                };
+                events.push(event);
+            }
+            if !dynamic_fields.has_next_page {
+                break;
+            }
+            next_cursor = dynamic_fields.next_cursor;
         }
+
         Ok(events)
     }
 
