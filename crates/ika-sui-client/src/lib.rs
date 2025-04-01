@@ -235,7 +235,7 @@ where
                 Ok(DWalletCoordinatorInner::V1(ika_system_state_inner))
             }
             _ => Err(IkaError::SuiClientInternalError(format!(
-                "Unsupported SystemInner version: {}",
+                "Unsupported DWalletCoordinatorInner version: {}",
                 wrapper.version
             ))),
         }
