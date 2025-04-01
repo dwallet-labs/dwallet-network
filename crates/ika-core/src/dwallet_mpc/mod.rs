@@ -105,6 +105,18 @@ pub struct Field<N, V> {
     pub value: V,
 }
 
+fn deserialize_event_or_dynamic_field<T: Deserialize>(
+    event_contents: &[u8],
+) -> anyhow::Result<DWalletMPCSuiEvent<T>> {
+    if let Ok(deserialized_event) = bcs::from_bytes::<DWalletMPCSuiEvent<T>>(&event_contents) {
+        Ok(deserialized_event)
+    } else {
+        let deserialized_event =
+            bcs::from_bytes::<Field<ID, DWalletMPCSuiEvent<T>>>(&event_contents)?;
+        Ok(deserialized_event.value)
+    }
+}
+
 /// Parses the session info from the event and returns it.
 /// Return `None` if the event is not a DWallet MPC event.
 pub(crate) fn session_info_from_event(
@@ -114,18 +126,9 @@ pub(crate) fn session_info_from_event(
     warn!("processing event of type {:?}", event.type_);
     match &event.type_ {
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
-            if let Ok(deserialized_event) =
-                bcs::from_bytes::<DWalletMPCSuiEvent<StartDKGFirstRoundEvent>>(&event.contents)
-            {
-                Ok(Some(dkg_first_party_session_info(deserialized_event)?))
-            } else {
-                let deserialized_event = bcs::from_bytes::<
-                    Field<ID, DWalletMPCSuiEvent<StartDKGFirstRoundEvent>>,
-                >(&event.contents)?;
-                Ok(Some(dkg_first_party_session_info(
-                    deserialized_event.value,
-                )?))
-            }
+            Ok(Some(dkg_first_party_session_info(
+                deserialize_event_or_dynamic_field::<StartDKGFirstRoundEvent>(&event.contents)?,
+            )?))
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGSecondRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent> =
