@@ -119,7 +119,12 @@ impl AuthorityPerpetualTables {
         let mut batch = self.pending_events.batch();
         let serialized_events: Vec<(EventID, Vec<u8>)> = events
             .into_iter()
-            .map(|e| (ObjectID::random().into(), e))
+            .map(|e| {
+                (
+                    EventID::try_from(ObjectID::random().to_string()).unwrap(),
+                    e,
+                )
+            })
             .collect();
         batch.insert_batch(&self.pending_events, serialized_events)?;
         batch.write()?;
