@@ -121,6 +121,8 @@ impl AuthorityPerpetualTables {
             .into_iter()
             .map(|e| {
                 (
+                    // The pending events are being read & removed from the local DB every few seconds,
+                    // so it's safe to use a random ObjectID - as the number of events is small and the chance of
                     EventID::try_from(ObjectID::random().to_string()).unwrap(),
                     e.clone(),
                 )
