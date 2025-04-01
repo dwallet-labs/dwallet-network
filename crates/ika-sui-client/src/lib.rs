@@ -752,6 +752,9 @@ impl SuiClientInner for SuiSdkClient {
                     object_id
                 )))?;
 
+                // log the type with warn
+                warn!("received event with type {:?}", raw_move_obj.type_);
+
                 let event = DBSuiEvent {
                     type_: raw_move_obj.type_,
                     contents: raw_move_obj.bcs_bytes,
