@@ -147,8 +147,6 @@ pub enum MessageKind {
     /// end of the epoch.
     EndOfEpoch(Vec<EndOfEpochMessageKind>),
 
-    /// Test message for checkpoints.
-    TestMessage(u32, u64),
     // .. more action types go here
     DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
@@ -168,7 +166,6 @@ impl MessageKind {
         match self {
             Self::InitiateProcessMidEpoch => "InitiateProcessMidEpoch",
             Self::EndOfEpoch(_) => "EndOfEpoch",
-            Self::TestMessage(_, _) => "TestMessage",
             MessageKind::DwalletMPCNetworkDKGOutput(_) => "DwalletMPCNetworkDKGOutput",
             MessageKind::DwalletDKGFirstRoundOutput(_) => "DwalletDKGFirstRoundOutput",
             MessageKind::DwalletDKGSecondRoundOutput(_) => "DwalletDKGSecondRoundOutput",
@@ -203,13 +200,6 @@ impl Display for MessageKind {
             }
             Self::EndOfEpoch(_) => {
                 writeln!(writer, "MessageKind : EndOfEpoch")?;
-            }
-            Self::TestMessage(authority, num) => {
-                writeln!(
-                    writer,
-                    "MessageKind : TestMessage authority: {}, num: {}",
-                    authority, num
-                )?;
             }
             MessageKind::DwalletMPCNetworkDKGOutput(output) => {
                 writeln!(
