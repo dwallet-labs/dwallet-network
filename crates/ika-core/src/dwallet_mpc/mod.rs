@@ -105,7 +105,7 @@ pub struct Field<N, V> {
     pub value: V,
 }
 
-fn deserialize_event_or_dynamic_field<T: Deserialize>(
+fn deserialize_event_or_dynamic_field<T: DeserializeOwned + DWalletMPCEventTrait>(
     event_contents: &[u8],
 ) -> anyhow::Result<DWalletMPCSuiEvent<T>> {
     if let Ok(deserialized_event) = bcs::from_bytes::<DWalletMPCSuiEvent<T>>(&event_contents) {
