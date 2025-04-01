@@ -262,19 +262,20 @@ async fn main() -> Result<()> {
 
             let initiation_parameters = InitiationParameters::new();
 
-            let (ika_system_object_id, protocol_cap_id, init_system_shared_version) = init_initialize(
-                publisher_address,
-                &mut context,
-                client.clone(),
-                publish_config.ika_system_package_id,
-                publish_config.init_cap_id,
-                publish_config.ika_package_upgrade_cap_id,
-                publish_config.ika_system_package_upgrade_cap_id,
-                publish_config.treasury_cap_id,
-                initiation_parameters,
-            )
-            .await
-            .expect("Failed to initialize the IKA system");
+            let (ika_system_object_id, protocol_cap_id, init_system_shared_version) =
+                init_initialize(
+                    publisher_address,
+                    &mut context,
+                    client.clone(),
+                    publish_config.ika_system_package_id,
+                    publish_config.init_cap_id,
+                    publish_config.ika_package_upgrade_cap_id,
+                    publish_config.ika_system_package_upgrade_cap_id,
+                    publish_config.treasury_cap_id,
+                    initiation_parameters,
+                )
+                .await
+                .expect("Failed to initialize the IKA system");
             println!(
                 "Environment initialized successfully with ika_system_object_id: {ika_system_object_id},\
                  protocol_cap_id: {protocol_cap_id},\
@@ -350,10 +351,10 @@ async fn main() -> Result<()> {
                 "system::initialize done. `dwallet_id`: {}, `initial_shared_version`: {}",
                 dwallet_id, dwallet_initial_shared_version
             );
-            
+
             // object_id = 0xacdb9188b62bea2201a836361f5f20374d8402cd5f200d6f92e06a604d4fb2a8
             // 1
-            
+
             // Call ika_system_request_dwallet_network_decryption_key_dkg_by_cap
             ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
                 publisher_address,

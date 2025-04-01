@@ -74,5 +74,5 @@ docs/content/references/ika-api/ika-graphql/*
 docs/content/references/framework/**
 
 lcov.info
-ika_publish_config.json
+ika_config.json
 ika_config.json
