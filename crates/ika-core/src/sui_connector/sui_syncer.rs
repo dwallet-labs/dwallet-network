@@ -58,6 +58,7 @@ where
         for (module, cursor) in self.cursors {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
+            let sui_client_clone2 = self.sui_client.clone();
             let perpetual_tables_clone = self.perpetual_tables.clone();
             let perpetual_tables_clone2 = self.perpetual_tables.clone();
             task_handles.push(spawn_logged_monitored_task!(
@@ -67,7 +68,7 @@ where
                 Self::run_event_listening_task(
                     module,
                     cursor,
-                    sui_client_clone,
+                    sui_client_clone2,
                     query_interval,
                     metrics,
                     perpetual_tables_clone
