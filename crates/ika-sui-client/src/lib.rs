@@ -754,9 +754,11 @@ impl SuiClientInner for SuiSdkClient {
 
                 // log the type with warn
                 warn!("received event with type {:?}", raw_move_obj.type_);
-
+                let TypeTag::Struct(event_tag) = raw_move_obj.type_.type_params.get(0).unwrap().clone() else {
+                    continue;
+                } ;
                 let event = DBSuiEvent {
-                    type_: raw_move_obj.type_,
+                    type_: *event_tag,
                     contents: raw_move_obj.bcs_bytes,
                 };
                 events.push(event);
