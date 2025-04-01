@@ -122,7 +122,7 @@ impl AuthorityPerpetualTables {
             .map(|e| {
                 (
                     EventID::try_from(ObjectID::random().to_string()).unwrap(),
-                    e,
+                    e.clone(),
                 )
             })
             .collect();
