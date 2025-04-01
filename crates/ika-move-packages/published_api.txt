@@ -1138,6 +1138,9 @@ SystemProtocolCapVerifiedEvent
 SystemCheckpointInfoEvent
 	public struct
 	0x0::system_inner_v1
+TestMessageEvent
+	public struct
+	0x0::system_inner_v1
 create
 	public(package) fun
 	0x0::system_inner_v1
