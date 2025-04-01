@@ -82,7 +82,7 @@ where
         perpetual_tables_clone: Arc<AuthorityPerpetualTables>,
     ) {
         loop {
-            time::sleep(Duration::from_secs(2)).await;
+            time::sleep(Duration::from_secs(60)).await;
             let missed_events = sui_client
                 .get_dwallet_mpc_missed_events()
                 .await
