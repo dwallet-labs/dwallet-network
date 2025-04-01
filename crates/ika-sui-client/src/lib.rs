@@ -208,9 +208,9 @@ where
             .inner
             .get_dwallet_coordinator(dwallet_coordinator_id)
             .await
-            .map_err(|e| IkaError::SuiClientInternalError(format!("Can't get System: {e}")))?;
+            .map_err(|e| IkaError::SuiClientInternalError(format!("Can't get Coordinator: {e}")))?;
         let wrapper = bcs::from_bytes::<DWalletCoordinator>(&result).map_err(|e| {
-            IkaError::SuiClientSerializationError(format!("Can't serialize System: {e}"))
+            IkaError::SuiClientSerializationError(format!("Can't serialize Coordinator: {e}"))
         })?;
 
         match wrapper.version {
