@@ -145,12 +145,8 @@ pub enum SystemInner {
     V1(SystemInnerV1),
 }
 
-/// IkaSystemIkaSystemStateInnerState provides an abstraction over multiple versions of the inner IkaSystemStateInner object.
-/// This should be the primary interface to the system state object in Rust.
-/// We use enum dispatch to dispatch all methods defined in IkaSystemStateTrait to the actual
-/// implementation in the inner types.
+/// A wrapper around the different versions of the DWalletCoordinator.
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-// #[enum_dispatch(SystemInnerTrait)]
 pub enum DWalletCoordinatorInner {
     V1(DWalletCoordinatorInnerV1),
 }
