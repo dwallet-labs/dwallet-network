@@ -220,14 +220,14 @@ where
                     .get_dwallet_coordinator_inner(dwallet_coordinator_id, wrapper.version)
                     .await
                     .map_err(|e| {
-                        IkaError::SuiClientInternalError(format!("Can't get SystemInner v1: {e}"))
+                        IkaError::SuiClientInternalError(format!("Can't get DWalletCoordinatorInner v1: {e}"))
                     })?;
                 let dynamic_field_inner = bcs::from_bytes::<Field<u64, DWalletCoordinatorInnerV1>>(
                     &result,
                 )
                 .map_err(|e| {
                     IkaError::SuiClientSerializationError(format!(
-                        "Can't serialize SystemInner v1: {e}"
+                        "Can't serialize DWalletCoordinatorInner v1: {e}"
                     ))
                 })?;
                 let ika_system_state_inner = dynamic_field_inner.value;
