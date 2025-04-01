@@ -2214,11 +2214,15 @@ fun process_checkpoint_message(
                     i = i + 1;
                 };
             } else if (message_data_type == 2) {
+                    //TestMessage
+                    let _authority = bcs_body.peel_u32();
+                    let _num = bcs_body.peel_u64();
+            } else if (message_data_type == 3) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
                 let session_sequence_number = bcs_body.peel_u64();
                 self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, session_sequence_number);
-            } else if (message_data_type == 3) {
+            } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
@@ -2236,7 +2240,7 @@ fun process_checkpoint_message(
                     session_sequence_number,
                     ctx,
                 );
-            } else if (message_data_type == 4) {
+            } else if (message_data_type == 5) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
@@ -2247,7 +2251,7 @@ fun process_checkpoint_message(
                     rejected,
                     session_sequence_number,
                 );
-            } else if (message_data_type == 5) {
+            } else if (message_data_type == 6) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2264,7 +2268,7 @@ fun process_checkpoint_message(
                     rejected,
                     session_sequence_number
                 );
-            } else if (message_data_type == 7) {
+            } else if (message_data_type == 8) {
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2277,7 +2281,7 @@ fun process_checkpoint_message(
                     rejected,
                     session_sequence_number
                 );
-            } else if (message_data_type == 6) {
+            } else if (message_data_type == 7) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let presign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2285,7 +2289,7 @@ fun process_checkpoint_message(
                 let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
                 self.respond_ecdsa_presign(dwallet_id, presign_id, session_id, presign, rejected, session_sequence_number);
-            } else if (message_data_type == 8) {
+            } else if (message_data_type == 9) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let key_shares = bcs_body.peel_vec_u8();
