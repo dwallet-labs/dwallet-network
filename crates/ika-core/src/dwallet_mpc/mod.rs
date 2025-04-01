@@ -107,7 +107,7 @@ pub struct Field<N, V> {
 
 fn deserialize_event_or_dynamic_field<T: DeserializeOwned + DWalletMPCEventTrait>(
     event_contents: &[u8],
-) -> anyhow::Result<DWalletMPCSuiEvent<T>> {
+) -> Result<DWalletMPCSuiEvent<T>, bcs::Error> {
     if let Ok(deserialized_event) = bcs::from_bytes::<DWalletMPCSuiEvent<T>>(&event_contents) {
         Ok(deserialized_event)
     } else {
@@ -451,7 +451,7 @@ pub(crate) fn session_input_from_event(
         )),
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
@@ -464,7 +464,7 @@ pub(crate) fn session_input_from_event(
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGSecondRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
