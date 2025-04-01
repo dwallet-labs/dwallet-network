@@ -168,8 +168,6 @@ pub enum ConsensusTransactionKind {
     EndOfPublish(AuthorityName),
 
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
-    // Test message for checkpoints.
-    TestMessage(AuthorityName, u64),
 
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
@@ -268,17 +266,6 @@ impl ConsensusTransaction {
         Self {
             tracking_id,
             kind: ConsensusTransactionKind::CapabilityNotificationV1(capabilities),
-        }
-    }
-
-    pub fn new_test_message(authority: AuthorityName, num: u64) -> Self {
-        let mut hasher = DefaultHasher::new();
-        authority.hash(&mut hasher);
-        hasher.write_u64(num);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::TestMessage(authority, num),
         }
     }
 
