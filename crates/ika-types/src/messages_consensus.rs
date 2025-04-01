@@ -46,6 +46,8 @@ pub enum ConsensusTransactionKey {
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
 
+    TestMessage(AuthorityName, u64),
+
     /// The message sent between MPC parties in a dwallet MPC session.
     DWalletMPCMessage(DWalletMPCMessageKey),
     /// The output of a dwallet MPC session.
@@ -71,6 +73,9 @@ impl Debug for ConsensusTransactionKey {
                 name.concise(),
                 generation
             ),
+            Self::TestMessage(name, num) => {
+                write!(f, "TestMessage({:?}, {})", name.concise(), num)
+            }
             Self::DWalletMPCMessage(message) => {
                 write!(f, "DWalletMPCMessage({:?})", message,)
             }
@@ -163,6 +168,8 @@ pub enum ConsensusTransactionKind {
     EndOfPublish(AuthorityName),
 
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
+    // Test message for checkpoints.
+    TestMessage(AuthorityName, u64),
 
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
@@ -264,6 +271,17 @@ impl ConsensusTransaction {
         }
     }
 
+    pub fn new_test_message(authority: AuthorityName, num: u64) -> Self {
+        let mut hasher = DefaultHasher::new();
+        authority.hash(&mut hasher);
+        hasher.write_u64(num);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::TestMessage(authority, num),
+        }
+    }
+
     pub fn get_tracking_id(&self) -> u64 {
         (&self.tracking_id[..])
             .read_u64::<BigEndian>()
@@ -286,6 +304,9 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::CapabilityNotificationV1(cap) => {
                 ConsensusTransactionKey::CapabilityNotification(cap.authority, cap.generation)
+            }
+            ConsensusTransactionKind::TestMessage(authority, num) => {
+                ConsensusTransactionKey::TestMessage(*authority, *num)
             }
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(DWalletMPCMessageKey {
