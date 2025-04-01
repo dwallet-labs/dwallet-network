@@ -1022,7 +1022,7 @@ impl SuiClientInner for SuiSdkClient {
             }
         }
         Err(Self::Error::DataError(format!(
-            "Failed to load ika system state inner object with ID {:?} and version {:?}",
+            "Failed to load DWalletCoordinatorInner object with ID {:?} and version {:?}",
             dwallet_coordinator_id, version
         )))
     }
