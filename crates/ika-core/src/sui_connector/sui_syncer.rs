@@ -60,20 +60,22 @@ where
             let sui_client_clone = self.sui_client.clone();
             let perpetual_tables_clone = self.perpetual_tables.clone();
             let perpetual_tables_clone2 = self.perpetual_tables.clone();
-            tokio::spawn(Self::sync_dwallet_missed_events(
+            task_handles.push(spawn_logged_monitored_task!(
+                Self::sync_dwallet_missed_events(
                 sui_client_clone,
                 perpetual_tables_clone2,
+            )
             ));
-            task_handles.push(spawn_logged_monitored_task!(
-                Self::run_event_listening_task(
-                    module,
-                    cursor,
-                    sui_client_clone,
-                    query_interval,
-                    metrics,
-                    perpetual_tables_clone
-                )
-            ));
+            // task_handles.push(spawn_logged_monitored_task!(
+            //     Self::run_event_listening_task(
+            //         module,
+            //         cursor,
+            //         sui_client_clone,
+            //         query_interval,
+            //         metrics,
+            //         perpetual_tables_clone
+            //     )
+            // ));
         }
         Ok(task_handles)
     }
