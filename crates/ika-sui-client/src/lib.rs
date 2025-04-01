@@ -169,7 +169,9 @@ where
                         )
                         .await
                         .map_err(|e| {
-                            IkaError::SuiClientInternalError(format!("Can't get DWalletCoordinator: {e}"))
+                            IkaError::SuiClientInternalError(format!(
+                                "Can't get DWalletCoordinator: {e}"
+                            ))
                         })?;
                     Ok(missed_events)
                 }
@@ -220,7 +222,9 @@ where
                     .get_dwallet_coordinator_inner(dwallet_coordinator_id, wrapper.version)
                     .await
                     .map_err(|e| {
-                        IkaError::SuiClientInternalError(format!("Can't get DWalletCoordinatorInner v1: {e}"))
+                        IkaError::SuiClientInternalError(format!(
+                            "Can't get DWalletCoordinatorInner v1: {e}"
+                        ))
                     })?;
                 let dynamic_field_inner = bcs::from_bytes::<Field<u64, DWalletCoordinatorInnerV1>>(
                     &result,
@@ -752,9 +756,7 @@ impl SuiClientInner for SuiSdkClient {
                     object_id
                 )))?;
 
-                let Some(TypeTag::Struct(event_tag)) =
-                    raw_move_obj.type_.type_params.get(1)
-                else {
+                let Some(TypeTag::Struct(event_tag)) = raw_move_obj.type_.type_params.get(1) else {
                     continue;
                 };
                 let event = DBSuiEvent {
