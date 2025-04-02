@@ -448,7 +448,7 @@ pub(crate) async fn session_input_from_event(
                         .dwallet_network_decryption_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                 )
-                .await?;
+                .await;
             Ok((dkg_first_public_input(protocol_public_parameters)?, None))
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGSecondRoundEvent>::type_(packages_config) => {
@@ -461,7 +461,7 @@ pub(crate) async fn session_input_from_event(
                     &deserialized_event.event_data.dwallet_mpc_network_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                 )
-                .await?;
+                .await;
             Ok((
                 dkg_second_public_input(deserialized_event.event_data, protocol_public_parameters)?,
                 None,
@@ -479,7 +479,7 @@ pub(crate) async fn session_input_from_event(
                         .dwallet_network_decryption_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                 )
-                .await?;
+                .await;
             Ok((
                 presign_public_input(deserialized_event.event_data, protocol_public_parameters)?,
                 None,
@@ -495,7 +495,7 @@ pub(crate) async fn session_input_from_event(
                     &deserialized_event.event_data.dwallet_mpc_network_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                 )
-                .await?;
+                .await;
             Ok((
                 sign_public_input(
                     &deserialized_event.event_data,
@@ -526,7 +526,7 @@ pub(crate) async fn session_input_from_event(
                     &deserialized_event.event_data.dwallet_mpc_network_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                 )
-                .await?;
+                .await;
             Ok((protocol_public_parameters, None))
         }
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),
