@@ -91,6 +91,9 @@ pub struct DWalletMPCManager {
     pub(crate) malicious_handler: MaliciousHandler,
     /// The order of the sessions that are ready to get computed.
     pub(crate) pending_for_computation_order: VecDeque<DWalletMPCSession>,
+    /// The order of the sessions that have received quorum for their current round, but we have not
+    /// yet received an event for from Sui.
+    pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -113,6 +116,12 @@ pub enum DWalletMPCDBMessage {
     /// and re-run the round again to make it succeed.
     /// AuthorityName is the name of the authority that reported the malicious parties.
     SessionFailedWithMaliciousParties(AuthorityName, MaliciousReport),
+}
+
+struct ReadySessionsResponse {
+    ready_sessions: Vec<DWalletMPCSession>,
+    pending_for_event_sessions: Vec<DWalletMPCSession>,
+    malicious_actors: Vec<PartyID>,
 }
 
 impl DWalletMPCManager {
@@ -140,6 +149,7 @@ impl DWalletMPCManager {
             cryptographic_computations_orchestrator: mpc_computations_orchestrator,
             malicious_handler: MaliciousHandler::new(epoch_store.committee().clone()),
             pending_for_computation_order: VecDeque::new(),
+            pending_for_events_order: Default::default(),
         })
     }
 
@@ -184,11 +194,14 @@ impl DWalletMPCManager {
     /// or perform the first step of the flow.
     /// We parallelize the advances with `Rayon` to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> IkaResult {
-        let (ready_to_advance, malicious_parties) = self.get_ready_to_advance_sessions()?;
-        if !malicious_parties.is_empty() {
-            self.flag_parties_as_malicious(&malicious_parties)?;
+        let ready_sessions_response = self.get_ready_to_advance_sessions()?;
+        if !ready_sessions_response.malicious_actors.is_empty() {
+            self.flag_parties_as_malicious(&ready_sessions_response.malicious_actors)?;
         }
-        self.pending_for_computation_order.extend(ready_to_advance);
+        self.pending_for_computation_order
+            .extend(ready_sessions_response.ready_sessions);
+        self.pending_for_events_order
+            .extend(ready_sessions_response.pending_for_event_sessions);
         Ok(())
     }
 
@@ -357,15 +370,13 @@ impl DWalletMPCManager {
 
     /// Returns the sessions that can perform the next cryptographic round, and the list of malicious parties that has
     /// been detected while checking for such sessions.
-    fn get_ready_to_advance_sessions(
-        &mut self,
-    ) -> DwalletMPCResult<(Vec<DWalletMPCSession>, Vec<PartyID>)> {
+    fn get_ready_to_advance_sessions(&mut self) -> DwalletMPCResult<ReadySessionsResponse> {
         let quorum_check_results: Vec<(DWalletMPCSession, Vec<PartyID>)> = self
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, ref mut session)| {
                 let quorum_check_result = session.check_quorum_for_next_crypto_round();
-                if quorum_check_result.is_ready && session.mpc_event_data.is_some() {
+                if quorum_check_result.is_ready {
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
@@ -380,17 +391,26 @@ impl DWalletMPCManager {
                 }
             })
             .collect();
+
         let malicious_parties: Vec<PartyID> = quorum_check_results
             .clone()
             .into_iter()
             .map(|(_, malicious_parties)| malicious_parties)
             .flatten()
             .collect();
-        let ready_to_advance_sessions = quorum_check_results
+        let ready_to_advance_sessions: Vec<DWalletMPCSession> = quorum_check_results
             .into_iter()
             .map(|(session, _)| session)
             .collect();
-        Ok((ready_to_advance_sessions, malicious_parties))
+        let (ready_sessions, pending_for_event_sessions): (Vec<_>, Vec<_>) =
+            ready_to_advance_sessions
+                .into_iter()
+                .partition(|s| s.mpc_event_data.is_some());
+        Ok(ReadySessionsResponse {
+            ready_sessions,
+            pending_for_event_sessions,
+            malicious_actors: malicious_parties,
+        })
     }
 
     /// Spawns all ready MPC cryptographic computations using Rayon.
