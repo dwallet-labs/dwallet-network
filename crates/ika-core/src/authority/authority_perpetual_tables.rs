@@ -88,11 +88,7 @@ impl AuthorityPerpetualTables {
         Ok(())
     }
 
-    pub fn serialize_and_insert_pending_events(
-        &self,
-        module: Identifier,
-        events: &[SuiEvent],
-    ) -> IkaResult {
+    pub fn insert_pending_events(&self, module: Identifier, events: &[SuiEvent]) -> IkaResult {
         let cursor = events.last().map(|e| e.id);
         if let Some(cursor) = cursor {
             let mut batch = self.pending_events.batch();
@@ -111,25 +107,6 @@ impl AuthorityPerpetualTables {
             batch.insert_batch(&self.pending_events, serialized_events?)?;
             batch.write()?;
         }
-        self.pending_events.rocksdb.flush()?;
-        Ok(())
-    }
-
-    pub fn insert_pending_events(&self, events: &[Vec<u8>]) -> IkaResult {
-        let mut batch = self.pending_events.batch();
-        let serialized_events: Vec<(EventID, Vec<u8>)> = events
-            .into_iter()
-            .map(|e| {
-                (
-                    // The pending events are being read & removed from the local DB every few seconds,
-                    // so it's safe to use a random ObjectID - as the number of events is small and the chance of
-                    EventID::try_from((TransactionDigest::random(), 0)).unwrap(),
-                    e.clone(),
-                )
-            })
-            .collect();
-        batch.insert_batch(&self.pending_events, serialized_events)?;
-        batch.write()?;
         self.pending_events.rocksdb.flush()?;
         Ok(())
     }

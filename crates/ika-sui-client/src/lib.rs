@@ -46,8 +46,8 @@ use sui_json_rpc_types::{
 use sui_sdk::error::Error;
 use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
 use sui_types::balance::Balance;
-use sui_types::base_types::ObjectRef;
 use sui_types::base_types::SequenceNumber;
+use sui_types::base_types::{EpochId, ObjectRef};
 use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
@@ -152,32 +152,43 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
-    pub async fn get_dwallet_mpc_missed_events(&self) -> IkaResult<Vec<DBSuiEvent>> {
+    pub async fn get_dwallet_mpc_missed_events(
+        &self,
+        epoch_id: EpochId,
+    ) -> IkaResult<Vec<DBSuiEvent>> {
         let system_inner = self.get_system_inner_until_success().await;
-        if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
-            let dwallet_coordinator_inner = self
-                .get_dwallet_coordinator_inner_until_success(dwallet_state_id)
-                .await;
-            return match dwallet_coordinator_inner {
-                DWalletCoordinatorInner::V1(dwallet_coordinator_inner_v1) => {
-                    let missed_events = self
-                        .inner
-                        .get_missed_events(
-                            dwallet_coordinator_inner_v1
-                                .session_start_events
-                                .id
-                                .id
-                                .bytes,
-                        )
-                        .await
-                        .map_err(|e| {
-                            IkaError::SuiClientInternalError(format!(
-                                "Can't get DWalletCoordinator: {e}"
-                            ))
-                        })?;
-                    Ok(missed_events)
-                }
-            };
+        loop {
+            if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
+                let dwallet_coordinator_inner = self
+                    .get_dwallet_coordinator_inner_until_success(dwallet_state_id)
+                    .await;
+                match dwallet_coordinator_inner {
+                    DWalletCoordinatorInner::V1(dwallet_coordinator_inner_v1) => {
+                        // Make sure we are synced with Sui in order to fetch the missed events
+                        // If Sui's epoch number matches ours, all the needed missed events must be synced as well.
+                        if dwallet_coordinator_inner_v1.current_epoch != epoch_id {
+                            tokio::time::sleep(Duration::from_secs(2)).await;
+                            continue;
+                        }
+                        let missed_events = self
+                            .inner
+                            .get_missed_events(
+                                dwallet_coordinator_inner_v1
+                                    .session_start_events
+                                    .id
+                                    .id
+                                    .bytes,
+                            )
+                            .await
+                            .map_err(|e| {
+                                IkaError::SuiClientInternalError(format!(
+                                    "Can't get DWalletCoordinator: {e}"
+                                ))
+                            })?;
+                        return Ok(missed_events);
+                    }
+                };
+            }
         }
         error!("failed to retrieve dwallet coordinator ID while fetching missed events");
         Ok(vec![])
@@ -555,7 +566,7 @@ where
             )
             .await
             .map_err(|e| {
-                IkaError::SuiClientInternalError(format!("can't get_network_decryption_keys: {e}"))
+                IkaError::SuiClientInternalError(format!("Can't get_network_decryption_keys: {e}"))
             })?)
     }
 

@@ -74,9 +74,8 @@ use mysten_metrics::{spawn_monitored_task, RegistryService};
 use mysten_network::server::ServerBuilder;
 use mysten_service::server_timing::server_timing_middleware;
 
-use ika_network::discovery;
 use ika_network::discovery::TrustedPeerChangeEvent;
-use ika_network::state_sync;
+use ika_network::{discovery, state_sync};
 use ika_protocol_config::{Chain, ProtocolConfig};
 use sui_macros::fail_point;
 use sui_macros::{fail_point_async, replay_log};
@@ -179,14 +178,12 @@ use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use ika_core::dwallet_mpc::network_dkg::{
-    DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
-};
+use ika_core::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateData};
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
 use ika_sui_client::metrics::SuiClientMetrics;
-use ika_sui_client::SuiClient;
+use ika_sui_client::{SuiBridgeClient, SuiClient};
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
@@ -374,7 +371,7 @@ impl IkaNode {
         let is_validator = config.consensus_config.is_some();
         let dwallet_network_keys = if is_validator {
             let party_id = epoch_store.authority_name_to_party_id(&config.protocol_public_key())?;
-            let validator_private_data = ValidatorPrivateDecryptionKeyData {
+            let validator_private_data = ValidatorPrivateData {
                 party_id,
                 class_groups_decryption_key: config
                     .class_groups_key_pair_and_proof
@@ -382,16 +379,18 @@ impl IkaNode {
                     .decryption_key(),
                 validator_decryption_key_shares: RwLock::new(HashMap::new()),
             };
-            let dwallet_network_keys = Arc::new(DwalletMPCNetworkKeys::new(validator_private_data));
-            Some(dwallet_network_keys)
+            let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
+            let dwallet_network_keys_arc = Arc::new(dwallet_network_keys);
+            Some(dwallet_network_keys_arc)
         } else {
             None
         };
+
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
                 checkpoint_store.clone(),
-                sui_client,
+                sui_client.clone(),
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
                 dwallet_network_keys.clone(),
@@ -399,7 +398,7 @@ impl IkaNode {
             .await?,
         );
 
-        info!("Creating archive reader");
+        info!("creating archive reader");
         // Create network
         // TODO only configure validators as seed/preferred peers for validators and not for
         // fullnodes once we've had a chance to re-work fullnode configuration generation.
@@ -493,8 +492,9 @@ impl IkaNode {
                 &registry_service,
                 ika_node_metrics.clone(),
                 previous_epoch_last_checkpoint_sequence_number,
-                // Safe to unwrap() because the node is a Validator.
+                // safe to unwrap because we are a validator
                 dwallet_network_keys.clone().unwrap(),
+                sui_client.clone(),
             )
             .await?;
             // This is only needed during cold start.
@@ -536,11 +536,13 @@ impl IkaNode {
         let node = Arc::new(node);
         let node_copy = node.clone();
         let perpetual_tables_copy = perpetual_tables.clone();
+        let sui_client_clone = sui_client.clone();
         spawn_monitored_task!(async move {
             let result = Self::monitor_reconfiguration(
                 node_copy,
                 perpetual_tables_copy,
                 dwallet_network_keys.clone(),
+                sui_client_clone,
             )
             .await;
             if let Err(error) = result {
@@ -780,6 +782,7 @@ impl IkaNode {
         ika_node_metrics: Arc<IkaNodeMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys: Arc<DwalletMPCNetworkKeys>,
+        sui_client: Arc<SuiBridgeClient>,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
         let consensus_config = config_clone
@@ -826,6 +829,7 @@ impl IkaNode {
             ika_tx_validator_metrics,
             previous_epoch_last_checkpoint_sequence_number,
             network_keys,
+            sui_client,
         )
         .await
     }
@@ -844,6 +848,7 @@ impl IkaNode {
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys: Arc<DwalletMPCNetworkKeys>,
+        sui_client: Arc<SuiBridgeClient>,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_checkpoint_service(
             config,
@@ -856,7 +861,8 @@ impl IkaNode {
             previous_epoch_last_checkpoint_sequence_number,
         );
 
-        let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(epoch_store.clone());
+        let dwallet_mpc_service_exit =
+            Self::start_dwallet_mpc_service(epoch_store.clone(), sui_client);
 
         // Start the dWallet MPC manager on epoch start.
         epoch_store.set_dwallet_mpc_network_keys(network_keys)?;
@@ -1026,7 +1032,9 @@ impl IkaNode {
         self: Arc<Self>,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
+        sui_client: Arc<SuiBridgeClient>,
     ) -> Result<()> {
+        let sui_client_clone2 = sui_client.clone();
         loop {
             let run_with_range = self.config.run_with_range;
 
@@ -1209,8 +1217,9 @@ impl IkaNode {
                             self.metrics.clone(),
                             ika_tx_validator_metrics,
                             previous_epoch_last_checkpoint_sequence_number,
-                            // Safe to unwrap() because the node is a Validator.
+                            // safe to unwrap because we are a validator
                             dwallet_network_keys.clone().unwrap(),
+                            sui_client_clone2.clone(),
                         )
                         .await?,
                     )
@@ -1245,6 +1254,7 @@ impl IkaNode {
                             previous_epoch_last_checkpoint_sequence_number,
                             // safe to unwrap because we are a validator
                             dwallet_network_keys.clone().unwrap(),
+                            sui_client.clone(),
                         )
                         .await?,
                     )
@@ -1301,10 +1311,13 @@ impl IkaNode {
         &self.config
     }
 
-    fn start_dwallet_mpc_service(epoch_store: Arc<AuthorityPerEpochStore>) -> watch::Sender<()> {
+    fn start_dwallet_mpc_service(
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        sui_client: Arc<SuiBridgeClient>,
+    ) -> watch::Sender<()> {
         let (exit_sender, exit_receiver) = watch::channel(());
         let mut service = DWalletMPCService::new(epoch_store.clone(), exit_receiver);
-        spawn_monitored_task!(service.spawn());
+        spawn_monitored_task!(service.spawn(sui_client));
 
         exit_sender
     }
