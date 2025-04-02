@@ -315,7 +315,7 @@ async fn main() -> Result<()> {
             // Check that the required fields are present.
             let ika_system_object_id = publish_config.ika_system_object_id.ok_or_else(|| {
                 anyhow::Error::msg(
-                    "`system_id` not found in configuration. Please run init-env first.",
+                    "`ika_system_object_id` not found in configuration. Please run init-env first.",
                 )
             })?;
             let init_system_shared_version = publish_config.init_system_shared_version.ok_or_else(|| {

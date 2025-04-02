@@ -7,6 +7,7 @@ FROM rust:1.85-bullseye AS builder
 ARG PROFILE=release
 ARG GIT_REVISION=unknown
 ARG GITHUB_TOKEN
+ARG WITH_NETWORK_DKG=0
 ARG WORKDIR=/opt
 
 # Environment
@@ -28,8 +29,16 @@ COPY class-groups-keys-mock-files class-groups-keys-mock-files
 
 # Build dependencies first for better layer caching
 # --locked ensures you never accidentally change dependencies during a build.
+# Build dependencies first for better layer caching
 RUN cargo fetch --locked
-RUN cargo build --profile ${PROFILE} --locked --bin ika-node
+
+# Conditionally compile with the network DKG feature
+RUN if [ "$WITH_NETWORK_DKG" = "1" ]; then \
+      cargo build --profile ${PROFILE} --locked --bin ika-node --features with-network-dkg; \
+    else \
+      cargo build --profile ${PROFILE} --locked --bin ika-node; \
+    fi
+
 
 # ==========================
 # Runtime stage
