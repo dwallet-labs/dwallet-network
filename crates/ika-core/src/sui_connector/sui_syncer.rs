@@ -5,9 +5,11 @@
 //! on Sui blockchain from concerned modules of ika_system package.
 
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::error::IkaResult;
+use itertools::Itertools;
 use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
@@ -20,7 +22,8 @@ use tokio::{
     task::JoinHandle,
     time::{self, Duration},
 };
-use tracing::error;
+use tracing::log::error;
+use tracing::{info, warn};
 
 /// Map from contract address to their start cursor (exclusive)
 pub type SuiTargetModules = HashMap<Identifier, Option<EventID>>;
@@ -52,9 +55,19 @@ where
         }
     }
 
-    pub async fn run(self, query_interval: Duration) -> IkaResult<Vec<JoinHandle<()>>> {
+    pub async fn run(
+        self,
+        query_interval: Duration,
+        dwallet_mpc_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
+    ) -> IkaResult<Vec<JoinHandle<()>>> {
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
+        if let Some(dwallet_mpc_network_keys) = dwallet_mpc_network_keys {
+            tokio::spawn(Self::sync_dwallet_network_keys(
+                sui_client_clone,
+                dwallet_mpc_network_keys,
+            ));
+        }
         for (module, cursor) in self.cursors {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
@@ -76,6 +89,52 @@ where
             ));
         }
         Ok(task_handles)
+    }
+
+    /// Sync the DwalletMPC network keys from the Sui client to the local store.
+    async fn sync_dwallet_network_keys(
+        sui_client: Arc<SuiClient<C>>,
+        dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
+    ) {
+        loop {
+            time::sleep(Duration::from_secs(2)).await;
+            let network_decryption_keys = sui_client
+                .get_dwallet_mpc_network_keys()
+                .await
+                .unwrap_or_else(|e| {
+                    warn!("failed to fetch dwallet MPC network keys: {e}");
+                    HashMap::new()
+                });
+            let mut local_network_decryption_keys =
+                dwallet_mpc_network_keys.network_decryption_keys();
+            network_decryption_keys
+                .into_iter()
+                .for_each(|(key_id, network_dec_key_shares)| {
+                    if let Some(local_dec_key_shares) = local_network_decryption_keys.get(&key_id) {
+                        info!("Updating the network key for `key_id`: {:?}", key_id);
+                        if *local_dec_key_shares != network_dec_key_shares {
+                            if let Err(e) =
+                                dwallet_mpc_network_keys.update_network_key(key_id, network_dec_key_shares)
+                            {
+                                error!(
+                                    "failed to update the key version for key_id: {:?}, error: {:?}",
+                                    key_id, e
+                                );
+                            }
+                        }
+                    } else {
+                        info!("Adding a new network key with ID: {:?}", key_id);
+                        if let Err(e) =
+                            dwallet_mpc_network_keys.add_new_network_key(key_id, network_dec_key_shares)
+                        {
+                            error!(
+                                "Failed to add new key for `key_id`: {:?}, error: {:?}",
+                                key_id, e
+                            );
+                        }
+                    }
+                });
+        }
     }
 
     /// Fetches the pending events from Sui every minute. Needed to receive the events that were missed during an

@@ -213,6 +213,12 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.dwallet_2pc_mpc_secp256k1_id
     }
 
+    fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
+        &self,
+    ) -> &Vec<DWalletNetworkDecryptionKeyCap> {
+        &self.dwallet_2pc_mpc_secp256k1_network_decryption_keys
+    }
+
     //
     // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata {
     //     let validators = self

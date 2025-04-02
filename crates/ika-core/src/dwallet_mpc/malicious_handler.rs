@@ -6,7 +6,6 @@
 //! - Storing reported malicious actors.
 //! - Ensuring these reports are only considered valid if submitted by a quorum of validators.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::stake_aggregator::StakeAggregator;
 use group::PartyID;
 use ika_types::committee::{Committee, StakeUnit};
@@ -98,7 +97,7 @@ impl MaliciousHandler {
         Ok(self
             .malicious_actors
             .iter()
-            .map(|name| Ok(authority_name_to_party_id(name, &epoch_store)?))
+            .map(|name| Ok(epoch_store.authority_name_to_party_id(name)?))
             .collect::<DwalletMPCResult<HashSet<_>>>()?)
     }
 
