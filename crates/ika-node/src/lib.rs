@@ -370,7 +370,7 @@ impl IkaNode {
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
         let is_validator = config.consensus_config.is_some();
-        let dwallet_network_keys_arc = if is_validator {
+        let dwallet_network_keys = if is_validator {
             let party_id = epoch_store.authority_name_to_party_id(&config.protocol_public_key())?;
             let validator_private_data = ValidatorPrivateData {
                 party_id,
@@ -378,7 +378,7 @@ impl IkaNode {
                     .class_groups_key_pair_and_proof
                     .class_groups_keypair()
                     .decryption_key(),
-                validator_decryption_key_share: RwLock::new(HashMap::new()),
+                validator_decryption_key_shares: RwLock::new(HashMap::new()),
             };
             let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
             let dwallet_network_keys_arc = Arc::new(dwallet_network_keys);
@@ -393,7 +393,7 @@ impl IkaNode {
                 sui_client,
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
-                dwallet_network_keys_arc.clone(),
+                dwallet_network_keys.clone(),
             )
             .await?,
         );
@@ -493,7 +493,7 @@ impl IkaNode {
                 ika_node_metrics.clone(),
                 previous_epoch_last_checkpoint_sequence_number,
                 // safe to unwrap because we are a validator
-                dwallet_network_keys_arc.clone().unwrap(),
+                dwallet_network_keys.clone().unwrap(),
             )
             .await?;
             // This is only needed during cold start.
@@ -539,7 +539,7 @@ impl IkaNode {
             let result = Self::monitor_reconfiguration(
                 node_copy,
                 perpetual_tables_copy,
-                dwallet_network_keys_arc.clone(),
+                dwallet_network_keys.clone(),
             )
             .await;
             if let Err(error) = result {

@@ -92,7 +92,10 @@ where
             let network_decryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
                 .await
-                .unwrap_or_default();
+                .unwrap_or_else(|e| {
+                    error!("Failed to fetch dwallet MPC network keys: {e}");
+                    HashMap::new()
+                });
             let mut local_network_decryption_keys =
                 dwallet_mpc_network_keys.network_decryption_keys();
             network_decryption_keys
