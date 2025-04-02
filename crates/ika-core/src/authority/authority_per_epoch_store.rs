@@ -1365,18 +1365,6 @@ impl AuthorityPerEpochStore {
                     return None;
                 }
             }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::TestMessage(authority, _),
-                ..
-            }) => {
-                if transaction.sender_authority() != *authority {
-                    warn!(
-                        "TestMessage authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    return None;
-                }
-            }
             SequencedConsensusTransactionKind::System(_) => {}
         }
         Some(VerifiedSequencedConsensusTransaction(transaction))
@@ -1960,15 +1948,6 @@ impl AuthorityPerEpochStore {
                 }
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::TestMessage(authority, num),
-                ..
-            }) => Ok(
-                self.process_consensus_system_transaction(&MessageKind::TestMessage(
-                    self.committee.authority_index(&authority).unwrap(),
-                    *num,
-                )),
-            ),
             SequencedConsensusTransactionKind::System(system_transaction) => {
                 Ok(self.process_consensus_system_transaction(system_transaction))
             }
