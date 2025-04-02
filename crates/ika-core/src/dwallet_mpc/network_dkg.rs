@@ -278,9 +278,15 @@ impl DwalletMPCNetworkKeys {
             .clone())
     }
 
-    fn try_get_decryption_keys(&self, key_id: &ObjectID) -> DwalletMPCResult<Option<NetworkDecryptionKeyShares>> {
+    fn try_get_decryption_keys(
+        &self,
+        key_id: &ObjectID,
+    ) -> DwalletMPCResult<Option<NetworkDecryptionKeyShares>> {
         let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
-        Ok(inner.network_decryption_keys.get(&key_id).map(|v| v.clone()))
+        Ok(inner
+            .network_decryption_keys
+            .get(&key_id)
+            .map(|v| v.clone()))
     }
 
     pub async fn get_protocol_public_parameters(
