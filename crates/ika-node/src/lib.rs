@@ -178,7 +178,7 @@ use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use ika_core::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys};
+use ika_core::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
@@ -371,7 +371,7 @@ impl IkaNode {
         let is_validator = config.consensus_config.is_some();
         let dwallet_network_keys = if is_validator {
             let party_id = epoch_store.authority_name_to_party_id(&config.protocol_public_key())?;
-            let validator_private_data = ValidatorPrivateData {
+            let validator_private_data = ValidatorPrivateDecryptionKeyData {
                 party_id,
                 class_groups_decryption_key: config
                     .class_groups_key_pair_and_proof
