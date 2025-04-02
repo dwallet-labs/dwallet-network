@@ -296,7 +296,7 @@ impl DwalletMPCNetworkKeys {
     ) -> DwalletMPCResult<Vec<u8>> {
         loop {
             let Ok(Some(result)) = self.try_get_decryption_keys(key_id) else {
-                warn!("Waiting for the network decryption key shares to be available");
+                warn!("failed to fetch the network decryption key shares for key ID: {:?}, trying again", key_id);
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 continue;
             };
