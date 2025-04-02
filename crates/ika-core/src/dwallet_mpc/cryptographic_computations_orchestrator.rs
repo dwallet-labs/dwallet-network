@@ -151,7 +151,7 @@ impl CryptographicComputationsOrchestrator {
         let authority_name = self.epoch_store.name;
         let position = positions
             .iter()
-            .position(|&x| x == *authority_name)
+            .position(|&x| x == authority_name)
             .ok_or(DwalletMPCError::InvalidMPCPartyType)?;
         Ok(position)
     }
@@ -198,7 +198,9 @@ impl CryptographicComputationsOrchestrator {
                 session.session_id
             );
             let session = session.clone();
-            self.spawn_session(&session).await;
+            if let Err(e) = self.spawn_session(&session) {
+                error!("failed to spawn session with error: {:?}", e);
+            }
         });
         Ok(())
     }
