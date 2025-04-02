@@ -494,7 +494,7 @@ impl IkaNode {
                 &registry_service,
                 ika_node_metrics.clone(),
                 previous_epoch_last_checkpoint_sequence_number,
-                // safe to unwrap because we are a validator
+                // Safe to unwrap() because the node is a Validator.
                 dwallet_network_keys.clone().unwrap(),
                 sui_client.clone(),
             )
