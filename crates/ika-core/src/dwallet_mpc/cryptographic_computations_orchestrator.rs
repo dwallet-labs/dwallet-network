@@ -9,13 +9,16 @@
 //! This approach reduces the read delay from the local DB without slowing down state sync.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
+use crate::dwallet_mpc::sign::SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS;
+use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::DWalletMPCLocalComputationMetadata;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
+use sui_types::base_types::ObjectID;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::error;
+use tracing::{error, info};
 
 /// The possible MPC computations update.
 /// Needed to use a channel also for start messages because in the aggregated sign flow,
@@ -49,6 +52,7 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// computations we called [`rayon::spawn_fifo`] for,
     /// but we didn't receive a completion message for.
     pub(crate) currently_running_sessions_count: usize,
+    epoch_store: Arc<AuthorityPerEpochStore>,
 }
 
 impl CryptographicComputationsOrchestrator {
@@ -67,6 +71,7 @@ impl CryptographicComputationsOrchestrator {
             available_cores_for_cryptographic_computations: available_cores_for_computations,
             computation_channel_sender: completed_computation_channel_sender,
             currently_running_sessions_count: 0,
+            epoch_store: epoch_store.clone(),
         })
     }
 
@@ -105,7 +110,6 @@ impl CryptographicComputationsOrchestrator {
     }
 
     fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
-        let session_id = session.session_id;
         // Hook the tokio thread pool to the rayon thread pool.
         let handle = Handle::current();
         let session = session.clone();
@@ -126,6 +130,50 @@ impl CryptographicComputationsOrchestrator {
                     err
                 );
             }
+        });
+        Ok(())
+    }
+
+    fn spawn_aggregated_sign(&mut self, session: DWalletMPCSession) -> DwalletMPCResult<()> {
+        let validator_position = self.get_validator_position(&session.session_id)?;
+        let epoch_store = self.epoch_store.clone();
+        tokio::spawn(async move {
+            for _ in 0..validator_position {
+                let manager = epoch_store.get_dwallet_mpc_manager().await;
+                let Some(session) = manager.mpc_sessions.get(&session.session_id) else {
+                    error!(
+                    "failed to get session when checking if sign last round should get executed"
+                );
+                    return;
+                };
+                // If a malicious report has been received for the sign session, all the validators
+                // should execute the last step immediately.
+                if !session.session_specific_state.is_none() {
+                    break;
+                }
+                tokio::time::sleep(tokio::time::Duration::from_secs(
+                    SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS as u64,
+                ))
+                .await;
+            }
+            let manager = epoch_store.get_dwallet_mpc_manager().await;
+            let Some(live_session) = manager.mpc_sessions.get(&session.session_id) else {
+                error!(
+                    "failed to get session when checking if sign last round should get executed"
+                );
+                return;
+            };
+            if live_session.status != MPCSessionStatus::Active
+                && !live_session.is_verifying_sign_ia_report()
+            {
+                return;
+            }
+            info!(
+                "running last sign cryptographic step for session_id: {:?}",
+                session.session_id
+            );
+            let session = session.clone();
+            self.spawn_session(&session).await;
         });
         Ok(())
     }

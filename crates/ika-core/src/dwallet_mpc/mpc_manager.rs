@@ -41,13 +41,13 @@ use ika_types::messages_dwallet_mpc::{
     DWalletMPCMessage, MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo,
     SignIASessionState, StartPresignFirstRoundEvent,
 };
+use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use rayon::ThreadPoolBuilder;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
-use itertools::Itertools;
 use sui_json_rpc_types::SuiEvent;
 use sui_storage::mutex_table::MutexGuard;
 use sui_types::digests::TransactionDigest;
@@ -398,7 +398,10 @@ impl DWalletMPCManager {
     pub(crate) fn perform_cryptographic_computation(&mut self) {
         while !self.pending_for_computation_order.is_empty() {
             let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
-            let live_session = self.mpc_sessions.get(&oldest_pending_session.session_id).unwrap();
+            let live_session = self
+                .mpc_sessions
+                .get(&oldest_pending_session.session_id)
+                .unwrap();
             if live_session.status != MPCSessionStatus::Active {
                 continue;
             }
