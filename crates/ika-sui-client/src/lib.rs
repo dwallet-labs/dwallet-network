@@ -16,7 +16,7 @@ use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
-    DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyState, DBSuiEvent
+    DBSuiEvent, DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyState,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::system_inner_v1::{

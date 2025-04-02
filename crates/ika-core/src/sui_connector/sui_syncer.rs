@@ -9,8 +9,8 @@ use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::error::IkaResult;
-use itertools::Itertools;
 use ika_types::messages_dwallet_mpc::DBSuiEvent;
+use itertools::Itertools;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
@@ -154,7 +154,10 @@ where
                 .map(|e| bcs::to_bytes(&e).unwrap())
                 .collect();
             if let Err(error) = perpetual_tables_clone.insert_pending_events(&serialized_events) {
-                error!(?error, "failed to write missed events to perpetual tables")
+                error!(
+                    "failed to write missed events to perpetual tables {:?}",
+                    error
+                );
             }
         }
     }
