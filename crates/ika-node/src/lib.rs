@@ -180,7 +180,7 @@ use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use ika_core::dwallet_mpc::network_dkg::{
-    DwalletMPCNetworkKeyVersions, NodeContext, ValidatorContext,
+    DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
 };
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
@@ -372,21 +372,21 @@ impl IkaNode {
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
         let is_validator = config.consensus_config.is_some();
-        let node_context = if is_validator {
+        let dwallet_network_keys = if is_validator {
             let party_id = epoch_store.authority_name_to_party_id(&config.protocol_public_key())?;
-            NodeContext::Validator(ValidatorContext {
+            let validator_private_data = ValidatorPrivateDecryptionKeyData {
                 party_id,
                 class_groups_decryption_key: config
                     .class_groups_key_pair_and_proof
                     .class_groups_keypair()
                     .decryption_key(),
-                validator_decryption_key_share: RwLock::new(HashMap::new()),
-            })
+                validator_decryption_key_shares: RwLock::new(HashMap::new()),
+            };
+            let dwallet_network_keys = Arc::new(DwalletMPCNetworkKeys::new(validator_private_data));
+            Some(dwallet_network_keys)
         } else {
-            NodeContext::FullNode
+            None
         };
-        let dwallet_network_keys = DwalletMPCNetworkKeyVersions::new(node_context);
-        let dwallet_network_keys_arc = Arc::new(dwallet_network_keys);
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
@@ -394,13 +394,13 @@ impl IkaNode {
                 sui_client,
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
-                dwallet_network_keys_arc.clone(),
+                dwallet_network_keys.clone(),
                 epoch_store.get_weighted_threshold_access_structure()?,
             )
             .await?,
         );
 
-        info!("creating archive reader");
+        info!("Creating archive reader");
         // Create network
         // TODO only configure validators as seed/preferred peers for validators and not for
         // fullnodes once we've had a chance to re-work fullnode configuration generation.
@@ -494,7 +494,8 @@ impl IkaNode {
                 &registry_service,
                 ika_node_metrics.clone(),
                 previous_epoch_last_checkpoint_sequence_number,
-                dwallet_network_keys_arc.clone(),
+                // Safe to unwrap() because the node is a Validator.
+                dwallet_network_keys.clone().unwrap(),
             )
             .await?;
             // This is only needed during cold start.
@@ -540,7 +541,7 @@ impl IkaNode {
             let result = Self::monitor_reconfiguration(
                 node_copy,
                 perpetual_tables_copy,
-                dwallet_network_keys_arc.clone(),
+                dwallet_network_keys.clone(),
             )
             .await;
             if let Err(error) = result {
@@ -779,7 +780,7 @@ impl IkaNode {
         registry_service: &RegistryService,
         ika_node_metrics: Arc<IkaNodeMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
-        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        network_keys: Arc<DwalletMPCNetworkKeys>,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
         let consensus_config = config_clone
@@ -843,7 +844,7 @@ impl IkaNode {
         ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
-        network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        network_keys: Arc<DwalletMPCNetworkKeys>,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_checkpoint_service(
             config,
@@ -1025,7 +1026,7 @@ impl IkaNode {
     pub async fn monitor_reconfiguration(
         self: Arc<Self>,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
-        dwallet_network_keys: Arc<DwalletMPCNetworkKeyVersions>,
+        dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
     ) -> Result<()> {
         loop {
             let run_with_range = self.config.run_with_range;
@@ -1072,33 +1073,6 @@ impl IkaNode {
                     .expect("Supported versions should be populated")
                     // no need to send digests of versions less than the current version
                     .truncate_below(config.version);
-
-                spawn_monitored_task!(async move {
-                    let mut num = 0u64;
-                    loop {
-                        tokio::time::sleep(Duration::from_millis(1000)).await;
-                        //     let transaction = ConsensusTransaction::new_capability_notification_v1(
-                        //     AuthorityCapabilitiesV1::new(
-                        //         name,
-                        //         Chain::Mainnet,
-                        //         //cur_epoch_store.get_chain_identifier().chain(),
-                        //         versions.clone(),
-                        //         vec![random_object_ref()],
-                        //         // self.state
-                        //         //     .get_available_system_packages(&binary_config)
-                        //         //     .await,
-                        //     ),
-                        // );
-                        // consensus_adapter
-                        // .submit_to_consensus(&[transaction], &cur_epoch_store).await.expect("ConsensusTransaction::new_capability_notification_v1");
-                        let transaction = ConsensusTransaction::new_test_message(name, num);
-                        consensus_adapter
-                            .submit_to_consensus(&[transaction], &cur_epoch_store)
-                            .await
-                            .expect("ConsensusTransaction::new_test_message");
-                        num += 1;
-                    }
-                });
             }
 
             let stop_condition = self
@@ -1236,7 +1210,8 @@ impl IkaNode {
                             self.metrics.clone(),
                             ika_tx_validator_metrics,
                             previous_epoch_last_checkpoint_sequence_number,
-                            dwallet_network_keys.clone(),
+                            // Safe to unwrap() because the node is a Validator.
+                            dwallet_network_keys.clone().unwrap(),
                         )
                         .await?,
                     )
@@ -1269,7 +1244,8 @@ impl IkaNode {
                             &self.registry_service,
                             self.metrics.clone(),
                             previous_epoch_last_checkpoint_sequence_number,
-                            dwallet_network_keys.clone(),
+                            // safe to unwrap because we are a validator
+                            dwallet_network_keys.clone().unwrap(),
                         )
                         .await?,
                     )

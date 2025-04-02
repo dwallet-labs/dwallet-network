@@ -11,7 +11,7 @@ use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
-use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, DwalletMPCNetworkKeysStatus};
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::dwallet_mpc::party_id_to_authority_name;
 use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
@@ -316,14 +316,12 @@ impl DWalletMPCManager {
             .get_protocol_public_parameters(key_id, key_scheme)
     }
 
-    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeyVersions>> {
+    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeys>> {
         Ok(self
             .epoch_store()?
             .dwallet_mpc_network_keys
             .get()
-            .ok_or(DwalletMPCError::TwoPCMPCError(
-                "Decryption share not found".to_string(),
-            ))?
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .clone())
     }
 
