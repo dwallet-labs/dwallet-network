@@ -110,7 +110,6 @@ impl CryptographicComputationsOrchestrator {
     }
 
     pub(crate) fn can_spawn_session(&self) -> bool {
-        warn!("we have {:?} events running atm", self.currently_running_sessions_count);
         self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
     }
 
