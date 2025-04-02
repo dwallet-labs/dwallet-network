@@ -31,7 +31,7 @@ use sui_json_rpc_types::SuiEvent;
 use sui_macros::fail_point_async;
 use sui_types::base_types::ObjectID;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{CallArg, ObjectArg, Transaction, TransactionKind};
+use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
 use tokio::{
@@ -195,11 +195,29 @@ where
         sui_client: &Arc<SuiClient<C>>,
         metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
-        let (gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
+        let gas_coins = sui_client
+            .get_gas_objects_panic_if_not_gas(sui_notifier.sui_address)
             .await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
+        let gas_coin = gas_coins.first().unwrap();
+        if gas_coins.len() > 1 {
+            let coins = gas_coins
+                .iter()
+                .skip(1)
+                .map(|c| {
+                    ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
+                        // Safe to unwrap as this function is only being called at the swarm config.
+                        .unwrap()
+                })
+                .collect::<Vec<_>>();
+            ptb.command(sui_types::transaction::Command::MergeCoins(
+                // Safe to unwrap as this function is only being called at the swarm config.
+                Argument::GasCoin,
+                // Keep the gas object out
+                coins.to_vec(),
+            ));
+        }
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
 
@@ -237,7 +255,7 @@ where
             sui_notifier.sui_address,
             ptb.finish(),
             sui_client,
-            vec![gas_obj_ref],
+            vec![*gas_coin],
             &sui_notifier.sui_key,
         )
         .await;
