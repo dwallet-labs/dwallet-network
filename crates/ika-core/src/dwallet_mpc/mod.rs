@@ -91,8 +91,8 @@ pub struct Field<N, V> {
 }
 
 /// The type of the event is different when we receive an emitted event and when we fetch the event's dynamic field
-/// directly from Sui. This function first tried to deserialize the event as a DWalletMPCSuiEvent and if it fails,
-/// it tries to deserialize it as a Field<ID, DWalletMPCSuiEvent<T>>.
+/// directly from Sui. This function first tried to deserialize the event as a [`DWalletMPCSuiEvent`], and if it fails,
+/// it tries to deserialize it as a [`Field<ID, DWalletMPCSuiEvent<T>>`].
 fn deserialize_event_or_dynamic_field<T: DeserializeOwned + DWalletMPCEventTrait>(
     event_contents: &[u8],
 ) -> Result<DWalletMPCSuiEvent<T>, bcs::Error> {

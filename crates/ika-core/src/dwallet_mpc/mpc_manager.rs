@@ -309,10 +309,15 @@ impl DWalletMPCManager {
         &self,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
-    ) -> DwalletMPCResult<Vec<u8>> {
-        self.dwallet_mpc_network_keys()?
-            .get_protocol_public_parameters(key_id, key_scheme)
-            .await
+    ) -> Vec<u8> {
+        loop {
+            if let Ok(dwallet_mpc_network_keys) = self.dwallet_mpc_network_keys() {
+                return dwallet_mpc_network_keys
+                    .get_protocol_public_parameters(key_id, key_scheme)
+                    .await
+            }
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        }
     }
 
     fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeys>> {
