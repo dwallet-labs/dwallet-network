@@ -21,6 +21,7 @@ use tokio::{
     time::{self, Duration},
 };
 use tracing::log::error;
+use tracing::{info, warn};
 
 /// Map from contract address to their start cursor (exclusive)
 pub type SuiTargetModules = HashMap<Identifier, Option<EventID>>;
@@ -60,6 +61,7 @@ where
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
         if let Some(dwallet_mpc_network_keys) = dwallet_mpc_network_keys {
+            // Todo (#810): Check the usage adding the task handle to the task_handles vector.
             tokio::spawn(Self::sync_dwallet_network_keys(
                 sui_client_clone,
                 dwallet_mpc_network_keys,
@@ -83,6 +85,7 @@ where
         Ok(task_handles)
     }
 
+    /// Sync the DwalletMPC network keys from the Sui client to the local store.
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
         dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
@@ -93,31 +96,33 @@ where
                 .get_dwallet_mpc_network_keys()
                 .await
                 .unwrap_or_else(|e| {
-                    error!("Failed to fetch dwallet MPC network keys: {e}");
+                    warn!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 });
             let mut local_network_decryption_keys =
                 dwallet_mpc_network_keys.network_decryption_keys();
             network_decryption_keys
                 .into_iter()
-                .for_each(|(key_id, key_version)| {
-                    if let Some(local_version) = local_network_decryption_keys.get(&key_id) {
-                        if *local_version != key_version {
+                .for_each(|(key_id, network_dec_key_shares)| {
+                    if let Some(local_dec_key_shares) = local_network_decryption_keys.get(&key_id) {
+                        info!("Updating the network key for `key_id`: {:?}", key_id);
+                        if *local_dec_key_shares != network_dec_key_shares {
                             if let Err(e) =
-                                dwallet_mpc_network_keys.update_network_key(key_id, key_version)
+                                dwallet_mpc_network_keys.update_network_key(key_id, network_dec_key_shares)
                             {
                                 error!(
-                                    "Failed to update key version for key_id: {:?}, error: {:?}",
+                                    "failed to update the key version for key_id: {:?}, error: {:?}",
                                     key_id, e
                                 );
                             }
                         }
                     } else {
+                        info!("Adding a new network key with ID: {:?}", key_id);
                         if let Err(e) =
-                            dwallet_mpc_network_keys.add_new_network_key(key_id, key_version)
+                            dwallet_mpc_network_keys.add_new_network_key(key_id, network_dec_key_shares)
                         {
                             error!(
-                                "Failed to add new key for key_id: {:?}, error: {:?}",
+                                "Failed to add new key for `key_id`: {:?}, error: {:?}",
                                 key_id, e
                             );
                         }
