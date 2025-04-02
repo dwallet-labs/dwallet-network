@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Fast fail on errors or unset variables
 set -ex
