@@ -1047,33 +1047,6 @@ impl IkaNode {
                     .expect("Supported versions should be populated")
                     // no need to send digests of versions less than the current version
                     .truncate_below(config.version);
-
-                spawn_monitored_task!(async move {
-                    let mut num = 0u64;
-                    loop {
-                        tokio::time::sleep(Duration::from_millis(1000)).await;
-                        //     let transaction = ConsensusTransaction::new_capability_notification_v1(
-                        //     AuthorityCapabilitiesV1::new(
-                        //         name,
-                        //         Chain::Mainnet,
-                        //         //cur_epoch_store.get_chain_identifier().chain(),
-                        //         versions.clone(),
-                        //         vec![random_object_ref()],
-                        //         // self.state
-                        //         //     .get_available_system_packages(&binary_config)
-                        //         //     .await,
-                        //     ),
-                        // );
-                        // consensus_adapter
-                        // .submit_to_consensus(&[transaction], &cur_epoch_store).await.expect("ConsensusTransaction::new_capability_notification_v1");
-                        let transaction = ConsensusTransaction::new_test_message(name, num);
-                        consensus_adapter
-                            .submit_to_consensus(&[transaction], &cur_epoch_store)
-                            .await
-                            .expect("ConsensusTransaction::new_test_message");
-                        num += 1;
-                    }
-                });
             }
 
             let stop_condition = self
