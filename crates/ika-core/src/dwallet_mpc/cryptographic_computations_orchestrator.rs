@@ -15,7 +15,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::DWalletMPCLocalComputationMetadata;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use sui_types::base_types::ObjectID;
+use sui_types::base_types::{ObjectID, TransactionDigest};
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{error, info};
@@ -138,7 +138,28 @@ impl CryptographicComputationsOrchestrator {
         Ok(())
     }
 
-    pub(crate) fn spawn_aggregated_sign(&mut self, session: DWalletMPCSession) -> DwalletMPCResult<()> {
+    /// Deterministically decides by the session ID how long this validator should wait before
+    /// running the last step of the sign protocol.
+    /// If while waiting, the validator receives a valid signature for this session,
+    /// it will not run the last step in the sign protocol, and save computation resources.
+    fn get_validator_position(&self, session_id: &ObjectID) -> DwalletMPCResult<usize> {
+        let session_id_as_32_bytes: [u8; 32] = session_id.into_bytes();
+        let positions = self
+            .epoch_store
+            .committee()
+            .shuffle_by_stake_from_tx_digest(&TransactionDigest::new(session_id_as_32_bytes));
+        let authority_name = self.epoch_store.name;
+        let position = positions
+            .iter()
+            .position(|&x| x == *authority_name)
+            .ok_or(DwalletMPCError::InvalidMPCPartyType)?;
+        Ok(position)
+    }
+
+    pub(crate) fn spawn_aggregated_sign(
+        &mut self,
+        session: DWalletMPCSession,
+    ) -> DwalletMPCResult<()> {
         let validator_position = self.get_validator_position(&session.session_id)?;
         let epoch_store = self.epoch_store.clone();
         tokio::spawn(async move {
