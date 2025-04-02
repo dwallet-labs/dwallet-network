@@ -47,6 +47,7 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use itertools::Itertools;
 use sui_json_rpc_types::SuiEvent;
 use sui_storage::mutex_table::MutexGuard;
 use sui_types::digests::TransactionDigest;
@@ -88,6 +89,8 @@ pub struct DWalletMPCManager {
     /// This happens automatically because the [`DWalletMPCManager`]
     /// is part of the [`AuthorityPerEpochStore`].
     pub(crate) malicious_handler: MaliciousHandler,
+    /// The order of the sessions that are ready to get computed.
+    pub(crate) pending_for_computation_order: VecDeque<DWalletMPCSession>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -136,6 +139,7 @@ impl DWalletMPCManager {
                 .map_err(|e| DwalletMPCError::MPCManagerError(e.to_string()))?,
             cryptographic_computations_orchestrator: mpc_computations_orchestrator,
             malicious_handler: MaliciousHandler::new(epoch_store.committee().clone()),
+            pending_for_computation_order: VecDeque::new(),
         })
     }
 
@@ -184,8 +188,7 @@ impl DWalletMPCManager {
         if !malicious_parties.is_empty() {
             self.flag_parties_as_malicious(&malicious_parties)?;
         }
-        self.cryptographic_computations_orchestrator
-            .insert_ready_sessions(ready_to_advance);
+        self.pending_for_computation_order.extend(ready_to_advance);
         Ok(())
     }
 
@@ -362,7 +365,7 @@ impl DWalletMPCManager {
             .iter_mut()
             .filter_map(|(_, ref mut session)| {
                 let quorum_check_result = session.check_quorum_for_next_crypto_round();
-                if quorum_check_result.is_ready {
+                if quorum_check_result.is_ready && session.mpc_event_data.is_some() {
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
@@ -393,22 +396,41 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) fn perform_cryptographic_computation(&mut self) {
+        while !self.pending_for_computation_order.is_empty() {
+            let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
+            let live_session = self.mpc_sessions.get(&oldest_pending_session.session_id).unwrap();
+            if live_session.status != MPCSessionStatus::Active {
+                continue;
+            }
+            if let Err(err) = self.spawn_session(&oldest_pending_session) {
+                error!("failed to spawn session with err: {:?}", err);
+            }
+        }
         let pending_computation_instances_len = self
             .cryptographic_computations_orchestrator
             .pending_for_computation_order
             .len();
-        for _ in 0..pending_computation_instances_len {
+        for i in 0..pending_computation_instances_len {
+            if self
+                .cryptographic_computations_orchestrator
+                .currently_running_sessions_count
+                >= self
+                    .cryptographic_computations_orchestrator
+                    .available_cores_for_cryptographic_computations
+            {
+                break;
+            }
             let Some(oldest_computation_metadata) = self
                 .cryptographic_computations_orchestrator
                 .pending_for_computation_order
-                .pop_front()
+                .get(i)
             else {
                 return;
             };
             let Some(mut ready_to_advance_session) = self
                 .cryptographic_computations_orchestrator
                 .pending_computation_map
-                .remove(&oldest_computation_metadata)
+                .get(&oldest_computation_metadata)
             else {
                 return;
             };
@@ -419,16 +441,30 @@ impl DWalletMPCManager {
                     return;
                 };
                 if live_session.mpc_event_data.is_none() {
-                    self.cryptographic_computations_orchestrator
-                        .pending_for_computation_order
-                        .push_back(oldest_computation_metadata.clone());
-                    self.cryptographic_computations_orchestrator
-                        .pending_computation_map
-                        .insert(oldest_computation_metadata, ready_to_advance_session);
                     continue;
                 }
+                let mut ready_to_advance_session = self
+                    .cryptographic_computations_orchestrator
+                    .pending_computation_map
+                    .remove(&oldest_computation_metadata)
+                    // Safe to unwrap as we just retrieved this session.
+                    .unwrap();
+                self.cryptographic_computations_orchestrator
+                    .pending_for_computation_order
+                    .remove(i);
                 ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
+
+                continue;
             }
+            let mut ready_to_advance_session = self
+                .cryptographic_computations_orchestrator
+                .pending_computation_map
+                .remove(&oldest_computation_metadata)
+                // Safe to unwrap as we just retrieved this session.
+                .unwrap();
+            self.cryptographic_computations_orchestrator
+                .pending_for_computation_order
+                .remove(i);
             if let Err(err) = self.spawn_session(&ready_to_advance_session) {
                 error!("failed to spawn session with err: {:?}", err);
             }

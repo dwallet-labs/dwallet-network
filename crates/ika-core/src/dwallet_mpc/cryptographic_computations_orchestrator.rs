@@ -13,7 +13,9 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::DWalletMPCLocalComputationMetadata;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
+use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
+use tracing::error;
 
 /// The possible MPC computations update.
 /// Needed to use a channel also for start messages because in the aggregated sign flow,
@@ -43,14 +45,6 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// This is needed to decrease the [`currently_running_sessions_count`] when a computation is
     /// done.
     pub(crate) computation_channel_sender: UnboundedSender<ComputationUpdate>,
-    /// A map of the pending cryptographic computation sessions.
-    /// This map is needed to remove a session that we received a quorum of messages for
-    /// its next round, so running the current completed round is redundant.
-    pub(crate) pending_computation_map:
-        HashMap<DWalletMPCLocalComputationMetadata, DWalletMPCSession>,
-    /// The order of the [`pending_computation_map`].
-    /// Needed to process the computations in the order they were received.
-    pub(crate) pending_for_computation_order: VecDeque<DWalletMPCLocalComputationMetadata>,
     /// The number of currently running cryptographic computations — i.e.,
     /// computations we called [`rayon::spawn_fifo`] for,
     /// but we didn't receive a completion message for.
@@ -72,26 +66,8 @@ impl CryptographicComputationsOrchestrator {
         Ok(CryptographicComputationsOrchestrator {
             available_cores_for_cryptographic_computations: available_cores_for_computations,
             computation_channel_sender: completed_computation_channel_sender,
-            pending_computation_map: HashMap::new(),
-            pending_for_computation_order: VecDeque::new(),
             currently_running_sessions_count: 0,
         })
-    }
-
-    /// Insert the given list of pending sessions to the pending computations queue.
-    /// If there's an existing pending computation for an old round of one of the newer
-    /// computations, the obsolete computation is removed.
-    pub(crate) fn insert_ready_sessions(&mut self, sessions: Vec<DWalletMPCSession>) {
-        for session in sessions.into_iter() {
-            let session_next_round_metadata = DWalletMPCLocalComputationMetadata {
-                session_id: session.session_id,
-                crypto_round_number: session.pending_quorum_for_highest_round_number,
-            };
-            self.pending_computation_map
-                .insert(session_next_round_metadata.clone(), session.clone());
-            self.pending_for_computation_order
-                .push_back(session_next_round_metadata);
-        }
     }
 
     fn listen_for_completed_computations(
@@ -126,5 +102,31 @@ impl CryptographicComputationsOrchestrator {
             }
         });
         completed_computation_channel_sender
+    }
+
+    fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
+        let session_id = session.session_id;
+        // Hook the tokio thread pool to the rayon thread pool.
+        let handle = Handle::current();
+        let session = session.clone();
+        let finished_computation_sender = self.computation_channel_sender.clone();
+        if let Err(err) = finished_computation_sender.send(ComputationUpdate::Started) {
+            error!(
+                "Failed to send a started computation message with error: {:?}",
+                err
+            );
+        }
+        rayon::spawn_fifo(move || {
+            if let Err(err) = session.advance(&handle) {
+                error!("failed to advance session with error: {:?}", err);
+            }
+            if let Err(err) = finished_computation_sender.send(ComputationUpdate::Completed) {
+                error!(
+                    "Failed to send a finished computation message with error: {:?}",
+                    err
+                );
+            }
+        });
+        Ok(())
     }
 }
