@@ -56,21 +56,6 @@ pub(crate) mod sign;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
-/// Convert a given authority name (address) to it's corresponding [`PartyID`].
-/// The [`PartyID`] is the index of the authority in the committee.
-pub(crate) fn authority_name_to_party_id(
-    authority_name: &AuthorityName,
-    epoch_store: &AuthorityPerEpochStore,
-) -> DwalletMPCResult<PartyID> {
-    epoch_store
-        .committee()
-        .authority_index(authority_name)
-        // Need to add 1 because the authority index is 0-based,
-        // and the twopc_mpc library uses 1-based party IDs.
-        .map(|index| (index + 1) as PartyID)
-        .ok_or_else(|| DwalletMPCError::AuthorityNameNotFound(*authority_name))
-}
-
 /// Convert a given [`PartyID`] to it's corresponding authority name (address).
 pub(crate) fn party_id_to_authority_name(
     party_id: PartyID,

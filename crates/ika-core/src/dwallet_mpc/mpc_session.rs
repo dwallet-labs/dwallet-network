@@ -20,8 +20,7 @@ use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{
-    authority_name_to_party_id, message_digest, party_id_to_authority_name,
-    party_ids_to_authority_names, presign,
+    message_digest, party_id_to_authority_name, party_ids_to_authority_names, presign,
 };
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
@@ -349,7 +348,6 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => advance_network_dkg(
-                init_event.event_data.dwallet_network_decryption_key_id,
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
@@ -362,7 +360,6 @@ impl DWalletMPCSession {
                         .clone()
                         .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                 )?,
-                self.epoch_store()?,
             ),
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
                 match verify_encrypted_share(&verification_data.event_data) {
@@ -452,8 +449,9 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        let source_party_id =
-            authority_name_to_party_id(&message.authority, &*self.epoch_store()?)?;
+        let source_party_id = self
+            .epoch_store()?
+            .authority_name_to_party_id(&message.authority)?;
 
         let current_round = self.serialized_messages.len();
         match self.serialized_messages.get_mut(message.round_number) {
