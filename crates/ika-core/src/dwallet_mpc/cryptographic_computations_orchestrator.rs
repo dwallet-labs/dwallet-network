@@ -18,7 +18,7 @@ use std::sync::Arc;
 use sui_types::base_types::{ObjectID, TransactionDigest};
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 /// The possible MPC computations update.
 /// Needed to use a channel also for start messages because in the aggregated sign flow,
@@ -43,15 +43,15 @@ pub(crate) enum ComputationUpdate {
 pub(crate) struct CryptographicComputationsOrchestrator {
     /// The number of logical CPUs available for cryptographic computations on the validator's
     /// machine.
-    pub(crate) available_cores_for_cryptographic_computations: usize,
+    available_cores_for_cryptographic_computations: usize,
     /// A channel sender to notify the manager that a computation has been completed.
     /// This is needed to decrease the [`currently_running_sessions_count`] when a computation is
     /// done.
-    pub(crate) computation_channel_sender: UnboundedSender<ComputationUpdate>,
+    computation_channel_sender: UnboundedSender<ComputationUpdate>,
     /// The number of currently running cryptographic computations — i.e.,
     /// computations we called [`rayon::spawn_fifo`] for,
     /// but we didn't receive a completion message for.
-    pub(crate) currently_running_sessions_count: usize,
+    currently_running_sessions_count: usize,
     epoch_store: Arc<AuthorityPerEpochStore>,
 }
 
@@ -110,6 +110,7 @@ impl CryptographicComputationsOrchestrator {
     }
 
     pub(crate) fn can_spawn_session(&self) -> bool {
+        warn!("we have {:?} events running atm", self.currently_running_sessions_count);
         self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
     }
 
