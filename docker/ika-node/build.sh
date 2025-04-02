@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Fast fail on errors or unset variables
-set -ex
+set -e
 
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
