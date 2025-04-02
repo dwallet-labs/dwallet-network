@@ -278,14 +278,19 @@ impl DwalletMPCNetworkKeys {
             .clone())
     }
 
+    fn try_get_decryption_keys(&self, key_id: &ObjectID) -> DwalletMPCResult<Option<NetworkDecryptionKeyShares>> {
+        let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
+        Ok(inner.network_decryption_keys.get(&key_id).map(|v| v.clone()))
+    }
+
     pub async fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
         loop {
-            let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
-            let Some(result) = inner.network_decryption_keys.get(&key_id) else {
+            let Ok(Some(result)) = self.try_get_decryption_keys(key_id) else {
+                warn!("Waiting for the network decryption key shares to be available");
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 continue;
             };
