@@ -6,5 +6,5 @@ run-local:
 	cargo run --release --package ika --bin ika -- start
 run-local-with-net-dkg:
 	cargo run --release --package ika --bin ika --features with-network-dkg -- start
-
-
+snapshot:
+	UPDATE=1 cargo test --package ika-move-packages --test build_ika_move_packages build_ika_move_packages -- --exact
