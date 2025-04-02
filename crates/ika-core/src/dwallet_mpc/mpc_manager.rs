@@ -397,6 +397,9 @@ impl DWalletMPCManager {
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) fn perform_cryptographic_computation(&mut self) {
         while !self.pending_for_computation_order.is_empty() {
+            if !self.cryptographic_computations_orchestrator.can_spawn_session() {
+                return;
+            }
             let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
             let live_session = self
                 .mpc_sessions
@@ -405,71 +408,23 @@ impl DWalletMPCManager {
             if live_session.status != MPCSessionStatus::Active {
                 continue;
             }
-            if let Err(err) = self.spawn_session(&oldest_pending_session) {
-                error!("failed to spawn session with err: {:?}", err);
-            }
-        }
-        let pending_computation_instances_len = self
-            .cryptographic_computations_orchestrator
-            .pending_for_computation_order
-            .len();
-        for i in 0..pending_computation_instances_len {
-            if self
-                .cryptographic_computations_orchestrator
-                .currently_running_sessions_count
-                >= self
-                    .cryptographic_computations_orchestrator
-                    .available_cores_for_cryptographic_computations
-            {
-                break;
-            }
-            let Some(oldest_computation_metadata) = self
-                .cryptographic_computations_orchestrator
-                .pending_for_computation_order
-                .get(i)
-            else {
-                return;
-            };
-            let Some(mut ready_to_advance_session) = self
-                .cryptographic_computations_orchestrator
-                .pending_computation_map
-                .get(&oldest_computation_metadata)
-            else {
-                return;
-            };
-            if ready_to_advance_session.mpc_event_data.is_none() {
-                let Some(live_session) =
-                    self.mpc_sessions.get(&ready_to_advance_session.session_id)
-                else {
-                    return;
-                };
-                if live_session.mpc_event_data.is_none() {
-                    continue;
-                }
-                let mut ready_to_advance_session = self
-                    .cryptographic_computations_orchestrator
-                    .pending_computation_map
-                    .remove(&oldest_computation_metadata)
-                    // Safe to unwrap as we just retrieved this session.
-                    .unwrap();
-                self.cryptographic_computations_orchestrator
-                    .pending_for_computation_order
-                    .remove(i);
-                ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
-
+            let Some(event_data) = &oldest_pending_session.mpc_event_data else {
+                // This should never happen, as in the [`Self::get_ready_to_advance_sessions`] function
+                // we check if the session has an event data.
+                error!(
+                    "failed to get event data for session_id: {:?}",
+                    oldest_pending_session.session_id
+                );
                 continue;
-            }
-            let mut ready_to_advance_session = self
-                .cryptographic_computations_orchestrator
-                .pending_computation_map
-                .remove(&oldest_computation_metadata)
-                // Safe to unwrap as we just retrieved this session.
-                .unwrap();
-            self.cryptographic_computations_orchestrator
-                .pending_for_computation_order
-                .remove(i);
-            if let Err(err) = self.spawn_session(&ready_to_advance_session) {
-                error!("failed to spawn session with err: {:?}", err);
+            };
+            if matches!(event_data.init_protocol_data, MPCProtocolInitData::Sign(..)) {
+                if let Err(err) = self.cryptographic_computations_orchestrator.spawn_aggregated_sign(oldest_pending_session) {
+                    error!("failed to spawn session with err: {:?}", err);
+                }
+            } else {
+                if let Err(err) = self.cryptographic_computations_orchestrator.spawn_aggregated_sign(oldest_pending_session) {
+                    error!("failed to spawn session with err: {:?}", err);
+                }
             }
         }
     }

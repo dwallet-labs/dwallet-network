@@ -109,7 +109,11 @@ impl CryptographicComputationsOrchestrator {
         completed_computation_channel_sender
     }
 
-    fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
+    pub(crate) fn can_spawn_session(&self) -> bool {
+        self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
+    }
+
+    pub(crate) fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
         // Hook the tokio thread pool to the rayon thread pool.
         let handle = Handle::current();
         let session = session.clone();
@@ -134,7 +138,7 @@ impl CryptographicComputationsOrchestrator {
         Ok(())
     }
 
-    fn spawn_aggregated_sign(&mut self, session: DWalletMPCSession) -> DwalletMPCResult<()> {
+    pub(crate) fn spawn_aggregated_sign(&mut self, session: DWalletMPCSession) -> DwalletMPCResult<()> {
         let validator_position = self.get_validator_position(&session.session_id)?;
         let epoch_store = self.epoch_store.clone();
         tokio::spawn(async move {
