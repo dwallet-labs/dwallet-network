@@ -42,17 +42,17 @@ ROOT_ADDR=""
 # The file containing the validators (separator: newline).
 export VALIDATORS_FILE=""
 # Validator Docker image name.
-export IMAGE_NAME="us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.4-arm64"
+export IMAGE_NAME="us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.5-arm64"
 # SUI fullnode URL.
-#export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
-export SUI_FULLNODE_RPC_URL="http://localhost:9000"
+export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+#export SUI_FULLNODE_RPC_URL="http://localhost:9000"
 # Sui Docker URL (only needed if you run Ika on Docker against localhost on non-linux).
 # If it's not against localhost, set it to the remote sui RPC.
-export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
-#export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+#export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
+export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 # SUI Faucet URL.
-#export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
-export SUI_FAUCET_URL="http://localhost:9123/gas"
+export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
+#export SUI_FAUCET_URL="http://localhost:9123/gas"
 # Default sui epoch duration time.
 export EPOCH_DURATION_TIME=86400000
 # Sui chain identifier.
@@ -386,6 +386,9 @@ mkdir -p "$SUI_CONFIG_PATH"
 cp -r $PUBLISHER_DIR/sui_config/* "$SUI_CONFIG_PATH"
 
 ./ika-swarm-config ika-system-initialize --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path $PUBLISHER_DIR/ika_publish_config.json
+
+# This if the file name that the SDK is looking for.
+mv $PUBLISHER_DIR/ika_publish_config.json $PUBLISHER_DIR/ika_config.json
 
 ############################
 # Generate Seed Peers
