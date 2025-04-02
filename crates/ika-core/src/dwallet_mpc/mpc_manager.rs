@@ -416,6 +416,22 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) fn perform_cryptographic_computation(&mut self) {
+        for (index, pending_for_event_session) in
+            self.pending_for_events_order.clone().iter().enumerate()
+        {
+            let Some(live_session) = self.mpc_sessions.get(&pending_for_event_session.session_id)
+            else {
+                // This should never happen
+                continue;
+            };
+            if live_session.mpc_event_data.is_some() {
+                let mut ready_to_advance_session = pending_for_event_session.clone();
+                ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
+                self.pending_for_computation_order
+                    .push_back(ready_to_advance_session);
+                self.pending_for_computation_order.remove(index);
+            }
+        }
         while !self.pending_for_computation_order.is_empty() {
             if !self
                 .cryptographic_computations_orchestrator
