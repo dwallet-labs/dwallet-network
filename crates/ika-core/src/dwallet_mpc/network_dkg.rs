@@ -290,7 +290,7 @@ impl DwalletMPCNetworkKeys {
                 continue;
             };
             let encryption_scheme_public_parameters =
-                bcs::from_bytes(&result?.encryption_scheme_public_parameters)?;
+                bcs::from_bytes(&result.encryption_scheme_public_parameters)?;
 
             match key_scheme {
                 DWalletMPCNetworkKeyScheme::Secp256k1 => {
