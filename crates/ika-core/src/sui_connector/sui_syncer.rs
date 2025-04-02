@@ -61,6 +61,7 @@ where
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
         if let Some(dwallet_mpc_network_keys) = dwallet_mpc_network_keys {
+            // Todo (#810): Check the usage adding the task handle to the task_handles vector.
             tokio::spawn(Self::sync_dwallet_network_keys(
                 sui_client_clone,
                 dwallet_mpc_network_keys,
