@@ -9,10 +9,12 @@ use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::error::IkaResult;
+use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use itertools::Itertools;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
+use sui_types::base_types::ObjectID;
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
 use tokio::{
@@ -61,7 +63,6 @@ where
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
         if let Some(dwallet_mpc_network_keys) = dwallet_mpc_network_keys {
-            // Todo (#810): Check the usage adding the task handle to the task_handles vector.
             tokio::spawn(Self::sync_dwallet_network_keys(
                 sui_client_clone,
                 dwallet_mpc_network_keys,
@@ -70,12 +71,17 @@ where
         for (module, cursor) in self.cursors {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
+            let sui_client_clone2 = self.sui_client.clone();
             let perpetual_tables_clone = self.perpetual_tables.clone();
+            let perpetual_tables_clone2 = self.perpetual_tables.clone();
+            task_handles.push(spawn_logged_monitored_task!(
+                Self::fetch_dwallet_events_from_sui(sui_client_clone, perpetual_tables_clone2,)
+            ));
             task_handles.push(spawn_logged_monitored_task!(
                 Self::run_event_listening_task(
                     module,
                     cursor,
-                    sui_client_clone,
+                    sui_client_clone2,
                     query_interval,
                     metrics,
                     perpetual_tables_clone
@@ -128,6 +134,31 @@ where
                         }
                     }
                 });
+        }
+    }
+
+    /// Fetches the pending events from Sui every minute. Needed to receive the events that were missed during an
+    /// epoch switch.
+    async fn fetch_dwallet_events_from_sui(
+        sui_client: Arc<SuiClient<C>>,
+        perpetual_tables_clone: Arc<AuthorityPerpetualTables>,
+    ) {
+        loop {
+            time::sleep(Duration::from_secs(60)).await;
+            let missed_events = sui_client
+                .get_dwallet_mpc_missed_events()
+                .await
+                .unwrap_or_default();
+            let serialized_events: Vec<Vec<u8>> = missed_events
+                .into_iter()
+                .map(|e| bcs::to_bytes(&e).unwrap())
+                .collect();
+            if let Err(error) = perpetual_tables_clone.insert_pending_events(&serialized_events) {
+                error!(
+                    "failed to write missed events to perpetual tables {:?}",
+                    error
+                );
+            }
         }
     }
 
@@ -184,7 +215,7 @@ where
                     notify.notify_one();
                 }
                 perpetual_tables
-                    .insert_pending_events(module.clone(), &events.data)
+                    .serialize_and_insert_pending_events(module.clone(), &events.data)
                     .expect("Failed to insert pending events");
                 if let Some(next) = events.next_cursor {
                     cursor = Some(next);
@@ -194,6 +225,7 @@ where
         }
     }
 }
+
 //
 // #[cfg(test)]
 // mod tests {

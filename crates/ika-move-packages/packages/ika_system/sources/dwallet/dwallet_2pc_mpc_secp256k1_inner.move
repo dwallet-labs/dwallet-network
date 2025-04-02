@@ -21,7 +21,6 @@ use sui::ed25519::ed25519_verify;
 use ika_system::address;
 use ika_system::dwallet_pricing::{Self, DWalletPricing2PcMpcSecp256K1, PricingPerOperation};
 use ika_system::bls_committee::{Self, BlsCommittee};
-use sui::dynamic_field;
 
 /// Supported hash schemes for message signing.
 const KECCAK256: u8 = 0;
@@ -52,6 +51,7 @@ const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 public struct DWalletCoordinatorInner has store {
     current_epoch: u64,
     sessions: ObjectTable<u64, DWalletSession>,
+    session_start_events: Bag,
     first_session_sequence_number: u64,
     next_session_sequence_number: u64,
     // TODO: change it to versioned
@@ -733,6 +733,7 @@ public(package) fun create_dwallet_coordinator_inner(
     DWalletCoordinatorInner {
         current_epoch,
         sessions: object_table::new(ctx),
+        session_start_events: bag::new(ctx),
         first_session_sequence_number: 0,
         next_session_sequence_number: 0,
         dwallets: object_table::new(ctx),
@@ -906,7 +907,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     let gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
 
     let session_sequence_number = self.next_session_sequence_number;
-    let mut session = DWalletSession {
+    let session = DWalletSession {
         id: object::new(ctx),
         session_sequence_number,
         dwallet_network_decryption_key_id,
@@ -920,7 +921,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         session_id: object::id(&session),
         event_data,
     };
-    dynamic_field::add(&mut session.id, DWalletSessionEventKey {}, event);
+    self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
 
@@ -1136,11 +1137,11 @@ fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordina
         gas_fee_reimbursement_sui,
         consensus_validation_fee_charged_ika,
         dwallet_network_decryption_key_id,
-        mut id,
+        id,
         ..
     } = session;
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    let _: DWalletEvent<E> = dynamic_field::remove(&mut id, DWalletSessionEventKey {});
+    let _: DWalletEvent<E> = self.session_start_events.remove(id.to_inner());
     object::delete(id);
     dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
     self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
