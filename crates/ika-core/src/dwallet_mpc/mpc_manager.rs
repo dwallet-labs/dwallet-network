@@ -314,7 +314,7 @@ impl DWalletMPCManager {
             if let Ok(dwallet_mpc_network_keys) = self.dwallet_mpc_network_keys() {
                 return dwallet_mpc_network_keys
                     .get_protocol_public_parameters(key_id, key_scheme)
-                    .await
+                    .await;
             }
             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         }
