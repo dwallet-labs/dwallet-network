@@ -114,10 +114,16 @@ impl CryptographicComputationsOrchestrator {
     }
 
     pub(crate) fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
+        Self::spawn_session_static(self.computation_channel_sender.clone(), session)
+    }
+
+    pub(crate) fn spawn_session_static(
+        finished_computation_sender: UnboundedSender<ComputationUpdate>,
+        session: &DWalletMPCSession,
+    ) -> DwalletMPCResult<()> {
         // Hook the tokio thread pool to the rayon thread pool.
         let handle = Handle::current();
         let session = session.clone();
-        let finished_computation_sender = self.computation_channel_sender.clone();
         if let Err(err) = finished_computation_sender.send(ComputationUpdate::Started) {
             error!(
                 "Failed to send a started computation message with error: {:?}",
@@ -162,6 +168,7 @@ impl CryptographicComputationsOrchestrator {
     ) -> DwalletMPCResult<()> {
         let validator_position = self.get_validator_position(&session.session_id)?;
         let epoch_store = self.epoch_store.clone();
+        let sender = self.computation_channel_sender.clone();
         tokio::spawn(async move {
             for _ in 0..validator_position {
                 let manager = epoch_store.get_dwallet_mpc_manager().await;
@@ -198,7 +205,7 @@ impl CryptographicComputationsOrchestrator {
                 session.session_id
             );
             let session = session.clone();
-            if let Err(e) = self.spawn_session(&session) {
+            if let Err(e) = Self::spawn_session_static(sender, &session) {
                 error!("failed to spawn session with error: {:?}", e);
             }
         });
