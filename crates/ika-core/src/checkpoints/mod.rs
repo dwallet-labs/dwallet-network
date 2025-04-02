@@ -1169,6 +1169,7 @@ impl CheckpointBuilder {
             let last_checkpoint_of_epoch = details.last_of_epoch && index == chunks_count - 1;
 
             let sequence_number = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0);
+            last_checkpoint_seq = Some(sequence_number);
 
             let timestamp_ms = details.timestamp_ms;
             if let Some((_, last_checkpoint)) = &last_checkpoint {

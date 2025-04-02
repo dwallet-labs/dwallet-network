@@ -67,10 +67,8 @@ use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
 };
 use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
-use crate::dwallet_mpc::{
-    authority_name_to_party_id, presign_public_input, session_info_from_event,
-};
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
+use crate::dwallet_mpc::{presign_public_input, session_info_from_event};
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
@@ -364,7 +362,7 @@ pub struct AuthorityPerEpochStore {
     /// This state machine is used to store outputs and emit ones
     /// where the quorum of votes is valid.
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
-    pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
+    pub dwallet_mpc_network_keys: OnceCell<Arc<DwalletMPCNetworkKeys>>,
     dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
     dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
     pub(crate) dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
@@ -656,12 +654,26 @@ impl AuthorityPerEpochStore {
         s
     }
 
+    /// Convert a given authority name (address) to it's corresponding [`PartyID`].
+    /// The [`PartyID`] is the index of the authority in the committee.
+    pub fn authority_name_to_party_id(
+        &self,
+        authority_name: &AuthorityName,
+    ) -> DwalletMPCResult<PartyID> {
+        self.committee()
+            .authority_index(authority_name)
+            // Need to add 1 because the authority index is 0-based,
+            // and the twopc_mpc library uses 1-based party IDs.
+            .map(|index| (index + 1) as PartyID)
+            .ok_or_else(|| DwalletMPCError::AuthorityNameNotFound(*authority_name))
+    }
+
     pub(crate) fn get_validators_class_groups_public_keys_and_proofs(
         &self,
     ) -> IkaResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
         let mut validators_class_groups_public_keys_and_proofs = HashMap::new();
         for (name, _) in self.committee().voting_rights.iter() {
-            let party_id = authority_name_to_party_id(name, &self)?;
+            let party_id = self.authority_name_to_party_id(name)?;
             let public_key =
                 bcs::from_bytes(&self.committee().class_groups_public_key_and_proof(name)?)
                     .map_err(|e| DwalletMPCError::BcsError(e))?;
@@ -759,7 +771,7 @@ impl AuthorityPerEpochStore {
             .committee()
             .voting_rights
             .iter()
-            .map(|(name, weight)| Ok((authority_name_to_party_id(name, &self)?, *weight as Weight)))
+            .map(|(name, weight)| Ok((self.authority_name_to_party_id(name)?, *weight as Weight)))
             .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
 
         WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
@@ -769,15 +781,11 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
     pub fn set_dwallet_mpc_network_keys(
         &self,
-        class_groups_decryption_key: ClassGroupsDecryptionKey,
+        dwallet_network_keys: Arc<DwalletMPCNetworkKeys>,
     ) -> IkaResult<()> {
         if self
             .dwallet_mpc_network_keys
-            .set(DwalletMPCNetworkKeyVersions::new(
-                self,
-                &self.get_weighted_threshold_access_structure()?,
-                class_groups_decryption_key,
-            ))
+            .set(dwallet_network_keys)
             .is_err()
         {
             error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
@@ -1352,18 +1360,6 @@ impl AuthorityPerEpochStore {
                 if transaction.sender_authority() != *authority {
                     warn!(
                         "CapabilityNotification authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::TestMessage(authority, _),
-                ..
-            }) => {
-                if transaction.sender_authority() != *authority {
-                    warn!(
-                        "TestMessage authority {} does not match its author from consensus {}",
                         authority, transaction.certificate_author_index
                     );
                     return None;
@@ -1952,15 +1948,6 @@ impl AuthorityPerEpochStore {
                 }
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::TestMessage(authority, num),
-                ..
-            }) => Ok(
-                self.process_consensus_system_transaction(&MessageKind::TestMessage(
-                    self.committee.authority_index(&authority).unwrap(),
-                    *num,
-                )),
-            ),
             SequencedConsensusTransactionKind::System(system_transaction) => {
                 Ok(self.process_consensus_system_transaction(system_transaction))
             }
@@ -1980,7 +1967,7 @@ impl AuthorityPerEpochStore {
         })
         .await;
 
-        let authority_index = authority_name_to_party_id(&origin_authority, &self);
+        let authority_index = self.authority_name_to_party_id(&origin_authority);
         let mut dwallet_mpc_verifier = self.get_dwallet_mpc_outputs_verifier().await;
         let output_verification_result = dwallet_mpc_verifier
             .try_verify_output(&output, &session_info, origin_authority)
