@@ -611,6 +611,10 @@ impl DWalletMPCManager {
         {
             self.mpc_sessions.insert(session_id.clone(), new_session);
         } else {
+            warn!(
+                "Adding session {:?} to pending sessions, as the number of active sessions is too high",
+                session_sequence_number
+            );
             self.pending_sessions
                 .insert(session_sequence_number, new_session);
         }
