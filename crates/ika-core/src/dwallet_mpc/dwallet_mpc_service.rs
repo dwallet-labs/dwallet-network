@@ -117,6 +117,7 @@ impl DWalletMPCService {
         self.load_missed_events(sui_client.clone()).await;
         tokio::spawn(Self::sync_dwallet_mpc_last_completed_session(
             sui_client.clone(),
+            self.epoch_store.clone()
         ));
         loop {
             match self.exit.has_changed() {
