@@ -276,17 +276,6 @@ impl DWalletMPCOutputsVerifier {
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
-    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeyVersions>> {
-        Ok(self
-            .epoch_store()?
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::TwoPCMPCError(
-                "Decryption share not found".to_string(),
-            ))?
-            .clone())
-    }
-
     fn verify_signature(
         epoch_store: &Arc<AuthorityPerEpochStore>,
         sign_session_data: &StartSignEvent,

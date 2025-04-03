@@ -95,7 +95,6 @@ impl SuiConnectorService {
             sui_connector_metrics.clone(),
             perpetual_tables,
         )
-        .run(Duration::from_secs(2), dwallet_network_keys)
         .run(
             Duration::from_secs(2),
             dwallet_network_keys,

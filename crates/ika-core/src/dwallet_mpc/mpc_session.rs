@@ -144,6 +144,7 @@ impl DWalletMPCSession {
                     )?;
                 }
                 let message = self.new_dwallet_mpc_message(message)?;
+                let party_id = self.party_id.clone();
                 tokio_runtime_handle.spawn(async move {
                     for msg in message {
                         if let Err(err) = consensus_adapter
@@ -152,7 +153,7 @@ impl DWalletMPCSession {
                         {
                             error!("failed to submit an MPC message to consensus: {:?}", err);
                         } else {
-                            println!("submitted to consensus");
+                            println!("submitted to consensus, party id: {:?}", party_id);
                         }
                     }
                 });

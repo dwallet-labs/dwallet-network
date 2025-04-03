@@ -183,7 +183,7 @@ impl ConsensusTransaction {
         // session_id.into_bytes().hash(&mut hasher);
         // let tracking_id = hasher.finish().to_le_bytes();
         let messages = MPCMessageBuilder::split(message, 120 * 1024);
-        let message = match messages.messages {
+        let messages = match messages.messages {
             MessageState::Incomplete(messages) => {
                 println!("Incomplete messages: {:?}", messages.len());
                 messages
@@ -191,7 +191,7 @@ impl ConsensusTransaction {
             MessageState::Complete(message) => panic!("should never happen "),
         };
 
-        message
+        messages
             .iter()
             .map(|(sequence_number, message)| {
                 let mut hasher = DefaultHasher::new();

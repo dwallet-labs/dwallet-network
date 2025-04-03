@@ -211,7 +211,7 @@ impl MPCSessionMessagesCollector {
                     party_to_msg.insert(party_id, messages_builder.clone());
                     match &messages_builder.messages {
                         MessageState::Complete(message) => {
-                            println!("ccomplete message: {:?}", message.len());
+                            println!("ccomplete message: {:?}, party id : {:?}", message.len(), party_id);
                             Some(message.clone())
                         }
                         MessageState::Incomplete(messages) => {
@@ -239,7 +239,7 @@ impl MPCSessionMessagesCollector {
 
                 match &messages.messages {
                     MessageState::Complete(message) => {
-                        println!("cccomplete message: {:?}", message.len());
+                        println!("cccomplete message: {:?} party id : {:?}", message.len(), party_id);
                         Some(message.clone())
                     }
                     MessageState::Incomplete(messages) => {

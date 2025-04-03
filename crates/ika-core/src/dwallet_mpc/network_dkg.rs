@@ -68,6 +68,7 @@ fn get_decryption_key_shares_from_public_output(
     shares: &NetworkDecryptionKeyShares,
     party_id: PartyID,
     decryption_key: ClassGroupsDecryptionKey,
+    weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
 ) -> DwalletMPCResult<HashMap<PartyID, SecretKeyShareSizedInteger>> {
     #[cfg(not(feature = "with-network-dkg"))]
     {
@@ -81,9 +82,10 @@ fn get_decryption_key_shares_from_public_output(
             &shares.encryption_key,
             &shares.public_verification_keys,
             &shares.current_epoch_encryptions_of_shares_per_crt_prime,
+            &shares.setup_parameters_per_crt_prime,
         )?;
         let secret_shares = dkg_public_output
-            .default_decryption_key_shares::<secp256k1::GroupElement>(party_id, decryption_key)
+            .default_decryption_key_shares::<secp256k1::GroupElement>(party_id, weighted_threshold_access_structure, decryption_key)
             .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
         Ok(secret_shares)
     }
@@ -97,11 +99,13 @@ impl ValidatorPrivateDecryptionKeyData {
         &self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyShares,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
         let secret_key_shares = get_decryption_key_shares_from_public_output(
             &key,
             self.party_id,
             self.class_groups_decryption_key,
+            weighted_threshold_access_structure,
         )?;
 
         let self_decryption_key_shares = Self::convert_secret_key_shares_type_to_decryption_shares(
@@ -195,11 +199,12 @@ impl DwalletMPCNetworkKeys {
         &self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyShares,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
         let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
         inner.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
-            .store_decryption_secret_shares(key_id, key)?;
+            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)?;
         Ok(())
     }
 
@@ -207,11 +212,12 @@ impl DwalletMPCNetworkKeys {
         &self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyShares,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
         let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
         inner.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
-            .store_decryption_secret_shares(key_id, key)?;
+            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)?;
         Ok(())
     }
 
