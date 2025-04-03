@@ -28,6 +28,3 @@ pub mod messages_dwallet_mpc;
 pub mod quorum_driver_types;
 pub mod sui;
 pub mod supported_protocol_versions;
-
-/// The number of CPU logical cores every validator allocates to the Tokio thread pool.
-pub const VALIDATOR_TOKIO_ALLOCATED_THREADS: usize = 2;
