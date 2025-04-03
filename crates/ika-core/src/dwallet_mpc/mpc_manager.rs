@@ -589,13 +589,13 @@ impl DWalletMPCManager {
             mpc_event_data,
             session_sequence_number,
         );
-        if session_sequence_number < self.last_completed_session_sequence_number + MAX_ACTIVE_SESSIONS_BUFFER {
+        if session_sequence_number
+            < self.last_completed_session_sequence_number + MAX_ACTIVE_SESSIONS_BUFFER
+        {
             self.mpc_sessions.insert(session_id.clone(), new_session);
         } else {
-            self.pending_sessions.insert(
-                session_sequence_number,
-                new_session,
-            );
+            self.pending_sessions
+                .insert(session_sequence_number, new_session);
         }
         info!(
             "Added MPCSession to MPC manager for session_id {:?}",
