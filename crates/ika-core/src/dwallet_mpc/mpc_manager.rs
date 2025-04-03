@@ -511,7 +511,11 @@ impl DWalletMPCManager {
                     "received a message for an MPC session ID: `{:?}` which an event has not yet received for",
                     message.session_id
                 );
-                self.push_new_mpc_session(&message.session_id, None);
+                self.push_new_mpc_session(
+                    &message.session_id,
+                    None,
+                    message.session_sequence_number,
+                );
                 // Safe to unwrap because we just added the session.
                 self.mpc_sessions.get_mut(&message.session_id).unwrap()
             }
@@ -555,6 +559,7 @@ impl DWalletMPCManager {
         &mut self,
         session_id: &ObjectID,
         mpc_event_data: Option<MPCEventData>,
+        session_sequence_number: u64,
     ) {
         if self.mpc_sessions.contains_key(&session_id) {
             warn!(
@@ -576,6 +581,7 @@ impl DWalletMPCManager {
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
+            session_sequence_number,
         );
         self.mpc_sessions.insert(session_id.clone(), new_session);
         info!(
