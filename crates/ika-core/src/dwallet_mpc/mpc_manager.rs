@@ -157,6 +157,23 @@ impl DWalletMPCManager {
         })
     }
 
+    pub(crate) fn update_last_completed_session_sequence_number(
+        &mut self,
+        last_completed_session_sequence_number: u64,
+    ) {
+        if last_completed_session_sequence_number < self.last_completed_session_sequence_number {
+            return;
+        }
+        for i in
+            self.last_completed_session_sequence_number..=last_completed_session_sequence_number
+        {
+            if let Some(session) = self.pending_sessions.remove(&i) {
+                self.mpc_sessions.insert(session.session_id, session);
+            }
+        }
+        self.last_completed_session_sequence_number = last_completed_session_sequence_number;
+    }
+
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
         if let Err(err) = self.handle_event(event.event, event.session_info).await {
             error!("Failed to handle event with error: {:?}", err);

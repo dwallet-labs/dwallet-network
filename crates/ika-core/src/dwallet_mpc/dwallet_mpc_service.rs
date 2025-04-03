@@ -97,8 +97,9 @@ impl DWalletMPCService {
                         let last_completed_session_sequence_number =
                             inner_state.first_session_sequence_number;
                         let mut dwallet_mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
-                        dwallet_mpc_manager.last_completed_session_sequence_number =
-                            last_completed_session_sequence_number;
+                        dwallet_mpc_manager.update_last_completed_session_sequence_number(
+                            last_completed_session_sequence_number,
+                        );
                     }
                 }
             }
