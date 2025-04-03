@@ -164,8 +164,8 @@ impl DWalletMPCManager {
         if last_completed_session_sequence_number < self.last_completed_session_sequence_number {
             return;
         }
-        for i in
-            self.last_completed_session_sequence_number..=last_completed_session_sequence_number
+        for i in self.last_completed_session_sequence_number
+            ..=(last_completed_session_sequence_number + MAX_ACTIVE_SESSIONS_BUFFER)
         {
             if let Some(session) = self.pending_sessions.remove(&i) {
                 self.mpc_sessions.insert(session.session_id, session);
