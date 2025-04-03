@@ -14,7 +14,6 @@ use crate::runtime;
 use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::DWalletMPCLocalComputationMetadata;
-use ika_types::VALIDATOR_TOKIO_ALLOCATED_THREADS;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use sui_types::base_types::{ObjectID, TransactionDigest};
