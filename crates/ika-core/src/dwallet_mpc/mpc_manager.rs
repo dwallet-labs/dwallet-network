@@ -94,6 +94,7 @@ pub struct DWalletMPCManager {
     /// The order of the sessions that have received quorum for their current round, but we have not
     /// yet received an event for from Sui.
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
+    pub(crate) last_completed_session_sequence_number: u64,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -150,6 +151,7 @@ impl DWalletMPCManager {
             malicious_handler: MaliciousHandler::new(epoch_store.committee().clone()),
             pending_for_computation_order: VecDeque::new(),
             pending_for_events_order: Default::default(),
+            last_completed_session_sequence_number: 0,
         })
     }
 
