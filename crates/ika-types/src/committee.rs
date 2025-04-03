@@ -38,14 +38,17 @@ pub type CommitteeDigest = [u8; 32];
 /// as easily understandable basis points (e.g., voting_power: 100 = 1%, voting_power: 1 = 0.01%).
 /// Fixing the total voting power allows clients to hardcode the quorum threshold and total_voting power rather
 /// than recomputing these.
+/// Note: Keep the value hard coded here in sync with the one in the `bls_committee.move` module
 pub const TOTAL_VOTING_POWER: StakeUnit = 4;
 
 /// Quorum threshold for our fixed voting power--any message signed by this much voting power can be trusted
 /// up to BFT assumptions
-pub const QUORUM_THRESHOLD: StakeUnit = (2 * TOTAL_VOTING_POWER) / 3 + 1;
+/// Note: Keep the value hard coded here in sync with the one in the `bls_committee.move` module
+pub const QUORUM_THRESHOLD: StakeUnit = 3;
 
 /// Validity threshold defined by f+1
-pub const VALIDITY_THRESHOLD: StakeUnit = TOTAL_VOTING_POWER / 3 + 1;
+/// Note: Keep the value hard coded here in sync with the one in the `bls_committee.move` module
+pub const VALIDITY_THRESHOLD: StakeUnit = 1;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq)]
 pub struct Committee {
