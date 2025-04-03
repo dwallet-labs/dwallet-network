@@ -3,7 +3,6 @@
 
 use ika_config::NodeConfig;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::VALIDATOR_TOKIO_ALLOCATED_THREADS;
 use tokio::runtime::Runtime;
 
 pub struct IkaRuntimes {
@@ -12,8 +11,8 @@ pub struct IkaRuntimes {
     pub metrics: Runtime,
 }
 
-pub(crate) const IKA_NODE_TOKIO_ALLOCATED_THREADS: usize = 1;
-pub(crate) const METRICS_TOKIO_ALLOCATED_THREADS: usize = 1;
+const IKA_NODE_TOKIO_ALLOCATED_THREADS: usize = 1;
+const METRICS_TOKIO_ALLOCATED_THREADS: usize = 1;
 
 impl IkaRuntimes {
     pub fn new(_confg: &NodeConfig) -> Self {
