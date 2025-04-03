@@ -73,6 +73,7 @@ pub struct DWalletMPCManager {
     party_id: PartyID,
     /// MPC sessions that where created.
     pub(crate) mpc_sessions: HashMap<ObjectID, DWalletMPCSession>,
+    pub(crate) pending_sessions: HashMap<u64, DWalletMPCSession>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub(super) node_config: NodeConfig,
     epoch_store: Weak<AuthorityPerEpochStore>,
@@ -138,6 +139,7 @@ impl DWalletMPCManager {
             CryptographicComputationsOrchestrator::try_new(&epoch_store)?;
         Ok(Self {
             mpc_sessions: HashMap::new(),
+            pending_sessions: Default::default(),
             consensus_adapter,
             party_id: epoch_store.authority_name_to_party_id(&epoch_store.name.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
@@ -587,10 +589,19 @@ impl DWalletMPCManager {
             mpc_event_data,
             session_sequence_number,
         );
-        self.mpc_sessions.insert(session_id.clone(), new_session);
+        if session_sequence_number < self.last_completed_session_sequence_number + MAX_ACTIVE_SESSIONS_BUFFER {
+            self.mpc_sessions.insert(session_id.clone(), new_session);
+        } else {
+            self.pending_sessions.insert(
+                session_sequence_number,
+                new_session,
+            );
+        }
         info!(
             "Added MPCSession to MPC manager for session_id {:?}",
             session_id
         );
     }
 }
+
+const MAX_ACTIVE_SESSIONS_BUFFER: u64 = 50;
