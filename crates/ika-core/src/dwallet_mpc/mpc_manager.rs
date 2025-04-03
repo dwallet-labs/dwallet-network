@@ -318,7 +318,11 @@ impl DWalletMPCManager {
                 session.mpc_event_data = mpc_event_data;
             }
         } else {
-            self.push_new_mpc_session(&session_info.session_id, mpc_event_data);
+            self.push_new_mpc_session(
+                &session_info.session_id,
+                mpc_event_data,
+                session_info.sequence_number,
+            );
         }
         Ok(())
     }
