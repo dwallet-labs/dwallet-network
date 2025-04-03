@@ -557,8 +557,7 @@ impl DWalletMPCManager {
         mpc_event_data: Option<MPCEventData>,
     ) {
         if self.mpc_sessions.contains_key(&session_id) {
-            // This should never happen, as the session ID is a Move UniqueID.
-            error!(
+            warn!(
                 "received start flow event for session ID {:?} that already exists",
                 &session_id
             );

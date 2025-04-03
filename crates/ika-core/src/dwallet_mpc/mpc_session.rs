@@ -424,6 +424,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             output,
             SessionInfo {
+                sequence_number: 0,
                 session_id: self.session_id.clone(),
                 mpc_round: mpc_event_data.init_protocol_data.clone(),
             },

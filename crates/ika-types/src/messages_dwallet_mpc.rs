@@ -169,6 +169,7 @@ pub struct DWalletMPCMessageKey {
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {
+    pub sequence_number: u64,
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
     /// The current MPC round in the protocol.
