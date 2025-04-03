@@ -182,79 +182,76 @@ impl MPCSessionMessagesCollector {
         message: DWalletMPCMessage,
         round_number: usize,
     ) -> Option<Vec<u8>> {
-        let message_bytes = match self.messages.get_mut(message.round_number) {
+        println!("session id: {:?} party id : {:?}", message.session_id, party_id);
+        println!("round number: {:?}, message rounf number: {:?}", round_number, message.round_number);
+        let messages_len = self.messages.len();
+        match self.messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
-                if let Some(a) = party_to_msg.get_mut(&party_id) {
-                    // there is key
-                    a.add_message(message.message.clone());
-                    a.build_message();
-                    match &a.messages {
-                        MessageState::Complete(message) => {
-                            println!("complete message: {:?}", message.len());
-                            Some(message.clone())
-                        }
-                        MessageState::Incomplete(messages) => {
-                            println!("incomplete message: {:?}", messages.len());
-                            None
-                        }
-                    }
-                } else {
-                    // build the message here, but where do I store it?
-                    let mut messages_builder = MPCMessageBuilder {
+                let entry = party_to_msg.entry(party_id).or_insert_with(|| {
+                    let mut builder = MPCMessageBuilder {
                         messages: MessageState::Incomplete(
                             vec![(message.message.sequence_number, message.message.clone())]
                                 .into_iter()
                                 .collect::<HashMap<_, _>>(),
                         ),
                     };
-                    messages_builder.build_message();
-                    party_to_msg.insert(party_id, messages_builder.clone());
-                    match &messages_builder.messages {
-                        MessageState::Complete(message) => {
-                            println!("ccomplete message: {:?}, party id : {:?}", message.len(), party_id);
-                            Some(message.clone())
-                        }
-                        MessageState::Incomplete(messages) => {
-                            println!("iincomplete message: {:?}", messages.len());
-                            None
-                        }
+                    builder.build_message();
+                    builder
+                });
+
+                entry.add_message(message.message.clone());
+                entry.build_message();
+
+                match &entry.messages {
+                    MessageState::Complete(msg) => {
+                        println!("complete message: {:?}, party id: {:?}", msg.len(), party_id);
+                        Some(msg.clone())
+                    }
+                    MessageState::Incomplete(msgs) => {
+                        println!("incomplete message: {:?}, party id: {:?}", msgs.len(), party_id);
+                        None
                     }
                 }
             }
-            // If next round.
-            None if message.round_number == round_number => {
-                let mut map = HashMap::new();
-                // let mut messages = MPCMessageBuilder { messages: MessageState::Incomplete(HashMap::from(vec![(message.message.sequence_number, message.message.clone())])) };
-                let mut messages = MPCMessageBuilder {
+
+            None if message.round_number >= messages_len => {
+                // Create new map for the new round
+                let mut round_map = HashMap::new();
+
+                let mut builder = MPCMessageBuilder {
                     messages: MessageState::Incomplete(
                         vec![(message.message.sequence_number, message.message.clone())]
                             .into_iter()
                             .collect::<HashMap<_, _>>(),
                     ),
                 };
-                messages.build_message();
-                map.insert(party_id, messages.clone());
-                // Build the message
-                self.messages.push(map);
+                builder.build_message();
 
-                match &messages.messages {
-                    MessageState::Complete(message) => {
-                        println!("cccomplete message: {:?} party id : {:?}", message.len(), party_id);
-                        Some(message.clone())
+                round_map.insert(party_id, builder.clone());
+                self.messages.push(round_map);
+
+                match &builder.messages {
+                    MessageState::Complete(msg) => {
+                        println!("cccomplete message: {:?}, party id: {:?}", msg.len(), party_id);
+                        Some(msg.clone())
                     }
-                    MessageState::Incomplete(messages) => {
-                        println!("iiincomplete message: {:?}", messages.len());
+                    MessageState::Incomplete(msgs) => {
+                        println!("iiincomplete message: {:?}, party id: {:?}", msgs.len(), party_id);
                         None
                     }
                 }
             }
+
             None => {
-                // Unexpected round number; rounds should grow sequentially.
-                // return Err(DwalletMPCError::MaliciousParties(vec![party_id]));
-                return None;
+                // Unexpected round number: probably older than expected
+                println!(
+                    "Received unexpected message for round {} (expected >= {})",
+                    message.round_number,
+                    self.messages.len()
+                );
+                None
             }
-        };
-        message_bytes
+        }
     }
 
     pub fn collect_completed_messages(&self, round_number: usize) -> Vec<MPCMessage> {

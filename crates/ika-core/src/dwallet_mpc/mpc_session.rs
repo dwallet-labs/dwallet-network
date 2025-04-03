@@ -175,11 +175,10 @@ impl DWalletMPCSession {
                 }
                 println!("public output: {:?}", public_output.len());
                 /// write the output into file "public_output_original"
-                std::fs::write("public_output_original", &public_output)
-                    .expect("Unable to write file");
-                let _ =
-                    bcs::from_bytes::<<Secp256k1Party as mpc::Party>::PublicOutput>(&public_output)
-                        .unwrap();
+                // std::fs::write("public_output_original", &public_output)
+                //     .expect("Unable to write file");
+                // let _ =
+                //     bcs::from_bytes::<<Secp256k1Party as mpc::Party>::PublicOutput>(&public_output)?;
                 let consensus_message =
                     self.new_dwallet_mpc_output_message(public_output.clone())?;
                 tokio_runtime_handle.spawn(async move {

@@ -26,6 +26,7 @@ use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::{Arc, Weak};
+use mockall::Any;
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
 use tracing::error;
@@ -56,7 +57,7 @@ pub struct DWalletMPCOutputsVerifier {
     pub(crate) last_processed_consensus_round: Round,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
-    output_collector: MPCSessionMessagesCollector,
+    output_collector: HashMap<ObjectID, MPCSessionMessagesCollector>,
 }
 
 /// The data needed to manage the outputs of an MPC session.
@@ -107,7 +108,7 @@ impl DWalletMPCOutputsVerifier {
             voted_to_lock_committee: HashSet::new(),
             last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
-            output_collector: MPCSessionMessagesCollector::new(),
+            output_collector: HashMap::new(),
         }
     }
 
@@ -153,10 +154,17 @@ impl DWalletMPCOutputsVerifier {
             round_number: 0,
         };
         let party_id = epoch_store.authority_name_to_party_id(&origin_authority)?;
-        let output = self.output_collector.add_message(party_id, output, 0);
+        // access the session messages collector or create new one if it doesn't exist
+        let session_messages_collector = self
+            .output_collector
+            .entry(session_info.session_id.clone())
+            .or_insert_with(|| {
+                MPCSessionMessagesCollector::new()
+            });
+        let output = session_messages_collector.add_message(party_id, output, 0);
         let output = match output {
             Some(output) => {
-                println!("output: {:?}", output.len());
+                println!("output: {:?}, session type {:?}", output.len(), session_info.mpc_round.type_name().type_name());
                 output
             }
             None => {
