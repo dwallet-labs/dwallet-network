@@ -33,7 +33,7 @@ impl IkaRuntimes {
     }
 }
 
-pub fn get_rayon_thread_pool_size() -> DwalletMPCResult<usize> {
+pub(crate) fn get_rayon_thread_pool_size() -> DwalletMPCResult<usize> {
     let available_cores_for_computations: usize = std::thread::available_parallelism()
         .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
         .into();
