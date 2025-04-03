@@ -42,6 +42,7 @@ struct Args {
     run_with_range_checkpoint: Option<CheckpointSequenceNumber>,
 }
 
+#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 fn main() {
     // Ensure that a validator never calls get_for_min_version/get_for_max_version_UNSAFE.
     // TODO: re-enable after we figure out how to eliminate crashes in prod because of this.

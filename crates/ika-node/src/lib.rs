@@ -176,6 +176,7 @@ mod simulator {
 
 use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use ika_core::consensus_handler::ConsensusHandlerInitializer;
+use ika_core::dwallet_mpc::cryptographic_computations_orchestrator::get_rayon_thread_pool_size;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
@@ -246,6 +247,14 @@ impl IkaNode {
         registry_service: RegistryService,
         software_version: &'static str,
     ) -> Result<Arc<IkaNode>> {
+        if let Err(err) = rayon::ThreadPoolBuilder::new()
+            .num_threads(get_rayon_thread_pool_size()?)
+            .build_global()
+        {
+            // This error will get printed while running the testing chain using Swarm, as all the validators
+            // start on the same process.
+            error!("Failed to create rayon thread pool: {:?}", err);
+        }
         NodeConfigMetrics::new(&registry_service.default_registry()).record_metrics(&config);
         let mut config = config.clone();
         if config.supported_protocol_versions.is_none() {

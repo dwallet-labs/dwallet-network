@@ -55,14 +55,25 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     epoch_store: Arc<AuthorityPerEpochStore>,
 }
 
+/// The number of CPU logical cores every validator allocates to the Tokio thread pool.
+const VALIDATOR_TOKIO_ALLOCATED_THREADS: usize = 2;
+
+pub fn get_rayon_thread_pool_size() -> DwalletMPCResult<usize> {
+    let available_cores_for_computations: usize = std::thread::available_parallelism()
+        .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
+        .into();
+    if !(available_cores_for_computations > 0) {
+        return Err(DwalletMPCError::InsufficientCPUCores);
+    }
+    Ok(available_cores_for_computations - VALIDATOR_TOKIO_ALLOCATED_THREADS - 1)
+}
+
 impl CryptographicComputationsOrchestrator {
     /// Creates a new orchestrator for cryptographic computations.
     pub(crate) fn try_new(epoch_store: &Arc<AuthorityPerEpochStore>) -> DwalletMPCResult<Self> {
         let completed_computation_channel_sender =
             Self::listen_for_completed_computations(&epoch_store);
-        let available_cores_for_computations: usize = std::thread::available_parallelism()
-            .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
-            .into();
+        let available_cores_for_computations: usize = get_rayon_thread_pool_size()?;
         if !(available_cores_for_computations > 0) {
             return Err(DwalletMPCError::InsufficientCPUCores);
         }
@@ -123,6 +134,10 @@ impl CryptographicComputationsOrchestrator {
     ) -> DwalletMPCResult<()> {
         // Hook the tokio thread pool to the rayon thread pool.
         let handle = Handle::current();
+        warn!(
+            "number of workers in global tokio thread pool {:?}",
+            handle.metrics().num_workers()
+        );
         let session = session.clone();
         if let Err(err) = finished_computation_sender.send(ComputationUpdate::Started) {
             error!(
