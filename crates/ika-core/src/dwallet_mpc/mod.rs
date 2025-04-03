@@ -40,7 +40,7 @@ use tracing::warn;
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use twopc_mpc::secp256k1;
 
-pub mod cryptographic_computations_orchestrator;
+mod cryptographic_computations_orchestrator;
 mod dkg;
 pub mod dwallet_mpc_service;
 mod encrypt_user_share;
