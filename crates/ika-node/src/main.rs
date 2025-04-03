@@ -14,6 +14,7 @@ use ika_config::{Config, NodeConfig};
 use ika_core::runtime::IkaRuntimes;
 use ika_node::metrics;
 use ika_telemetry::send_telemetry_event;
+use ika_types::VALIDATOR_TOKIO_ALLOCATED_THREADS;
 use ika_types::messages_checkpoint::CheckpointSequenceNumber;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use mysten_common::sync::async_once_cell::AsyncOnceCell;
@@ -42,7 +43,7 @@ struct Args {
     run_with_range_checkpoint: Option<CheckpointSequenceNumber>,
 }
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
+// #[tokio::main(flavor = "multi_thread", worker_threads = VALIDATOR_TOKIO_ALLOCATED_THREADS)]
 fn main() {
     // Ensure that a validator never calls get_for_min_version/get_for_max_version_UNSAFE.
     // TODO: re-enable after we figure out how to eliminate crashes in prod because of this.

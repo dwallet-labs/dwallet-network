@@ -19,6 +19,7 @@ use sui_types::base_types::{ObjectID, TransactionDigest};
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{error, info, warn};
+use ika_types::VALIDATOR_TOKIO_ALLOCATED_THREADS;
 
 /// The possible MPC computations update.
 /// Needed to use a channel also for start messages because in the aggregated sign flow,
@@ -54,9 +55,6 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     currently_running_sessions_count: usize,
     epoch_store: Arc<AuthorityPerEpochStore>,
 }
-
-/// The number of CPU logical cores every validator allocates to the Tokio thread pool.
-const VALIDATOR_TOKIO_ALLOCATED_THREADS: usize = 2;
 
 pub fn get_rayon_thread_pool_size() -> DwalletMPCResult<usize> {
     let available_cores_for_computations: usize = std::thread::available_parallelism()
