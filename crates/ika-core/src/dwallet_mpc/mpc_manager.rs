@@ -466,7 +466,7 @@ impl DWalletMPCManager {
             } else {
                 if let Err(err) = self
                     .cryptographic_computations_orchestrator
-                    .spawn_aggregated_sign(oldest_pending_session)
+                    .spawn_session(&oldest_pending_session)
                 {
                     error!("failed to spawn session with err: {:?}", err);
                 }
