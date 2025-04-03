@@ -187,7 +187,7 @@ impl CryptographicComputationsOrchestrator {
                     tokio::time::sleep(tokio::time::Duration::from_secs(
                         SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS as u64,
                     ))
-                        .await;
+                    .await;
                 }
             }
             let manager = epoch_store.get_dwallet_mpc_manager().await;
