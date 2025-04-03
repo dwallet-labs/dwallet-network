@@ -170,23 +170,25 @@ impl CryptographicComputationsOrchestrator {
         let epoch_store = self.epoch_store.clone();
         let sender = self.computation_channel_sender.clone();
         tokio::spawn(async move {
-            for _ in 0..validator_position {
-                let manager = epoch_store.get_dwallet_mpc_manager().await;
-                let Some(session) = manager.mpc_sessions.get(&session.session_id) else {
-                    error!(
+            if validator_position > 0 {
+                for _ in 1..validator_position {
+                    let manager = epoch_store.get_dwallet_mpc_manager().await;
+                    let Some(session) = manager.mpc_sessions.get(&session.session_id) else {
+                        error!(
                     "failed to get session when checking if sign last round should get executed"
                 );
-                    return;
-                };
-                // If a malicious report has been received for the sign session, all the validators
-                // should execute the last step immediately.
-                if !session.session_specific_state.is_none() {
-                    break;
+                        return;
+                    };
+                    // If a malicious report has been received for the sign session, all the validators
+                    // should execute the last step immediately.
+                    if !session.session_specific_state.is_none() {
+                        break;
+                    }
+                    tokio::time::sleep(tokio::time::Duration::from_secs(
+                        SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS as u64,
+                    ))
+                        .await;
                 }
-                tokio::time::sleep(tokio::time::Duration::from_secs(
-                    SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS as u64,
-                ))
-                .await;
             }
             let manager = epoch_store.get_dwallet_mpc_manager().await;
             let Some(live_session) = manager.mpc_sessions.get(&session.session_id) else {
