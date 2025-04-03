@@ -60,6 +60,8 @@ use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
 
+const MAX_ACTIVE_SESSIONS_BUFFER: u64 = 50;
+
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
 /// — Executing all active sessions, and
@@ -624,5 +626,3 @@ impl DWalletMPCManager {
         );
     }
 }
-
-const MAX_ACTIVE_SESSIONS_BUFFER: u64 = 50;
