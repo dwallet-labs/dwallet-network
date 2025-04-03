@@ -134,10 +134,6 @@ impl CryptographicComputationsOrchestrator {
     ) -> DwalletMPCResult<()> {
         // Hook the tokio thread pool to the rayon thread pool.
         let handle = Handle::current();
-        warn!(
-            "number of workers in global tokio thread pool {:?}",
-            handle.metrics().num_workers()
-        );
         let session = session.clone();
         if let Err(err) = finished_computation_sender.send(ComputationUpdate::Started) {
             error!(
