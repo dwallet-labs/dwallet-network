@@ -183,6 +183,10 @@ describe('Test dWallet MPC', () => {
 
 	it('should sign full flow with on-chain network DKG output', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		const base64NetworkDecryptionKeyPublicOutput = Buffer.from(
+			networkDecryptionKeyPublicOutput,
+		).toString('base64');
+		console.log(base64NetworkDecryptionKeyPublicOutput);
 		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
