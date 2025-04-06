@@ -96,11 +96,9 @@ pub struct Field<N, V> {
 fn deserialize_event_or_dynamic_field<T: DeserializeOwned + DWalletMPCEventTrait>(
     event_contents: &[u8],
 ) -> Result<DWalletMPCSuiEvent<T>, bcs::Error> {
-    bcs::from_bytes::<DWalletMPCSuiEvent<T>>(event_contents)
-        .or_else(|_| {
-            bcs::from_bytes::<Field<ID, DWalletMPCSuiEvent<T>>>(event_contents)
-                .map(|field| field.value)
-        })
+    bcs::from_bytes::<DWalletMPCSuiEvent<T>>(event_contents).or_else(|_| {
+        bcs::from_bytes::<Field<ID, DWalletMPCSuiEvent<T>>>(event_contents).map(|field| field.value)
+    })
 }
 
 /// Parses the session info from the event and returns it.
