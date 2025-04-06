@@ -182,8 +182,14 @@ impl MPCSessionMessagesCollector {
         message: DWalletMPCMessage,
         round_number: usize,
     ) -> Option<Vec<u8>> {
-        println!("session id: {:?} party id : {:?}", message.session_id, party_id);
-        println!("round number: {:?}, message rounf number: {:?}", round_number, message.round_number);
+        println!(
+            "session id: {:?} party id : {:?}",
+            message.session_id, party_id
+        );
+        println!(
+            "round number: {:?}, message rounf number: {:?}",
+            round_number, message.round_number
+        );
         let messages_len = self.messages.len();
         match self.messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
@@ -204,11 +210,19 @@ impl MPCSessionMessagesCollector {
 
                 match &entry.messages {
                     MessageState::Complete(msg) => {
-                        println!("complete message: {:?}, party id: {:?}", msg.len(), party_id);
+                        println!(
+                            "complete message: {:?}, party id: {:?}",
+                            msg.len(),
+                            party_id
+                        );
                         Some(msg.clone())
                     }
                     MessageState::Incomplete(msgs) => {
-                        println!("incomplete message: {:?}, party id: {:?}", msgs.len(), party_id);
+                        println!(
+                            "incomplete message: {:?}, party id: {:?}",
+                            msgs.len(),
+                            party_id
+                        );
                         None
                     }
                 }
@@ -232,11 +246,19 @@ impl MPCSessionMessagesCollector {
 
                 match &builder.messages {
                     MessageState::Complete(msg) => {
-                        println!("cccomplete message: {:?}, party id: {:?}", msg.len(), party_id);
+                        println!(
+                            "cccomplete message: {:?}, party id: {:?}",
+                            msg.len(),
+                            party_id
+                        );
                         Some(msg.clone())
                     }
                     MessageState::Incomplete(msgs) => {
-                        println!("iiincomplete message: {:?}, party id: {:?}", msgs.len(), party_id);
+                        println!(
+                            "iiincomplete message: {:?}, party id: {:?}",
+                            msgs.len(),
+                            party_id
+                        );
                         None
                     }
                 }

@@ -21,12 +21,12 @@ use ika_types::messages_dwallet_mpc::{
     DWalletMPCMessage, MPCProtocolInitData, MPCSessionMessagesCollector, MPCSessionSpecificState,
     SessionInfo, StartSignEvent,
 };
+use mockall::Any;
 use mpc::Party;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::{Arc, Weak};
-use mockall::Any;
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
 use tracing::error;
@@ -158,13 +158,15 @@ impl DWalletMPCOutputsVerifier {
         let session_messages_collector = self
             .output_collector
             .entry(session_info.session_id.clone())
-            .or_insert_with(|| {
-                MPCSessionMessagesCollector::new()
-            });
+            .or_insert_with(|| MPCSessionMessagesCollector::new());
         let output = session_messages_collector.add_message(party_id, output, 0);
         let output = match output {
             Some(output) => {
-                println!("output: {:?}, session type {:?}", output.len(), session_info.mpc_round.type_name().type_name());
+                println!(
+                    "output: {:?}, session type {:?}",
+                    output.len(),
+                    session_info.mpc_round.type_name().type_name()
+                );
                 output
             }
             None => {

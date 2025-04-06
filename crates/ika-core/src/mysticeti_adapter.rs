@@ -89,10 +89,6 @@ impl ConsensusClient for LazyMysticetiClient {
             .iter()
             .map(|t| bcs::to_bytes(t).expect("Serializing consensus transaction cannot fail"))
             .collect::<Vec<_>>();
-        let transactions_kinds = transactions
-            .iter()
-            .map(|t| t.kind.clone())
-            .collect::<Vec<_>>();
         let (block_ref, status_waiter) = client
             .as_ref()
             .expect("Client should always be returned")
@@ -101,7 +97,6 @@ impl ConsensusClient for LazyMysticetiClient {
             .tap_err(|err| {
                 // Will be logged by caller as well.
                 let msg = format!("Transaction submission failed with: {:?}", err);
-                // println!("yael: {:?}", transactions_kinds);
                 match err {
                     ClientError::ConsensusShuttingDown(_) => {
                         info!("{}", msg);

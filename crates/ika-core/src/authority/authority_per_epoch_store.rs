@@ -1898,7 +1898,10 @@ impl AuthorityPerEpochStore {
                 // DB.
                 // Those messages will get processed when the dWallet MPC service reads
                 // them from the DB.
-                println!("Received DWalletMPCMessage from party id {:?}", self.authority_name_to_party_id(&message.authority));
+                println!(
+                    "Received DWalletMPCMessage from party id {:?}",
+                    self.authority_name_to_party_id(&message.authority)
+                );
                 self.save_dwallet_mpc_round_message(DWalletMPCDBMessage::Message(message.clone()))
                     .await;
                 Ok(ConsensusCertificateResult::ConsensusMessage)

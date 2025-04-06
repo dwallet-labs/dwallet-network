@@ -85,7 +85,11 @@ fn get_decryption_key_shares_from_public_output(
             &shares.setup_parameters_per_crt_prime,
         )?;
         let secret_shares = dkg_public_output
-            .default_decryption_key_shares::<secp256k1::GroupElement>(party_id, weighted_threshold_access_structure, decryption_key)
+            .default_decryption_key_shares::<secp256k1::GroupElement>(
+                party_id,
+                weighted_threshold_access_structure,
+                decryption_key,
+            )
             .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
         Ok(secret_shares)
     }
