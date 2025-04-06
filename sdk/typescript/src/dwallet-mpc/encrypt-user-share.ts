@@ -8,16 +8,18 @@ import { bcs, toHex } from '@mysten/bcs';
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config, EncryptedDWalletData } from './globals.js';
 import {
+	Config,
 	delay,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
+	EncryptedDWalletData,
 	fetchObjectWithType,
 	getDWalletSecpState,
 	getEncryptionKeyMoveType,
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
+	MPCKeyScheme,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 
@@ -245,6 +247,7 @@ export async function encryptUserShareForPublicKey(
 	sourceConf: Config,
 	destSuiAddress: string,
 	dWalletSecretShare: Uint8Array,
+	networkDecryptionKeyPublicOutput: Uint8Array,
 ): Promise<Uint8Array> {
 	const destActiveEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		sourceConf,
@@ -281,6 +284,8 @@ export async function encryptUserShareForPublicKey(
 		dWalletSecretShare,
 		// Encryption Key.
 		new Uint8Array(destActiveEncryptionKeyObj.encryption_key),
+		networkDecryptionKeyPublicOutput,
+		MPCKeyScheme.Secp256k1,
 	);
 }
 

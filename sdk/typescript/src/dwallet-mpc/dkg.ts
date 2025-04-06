@@ -110,6 +110,8 @@ export async function launchDKGSecondRound(
 	const encryptedUserShareAndProof = encrypt_secret_share(
 		centralizedSecretKeyShare,
 		classGroupsSecpKeyPair.encryptionKey,
+		networkDecryptionKeyPublicOutput,
+		MPCKeyScheme.Secp256k1,
 	);
 
 	const completionEvent = await dkgSecondRoundMoveCall(

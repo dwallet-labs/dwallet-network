@@ -28,10 +28,12 @@ use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use serde::{Deserialize, Serialize};
 use shared_wasm_class_groups::message_digest::message_digest;
-use shared_wasm_class_groups::protocol_public_parameters;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
+};
+use twopc_mpc::secp256k1::class_groups::{
+    FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
@@ -195,6 +197,22 @@ pub fn advance_centralized_sign_party(
     let signed_message = bcs::to_bytes(&round_result.outgoing_message)?;
     Ok(signed_message)
 }
+fn encryption_scheme_public_parameters_by_key_scheme(
+    network_decryption_key_public_output: Vec<u8>,
+    key_scheme: u8,
+) -> anyhow::Result<Vec<u8>> {
+    let key_scheme = DWalletMPCNetworkKeyScheme::try_from(key_scheme)?;
+    match key_scheme {
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            let network_decryption_key_public_output: NetworkDecryptionKeyOnChainOutput =
+                bcs::from_bytes(&network_decryption_key_public_output)?;
+            Ok(bcs::to_bytes(
+                &network_decryption_key_public_output.encryption_scheme_public_parameters,
+            )?)
+        }
+        DWalletMPCNetworkKeyScheme::Ristretto => todo!(),
+    }
+}
 
 fn protocol_public_parameters_by_key_scheme(
     network_decryption_key_public_output: Vec<u8>,
@@ -260,8 +278,22 @@ pub fn centralized_public_share_from_decentralized_output_inner(
 pub fn encrypt_secret_key_share_and_prove(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
+    key_scheme: u8,
 ) -> anyhow::Result<Vec<u8>> {
-    let protocol_public_params = protocol_public_parameters();
+    let encryption_scheme_public_parameters =
+        bcs::from_bytes(&encryption_scheme_public_parameters_by_key_scheme(
+            network_decryption_key_public_output,
+            key_scheme,
+        )?)?;
+
+    let protocol_public_params = twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters::new::<
+        { group::secp256k1::SCALAR_LIMBS },
+        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+        group::secp256k1::GroupElement,
+    >(encryption_scheme_public_parameters);
+
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
         SCALAR_LIMBS,
         { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
