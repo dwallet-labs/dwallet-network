@@ -190,8 +190,6 @@ where
                 };
             }
         }
-        error!("failed to retrieve dwallet coordinator ID while fetching missed events");
-        Ok(vec![])
     }
 
     pub fn new_for_testing(inner: P) -> Self {
