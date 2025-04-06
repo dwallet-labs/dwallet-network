@@ -519,6 +519,7 @@ public struct EncryptedShareVerificationRequestEvent has copy, drop, store {
     encrypted_user_secret_key_share_id: ID,
 
     source_encrypted_user_secret_key_share_id: ID,
+    dwallet_mpc_network_key_id: ID,
 }
 
 public struct CompletedEncryptedShareVerificationEvent has copy, drop, store {
@@ -1430,6 +1431,7 @@ public(package) fun request_re_encrypt_user_share_for(
 
     let dwallet = self.get_dwallet_mut(dwallet_id);
     let public_output = *dwallet.validate_active_and_get_public_output();
+    let dwallet_mpc_network_key_id = dwallet.dwallet_network_decryption_key_id;
 
     assert!(dwallet.encrypted_user_secret_key_shares.contains(source_encrypted_user_secret_key_share_id), EInvalidSource);
 
@@ -1463,6 +1465,7 @@ public(package) fun request_re_encrypt_user_share_for(
                 encryption_key_id: destination_encryption_key_id,
                 encrypted_user_secret_key_share_id,
                 source_encrypted_user_secret_key_share_id,
+                dwallet_mpc_network_key_id,
             },
             ctx,
         )
