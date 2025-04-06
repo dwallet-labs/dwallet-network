@@ -158,7 +158,7 @@ impl DWalletMPCSession {
                 info!(
                     // Safe to unwrap as advance can only be called after the event is received.
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
-                    session_id=?session_info.session_id,
+                    session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
                     "Received start event for session"
                 );
