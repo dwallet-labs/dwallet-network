@@ -18,6 +18,7 @@ use fastcrypto_zkp::bn254::zk_login::{JwkId, JWK};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -228,13 +229,25 @@ impl ConsensusTransaction {
         // let mut hasher = DefaultHasher::new();
         // output.hash(&mut hasher);
         // let tracking_id = hasher.finish().to_le_bytes();
-        let messages = MPCMessageBuilder::split(output, 120 * 1024);
-        let messages = match messages.messages {
+        let messages = MPCMessageBuilder::split(output.clone(), 120 * 1024);
+        let mut messages = match messages.messages {
             MessageState::Incomplete(messages) => {
                 println!("Incomplete messages: {:?}", messages.len());
                 messages
             }
             MessageState::Complete(message) => panic!("should never happen "),
+        };
+        messages = if messages.is_empty() {
+            HashMap::from([(
+                0,
+                MPCMessageSlice {
+                    message: output,
+                    sequence_number: 0,
+                    number_of_chunks: 1,
+                },
+            )])
+        } else {
+            messages
         };
 
         messages
