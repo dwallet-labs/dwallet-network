@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use crate::crypto::default_hash;
 use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
@@ -21,6 +20,7 @@ use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
+use std::fmt::Display;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
