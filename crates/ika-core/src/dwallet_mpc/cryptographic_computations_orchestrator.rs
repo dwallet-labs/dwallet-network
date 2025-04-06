@@ -29,9 +29,11 @@ use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{error, info, warn};
 
-/// The possible MPC computations update.
-/// Needed to use a channel also for start messages because in the aggregated sign flow,
-/// the Rayon task is being spawned from within a Tokio task.
+/// Represents the state transitions of cryptographic computations in the orchestrator.
+///
+/// This enum is used for communication between Tokio and Rayon tasks via a channel.
+/// In the aggregated sign flow, Rayon tasks are spawned from within Tokio tasks,
+/// requiring explicit lifecycle tracking.
 pub(crate) enum ComputationUpdate {
     /// A new computation has started.
     Started,
