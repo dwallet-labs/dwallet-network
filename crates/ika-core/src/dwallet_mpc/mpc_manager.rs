@@ -580,6 +580,13 @@ impl DWalletMPCManager {
     /// Handles a message by forwarding it to the relevant MPC session.
     /// If the session does not exist, punish the sender.
     pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) -> DwalletMPCResult<()> {
+        info!(
+            session_id=?message.session_id,
+            from_authority=?message.authority,
+            receiving_authority=?self.epoch_store()?.name,
+            crypto_round_number=?message.round_number,
+            "Received a message for session",
+        );
         if self
             .malicious_handler
             .get_malicious_actors_names()
