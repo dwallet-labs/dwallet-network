@@ -38,7 +38,7 @@ pub type CommitteeDigest = [u8; 32];
 /// as easily understandable basis points (e.g., voting_power: 100 = 1%, voting_power: 1 = 0.01%).
 /// Fixing the total voting power allows clients to hardcode the quorum threshold and total_voting power rather
 /// than recomputing these.
-pub const TOTAL_VOTING_POWER: StakeUnit = 280;
+pub const TOTAL_VOTING_POWER: StakeUnit = 4;
 
 /// Quorum threshold for our fixed voting power--any message signed by this much voting power can be trusted
 /// up to BFT assumptions
