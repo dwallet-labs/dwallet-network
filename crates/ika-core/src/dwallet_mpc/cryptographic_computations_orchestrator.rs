@@ -21,8 +21,6 @@ use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::sign::SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS;
 use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::DWalletMPCLocalComputationMetadata;
-use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use sui_types::base_types::{ObjectID, TransactionDigest};
 use tokio::runtime::Handle;
