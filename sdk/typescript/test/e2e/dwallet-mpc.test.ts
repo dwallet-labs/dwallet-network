@@ -183,15 +183,17 @@ describe('Test dWallet MPC', () => {
 
 	it('should sign full flow with on-chain network DKG output', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		const base64NetworkDecryptionKeyPublicOutput = Buffer.from(
-			networkDecryptionKeyPublicOutput,
-		).toString('base64');
-		console.log(base64NetworkDecryptionKeyPublicOutput);
+		// const base64NetworkDecryptionKeyPublicOutput = Buffer.from(
+		// 	networkDecryptionKeyPublicOutput,
+		// ).toString('base64');
+		// console.log(base64NetworkDecryptionKeyPublicOutput);
 		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
 		const presignCompletion = await presign(conf, dwalletID.dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		// const bas64PresignBytes = Buffer.from(presignCompletion.presign).toString('base64');
+		// console.log(`presign bytes: ${bas64PresignBytes}`); //
 		await delay(checkpointCreationTime);
 		await sign(
 			conf,
