@@ -126,6 +126,7 @@ impl CryptographicComputationsOrchestrator {
         completed_computation_channel_sender
     }
 
+    /// Checks if a new session can be spawned based on available CPU cores.	
     pub(crate) fn can_spawn_session(&self) -> bool {
         self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
     }
