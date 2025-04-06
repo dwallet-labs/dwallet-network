@@ -69,6 +69,8 @@ impl DWalletMPCService {
                             session_info,
                         })
                         .await;
+                                     info!("Successfully processed missed event from Sui, session: {session_info.session_id}");
+
                 }
             }
             return;
