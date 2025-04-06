@@ -181,8 +181,9 @@ where
                             )
                             .await
                             .map_err(|e| {
+                                error!("failed to get missed events: {e}");
                                 IkaError::SuiClientInternalError(format!(
-                                    "Can't get DWalletCoordinator: {e}"
+                                    "failed to get missed events: {e}"
                                 ))
                             })?;
                         return Ok(missed_events);
