@@ -20,7 +20,7 @@ use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
 use tokio::task::yield_now;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 use typed_store::Map;
 
 const READ_INTERVAL_MS: u64 = 100;
@@ -126,6 +126,9 @@ impl DWalletMPCService {
                 else {
                     return None;
                 };
+                info!(mpc_protocol=?session_info.mpc_round,
+                    session_id=?session_info.session_id
+                    "Received start event for session");
                 let event = DWalletMPCEvent {
                     event,
                     session_info,
