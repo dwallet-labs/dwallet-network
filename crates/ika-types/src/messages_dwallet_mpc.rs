@@ -29,7 +29,7 @@ use sui_types::id::ID;
 use sui_types::message_envelope::Message;
 use sui_types::SUI_SYSTEM_ADDRESS;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
     DKGFirst(DWalletMPCSuiEvent<StartDKGFirstRoundEvent>),
