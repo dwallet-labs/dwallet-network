@@ -1,10 +1,10 @@
 //! The orchestrator for dWallet MPC cryptographic computations.
 //!
-//! The orchestrator manages a task queue for cryptographic computations and 
+//! The orchestrator manages a task queue for cryptographic computations and
 //! ensures efficient CPU resource utilization.
-//! It tracks the number of available CPU cores and prevents launching 
+//! It tracks the number of available CPU cores and prevents launching
 //! tasks when all cores are occupied.
-//! 
+//!
 //! Key responsibilities:
 //! - Manages a queue of pending cryptographic computations
 //! - Tracks currently running sessions and available CPU cores
@@ -58,16 +58,16 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// The number of logical CPUs available for cryptographic computations on the validator's
     /// machine. Used to limit parallel task execution.
     available_cores_for_cryptographic_computations: usize,
-    
+
     /// A channel sender to notify the manager about computation lifecycle events.
     /// Used to track when computations start and complete, allowing proper resource management.
     computation_channel_sender: UnboundedSender<ComputationUpdate>,
-    
+
     /// The number of currently running cryptographic computations.
     /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
     /// Used to prevent exceeding available CPU cores.
     currently_running_sessions_count: usize,
-    
+
     /// Reference to the epoch store, used for accessing validator state and configuration.
     epoch_store: Arc<AuthorityPerEpochStore>,
 }
@@ -126,7 +126,7 @@ impl CryptographicComputationsOrchestrator {
         completed_computation_channel_sender
     }
 
-    /// Checks if a new session can be spawned based on available CPU cores.	
+    /// Checks if a new session can be spawned based on available CPU cores.
     pub(crate) fn can_spawn_session(&self) -> bool {
         self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
     }
@@ -135,7 +135,7 @@ impl CryptographicComputationsOrchestrator {
         Self::spawn_session_static(self.computation_channel_sender.clone(), session)
     }
 
-    pub(crate) fn spawn_session_static(
+    pub(super) fn spawn_session_static(
         finished_computation_sender: UnboundedSender<ComputationUpdate>,
         session: &DWalletMPCSession,
     ) -> DwalletMPCResult<()> {
@@ -180,7 +180,7 @@ impl CryptographicComputationsOrchestrator {
         Ok(position)
     }
 
-    pub(crate) fn spawn_aggregated_sign(
+    pub(super) fn spawn_aggregated_sign(
         &mut self,
         session: DWalletMPCSession,
     ) -> DwalletMPCResult<()> {
