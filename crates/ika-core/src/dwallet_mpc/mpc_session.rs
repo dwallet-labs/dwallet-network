@@ -155,6 +155,13 @@ impl DWalletMPCSession {
                 private_output: _,
                 public_output,
             }) => {
+                info!(
+                    // Safe to unwrap as advance can only be called after the event is received.
+                    mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
+                    session_id=?session_info.session_id,
+                    validator=?self.epoch_store()?.name,
+                    "Received start event for session"
+                );
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() || self.is_verifying_sign_ia_report() {

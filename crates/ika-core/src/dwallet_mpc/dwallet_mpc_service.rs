@@ -127,7 +127,7 @@ impl DWalletMPCService {
                     return None;
                 };
                 info!(mpc_protocol=?session_info.mpc_round,
-                    session_id=?session_info.session_id
+                    session_id=?session_info.session_id, validator=?self.epoch_store.name,
                     "Received start event for session");
                 let event = DWalletMPCEvent {
                     event,
