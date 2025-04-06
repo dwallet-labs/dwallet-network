@@ -289,6 +289,9 @@ impl DwalletMPCNetworkKeys {
             .map(|v| v.clone()))
     }
 
+    /// Retrieves the protocol public parameters for the specified key ID.
+    /// This function assumes the given key_id is a valid key ID, and retries getting it until it has been synced from
+    /// the Sui network.
     pub async fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
