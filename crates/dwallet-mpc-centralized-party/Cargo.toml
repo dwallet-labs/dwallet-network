@@ -6,7 +6,7 @@ version.workspace = true
 [dependencies]
 mpc.workspace = true
 twopc_mpc.workspace = true
-commitment = { path = "../../../cryptography-private/commitment"}
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "ika2", subdir = "commitment" }
 shared_wasm_class_groups = { path = "../shared-wasm-class-groups" }
 class_groups.workspace = true
 group.workspace = true
