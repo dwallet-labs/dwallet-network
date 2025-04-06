@@ -8,7 +8,7 @@ module ika_system::class_groups_public_key_and_proof;
 use sui::table_vec;
 
 /// The total number of keys in a full Class Groups public key and proof set.
-const NUMBER_OF_KEYS: u64 = 13;
+const NUMBER_OF_KEYS: u64 = 23;
 
 /// `ClassGroupsPublicKeyAndProofBuilder` is used to construct a `ClassGroupsPublicKeyAndProof` object.
 public struct ClassGroupsPublicKeyAndProofBuilder has key, store {

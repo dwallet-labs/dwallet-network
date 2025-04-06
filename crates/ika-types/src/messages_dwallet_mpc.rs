@@ -3,15 +3,16 @@ use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyShares,
-    DWALLET_MPC_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_SIGN_ROUND_EVENT_STRUCT_NAME,
+    DWalletMPCNetworkKeyScheme, MPCMessageBuilder, MPCMessageSlice, MPCPublicInput, MessageState,
+    NetworkDecryptionKeyShares, DWALLET_MPC_EVENT_STRUCT_NAME,
+    START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
+    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
     START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
 };
+use group::PartyID;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
@@ -20,6 +21,7 @@ use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
+use std::collections::HashMap;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
@@ -116,9 +118,12 @@ pub struct DWalletMPCEvent {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DWalletMPCOutputMessage {
-    pub output: Vec<u8>,
+    /// The authority that sent the output.
     pub authority: AuthorityName,
+    /// The session information of the MPC session.
     pub session_info: SessionInfo,
+    /// The final value of the MPC session.
+    pub output: MPCMessageSlice,
 }
 
 /// Metadata for a local MPC computation.
@@ -133,21 +138,12 @@ pub struct DWalletMPCLocalComputationMetadata {
     pub crypto_round_number: usize,
 }
 
-/// The content of the system transaction that stores the MPC session output on the chain.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct DWalletMPCOutput {
-    /// The session information of the MPC session.
-    pub session_info: SessionInfo,
-    /// The final value of the MPC session.
-    pub output: Vec<u8>,
-}
-
 /// The message a Validator can send to the other parties while
 /// running a dWallet MPC session.
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct DWalletMPCMessage {
     /// The serialized message.
-    pub message: MPCMessage,
+    pub message: MPCMessageSlice,
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
@@ -159,11 +155,97 @@ pub struct DWalletMPCMessage {
 /// Used to make sure no message is being processed twice.
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct DWalletMPCMessageKey {
+    /// The serialized message.
+    pub message: MPCMessageSlice,
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
+}
+
+/// Collects and reconstructs `MPCMessage`s from all parties across multiple rounds.
+/// This struct is useful for aggregating fragmented MPC messages from different
+/// parties, round by round, and reassembling them once all parts are received.
+#[derive(Clone)]
+pub struct MPCSessionMessagesCollector {
+    /// Each index corresponds to a round. Each round maps `PartyID` to its message builder.
+    pub messages: Vec<HashMap<PartyID, MPCMessageBuilder>>,
+}
+
+impl MPCSessionMessagesCollector {
+    /// Creates a new, empty message collector.
+    pub fn new() -> Self {
+        Self {
+            messages: Vec::new(),
+        }
+    }
+
+    /// Adds a message from a given party to the collector.
+    ///
+    /// If a complete message is reconstructed, it is returned as `Some(message)`.
+    /// Otherwise, returns `None`.
+    /// If the round number is beyond the current vector length, a new entry is created.
+    pub fn add_message(
+        &mut self,
+        party_id: PartyID,
+        message: DWalletMPCMessage,
+    ) -> Option<Vec<u8>> {
+        let messages_len = self.messages.len();
+        let round_number = message.round_number;
+        let sequence_number = message.message.sequence_number;
+        let message_slice = message.message.clone();
+
+        match self.messages.get_mut(round_number) {
+            Some(party_to_msg) => {
+                let entry = party_to_msg.entry(party_id).or_insert_with(|| {
+                    let mut builder = MPCMessageBuilder {
+                        messages: MessageState::Incomplete(
+                            vec![(sequence_number, message_slice.clone())]
+                                .into_iter()
+                                .collect(),
+                        ),
+                    };
+                    builder.build_message();
+                    builder
+                });
+
+                entry.add_message(message_slice.clone());
+                entry.build_message();
+
+                match &entry.messages {
+                    MessageState::Complete(msg) => Some(msg.clone()),
+                    MessageState::Incomplete(_) => None,
+                }
+            }
+
+            None if round_number >= messages_len => {
+                let mut round_map = HashMap::new();
+
+                let mut builder = MPCMessageBuilder {
+                    messages: MessageState::Incomplete(
+                        vec![(sequence_number, message_slice.clone())]
+                            .into_iter()
+                            .collect(),
+                    ),
+                };
+                builder.build_message();
+
+                round_map.insert(party_id, builder.clone());
+                self.messages.push(round_map);
+
+                match &builder.messages {
+                    MessageState::Complete(msg) => Some(msg.clone()),
+                    MessageState::Incomplete(_) => None,
+                }
+            }
+
+            None => {
+                // Unexpected round number: probably older than expected
+                None
+            }
+        }
+    }
 }
 
 /// Holds information about the current MPC session.
@@ -229,6 +311,7 @@ pub struct StartEncryptedShareVerificationEvent {
     pub encryption_key_id: ObjectID,
     pub encrypted_user_secret_key_share_id: ObjectID,
     pub source_encrypted_user_secret_key_share_id: ObjectID,
+    pub dwallet_mpc_network_key_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {

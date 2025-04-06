@@ -1,5 +1,6 @@
 use move_core_types::{ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt;
 use thiserror::Error;
 
@@ -30,6 +31,99 @@ pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
 
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
+
+/// Represents a chunk of an MPC message, with metadata for reassembly.
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
+pub struct MPCMessageSlice {
+    /// A fragment of the original message.
+    pub message: MPCMessage,
+    /// The position of this chunk in the original message sequence.
+    pub sequence_number: u64,
+    /// Total number of chunks in the message.
+    pub number_of_chunks: usize,
+}
+
+/// Represents the state of the message building process.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub enum MessageState {
+    /// All chunks received; full message reconstructed.
+    Complete(MPCMessage),
+    /// Still waiting on some chunks; maps sequence numbers to slices.
+    Incomplete(HashMap<u64, MPCMessageSlice>),
+}
+
+/// Builds and reconstructs messages from incoming slices.
+/// Some MPC messages might be greater than the maximum size of a consensus message limit.
+/// The `MPCMessageBuilder` is used to split the message into smaller chunks,
+/// to avoid exceeding the maximum size limit.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct MPCMessageBuilder {
+    /// Current state of the message.
+    pub messages: MessageState,
+}
+
+impl MPCMessageBuilder {
+    /// Splits a message into smaller chunks and returns a new builder with those chunks.
+    /// Ensures at least one chunk is created, even if the message is empty.
+    pub fn split(message: Vec<u8>, chunk_size: usize) -> Self {
+        let chunks: Vec<Vec<u8>> = if message.is_empty() {
+            vec![vec![]] // Ensure at least one slice for empty messages
+        } else {
+            message
+                .chunks(chunk_size)
+                .map(|chunk| chunk.to_vec())
+                .collect()
+        };
+
+        let number_of_chunks = chunks.len();
+
+        let messages = chunks
+            .into_iter()
+            .enumerate()
+            .map(|(i, message)| {
+                (
+                    i as u64,
+                    MPCMessageSlice {
+                        message,
+                        sequence_number: i as u64,
+                        number_of_chunks,
+                    },
+                )
+            })
+            .collect();
+
+        Self {
+            messages: MessageState::Incomplete(messages),
+        }
+    }
+
+    /// Adds a single message slice to the builder.
+    pub fn add_message(&mut self, message: MPCMessageSlice) {
+        if let MessageState::Incomplete(messages) = &mut self.messages {
+            messages.insert(message.sequence_number, message);
+        }
+    }
+
+    /// Attempts to build the full message from all available slices.
+    /// Converts state to `Complete` if all slices are present.
+    pub fn build_message(&mut self) {
+        if let MessageState::Incomplete(messages) = &self.messages {
+            if let Some(expected_chunks) = messages.values().next().map(|s| s.number_of_chunks) {
+                if messages.len() == expected_chunks {
+                    let mut message = Vec::new();
+
+                    for i in 0..expected_chunks {
+                        if let Some(slice) = messages.get(&(i as u64)) {
+                            message.extend_from_slice(&slice.message);
+                        }
+                    }
+
+                    self.messages = MessageState::Complete(message);
+                }
+            }
+        }
+    }
+}
 
 /// Alias for an MPC public output.
 pub type MPCPublicOutput = Vec<u8>;
@@ -111,6 +205,7 @@ pub struct NetworkDecryptionKeyShares {
 
     /// Validators' verification keys.
     pub public_verification_keys: Vec<u8>,
+    pub setup_parameters_per_crt_prime: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
@@ -119,6 +214,7 @@ pub struct NetworkDecryptionKeyOnChainOutput {
     pub decryption_key_share_public_parameters: Vec<u8>,
     pub encryption_scheme_public_parameters: Vec<u8>,
     pub public_verification_keys: Vec<u8>,
+    pub setup_parameters_per_crt_prime: Vec<u8>,
 }
 
 #[repr(u8)]
@@ -157,6 +253,7 @@ impl NetworkDecryptionKeyShares {
                 .clone(),
             encryption_scheme_public_parameters: self.encryption_scheme_public_parameters.clone(),
             public_verification_keys: self.public_verification_keys.clone(),
+            setup_parameters_per_crt_prime: self.setup_parameters_per_crt_prime.clone(),
         }
     }
 }

@@ -1411,6 +1411,11 @@ similar to the MPC processes.
 </dt>
 <dd>
 </dd>
+<dt>
+<code>dwallet_mpc_network_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
 </dl>
 
 
@@ -3812,6 +3817,7 @@ which is captured by the blockchain to initiate the verification process.
     <b>let</b> destination_encryption_key = destination_encryption_key.encryption_key;
     <b>let</b> dwallet = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet_mut">get_dwallet_mut</a>(dwallet_id);
     <b>let</b> public_output = *dwallet.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_validate_active_and_get_public_output">validate_active_and_get_public_output</a>();
+    <b>let</b> dwallet_mpc_network_key_id = dwallet.dwallet_network_decryption_key_id;
     <b>assert</b>!(dwallet.encrypted_user_secret_key_shares.contains(source_encrypted_user_secret_key_share_id), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EInvalidSource">EInvalidSource</a>);
     <b>let</b> encrypted_user_share = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a> {
         id: object::new(ctx),
@@ -3841,6 +3847,7 @@ which is captured by the blockchain to initiate the verification process.
                 encryption_key_id: destination_encryption_key_id,
                 encrypted_user_secret_key_share_id,
                 source_encrypted_user_secret_key_share_id,
+                dwallet_mpc_network_key_id,
             },
             ctx,
         )

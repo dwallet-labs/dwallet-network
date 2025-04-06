@@ -10,6 +10,7 @@ use crate::sui_connector::metrics::SuiConnectorMetrics;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::error::IkaResult;
 use itertools::Itertools;
+use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
@@ -57,6 +58,7 @@ where
         self,
         query_interval: Duration,
         dwallet_mpc_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
@@ -66,6 +68,7 @@ where
             tokio::spawn(Self::sync_dwallet_network_keys(
                 sui_client_clone,
                 dwallet_mpc_network_keys,
+                weighted_threshold_access_structure,
             ));
         }
         for (module, cursor) in self.cursors {
@@ -90,6 +93,7 @@ where
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
         dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     ) {
         loop {
             time::sleep(Duration::from_secs(2)).await;
@@ -109,7 +113,7 @@ where
                         if *local_dec_key_shares != network_dec_key_shares {
                             info!("Updating the network key for `key_id`: {:?}", key_id);
                             if let Err(e) =
-                                dwallet_mpc_network_keys.update_network_key(key_id, network_dec_key_shares)
+                                dwallet_mpc_network_keys.update_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
                             {
                                 error!(
                                     "failed to update the key version for key_id: {:?}, error: {:?}",
@@ -120,7 +124,7 @@ where
                     } else {
                         info!("Adding a new network key with ID: {:?}", key_id);
                         if let Err(e) =
-                            dwallet_mpc_network_keys.add_new_network_key(key_id, network_dec_key_shares)
+                            dwallet_mpc_network_keys.add_new_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
                         {
                             error!(
                                 "Failed to add new key for `key_id`: {:?}, error: {:?}",
