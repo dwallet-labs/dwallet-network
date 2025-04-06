@@ -54,7 +54,7 @@ impl DWalletMPCService {
                 .get_dwallet_mpc_missed_events(epoch_store.epoch())
                 .await
             else {
-                error!("Failed to fetch missed DWallet MPC events from SUI");
+                error!("failed to fetch missed dWallet MPC events from Sui");
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 continue;
             };
