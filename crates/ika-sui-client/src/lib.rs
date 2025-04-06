@@ -70,7 +70,7 @@ use sui_types::{
     Identifier,
 };
 use tokio::sync::OnceCell;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 pub mod ika_validator_transactions;
 pub mod metrics;
@@ -186,6 +186,7 @@ where
                                     "failed to get missed events: {e}"
                                 ))
                             })?;
+                        info!("retrieved missed events from Sui successfully");
                         return Ok(missed_events);
                     }
                 };
