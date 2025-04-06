@@ -104,7 +104,7 @@ impl CryptographicComputationsOrchestrator {
                     None => {
                         break;
                     }
-                    Some(updateValue) => match updateValue {
+                    Some(update_value) => match update_value {
                         ComputationUpdate::Started => {
                             epoch_store_for_channel
                                 .get_dwallet_mpc_manager()
