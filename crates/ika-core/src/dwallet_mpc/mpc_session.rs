@@ -9,7 +9,7 @@ use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
@@ -283,6 +283,7 @@ impl DWalletMPCSession {
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
+        info!(mpc_protocol=?mpc_event_data.init_protocol_data, session_id=?self.session_id, crypto_round=?self.pending_quorum_for_highest_round_number, "Advancing MPC session");
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
         let public_input = &mpc_event_data.public_input;
         match &mpc_event_data.init_protocol_data {
