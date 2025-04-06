@@ -14,7 +14,7 @@ use class_groups::{
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyOnChainOutput,
 };
-use group::{CyclicGroupElement, GroupElement, Samplable};
+use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors,
@@ -33,9 +33,8 @@ use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
 use twopc_mpc::secp256k1::class_groups::{
-    FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
-use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
@@ -198,16 +197,6 @@ pub fn advance_centralized_sign_party(
     Ok(signed_message)
 }
 
-fn encryption_scheme_public_parameters(
-    network_decryption_key_public_output: Vec<u8>,
-) -> anyhow::Result<Vec<u8>> {
-    let network_decryption_key_public_output: NetworkDecryptionKeyOnChainOutput =
-        bcs::from_bytes(&network_decryption_key_public_output)?;
-    Ok(bcs::to_bytes(
-        &network_decryption_key_public_output.encryption_scheme_public_parameters,
-    )?)
-}
-
 fn protocol_public_parameters_by_key_scheme(
     network_decryption_key_public_output: Vec<u8>,
     key_scheme: u8,
@@ -274,17 +263,11 @@ pub fn encrypt_secret_key_share_and_prove(
     encryption_key: Vec<u8>,
     network_decryption_key_public_output: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
-    let encryption_scheme_public_parameters =
-        bcs::from_bytes(&encryption_scheme_public_parameters(
+    let protocol_public_params: ProtocolPublicParameters =
+        bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_decryption_key_public_output,
+            DWalletMPCNetworkKeyScheme::Secp256k1 as u8,
         )?)?;
-
-    let protocol_public_params = twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters::new::<
-        { group::secp256k1::SCALAR_LIMBS },
-        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        group::secp256k1::GroupElement,
-    >(encryption_scheme_public_parameters);
 
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
         SCALAR_LIMBS,
