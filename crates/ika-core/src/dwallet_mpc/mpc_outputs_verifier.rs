@@ -161,16 +161,8 @@ impl DWalletMPCOutputsVerifier {
             .or_insert_with(|| MPCSessionMessagesCollector::new());
         let output = session_messages_collector.add_message(party_id, output, 0);
         let output = match output {
-            Some(output) => {
-                println!(
-                    "output: {:?}, session type {:?}",
-                    output.len(),
-                    session_info.mpc_round.type_name().type_name()
-                );
-                output
-            }
+            Some(output) => output,
             None => {
-                println!("output: None");
                 return Ok(OutputVerificationResult {
                     result: OutputResult::BuildingOutput,
                     malicious_actors: vec![],
@@ -299,9 +291,7 @@ impl DWalletMPCOutputsVerifier {
         let protocol_public_parameters = epoch_store
             .dwallet_mpc_network_keys
             .get()
-            .ok_or(DwalletMPCError::TwoPCMPCError(
-                "Decryption share not found".to_string(),
-            ))?
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .get_protocol_public_parameters(
                 &sign_session_data.dwallet_mpc_network_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
