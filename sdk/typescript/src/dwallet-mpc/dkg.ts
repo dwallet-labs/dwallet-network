@@ -68,8 +68,6 @@ export async function createDWallet(
 	networkDecryptionKeyPublicOutput: Uint8Array,
 ): Promise<DWallet> {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
-	// const base64firstRoundOutput = Buffer.from(firstRoundOutputResult.output).toString('base64');
-	// console.log(base64firstRoundOutput); //
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	const dwalletOutput = await launchDKGSecondRound(
 		conf,
@@ -107,9 +105,6 @@ export async function launchDKGSecondRound(
 			firstRoundOutputResult.sessionID.slice(2),
 		);
 
-	// const bas64centralizedSecretKeyShare = Buffer.from(centralizedSecretKeyShare).toString('base64');
-	// console.log(bas64centralizedSecretKeyShare); //
-
 	const dWalletStateData = await getDWalletSecpState(conf);
 
 	const encryptedUserShareAndProof = encrypt_secret_share(
@@ -126,9 +121,6 @@ export async function launchDKGSecondRound(
 		encryptedUserShareAndProof,
 		centralizedPublicOutput,
 	);
-
-	// const bas64dwalletOutput = Buffer.from(completionEvent.public_output).toString('base64');
-	// console.log(bas64dwalletOutput); //
 	return {
 		completionEvent,
 		secretShare: centralizedSecretKeyShare,
