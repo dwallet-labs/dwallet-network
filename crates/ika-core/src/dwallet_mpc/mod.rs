@@ -35,7 +35,7 @@ use std::collections::{HashMap, HashSet};
 use std::vec::Vec;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
-use tracing::{info, warn};
+use tracing::warn;
 
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use twopc_mpc::secp256k1;
