@@ -1,12 +1,21 @@
 //! The orchestrator for dWallet MPC cryptographic computations.
 //!
-//! The orchestrator's job is to manage a task queue for computations
-//! and avoid launching tasks that cannot be parallelized at the moment
-//! due to unavailable CPUs.
-//! When a CPU core is freed, and before launching the Rayon task,
-//! it ensures that the computation has not become redundant based on
-//! messages received since it was added to the queue.
-//! This approach reduces the read delay from the local DB without slowing down state sync.
+//! The orchestrator manages a task queue for cryptographic computations and 
+//! ensures efficient CPU resource utilization.
+//! It tracks the number of available CPU cores and prevents launching 
+//! tasks when all cores are occupied.
+//! 
+//! Key responsibilities:
+//! - Manages a queue of pending cryptographic computations
+//! - Tracks currently running sessions and available CPU cores
+//! - Handles session spawning and completion notifications
+//! - Implements special handling for aggregated sign operations
+//! - Ensures computations don't become redundant based on received messages
+//!
+//! The orchestrator uses a channel-based notification system to track computation status:
+//! - Sends `Started` notifications when computations begin
+//! - Sends `Completed` notifications when computations finish
+//! - Updates the running session count accordingly
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::sign::SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS;
