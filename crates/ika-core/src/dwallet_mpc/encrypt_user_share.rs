@@ -13,7 +13,7 @@ use twopc_mpc::languages::class_groups::{
     construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
 };
 use twopc_mpc::secp256k1;
-use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
+use twopc_mpc::secp256k1::class_groups::{AsyncProtocol, ProtocolPublicParameters};
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
@@ -28,11 +28,13 @@ type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
 /// and ensures the signing public key matches the address that initiated this transaction.
 pub(crate) fn verify_encrypted_share(
     verification_data: &StartEncryptedShareVerificationEvent,
+    protocol_public_parameters: &Vec<u8>,
 ) -> DwalletMPCResult<()> {
     verify_centralized_secret_key_share_proof(
         &verification_data.encrypted_centralized_secret_share_and_proof,
         &verification_data.decentralized_public_output,
         &verification_data.encryption_key,
+        protocol_public_parameters,
     )
     .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
 }
@@ -43,8 +45,10 @@ fn verify_centralized_secret_key_share_proof(
     encrypted_centralized_secret_share_and_proof: &Vec<u8>,
     serialized_dkg_public_output: &Vec<u8>,
     encryption_key: &Vec<u8>,
+    protocol_public_parameters: &Vec<u8>,
 ) -> anyhow::Result<()> {
-    let protocol_public_params = protocol_public_parameters();
+    let protocol_public_params: ProtocolPublicParameters =
+        bcs::from_bytes(protocol_public_parameters)?;
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
         SCALAR_LIMBS,
         { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
