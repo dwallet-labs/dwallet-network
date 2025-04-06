@@ -22,6 +22,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 use std::collections::HashMap;
+use std::fmt::{Debug, Display};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
@@ -30,7 +31,7 @@ use sui_types::id::ID;
 use sui_types::message_envelope::Message;
 use sui_types::SUI_SYSTEM_ADDRESS;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
     DKGFirst(DWalletMPCSuiEvent<StartDKGFirstRoundEvent>),
@@ -60,6 +61,42 @@ pub enum MPCProtocolInitData {
     /// because the system does not support native functions.
     EncryptedShareVerification(DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>),
     PartialSignatureVerification(DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent>),
+}
+
+impl Display for MPCProtocolInitData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MPCProtocolInitData::DKGFirst(_) => write!(f, "DKGFirst"),
+            MPCProtocolInitData::DKGSecond(_) => write!(f, "DKGSecond"),
+            MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
+            MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
+            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                write!(f, "EncryptedShareVerification")
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                write!(f, "PartialSignatureVerification")
+            }
+        }
+    }
+}
+
+impl Debug for MPCProtocolInitData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MPCProtocolInitData::DKGFirst(_) => write!(f, "DKGFirst"),
+            MPCProtocolInitData::DKGSecond(_) => write!(f, "DKGSecond"),
+            MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
+            MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
+            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                write!(f, "EncryptedShareVerification")
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                write!(f, "PartialSignatureVerification")
+            }
+        }
+    }
 }
 
 /// The session-specific state of the MPC session.

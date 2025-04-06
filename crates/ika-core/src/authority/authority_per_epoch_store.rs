@@ -2034,6 +2034,12 @@ impl AuthorityPerEpochStore {
         output: Vec<u8>,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<ConsensusCertificateResult> {
+        info!(
+            validator=?self.name,
+            mpc_protocol=?session_info.mpc_round,
+            session_id=?session_info.session_id,
+            "creating session output checkpoint transaction"
+        );
         let rejected = output == FAILED_SESSION_OUTPUT.to_vec();
         match &session_info.mpc_round {
             MPCProtocolInitData::DKGFirst(event_data) => {
