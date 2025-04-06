@@ -44,25 +44,31 @@ pub(crate) enum ComputationUpdate {
 
 /// The orchestrator for DWallet MPC cryptographic computations.
 ///
-/// The orchestrator's job is to manage a task queue for computations
-/// and avoid launching tasks that cannot be parallelized at the moment
-/// due to unavailable CPUs.
-/// When a CPU core is freed, and before launching the Rayon task,
-/// it ensures that the computation has not become redundant based on
-/// messages received since it was added to the queue. This approach
-/// reduces the read delay from the local DB without slowing down state sync.
+/// The orchestrator manages cryptographic computation tasks and ensures efficient
+///  CPU resource utilization.
+/// It tracks available CPU cores and prevents launching tasks when all cores are occupied.
+///
+/// Key responsibilities:
+/// - Manages a queue of pending cryptographic computations
+/// - Tracks currently running sessions and available CPU cores
+/// - Handles session spawning and completion notifications
+/// - Implements special handling for aggregated sign operations
+/// - Ensures computations don't become redundant based on received messages
 pub(crate) struct CryptographicComputationsOrchestrator {
     /// The number of logical CPUs available for cryptographic computations on the validator's
-    /// machine.
+    /// machine. Used to limit parallel task execution.
     available_cores_for_cryptographic_computations: usize,
-    /// A channel sender to notify the manager that a computation has been completed.
-    /// This is needed to decrease the [`currently_running_sessions_count`] when a computation is
-    /// done.
+    
+    /// A channel sender to notify the manager about computation lifecycle events.
+    /// Used to track when computations start and complete, allowing proper resource management.
     computation_channel_sender: UnboundedSender<ComputationUpdate>,
-    /// The number of currently running cryptographic computations — i.e.,
-    /// computations we called [`rayon::spawn_fifo`] for,
-    /// but we didn't receive a completion message for.
+    
+    /// The number of currently running cryptographic computations.
+    /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
+    /// Used to prevent exceeding available CPU cores.
     currently_running_sessions_count: usize,
+    
+    /// Reference to the epoch store, used for accessing validator state and configuration.
     epoch_store: Arc<AuthorityPerEpochStore>,
 }
 
