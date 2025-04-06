@@ -197,21 +197,15 @@ pub fn advance_centralized_sign_party(
     let signed_message = bcs::to_bytes(&round_result.outgoing_message)?;
     Ok(signed_message)
 }
-fn encryption_scheme_public_parameters_by_key_scheme(
+
+fn encryption_scheme_public_parameters(
     network_decryption_key_public_output: Vec<u8>,
-    key_scheme: u8,
 ) -> anyhow::Result<Vec<u8>> {
-    let key_scheme = DWalletMPCNetworkKeyScheme::try_from(key_scheme)?;
-    match key_scheme {
-        DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            let network_decryption_key_public_output: NetworkDecryptionKeyOnChainOutput =
-                bcs::from_bytes(&network_decryption_key_public_output)?;
-            Ok(bcs::to_bytes(
-                &network_decryption_key_public_output.encryption_scheme_public_parameters,
-            )?)
-        }
-        DWalletMPCNetworkKeyScheme::Ristretto => todo!(),
-    }
+    let network_decryption_key_public_output: NetworkDecryptionKeyOnChainOutput =
+        bcs::from_bytes(&network_decryption_key_public_output)?;
+    Ok(bcs::to_bytes(
+        &network_decryption_key_public_output.encryption_scheme_public_parameters,
+    )?)
 }
 
 fn protocol_public_parameters_by_key_scheme(
@@ -279,12 +273,10 @@ pub fn encrypt_secret_key_share_and_prove(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
     network_decryption_key_public_output: Vec<u8>,
-    key_scheme: u8,
 ) -> anyhow::Result<Vec<u8>> {
     let encryption_scheme_public_parameters =
-        bcs::from_bytes(&encryption_scheme_public_parameters_by_key_scheme(
+        bcs::from_bytes(&encryption_scheme_public_parameters(
             network_decryption_key_public_output,
-            key_scheme,
         )?)?;
 
     let protocol_public_params = twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters::new::<

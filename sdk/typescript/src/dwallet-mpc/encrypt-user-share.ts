@@ -285,7 +285,6 @@ export async function encryptUserShareForPublicKey(
 		// Encryption Key.
 		new Uint8Array(destActiveEncryptionKeyObj.encryption_key),
 		networkDecryptionKeyPublicOutput,
-		MPCKeyScheme.Secp256k1,
 	);
 }
 

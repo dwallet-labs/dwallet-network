@@ -57,13 +57,11 @@ pub fn encrypt_secret_share(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
     network_decryption_key_public_output: Vec<u8>,
-    key_scheme: u8,
 ) -> Result<JsValue, JsError> {
     let encryption_and_proof = encrypt_secret_key_share_and_prove(
         secret_key_share,
         encryption_key,
         network_decryption_key_public_output,
-        key_scheme,
     )
     .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
