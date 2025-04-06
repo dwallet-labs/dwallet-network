@@ -173,23 +173,17 @@ pub enum ConsensusTransactionKind {
 }
 
 impl ConsensusTransaction {
-    /// Create a new consensus transaction with the message to be sent to the other MPC parties.
-    pub fn new_dwallet_mpc_message(
+    /// Create new consensus transactions with the message to be sent to the other MPC parties.
+    pub fn new_dwallet_mpc_messages(
         authority: AuthorityName,
         message: Vec<u8>,
         session_id: ObjectID,
         round_number: usize,
     ) -> Vec<Self> {
-        // let mut hasher = DefaultHasher::new();
-        // session_id.into_bytes().hash(&mut hasher);
-        // let tracking_id = hasher.finish().to_le_bytes();
         let messages = MPCMessageBuilder::split(message, 120 * 1024);
         let messages = match messages.messages {
-            MessageState::Incomplete(messages) => {
-                println!("Incomplete messages: {:?}", messages.len());
-                messages
-            }
-            MessageState::Complete(message) => panic!("should never happen "),
+            MessageState::Incomplete(messages) => messages,
+            MessageState::Complete(_) => panic!("should never happen "),
         };
 
         messages
@@ -209,45 +203,18 @@ impl ConsensusTransaction {
                 }
             })
             .collect()
-        // Self {
-        //     tracking_id,
-        //     kind: ConsensusTransactionKind::DWalletMPCMessage(DWalletMPCMessage {
-        //         message,
-        //         authority,
-        //         round_number,
-        //         session_id,
-        //     }),
-        // }
     }
 
-    /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
+    /// Create new consensus transactions with the output of the MPC session to be sent to the parties.
     pub fn new_dwallet_mpc_output(
         authority: AuthorityName,
         output: Vec<u8>,
         session_info: SessionInfo,
     ) -> Vec<Self> {
-        // let mut hasher = DefaultHasher::new();
-        // output.hash(&mut hasher);
-        // let tracking_id = hasher.finish().to_le_bytes();
         let messages = MPCMessageBuilder::split(output.clone(), 120 * 1024);
-        let mut messages = match messages.messages {
-            MessageState::Incomplete(messages) => {
-                println!("Incomplete messages: {:?}", messages.len());
-                messages
-            }
-            MessageState::Complete(message) => panic!("should never happen "),
-        };
-        messages = if messages.is_empty() {
-            HashMap::from([(
-                0,
-                MPCMessageSlice {
-                    message: output,
-                    sequence_number: 0,
-                    number_of_chunks: 1,
-                },
-            )])
-        } else {
-            messages
+        let messages = match messages.messages {
+            MessageState::Incomplete(messages) => messages,
+            MessageState::Complete(_) => panic!("should never happen "),
         };
 
         messages

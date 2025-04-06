@@ -70,6 +70,8 @@ pub(super) struct DWalletMPCSession {
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
     pub(super) serialized_full_messages: Vec<HashMap<PartyID, MPCMessage>>,
+    /// MPC messages can be too large to go through the consensus (Sui's limit),
+    /// therefore, we must build all messages before processing them and passing them to `serialized_full_messages`.
     messages_collector: MPCSessionMessagesCollector,
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
@@ -143,8 +145,7 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
-                let message = self.new_dwallet_mpc_message(message)?;
-                let party_id = self.party_id.clone();
+                let message = self.construct_new_dwallet_mpc_messages(message)?;
                 tokio_runtime_handle.spawn(async move {
                     for msg in message {
                         if let Err(err) = consensus_adapter
@@ -152,8 +153,6 @@ impl DWalletMPCSession {
                             .await
                         {
                             error!("failed to submit an MPC message to consensus: {:?}", err);
-                        } else {
-                            println!("submitted to consensus, party id: {:?}", party_id);
                         }
                     }
                 });
@@ -174,7 +173,7 @@ impl DWalletMPCSession {
                     )?;
                 }
                 let consensus_message =
-                    self.new_dwallet_mpc_output_message(public_output.clone())?;
+                    self.construct_new_dwallet_mpc_output_messages(public_output.clone())?;
                 tokio_runtime_handle.spawn(async move {
                     for msg in consensus_message {
                         if let Err(err) = consensus_adapter
@@ -182,8 +181,6 @@ impl DWalletMPCSession {
                             .await
                         {
                             error!("failed to submit an MPC message to consensus: {:?}", err);
-                        } else {
-                            println!("submitted to consensus");
                         }
                     }
                 });
@@ -205,7 +202,7 @@ impl DWalletMPCSession {
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 let consensus_message =
-                    self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT.to_vec())?;
+                    self.construct_new_dwallet_mpc_output_messages(FAILED_SESSION_OUTPUT.to_vec())?;
                 tokio_runtime_handle.spawn(async move {
                     for msg in consensus_message {
                         if let Err(err) = consensus_adapter
@@ -213,8 +210,6 @@ impl DWalletMPCSession {
                             .await
                         {
                             error!("failed to submit an MPC message to consensus: {:?}", err);
-                        } else {
-                            println!("submitted to consensus");
                         }
                     }
                 });
@@ -445,13 +440,13 @@ impl DWalletMPCSession {
         }
     }
 
-    /// Create a new consensus transaction with the message to be sent to the other MPC parties.
+    /// Create new consensus transactions with the message to be sent to the other MPC parties.
     /// Returns Error only if the epoch switched in the middle and was not available.
-    fn new_dwallet_mpc_message(
+    fn construct_new_dwallet_mpc_messages(
         &self,
         message: MPCMessage,
     ) -> DwalletMPCResult<Vec<ConsensusTransaction>> {
-        Ok(ConsensusTransaction::new_dwallet_mpc_message(
+        Ok(ConsensusTransaction::new_dwallet_mpc_messages(
             self.epoch_store()?.name,
             message,
             self.session_id.clone(),
@@ -459,10 +454,10 @@ impl DWalletMPCSession {
         ))
     }
 
-    /// Create a new consensus transaction with the flow result (output) to be
+    /// Create new consensus transactions with the flow result (output) to be
     /// sent to the other MPC parties.
     /// Errors if the epoch was switched in the middle and was not available.
-    fn new_dwallet_mpc_output_message(
+    fn construct_new_dwallet_mpc_output_messages(
         &self,
         output: Vec<u8>,
     ) -> DwalletMPCResult<Vec<ConsensusTransaction>> {
@@ -504,9 +499,9 @@ impl DWalletMPCSession {
 
         let current_round = self.serialized_full_messages.len();
 
-        let message_bytes =
-            self.messages_collector
-                .add_message(source_party_id, message.clone(), current_round);
+        let message_bytes = self
+            .messages_collector
+            .add_message(source_party_id, message.clone());
 
         let message_bytes = match message_bytes {
             Some(message) => message,
@@ -521,14 +516,12 @@ impl DWalletMPCSession {
                     // session ID and MPC round.
                     return Ok(());
                 }
-                // build the message here, but where do I store it?
                 party_to_msg.insert(source_party_id, message_bytes.clone());
             }
             // If next round.
             None if message.round_number == current_round => {
                 let mut map = HashMap::new();
                 map.insert(source_party_id, message_bytes.clone());
-                // Build the message
                 self.serialized_full_messages.push(map);
             }
             None => {
