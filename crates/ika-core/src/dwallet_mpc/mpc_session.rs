@@ -160,7 +160,6 @@ impl DWalletMPCSession {
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    public_output=?public_output,
                     "reached public output for session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();

@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::crypto::default_hash;
 use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
@@ -58,6 +59,24 @@ pub enum MPCProtocolInitData {
     /// because the system does not support native functions.
     EncryptedShareVerification(DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>),
     PartialSignatureVerification(DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent>),
+}
+
+impl Display for MPCProtocolInitData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MPCProtocolInitData::DKGFirst(_) => write!(f, "DKGFirst"),
+            MPCProtocolInitData::DKGSecond(_) => write!(f, "DKGSecond"),
+            MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
+            MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
+            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                write!(f, "EncryptedShareVerification")
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                write!(f, "PartialSignatureVerification")
+            }
+        }
+    }
 }
 
 /// The session-specific state of the MPC session.
