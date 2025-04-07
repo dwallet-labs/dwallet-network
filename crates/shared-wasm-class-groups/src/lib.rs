@@ -6,9 +6,9 @@ use class_groups::dkg::Secp256k1Party;
 use class_groups::SecretKeyShareSizedInteger;
 use constants::{DECRYPTION_KEY_SHARE_PUBLIC_PARAMETERS, DYCRPTION_SHARES, NETWORK_DKG_OUTPUT};
 use group::{secp256k1, PartyID};
+use mpc::PublicOutput;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use mpc::PublicOutput;
 use twopc_mpc::secp256k1::class_groups::{
     ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
@@ -37,8 +37,12 @@ pub fn protocol_public_parameters() -> ProtocolPublicParameters {
 pub fn network_dkg_final_output() -> Box<<Secp256k1Party as mpc::Party>::PublicOutput> {
     // Safe to unwrap as we're using a hardcoded constant.
     let protocol_public_parameters = base64::decode(&NETWORK_DKG_OUTPUT).unwrap();
-    let protocol_public_parameters =
-        Box::new(bcs::from_bytes::<<Secp256k1Party as mpc::Party>::PublicOutput>(&protocol_public_parameters).unwrap());
+    let protocol_public_parameters = Box::new(
+        bcs::from_bytes::<<Secp256k1Party as mpc::Party>::PublicOutput>(
+            &protocol_public_parameters,
+        )
+        .unwrap(),
+    );
     protocol_public_parameters
 }
 

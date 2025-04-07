@@ -1,9 +1,9 @@
+use class_groups::SecretKeyShareSizedInteger;
 use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyOnChainOutput;
 use group::{secp256k1, PartyID};
 use mpc::{Weight, WeightedThresholdAccessStructure};
 use shared_wasm_class_groups::network_dkg_final_output;
 use std::collections::HashMap;
-use class_groups::SecretKeyShareSizedInteger;
 
 // This test is used to generate the mock on-chain output for the network DKG.
 // For internal use.
@@ -21,10 +21,12 @@ fn build_network_dkg_on_chain_output_test() {
         .unwrap();
     let decryption_key_share_public_parameters_base64 =
         base64::encode(bcs::to_bytes(&decryption_key_share_public_parameters).unwrap());
-    let decryption_key_share_public_parameters_path =
-        "decryption_key_share_public_parameters.txt";
-    std::fs::write(decryption_key_share_public_parameters_path, decryption_key_share_public_parameters_base64)
-        .unwrap();
+    let decryption_key_share_public_parameters_path = "decryption_key_share_public_parameters.txt";
+    std::fs::write(
+        decryption_key_share_public_parameters_path,
+        decryption_key_share_public_parameters_base64,
+    )
+    .unwrap();
 
     let on_chain_output = NetworkDecryptionKeyOnChainOutput {
         encryption_key: bcs::to_bytes(&network_decryption_key_public_output.encryption_key)
@@ -64,8 +66,7 @@ fn build_network_dkg_on_chain_output_test() {
 
 #[test]
 fn create_shares() {
-    let mut shares: HashMap<PartyID, HashMap<PartyID, SecretKeyShareSizedInteger>> =
-        HashMap::new();
+    let mut shares: HashMap<PartyID, HashMap<PartyID, SecretKeyShareSizedInteger>> = HashMap::new();
     for i in 1..=4 {
         let private_output_path = format!("/Users/yaelabergel/projects/dwallet_labs/dwallet-network-original/bas64_private_output_{}.txt", i);
         let private_output = std::fs::read_to_string(private_output_path).unwrap();
