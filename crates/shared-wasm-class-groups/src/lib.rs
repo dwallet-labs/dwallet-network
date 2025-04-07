@@ -37,13 +37,12 @@ pub fn protocol_public_parameters() -> ProtocolPublicParameters {
 pub fn network_dkg_final_output() -> Box<<Secp256k1Party as mpc::Party>::PublicOutput> {
     // Safe to unwrap as we're using a hardcoded constant.
     let protocol_public_parameters = STANDARD.decode(&NETWORK_DKG_OUTPUT).unwrap();
-    let protocol_public_parameters = Box::new(
+    Box::new(
         bcs::from_bytes::<<Secp256k1Party as mpc::Party>::PublicOutput>(
             &protocol_public_parameters,
         )
         .unwrap(),
-    );
-    protocol_public_parameters
+    )
 }
 
 pub fn decryption_key_share_public_parameters() -> Vec<u8> {
