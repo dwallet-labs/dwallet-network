@@ -37,9 +37,9 @@ use ika_types::digests::Digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCLocalComputationMetadata,
-    DWalletMPCMessage, MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo,
-    SignIASessionState, StartPresignFirstRoundEvent,
+    AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
+    MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
+    StartPresignFirstRoundEvent,
 };
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
@@ -152,8 +152,8 @@ impl DWalletMPCManager {
         })
     }
 
-    pub(crate) fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
-        if let Err(err) = self.handle_event(event.event, event.session_info) {
+    pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
+        if let Err(err) = self.handle_event(event.event, event.session_info).await {
             error!("Failed to handle event with error: {:?}", err);
         }
     }
@@ -290,12 +290,12 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn handle_event(
+    async fn handle_event(
         &mut self,
         event: DBSuiEvent,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
-        let (public_input, private_input) = session_input_from_event(event, &self)?;
+        let (public_input, private_input) = session_input_from_event(event, &self).await?;
         let mpc_event_data = Some(MPCEventData {
             init_protocol_data: session_info.mpc_round.clone(),
             public_input,
@@ -315,18 +315,27 @@ impl DWalletMPCManager {
                 session.mpc_event_data = mpc_event_data;
             }
         } else {
-            self.push_new_mpc_session(&session_info.session_id, mpc_event_data)?;
+            self.push_new_mpc_session(&session_info.session_id, mpc_event_data);
         }
         Ok(())
     }
 
-    pub(crate) fn get_protocol_public_parameters(
+    pub(crate) async fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
-    ) -> DwalletMPCResult<Vec<u8>> {
-        self.dwallet_mpc_network_keys()?
-            .get_protocol_public_parameters(key_id, key_scheme)
+    ) -> Vec<u8> {
+        loop {
+            if let Ok(dwallet_mpc_network_keys) = self.dwallet_mpc_network_keys() {
+                if let Ok(protocol_public_parameters) = dwallet_mpc_network_keys
+                    .get_protocol_public_parameters(key_id, key_scheme)
+                    .await
+                {
+                    return protocol_public_parameters;
+                }
+            }
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        }
     }
 
     fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeys>> {
@@ -499,7 +508,7 @@ impl DWalletMPCManager {
                     "received a message for an MPC session ID: `{:?}` which an event has not yet received for",
                     message.session_id
                 );
-                self.push_new_mpc_session(&message.session_id, None)?;
+                self.push_new_mpc_session(&message.session_id, None);
                 // Safe to unwrap because we just added the session.
                 self.mpc_sessions.get_mut(&message.session_id).unwrap()
             }
@@ -543,21 +552,20 @@ impl DWalletMPCManager {
         &mut self,
         session_id: &ObjectID,
         mpc_event_data: Option<MPCEventData>,
-    ) -> DwalletMPCResult<()> {
+    ) {
         if self.mpc_sessions.contains_key(&session_id) {
             // This should never happen, as the session ID is a Move UniqueID.
             error!(
                 "received start flow event for session ID {:?} that already exists",
                 &session_id
             );
-            return Ok(());
         }
         info!(
             "Received start MPC flow event for session ID {:?}",
             session_id
         );
 
-        let mut new_session = DWalletMPCSession::new(
+        let new_session = DWalletMPCSession::new(
             self.epoch_store.clone(),
             self.consensus_adapter.clone(),
             self.epoch_id,
@@ -572,6 +580,5 @@ impl DWalletMPCManager {
             "Added MPCSession to MPC manager for session_id {:?}",
             session_id
         );
-        Ok(())
     }
 }
