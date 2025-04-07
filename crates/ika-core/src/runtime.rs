@@ -4,6 +4,7 @@
 use ika_config::NodeConfig;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use tokio::runtime::Runtime;
+use tracing::error;
 
 pub struct IkaRuntimes {
     // Order in this struct is the order in which runtimes are stopped
@@ -40,8 +41,16 @@ pub fn get_rayon_thread_pool_size() -> DwalletMPCResult<usize> {
     if !(available_cores_for_computations > 0) {
         return Err(DwalletMPCError::InsufficientCPUCores);
     }
-    Ok(available_cores_for_computations
+    let rayon_thread_pool_size = available_cores_for_computations
         - IKA_NODE_TOKIO_ALLOCATED_THREADS
         - METRICS_TOKIO_ALLOCATED_THREADS
-        - 1)
+        - 1;
+    if rayon_thread_pool_size <= 0 {
+        error!(
+            ?available_cores_for_computations,
+            "there are not enough logical cores for the Rayon thread pool; time slicing with the Tokio thread pool may cause unexpected behaviour"
+        );
+        return Ok(1)
+    }
+    Ok(rayon_thread_pool_size)
 }
