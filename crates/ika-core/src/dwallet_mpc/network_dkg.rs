@@ -14,9 +14,7 @@ use class_groups::{
 };
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, NetworkDecryptionKeyShares,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -357,38 +355,14 @@ pub(crate) fn advance_network_dkg(
     }
 
     let res = match key_scheme {
-        DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            let output = advance_and_serialize::<Secp256k1Party>(
-                session_id,
-                party_id,
-                &weighted_threshold_access_structure,
-                messages,
-                bcs::from_bytes(public_input)?,
-                class_groups_decryption_key,
-            )?;
-            match &output {
-                AsynchronousRoundResult::Advance { .. } => {}
-                AsynchronousRoundResult::Finalize {
-                    public_output,
-                    private_output,
-                    ..
-                } => {
-                    Box::new(
-                        bcs::from_bytes::<<Secp256k1Party as mpc::Party>::PublicOutput>(
-                            &public_output,
-                        )
-                        .unwrap(),
-                    );
-                    let public_output_path = format!("bas64_public_output_{}.txt", party_id);
-                    let base64_public_output = base64::encode(public_output.clone());
-                    let _ = std::fs::write(public_output_path, base64_public_output);
-                    let private_output_path = format!("bas64_private_output_{}.txt", party_id);
-                    let base64_private_output = base64::encode(private_output.clone());
-                    let _ = std::fs::write(private_output_path, base64_private_output);
-                }
-            };
-            Ok(output)
-        }
+        DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
+            session_id,
+            party_id,
+            &weighted_threshold_access_structure,
+            messages,
+            bcs::from_bytes(public_input)?,
+            class_groups_decryption_key,
+        ),
         DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
             session_id,
             party_id,
