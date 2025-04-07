@@ -250,8 +250,9 @@ impl IkaNode {
             .num_threads(get_rayon_thread_pool_size()?)
             .build_global()
         {
-            // This error will get printed while running the testing chain using Swarm, as all the validators
-            // start on the same process.
+            // This error will get printed while running the testing chain using Swarm,
+            // as all the validators start on the same process, 
+            // therefore Rayon can't configure a thread pool more than once.
             error!("Failed to create rayon thread pool: {:?}", err);
         }
         NodeConfigMetrics::new(&registry_service.default_registry()).record_metrics(&config);
