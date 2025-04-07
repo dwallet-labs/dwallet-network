@@ -50,7 +50,7 @@ pub fn get_rayon_thread_pool_size() -> DwalletMPCResult<usize> {
             ?available_cores_for_computations,
             "there are not enough logical cores for the Rayon thread pool; time slicing with the Tokio thread pool may cause unexpected behaviour"
         );
-        return Ok(1)
+        return Ok(1);
     }
     Ok(rayon_thread_pool_size)
 }

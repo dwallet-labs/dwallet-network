@@ -251,7 +251,7 @@ impl IkaNode {
             .build_global()
         {
             // This error will get printed while running the testing chain using Swarm,
-            // as all the validators start on the same process, 
+            // as all the validators start on the same process,
             // therefore Rayon can't configure a thread pool more than once.
             error!("Failed to create rayon thread pool: {:?}", err);
         }
