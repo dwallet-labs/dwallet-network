@@ -13,7 +13,7 @@ pub struct IkaRuntimes {
 }
 
 const IKA_NODE_TOKIO_ALLOCATED_THREADS: usize = 1;
-const METRICS_TOKIO_ALLOCATED_THREADS: usize = 1;
+const METRICS_TOKIO_ALLOCATED_THREADS: usize = 2;
 
 impl IkaRuntimes {
     pub fn new(_confg: &NodeConfig) -> Self {
