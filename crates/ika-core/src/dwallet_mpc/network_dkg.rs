@@ -368,11 +368,12 @@ pub(crate) fn advance_network_dkg(
                 match &output {
                     AsynchronousRoundResult::Advance { .. } => {}
                     AsynchronousRoundResult::Finalize { public_output, private_output, .. } => {
+                        Box::new(bcs::from_bytes::<<Secp256k1Party as mpc::Party>::PublicOutput>(&public_output).unwrap());
                         let public_output_path = format!("bas64_public_output_{}.txt", party_id);
-                        let base64_public_output = base64::encode(&public_output);
+                        let base64_public_output = base64::encode(public_output.clone());
                         let _ = std::fs::write(public_output_path, base64_public_output);
                         let private_output_path = format!("bas64_private_output_{}.txt", party_id);
-                        let base64_private_output = base64::encode(&private_output);
+                        let base64_private_output = base64::encode(private_output.clone());
                         let _ = std::fs::write(private_output_path, base64_private_output);
                     }
                 };
