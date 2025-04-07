@@ -102,9 +102,10 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 
-cargo build --bin "$BINARY_NAME"
-cp ../../target/debug/"$BINARY_NAME" .
+RUST_MIN_STACK=16777216
 
+RUST_MIN_STACK=$RUST_MIN_STACK cargo build --release --bin "$BINARY_NAME"
+cp ../../target/release/"$BINARY_NAME" .
 BINARY_NAME="$(pwd)/$BINARY_NAME"
 
 VALIDATORS_ARRAY=()
@@ -211,7 +212,7 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
     cp ../../class-groups.key .
 
     # Usage: {binary_name} validator make-validator-info <NAME> <DESCRIPTION> <IMAGE_URL> <PROJECT_URL> <HOST_NAME> <GAS_PRICE> <sender_sui_address>
-    $BINARY_NAME validator make-validator-info "$VALIDATOR_NAME" "$VALIDATOR_NAME" "" "" "$VALIDATOR_HOSTNAME" 0 "$SENDER_SUI_ADDR"
+    RUST_MIN_STACK=$RUST_MIN_STACK $BINARY_NAME validator make-validator-info "$VALIDATOR_NAME" "$VALIDATOR_NAME" "" "" "$VALIDATOR_HOSTNAME" 0 "$SENDER_SUI_ADDR"
 
     mkdir -p "$KEY_PAIRS_DIR"
     mv ./*.key "$KEY_PAIRS_DIR"/

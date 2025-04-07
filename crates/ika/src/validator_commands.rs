@@ -437,6 +437,7 @@ fn read_or_generate_from_seed_class_groups_key(
     file_path: PathBuf,
     seed: &AuthorityKeyPair,
 ) -> Result<Box<ClassGroupsKeyPairAndProof>> {
+    println!("Generating class groups key pair file",);
     match read_class_groups_from_file(file_path.clone()) {
         Ok(class_groups_public_key_and_proof) => {
             println!("Use existing: {:?}.", file_path,);
