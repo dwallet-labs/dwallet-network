@@ -77,9 +77,6 @@ impl CryptographicComputationsOrchestrator {
         let completed_computation_channel_sender =
             Self::listen_for_completed_computations(&epoch_store);
         let available_cores_for_computations: usize = runtime::get_rayon_thread_pool_size()?;
-        if !(available_cores_for_computations > 0) {
-            return Err(DwalletMPCError::InsufficientCPUCores);
-        }
 
         Ok(CryptographicComputationsOrchestrator {
             available_cores_for_cryptographic_computations: available_cores_for_computations,
