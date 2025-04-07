@@ -54,8 +54,7 @@ use sui_types::event::Event;
 use sui_types::id::ID;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::log::debug;
-use tracing::{error, info, warn};
+use tracing::{error, info, warn, debug};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
 
