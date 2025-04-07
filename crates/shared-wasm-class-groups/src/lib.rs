@@ -36,7 +36,7 @@ pub fn protocol_public_parameters() -> ProtocolPublicParameters {
 
 pub fn network_dkg_final_output() -> Box<<Secp256k1Party as mpc::Party>::PublicOutput> {
     // Safe to unwrap as we're using a hardcoded constant.
-    let protocol_public_parameters = base64::decode(&NETWORK_DKG_OUTPUT).unwrap();
+    let protocol_public_parameters = STANDARD.decode(&NETWORK_DKG_OUTPUT).unwrap();
     let protocol_public_parameters = Box::new(
         bcs::from_bytes::<<Secp256k1Party as mpc::Party>::PublicOutput>(
             &protocol_public_parameters,
