@@ -21,8 +21,7 @@ use tokio::{
     task::JoinHandle,
     time::{self, Duration},
 };
-use tracing::log::error;
-use tracing::{info, warn};
+use tracing::{info, warn, error};
 
 /// Map from contract address to their start cursor (exclusive)
 pub type SuiTargetModules = HashMap<Identifier, Option<EventID>>;
@@ -127,7 +126,7 @@ where
                             dwallet_mpc_network_keys.add_new_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
                         {
                             error!(
-                                "Failed to add new key for `key_id`: {:?}, error: {:?}",
+                                "failed to add new key for `key_id`: {:?}, error: {:?}",
                                 key_id, e
                             );
                         }
