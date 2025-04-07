@@ -2168,12 +2168,17 @@ impl AuthorityPerEpochStore {
         session_sequence_number: u64,
     ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
         let mut slices = Vec::new();
+        // todo(zeev): why 5?
         let public_chunks = public_output.chunks(5 * 1024).collect_vec();
         let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
         let empty: &[u8] = &[];
         // Take the max of the two lengths to ensure we have enough slices.
         let total_slices = public_chunks.len().max(key_shares_chunks.len());
         for i in 0..total_slices {
+            // todo(zeev): unwrap_or_default?
+            // todo(zeev): remove 0s
+            // todo(zeev): in the Move code, ignore empty.
+            // todo(zeev): separate the chunks.
             // If the chunk is missing, use an empty slice, as the size of the slices can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
             let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
