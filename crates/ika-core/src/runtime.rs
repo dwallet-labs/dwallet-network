@@ -34,6 +34,8 @@ impl IkaRuntimes {
     }
 }
 
+/// Calculates the appropriate size for the Rayon thread pool based on
+/// available system resources.
 pub fn get_rayon_thread_pool_size() -> DwalletMPCResult<usize> {
     let available_cores_for_computations: usize = std::thread::available_parallelism()
         .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
