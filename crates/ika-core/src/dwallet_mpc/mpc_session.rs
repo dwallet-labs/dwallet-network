@@ -16,7 +16,7 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
-use crate::dwallet_mpc::network_dkg::advance_network_dkg;
+use crate::dwallet_mpc::network_dkg::{advance_network_dkg, DwalletMPCNetworkKeys};
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{
@@ -277,6 +277,15 @@ impl DWalletMPCSession {
         Ok(())
     }
 
+    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeys>> {
+        Ok(self
+            .epoch_store()?
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .clone())
+    }
+
     fn advance_specific_party(
         &self,
     ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
@@ -299,6 +308,14 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::DKGSecond(event_data) => {
                 let public_input = bcs::from_bytes(public_input)?;
+                let protocol_public_parameters = self
+                    .dwallet_mpc_network_keys()?
+                    .get_protocol_public_parameters(
+                        // The event is assign with a Secp256k1 dwallet.
+                        // Todo (#473): Support generic network key scheme
+                        &event_data.event_data.dwallet_mpc_network_key_id,
+                        DWalletMPCNetworkKeyScheme::Secp256k1,
+                    )?;
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,
                     self.party_id,
@@ -308,20 +325,27 @@ impl DWalletMPCSession {
                     (),
                 )?;
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
-                    verify_encrypted_share(&StartEncryptedShareVerificationEvent {
-                        decentralized_public_output: public_output.clone(),
-                        encrypted_centralized_secret_share_and_proof: event_data
-                            .event_data
-                            .encrypted_centralized_secret_share_and_proof
-                            .clone(),
-                        encryption_key: event_data.event_data.encryption_key.clone(),
-                        encryption_key_id: event_data.event_data.encryption_key_id.clone(),
+                    verify_encrypted_share(
+                        &StartEncryptedShareVerificationEvent {
+                            decentralized_public_output: public_output.clone(),
+                            encrypted_centralized_secret_share_and_proof: event_data
+                                .event_data
+                                .encrypted_centralized_secret_share_and_proof
+                                .clone(),
+                            encryption_key: event_data.event_data.encryption_key.clone(),
+                            encryption_key_id: event_data.event_data.encryption_key_id.clone(),
+                            dwallet_mpc_network_key_id: event_data
+                                .event_data
+                                .dwallet_mpc_network_key_id
+                                .clone(),
 
-                        // Fields not relevant for verification; passing empty values.
-                        dwallet_id: ObjectID::new([0; 32]),
-                        source_encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
-                        encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
-                    })?;
+                            // Fields not relevant for verification; passing empty values.
+                            dwallet_id: ObjectID::new([0; 32]),
+                            source_encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
+                            encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
+                        },
+                        &protocol_public_parameters,
+                    )?;
                 }
                 Ok(result)
             }
@@ -362,7 +386,16 @@ impl DWalletMPCSession {
                 )?,
             ),
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
-                match verify_encrypted_share(&verification_data.event_data) {
+                let protocol_public_parameters = self
+                    .dwallet_mpc_network_keys()?
+                    .get_protocol_public_parameters(
+                        &verification_data.event_data.dwallet_mpc_network_key_id,
+                        DWalletMPCNetworkKeyScheme::Secp256k1,
+                    )?;
+                match verify_encrypted_share(
+                    &verification_data.event_data,
+                    &protocol_public_parameters,
+                ) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
                         public_output: vec![],
                         private_output: vec![],

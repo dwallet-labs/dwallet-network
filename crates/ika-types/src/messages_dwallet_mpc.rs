@@ -217,6 +217,7 @@ pub struct StartEncryptedShareVerificationEvent {
     pub encryption_key_id: ObjectID,
     pub encrypted_user_secret_key_share_id: ObjectID,
     pub source_encrypted_user_secret_key_share_id: ObjectID,
+    pub dwallet_mpc_network_key_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {
