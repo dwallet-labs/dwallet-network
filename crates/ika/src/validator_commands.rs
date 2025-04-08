@@ -11,10 +11,9 @@ use sui_types::{base_types::SuiAddress, crypto::Signable, multiaddr::Multiaddr};
 use clap::*;
 use colored::Colorize;
 use dwallet_classgroups_types::{
-    generate_class_groups_keypair_and_proof_from_seed, generate_random_bytes,
-    read_class_groups_from_file, read_class_groups_seed_from_file,
-    write_class_groups_keypair_and_proof_to_file, write_class_groups_seed_to_file,
-    ClassGroupsKeyPairAndProof,
+    generate_class_groups_keypair_and_proof_from_seed, read_class_groups_from_file,
+    read_class_groups_seed_from_file, sample_seed, write_class_groups_keypair_and_proof_to_file,
+    write_class_groups_seed_to_file, ClassGroupsKeyPairAndProof,
 };
 use fastcrypto::traits::KeyPair;
 use fastcrypto::traits::ToFromBytes;
@@ -429,8 +428,7 @@ fn read_or_generate_seed_and_class_groups_key(
             Ok(class_groups_public_key_and_proof)
         }
         Err(_) => {
-            let seed = read_class_groups_seed_from_file(seed_path.clone())
-                .unwrap_or(generate_random_bytes());
+            let seed = read_class_groups_seed_from_file(seed_path.clone()).unwrap_or(sample_seed());
             let class_groups_public_key_and_proof =
                 Box::new(generate_class_groups_keypair_and_proof_from_seed(seed));
             write_class_groups_keypair_and_proof_to_file(

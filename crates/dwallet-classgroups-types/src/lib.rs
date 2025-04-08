@@ -46,7 +46,7 @@ pub struct DWalletPublicKeys {
     pub public_key: Vec<u8>,
 }
 
-pub const CLASS_GROUPS_SEED_SIZE: usize = 32;
+pub const RANDOM_SEED_SIZE: usize = 32;
 
 impl ClassGroupsKeyPairAndProof {
     pub fn new(
@@ -75,7 +75,7 @@ impl ClassGroupsKeyPairAndProof {
 
 /// Generate a class groups keypair and proof from a seed.
 pub fn generate_class_groups_keypair_and_proof_from_seed(
-    seed: [u8; CLASS_GROUPS_SEED_SIZE],
+    seed: [u8; RANDOM_SEED_SIZE],
 ) -> ClassGroupsKeyPairAndProof {
     let setup_parameters_per_crt_prime =
         construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER).unwrap();
@@ -98,10 +98,9 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
     ClassGroupsKeyPairAndProof::new(decryption_key, encryption_key_and_proof)
 }
 
-pub fn generate_random_bytes() -> [u8; CLASS_GROUPS_SEED_SIZE] {
-    let mut rng = rand::thread_rng();
-    let mut bytes = [0u8; CLASS_GROUPS_SEED_SIZE];
-    rng.fill(&mut bytes);
+pub fn sample_seed() -> [u8; RANDOM_SEED_SIZE] {
+    let mut bytes = [0u8; RANDOM_SEED_SIZE];
+    OsRng.fill_bytes(&mut bytes);
     bytes
 }
 
@@ -133,7 +132,7 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
 /// Writes a class group key seed, encoded in Base64,
 /// to a file and returns the public key.
 pub fn write_class_groups_seed_to_file<P: AsRef<std::path::Path> + Clone>(
-    seed: [u8; CLASS_GROUPS_SEED_SIZE],
+    seed: [u8; RANDOM_SEED_SIZE],
     path: P,
 ) -> DwalletMPCResult<String> {
     let contents = Base64::encode(seed);
@@ -145,14 +144,14 @@ pub fn write_class_groups_seed_to_file<P: AsRef<std::path::Path> + Clone>(
 /// Reads a class group seed (encoded in Base64) from a file.
 pub fn read_class_groups_seed_from_file<P: AsRef<std::path::Path>>(
     path: P,
-) -> DwalletMPCResult<[u8; CLASS_GROUPS_SEED_SIZE]> {
+) -> DwalletMPCResult<[u8; RANDOM_SEED_SIZE]> {
     let contents = std::fs::read_to_string(path)
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
     let decoded = Base64::decode(contents.as_str())
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
-    Ok(decoded
-        .try_into()
-        .map_err(|e| DwalletMPCError::FailedToReadCGKey("kjll".to_string()))?)
+    Ok(decoded.try_into().map_err(|e| {
+        DwalletMPCError::FailedToReadCGKey(format!("Failed to read class group seed: {:?}", e))
+    })?)
 }
 
 /// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].

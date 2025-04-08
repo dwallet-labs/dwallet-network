@@ -4,7 +4,7 @@
 use std::net::{IpAddr, SocketAddr};
 
 use dwallet_classgroups_types::{
-    generate_class_groups_keypair_and_proof_from_seed, generate_random_bytes,
+    generate_class_groups_keypair_and_proof_from_seed, sample_seed,
     write_class_groups_seed_to_file, ClassGroupsKeyPairAndProof,
 };
 use fastcrypto::traits::{KeyPair, ToFromBytes};
@@ -161,7 +161,7 @@ impl ValidatorInitializationConfigBuilder {
             .class_groups_key_pair_and_proof
             .clone()
             .unwrap_or_else(|| {
-                let seed = generate_random_bytes();
+                let seed = sample_seed();
                 Box::new(generate_class_groups_keypair_and_proof_from_seed(seed))
             });
 
