@@ -46,7 +46,7 @@ pub struct DWalletPublicKeys {
     pub public_key: Vec<u8>,
 }
 
-pub const RANDOM_SEED_SIZE: usize = 32;
+pub const RNG_SEED_SIZE: usize = 32;
 
 impl ClassGroupsKeyPairAndProof {
     pub fn new(
