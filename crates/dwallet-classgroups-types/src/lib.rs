@@ -98,6 +98,7 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
     ClassGroupsKeyPairAndProof::new(decryption_key, encryption_key_and_proof)
 }
 
+/// Generates a cryptographically secure random seed for class groups key generation.
 pub fn sample_seed() -> [u8; RANDOM_SEED_SIZE] {
     let mut bytes = [0u8; RANDOM_SEED_SIZE];
     OsRng.fill_bytes(&mut bytes);
@@ -130,7 +131,7 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
 }
 
 /// Writes a class group key seed, encoded in Base64,
-/// to a file and returns the public key.
+/// to a file and returns the encoded seed string.
 pub fn write_class_groups_seed_to_file<P: AsRef<std::path::Path> + Clone>(
     seed: [u8; RANDOM_SEED_SIZE],
     path: P,
@@ -150,7 +151,7 @@ pub fn read_class_groups_seed_from_file<P: AsRef<std::path::Path>>(
     let decoded = Base64::decode(contents.as_str())
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
     Ok(decoded.try_into().map_err(|e| {
-        DwalletMPCError::FailedToReadCGKey(format!("Failed to read class group seed: {:?}", e))
+        DwalletMPCError::FailedToReadCGKey(format!("failed to read class group seed: {:?}", e))
     })?)
 }
 
