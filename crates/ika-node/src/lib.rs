@@ -181,6 +181,7 @@ use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use ika_core::dwallet_mpc::network_dkg::{
     DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
 };
+use ika_core::runtime::get_rayon_thread_pool_size;
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
@@ -245,6 +246,15 @@ impl IkaNode {
         registry_service: RegistryService,
         software_version: &'static str,
     ) -> Result<Arc<IkaNode>> {
+        if let Err(err) = rayon::ThreadPoolBuilder::new()
+            .num_threads(get_rayon_thread_pool_size()?)
+            .build_global()
+        {
+            // This error will get printed while running the testing chain using Swarm,
+            // as all the validators start on the same process,
+            // therefore Rayon can't configure a thread pool more than once.
+            error!("Failed to create rayon thread pool: {:?}", err);
+        }
         NodeConfigMetrics::new(&registry_service.default_registry()).record_metrics(&config);
         let mut config = config.clone();
         if config.supported_protocol_versions.is_none() {
