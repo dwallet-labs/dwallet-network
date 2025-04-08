@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::committee::CommitteeWithNetworkMetadata;
+use crate::sui::system_inner_v1::DWalletCoordinatorInnerV1;
+use crate::sui::system_inner_v1::DWalletNetworkDecryptionKeyCap;
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use epoch_start_system::EpochStartSystem;
@@ -95,6 +97,15 @@ pub struct System {
     pub new_package_id: Option<ObjectID>,
 }
 
+/// Rust version of the Move DWalletCoordinator type
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DWalletCoordinator {
+    pub id: ObjectID,
+    pub version: u64,
+    pub package_id: ObjectID,
+    pub new_package_id: Option<ObjectID>,
+}
+
 impl System {
     pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {
@@ -122,6 +133,9 @@ pub trait SystemInnerTrait {
     fn previous_epoch_last_checkpoint_sequence_number(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
     fn dwallet_2pc_mpc_secp256k1_id(&self) -> Option<ObjectID>;
+    fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
+        &self,
+    ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
     // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata;
     // fn into_epoch_start_state(self) -> EpochStartSystemState;
 }
@@ -134,6 +148,12 @@ pub trait SystemInnerTrait {
 #[enum_dispatch(SystemInnerTrait)]
 pub enum SystemInner {
     V1(SystemInnerV1),
+}
+
+/// A wrapper around the different versions of the DWalletCoordinator.
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub enum DWalletCoordinatorInner {
+    V1(DWalletCoordinatorInnerV1),
 }
 
 /// This is the fixed type used by init.
