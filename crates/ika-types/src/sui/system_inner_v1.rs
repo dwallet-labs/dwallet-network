@@ -157,47 +157,6 @@ pub struct DWalletCoordinatorInnerV1 {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct PricingPerOperation {
-    pub consensus_validation_ika: u64,
-    pub computation_ika: u64,
-    pub gas_fee_reimbursement_sui: u64,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletPricing2PcMpcSecp256K1 {
-    id: ObjectID,
-    dkg_first_round: PricingPerOperation,
-    dkg_second_round: PricingPerOperation,
-    re_encrypt_user_share: PricingPerOperation,
-    ecdsa_presign: PricingPerOperation,
-    ecdsa_sign: PricingPerOperation,
-    ecdsa_future_sign: PricingPerOperation,
-    ecdsa_sign_with_partial_user_signature: PricingPerOperation,
-}
-
-/// Rust version of the Move DWalletCoordinatorInner type
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletCoordinatorInnerV1 {
-    pub current_epoch: u64,
-    pub sessions: ObjectTable,
-    pub session_start_events: Bag,
-    pub first_session_sequence_number: u64,
-    pub next_session_sequence_number: u64,
-    pub dwallets: ObjectTable,
-    pub dwallet_network_decryption_keys: ObjectTable,
-    pub encryption_keys: ObjectTable,
-    pub ecdsa_partial_centralized_signed_messages: ObjectTable,
-    pub pricing: DWalletPricing2PcMpcSecp256K1,
-    pub gas_fee_reimbursement_sui: Balance,
-    pub consensus_validation_fee_charged_ika: Balance,
-    pub active_committee: BlsCommittee,
-    pub previous_committee: BlsCommittee,
-    pub total_messages_processed: u64,
-    pub last_processed_checkpoint_sequence_number: Option<u64>,
-    pub extra_fields: Bag,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct IkaTreasuryV1 {
     /// TreasuryCap of IKA tokens.
     pub treasury_cap: TreasuryCap,
