@@ -324,14 +324,29 @@ export async function getNetworkDecryptionKeyPublicOutputID(
 }
 
 async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint8Array> {
-	const dynamicFieldPage = await c.client.getDynamicFields({ parentId: table_id });
+	let cursor: string | null = null;
+	const allTableRows: { objectId: string }[] = [];
 
-	if (!dynamicFieldPage?.data?.length) {
-		throw new Error('no dynamic fields found');
-	}
+	// Fetch all dynamic fields using pagination with cursor
+	do {
+		const dynamicFieldPage = await c.client.getDynamicFields({
+			parentId: table_id,
+			cursor,
+		});
+
+		if (!dynamicFieldPage?.data?.length) {
+			if (allTableRows.length === 0) {
+				throw new Error('no dynamic fields found');
+			}
+			break;
+		}
+
+		allTableRows.push(...dynamicFieldPage.data);
+		cursor = dynamicFieldPage.nextCursor;
+	} while (cursor);
 
 	const data: Uint8Array[] = [];
-	for (const tableRowResult of dynamicFieldPage.data) {
+	for (const tableRowResult of allTableRows) {
 		const id = tableRowResult.objectId;
 
 		const dynField = await c.client.getObject({
