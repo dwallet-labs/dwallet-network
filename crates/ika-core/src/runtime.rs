@@ -46,6 +46,7 @@ pub fn get_rayon_thread_pool_size() -> DwalletMPCResult<usize> {
     let rayon_thread_pool_size = available_cores_for_computations
         - IKA_NODE_TOKIO_ALLOCATED_THREADS
         - METRICS_TOKIO_ALLOCATED_THREADS
+	// 1 is for the `main()` rust thread.
         - 1;
     if rayon_thread_pool_size <= 0 {
         warn!(
