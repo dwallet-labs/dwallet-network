@@ -5035,6 +5035,7 @@ dependencies = [
  "async-trait",
  "axum 0.7.9",
  "backoff",
+ "base64 0.22.1",
  "bcs",
  "bytes",
  "chrono",

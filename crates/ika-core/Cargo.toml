@@ -113,6 +113,7 @@ derive_more.workspace = true
 backoff.workspace = true
 sha3 = "0.10.8"
 sha2 = "0.10.8"
+base64 = "0.22.1"
 
 
 [dev-dependencies]
