@@ -1,28 +1,37 @@
 //! The orchestrator for dWallet MPC cryptographic computations.
 //!
-//! The orchestrator's job is to manage a task queue for computations
-//! and avoid launching tasks that cannot be parallelized at the moment
-//! due to unavailable CPUs.
-//! When a CPU core is freed, and before launching the Rayon task,
-//! it ensures that the computation has not become redundant based on
-//! messages received since it was added to the queue.
-//! This approach reduces the read delay from the local DB without slowing down state sync.
+//! The orchestrator manages a task queue for cryptographic computations and
+//! ensures efficient CPU resource utilization.
+//! It tracks the number of available CPU cores and prevents launching
+//! tasks when all cores are occupied.
+//!
+//! Key responsibilities:
+//! - Manages a queue of pending cryptographic computations
+//! - Tracks currently running sessions and available CPU cores
+//! - Handles session spawning and completion notifications
+//! - Implements special handling for aggregated sign operations
+//! - Ensures computations don't become redundant based on received messages
+//!
+//! The orchestrator uses a channel-based notification system to track computation status:
+//! - Sends `Started` notifications when computations begin
+//! - Sends `Completed` notifications when computations finish
+//! - Updates the running session count accordingly
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::sign::SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS;
 use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::DWalletMPCLocalComputationMetadata;
-use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use sui_types::base_types::{ObjectID, TransactionDigest};
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{error, info, warn};
 
-/// The possible MPC computations update.
-/// Needed to use a channel also for start messages because in the aggregated sign flow,
-/// the Rayon task is being spawned from within a Tokio task.
+/// Represents the state transitions of cryptographic computations in the orchestrator.
+///
+/// This enum is used for communication between Tokio and Rayon tasks via a channel.
+/// In the aggregated sign flow, Rayon tasks are spawned from within Tokio tasks,
+/// requiring explicit lifecycle tracking.
 pub(crate) enum ComputationUpdate {
     /// A new computation has started.
     Started,
@@ -33,25 +42,31 @@ pub(crate) enum ComputationUpdate {
 
 /// The orchestrator for DWallet MPC cryptographic computations.
 ///
-/// The orchestrator's job is to manage a task queue for computations
-/// and avoid launching tasks that cannot be parallelized at the moment
-/// due to unavailable CPUs.
-/// When a CPU core is freed, and before launching the Rayon task,
-/// it ensures that the computation has not become redundant based on
-/// messages received since it was added to the queue. This approach
-/// reduces the read delay from the local DB without slowing down state sync.
+/// The orchestrator manages cryptographic computation tasks and ensures efficient
+///  CPU resource utilization.
+/// It tracks available CPU cores and prevents launching tasks when all cores are occupied.
+///
+/// Key responsibilities:
+/// - Manages a queue of pending cryptographic computations
+/// - Tracks currently running sessions and available CPU cores
+/// - Handles session spawning and completion notifications
+/// - Implements special handling for aggregated sign operations
+/// - Ensures computations don't become redundant based on received messages
 pub(crate) struct CryptographicComputationsOrchestrator {
     /// The number of logical CPUs available for cryptographic computations on the validator's
-    /// machine.
+    /// machine. Used to limit parallel task execution.
     available_cores_for_cryptographic_computations: usize,
-    /// A channel sender to notify the manager that a computation has been completed.
-    /// This is needed to decrease the [`currently_running_sessions_count`] when a computation is
-    /// done.
+
+    /// A channel sender to notify the manager about computation lifecycle events.
+    /// Used to track when computations start and complete, allowing proper resource management.
     computation_channel_sender: UnboundedSender<ComputationUpdate>,
-    /// The number of currently running cryptographic computations — i.e.,
-    /// computations we called [`rayon::spawn_fifo`] for,
-    /// but we didn't receive a completion message for.
+
+    /// The number of currently running cryptographic computations.
+    /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
+    /// Used to prevent exceeding available CPU cores.
     currently_running_sessions_count: usize,
+
+    /// Reference to the epoch store, used for accessing validator state and configuration.
     epoch_store: Arc<AuthorityPerEpochStore>,
 }
 
@@ -87,7 +102,7 @@ impl CryptographicComputationsOrchestrator {
                     None => {
                         break;
                     }
-                    Some(updateValue) => match updateValue {
+                    Some(update_value) => match update_value {
                         ComputationUpdate::Started => {
                             epoch_store_for_channel
                                 .get_dwallet_mpc_manager()
@@ -109,6 +124,7 @@ impl CryptographicComputationsOrchestrator {
         completed_computation_channel_sender
     }
 
+    /// Checks if a new session can be spawned based on available CPU cores.
     pub(crate) fn can_spawn_session(&self) -> bool {
         self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
     }
@@ -117,7 +133,7 @@ impl CryptographicComputationsOrchestrator {
         Self::spawn_session_static(self.computation_channel_sender.clone(), session)
     }
 
-    pub(crate) fn spawn_session_static(
+    pub(super) fn spawn_session_static(
         finished_computation_sender: UnboundedSender<ComputationUpdate>,
         session: &DWalletMPCSession,
     ) -> DwalletMPCResult<()> {
@@ -162,7 +178,7 @@ impl CryptographicComputationsOrchestrator {
         Ok(position)
     }
 
-    pub(crate) fn spawn_aggregated_sign(
+    pub(super) fn spawn_aggregated_sign(
         &mut self,
         session: DWalletMPCSession,
     ) -> DwalletMPCResult<()> {

@@ -121,18 +121,6 @@ pub struct DWalletMPCOutputMessage {
     pub session_info: SessionInfo,
 }
 
-/// Metadata for a local MPC computation.
-/// Includes the session ID and the cryptographic round.
-///
-/// Used to remove a pending computation if a quorum of outputs for the session
-/// is received before the computation is spawned, or if a quorum of messages
-/// for the next round of the computation is received, making the old round redundant.
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
-pub struct DWalletMPCLocalComputationMetadata {
-    pub session_id: ObjectID,
-    pub crypto_round_number: usize,
-}
-
 /// The content of the system transaction that stores the MPC session output on the chain.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct DWalletMPCOutput {

@@ -97,6 +97,7 @@ pub struct System {
     pub new_package_id: Option<ObjectID>,
 }
 
+/// Rust version of the Move DWalletCoordinator type
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DWalletCoordinator {
     pub id: ObjectID,

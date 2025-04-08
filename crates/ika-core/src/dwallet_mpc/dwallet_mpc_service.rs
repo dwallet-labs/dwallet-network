@@ -24,7 +24,7 @@ use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
 use tokio::task::yield_now;
 use tokio::time;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 use typed_store::Map;
 
 const READ_INTERVAL_MS: u64 = 100;
@@ -57,7 +57,7 @@ impl DWalletMPCService {
                 .get_dwallet_mpc_missed_events(epoch_store.epoch())
                 .await
             else {
-                error!("Failed to fetch missed DWallet MPC events from SUI");
+                error!("failed to fetch missed dWallet MPC events from Sui");
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 continue;
             };
@@ -69,40 +69,16 @@ impl DWalletMPCService {
                     dwallet_mpc_manager
                         .handle_dwallet_db_event(DWalletMPCEvent {
                             event,
-                            session_info,
+                            session_info: session_info.clone(),
                         })
                         .await;
+                    info!(
+                        "successfully processed missed event from Sui, session: {:?}",
+                        session_info.session_id
+                    );
                 }
             }
             return;
-        }
-    }
-
-    async fn sync_dwallet_mpc_last_completed_session(
-        sui_client: Arc<SuiBridgeClient>,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-    ) {
-        loop {
-            time::sleep(Duration::from_secs(2)).await;
-            let system_inner = sui_client.get_system_inner_until_success().await;
-            if let Some(dwallet_coordinator_id) = system_inner
-                .into_init_version_for_tooling()
-                .dwallet_2pc_mpc_secp256k1_id
-            {
-                let coordinator_state = sui_client
-                    .get_dwallet_coordinator_inner_until_success(dwallet_coordinator_id)
-                    .await;
-                match coordinator_state {
-                    DWalletCoordinatorInner::V1(inner_state) => {
-                        let last_completed_session_sequence_number =
-                            inner_state.first_session_sequence_number;
-                        let mut dwallet_mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
-                        dwallet_mpc_manager.update_last_completed_session_sequence_number(
-                            last_completed_session_sequence_number,
-                        );
-                    }
-                }
-            }
         }
     }
 

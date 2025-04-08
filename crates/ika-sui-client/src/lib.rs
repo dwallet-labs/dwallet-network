@@ -70,7 +70,7 @@ use sui_types::{
     Identifier,
 };
 use tokio::sync::OnceCell;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 pub mod ika_validator_transactions;
 pub mod metrics;
@@ -181,17 +181,17 @@ where
                             )
                             .await
                             .map_err(|e| {
+                                error!("failed to get missed events: {e}");
                                 IkaError::SuiClientInternalError(format!(
-                                    "Can't get DWalletCoordinator: {e}"
+                                    "failed to get missed events: {e}"
                                 ))
                             })?;
+                        info!("retrieved missed events from Sui successfully");
                         return Ok(missed_events);
                     }
                 };
             }
         }
-        error!("failed to retrieve dwallet coordinator ID while fetching missed events");
-        Ok(vec![])
     }
 
     pub fn new_for_testing(inner: P) -> Self {

@@ -37,9 +37,9 @@ use ika_types::digests::Digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCLocalComputationMetadata,
-    DWalletMPCMessage, MPCProtocolInitData, MPCSessionSpecificState, MaliciousReport, SessionInfo,
-    SignIASessionState, StartPresignFirstRoundEvent,
+    AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
+    MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
+    StartPresignFirstRoundEvent,
 };
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
@@ -159,7 +159,7 @@ impl DWalletMPCManager {
         })
     }
 
-    pub(crate) fn update_last_completed_session_sequence_number(
+    pub(crate) async fn update_last_completed_session_sequence_number(
         &mut self,
         last_completed_session_sequence_number: u64,
     ) {
