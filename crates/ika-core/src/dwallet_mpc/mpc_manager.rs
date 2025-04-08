@@ -163,7 +163,7 @@ impl DWalletMPCManager {
         &mut self,
         last_completed_session_sequence_number: u64,
     ) {
-        if last_completed_session_sequence_number < self.last_completed_session_sequence_number {
+        if last_completed_session_sequence_number <= self.last_completed_session_sequence_number {
             return;
         }
         for i in self.last_completed_session_sequence_number
