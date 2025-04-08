@@ -39,8 +39,8 @@ pub struct MPCMessageSlice {
     pub message: MPCMessage,
     /// The position of this chunk in the original message sequence.
     pub sequence_number: u64,
-    /// Total number of chunks in the message.
-    pub number_of_chunks: usize,
+    /// Total number of chunks in the message, used only in the first slice.
+    pub number_of_chunks: Option<usize>,
 }
 
 /// Represents the state of the message building process.
@@ -63,6 +63,12 @@ pub struct MPCMessageBuilder {
 }
 
 impl MPCMessageBuilder {
+    pub fn empty() -> Self {
+        Self {
+            messages: MessageState::Incomplete(HashMap::new()),
+        }
+    }
+
     /// Splits a message into smaller chunks and returns a new builder with those chunks.
     /// Ensures at least one chunk is created, even if the message is empty.
     pub fn split(message: Vec<u8>, chunk_size: usize) -> Self {
@@ -86,7 +92,7 @@ impl MPCMessageBuilder {
                     MPCMessageSlice {
                         message,
                         sequence_number: i as u64,
-                        number_of_chunks,
+                        number_of_chunks: if i == 0 { Some(number_of_chunks) } else { None },
                     },
                 )
             })
@@ -97,28 +103,24 @@ impl MPCMessageBuilder {
         }
     }
 
-    /// Adds a single message slice to the builder.
-    pub fn add_message(&mut self, message: MPCMessageSlice) {
+    /// Adds a message slice to the builder and attempts to complete the full message.
+    /// If all slices are present, the message state is updated to `Complete`.
+    pub fn add_and_maybe_complete(&mut self, message: MPCMessageSlice) {
         if let MessageState::Incomplete(messages) = &mut self.messages {
             messages.insert(message.sequence_number, message);
-        }
-    }
 
-    /// Attempts to build the full message from all available slices.
-    /// Converts state to `Complete` if all slices are present.
-    pub fn build_message(&mut self) {
-        if let MessageState::Incomplete(messages) = &self.messages {
-            if let Some(expected_chunks) = messages.values().next().map(|s| s.number_of_chunks) {
+            if let Some(slice) = messages.get(&0) {
+                let expected_chunks = slice.number_of_chunks.unwrap_or(0);
+
                 if messages.len() == expected_chunks {
-                    let mut message = Vec::new();
+                    let complete_message = (0..expected_chunks as u64)
+                        .map(|i| messages.get(&i).map(|s| s.message.as_slice()))
+                        .collect::<Option<Vec<_>>>()
+                        .map(|slices| slices.concat());
 
-                    for i in 0..expected_chunks {
-                        if let Some(slice) = messages.get(&(i as u64)) {
-                            message.extend_from_slice(&slice.message);
-                        }
+                    if let Some(message) = complete_message {
+                        self.messages = MessageState::Complete(message);
                     }
-
-                    self.messages = MessageState::Complete(message);
                 }
             }
         }
