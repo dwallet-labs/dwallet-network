@@ -6,10 +6,13 @@ use class_groups::{
     CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
 };
+use crypto_bigint::rand_core::{OsRng, RngCore};
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::encoding::{Base64, Encoding};
+use fastcrypto::traits::{FromUniformBytes, ToFromBytes};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
 
@@ -43,6 +46,8 @@ pub struct DWalletPublicKeys {
     pub public_key: Vec<u8>,
 }
 
+pub const RNG_SEED_SIZE: usize = 32;
+
 impl ClassGroupsKeyPairAndProof {
     pub fn new(
         decryption_key: ClassGroupsDecryptionKey,
@@ -70,7 +75,7 @@ impl ClassGroupsKeyPairAndProof {
 
 /// Generate a class groups keypair and proof from a seed.
 pub fn generate_class_groups_keypair_and_proof_from_seed(
-    seed: [u8; 32],
+    seed: [u8; RANDOM_SEED_SIZE],
 ) -> ClassGroupsKeyPairAndProof {
     let setup_parameters_per_crt_prime =
         construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER).unwrap();
@@ -91,6 +96,13 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
     .unwrap();
 
     ClassGroupsKeyPairAndProof::new(decryption_key, encryption_key_and_proof)
+}
+
+/// Generates a cryptographically secure random seed for class groups key generation.
+pub fn sample_seed() -> [u8; RANDOM_SEED_SIZE] {
+    let mut bytes = [0u8; RANDOM_SEED_SIZE];
+    OsRng.fill_bytes(&mut bytes);
+    bytes
 }
 
 /// Writes a class group key pair and proof, encoded in Base64,
@@ -116,6 +128,31 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
     let keypair: Box<ClassGroupsKeyPairAndProof> = Box::new(bcs::from_bytes(&decoded)?);
     Ok(keypair)
+}
+
+/// Writes a class group key seed, encoded in Base64,
+/// to a file and returns the encoded seed string.
+pub fn write_class_groups_seed_to_file<P: AsRef<std::path::Path> + Clone>(
+    seed: [u8; RANDOM_SEED_SIZE],
+    path: P,
+) -> DwalletMPCResult<String> {
+    let contents = Base64::encode(seed);
+    std::fs::write(path.clone(), contents.clone())
+        .map_err(|e| DwalletMPCError::FailedToWriteCGKey(e.to_string()))?;
+    Ok(contents)
+}
+
+/// Reads a class group seed (encoded in Base64) from a file.
+pub fn read_class_groups_seed_from_file<P: AsRef<std::path::Path>>(
+    path: P,
+) -> DwalletMPCResult<[u8; RANDOM_SEED_SIZE]> {
+    let contents = std::fs::read_to_string(path)
+        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
+    let decoded = Base64::decode(contents.as_str())
+        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
+    Ok(decoded.try_into().map_err(|e| {
+        DwalletMPCError::FailedToReadCGKey(format!("failed to read class group seed: {:?}", e))
+    })?)
 }
 
 /// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
