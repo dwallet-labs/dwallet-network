@@ -32,6 +32,7 @@ describe('Test dWallet MPC', () => {
 	let conf: Config;
 
 	beforeEach(async () => {
+		// todo(zeev): Think key is probably incorrect, check it.
 		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x2');
 		const dWalletSeed = new Uint8Array(32).fill(1);
 		const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
