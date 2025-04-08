@@ -501,12 +501,12 @@ where
         }
     }
 
-    pub async fn get_gas_objects_panic_if_not_gas(
+    pub async fn get_gas_objects(
         &self,
         address: SuiAddress,
     ) -> Vec<ObjectRef> {
         self.inner
-            .get_gas_objects_panic_if_not_gas(address)
+            .get_gas_objects(address)
             .await
     }
 }
@@ -578,7 +578,7 @@ pub trait SuiClientInner: Send + Sync {
         tx: Transaction,
     ) -> Result<SuiTransactionBlockResponse, IkaError>;
 
-    async fn get_gas_objects_panic_if_not_gas(
+    async fn get_gas_objects(
         &self,
         address: SuiAddress,
     ) -> Vec<ObjectRef>;
@@ -1026,7 +1026,7 @@ impl SuiClientInner for SuiSdkClient {
             }
     }
 
-    async fn get_gas_objects_panic_if_not_gas(
+    async fn get_gas_objects(
         &self,
         address: SuiAddress,
     ) -> Vec<ObjectRef> {
@@ -1049,13 +1049,11 @@ impl SuiClientInner for SuiSdkClient {
                     .filter_map(|r| r.data.map(|o| o.object_ref()))
                     .collect::<Vec<_>>()
                 );
-            match results
-            {
-                Ok(gas_objs) => {
-                    return gas_objs;
-                }
-                other => {
-                    warn!("Can't get gas objects for address: {:?}: {:?}", address, other);
+            
+            match results {
+                Ok(gas_objs) => return gas_objs,
+                Err(err) => {
+                    warn!("can't get gas objects for address {}: {}", address, err);
                     tokio::time::sleep(Duration::from_secs(5)).await;
                 }
             }

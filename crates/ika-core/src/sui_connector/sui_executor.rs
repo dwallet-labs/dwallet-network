@@ -196,7 +196,7 @@ where
         metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
         let gas_coins = sui_client
-            .get_gas_objects_panic_if_not_gas(sui_notifier.sui_address)
+            .get_gas_objects(sui_notifier.sui_address)
             .await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
