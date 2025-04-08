@@ -38,7 +38,7 @@ pub fn get_rayon_thread_pool_size() -> DwalletMPCResult<usize> {
     let available_cores_for_computations: usize = std::thread::available_parallelism()
         .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
         .into();
-    if !(available_cores_for_computations > 0) {
+    if available_cores_for_computations == 0 {
         return Err(DwalletMPCError::InsufficientCPUCores);
     }
     let rayon_thread_pool_size = available_cores_for_computations
