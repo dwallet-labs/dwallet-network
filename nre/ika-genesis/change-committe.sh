@@ -9,11 +9,11 @@ MAX_VOTING_POWER=4
 
 pushd ../../
 
-# File paths
+# File paths.
 MOVE_FILE="crates/ika-move-packages/packages/ika_system/sources/system_v1/bls_committee.move"
 RUST_FILE="crates/ika-types/src/committee.rs"
 
-# Check if files exist
+# Check if files exist.
 if [ ! -f "$MOVE_FILE" ]; then
     echo "Error: Move file not found at $MOVE_FILE"
     exit 1
@@ -29,30 +29,30 @@ echo "Starting parameter update..."
 # Update Move file
 echo "Updating Move file at $MOVE_FILE"
 
-# Replace values in the Move file using sed
+# Replace values in the Move file using sed.
 sed -i '' \
     -e "s/const TOTAL_VOTING_POWER: u64 = [0-9]*;/const TOTAL_VOTING_POWER: u64 = $TOTAL_VOTING_POWER;/" \
     -e "s/const QUORUM_THRESHOLD: u64 = [0-9]*;/const QUORUM_THRESHOLD: u64 = $QUORUM_THRESHOLD;/" \
     -e "s/const MAX_VOTING_POWER: u64 = [0-9]*;/const MAX_VOTING_POWER: u64 = $MAX_VOTING_POWER;/" \
     "$MOVE_FILE"
 
-# Update Rust file
+# Update Rust file.
 echo "Updating Rust file at $RUST_FILE"
 
-# Replace values in the Rust file
+# Replace values in the Rust file.
 sed -i '' \
     -e "s/pub const TOTAL_VOTING_POWER: StakeUnit = [0-9]*;/pub const TOTAL_VOTING_POWER: StakeUnit = $TOTAL_VOTING_POWER;/" \
     -e "s/pub const QUORUM_THRESHOLD: StakeUnit = .*$/pub const QUORUM_THRESHOLD: StakeUnit = $QUORUM_THRESHOLD;/" \
     "$RUST_FILE"
 
-# Verify the changes
+# Verify the changes.
 echo "Verifying changes..."
 
-# Check Move file changes
+# Check Move file changes.
 echo "Move file changes:"
 grep -n "TOTAL_VOTING_POWER\|QUORUM_THRESHOLD\|MAX_VOTING_POWER" "$MOVE_FILE"
 
-# Check Rust file changes
+# Check Rust file changes.
 echo "Rust file changes:"
 grep -n "TOTAL_VOTING_POWER\|QUORUM_THRESHOLD\|VALIDITY_THRESHOLD" "$RUST_FILE"
 
