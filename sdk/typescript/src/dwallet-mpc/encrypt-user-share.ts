@@ -245,6 +245,7 @@ export async function encryptUserShareForPublicKey(
 	sourceConf: Config,
 	destSuiAddress: string,
 	dWalletSecretShare: Uint8Array,
+	networkDecryptionKeyPublicOutput: Uint8Array,
 ): Promise<Uint8Array> {
 	const destActiveEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		sourceConf,
@@ -281,6 +282,7 @@ export async function encryptUserShareForPublicKey(
 		dWalletSecretShare,
 		// Encryption Key.
 		new Uint8Array(destActiveEncryptionKeyObj.encryption_key),
+		networkDecryptionKeyPublicOutput,
 	);
 }
 
