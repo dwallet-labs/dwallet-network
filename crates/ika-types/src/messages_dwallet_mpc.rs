@@ -233,10 +233,10 @@ impl MPCSessionMessagesCollector {
             Some(party_to_msg) => {
                 let entry = party_to_msg.entry(party_id).or_insert_with(|| {
                     let mut builder = MPCMessageBuilder::empty();
-                    builder.add_and_maybe_complete(message_slice.clone());
+                    builder.add_and_try_complete(message_slice.clone());
                     builder
                 });
-                entry.add_and_maybe_complete(message_slice.clone());
+                entry.add_and_try_complete(message_slice.clone());
                 match &entry.messages {
                     MessageState::Complete(msg) => Some(msg.clone()),
                     MessageState::Incomplete(_) => None,
@@ -246,7 +246,7 @@ impl MPCSessionMessagesCollector {
             None if round_number >= messages_len => {
                 let mut round_map = HashMap::new();
                 let mut builder = MPCMessageBuilder::empty();
-                builder.add_and_maybe_complete(message_slice.clone());
+                builder.add_and_try_complete(message_slice.clone());
                 round_map.insert(party_id, builder.clone());
                 self.messages.push(round_map);
 

@@ -105,7 +105,7 @@ impl MPCMessageBuilder {
 
     /// Adds a message slice to the builder and attempts to complete the full message.
     /// If all slices are present, the message state is updated to `Complete`.
-    pub fn add_and_maybe_complete(&mut self, message: MPCMessageSlice) {
+    pub fn add_and_try_complete(&mut self, message: MPCMessageSlice) {
         if let MessageState::Incomplete(messages) = &mut self.messages {
             messages.insert(message.sequence_number, message);
 
