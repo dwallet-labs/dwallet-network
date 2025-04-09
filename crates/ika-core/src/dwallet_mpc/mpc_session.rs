@@ -333,7 +333,8 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::DKGSecond(event_data) => {
-                let public_input: <DKGSecondParty as mpc::Party>::PublicInput = bcs::from_bytes(public_input)?;
+                let public_input: <DKGSecondParty as mpc::Party>::PublicInput =
+                    bcs::from_bytes(public_input)?;
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,
                     self.party_id,

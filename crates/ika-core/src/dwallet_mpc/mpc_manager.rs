@@ -327,8 +327,9 @@ impl DWalletMPCManager {
     ) -> Vec<u8> {
         loop {
             if let Ok(dwallet_mpc_network_keys) = self.dwallet_mpc_network_keys() {
-                if let Ok(protocol_public_parameters) =
-                    dwallet_mpc_network_keys.get_protocol_public_parameters(key_id, key_scheme).await
+                if let Ok(protocol_public_parameters) = dwallet_mpc_network_keys
+                    .get_protocol_public_parameters(key_id, key_scheme)
+                    .await
                 {
                     return protocol_public_parameters;
                 }
