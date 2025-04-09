@@ -1,10 +1,9 @@
-use class_groups::KnowledgeOfDiscreteLogUCProof;
 use class_groups::{
     construct_knowledge_of_decryption_key_public_parameters_per_crt_prime,
     construct_setup_parameters_per_crt_prime, generate_keypairs_per_crt_prime,
     generate_knowledge_of_decryption_key_proofs_per_crt_prime, CompactIbqf,
-    CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
+    KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
 };
 use crypto_bigint::rand_core::{OsRng, RngCore};
 use crypto_bigint::Uint;
@@ -92,6 +91,7 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
     let encryption_key_and_proof = generate_knowledge_of_decryption_key_proofs_per_crt_prime(
         language_public_parameters_per_crt_prime.clone(),
         decryption_key,
+        &mut rng,
     )
     .unwrap();
 

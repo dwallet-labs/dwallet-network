@@ -914,6 +914,7 @@ impl SuiClientInner for SuiSdkClient {
                     .decryption_key_share_public_parameters,
                 encryption_key: public_output.encryption_key,
                 public_verification_keys: public_output.public_verification_keys,
+                setup_parameters_per_crt_prime: public_output.setup_parameters_per_crt_prime,
             };
             network_decryption_keys.insert(key_id, key);
         }
@@ -924,37 +925,45 @@ impl SuiClientInner for SuiSdkClient {
         &self,
         table_id: ObjectID,
     ) -> Result<Vec<u8>, Self::Error> {
-        let mut full_output = HashMap::new();
-        let dynamic_fields = self
-            .read_api()
-            .get_dynamic_fields(table_id, None, None)
-            .await
-            .map_err(|e| {
-                Error::DataError(format!(
-                    "can't get dynamic fields of table {:?}: {:?}",
-                    table_id, e
-                ))
-            })?;
-
-        for df in dynamic_fields.data.iter() {
-            let object_id = df.object_id;
-            let dynamic_field_response = self
+        let mut full_output: HashMap<usize, Vec<u8>> = HashMap::new();
+        let mut cursor = None;
+        loop {
+            let dynamic_fields = self
                 .read_api()
-                .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
-                .await?;
-            let resp = dynamic_field_response.into_object().map_err(|e| {
-                Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
-            })?;
-            let raw_data = resp.bcs.ok_or(Error::DataError(format!(
-                "object {:?} has no bcs data",
-                object_id
-            )))?;
-            let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(format!(
-                "object {:?} is not a MoveObject",
-                object_id
-            )))?;
-            let bytes_chunk = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
-            full_output.insert(bytes_chunk.name as usize, bytes_chunk.value.clone());
+                .get_dynamic_fields(table_id, cursor, None)
+                .await
+                .map_err(|e| {
+                    Error::DataError(format!(
+                        "can't get dynamic fields of table {:?}: {:?}",
+                        table_id, e
+                    ))
+                })?;
+
+            for df in dynamic_fields.data.iter() {
+                let object_id = df.object_id;
+                let dynamic_field_response = self
+                    .read_api()
+                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                    .await?;
+                let resp = dynamic_field_response.into_object().map_err(|e| {
+                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+                })?;
+                let raw_data = resp.bcs.ok_or(Error::DataError(format!(
+                    "object {:?} has no bcs data",
+                    object_id
+                )))?;
+                let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(format!(
+                    "object {:?} is not a MoveObject",
+                    object_id
+                )))?;
+                let bytes_chunk = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
+                full_output.insert(bytes_chunk.name as usize, bytes_chunk.value.clone());
+            }
+
+            cursor = dynamic_fields.next_cursor;
+            if !dynamic_fields.has_next_page {
+                break;
+            }
         }
 
         Ok(full_output
