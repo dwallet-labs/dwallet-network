@@ -68,14 +68,14 @@ pub struct SessionOutputsData {
         HashMap<(MPCPublicOutput, SessionInfo), StakeAggregator<(), true>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
     pub authorities_that_sent_output: HashSet<AuthorityName>,
-    pub(crate) current_result: OutputResult,
+    pub(crate) current_result: OutputVerificationStatus,
 }
 
 /// The result of verifying an incoming output for an MPC session.
 /// We need to differentiate between a duplicate and a malicious output,
 /// as the output can be sent twice by honest parties.
 #[derive(PartialOrd, PartialEq, Clone)]
-pub enum OutputResult {
+pub enum OutputVerificationStatus {
     FirstQuorumReached(MPCPublicOutput),
     Malicious,
     /// We need more votes to decide if the output is valid or not.
@@ -87,7 +87,7 @@ pub enum OutputResult {
 }
 
 pub struct OutputVerificationResult {
-    pub result: OutputResult,
+    pub result: OutputVerificationStatus,
     pub malicious_actors: Vec<AuthorityName>,
 }
 
@@ -163,7 +163,7 @@ impl DWalletMPCOutputsVerifier {
             Some(output) => output,
             None => {
                 return Ok(OutputVerificationResult {
-                    result: OutputResult::BuildingOutput,
+                    result: OutputVerificationStatus::BuildingOutput,
                     malicious_actors: vec![],
                 });
             }
@@ -175,11 +175,11 @@ impl DWalletMPCOutputsVerifier {
             .or_insert(SessionOutputsData {
                 session_output_to_voting_authorities: HashMap::new(),
                 authorities_that_sent_output: HashSet::new(),
-                current_result: OutputResult::NotEnoughVotes,
+                current_result: OutputVerificationStatus::NotEnoughVotes,
             });
-        if session_output_data.current_result == OutputResult::AlreadyCommitted {
+        if session_output_data.current_result == OutputVerificationStatus::AlreadyCommitted {
             return Ok(OutputVerificationResult {
-                result: OutputResult::AlreadyCommitted,
+                result: OutputVerificationStatus::AlreadyCommitted,
                 malicious_actors: vec![],
             });
         }
@@ -189,14 +189,14 @@ impl DWalletMPCOutputsVerifier {
             else {
                 warn!("received an output for a session that an event has not been received for: {:?}", session_info.session_id);
                 return Ok(OutputVerificationResult {
-                    result: OutputResult::NotEnoughVotes,
+                    result: OutputVerificationStatus::NotEnoughVotes,
                     malicious_actors: vec![],
                 });
             };
             let Some(mpc_event_data) = &stored_sign_session.mpc_event_data else {
                 warn!("received an output for a session that an event has not been received for: {:?}", session_info.session_id);
                 return Ok(OutputVerificationResult {
-                    result: OutputResult::NotEnoughVotes,
+                    result: OutputVerificationStatus::NotEnoughVotes,
                     malicious_actors: vec![],
                 });
             };
@@ -207,7 +207,7 @@ impl DWalletMPCOutputsVerifier {
                     session_info.session_id
                 );
                 return Ok(OutputVerificationResult {
-                    result: OutputResult::NotEnoughVotes,
+                    result: OutputVerificationStatus::NotEnoughVotes,
                     malicious_actors: vec![],
                 });
             };
@@ -219,10 +219,10 @@ impl DWalletMPCOutputsVerifier {
             .await
             {
                 Ok(res) => {
-                    session_output_data.current_result = OutputResult::AlreadyCommitted;
+                    session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
                     let mut session_malicious_actors = res.malicious_actors;
                     Ok(OutputVerificationResult {
-                        result: OutputResult::FirstQuorumReached(output),
+                        result: OutputVerificationStatus::FirstQuorumReached(output),
                         malicious_actors: session_malicious_actors,
                     })
                 }
@@ -233,7 +233,7 @@ impl DWalletMPCOutputsVerifier {
                         err, session_info.session_id
                     );
                     Ok(OutputVerificationResult {
-                        result: OutputResult::Malicious,
+                        result: OutputVerificationStatus::Malicious,
                         malicious_actors: vec![origin_authority],
                     })
                 }
@@ -246,7 +246,7 @@ impl DWalletMPCOutputsVerifier {
         {
             // Duplicate.
             return Ok(OutputVerificationResult {
-                result: OutputResult::AlreadyCommitted,
+                result: OutputVerificationStatus::AlreadyCommitted,
                 malicious_actors: vec![],
             });
         }
@@ -261,14 +261,14 @@ impl DWalletMPCOutputsVerifier {
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
         {
-            session_output_data.current_result = OutputResult::AlreadyCommitted;
+            session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
             return Ok(OutputVerificationResult {
-                result: OutputResult::FirstQuorumReached(output),
+                result: OutputVerificationStatus::FirstQuorumReached(output),
                 malicious_actors: vec![],
             });
         }
         Ok(OutputVerificationResult {
-            result: OutputResult::NotEnoughVotes,
+            result: OutputVerificationStatus::NotEnoughVotes,
             malicious_actors: vec![],
         })
     }
@@ -327,7 +327,7 @@ impl DWalletMPCOutputsVerifier {
             ));
         }
         Ok(OutputVerificationResult {
-            result: OutputResult::FirstQuorumReached(signature.clone()),
+            result: OutputVerificationStatus::FirstQuorumReached(signature.clone()),
             malicious_actors: vec![],
         })
     }
@@ -342,7 +342,7 @@ impl DWalletMPCOutputsVerifier {
             SessionOutputsData {
                 session_output_to_voting_authorities: HashMap::new(),
                 authorities_that_sent_output: HashSet::new(),
-                current_result: OutputResult::NotEnoughVotes,
+                current_result: OutputVerificationStatus::NotEnoughVotes,
             },
         );
     }
