@@ -308,7 +308,7 @@ impl DwalletMPCNetworkKeys {
     /// Retrieves the protocol public parameters for the specified key ID.
     /// This function assumes the given key_id is a valid key ID, and retries getting it until it has been synced from
     /// the Sui network.
-    pub fn get_protocol_public_parameters(
+    pub async fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
@@ -316,7 +316,7 @@ impl DwalletMPCNetworkKeys {
         loop {
             let Ok(Some(result)) = self.try_get_decryption_keys(key_id) else {
                 warn!("failed to fetch the network decryption key shares for key ID: {:?}, trying again", key_id);
-                thread::sleep(Duration::from_secs(2));
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 continue;
             };
             let encryption_scheme_public_parameters =

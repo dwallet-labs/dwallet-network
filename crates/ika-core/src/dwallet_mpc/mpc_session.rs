@@ -333,21 +333,13 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::DKGSecond(event_data) => {
-                let public_input = bcs::from_bytes(public_input)?;
-                let protocol_public_parameters = self
-                    .dwallet_mpc_network_keys()?
-                    .get_protocol_public_parameters(
-                        // The event is assign with a Secp256k1 dwallet.
-                        // Todo (#473): Support generic network key scheme
-                        &event_data.event_data.dwallet_mpc_network_key_id,
-                        DWalletMPCNetworkKeyScheme::Secp256k1,
-                    )?;
+                let public_input: <DKGSecondParty as mpc::Party>::PublicInput = bcs::from_bytes(public_input)?;
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input,
+                    public_input.clone(),
                     (),
                 )?;
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
@@ -370,7 +362,7 @@ impl DWalletMPCSession {
                             source_encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
                             encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
                         },
-                        &protocol_public_parameters,
+                        &bcs::to_bytes(&public_input.protocol_public_parameters)?,
                     )?;
                 }
                 Ok(result)
@@ -412,12 +404,7 @@ impl DWalletMPCSession {
                 )?,
             ),
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
-                let protocol_public_parameters = self
-                    .dwallet_mpc_network_keys()?
-                    .get_protocol_public_parameters(
-                        &verification_data.event_data.dwallet_mpc_network_key_id,
-                        DWalletMPCNetworkKeyScheme::Secp256k1,
-                    )?;
+                let protocol_public_parameters = mpc_event_data.public_input.clone();
                 match verify_encrypted_share(
                     &verification_data.event_data,
                     &protocol_public_parameters,
