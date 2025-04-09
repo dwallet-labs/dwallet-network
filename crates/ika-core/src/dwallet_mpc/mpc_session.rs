@@ -71,7 +71,8 @@ pub(super) struct DWalletMPCSession {
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
     pub(super) serialized_full_messages: Vec<HashMap<PartyID, MPCMessage>>,
     /// MPC messages can be too large to go through the consensus (Sui's limit),
-    /// therefore, we must build all messages before processing them and passing them to `serialized_full_messages`.
+    /// therefore, we must build all messages before processing them and passing them to 
+    /// `serialized_full_messages`.
     messages_collector: MPCSessionMessagesCollector,
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
