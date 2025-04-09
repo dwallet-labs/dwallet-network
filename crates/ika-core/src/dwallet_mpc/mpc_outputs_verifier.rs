@@ -150,6 +150,7 @@ impl DWalletMPCOutputsVerifier {
             message: output.clone(),
             authority: origin_authority.clone(),
             session_id: session_info.session_id.clone(),
+            session_sequence_number: session_info.sequence_number,
             round_number: 0,
         };
         let party_id = epoch_store.authority_name_to_party_id(&origin_authority)?;

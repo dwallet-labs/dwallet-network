@@ -109,6 +109,8 @@ pub struct SystemInnerV1 {
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_id: Option<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_network_decryption_keys: Vec<DWalletNetworkDecryptionKeyCap>,
+    pub next_epoch_protocol_version: u64,
+    pub next_epoch_start_timestamp_ms: u64,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }
@@ -142,6 +144,9 @@ pub struct DWalletCoordinatorInnerV1 {
     pub session_start_events: Bag,
     pub first_session_sequence_number: u64,
     pub next_session_sequence_number: u64,
+    pub last_active_session_sequence_number: u64,
+    pub locked_last_active_session_sequence_number: bool,
+    pub max_active_sessions_buffer: u64,
     pub dwallets: ObjectTable,
     pub dwallet_network_decryption_keys: ObjectTable,
     pub encryption_keys: ObjectTable,

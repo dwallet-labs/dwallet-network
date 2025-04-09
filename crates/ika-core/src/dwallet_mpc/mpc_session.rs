@@ -88,6 +88,7 @@ pub(super) struct DWalletMPCSession {
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
+    pub(crate) sequence_number: u64,
 }
 
 impl DWalletMPCSession {
@@ -100,6 +101,7 @@ impl DWalletMPCSession {
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         mpc_event_data: Option<MPCEventData>,
+        sequence_number: u64,
     ) -> Self {
         Self {
             status,
@@ -114,6 +116,7 @@ impl DWalletMPCSession {
             session_specific_state: None,
             mpc_event_data,
             messages_collector: MPCSessionMessagesCollector::new(),
+            sequence_number,
         }
     }
 
@@ -440,6 +443,9 @@ impl DWalletMPCSession {
                     malicious_parties: vec![],
                 })
             }
+            _ => {
+                unreachable!("Unsupported MPC protocol type")
+            }
         }
     }
 
@@ -454,13 +460,14 @@ impl DWalletMPCSession {
             message,
             self.session_id.clone(),
             self.pending_quorum_for_highest_round_number,
+            self.sequence_number,
         ))
     }
 
     /// Create new consensus transactions with the flow result (output) to be
     /// sent to the other MPC parties.
     /// Errors if the epoch was switched in the middle and was not available.
-    fn construct_new_dwallet_mpc_output_messages(
+    pub(crate) fn construct_new_dwallet_mpc_output_messages(
         &self,
         output: Vec<u8>,
     ) -> DwalletMPCResult<Vec<ConsensusTransaction>> {
@@ -471,6 +478,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             output,
             SessionInfo {
+                sequence_number: self.sequence_number,
                 session_id: self.session_id.clone(),
                 mpc_round: mpc_event_data.init_protocol_data.clone(),
             },

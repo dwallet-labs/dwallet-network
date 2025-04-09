@@ -29,6 +29,8 @@ pub trait CheckpointOutput: Sync + Send + 'static {
         epoch_store: &Arc<AuthorityPerEpochStore>,
         checkpoint_store: &Arc<CheckpointStore>,
     ) -> IkaResult;
+    fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>);
+    fn initiate_process_mid_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>);
 }
 
 #[async_trait]
@@ -133,6 +135,14 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> CheckpointOutput
         }
         Ok(())
     }
+
+    fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
+        self.sender.close_epoch(epoch_store);
+    }
+
+    fn initiate_process_mid_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
+        self.sender.initiate_process_mid_epoch(epoch_store);
+    }
 }
 
 #[async_trait]
@@ -157,6 +167,17 @@ impl CheckpointOutput for LogCheckpointOutput {
         );
 
         Ok(())
+    }
+
+    fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
+        info!("Closing epoch {}", epoch_store.epoch(),);
+    }
+
+    fn initiate_process_mid_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
+        info!(
+            "Initiating process mid-epoch for epoch {}",
+            epoch_store.epoch(),
+        );
     }
 }
 

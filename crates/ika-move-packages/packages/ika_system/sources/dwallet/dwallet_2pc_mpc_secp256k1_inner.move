@@ -54,6 +54,15 @@ public struct DWalletCoordinatorInner has store {
     session_start_events: Bag,
     first_session_sequence_number: u64,
     next_session_sequence_number: u64,
+    /// The last MPC session to start process in the current epoch.
+    /// Validators should complete every session they start before switching epochs.
+    last_active_session_sequence_number: u64,
+    /// Denotes wether the last_active_session_sequence_number field is locked or not.
+    /// This field gets locked before performing the epoch switch.
+    locked_last_active_session_sequence_number: bool,
+    /// The maximum number of active MPC sessions Ika nodes will may run during an epoch.
+    /// Validators should complete every session they start before switching epochs.
+    max_active_sessions_buffer: u64,
     // TODO: change it to versioned
     /// The key is the ID of `DWallet`.
     dwallets: ObjectTable<ID, DWallet>,
@@ -737,6 +746,9 @@ public(package) fun create_dwallet_coordinator_inner(
         session_start_events: bag::new(ctx),
         first_session_sequence_number: 0,
         next_session_sequence_number: 0,
+        last_active_session_sequence_number: 0,
+        max_active_sessions_buffer: 100,
+        locked_last_active_session_sequence_number: false,
         dwallets: object_table::new(ctx),
         dwallet_network_decryption_keys: object_table::new(ctx),
         encryption_keys: object_table::new(ctx),
@@ -856,6 +868,8 @@ public(package) fun advance_epoch(
     self: &mut DWalletCoordinatorInner,
     next_committee: BlsCommittee
 ) {
+    self.locked_last_active_session_sequence_number = false;
+    self.update_last_active_session_sequence_number();
     self.current_epoch = self.current_epoch + 1;
     self.previous_committee = self.active_committee;
     self.active_committee = next_committee;
@@ -925,6 +939,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
+    self.update_last_active_session_sequence_number();
 
     event
 }
@@ -1130,8 +1145,29 @@ public(package) fun request_dwallet_dkg_first_round(
     dwallet_cap
 }
 
+fun update_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
+    if (self.locked_last_active_session_sequence_number) {
+        return
+    };
+    let new_last_active_session_sequence_number = (
+        self.first_session_sequence_number + self.max_active_sessions_buffer
+    ).min(
+        self.next_session_sequence_number - 1,
+    );
+    if (self.last_active_session_sequence_number >= new_last_active_session_sequence_number) {
+        return
+    };
+    self.last_active_session_sequence_number = new_last_active_session_sequence_number;
+}
+
+public(package) fun should_advance_epoch(self: &DWalletCoordinatorInner): bool {
+    return self.locked_last_active_session_sequence_number &&
+        self.first_session_sequence_number == self.last_active_session_sequence_number
+}
+
 fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
     self.first_session_sequence_number = self.first_session_sequence_number + 1;
+    self.update_last_active_session_sequence_number();
     let session = self.sessions.remove(session_sequence_number);
     let DWalletSession {
         computation_fee_charged_ika,
@@ -2211,6 +2247,7 @@ fun process_checkpoint_message(
                     let end_of_epch_message_type = bcs_body.peel_vec_length();
                     // AdvanceEpoch
                     if(end_of_epch_message_type == 0) {
+                        self.locked_last_active_session_sequence_number = true;
                         let _new_epoch = bcs_body.peel_u64();
                         let _next_protocol_version = bcs_body.peel_u64();
                         let _epoch_start_timestamp_ms = bcs_body.peel_u64();

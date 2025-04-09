@@ -18,6 +18,7 @@ use crate::dwallet_mpc::sign::{
 };
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
 use class_groups::DecryptionKeyShare;
+use crypto_bigint::Zero;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
@@ -72,6 +73,7 @@ pub struct DWalletMPCManager {
     party_id: PartyID,
     /// MPC sessions that where created.
     pub(crate) mpc_sessions: HashMap<ObjectID, DWalletMPCSession>,
+    pub(crate) pending_sessions: HashMap<u64, DWalletMPCSession>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub(super) node_config: NodeConfig,
     epoch_store: Weak<AuthorityPerEpochStore>,
@@ -93,6 +95,7 @@ pub struct DWalletMPCManager {
     /// The order of the sessions that have received quorum for their current round, but we have not
     /// yet received an event for from Sui.
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
+    pub(crate) last_active_session_sequence_number: u64,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -136,6 +139,7 @@ impl DWalletMPCManager {
             CryptographicComputationsOrchestrator::try_new(&epoch_store)?;
         Ok(Self {
             mpc_sessions: HashMap::new(),
+            pending_sessions: Default::default(),
             consensus_adapter,
             party_id: epoch_store.authority_name_to_party_id(&epoch_store.name.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
@@ -149,7 +153,27 @@ impl DWalletMPCManager {
             malicious_handler: MaliciousHandler::new(epoch_store.committee().clone()),
             pending_for_computation_order: VecDeque::new(),
             pending_for_events_order: Default::default(),
+            last_active_session_sequence_number: 0,
         })
+    }
+
+    pub(crate) fn update_last_active_session_sequence_number(
+        &mut self,
+        last_active_session_sequence_number: u64,
+    ) {
+        if last_active_session_sequence_number <= self.last_active_session_sequence_number {
+            return;
+        }
+        for session_sequence_number in
+            self.last_active_session_sequence_number..=last_active_session_sequence_number
+        {
+            if let Some(session) = self.pending_sessions.remove(&session_sequence_number) {
+                info!(session_sequence_number=?session_sequence_number, new_last_active_session_sequence_number=?last_active_session_sequence_number, "adding session sequence number to active sessions");
+
+                self.mpc_sessions.insert(session.session_id, session);
+            }
+        }
+        self.last_active_session_sequence_number = last_active_session_sequence_number;
     }
 
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
@@ -315,7 +339,11 @@ impl DWalletMPCManager {
                 session.mpc_event_data = mpc_event_data;
             }
         } else {
-            self.push_new_mpc_session(&session_info.session_id, mpc_event_data);
+            self.push_new_mpc_session(
+                &session_info.session_id,
+                mpc_event_data,
+                session_info.sequence_number,
+            );
         }
         Ok(())
     }
@@ -515,9 +543,11 @@ impl DWalletMPCManager {
                     "received a message for an MPC session ID: `{:?}` which an event has not yet received for",
                     message.session_id
                 );
-                self.push_new_mpc_session(&message.session_id, None);
-                // Safe to unwrap because we just added the session.
-                self.mpc_sessions.get_mut(&message.session_id).unwrap()
+                &mut self.push_new_mpc_session(
+                    &message.session_id,
+                    None,
+                    message.session_sequence_number,
+                )
             }
         };
         match session.store_message(&message) {
@@ -559,10 +589,10 @@ impl DWalletMPCManager {
         &mut self,
         session_id: &ObjectID,
         mpc_event_data: Option<MPCEventData>,
-    ) {
+        session_sequence_number: u64,
+    ) -> DWalletMPCSession {
         if self.mpc_sessions.contains_key(&session_id) {
-            // This should never happen, as the session ID is a Move UniqueID.
-            error!(
+            warn!(
                 "received start flow event for session ID {:?} that already exists",
                 &session_id
             );
@@ -581,11 +611,29 @@ impl DWalletMPCManager {
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
+            session_sequence_number,
         );
-        self.mpc_sessions.insert(session_id.clone(), new_session);
+        if session_sequence_number <= self.last_active_session_sequence_number {
+            info!(
+                session_sequence_number=?session_sequence_number,
+                last_active_session_sequence_number=?self.last_active_session_sequence_number,
+                "Adding session to active sessions",
+            );
+            self.mpc_sessions
+                .insert(session_id.clone(), new_session.clone());
+        } else {
+            info!(
+                session_sequence_number=?session_sequence_number,
+                last_active_session_sequence_number=?self.last_active_session_sequence_number,
+                "Adding session to pending sessions, as its sequence number is too high",
+            );
+            self.pending_sessions
+                .insert(session_sequence_number, new_session.clone());
+        }
         info!(
             "Added MPCSession to MPC manager for session_id {:?}",
             session_id
         );
+        new_session
     }
 }

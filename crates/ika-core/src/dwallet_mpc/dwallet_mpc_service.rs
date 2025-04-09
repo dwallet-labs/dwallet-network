@@ -4,16 +4,22 @@
 //! and forward them to the [`DWalletMPCManager`].
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::session_info_from_event;
+use crate::epoch::reconfiguration::ReconfigurationInitiator;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
-use ika_sui_client::SuiBridgeClient;
+use ika_sui_client::{SuiBridgeClient, SuiClient};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
+use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
+use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
+use ika_types::sui::DWalletCoordinatorInner;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::{Duration, Instant, SystemTime};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::EpochId;
 use sui_types::event::EventID;
@@ -21,6 +27,7 @@ use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
 use tokio::task::yield_now;
+use tokio::time;
 use tracing::{error, info, warn};
 use typed_store::Map;
 
@@ -44,6 +51,32 @@ impl DWalletMPCService {
             epoch_id: epoch_store.epoch(),
             notify: Arc::new(Notify::new()),
             exit,
+        }
+    }
+
+    async fn sync_dwallet_mpc_last_active_session_sequence_number(
+        sui_client: Arc<SuiBridgeClient>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+    ) {
+        loop {
+            time::sleep(Duration::from_secs(2)).await;
+            let system_inner = sui_client.get_system_inner_until_success().await;
+            if let Some(dwallet_coordinator_id) = system_inner
+                .into_init_version_for_tooling()
+                .dwallet_2pc_mpc_secp256k1_id
+            {
+                let coordinator_state = sui_client
+                    .get_dwallet_coordinator_inner_until_success(dwallet_coordinator_id)
+                    .await;
+                match coordinator_state {
+                    DWalletCoordinatorInner::V1(inner_state) => {
+                        let mut dwallet_mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
+                        dwallet_mpc_manager.update_last_active_session_sequence_number(
+                            inner_state.last_active_session_sequence_number,
+                        );
+                    }
+                }
+            }
         }
     }
 
@@ -89,6 +122,10 @@ impl DWalletMPCService {
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>) {
         self.load_missed_events(sui_client.clone()).await;
+        tokio::spawn(Self::sync_dwallet_mpc_last_active_session_sequence_number(
+            sui_client.clone(),
+            self.epoch_store.clone(),
+        ));
         loop {
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
