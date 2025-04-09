@@ -64,7 +64,7 @@ use crate::consensus_handler::{
 };
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::{
-    DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
+    DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
 };
 use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
@@ -1975,22 +1975,24 @@ impl AuthorityPerEpochStore {
             .unwrap_or_else(|e| {
                 error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                 OutputVerificationResult {
-                    result: OutputResult::Malicious,
+                    result: OutputVerificationStatus::Malicious,
                     malicious_actors: vec![origin_authority],
                 }
             });
 
         match output_verification_result.result {
-            OutputResult::FirstQuorumReached(output) => {
+            OutputVerificationStatus::FirstQuorumReached(output) => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
                     .await;
                 self.process_dwallet_transaction(output, session_info)
                     .map_err(|e| IkaError::from(e))
             }
-            OutputResult::NotEnoughVotes => Ok(ConsensusCertificateResult::ConsensusMessage),
-            OutputResult::AlreadyCommitted
-            | OutputResult::Malicious
-            | OutputResult::BuildingOutput => {
+            OutputVerificationStatus::NotEnoughVotes => {
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            OutputVerificationStatus::AlreadyCommitted
+            | OutputVerificationStatus::Malicious
+            | OutputVerificationStatus::BuildingOutput => {
                 // Ignore this output,
                 // since there is nothing to do with it,
                 // at this stage.

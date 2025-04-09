@@ -36,7 +36,7 @@ use sui_types::{
 };
 
 use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
-use crate::dwallet_mpc::mpc_outputs_verifier::OutputResult;
+use crate::dwallet_mpc::mpc_outputs_verifier::OutputVerificationStatus;
 use crate::{
     authority::{
         authority_per_epoch_store::{

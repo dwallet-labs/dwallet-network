@@ -180,6 +180,7 @@ impl ConsensusTransaction {
         session_id: ObjectID,
         round_number: usize,
     ) -> Vec<Self> {
+        // This size is arbitrary and might be changed in the future.
         let messages = MPCMessageBuilder::split(message, 120 * 1024);
         let messages = match messages.messages {
             MessageState::Incomplete(messages) => messages,
@@ -190,7 +191,7 @@ impl ConsensusTransaction {
             .iter()
             .map(|(sequence_number, message)| {
                 let mut hasher = DefaultHasher::new();
-                message.message.hash(&mut hasher);
+                message.fragment.hash(&mut hasher);
                 let tracking_id = hasher.finish().to_le_bytes();
                 Self {
                     tracking_id,
@@ -221,7 +222,7 @@ impl ConsensusTransaction {
             .iter()
             .map(|(_, message)| {
                 let mut hasher = DefaultHasher::new();
-                message.message.hash(&mut hasher);
+                message.fragment.hash(&mut hasher);
                 let tracking_id = hasher.finish().to_le_bytes();
                 Self {
                     tracking_id,

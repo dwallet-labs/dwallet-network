@@ -7,6 +7,7 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::session_info_from_event;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
+use ika_sui_client::SuiBridgeClient;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DBSuiEvent;
@@ -46,6 +47,38 @@ impl DWalletMPCService {
         }
     }
 
+    async fn load_missed_events(&self, sui_client: Arc<SuiBridgeClient>) {
+        let epoch_store = self.epoch_store.clone();
+        loop {
+            let Ok(events) = sui_client
+                .get_dwallet_mpc_missed_events(epoch_store.epoch())
+                .await
+            else {
+                error!("failed to fetch missed dWallet MPC events from Sui");
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                continue;
+            };
+            let mut dwallet_mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
+            for event in events {
+                if let Ok(Some(session_info)) =
+                    session_info_from_event(event.clone(), &epoch_store.packages_config)
+                {
+                    dwallet_mpc_manager
+                        .handle_dwallet_db_event(DWalletMPCEvent {
+                            event,
+                            session_info: session_info.clone(),
+                        })
+                        .await;
+                    info!(
+                        "successfully processed missed event from Sui, session: {:?}",
+                        session_info.session_id
+                    );
+                }
+            }
+            return;
+        }
+    }
+
     /// Starts the DWallet MPC service.
     ///
     /// This service periodically reads DWallet MPC messages from the local database
@@ -54,7 +87,8 @@ impl DWalletMPCService {
     /// [`DWalletMPCManager`] for processing.
     ///
     /// The service automatically terminates when an epoch switch occurs.
-    pub async fn spawn(&mut self) {
+    pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>) {
+        self.load_missed_events(sui_client.clone()).await;
         loop {
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
@@ -93,7 +127,7 @@ impl DWalletMPCService {
                 continue;
             };
             for event in events {
-                manager.handle_dwallet_db_event(event);
+                manager.handle_dwallet_db_event(event).await;
             }
             let new_dwallet_messages_iter = tables
                 .dwallet_mpc_messages

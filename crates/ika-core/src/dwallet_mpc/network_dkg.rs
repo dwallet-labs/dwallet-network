@@ -24,6 +24,8 @@ use ika_types::messages_dwallet_mpc::{
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
+use std::thread;
+use std::time::Duration;
 use sui_types::base_types::ObjectID;
 use tracing::log::info;
 use tracing::warn;
@@ -292,32 +294,49 @@ impl DwalletMPCNetworkKeys {
             .clone())
     }
 
+    fn try_get_decryption_keys(
+        &self,
+        key_id: &ObjectID,
+    ) -> DwalletMPCResult<Option<NetworkDecryptionKeyShares>> {
+        let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
+        Ok(inner
+            .network_decryption_keys
+            .get(&key_id)
+            .map(|v| v.clone()))
+    }
+
+    /// Retrieves the protocol public parameters for the specified key ID.
+    /// This function assumes the given key_id is a valid key ID, and retries getting it until it has been synced from
+    /// the Sui network.
     pub fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
-        let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
-        let encryption_scheme_public_parameters = bcs::from_bytes(
-            &inner
-                .network_decryption_keys
-                .get(&key_id)
-                .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-                .encryption_scheme_public_parameters,
-        )?;
+        loop {
+            let Ok(Some(result)) = self.try_get_decryption_keys(key_id) else {
+                warn!("failed to fetch the network decryption key shares for key ID: {:?}, trying again", key_id);
+                thread::sleep(Duration::from_secs(2));
+                continue;
+            };
+            let encryption_scheme_public_parameters =
+                bcs::from_bytes(&result.encryption_scheme_public_parameters)?;
 
-        match key_scheme {
-            DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                bcs::to_bytes(&ProtocolPublicParameters::new::<
-                    { secp256k1::SCALAR_LIMBS },
-                    { FUNDAMENTAL_DISCRIMINANT_LIMBS },
-                    { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-                    secp256k1::GroupElement,
-                >(encryption_scheme_public_parameters))
-                .map_err(|e| DwalletMPCError::BcsError(e))
-            }
-            DWalletMPCNetworkKeyScheme::Ristretto => {
-                todo!()
+            match key_scheme {
+                DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                    return bcs::to_bytes(&ProtocolPublicParameters::new::<
+                        { secp256k1::SCALAR_LIMBS },
+                        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                        { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                        secp256k1::GroupElement,
+                    >(
+                        encryption_scheme_public_parameters
+                    ))
+                    .map_err(|e| DwalletMPCError::BcsError(e))
+                }
+                DWalletMPCNetworkKeyScheme::Ristretto => {
+                    todo!()
+                }
             }
         }
     }

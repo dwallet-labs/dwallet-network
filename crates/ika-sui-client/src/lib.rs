@@ -16,12 +16,16 @@ use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
-    DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyState,
+    DBSuiEvent, DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyState,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
-use ika_types::sui::system_inner_v1::{DWalletNetworkDecryptionKeyCap, SystemInnerV1};
+use ika_types::sui::system_inner_v1::{
+    DWalletCoordinatorInnerV1, DWalletNetworkDecryptionKeyCap, SystemInnerV1,
+};
 use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
-use ika_types::sui::{System, SystemInner, SystemInnerTrait, Validator};
+use ika_types::sui::{
+    DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
+};
 use itertools::Itertools;
 use move_binary_format::binary_config::BinaryConfig;
 use move_core_types::account_address::AccountAddress;
@@ -42,8 +46,8 @@ use sui_json_rpc_types::{
 use sui_sdk::error::Error;
 use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
 use sui_types::balance::Balance;
-use sui_types::base_types::ObjectRef;
 use sui_types::base_types::SequenceNumber;
+use sui_types::base_types::{EpochId, ObjectRef};
 use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
@@ -66,7 +70,7 @@ use sui_types::{
     Identifier,
 };
 use tokio::sync::OnceCell;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 pub mod ika_validator_transactions;
 pub mod metrics;
@@ -148,6 +152,48 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
+    pub async fn get_dwallet_mpc_missed_events(
+        &self,
+        epoch_id: EpochId,
+    ) -> IkaResult<Vec<DBSuiEvent>> {
+        let system_inner = self.get_system_inner_until_success().await;
+        loop {
+            if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
+                let dwallet_coordinator_inner = self
+                    .get_dwallet_coordinator_inner_until_success(dwallet_state_id)
+                    .await;
+                match dwallet_coordinator_inner {
+                    DWalletCoordinatorInner::V1(dwallet_coordinator_inner_v1) => {
+                        // Make sure we are synced with Sui in order to fetch the missed events
+                        // If Sui's epoch number matches ours, all the needed missed events must be synced as well.
+                        if dwallet_coordinator_inner_v1.current_epoch != epoch_id {
+                            tokio::time::sleep(Duration::from_secs(2)).await;
+                            continue;
+                        }
+                        let missed_events = self
+                            .inner
+                            .get_missed_events(
+                                dwallet_coordinator_inner_v1
+                                    .session_start_events
+                                    .id
+                                    .id
+                                    .bytes,
+                            )
+                            .await
+                            .map_err(|e| {
+                                error!("failed to get missed events: {e}");
+                                IkaError::SuiClientInternalError(format!(
+                                    "failed to get missed events: {e}"
+                                ))
+                            })?;
+                        info!("retrieved missed events from Sui successfully");
+                        return Ok(missed_events);
+                    }
+                };
+            }
+        }
+    }
+
     pub fn new_for_testing(inner: P) -> Self {
         Self {
             inner,
@@ -167,6 +213,49 @@ where
             "SuiClient is connected to chain {chain_id}, current checkpoint sequence number: {checkpoint_sequence_number}"
         );
         Ok(())
+    }
+
+    pub async fn get_dwallet_coordinator_inner(
+        &self,
+        dwallet_coordinator_id: ObjectID,
+    ) -> IkaResult<DWalletCoordinatorInner> {
+        let result = self
+            .inner
+            .get_dwallet_coordinator(dwallet_coordinator_id)
+            .await
+            .map_err(|e| IkaError::SuiClientInternalError(format!("Can't get Coordinator: {e}")))?;
+        let wrapper = bcs::from_bytes::<DWalletCoordinator>(&result).map_err(|e| {
+            IkaError::SuiClientSerializationError(format!("Can't serialize Coordinator: {e}"))
+        })?;
+
+        match wrapper.version {
+            1 => {
+                let result = self
+                    .inner
+                    .get_dwallet_coordinator_inner(dwallet_coordinator_id, wrapper.version)
+                    .await
+                    .map_err(|e| {
+                        IkaError::SuiClientInternalError(format!(
+                            "Can't get DWalletCoordinatorInner v1: {e}"
+                        ))
+                    })?;
+                let dynamic_field_inner = bcs::from_bytes::<Field<u64, DWalletCoordinatorInnerV1>>(
+                    &result,
+                )
+                .map_err(|e| {
+                    IkaError::SuiClientSerializationError(format!(
+                        "Can't serialize DWalletCoordinatorInner v1: {e}"
+                    ))
+                })?;
+                let ika_system_state_inner = dynamic_field_inner.value;
+
+                Ok(DWalletCoordinatorInner::V1(ika_system_state_inner))
+            }
+            _ => Err(IkaError::SuiClientInternalError(format!(
+                "Unsupported DWalletCoordinatorInner version: {}",
+                wrapper.version
+            ))),
+        }
     }
 
     pub async fn get_system_inner(&self) -> IkaResult<SystemInner> {
@@ -309,7 +398,7 @@ where
                                     .expect("failed to get the validator class groups public key from Sui")
                                     .clone(),
                             )
-                            .unwrap(),
+                                .unwrap(),
                             network_address: metadata.network_address.clone(),
                             p2p_address: metadata.p2p_address.clone(),
                             consensus_address: metadata.consensus_address.clone(),
@@ -477,8 +566,30 @@ where
             )
             .await
             .map_err(|e| {
-                IkaError::SuiClientInternalError(format!("can't get_network_decryption_keys: {e}"))
+                IkaError::SuiClientInternalError(format!("Can't get_network_decryption_keys: {e}"))
             })?)
+    }
+
+    pub async fn get_dwallet_coordinator_inner_until_success(
+        &self,
+        dwallet_state_id: ObjectID,
+    ) -> DWalletCoordinatorInner {
+        loop {
+            let res = retry_with_max_elapsed_time!(
+                self.get_dwallet_coordinator_inner(dwallet_state_id),
+                Duration::from_secs(30)
+            );
+            let Ok(Ok(ika_system_state)) = res else {
+                self.sui_client_metrics
+                    .sui_rpc_errors
+                    .with_label_values(&["get_dwallet_coordinator_inner_until_success"])
+                    .inc();
+                error!("Failed to get dwallet coordinator inner until success");
+                error!(?res);
+                continue;
+            };
+            return ika_system_state;
+        }
     }
 
     pub async fn get_epoch_start_system_until_success(
@@ -533,6 +644,10 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_latest_checkpoint_sequence_number(&self) -> Result<u64, Self::Error>;
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
+    async fn get_dwallet_coordinator(
+        &self,
+        dwallet_coordinator_id: ObjectID,
+    ) -> Result<Vec<u8>, Self::Error>;
 
     async fn get_class_groups_public_keys_and_proofs(
         &self,
@@ -550,6 +665,12 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_system_inner(
         &self,
         system_id: ObjectID,
+        version: u64,
+    ) -> Result<Vec<u8>, Self::Error>;
+
+    async fn get_dwallet_coordinator_inner(
+        &self,
+        dwallet_coordinator_id: ObjectID,
         version: u64,
     ) -> Result<Vec<u8>, Self::Error>;
 
@@ -582,6 +703,10 @@ pub trait SuiClientInner: Send + Sync {
         &self,
         gas_object_id: ObjectID,
     ) -> (GasCoin, ObjectRef, Owner);
+    async fn get_missed_events(
+        &self,
+        events_bag_id: ObjectID,
+    ) -> Result<Vec<DBSuiEvent>, self::Error>;
 }
 
 #[async_trait]
@@ -621,6 +746,62 @@ impl SuiClientInner for SuiSdkClient {
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
         self.read_api().get_move_object_bcs(system_id).await
+    }
+
+    async fn get_dwallet_coordinator(
+        &self,
+        dwallet_coordinator_id: ObjectID,
+    ) -> Result<Vec<u8>, Self::Error> {
+        self.read_api()
+            .get_move_object_bcs(dwallet_coordinator_id)
+            .await
+    }
+
+    async fn get_missed_events(
+        &self,
+        events_bag_id: ObjectID,
+    ) -> Result<Vec<DBSuiEvent>, self::Error> {
+        let mut events = vec![];
+        let mut next_cursor = None;
+        loop {
+            let dynamic_fields = self
+                .read_api()
+                .get_dynamic_fields(events_bag_id, next_cursor, None)
+                .await?;
+            for df in dynamic_fields.data.iter() {
+                let object_id = df.object_id;
+                let dynamic_field_response = self
+                    .read_api()
+                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                    .await?;
+                let resp = dynamic_field_response.into_object().map_err(|e| {
+                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+                })?;
+                let move_object = resp.bcs.ok_or(Error::DataError(format!(
+                    "object {:?} has no bcs data",
+                    object_id
+                )))?;
+                let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+                    "object {:?} is not a MoveObject",
+                    object_id
+                )))?;
+
+                let Some(TypeTag::Struct(event_tag)) = raw_move_obj.type_.type_params.get(1) else {
+                    continue;
+                };
+                let event = DBSuiEvent {
+                    type_: *event_tag.clone(),
+                    contents: raw_move_obj.bcs_bytes,
+                };
+                events.push(event);
+            }
+            if !dynamic_fields.has_next_page {
+                break;
+            }
+            next_cursor = dynamic_fields.next_cursor;
+        }
+
+        Ok(events)
     }
 
     async fn get_class_groups_public_keys_and_proofs(
@@ -842,6 +1023,54 @@ impl SuiClientInner for SuiSdkClient {
         )))
     }
 
+    async fn get_dwallet_coordinator_inner(
+        &self,
+        dwallet_coordinator_id: ObjectID,
+        version: u64,
+    ) -> Result<Vec<u8>, Self::Error> {
+        let dynamic_fields = self
+            .read_api()
+            .get_dynamic_fields(dwallet_coordinator_id, None, None)
+            .await?;
+        let dynamic_field = dynamic_fields.data.iter().find(|df| {
+            df.name.type_ == TypeTag::U64
+                && df
+                    .name
+                    .value
+                    .as_str()
+                    .map(|v| v == version.to_string().as_str())
+                    .unwrap_or(false)
+        });
+        if let Some(dynamic_field) = dynamic_field {
+            let result = self
+                .read_api()
+                .get_dynamic_field_object(dwallet_coordinator_id, dynamic_field.name.clone())
+                .await?;
+
+            if let Some(dynamic_field) = result.data {
+                let object_id = dynamic_field.object_id;
+                let dynamic_field_response = self
+                    .read_api()
+                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                    .await?;
+                let resp = dynamic_field_response.into_object().map_err(|e| {
+                    Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))
+                })?;
+                // unwrap: requested bcs data
+                let move_object = resp.bcs.unwrap();
+                let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
+                    "Object {:?} is not a MoveObject",
+                    object_id
+                )))?;
+                return Ok(raw_move_obj.bcs_bytes);
+            }
+        }
+        Err(Self::Error::DataError(format!(
+            "Failed to load DWalletCoordinatorInner object with ID {:?} and version {:?}",
+            dwallet_coordinator_id, version
+        )))
+    }
+
     async fn get_validators_from_object_table(
         &self,
         validators_object_table_id: ObjectID,
@@ -1026,13 +1255,13 @@ impl SuiClientInner for SuiSdkClient {
         tx: Transaction,
     ) -> Result<SuiTransactionBlockResponse, IkaError> {
         match self.quorum_driver_api().execute_transaction_block(
-                tx,
-                SuiTransactionBlockResponseOptions::new().with_effects().with_events(),
-                Some(sui_types::quorum_driver_types::ExecuteTransactionRequestType::WaitForEffectsCert),
-            ).await {
-                Ok(response) => Ok(response),
-                Err(e) => Err(IkaError::SuiClientTxFailureGeneric(e.to_string())),
-            }
+            tx,
+            SuiTransactionBlockResponseOptions::new().with_effects().with_events(),
+            Some(sui_types::quorum_driver_types::ExecuteTransactionRequestType::WaitForEffectsCert),
+        ).await {
+            Ok(response) => Ok(response),
+            Err(e) => Err(IkaError::SuiClientTxFailureGeneric(e.to_string())),
+        }
     }
 
     async fn get_gas_data_panic_if_not_gas(
