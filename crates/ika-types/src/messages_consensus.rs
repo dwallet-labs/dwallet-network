@@ -190,7 +190,7 @@ impl ConsensusTransaction {
             .iter()
             .map(|(sequence_number, message)| {
                 let mut hasher = DefaultHasher::new();
-                message.message.hash(&mut hasher);
+                message.fragment.hash(&mut hasher);
                 let tracking_id = hasher.finish().to_le_bytes();
                 Self {
                     tracking_id,
@@ -221,7 +221,7 @@ impl ConsensusTransaction {
             .iter()
             .map(|(_, message)| {
                 let mut hasher = DefaultHasher::new();
-                message.message.hash(&mut hasher);
+                message.fragment.hash(&mut hasher);
                 let tracking_id = hasher.finish().to_le_bytes();
                 Self {
                     tracking_id,

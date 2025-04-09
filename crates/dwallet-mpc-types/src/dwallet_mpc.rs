@@ -36,7 +36,7 @@ pub type MPCMessage = Vec<u8>;
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct MPCMessageSlice {
     /// A fragment of the original message.
-    pub message: MPCMessage,
+    pub fragment: MPCMessage,
     /// The position of this chunk in the original message sequence.
     pub sequence_number: u64,
     /// Total number of chunks in the message, used only in the first slice.
@@ -90,7 +90,7 @@ impl MPCMessageBuilder {
                 (
                     i as u64,
                     MPCMessageSlice {
-                        message,
+                        fragment: message,
                         sequence_number: i as u64,
                         number_of_chunks: if i == 0 { Some(number_of_chunks) } else { None },
                     },
@@ -113,16 +113,18 @@ impl MPCMessageBuilder {
                 if let Some(expected_chunks) = slice.number_of_chunks {
                     if messages.len() == expected_chunks {
                         let mut complete_message = Vec::new();
-                            (0..expected_chunks as u64)
-                            .for_each(|i| {
-                                complete_message.append(&mut messages.get(&i).clone().unwrap().clone().message);
-                            });
-                            // .collect::<Vec<_>>()
-                            // .map(|slices| slices.into_iter().flatten().collect::<Vec<_>>());
+                        (0..expected_chunks as u64).for_each(|i| {
+                            complete_message.append(
+                                &mut messages
+                                    .get(&i)
+                                    // Safe unwrap: we check the number of chunks before
+                                    .unwrap()
+                                    .clone()
+                                    .fragment,
+                            );
+                        });
 
-                        // if let Some(message) = complete_message {
-                            self.messages = MessageState::Complete(complete_message);
-                        // }
+                        self.messages = MessageState::Complete(complete_message);
                     }
                 }
             }

@@ -223,20 +223,20 @@ impl MPCSessionMessagesCollector {
     pub fn add_message(
         &mut self,
         party_id: PartyID,
-        message: DWalletMPCMessage,
+        new_message: DWalletMPCMessage,
     ) -> Option<Vec<u8>> {
         let messages_len = self.messages.len();
-        let round_number = message.round_number;
-        let message_slice = message.message.clone();
+        let round_number = new_message.round_number;
+        let message_fragment = new_message.message.clone();
 
         match self.messages.get_mut(round_number) {
             Some(party_to_msg) => {
                 let entry = party_to_msg.entry(party_id).or_insert_with(|| {
                     let mut builder = MPCMessageBuilder::empty();
-                    builder.add_and_try_complete(message_slice.clone());
+                    builder.add_and_try_complete(message_fragment.clone());
                     builder
                 });
-                entry.add_and_try_complete(message_slice.clone());
+                entry.add_and_try_complete(message_fragment);
                 match &entry.messages {
                     MessageState::Complete(msg) => Some(msg.clone()),
                     MessageState::Incomplete(_) => None,
@@ -246,7 +246,7 @@ impl MPCSessionMessagesCollector {
             None if round_number >= messages_len => {
                 let mut round_map = HashMap::new();
                 let mut builder = MPCMessageBuilder::empty();
-                builder.add_and_try_complete(message_slice.clone());
+                builder.add_and_try_complete(message_fragment.clone());
                 round_map.insert(party_id, builder.clone());
                 self.messages.push(round_map);
 
