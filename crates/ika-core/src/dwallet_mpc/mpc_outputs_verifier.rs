@@ -153,7 +153,7 @@ impl DWalletMPCOutputsVerifier {
             round_number: 0,
         };
         let party_id = epoch_store.authority_name_to_party_id(&origin_authority)?;
-        // access the session messages collector or create new one if it doesn't exist
+        // Access the session messages collector or create a new one if it doesn't exist.
         let session_messages_collector = self
             .output_collector
             .entry(session_info.session_id.clone())
