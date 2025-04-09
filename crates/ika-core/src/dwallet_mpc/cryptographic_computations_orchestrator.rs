@@ -126,17 +126,9 @@ impl CryptographicComputationsOrchestrator {
     }
 
     pub(crate) fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
-        Self::spawn_session_static(self.computation_channel_sender.clone(), session)
-    }
-
-    pub(super) fn spawn_session_static(
-        finished_computation_sender: UnboundedSender<ComputationUpdate>,
-        session: &DWalletMPCSession,
-    ) -> DwalletMPCResult<()> {
-        // Hook the tokio thread pool to the rayon thread pool.
         let handle = Handle::current();
         let session = session.clone();
-        if let Err(err) = finished_computation_sender.send(ComputationUpdate::Started) {
+        if let Err(err) = self.computation_channel_sender.send(ComputationUpdate::Started) {
             error!(
                 "Failed to send a started computation message with error: {:?}",
                 err
@@ -146,81 +138,11 @@ impl CryptographicComputationsOrchestrator {
             if let Err(err) = session.advance(&handle) {
                 error!("failed to advance session with error: {:?}", err);
             }
-            if let Err(err) = finished_computation_sender.send(ComputationUpdate::Completed) {
+            if let Err(err) = self.computation_channel_sender.send(ComputationUpdate::Completed) {
                 error!(
                     "Failed to send a finished computation message with error: {:?}",
                     err
                 );
-            }
-        });
-        Ok(())
-    }
-
-    /// Deterministically decides by the session ID how long this validator should wait before
-    /// running the last step of the sign protocol.
-    /// If while waiting, the validator receives a valid signature for this session,
-    /// it will not run the last step in the sign protocol, and save computation resources.
-    fn get_validator_position(&self, session_id: &ObjectID) -> DwalletMPCResult<usize> {
-        let session_id_as_32_bytes: [u8; 32] = session_id.into_bytes();
-        let positions = self
-            .epoch_store
-            .committee()
-            .shuffle_by_stake_from_tx_digest(&TransactionDigest::new(session_id_as_32_bytes));
-        let authority_name = self.epoch_store.name;
-        let position = positions
-            .iter()
-            .position(|&x| x == authority_name)
-            .ok_or(DwalletMPCError::InvalidMPCPartyType)?;
-        Ok(position)
-    }
-
-    pub(super) fn spawn_aggregated_sign(
-        &mut self,
-        session: DWalletMPCSession,
-    ) -> DwalletMPCResult<()> {
-        let validator_position = self.get_validator_position(&session.session_id)?;
-        let epoch_store = self.epoch_store.clone();
-        let sender = self.computation_channel_sender.clone();
-        tokio::spawn(async move {
-            if validator_position > 0 {
-                for _ in 1..validator_position {
-                    let manager = epoch_store.get_dwallet_mpc_manager().await;
-                    let Some(session) = manager.mpc_sessions.get(&session.session_id) else {
-                        error!(
-                    "failed to get session when checking if sign last round should get executed"
-                );
-                        return;
-                    };
-                    // If a malicious report has been received for the sign session, all the validators
-                    // should execute the last step immediately.
-                    if !session.session_specific_state.is_none() {
-                        break;
-                    }
-                    tokio::time::sleep(tokio::time::Duration::from_secs(
-                        SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS as u64,
-                    ))
-                    .await;
-                }
-            }
-            let manager = epoch_store.get_dwallet_mpc_manager().await;
-            let Some(live_session) = manager.mpc_sessions.get(&session.session_id) else {
-                error!(
-                    "failed to get session when checking if sign last round should get executed"
-                );
-                return;
-            };
-            if live_session.status != MPCSessionStatus::Active
-                && !live_session.is_verifying_sign_ia_report()
-            {
-                return;
-            }
-            info!(
-                "running last sign cryptographic step for session_id: {:?}",
-                session.session_id
-            );
-            let session = session.clone();
-            if let Err(e) = Self::spawn_session_static(sender, &session) {
-                error!("failed to spawn session with error: {:?}", e);
             }
         });
         Ok(())
