@@ -110,16 +110,19 @@ impl MPCMessageBuilder {
             messages.insert(message.sequence_number, message);
 
             if let Some(slice) = messages.get(&0) {
-                let expected_chunks = slice.number_of_chunks.unwrap_or(0);
+                if let Some(expected_chunks) = slice.number_of_chunks {
+                    if messages.len() == expected_chunks {
+                        let mut complete_message = Vec::new();
+                            (0..expected_chunks as u64)
+                            .for_each(|i| {
+                                complete_message.append(&mut messages.get(&i).clone().unwrap().clone().message);
+                            });
+                            // .collect::<Vec<_>>()
+                            // .map(|slices| slices.into_iter().flatten().collect::<Vec<_>>());
 
-                if messages.len() == expected_chunks {
-                    let complete_message = (0..expected_chunks as u64)
-                        .map(|i| messages.get(&i).map(|s| s.message.as_slice()))
-                        .collect::<Option<Vec<_>>>()
-                        .map(|slices| slices.concat());
-
-                    if let Some(message) = complete_message {
-                        self.messages = MessageState::Complete(message);
+                        // if let Some(message) = complete_message {
+                            self.messages = MessageState::Complete(complete_message);
+                        // }
                     }
                 }
             }
