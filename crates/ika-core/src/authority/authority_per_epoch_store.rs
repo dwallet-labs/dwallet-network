@@ -64,7 +64,7 @@ use crate::consensus_handler::{
 };
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::{
-    DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
+    DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
 };
 use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
@@ -1975,22 +1975,24 @@ impl AuthorityPerEpochStore {
             .unwrap_or_else(|e| {
                 error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                 OutputVerificationResult {
-                    result: OutputResult::Malicious,
+                    result: OutputVerificationStatus::Malicious,
                     malicious_actors: vec![origin_authority],
                 }
             });
 
         match output_verification_result.result {
-            OutputResult::FirstQuorumReached(output) => {
+            OutputVerificationStatus::FirstQuorumReached(output) => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
                     .await;
                 self.process_dwallet_transaction(output, session_info)
                     .map_err(|e| IkaError::from(e))
             }
-            OutputResult::NotEnoughVotes => Ok(ConsensusCertificateResult::ConsensusMessage),
-            OutputResult::AlreadyCommitted
-            | OutputResult::Malicious
-            | OutputResult::BuildingOutput => {
+            OutputVerificationStatus::NotEnoughVotes => {
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            OutputVerificationStatus::AlreadyCommitted
+            | OutputVerificationStatus::Malicious
+            | OutputVerificationStatus::BuildingOutput => {
                 // Ignore this output,
                 // since there is nothing to do with it,
                 // at this stage.
@@ -2176,7 +2178,7 @@ impl AuthorityPerEpochStore {
         // Take the max of the two lengths to ensure we have enough slices.
         let total_slices = public_chunks.len().max(key_shares_chunks.len());
         for i in 0..total_slices {
-            // If the chunk is missing, use an empty slice, 
+            // If the chunk is missing, use an empty slice,
             // as the size of the input can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
             let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);

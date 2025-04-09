@@ -163,16 +163,13 @@ pub struct DWalletMPCOutputMessage {
     pub output: MPCMessageSlice,
 }
 
-/// Metadata for a local MPC computation.
-/// Includes the session ID and the cryptographic round.
-///
-/// Used to remove a pending computation if a quorum of outputs for the session
-/// is received before the computation is spawned, or if a quorum of messages
-/// for the next round of the computation is received, making the old round redundant.
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
-pub struct DWalletMPCLocalComputationMetadata {
-    pub session_id: ObjectID,
-    pub crypto_round_number: usize,
+/// The content of the system transaction that stores the MPC session output on the chain.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct DWalletMPCOutput {
+    /// The session information of the MPC session.
+    pub session_info: SessionInfo,
+    /// The final value of the MPC session.
+    pub output: Vec<u8>,
 }
 
 /// The message a Validator can send to the other parties while
@@ -226,30 +223,20 @@ impl MPCSessionMessagesCollector {
     pub fn add_message(
         &mut self,
         party_id: PartyID,
-        message: DWalletMPCMessage,
+        new_message: DWalletMPCMessage,
     ) -> Option<Vec<u8>> {
         let messages_len = self.messages.len();
-        let round_number = message.round_number;
-        let sequence_number = message.message.sequence_number;
-        let message_slice = message.message.clone();
+        let round_number = new_message.round_number;
+        let message_fragment = new_message.message.clone();
 
         match self.messages.get_mut(round_number) {
             Some(party_to_msg) => {
                 let entry = party_to_msg.entry(party_id).or_insert_with(|| {
-                    let mut builder = MPCMessageBuilder {
-                        messages: MessageState::Incomplete(
-                            vec![(sequence_number, message_slice.clone())]
-                                .into_iter()
-                                .collect(),
-                        ),
-                    };
-                    builder.build_message();
+                    let mut builder = MPCMessageBuilder::empty();
+                    builder.add_and_try_complete(message_fragment.clone());
                     builder
                 });
-
-                entry.add_message(message_slice.clone());
-                entry.build_message();
-
+                entry.add_and_try_complete(message_fragment);
                 match &entry.messages {
                     MessageState::Complete(msg) => Some(msg.clone()),
                     MessageState::Incomplete(_) => None,
@@ -258,16 +245,8 @@ impl MPCSessionMessagesCollector {
 
             None if round_number >= messages_len => {
                 let mut round_map = HashMap::new();
-
-                let mut builder = MPCMessageBuilder {
-                    messages: MessageState::Incomplete(
-                        vec![(sequence_number, message_slice.clone())]
-                            .into_iter()
-                            .collect(),
-                    ),
-                };
-                builder.build_message();
-
+                let mut builder = MPCMessageBuilder::empty();
+                builder.add_and_try_complete(message_fragment.clone());
                 round_map.insert(party_id, builder.clone());
                 self.messages.push(round_map);
 
