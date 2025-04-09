@@ -277,7 +277,7 @@ impl DWalletMPCOutputsVerifier {
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
-    fn verify_signature(
+    async fn verify_signature(
         epoch_store: &Arc<AuthorityPerEpochStore>,
         sign_session_data: &StartSignEvent,
         signature: &MPCPublicOutput,
@@ -294,7 +294,8 @@ impl DWalletMPCOutputsVerifier {
             .get_protocol_public_parameters(
                 &sign_session_data.dwallet_mpc_network_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
-            )?;
+            )
+            .await?;
         let protocol_public_parameters: secp256k1::class_groups::ProtocolPublicParameters =
             bcs::from_bytes(&protocol_public_parameters)?;
         let dwallet_public_key = secp256k1::GroupElement::new(
