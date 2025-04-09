@@ -128,7 +128,10 @@ impl CryptographicComputationsOrchestrator {
     pub(crate) fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
         let handle = Handle::current();
         let session = session.clone();
-        if let Err(err) = self.computation_channel_sender.send(ComputationUpdate::Started) {
+        if let Err(err) = self
+            .computation_channel_sender
+            .send(ComputationUpdate::Started)
+        {
             error!(
                 "Failed to send a started computation message with error: {:?}",
                 err
@@ -138,7 +141,10 @@ impl CryptographicComputationsOrchestrator {
             if let Err(err) = session.advance(&handle) {
                 error!("failed to advance session with error: {:?}", err);
             }
-            if let Err(err) = self.computation_channel_sender.send(ComputationUpdate::Completed) {
+            if let Err(err) = self
+                .computation_channel_sender
+                .send(ComputationUpdate::Completed)
+            {
                 error!(
                     "Failed to send a finished computation message with error: {:?}",
                     err

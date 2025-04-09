@@ -99,14 +99,6 @@ impl Debug for MPCProtocolInitData {
     }
 }
 
-/// The session-specific state of the MPC session.
-/// I.e., state needs to exist only in the sign protocol but is not required in the
-/// presign protocol.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum MPCSessionSpecificState {
-    Sign(SignIASessionState),
-}
-
 /// The optional state of the Presign session, if the first round party was
 /// completed and agreed on.
 /// If the first presign round was completed and agreed on,
