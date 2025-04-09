@@ -99,14 +99,6 @@ impl Debug for MPCProtocolInitData {
     }
 }
 
-/// The session-specific state of the MPC session.
-/// I.e., state needs to exist only in the sign protocol but is not required in the
-/// presign protocol.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum MPCSessionSpecificState {
-    Sign(SignIASessionState),
-}
-
 /// The optional state of the Presign session, if the first round party was
 /// completed and agreed on.
 /// If the first presign round was completed and agreed on,
@@ -127,23 +119,6 @@ pub struct PresignSessionState {
 pub struct DBSuiEvent {
     pub type_: StructTag,
     pub contents: Vec<u8>,
-}
-
-/// The state of a sign-identifiable abort session.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct SignIASessionState {
-    /// The first report that triggered the beginning of the Sign-Identifiable Abort protocol,
-    /// in which, instead of having only one validator run the last sign step, every validator runs
-    /// the last step to agree on the malicious actors.
-    pub start_ia_flow_malicious_report: MaliciousReport,
-    /// The malicious report that has been agreed upon by a quorum of validators.
-    /// If this report
-    /// is different from the `start_ia_flow_malicious_report`, the authority that sent the
-    /// `start_ia_flow_malicious_report` is being marked as malicious.
-    pub verified_malicious_report: Option<MaliciousReport>,
-    /// The first authority that sent a [`MaliciousReport`] in this sign session and triggered
-    /// the beginning of the Sign-Identifiable Abort flow.
-    pub initiating_ia_authority: AuthorityName,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
