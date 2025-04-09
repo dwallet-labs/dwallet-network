@@ -74,7 +74,7 @@ impl MPCMessageBuilder {
     pub fn split(message: Vec<u8>, chunk_size: usize) -> Self {
         let chunks: Vec<Vec<u8>> = if message.is_empty() {
             // Ensure at least one slice for empty messages.
-            vec![vec![]] 
+            vec![vec![]]
         } else {
             message
                 .chunks(chunk_size)

@@ -180,7 +180,7 @@ impl ConsensusTransaction {
         session_id: ObjectID,
         round_number: usize,
     ) -> Vec<Self> {
-	 // This size is arbitrary and might be changed in the future.
+        // This size is arbitrary and might be changed in the future.
         let messages = MPCMessageBuilder::split(message, 120 * 1024);
         let messages = match messages.messages {
             MessageState::Incomplete(messages) => messages,
