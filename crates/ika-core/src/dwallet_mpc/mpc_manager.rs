@@ -247,13 +247,7 @@ impl DWalletMPCManager {
                         });
                 }
             }
-            ReportStatus::WaitingForQuorum => {
-                let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) else {
-                    return Err(DwalletMPCError::MPCSessionNotFound {
-                        session_id: report.session_id,
-                    });
-                };
-            }
+            ReportStatus::WaitingForQuorum => {}
             ReportStatus::OverQuorum => {}
         }
 
