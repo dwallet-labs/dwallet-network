@@ -22,6 +22,8 @@ use ika_types::messages_dwallet_mpc::{
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
+use std::thread;
+use std::time::Duration;
 use sui_types::base_types::ObjectID;
 use tracing::log::info;
 use tracing::warn;
@@ -292,7 +294,7 @@ impl DwalletMPCNetworkKeys {
     /// Retrieves the protocol public parameters for the specified key ID.
     /// This function assumes the given key_id is a valid key ID, and retries getting it until it has been synced from
     /// the Sui network.
-    pub async fn get_protocol_public_parameters(
+    pub fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
@@ -300,7 +302,7 @@ impl DwalletMPCNetworkKeys {
         loop {
             let Ok(Some(result)) = self.try_get_decryption_keys(key_id) else {
                 warn!("failed to fetch the network decryption key shares for key ID: {:?}, trying again", key_id);
-                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                thread::sleep(Duration::from_secs(2));
                 continue;
             };
             let encryption_scheme_public_parameters =
