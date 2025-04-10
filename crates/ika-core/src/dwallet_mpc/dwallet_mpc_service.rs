@@ -54,27 +54,21 @@ impl DWalletMPCService {
         }
     }
 
-    async fn sync_dwallet_mpc_last_active_session_sequence_number(
-        sui_client: Arc<SuiBridgeClient>,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-    ) {
-        loop {
-            time::sleep(Duration::from_secs(2)).await;
-            let system_inner = sui_client.get_system_inner_until_success().await;
-            if let Some(dwallet_coordinator_id) = system_inner
-                .into_init_version_for_tooling()
-                .dwallet_2pc_mpc_secp256k1_id
-            {
-                let coordinator_state = sui_client
-                    .get_dwallet_coordinator_inner_until_success(dwallet_coordinator_id)
-                    .await;
-                match coordinator_state {
-                    DWalletCoordinatorInner::V1(inner_state) => {
-                        let mut dwallet_mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
-                        dwallet_mpc_manager.update_last_active_session_sequence_number(
-                            inner_state.last_active_session_sequence_number,
-                        );
-                    }
+    async fn update_last_active_session_sequence_number(&self, sui_client: &SuiBridgeClient) {
+        let system_inner = sui_client.get_system_inner_until_success().await;
+        if let Some(dwallet_coordinator_id) = system_inner
+            .into_init_version_for_tooling()
+            .dwallet_2pc_mpc_secp256k1_id
+        {
+            let coordinator_state = sui_client
+                .get_dwallet_coordinator_inner_until_success(dwallet_coordinator_id)
+                .await;
+            match coordinator_state {
+                DWalletCoordinatorInner::V1(inner_state) => {
+                    let mut dwallet_mpc_manager = self.epoch_store.get_dwallet_mpc_manager().await;
+                    dwallet_mpc_manager.update_last_active_session_sequence_number(
+                        inner_state.last_active_session_sequence_number,
+                    );
                 }
             }
         }
@@ -122,10 +116,6 @@ impl DWalletMPCService {
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>) {
         self.load_missed_events(sui_client.clone()).await;
-        tokio::spawn(Self::sync_dwallet_mpc_last_active_session_sequence_number(
-            sui_client.clone(),
-            self.epoch_store.clone(),
-        ));
         loop {
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
@@ -133,7 +123,9 @@ impl DWalletMPCService {
                 }
                 Ok(false) => (),
             };
-            tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MS)).await;
+            tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
+            self.update_last_active_session_sequence_number(&sui_client)
+                .await;
             if let Err(e) = self.read_events().await {
                 error!("failed to handle dWallet MPC events: {}", e);
             }
