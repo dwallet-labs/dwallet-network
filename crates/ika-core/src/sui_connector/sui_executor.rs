@@ -97,27 +97,7 @@ where
 
             if let Some(dwallet_2pc_mpc_secp256k1_id) =
                 ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
-            {
-                let task = Self::handle_execution_task(
-                    self.ika_system_package_id,
-                    dwallet_2pc_mpc_secp256k1_id,
-                    signature,
-                    signers_bitmap,
-                    message,
-                    &sui_notifier,
-                    &self.sui_client,
-                    &self.metrics,
-                )
-                .await;
-                match task {
-                    Ok(_) => {
-                        info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
-                    }
-                    Err(err) => {
-                        error!("Sui transaction execution failed for checkpoint sequence number: {}, error: {}", next_checkpoint_sequence_number, err);
-                    }
-                };
-            }
+            {}
         }
     }
 
