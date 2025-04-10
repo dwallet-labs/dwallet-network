@@ -90,8 +90,6 @@ public struct SystemInnerV1 has store {
     // TODO: maybe change that later
     dwallet_2pc_mpc_secp256k1_id: Option<ID>,
     dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector<DWalletNetworkDecryptionKeyCap>,
-    next_epoch_protocol_version: u64,
-    next_epoch_start_timestamp_ms: u64,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
