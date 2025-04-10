@@ -169,6 +169,9 @@ impl CheckpointOutput for LogCheckpointOutput {
         Ok(())
     }
 
+
+    // read clock sui all the time to get the current time when to run the mid epoch / lock next committee
+
     fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
         info!("Closing epoch {}", epoch_store.epoch(),);
     }
