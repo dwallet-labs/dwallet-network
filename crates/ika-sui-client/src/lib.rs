@@ -48,6 +48,7 @@ use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
 use sui_types::balance::Balance;
 use sui_types::base_types::SequenceNumber;
 use sui_types::base_types::{EpochId, ObjectRef};
+use sui_types::clock::Clock;
 use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
@@ -292,6 +293,17 @@ where
                 wrapper.version
             ))),
         }
+    }
+
+    pub async fn get_clock(&self) -> IkaResult<Clock> {
+        let result = self
+            .inner
+            .get_clock(ObjectID::from_hex_literal("0x6").unwrap())
+            .await
+            .map_err(|e| IkaError::SuiClientInternalError(format!("Can't get System: {e}")))?;
+        bcs::from_bytes::<Clock>(&result).map_err(|e| {
+            IkaError::SuiClientSerializationError(format!("Can't serialize System: {e}"))
+        })
     }
 
     pub async fn get_epoch_start_system(
@@ -553,6 +565,22 @@ where
         }
     }
 
+    pub async fn get_sui_clock_until_success(&self) -> Clock {
+        loop {
+            let Ok(Ok(sui_clock)) =
+                retry_with_max_elapsed_time!(self.get_clock(), Duration::from_secs(30))
+            else {
+                self.sui_client_metrics
+                    .sui_rpc_errors
+                    .with_label_values(&["get_system_inner_until_success"])
+                    .inc();
+                error!("Failed to get system inner until success");
+                continue;
+            };
+            return sui_clock;
+        }
+    }
+
     pub async fn get_dwallet_mpc_network_keys(
         &self,
     ) -> IkaResult<HashMap<ObjectID, NetworkDecryptionKeyShares>> {
@@ -644,6 +672,7 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_latest_checkpoint_sequence_number(&self) -> Result<u64, Self::Error>;
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
+    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
     async fn get_dwallet_coordinator(
         &self,
         dwallet_coordinator_id: ObjectID,
@@ -745,6 +774,10 @@ impl SuiClientInner for SuiSdkClient {
     }
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
+        self.read_api().get_move_object_bcs(system_id).await
+    }
+
+    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
         self.read_api().get_move_object_bcs(system_id).await
     }
 

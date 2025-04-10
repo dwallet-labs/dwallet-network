@@ -11,7 +11,7 @@ use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System,
+    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, Clock,
     ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
     CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
     CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
@@ -495,7 +495,7 @@ async fn init_initialize(
                 object_id,
                 object_type,
                 ..
-            } if System::type_(ika_system_package_id.into()) == *object_type => Some(*object_id),
+            } if Clock::type_(ika_system_package_id.into()) == *object_type => Some(*object_id),
             _ => None,
         })
         .collect::<Vec<_>>()

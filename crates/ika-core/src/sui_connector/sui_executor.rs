@@ -75,6 +75,52 @@ where
         }
     }
 
+    pub async fn run_epoch_switch_loop(&self, epoch: EpochId) -> StopReason {
+        let mut interval = time::interval(Duration::from_secs(2));
+
+        loop {
+            interval.tick().await;
+            let ika_system_state_inner = self.sui_client.get_system_inner_until_success().await;
+            let epoch_on_sui: u64 = ika_system_state_inner.epoch();
+            if epoch_on_sui != epoch {
+                fail_point_async!("crash");
+                debug!(epoch, "finished epoch");
+                let epoch_start_system_state = self
+                    .sui_client
+                    .get_epoch_start_system_until_success(&ika_system_state_inner)
+                    .await;
+                return StopReason::EpochComplete(ika_system_state_inner, epoch_start_system_state);
+            }
+            if epoch_on_sui < epoch {
+                error!("epoch_on_sui cannot be less than epoch");
+            }
+
+            if let Some(dwallet_2pc_mpc_secp256k1_id) =
+                ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+            {
+                let task = Self::handle_execution_task(
+                    self.ika_system_package_id,
+                    dwallet_2pc_mpc_secp256k1_id,
+                    signature,
+                    signers_bitmap,
+                    message,
+                    &sui_notifier,
+                    &self.sui_client,
+                    &self.metrics,
+                )
+                .await;
+                match task {
+                    Ok(_) => {
+                        info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
+                    }
+                    Err(err) => {
+                        error!("Sui transaction execution failed for checkpoint sequence number: {}, error: {}", next_checkpoint_sequence_number, err);
+                    }
+                };
+            }
+        }
+    }
+
     pub async fn run_epoch(
         &self,
         epoch: EpochId,
