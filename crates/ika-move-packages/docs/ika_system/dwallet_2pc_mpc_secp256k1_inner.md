@@ -5045,10 +5045,9 @@ the function will abort with this error.
                     <b>let</b> end_of_epch_message_type = bcs_body.peel_vec_length();
                     // AdvanceEpoch
                     <b>if</b>(end_of_epch_message_type == 0) {
-                        self.locked_last_active_session_sequence_number = <b>true</b>;
-                        <b>let</b> _new_epoch = bcs_body.peel_u64();
-                        <b>let</b> _next_protocol_version = bcs_body.peel_u64();
-                        <b>let</b> _epoch_start_timestamp_ms = bcs_body.peel_u64();
+                        bcs_body.peel_u64();
+                        bcs_body.peel_u64();
+                        bcs_body.peel_u64();
                     };
                     i = i + 1;
                 };

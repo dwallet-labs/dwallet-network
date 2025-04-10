@@ -326,16 +326,6 @@ Uses SystemParametersV1 as the parameters.
 <dd>
 </dd>
 <dt>
-<code>next_epoch_protocol_version: u64</code>
-</dt>
-<dd>
-</dd>
-<dt>
-<code>next_epoch_start_timestamp_ms: u64</code>
-</dt>
-<dd>
-</dd>
-<dt>
 <code>extra_fields: <a href="../sui/bag.md#sui_bag_Bag">sui::bag::Bag</a></code>
 </dt>
 <dd>
@@ -512,6 +502,15 @@ the checkpoint submmision message.
 
 
 
+<a name="(ika_system=0x0)_system_inner_v1_EAdvancedToWrongEpoch"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_EAdvancedToWrongEpoch">EAdvancedToWrongEpoch</a>: u64 = 8;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_system_inner_v1_EBpsTooLarge"></a>
 
 
@@ -614,8 +613,6 @@ This function will be called only once in init.
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_secp256k1_id: option::none(),
         dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector[],
-        next_epoch_protocol_version: 0,
-        next_epoch_start_timestamp_ms: 0,
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -1860,7 +1857,7 @@ gas coins.
 4. Update all validators.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, new_epoch: u64, next_protocol_version: u64, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>: u64, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1871,10 +1868,13 @@ gas coins.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>,
+    new_epoch: u64,
+    next_protocol_version: u64,
+    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>: u64, // Timestamp of the <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> start
     ctx: &<b>mut</b> TxContext,
 ) {
     <b>let</b> prev_epoch_start_timestamp = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>;
-    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a> = self.next_epoch_start_timestamp_ms;
+    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a> = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>;
     // TODO: remove this in later upgrade.
     <b>if</b> (self.parameters.stake_subsidy_start_epoch &gt; 0) {
         self.parameters.stake_subsidy_start_epoch = 20;
@@ -1887,7 +1887,7 @@ gas coins.
     // And <b>if</b> this <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> is shorter than the regular <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> duration, don't distribute any stake subsidy.
     <b>if</b> (
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> &gt;= self.parameters.stake_subsidy_start_epoch  &&
-            self.next_epoch_start_timestamp_ms &gt;= prev_epoch_start_timestamp + self.parameters.epoch_duration_ms
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a> &gt;= prev_epoch_start_timestamp + self.parameters.epoch_duration_ms
     ) {
         stake_subsidy.join(self.<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>.stake_subsidy_for_distribution(ctx));
     };
@@ -1897,13 +1897,14 @@ gas coins.
     total_reward.join(self.computation_reward.withdraw_all());
     total_reward.join(stake_subsidy);
     <b>let</b> total_reward_amount_before_distribution = total_reward.value();
-    <b>let</b> next_epoch = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> + 1;
-    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> = next_epoch;
+    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> + 1;
+    // Sanity check to make sure we are advancing to the right <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>.
+    <b>assert</b>!(new_epoch == self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_EAdvancedToWrongEpoch">EAdvancedToWrongEpoch</a>);
     self
         .validators
         .<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(
             <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>,
-            next_epoch,
+            new_epoch,
             &<b>mut</b> total_reward,
             self.parameters.reward_slashing_rate,
             ctx,
@@ -1915,7 +1916,7 @@ gas coins.
     // Because of precision issues with integer divisions, we expect that there will be some
     // remaining balance in `computation_reward`.
     self.computation_reward.join(total_reward);
-    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_protocol_version">protocol_version</a> = self.next_epoch_protocol_version;
+    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_protocol_version">protocol_version</a> = next_protocol_version;
     <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a> = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>();
     // Derive the computation price per unit size <b>for</b> the new <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>
     self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>);
@@ -2269,13 +2270,10 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message">process_checkpoint_message</a>(message, ctx);
     // TODO: seperate this to its own process
     <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(signature, signers_bitmap, message, ctx);
-    <b>if</b> (<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.inner().should_advance_epoch()) {
-        self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(ctx);
+    <b>if</b>(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> + 1 == self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>()) {
         <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>());
-        self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(
-            |cap| <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.advance_epoch_dwallet_network_decryption_key(cap)
-        );
-    };
+        self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.advance_epoch_dwallet_network_decryption_key(cap));
+    }
 }
 </code></pre>
 
@@ -2320,7 +2318,7 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 
 
 
-<pre><code><b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message">process_checkpoint_message</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, message: vector&lt;u8&gt;, _ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message">process_checkpoint_message</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -2332,7 +2330,7 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 <pre><code><b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message">process_checkpoint_message</a>(
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>,
     message: vector&lt;u8&gt;,
-    _ctx: &<b>mut</b> TxContext,
+    ctx: &<b>mut</b> TxContext,
 ) {
     <b>assert</b>!(!self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>().members().is_empty(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>);
     // first <b>let</b>'s make sure it's the correct checkpoint message
@@ -2370,9 +2368,10 @@ Returns all the validators who are currently reporting <code>validator_id</code>
                     <b>let</b> end_of_epch_message_type = bcs_body.peel_vec_length();
                     // AdvanceEpoch
                     <b>if</b>(end_of_epch_message_type == 0) {
-                        bcs_body.peel_u64();
-                        self.next_epoch_protocol_version = bcs_body.peel_u64();
-                        self.next_epoch_start_timestamp_ms = bcs_body.peel_u64();
+                        <b>let</b> new_epoch = bcs_body.peel_u64();
+                        <b>let</b> next_protocol_version = bcs_body.peel_u64();
+                        <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a> = bcs_body.peel_u64();
+                        self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(new_epoch, next_protocol_version, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>, ctx);
                     };
                     i = i + 1;
                 };
