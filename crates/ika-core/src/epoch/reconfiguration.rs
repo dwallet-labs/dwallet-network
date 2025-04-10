@@ -69,7 +69,7 @@ impl ReconfigState {
     }
 
     pub fn should_accept_tx(&self) -> bool {
-        // TODO: Remove network reconfiguration logic
+        // TODO (#845): Remove network reconfiguration logic
         true
     }
 }
