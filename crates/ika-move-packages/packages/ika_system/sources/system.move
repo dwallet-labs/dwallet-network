@@ -644,6 +644,10 @@ public fun process_checkpoint_message_by_quorum(
     self.process_checkpoint_message_by_quorum(dwallet_2pc_mpc_secp256k1, signature, signers_bitmap, message, ctx);
 }
 
+public fun request_mid_epoch(self: &mut System, _ctx: &TxContext) {
+    self.inner_mut().process_mid_epoch();
+}
+
 public fun request_dwallet_network_decryption_key_dkg_by_cap(
     self: &mut System,
     dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
