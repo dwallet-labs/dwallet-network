@@ -69,7 +69,8 @@ impl ReconfigState {
     }
 
     pub fn should_accept_tx(&self) -> bool {
-        !matches!(self.status, ReconfigCertStatus::RejectAllTx)
+        // TODO: Remove network reconfiguration logic
+        true
     }
 }
 
