@@ -47,7 +47,7 @@ pub fn get_rayon_thread_pool_size() -> DwalletMPCResult<usize> {
     if tokio_threads + 1 >= available_cores_for_computations {
         warn!(
             ?available_cores_for_computations,
-            "there are not enough logical cores for the Tokio thread pool; time slicing with the Rayon thread pool may cause unexpected behaviour"
+            "there are not enough logical cores for the Rayon thread pool; time slicing with the Tokio thread pool may cause unexpected behaviour"
         );
         return Ok(1);
     }
