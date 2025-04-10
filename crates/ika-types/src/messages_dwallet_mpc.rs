@@ -181,6 +181,7 @@ pub struct DWalletMPCMessage {
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
+    pub session_sequence_number: u64,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
 }
@@ -267,6 +268,7 @@ impl MPCSessionMessagesCollector {
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {
+    pub sequence_number: u64,
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
     /// The current MPC round in the protocol.
