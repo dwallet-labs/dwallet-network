@@ -733,27 +733,21 @@ impl CheckpointBuilder {
                 .epoch_store
                 .epoch_start_state()
                 .epoch_start_timestamp_ms();
-            let epoch_duration = self.epoch_store.epoch_start_state().epoch_duration_ms();
-            let mid_epoch_timestamp_ms = epoch_start_timestamp_ms + (epoch_duration / 2);
-            let epoch_end_timestamp_ms = epoch_start_timestamp_ms + epoch_duration;
             let current_timestamp = pending.details().timestamp_ms;
-
-            if current_timestamp > mid_epoch_timestamp_ms {
+            if current_timestamp > self.output.next_mid_epoch_timestamp_ms {
                 info!(
                     checkpoint_commit_height=?height,
                     checkpoint_timestamp=?current_timestamp,
                     ?epoch_start_timestamp_ms,
-                    ?epoch_duration,
                     "commit timestamp is greater than mid epoch timestamp, start mid epoch"
                 );
                 self.output.initiate_process_mid_epoch(&self.epoch_store);
             }
-            if current_timestamp > epoch_end_timestamp_ms {
+            if current_timestamp > self.output.next_reconfiguration_timestamp_ms {
                 info!(
                     checkpoint_commit_height=?height,
                     checkpoint_timestamp=?current_timestamp,
                     ?epoch_start_timestamp_ms,
-                    ?epoch_duration,
                     "commit timestamp is greater than epoch end timestamp, start closing epoch"
                 );
                 self.output.close_epoch(&self.epoch_store);

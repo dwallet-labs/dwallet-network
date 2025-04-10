@@ -23,7 +23,7 @@ use std::str::FromStr;
 #[cfg(msim)]
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, RwLock, Weak};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use ika_core::consensus_adapter::ConsensusClient;
 use ika_core::consensus_manager::UpdatableConsensusClient;
@@ -193,6 +193,7 @@ pub use simulator::set_jwk_injector;
 #[cfg(msim)]
 use simulator::*;
 use sui_types::execution_config_utils::to_binary_config;
+use tokio::time;
 
 pub struct IkaNode {
     config: NodeConfig,
@@ -960,9 +961,16 @@ impl IkaNode {
         let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
 
         debug!(
-            "Starting checkpoint service with epoch start timestamp {}
+            "`Starting checkpoint service with epoch start timestamp {}
             and epoch duration {}",
             epoch_start_timestamp_ms, epoch_duration_ms
+        );
+
+        println!(
+            "Starting checkpoint service with epoch start timestamp {}
+            and epoch duration {}, now {}",
+            epoch_start_timestamp_ms, epoch_duration_ms, SystemTime::now()
+                .duration_since(UNIX_EPOCH).unwrap().as_millis()
         );
 
         let checkpoint_output = Box::new(SubmitCheckpointToConsensus {

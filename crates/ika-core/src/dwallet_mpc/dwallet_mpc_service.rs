@@ -122,10 +122,10 @@ impl DWalletMPCService {
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>) {
         self.load_missed_events(sui_client.clone()).await;
-        tokio::spawn(Self::sync_dwallet_mpc_last_active_session_sequence_number(
-            sui_client.clone(),
-            self.epoch_store.clone(),
-        ));
+        // tokio::spawn(Self::sync_dwallet_mpc_last_active_session_sequence_number(
+        //     sui_client.clone(),
+        //     self.epoch_store.clone(),
+        // ));
         loop {
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
