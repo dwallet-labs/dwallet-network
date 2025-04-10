@@ -644,7 +644,8 @@ public fun process_checkpoint_message_by_quorum(
     self.process_checkpoint_message_by_quorum(dwallet_2pc_mpc_secp256k1, signature, signers_bitmap, message, ctx);
 }
 
-public fun request_mid_epoch(self: &mut System, _ctx: &TxContext) {
+public fun request_mid_epoch(self: &mut System, clock: &Clock, _ctx: &TxContext) {
+    if (clock.)
     self.inner_mut().process_mid_epoch();
 }
 
