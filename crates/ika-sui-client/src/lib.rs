@@ -452,6 +452,24 @@ where
         .await
     }
 
+    /// Get the mutable system object arg on chain.
+    // We retry a few times in case of errors. If it fails eventually, we panic.
+    // In general it's safe to call in the beginning of the program.
+    // After the first call, the result is cached since the value should never change.
+    pub async fn get_clock_arg_must_succeed(&self) -> ObjectArg {
+        static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
+        *ARG.get_or_init(|| async move {
+            let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
+                self.inner.get_shared_arg(ObjectID::from_single_byte(6)),
+                Duration::from_secs(30)
+            ) else {
+                panic!("Failed to get system object arg after retries");
+            };
+            system_arg
+        })
+        .await
+    }
+
     /// Retrieves the dwallet_2pc_mpc_secp256k1_id object arg from the Sui chain.
     pub async fn get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(
         &self,
@@ -562,22 +580,6 @@ where
                 continue;
             };
             return ika_system_state;
-        }
-    }
-
-    pub async fn get_sui_clock_until_success(&self) -> Clock {
-        loop {
-            let Ok(Ok(sui_clock)) =
-                retry_with_max_elapsed_time!(self.get_clock(), Duration::from_secs(30))
-            else {
-                self.sui_client_metrics
-                    .sui_rpc_errors
-                    .with_label_values(&["get_system_inner_until_success"])
-                    .inc();
-                error!("Failed to get system inner until success");
-                continue;
-            };
-            return sui_clock;
         }
     }
 
@@ -715,6 +717,8 @@ pub trait SuiClientInner: Send + Sync {
     ) -> Result<Vec<Vec<u8>>, Self::Error>;
 
     async fn get_mutable_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error>;
+
+    async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error>;
 
     async fn get_available_move_packages(
         &self,
@@ -1242,6 +1246,27 @@ impl SuiClientInner for SuiSdkClient {
             id: system_id,
             initial_shared_version,
             mutable: true,
+        })
+    }
+
+    async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error> {
+        let response = self
+            .read_api()
+            .get_object_with_options(system_id, SuiObjectDataOptions::new().with_owner())
+            .await?;
+        let Some(Owner::Shared {
+            initial_shared_version,
+        }) = response.owner()
+        else {
+            return Err(Self::Error::DataError(format!(
+                "Failed to load ika system state owner {:?}",
+                system_id
+            )));
+        };
+        Ok(ObjectArg::SharedObject {
+            id: system_id,
+            initial_shared_version,
+            mutable: false,
         })
     }
 

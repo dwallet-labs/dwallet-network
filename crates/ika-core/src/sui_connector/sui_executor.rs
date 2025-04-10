@@ -95,6 +95,13 @@ where
                 error!("epoch_on_sui cannot be less than epoch");
             }
 
+            let Ok(clock) = self.sui_client.get_clock().await else {
+                continue;
+            };
+
+            if clock.timestamp_ms > ika_system_state_inner.epoch_start_timestamp_ms() + (ika_system_state_inner.epoch_duration_ms() / 2) {
+                info!("calling process mid epoch")
+            }
 
             let Some(dwallet_2pc_mpc_secp256k1_id) =
                 ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
@@ -109,6 +116,8 @@ where
             else {
                 continue;
             };
+
+
         }
     }
 
@@ -220,6 +229,61 @@ where
             slices.push(CallArg::Pure(bcs::to_bytes(message).unwrap()));
         }
         slices
+    }
+
+    async fn process_mid_epoch(
+        ika_system_package_id: ObjectID,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        sui_notifier: &SuiNotifier,
+        sui_client: &Arc<SuiClient<C>>,
+    ) -> IkaResult<()> {
+        let (gas_coin, gas_obj_ref, owner) = sui_client
+            .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
+            .await;
+
+        let mut ptb = ProgrammableTransactionBuilder::new();
+
+        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
+        let clock_arg = sui_client.get_clock_arg_must_succeed().await;
+
+        let dwallet_2pc_mpc_secp256k1_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+            .await;
+
+        let mut args = vec![
+            CallArg::Object(ika_system_state_arg),
+            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(clock_arg)
+
+        ];
+
+        ptb.move_call(
+            ika_system_package_id,
+            SYSTEM_MODULE_NAME.into(),
+            PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        )
+        .map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!(
+                "Can't ProgrammableTransactionBuilder::move_call: {e}"
+            ))
+        })?;
+
+        let transaction = super::build_sui_transaction(
+            sui_notifier.sui_address,
+            ptb.finish(),
+            sui_client,
+            vec![gas_obj_ref],
+            &sui_notifier.sui_key,
+        )
+        .await;
+
+        sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        Ok(())
     }
 
     async fn handle_execution_task(
