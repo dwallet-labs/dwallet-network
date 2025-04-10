@@ -73,6 +73,7 @@ const EWrongInnerVersion: u64 = 0;
 const EInvalidMigration: u64 = 1;
 const EHaveNotReachedMidEpochTime: u64 = 2;
 const EHaveNotReachedEndEpochTime: u64 = 3;
+const ECannotAdvanceEpoch: u64 = 4;
 
 /// Flag to indicate the version of the ika system.
 const VERSION: u64 = 1;
@@ -658,6 +659,14 @@ public fun request_lock_epoch_sessions(
     let inner = self.inner_mut();
     assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms()), EHaveNotReachedEndEpochTime);
     dwallet_coordinator.inner_mut().lock_last_active_session_sequence_number();
+}
+
+public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, ctx: &mut TxContext) {
+    let mut inner_system = self.inner_mut();
+    let mut inner_dwallet = dwallet_coordinator.inner_mut();
+    assert!(inner_dwallet.should_advance_epoch(), ECannotAdvanceEpoch);
+    inner_system.advance_epoch(clock.timestamp_ms(), ctx);
+    dwallet_coordinator.advance_epoch(inner_system.active_committee());
 }
 
 public fun request_dwallet_network_decryption_key_dkg_by_cap(

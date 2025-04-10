@@ -677,8 +677,6 @@ public(package) fun update_candidate_validator_network_pubkey_bytes(
 /// 4. Update all validators.
 public(package) fun advance_epoch(
     self: &mut SystemInnerV1,
-    new_epoch: u64,
-    next_protocol_version: u64,
     epoch_start_timestamp_ms: u64, // Timestamp of the epoch start
     ctx: &mut TxContext,
 ) {
