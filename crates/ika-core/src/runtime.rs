@@ -12,7 +12,7 @@ pub struct IkaRuntimes {
     pub metrics: Runtime,
 }
 
-const IKA_NODE_TOKIO_ALLOCATED_THREADS: usize = 16;
+const IKA_NODE_TOKIO_ALLOCATED_THREADS: usize = 4;
 const METRICS_TOKIO_ALLOCATED_THREADS: usize = 2;
 
 impl IkaRuntimes {
