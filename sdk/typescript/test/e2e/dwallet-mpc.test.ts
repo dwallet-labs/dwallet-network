@@ -8,7 +8,7 @@ import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
-import {createDWallet, launchDKGFirstRound, mockCreateDWallet} from '../../src/dwallet-mpc/dkg';
+import { createDWallet, mockCreateDWallet } from '../../src/dwallet-mpc/dkg';
 import {
 	checkpointCreationTime,
 	Config,
@@ -63,39 +63,6 @@ describe('Test dWallet MPC', () => {
 
 	it('should create a dWallet (DKG)', async () => {
 		const dwallet = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
-		console.log(`dWallet has been created successfully: ${dwallet}`);
-	});
-
-	it('ye', async () => {
-		const dwallet = await launchDKGFirstRound(conf);
-		console.log(`dWallet has been created successfully: ${dwallet}`);
-	});
-	it('ye2', async () => {
-		const dwallet = await launchDKGFirstRound(conf);
-		console.log(`dWallet has been created successfully: ${dwallet}`);
-	});
-	it('ye3', async () => {
-		const dwallet = await launchDKGFirstRound(conf);
-		console.log(`dWallet has been created successfully: ${dwallet}`);
-	});
-	it('ye4', async () => {
-		const dwallet = await launchDKGFirstRound(conf);
-		console.log(`dWallet has been created successfully: ${dwallet}`);
-	});
-	it('ye5', async () => {
-		const dwallet = await launchDKGFirstRound(conf);
-		console.log(`dWallet has been created successfully: ${dwallet}`);
-	});
-	it('ye6', async () => {
-		const dwallet = await launchDKGFirstRound(conf);
-		console.log(`dWallet has been created successfully: ${dwallet}`);
-	});
-	it('ye7', async () => {
-		const dwallet = await launchDKGFirstRound(conf);
-		console.log(`dWallet has been created successfully: ${dwallet}`);
-	});
-	it('ye8', async () => {
-		const dwallet = await launchDKGFirstRound(conf);
 		console.log(`dWallet has been created successfully: ${dwallet}`);
 	});
 
