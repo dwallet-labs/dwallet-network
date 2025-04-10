@@ -12,7 +12,7 @@ pub struct IkaRuntimes {
     pub metrics: Runtime,
 }
 
-const IKA_NODE_TOKIO_ALLOCATED_THREADS: usize = 1;
+const IKA_NODE_TOKIO_ALLOCATED_THREADS: usize = 16;
 const METRICS_TOKIO_ALLOCATED_THREADS: usize = 2;
 
 impl IkaRuntimes {
@@ -43,17 +43,16 @@ pub fn get_rayon_thread_pool_size() -> DwalletMPCResult<usize> {
     if available_cores_for_computations == 0 {
         return Err(DwalletMPCError::InsufficientCPUCores);
     }
-    let rayon_thread_pool_size = available_cores_for_computations
-        - IKA_NODE_TOKIO_ALLOCATED_THREADS
-        - METRICS_TOKIO_ALLOCATED_THREADS
-	// 1 is for the `main()` rust thread.
-        - 1;
-    if rayon_thread_pool_size <= 0 {
+    let tokio_threads = IKA_NODE_TOKIO_ALLOCATED_THREADS + METRICS_TOKIO_ALLOCATED_THREADS;
+    if tokio_threads + 1 >= available_cores_for_computations {
         warn!(
             ?available_cores_for_computations,
-            "there are not enough logical cores for the Rayon thread pool; time slicing with the Tokio thread pool may cause unexpected behaviour"
+            "there are not enough logical cores for the Tokio thread pool; time slicing with the Rayon thread pool may cause unexpected behaviour"
         );
         return Ok(1);
     }
+    let rayon_thread_pool_size = available_cores_for_computations - tokio_threads
+        // 1 is for the `main()` rust thread.
+        - 1;
     Ok(rayon_thread_pool_size)
 }
