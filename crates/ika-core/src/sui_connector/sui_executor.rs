@@ -95,9 +95,20 @@ where
                 error!("epoch_on_sui cannot be less than epoch");
             }
 
-            if let Some(dwallet_2pc_mpc_secp256k1_id) =
+
+            let Some(dwallet_2pc_mpc_secp256k1_id) =
                 ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
-            {}
+            else {
+                continue;
+            };
+
+            let Ok(coordinator) = self
+                .sui_client
+                .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
+                .await
+            else {
+                continue;
+            };
         }
     }
 
