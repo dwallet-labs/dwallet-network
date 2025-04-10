@@ -71,6 +71,7 @@ public struct System has key {
 
 const EWrongInnerVersion: u64 = 0;
 const EInvalidMigration: u64 = 1;
+const EHaveNotReachedMidEpochTime: u64 = 2;
 
 /// Flag to indicate the version of the ika system.
 const VERSION: u64 = 1;
@@ -645,7 +646,8 @@ public fun process_checkpoint_message_by_quorum(
 }
 
 public fun request_mid_epoch(self: &mut System, clock: &Clock, _ctx: &TxContext) {
-    if (clock.)
+    let inner = self.inner_mut();
+    assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms() / 2), EHaveNotReachedMidEpochTime);
     self.inner_mut().process_mid_epoch();
 }
 
