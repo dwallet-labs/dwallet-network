@@ -279,7 +279,7 @@ interface DKGFirstRoundOutputResult {
  * The output of this function is being used to generate the input for the second round,
  * and as input for the centralized party round.
  */
-export async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult> {
+async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult> {
 	const tx = new Transaction();
 	const emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
