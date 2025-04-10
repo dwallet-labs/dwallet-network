@@ -109,8 +109,6 @@ pub struct SystemInnerV1 {
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_id: Option<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_network_decryption_keys: Vec<DWalletNetworkDecryptionKeyCap>,
-    pub next_epoch_protocol_version: u64,
-    pub next_epoch_start_timestamp_ms: u64,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }
