@@ -467,7 +467,7 @@ impl DWalletMPCSession {
     /// Create new consensus transactions with the flow result (output) to be
     /// sent to the other MPC parties.
     /// Errors if the epoch was switched in the middle and was not available.
-    pub(crate) fn construct_new_dwallet_mpc_output_messages(
+    fn construct_new_dwallet_mpc_output_messages(
         &self,
         output: Vec<u8>,
     ) -> DwalletMPCResult<Vec<ConsensusTransaction>> {
