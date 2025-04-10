@@ -35,3 +35,5 @@ telemetry-subscribers.workspace = true
 [target.'cfg(msim)'.dependencies]
 sui-simulator.workspace = true
 
+[features]
+with-network-dkg = ["ika-node/with-network-dkg"]

@@ -21,8 +21,7 @@ use tokio::{
     task::JoinHandle,
     time::{self, Duration},
 };
-use tracing::log::error;
-use tracing::{info, warn};
+use tracing::{info, warn, error};
 
 /// Map from contract address to their start cursor (exclusive)
 pub type SuiTargetModules = HashMap<Identifier, Option<EventID>>;
@@ -60,6 +59,7 @@ where
         dwallet_mpc_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
+        info!("Starting SuiSyncer");
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
         if let Some(dwallet_mpc_network_keys) = dwallet_mpc_network_keys {
@@ -100,7 +100,7 @@ where
                 .get_dwallet_mpc_network_keys()
                 .await
                 .unwrap_or_else(|e| {
-                    warn!("failed to fetch dwallet MPC network keys: {e}");
+                    error!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 });
             let mut local_network_decryption_keys =
@@ -109,8 +109,8 @@ where
                 .into_iter()
                 .for_each(|(key_id, network_dec_key_shares)| {
                     if let Some(local_dec_key_shares) = local_network_decryption_keys.get(&key_id) {
-                        info!("Updating the network key for `key_id`: {:?}", key_id);
                         if *local_dec_key_shares != network_dec_key_shares {
+                            info!("Updating the network key for `key_id`: {:?}", key_id);
                             if let Err(e) =
                                 dwallet_mpc_network_keys.update_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
                             {
@@ -126,7 +126,7 @@ where
                             dwallet_mpc_network_keys.add_new_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
                         {
                             error!(
-                                "Failed to add new key for `key_id`: {:?}, error: {:?}",
+                                "failed to add new key for `key_id`: {:?}, error: {:?}",
                                 key_id, e
                             );
                         }

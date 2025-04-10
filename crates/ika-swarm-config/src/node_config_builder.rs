@@ -84,7 +84,7 @@ impl ValidatorConfigBuilder {
         sui_rpc_url: String,
         ika_package_id: ObjectID,
         ika_system_package_id: ObjectID,
-        system_id: ObjectID,
+        ika_system_object_id: ObjectID,
     ) -> NodeConfig {
         let key_path = get_key_path(&validator.key_pair);
         let config_directory = self
@@ -140,7 +140,7 @@ impl ValidatorConfigBuilder {
                 sui_chain_identifier: SuiChainIdentifier::Custom,
                 ika_package_id,
                 ika_system_package_id,
-                system_id,
+                ika_system_object_id,
                 notifier_client_key_pair: None,
                 notifier_client_gas_object: None,
                 sui_ika_system_module_last_processed_event_id_override: None,
@@ -172,7 +172,7 @@ impl ValidatorConfigBuilder {
         sui_rpc_url: String,
         ika_package_id: ObjectID,
         ika_system_package_id: ObjectID,
-        system_id: ObjectID,
+        ika_system_object_id: ObjectID,
     ) -> NodeConfig {
         let validator_initialization_config =
             ValidatorInitializationConfigBuilder::new().build(rng);
@@ -181,7 +181,7 @@ impl ValidatorConfigBuilder {
             sui_rpc_url,
             ika_package_id,
             ika_system_package_id,
-            system_id,
+            ika_system_object_id,
         )
     }
 }
@@ -273,7 +273,7 @@ impl FullnodeConfigBuilder {
         sui_rpc_url: String,
         ika_package_id: ObjectID,
         ika_system_package_id: ObjectID,
-        system_id: ObjectID,
+        ika_system_object_id: ObjectID,
         notifier_client_key_pair: Option<SuiKeyPair>,
     ) -> NodeConfig {
         // Take advantage of ValidatorGenesisConfigBuilder to build the keypairs and addresses,
@@ -332,6 +332,8 @@ impl FullnodeConfigBuilder {
         let notifier_client_key_pair = notifier_client_key_pair.map(|k| KeyPairWithPath::new(k));
 
         NodeConfig {
+            // todo(zeev): this should be removed from Fullnode, also check it in SUI
+            // todo(zeev): or make sure we ignore it.
             class_groups_key_pair_and_proof: ClassGroupsKeyPairWithPath::new(
                 validator_config.class_groups_key_pair_and_proof.clone(),
             ),
@@ -354,7 +356,7 @@ impl FullnodeConfigBuilder {
                 sui_chain_identifier: SuiChainIdentifier::Custom,
                 ika_package_id,
                 ika_system_package_id,
-                system_id,
+                ika_system_object_id,
                 notifier_client_key_pair,
                 notifier_client_gas_object: None,
                 sui_ika_system_module_last_processed_event_id_override: None,

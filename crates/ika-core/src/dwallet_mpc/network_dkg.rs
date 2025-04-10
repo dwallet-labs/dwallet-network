@@ -25,7 +25,7 @@ use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use sui_types::base_types::ObjectID;
-use tracing::log::{info, warn};
+use tracing::{warn, info};
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
@@ -349,6 +349,7 @@ pub(crate) fn advance_network_dkg(
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
 ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+    // todo(zeev): move the mock to a func.
     #[cfg(not(feature = "with-network-dkg"))]
     {
         let secret_shares = shared_wasm_class_groups::decryption_key_shares(party_id);
