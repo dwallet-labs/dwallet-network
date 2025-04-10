@@ -117,7 +117,9 @@ where
                     self.ika_system_package_id,
                     &sui_notifier,
                     &self.sui_client,
-                ) {
+                )
+                .await
+                {
                     error!("Failed to process mid epoch: {:?}", e);
                 } else {
                     info!("Successfully processed mid epoch");
@@ -134,7 +136,9 @@ where
                     dwallet_2pc_mpc_secp256k1_id,
                     &sui_notifier,
                     &self.sui_client,
-                ) {
+                )
+                .await
+                {
                     error!("Failed to process mid epoch: {:?}", e);
                 } else {
                     info!("Successfully processed mid epoch");
@@ -159,7 +163,9 @@ where
                     dwallet_2pc_mpc_secp256k1_id,
                     &sui_notifier,
                     &self.sui_client,
-                ) {
+                )
+                .await
+                {
                     error!("Failed to process request advance epoch: {:?}", e);
                 } else {
                     info!("Successfully processed request advance epoch");
