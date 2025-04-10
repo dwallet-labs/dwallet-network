@@ -2247,10 +2247,9 @@ fun process_checkpoint_message(
                     let end_of_epch_message_type = bcs_body.peel_vec_length();
                     // AdvanceEpoch
                     if(end_of_epch_message_type == 0) {
-                        self.locked_last_active_session_sequence_number = true;
-                        let _new_epoch = bcs_body.peel_u64();
-                        let _next_protocol_version = bcs_body.peel_u64();
-                        let _epoch_start_timestamp_ms = bcs_body.peel_u64();
+                        bcs_body.peel_u64();
+                        bcs_body.peel_u64();
+                        bcs_body.peel_u64();
                     };
                     i = i + 1;
                 };

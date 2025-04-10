@@ -929,8 +929,8 @@ fun process_checkpoint_message(
                     // AdvanceEpoch 
                     if(end_of_epch_message_type == 0) {
                         bcs_body.peel_u64();
-                        self.next_epoch_protocol_version = bcs_body.peel_u64();
-                        self.next_epoch_start_timestamp_ms = bcs_body.peel_u64();
+                        bcs_body.peel_u64();
+                        bcs_body.peel_u64();
                     };
                     i = i + 1;
                 };
