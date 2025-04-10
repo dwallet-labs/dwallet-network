@@ -782,11 +782,6 @@ public(package) fun epoch_start_timestamp_ms(self: &SystemInnerV1): u64 {
     self.epoch_start_timestamp_ms
 }
 
-/// Returns unix timestamp of the start of current epoch
-public(package) fun parameters(self: &SystemInnerV1): &SystemParametersV1 {
-    &self.parameters
-}
-
 /// Returns the total amount staked with `validator_id`.
 /// Aborts if `validator_id` is not an active validator.
 public(package) fun validator_stake_amount(
