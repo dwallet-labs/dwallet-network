@@ -125,6 +125,7 @@ public struct SystemCheckpointInfoEvent has copy, drop {
 const ELimitExceeded: u64 = 1;
 const EBpsTooLarge: u64 = 5;
 // const ESafeModeGasNotProcessed: u64 = 7;
+const EAdvancedToWrongEpoch: u64 = 8;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -172,8 +173,6 @@ public(package) fun create(
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_secp256k1_id: option::none(),
         dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector[],
-        next_epoch_protocol_version: 0,
-        next_epoch_start_timestamp_ms: 0,
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -678,10 +677,13 @@ public(package) fun update_candidate_validator_network_pubkey_bytes(
 /// 4. Update all validators.
 public(package) fun advance_epoch(
     self: &mut SystemInnerV1,
+    new_epoch: u64,
+    next_protocol_version: u64,
+    epoch_start_timestamp_ms: u64, // Timestamp of the epoch start
     ctx: &mut TxContext,
 ) {
     let prev_epoch_start_timestamp = self.epoch_start_timestamp_ms;
-    self.epoch_start_timestamp_ms = self.next_epoch_start_timestamp_ms;
+    self.epoch_start_timestamp_ms = epoch_start_timestamp_ms;
 
     // TODO: remove this in later upgrade.
     if (self.parameters.stake_subsidy_start_epoch > 0) {
@@ -697,7 +699,7 @@ public(package) fun advance_epoch(
     // And if this epoch is shorter than the regular epoch duration, don't distribute any stake subsidy.
     if (
         epoch >= self.parameters.stake_subsidy_start_epoch  &&
-            self.next_epoch_start_timestamp_ms >= prev_epoch_start_timestamp + self.parameters.epoch_duration_ms
+            epoch_start_timestamp_ms >= prev_epoch_start_timestamp + self.parameters.epoch_duration_ms
     ) {
         stake_subsidy.join(self.protocol_treasury.stake_subsidy_for_distribution(ctx));
     };
@@ -710,14 +712,16 @@ public(package) fun advance_epoch(
     total_reward.join(self.computation_reward.withdraw_all());
     total_reward.join(stake_subsidy);
     let total_reward_amount_before_distribution = total_reward.value();
-    let next_epoch = self.epoch + 1;
-    self.epoch = next_epoch;
+
+    self.epoch = self.epoch + 1;
+    // Sanity check to make sure we are advancing to the right epoch.
+    assert!(new_epoch == self.epoch, EAdvancedToWrongEpoch);
 
     self
         .validators
         .advance_epoch(
             epoch,
-            next_epoch,
+            new_epoch,
             &mut total_reward,
             self.parameters.reward_slashing_rate,
 
@@ -734,12 +738,11 @@ public(package) fun advance_epoch(
     // remaining balance in `computation_reward`.
     self.computation_reward.join(total_reward);
 
-    self.protocol_version = self.next_epoch_protocol_version;
+    self.protocol_version = next_protocol_version;
 
     let active_committee = self.active_committee();
     // Derive the computation price per unit size for the new epoch
     self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&active_committee);
-
 
     let last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
     self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
@@ -842,6 +845,7 @@ public(package) fun process_checkpoint_message_by_cap(
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut SystemInnerV1,
     dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
@@ -858,13 +862,10 @@ public(package) fun process_checkpoint_message_by_quorum(
 
     // TODO: seperate this to its own process
     dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
-    if (dwallet_2pc_mpc_secp256k1.inner().should_advance_epoch()) {
-        self.advance_epoch(ctx);
+    if(epoch + 1 == self.epoch()) {
         dwallet_2pc_mpc_secp256k1.advance_epoch(self.active_committee());
-        self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(
-            |cap| dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap)
-        );
-    };
+        self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
+    }
 }
 
 public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
@@ -881,7 +882,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
 fun process_checkpoint_message(
     self: &mut SystemInnerV1,
     message: vector<u8>,
-    _ctx: &mut TxContext,
+    ctx: &mut TxContext,
 ) {
     assert!(!self.active_committee().members().is_empty(), EActiveBlsCommitteeMustInitialize);
 
@@ -926,9 +927,10 @@ fun process_checkpoint_message(
                     let end_of_epch_message_type = bcs_body.peel_vec_length();
                     // AdvanceEpoch 
                     if(end_of_epch_message_type == 0) {
-                        bcs_body.peel_u64();
-                        bcs_body.peel_u64();
-                        bcs_body.peel_u64();
+                        let new_epoch = bcs_body.peel_u64();
+                        let next_protocol_version = bcs_body.peel_u64();
+                        let epoch_start_timestamp_ms = bcs_body.peel_u64();
+                        self.advance_epoch(new_epoch, next_protocol_version, epoch_start_timestamp_ms, ctx);
                     };
                     i = i + 1;
                 };
