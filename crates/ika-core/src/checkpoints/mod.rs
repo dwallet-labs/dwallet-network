@@ -21,7 +21,6 @@ use sui_macros::fail_point;
 use sui_types::base_types::ConciseableName;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_adapter::ConsensusAdapter;
 use crate::consensus_handler::SequencedConsensusTransactionKey;
 use chrono::Utc;
 use ika_protocol_config::ProtocolVersion;
@@ -640,7 +639,7 @@ pub struct CheckpointBuilder {
     epoch_store: Arc<AuthorityPerEpochStore>,
     notify: Arc<Notify>,
     notify_aggregator: Arc<Notify>,
-    output: Box<SubmitCheckpointToConsensus<Arc<ConsensusAdapter>>>,
+    output: Box<dyn CheckpointOutput>,
     metrics: Arc<CheckpointMetrics>,
     max_messages_per_checkpoint: usize,
     max_checkpoint_size_bytes: usize,
@@ -675,7 +674,7 @@ impl CheckpointBuilder {
         tables: Arc<CheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         notify: Arc<Notify>,
-        output: Box<SubmitCheckpointToConsensus<Arc<ConsensusAdapter>>>,
+        output: Box<dyn CheckpointOutput>,
         notify_aggregator: Arc<Notify>,
         metrics: Arc<CheckpointMetrics>,
         max_messages_per_checkpoint: usize,
@@ -729,32 +728,9 @@ impl CheckpointBuilder {
             .into_iter()
             .peekable();
         while let Some((height, pending)) = checkpoints_iter.next() {
-            let epoch_start_timestamp_ms = self
-                .epoch_store
-                .epoch_start_state()
-                .epoch_start_timestamp_ms();
-            let current_timestamp = pending.details().timestamp_ms;
-            if current_timestamp > self.output.next_mid_epoch_timestamp_ms {
-                info!(
-                    checkpoint_commit_height=?height,
-                    checkpoint_timestamp=?current_timestamp,
-                    ?epoch_start_timestamp_ms,
-                    "commit timestamp is greater than mid epoch timestamp, start mid epoch"
-                );
-                self.output.initiate_process_mid_epoch(&self.epoch_store);
-            }
-            if current_timestamp > self.output.next_reconfiguration_timestamp_ms {
-                info!(
-                    checkpoint_commit_height=?height,
-                    checkpoint_timestamp=?current_timestamp,
-                    ?epoch_start_timestamp_ms,
-                    "commit timestamp is greater than epoch end timestamp, start closing epoch"
-                );
-                self.output.close_epoch(&self.epoch_store);
-            }
-
             // Group PendingCheckpoints until:
             // - minimum interval has elapsed ...
+            let current_timestamp = pending.details().timestamp_ms;
             let can_build = match last_timestamp {
                     Some(last_timestamp) => {
                         current_timestamp >= last_timestamp + min_checkpoint_interval_ms
@@ -1799,7 +1775,7 @@ impl CheckpointService {
         state: Arc<AuthorityState>,
         checkpoint_store: Arc<CheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        checkpoint_output: Box<SubmitCheckpointToConsensus<Arc<ConsensusAdapter>>>,
+        checkpoint_output: Box<dyn CheckpointOutput>,
         certified_checkpoint_output: Box<dyn CertifiedCheckpointMessageOutput>,
         metrics: Arc<CheckpointMetrics>,
         max_messages_per_checkpoint: usize,
