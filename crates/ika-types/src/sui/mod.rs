@@ -90,7 +90,7 @@ pub const IKA_SYSTEM_STATE_SIM_TEST_DEEP_V2: u64 = 18446744073709551607; // u64:
 /// so that we could deserialize the inner object correctly.
 /// Outside of this module, we only use it in testing.
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Clock {
+pub struct System {
     pub id: ObjectID,
     pub version: u64,
     pub package_id: ObjectID,
@@ -106,7 +106,7 @@ pub struct DWalletCoordinator {
     pub new_package_id: Option<ObjectID>,
 }
 
-impl Clock {
+impl System {
     pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {
             address: ika_system_package_address,

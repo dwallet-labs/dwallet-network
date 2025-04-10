@@ -52,7 +52,7 @@ use ika_types::governance::{
     VALIDATOR_LOW_STAKE_THRESHOLD_NIKA, VALIDATOR_VERY_LOW_STAKE_THRESHOLD_NIKA,
 };
 use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
-use ika_types::sui::Clock;
+use ika_types::sui::System;
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, SequenceNumber, SuiAddress};
