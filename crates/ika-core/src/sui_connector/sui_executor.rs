@@ -94,20 +94,34 @@ where
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
             }
-
             let Ok(clock) = self.sui_client.get_clock().await else {
                 continue;
             };
-
-            if clock.timestamp_ms > ika_system_state_inner.epoch_start_timestamp_ms() + (ika_system_state_inner.epoch_duration_ms() / 2) {
-                info!("calling process mid epoch")
-            }
-
             let Some(dwallet_2pc_mpc_secp256k1_id) =
                 ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
             else {
                 continue;
             };
+
+            let Some(sui_notifier) = self.sui_notifier.as_ref() else {
+                continue;
+            };
+
+            if clock.timestamp_ms > ika_system_state_inner.epoch_start_timestamp_ms() + (ika_system_state_inner.epoch_duration_ms() / 2) {
+                info!("calling process mid epoch");
+                if let Err(e) = Self::process_mid_epoch(
+                    self.ika_system_package_id,
+                    dwallet_2pc_mpc_secp256k1_id,
+                    &sui_notifier,
+                    &self.sui_client
+                ) {
+                    error!("Failed to process mid epoch: {:?}", e);
+                } else {
+                    info!("Successfully processed mid epoch");
+                }
+            }
+
+
 
             let Ok(coordinator) = self
                 .sui_client
@@ -116,7 +130,6 @@ where
             else {
                 continue;
             };
-
 
         }
     }
