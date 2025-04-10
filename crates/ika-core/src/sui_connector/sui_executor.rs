@@ -21,9 +21,9 @@ use ika_types::message::Secp256K1NetworkDKGOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::{
-    SystemInner, SystemInnerTrait, PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME,
-    REQUEST_ADVANCE_EPOCH_FUNCTION_NAME, REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME,
-    REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
+    DWalletCoordinatorInner, SystemInner, SystemInnerTrait,
+    PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_ADVANCE_EPOCH_FUNCTION_NAME,
+    REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use itertools::Itertools;
 use mysten_metrics::spawn_logged_monitored_task;
@@ -115,7 +115,6 @@ where
                 info!("calling process mid epoch");
                 if let Err(e) = Self::process_mid_epoch(
                     self.ika_system_package_id,
-                    dwallet_2pc_mpc_secp256k1_id,
                     &sui_notifier,
                     &self.sui_client,
                 ) {
@@ -129,8 +128,8 @@ where
                 > ika_system_state_inner.epoch_start_timestamp_ms()
                     + ika_system_state_inner.epoch_duration_ms()
             {
-                info!("calling process mid epoch");
-                if let Err(e) = Self::process_mid_epoch(
+                info!("calling lock last active session sequence number");
+                if let Err(e) = Self::lock_last_active_session_sequence_number(
                     self.ika_system_package_id,
                     dwallet_2pc_mpc_secp256k1_id,
                     &sui_notifier,
@@ -142,13 +141,30 @@ where
                 }
             }
 
-            let Ok(coordinator) = self
+            let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
                 .sui_client
                 .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
                 .await
             else {
                 continue;
             };
+
+            if coordinator.locked_last_active_session_sequence_number
+                && coordinator.first_session_sequence_number
+                    == coordinator.last_active_session_sequence_number
+            {
+                info!("calling process request advance epoch");
+                if let Err(e) = Self::process_request_advance_epoch(
+                    self.ika_system_package_id,
+                    dwallet_2pc_mpc_secp256k1_id,
+                    &sui_notifier,
+                    &self.sui_client,
+                ) {
+                    error!("Failed to process request advance epoch: {:?}", e);
+                } else {
+                    info!("Successfully processed request advance epoch");
+                }
+            }
         }
     }
 
@@ -310,7 +326,7 @@ where
         Ok(())
     }
 
-    async fn process_lock_last_active_session_sequence_number(
+    async fn lock_last_active_session_sequence_number(
         ika_system_package_id: ObjectID,
         dwallet_2pc_mpc_secp256k1_id: ObjectID,
         sui_notifier: &SuiNotifier,
