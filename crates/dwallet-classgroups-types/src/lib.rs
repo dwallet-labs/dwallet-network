@@ -118,6 +118,23 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + 
     Ok(Base64::encode(keypair.public_bytes()))
 }
 
+/// A wrapper around `ClassGroupsKeyPairAndProof` that ensures the deserialized value
+/// is constructed directly on the heap via `Box`, avoiding large stack allocations.
+///
+/// # Why This Exists
+///
+/// In debug builds, Rust has a significantly smaller stack size compared to release builds.
+/// Deserializing a large or deeply nested struct like `ClassGroupsKeyPairAndProof` directly
+/// can lead to a stack overflow if it's first constructed on the stack before being boxed.
+///
+/// By wrapping the struct inside a `Box` field (`inner`) within this wrapper, we allow the
+/// deserializer (`bcs::from_bytes`) to allocate the entire structure directly on the heap,
+/// bypassing the stack and preventing overflow.
+#[derive(Deserialize)]
+struct ClassGroupsKeyPairAndProofWrapper {
+    inner: Box<ClassGroupsKeyPairAndProof>,
+}
+
 /// Reads a class group key pair and proof (encoded in Base64) from a file.
 pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
     path: P,
@@ -126,8 +143,8 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
     let decoded = Base64::decode(contents.as_str())
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
-    let keypair: Box<ClassGroupsKeyPairAndProof> = Box::new(bcs::from_bytes(&decoded)?);
-    Ok(keypair)
+    let keypair: ClassGroupsKeyPairAndProofWrapper = bcs::from_bytes(&decoded)?;
+    Ok(keypair.inner)
 }
 
 /// Writes a class group key seed, encoded in Base64,
