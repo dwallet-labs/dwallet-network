@@ -153,7 +153,7 @@ impl DWalletMPCManager {
             malicious_handler: MaliciousHandler::new(epoch_store.committee().clone()),
             pending_for_computation_order: VecDeque::new(),
             pending_for_events_order: Default::default(),
-            last_active_session_sequence_number: 0,
+            last_active_session_sequence_number: 1_000,
         })
     }
 
