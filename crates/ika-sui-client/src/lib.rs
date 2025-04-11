@@ -48,6 +48,7 @@ use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
 use sui_types::balance::Balance;
 use sui_types::base_types::SequenceNumber;
 use sui_types::base_types::{EpochId, ObjectRef};
+use sui_types::clock::Clock;
 use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
@@ -294,6 +295,17 @@ where
         }
     }
 
+    pub async fn get_clock(&self) -> IkaResult<Clock> {
+        let result = self
+            .inner
+            .get_clock(ObjectID::from_hex_literal("0x6").unwrap())
+            .await
+            .map_err(|e| IkaError::SuiClientInternalError(format!("Can't get System: {e}")))?;
+        bcs::from_bytes::<Clock>(&result).map_err(|e| {
+            IkaError::SuiClientSerializationError(format!("Can't serialize System: {e}"))
+        })
+    }
+
     pub async fn get_epoch_start_system(
         &self,
         ika_system_state_inner: &SystemInner,
@@ -431,6 +443,24 @@ where
         *ARG.get_or_init(|| async move {
             let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
                 self.inner.get_mutable_shared_arg(self.system_id),
+                Duration::from_secs(30)
+            ) else {
+                panic!("Failed to get system object arg after retries");
+            };
+            system_arg
+        })
+        .await
+    }
+
+    /// Get the mutable system object arg on chain.
+    // We retry a few times in case of errors. If it fails eventually, we panic.
+    // In general it's safe to call in the beginning of the program.
+    // After the first call, the result is cached since the value should never change.
+    pub async fn get_clock_arg_must_succeed(&self) -> ObjectArg {
+        static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
+        *ARG.get_or_init(|| async move {
+            let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
+                self.inner.get_shared_arg(ObjectID::from_single_byte(6)),
                 Duration::from_secs(30)
             ) else {
                 panic!("Failed to get system object arg after retries");
@@ -644,6 +674,7 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_latest_checkpoint_sequence_number(&self) -> Result<u64, Self::Error>;
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
+    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
     async fn get_dwallet_coordinator(
         &self,
         dwallet_coordinator_id: ObjectID,
@@ -686,6 +717,8 @@ pub trait SuiClientInner: Send + Sync {
     ) -> Result<Vec<Vec<u8>>, Self::Error>;
 
     async fn get_mutable_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error>;
+
+    async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error>;
 
     async fn get_available_move_packages(
         &self,
@@ -745,6 +778,10 @@ impl SuiClientInner for SuiSdkClient {
     }
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
+        self.read_api().get_move_object_bcs(system_id).await
+    }
+
+    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
         self.read_api().get_move_object_bcs(system_id).await
     }
 
@@ -1209,6 +1246,27 @@ impl SuiClientInner for SuiSdkClient {
             id: system_id,
             initial_shared_version,
             mutable: true,
+        })
+    }
+
+    async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error> {
+        let response = self
+            .read_api()
+            .get_object_with_options(system_id, SuiObjectDataOptions::new().with_owner())
+            .await?;
+        let Some(Owner::Shared {
+            initial_shared_version,
+        }) = response.owner()
+        else {
+            return Err(Self::Error::DataError(format!(
+                "Failed to load ika system state owner {:?}",
+                system_id
+            )));
+        };
+        Ok(ObjectArg::SharedObject {
+            id: system_id,
+            initial_shared_version,
+            mutable: false,
         })
     }
 
