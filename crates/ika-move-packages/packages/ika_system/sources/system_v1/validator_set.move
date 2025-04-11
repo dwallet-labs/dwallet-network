@@ -111,8 +111,7 @@ const EReportRecordNotFound: u64 = 18;
 const EInvalidCap: u64 = 101;
 
 #[error]
-const EProcessMidEpochOnlyAfterAdvanceEpoch: vector<u8> = b"Process mid epoch can be called only after advance epoch.";
-
+const EProcessMidEpochOnlyAfterAdvanceEpoch: u64 = 19;
 
 #[error]
 const EAdvanceEpochOnlyAfterProcessMidEpoch: vector<u8> = b"Advance epoch can be called only after process mid epoch.";
