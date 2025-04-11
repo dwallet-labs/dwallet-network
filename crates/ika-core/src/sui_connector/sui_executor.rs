@@ -79,15 +79,18 @@ where
     pub async fn run_epoch_switch(&self) {
         let ika_system_state_inner = self.sui_client.get_system_inner_until_success().await;
         let Ok(clock) = self.sui_client.get_clock().await else {
+            error!("Failed to get clock when running epoch switch");
             return;
         };
         let Some(dwallet_2pc_mpc_secp256k1_id) =
             ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
         else {
+            error!("Failed to get dwallet_2pc_mpc_secp256k1_id when running epoch switch");
             return;
         };
 
         let Some(sui_notifier) = self.sui_notifier.as_ref() else {
+            error!("Failed to get sui notifier when running epoch switch");
             return;
         };
 
@@ -130,6 +133,7 @@ where
             .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
             .await
         else {
+            error!("Failed to get dwallet coordinator inner when running epoch switch");
             return;
         };
 
