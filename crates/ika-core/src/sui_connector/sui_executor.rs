@@ -76,100 +76,79 @@ where
         }
     }
 
-    pub async fn run_epoch_switch_loop(&self, epoch: EpochId) -> StopReason {
-        let mut interval = time::interval(Duration::from_secs(2));
+    pub async fn run_epoch_switch(&self) {
+        let ika_system_state_inner = self.sui_client.get_system_inner_until_success().await;
+        let Ok(clock) = self.sui_client.get_clock().await else {
+            return;
+        };
+        let Some(dwallet_2pc_mpc_secp256k1_id) =
+            ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+        else {
+            return;
+        };
 
-        loop {
-            interval.tick().await;
-            let ika_system_state_inner = self.sui_client.get_system_inner_until_success().await;
-            let epoch_on_sui: u64 = ika_system_state_inner.epoch();
-            if epoch_on_sui != epoch {
-                fail_point_async!("crash");
-                debug!(epoch, "finished epoch");
-                let epoch_start_system_state = self
-                    .sui_client
-                    .get_epoch_start_system_until_success(&ika_system_state_inner)
-                    .await;
-                return StopReason::EpochComplete(ika_system_state_inner, epoch_start_system_state);
-            }
-            if epoch_on_sui < epoch {
-                error!("epoch_on_sui cannot be less than epoch");
-            }
-            let Ok(clock) = self.sui_client.get_clock().await else {
-                continue;
-            };
-            let Some(dwallet_2pc_mpc_secp256k1_id) =
-                ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
-            else {
-                continue;
-            };
+        let Some(sui_notifier) = self.sui_notifier.as_ref() else {
+            return;
+        };
 
-            let Some(sui_notifier) = self.sui_notifier.as_ref() else {
-                continue;
-            };
-
-            if clock.timestamp_ms
-                > ika_system_state_inner.epoch_start_timestamp_ms()
-                    + (ika_system_state_inner.epoch_duration_ms() / 2)
+        if clock.timestamp_ms
+            > ika_system_state_inner.epoch_start_timestamp_ms()
+                + (ika_system_state_inner.epoch_duration_ms() / 2)
+        {
+            info!("calling process mid epoch");
+            if let Err(e) =
+                Self::process_mid_epoch(self.ika_system_package_id, &sui_notifier, &self.sui_client)
+                    .await
             {
-                info!("calling process mid epoch");
-                if let Err(e) = Self::process_mid_epoch(
-                    self.ika_system_package_id,
-                    &sui_notifier,
-                    &self.sui_client,
-                )
-                .await
-                {
-                    error!("Failed to process mid epoch: {:?}", e);
-                } else {
-                    info!("Successfully processed mid epoch");
-                }
+                error!("Failed to process mid epoch: {:?}", e);
+            } else {
+                info!("Successfully processed mid epoch");
             }
+        }
 
-            if clock.timestamp_ms
-                > ika_system_state_inner.epoch_start_timestamp_ms()
-                    + ika_system_state_inner.epoch_duration_ms()
+        if clock.timestamp_ms
+            > ika_system_state_inner.epoch_start_timestamp_ms()
+                + ika_system_state_inner.epoch_duration_ms()
+        {
+            info!("calling lock last active session sequence number");
+            if let Err(e) = Self::lock_last_active_session_sequence_number(
+                self.ika_system_package_id,
+                dwallet_2pc_mpc_secp256k1_id,
+                &sui_notifier,
+                &self.sui_client,
+            )
+            .await
             {
-                info!("calling lock last active session sequence number");
-                if let Err(e) = Self::lock_last_active_session_sequence_number(
-                    self.ika_system_package_id,
-                    dwallet_2pc_mpc_secp256k1_id,
-                    &sui_notifier,
-                    &self.sui_client,
-                )
-                .await
-                {
-                    error!("Failed to process mid epoch: {:?}", e);
-                } else {
-                    info!("Successfully processed mid epoch");
-                }
+                error!("Failed to process mid epoch: {:?}", e);
+            } else {
+                info!("Successfully processed mid epoch");
             }
+        }
 
-            let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
-                .sui_client
-                .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
-                .await
-            else {
-                continue;
-            };
+        let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
+            .sui_client
+            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
+            .await
+        else {
+            return;
+        };
 
-            if coordinator.locked_last_active_session_sequence_number
-                && coordinator.first_session_sequence_number
-                    == coordinator.last_active_session_sequence_number
+        if coordinator.locked_last_active_session_sequence_number
+            && coordinator.first_session_sequence_number
+                == coordinator.last_active_session_sequence_number
+        {
+            info!("calling process request advance epoch");
+            if let Err(e) = Self::process_request_advance_epoch(
+                self.ika_system_package_id,
+                dwallet_2pc_mpc_secp256k1_id,
+                &sui_notifier,
+                &self.sui_client,
+            )
+            .await
             {
-                info!("calling process request advance epoch");
-                if let Err(e) = Self::process_request_advance_epoch(
-                    self.ika_system_package_id,
-                    dwallet_2pc_mpc_secp256k1_id,
-                    &sui_notifier,
-                    &self.sui_client,
-                )
-                .await
-                {
-                    error!("Failed to process request advance epoch: {:?}", e);
-                } else {
-                    info!("Successfully processed request advance epoch");
-                }
+                error!("Failed to process request advance epoch: {:?}", e);
+            } else {
+                info!("Successfully processed request advance epoch");
             }
         }
     }
@@ -198,6 +177,7 @@ where
 
         loop {
             interval.tick().await;
+            self.run_epoch_switch().await;
             let ika_system_state_inner = self.sui_client.get_system_inner_until_success().await;
             let epoch_on_sui: u64 = ika_system_state_inner.epoch();
             if epoch_on_sui > epoch {
