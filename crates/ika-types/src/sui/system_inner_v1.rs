@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{Element, SystemInnerTrait};
-use crate::committee::{Committee, StakeUnit};
+use crate::committee::StakeUnit;
 use crate::crypto::AuthorityName;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -224,10 +224,6 @@ impl SystemInnerTrait for SystemInnerV1 {
         &self.dwallet_2pc_mpc_secp256k1_network_decryption_keys
     }
 
-    fn get_next_epoch_committee(&self) -> Option<BlsCommittee> {
-        self.validators.next_epoch_active_committee.clone()
-    }
-
     fn get_ika_next_epoch_active_committee(
         &self,
     ) -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>> {
@@ -253,6 +249,8 @@ impl SystemInnerTrait for SystemInnerV1 {
                 (
                     v.validator_id,
                     (
+                        // AuthorityName is derived from the protocol public key,
+                        // therefore it is safe to unwrap.
                         AuthorityName::new(v.protocol_pubkey.clone().bytes.try_into().unwrap()),
                         v.voting_power,
                     ),
@@ -261,24 +259,6 @@ impl SystemInnerTrait for SystemInnerV1 {
             .collect();
 
         Some(voting_rights)
-
-        // let class_groups_public_keys_and_proofs = self.validators
-        //     .validators.next_epoch_active_committee?.members
-        //     .iter()
-        //     .filter(|v| allowed_ids.contains(&v.authority_name()))
-        //     .map(|v| {
-        //         (
-        //             v.authority_name(),
-        //             v.class_groups_public_key_and_proof.clone(),
-        //         )
-        //     })
-        //     .collect();
-        //
-        // Some(Committee::new(
-        //     self.epoch + 1,
-        //     voting_rights,
-        //     class_groups_public_keys_and_proofs,
-        // ))
     }
 
     //

@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::committee::{Committee, StakeUnit};
+use crate::committee::StakeUnit;
 use crate::crypto::AuthorityName;
+use crate::sui::system_inner_v1::DWalletCoordinatorInnerV1;
 use crate::sui::system_inner_v1::DWalletNetworkDecryptionKeyCap;
-use crate::sui::system_inner_v1::{BlsCommittee, DWalletCoordinatorInnerV1};
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use epoch_start_system::EpochStartSystem;
@@ -138,7 +138,6 @@ pub trait SystemInnerTrait {
     fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
-    fn get_next_epoch_committee(&self) -> Option<BlsCommittee>;
     fn get_ika_next_epoch_active_committee(
         &self,
     ) -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>>;

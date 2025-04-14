@@ -99,47 +99,66 @@ where
         while next_committee.get().is_none() {
             let system_inner = sui_client.get_system_inner_until_success().await;
             let system_inner = system_inner.into_init_version_for_tooling();
-            match system_inner.get_ika_next_epoch_active_committee() {
-                Some(new_next_committee) => {
-                    let validator_ids = new_next_committee
-                        .iter()
-                        .map(|(id, _)| id.clone())
-                        .collect_vec();
-                    let validators = sui_client
-                        .get_validators_info_by_ids(&system_inner, validator_ids)
-                        .await
-                        .unwrap();
-                    let validators_class_groups_public_key_and_proof = sui_client
-                        .get_class_groups_public_keys_and_proofs(&validators)
-                        .await
-                        .map_err(|e| {
-                            IkaError::SuiClientInternalError(format!(
-                                "can't get_class_groups_public_keys_and_proofs: {e}"
-                            ))
-                        })
-                        .unwrap();
 
-                    let validators_class_groups_public_key_and_proof =
-                        validators_class_groups_public_key_and_proof
-                            .into_iter()
-                            .map(|(id, class_groups_public_key_and_proof)| {
-                                (
-                                    new_next_committee.get(&id).unwrap().0,
-                                    bcs::to_bytes(&class_groups_public_key_and_proof).unwrap(),
-                                )
-                            })
-                            .collect::<HashMap<_, _>>();
+            let Some(new_next_committee) = system_inner.get_ika_next_epoch_active_committee()
+            else {
+                info!("ika next epoch active committee not found, retrying...");
+                continue;
+            };
 
-                    let committee = Committee::new(
-                        system_inner.epoch + 1,
-                        new_next_committee.values().cloned().collect(),
-                        validators_class_groups_public_key_and_proof,
-                    );
-                    if let Err(e) = next_committee.set(committee) {
-                        error!("Failed to set next committee: {e}");
-                    }
+            let validator_ids: Vec<_> = new_next_committee.keys().cloned().collect();
+
+            let validators = match sui_client
+                .get_validators_info_by_ids(&system_inner, validator_ids)
+                .await
+            {
+                Ok(v) => v,
+                Err(e) => {
+                    error!("failed to fetch validators info: {e}");
+                    continue;
                 }
-                None => {}
+            };
+
+            let class_group_data = match sui_client
+                .get_class_groups_public_keys_and_proofs(&validators)
+                .await
+            {
+                Ok(data) => data,
+                Err(e) => {
+                    error!("can't get_class_groups_public_keys_and_proofs: {e}");
+                    continue;
+                }
+            };
+
+            let class_group_map = class_group_data
+                .into_iter()
+                .filter_map(|(id, class_groups)| {
+                    let voting_power = match new_next_committee.get(&id) {
+                        Some((power, _)) => *power,
+                        None => {
+                            error!("missing validator voting power for id: {id}");
+                            return None;
+                        }
+                    };
+
+                    match bcs::to_bytes(&class_groups) {
+                        Ok(bytes) => Some((voting_power, bytes)),
+                        Err(e) => {
+                            error!("failed to serialize class group for id {id}: {e}");
+                            None
+                        }
+                    }
+                })
+                .collect();
+
+            let committee = Committee::new(
+                system_inner.epoch + 1,
+                new_next_committee.values().cloned().collect(),
+                class_group_map,
+            );
+
+            if let Err(e) = next_committee.set(committee) {
+                error!("failed to set next committee: {e}");
             }
         }
     }
