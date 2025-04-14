@@ -117,9 +117,19 @@ where
             }
         }
 
+        let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
+            .sui_client
+            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
+            .await
+        else {
+            error!("Failed to get dwallet coordinator inner when running epoch switch");
+            return;
+        };
+
         if clock.timestamp_ms
             > ika_system_state_inner.epoch_start_timestamp_ms()
                 + ika_system_state_inner.epoch_duration_ms()
+            && !coordinator.locked_last_active_session_sequence_number
         {
             info!("calling lock last active session sequence number");
             if let Err(e) = Self::lock_last_active_session_sequence_number(
@@ -135,15 +145,6 @@ where
                 info!("Successfully processed mid epoch");
             }
         }
-
-        let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
-            .sui_client
-            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
-            .await
-        else {
-            error!("Failed to get dwallet coordinator inner when running epoch switch");
-            return;
-        };
 
         if coordinator.locked_last_active_session_sequence_number
             && coordinator.first_session_sequence_number
