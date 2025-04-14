@@ -96,49 +96,51 @@ where
         sui_client: Arc<SuiClient<C>>,
         next_committee: Arc<OnceCell<Committee>>,
     ) {
-        let system_inner = sui_client.get_system_inner_until_success().await;
-        let system_inner = system_inner.into_init_version_for_tooling();
-        match system_inner.get_ika_next_epoch_active_committee() {
-            Some(new_next_committee) => {
-                let validator_ids = new_next_committee
-                    .iter()
-                    .map(|(id, _)| id.clone())
-                    .collect_vec();
-                let validators = sui_client
-                    .get_validators_info_by_ids(&system_inner, validator_ids)
-                    .await
-                    .unwrap();
-                let validators_class_groups_public_key_and_proof = sui_client
-                    .get_class_groups_public_keys_and_proofs(&validators)
-                    .await
-                    .map_err(|e| {
-                        IkaError::SuiClientInternalError(format!(
-                            "can't get_class_groups_public_keys_and_proofs: {e}"
-                        ))
-                    })
-                    .unwrap();
-
-                let validators_class_groups_public_key_and_proof =
-                    validators_class_groups_public_key_and_proof
-                        .into_iter()
-                        .map(|(id, class_groups_public_key_and_proof)| {
-                            (
-                                new_next_committee.get(&id).unwrap().0,
-                                bcs::to_bytes(&class_groups_public_key_and_proof).unwrap(),
-                            )
+        while next_committee.get().is_none() {
+            let system_inner = sui_client.get_system_inner_until_success().await;
+            let system_inner = system_inner.into_init_version_for_tooling();
+            match system_inner.get_ika_next_epoch_active_committee() {
+                Some(new_next_committee) => {
+                    let validator_ids = new_next_committee
+                        .iter()
+                        .map(|(id, _)| id.clone())
+                        .collect_vec();
+                    let validators = sui_client
+                        .get_validators_info_by_ids(&system_inner, validator_ids)
+                        .await
+                        .unwrap();
+                    let validators_class_groups_public_key_and_proof = sui_client
+                        .get_class_groups_public_keys_and_proofs(&validators)
+                        .await
+                        .map_err(|e| {
+                            IkaError::SuiClientInternalError(format!(
+                                "can't get_class_groups_public_keys_and_proofs: {e}"
+                            ))
                         })
-                        .collect::<HashMap<_, _>>();
+                        .unwrap();
 
-                let committee = Committee::new(
-                    system_inner.epoch + 1,
-                    new_next_committee.values().cloned().collect(),
-                    validators_class_groups_public_key_and_proof,
-                );
-                if let Err(e) = next_committee.set(committee) {
-                    error!("Failed to set next committee: {e}");
+                    let validators_class_groups_public_key_and_proof =
+                        validators_class_groups_public_key_and_proof
+                            .into_iter()
+                            .map(|(id, class_groups_public_key_and_proof)| {
+                                (
+                                    new_next_committee.get(&id).unwrap().0,
+                                    bcs::to_bytes(&class_groups_public_key_and_proof).unwrap(),
+                                )
+                            })
+                            .collect::<HashMap<_, _>>();
+
+                    let committee = Committee::new(
+                        system_inner.epoch + 1,
+                        new_next_committee.values().cloned().collect(),
+                        validators_class_groups_public_key_and_proof,
+                    );
+                    if let Err(e) = next_committee.set(committee) {
+                        error!("Failed to set next committee: {e}");
+                    }
                 }
+                None => {}
             }
-            None => {}
         }
     }
 
