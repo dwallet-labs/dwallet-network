@@ -328,7 +328,7 @@ public fun migrate(
 // === Internals ===
 
 /// Get a mutable reference to `DWalletCoordinatorInnerVX` from the `DWalletCoordinator`.
-fun inner_mut(self: &mut DWalletCoordinator): &mut DWalletCoordinatorInner {
+public(package) fun inner_mut(self: &mut DWalletCoordinator): &mut DWalletCoordinatorInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow_mut(&mut self.id, VERSION)
 }
