@@ -140,9 +140,9 @@ where
             )
             .await
             {
-                error!("Failed to process mid epoch: {:?}", e);
+                error!("Failed to lock last active session sequence number: {:?}", e);
             } else {
-                info!("Successfully processed mid epoch");
+                info!("Successfully locked last active session sequence number");
             }
         }
 
