@@ -664,7 +664,7 @@ public fun request_lock_epoch_sessions(
 public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, ctx: &mut TxContext) {
     let inner_system = self.inner_mut();
     let inner_dwallet = dwallet_coordinator.inner_mut();
-    assert!(inner_dwallet.should_advance_epoch(), ECannotAdvanceEpoch);
+    assert!(inner_dwallet.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
     inner_system.advance_epoch(clock.timestamp_ms(), ctx);
     dwallet_coordinator.advance_epoch(inner_system.active_committee());
 }

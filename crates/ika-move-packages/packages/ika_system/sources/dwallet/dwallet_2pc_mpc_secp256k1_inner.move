@@ -49,7 +49,7 @@ fun copy_table_vec(dest: &mut TableVec<vector<u8>>, src: &TableVec<vector<u8>>) 
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
 public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
-    self.locked_last_active_session_sequence_number = true;
+    self.locked_last_session_to_complete_in_current_epoch = true;
 }
 
 public struct DWalletCoordinatorInner has store {
