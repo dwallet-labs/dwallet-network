@@ -54,7 +54,7 @@ public struct DWalletCoordinatorInner has store {
     session_start_events: Bag,
     first_session_sequence_number: u64,
     next_session_sequence_number: u64,
-    /// The last MPC session to start process in the current epoch.
+    /// The last MPC session to process in the current epoch.
     /// Validators should complete every session they start before switching epochs.
     last_active_session_sequence_number: u64,
     /// Denotes wether the last_active_session_sequence_number field is locked or not.
