@@ -49,22 +49,24 @@ fun copy_table_vec(dest: &mut TableVec<vector<u8>>, src: &TableVec<vector<u8>>) 
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
 public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
-    self.locked_last_active_session_sequence_number = true;
+    self.locked_last_session_to_complete_in_current_epoch = true;
 }
 
 public struct DWalletCoordinatorInner has store {
     current_epoch: u64,
     sessions: ObjectTable<u64, DWalletSession>,
     session_start_events: Bag,
-    first_session_sequence_number: u64,
+    number_of_completed_sessions: u64,
+    /// The last session sequence number that an event was emitted for.
+    /// i.e, the user requested this session, and the event was emitted for it.
     next_session_sequence_number: u64,
-    /// The last MPC session to start process in the current epoch.
+    /// The last MPC session to process in the current epoch.
     /// Validators should complete every session they start before switching epochs.
-    last_active_session_sequence_number: u64,
-    /// Denotes wether the last_active_session_sequence_number field is locked or not.
+    last_session_to_complete_in_current_epoch: u64,
+    /// Denotes wether the `last_session_to_complete_in_current_epoch` field is locked or not.
     /// This field gets locked before performing the epoch switch.
-    locked_last_active_session_sequence_number: bool,
-    /// The maximum number of active MPC sessions Ika nodes will may run during an epoch.
+    locked_last_session_to_complete_in_current_epoch: bool,
+    /// The maximum number of active MPC sessions Ika nodes may run during an epoch.
     /// Validators should complete every session they start before switching epochs.
     max_active_sessions_buffer: u64,
     // TODO: change it to versioned
@@ -748,11 +750,12 @@ public(package) fun create_dwallet_coordinator_inner(
         current_epoch,
         sessions: object_table::new(ctx),
         session_start_events: bag::new(ctx),
-        first_session_sequence_number: 0,
+        number_of_completed_sessions: 0,
         next_session_sequence_number: 0,
-        last_active_session_sequence_number: 0,
+        last_session_to_complete_in_current_epoch: 0,
+        // TODO (#856): Allow configuring the max_active_session_buffer field
         max_active_sessions_buffer: 100,
-        locked_last_active_session_sequence_number: false,
+        locked_last_session_to_complete_in_current_epoch: false,
         dwallets: object_table::new(ctx),
         dwallet_network_decryption_keys: object_table::new(ctx),
         encryption_keys: object_table::new(ctx),
@@ -872,8 +875,8 @@ public(package) fun advance_epoch(
     self: &mut DWalletCoordinatorInner,
     next_committee: BlsCommittee
 ) {
-    self.locked_last_active_session_sequence_number = false;
-    self.update_last_active_session_sequence_number();
+    self.locked_last_session_to_complete_in_current_epoch = false;
+    self.update_last_session_to_complete_in_current_epoch();
     self.current_epoch = self.current_epoch + 1;
     self.previous_committee = self.active_committee;
     self.active_committee = next_committee;
@@ -908,7 +911,6 @@ fun validate_active_and_get_public_output(
     }
 }
 
-#[allow(dead_code, unused_mut_parameter, unused_variable)]
 fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
@@ -943,7 +945,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
-    self.update_last_active_session_sequence_number();
+    self.update_last_session_to_complete_in_current_epoch();
 
     event
 }
@@ -1149,29 +1151,33 @@ public(package) fun request_dwallet_dkg_first_round(
     dwallet_cap
 }
 
-fun update_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
-    if (self.locked_last_active_session_sequence_number) {
+/// Updates the `last_session_to_complete_in_current_epoch` field.
+/// We do this to ensure that the last session to complete in the current epoch is equal
+/// to the desired completed sessions count.
+/// This is part of the epoch switch logic.
+fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinatorInner) {
+    if (self.locked_last_session_to_complete_in_current_epoch) {
         return
     };
-    let new_last_active_session_sequence_number = (
-        self.first_session_sequence_number + self.max_active_sessions_buffer
+    let new_last_session_to_complete_in_current_epoch = (
+        self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
         self.next_session_sequence_number - 1,
     );
-    if (self.last_active_session_sequence_number >= new_last_active_session_sequence_number) {
+    if (self.last_session_to_complete_in_current_epoch >= new_last_session_to_complete_in_current_epoch) {
         return
     };
-    self.last_active_session_sequence_number = new_last_active_session_sequence_number;
+    self.last_session_to_complete_in_current_epoch = new_last_session_to_complete_in_current_epoch;
 }
 
-public(package) fun should_advance_epoch(self: &DWalletCoordinatorInner): bool {
-    return self.locked_last_active_session_sequence_number &&
-        self.first_session_sequence_number == self.last_active_session_sequence_number
+public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinatorInner): bool {
+    return self.locked_last_session_to_complete_in_current_epoch &&
+        self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch
 }
 
 fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
-    self.first_session_sequence_number = self.first_session_sequence_number + 1;
-    self.update_last_active_session_sequence_number();
+    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
+    self.update_last_session_to_complete_in_current_epoch();
     let session = self.sessions.remove(session_sequence_number);
     let DWalletSession {
         computation_fee_charged_ika,

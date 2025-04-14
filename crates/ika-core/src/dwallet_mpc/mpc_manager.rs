@@ -39,8 +39,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
-    MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
-    StartPresignFirstRoundEvent,
+    MaliciousReport, SessionInfo, StartPresignFirstRoundEvent,
 };
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
@@ -56,8 +55,7 @@ use sui_types::event::Event;
 use sui_types::id::ID;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::log::debug;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
 
@@ -96,7 +94,7 @@ pub struct DWalletMPCManager {
     /// The order of the sessions that have received quorum for their current round, but we have not
     /// yet received an event for from Sui.
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
-    pub(crate) last_active_session_sequence_number: u64,
+    pub(crate) last_session_to_complete_in_current_epoch: u64,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -154,32 +152,34 @@ impl DWalletMPCManager {
             malicious_handler: MaliciousHandler::new(epoch_store.committee().clone()),
             pending_for_computation_order: VecDeque::new(),
             pending_for_events_order: Default::default(),
-            last_active_session_sequence_number: 0,
+            last_session_to_complete_in_current_epoch: 0,
         })
     }
 
-    pub(crate) fn update_last_active_session_sequence_number(
+    pub(crate) fn update_last_session_to_complete_in_current_epoch(
         &mut self,
-        last_active_session_sequence_number: u64,
+        last_session_to_complete_in_current_epoch: u64,
     ) {
-        if last_active_session_sequence_number <= self.last_active_session_sequence_number {
+        if last_session_to_complete_in_current_epoch
+            <= self.last_session_to_complete_in_current_epoch
+        {
             return;
         }
-        for session_sequence_number in
-            self.last_active_session_sequence_number..=last_active_session_sequence_number
+        for session_sequence_number in self.last_session_to_complete_in_current_epoch
+            ..=last_session_to_complete_in_current_epoch
         {
             if let Some(session) = self.pending_sessions.remove(&session_sequence_number) {
-                info!(session_sequence_number=?session_sequence_number, new_last_active_session_sequence_number=?last_active_session_sequence_number, "adding session sequence number to active sessions");
+                info!(session_sequence_number=?session_sequence_number, new_last_session_to_complete_in_current_epoch=?last_session_to_complete_in_current_epoch, "adding session sequence number to active sessions");
 
                 self.mpc_sessions.insert(session.session_id, session);
             }
         }
-        self.last_active_session_sequence_number = last_active_session_sequence_number;
+        self.last_session_to_complete_in_current_epoch = last_session_to_complete_in_current_epoch;
     }
 
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
         if let Err(err) = self.handle_event(event.event, event.session_info).await {
-            error!("Failed to handle event with error: {:?}", err);
+            error!("failed to handle event with error: {:?}", err);
         }
     }
 
@@ -198,7 +198,8 @@ impl DWalletMPCManager {
                     error!("failed to handle the end of delivery with error: {:?}", err);
                 }
             }
-            DWalletMPCDBMessage::MPCSessionFailed(_session_id) => {
+            DWalletMPCDBMessage::MPCSessionFailed(session_id) => {
+                error!(session_id=?session_id, "dwallet MPC session failed");
                 // TODO (#524): Handle failed MPC sessions
             }
             DWalletMPCDBMessage::SessionFailedWithMaliciousParties(authority_name, report) => {
@@ -249,7 +250,6 @@ impl DWalletMPCManager {
         match status {
             // Quorum reached, remove the malicious parties from the session messages.
             ReportStatus::QuorumReached => {
-                let _ = self.check_for_malicious_ia_report(&report);
                 if report.advance_result == AdvanceResult::Success {
                     // No need to re-perform the last step, as the advance was successful.
                     return Ok(());
@@ -274,44 +274,10 @@ impl DWalletMPCManager {
                         });
                 }
             }
-            ReportStatus::WaitingForQuorum => {
-                let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) else {
-                    return Err(DwalletMPCError::MPCSessionNotFound {
-                        session_id: report.session_id,
-                    });
-                };
-                session.check_for_sign_ia_start(reporting_authority, report);
-            }
+            ReportStatus::WaitingForQuorum => {}
             ReportStatus::OverQuorum => {}
         }
 
-        Ok(())
-    }
-
-    /// Makes sure the first agreed-upon malicious report in a sign flow is equals to the request
-    /// that triggered the Sign Identifiable Abort flow. If it isn't, we mark the validator that
-    /// sent the request to start the Sign Identifiable Abort flow as malicious, as he sent a faulty
-    /// report.
-    fn check_for_malicious_ia_report(&mut self, report: &MaliciousReport) -> DwalletMPCResult<()> {
-        let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) else {
-            return Err(DwalletMPCError::MPCSessionNotFound {
-                session_id: report.session_id,
-            });
-        };
-        let Some(MPCSessionSpecificState::Sign(ref mut sign_state)) =
-            &mut session.session_specific_state
-        else {
-            return Err(DwalletMPCError::AggregatedSignStateNotFound {
-                session_id: report.session_id,
-            });
-        };
-        if sign_state.verified_malicious_report.is_none() {
-            sign_state.verified_malicious_report = Some(report.clone());
-            if &sign_state.start_ia_flow_malicious_report != report {
-                self.malicious_handler
-                    .report_malicious_actors(&vec![sign_state.initiating_ia_authority]);
-            }
-        }
         Ok(())
     }
 
@@ -333,7 +299,7 @@ impl DWalletMPCManager {
         });
         if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
-                "Received an event for an existing session with session_id: {:?}",
+                "received an event for an existing session with `session_id`: {:?}",
                 session_info.session_id
             );
             if session.mpc_event_data.is_none() {
@@ -486,27 +452,18 @@ impl DWalletMPCManager {
             }
             let Some(event_data) = &oldest_pending_session.mpc_event_data else {
                 // This should never happen, as in the [`Self::get_ready_to_advance_sessions`] function
-                // we check if the session has an event data.
+                // we check if the session has event data.
                 error!(
                     "failed to get event data for session_id: {:?}",
                     oldest_pending_session.session_id
                 );
                 continue;
             };
-            if matches!(event_data.init_protocol_data, MPCProtocolInitData::Sign(..)) {
-                if let Err(err) = self
-                    .cryptographic_computations_orchestrator
-                    .spawn_aggregated_sign(oldest_pending_session)
-                {
-                    error!("failed to spawn session with err: {:?}", err);
-                }
-            } else {
-                if let Err(err) = self
-                    .cryptographic_computations_orchestrator
-                    .spawn_session(&oldest_pending_session)
-                {
-                    error!("failed to spawn session with err: {:?}", err);
-                }
+            if let Err(err) = self
+                .cryptographic_computations_orchestrator
+                .spawn_session(&oldest_pending_session)
+            {
+                error!("failed to spawn session with err: {:?}", err);
             }
         }
     }
@@ -534,6 +491,13 @@ impl DWalletMPCManager {
             .get_malicious_actors_names()
             .contains(&message.authority)
         {
+            info!(
+                session_id=?message.session_id,
+                from_authority=?message.authority,
+                receiving_authority=?self.epoch_store()?.name,
+                crypto_round_number=?message.round_number,
+                "Received a message for from malicious authority",
+            );
             // Ignore a malicious actor's messages.
             return Ok(());
         }
@@ -541,8 +505,11 @@ impl DWalletMPCManager {
             Some(session) => session,
             None => {
                 warn!(
-                    "received a message for an MPC session ID: `{:?}` which an event has not yet received for",
-                    message.session_id
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    receiving_authority=?self.epoch_store()?.name,
+                    crypto_round_number=?message.round_number,
+                    "received a message for an MPC session ID, which an event has not yet received for"
                 );
                 &mut self.push_new_mpc_session(
                     &message.session_id,
@@ -553,6 +520,13 @@ impl DWalletMPCManager {
         };
         match session.store_message(&message) {
             Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
+                info!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    receiving_authority=?self.epoch_store()?.name,
+                    crypto_round_number=?message.round_number,
+                    "Error storing message, malicious parties detected"
+                );
                 self.flag_parties_as_malicious(&malicious_parties)?;
                 Ok(())
             }
@@ -586,13 +560,16 @@ impl DWalletMPCManager {
 
     /// Spawns a new MPC session if the number of active sessions is below the limit.
     /// Otherwise, add the session to the pending queue.
-    pub(crate) fn push_new_mpc_session(
+    pub(super) fn push_new_mpc_session(
         &mut self,
         session_id: &ObjectID,
         mpc_event_data: Option<MPCEventData>,
         session_sequence_number: u64,
     ) -> DWalletMPCSession {
         if self.mpc_sessions.contains_key(&session_id) {
+            // This can happpen because the event will be loaded once from the `load_missed_events` function,
+            // and once by querying the events from Sui.
+            // These sessions are ignored since we already have them in the `mpc_sessions` map.
             warn!(
                 "received start flow event for session ID {:?} that already exists",
                 &session_id
@@ -614,27 +591,23 @@ impl DWalletMPCManager {
             mpc_event_data,
             session_sequence_number,
         );
-        if session_sequence_number <= self.last_active_session_sequence_number {
+        if session_sequence_number <= self.last_session_to_complete_in_current_epoch {
             info!(
                 session_sequence_number=?session_sequence_number,
-                last_active_session_sequence_number=?self.last_active_session_sequence_number,
-                "Adding session to active sessions",
+                last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
+                "Adding MPC session to active sessions",
             );
             self.mpc_sessions
                 .insert(session_id.clone(), new_session.clone());
         } else {
             info!(
                 session_sequence_number=?session_sequence_number,
-                last_active_session_sequence_number=?self.last_active_session_sequence_number,
-                "Adding session to pending sessions, as its sequence number is too high",
+                last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
+                "Adding MPC session to pending sessions, as its sequence number is too high",
             );
             self.pending_sessions
                 .insert(session_sequence_number, new_session.clone());
         }
-        info!(
-            "Added MPCSession to MPC manager for session_id {:?}",
-            session_id
-        );
         new_session
     }
 }

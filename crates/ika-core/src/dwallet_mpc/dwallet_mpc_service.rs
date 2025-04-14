@@ -54,7 +54,7 @@ impl DWalletMPCService {
         }
     }
 
-    async fn update_last_active_session_sequence_number(&self, sui_client: &SuiBridgeClient) {
+    async fn update_last_session_to_complete_in_current_epoch(&self, sui_client: &SuiBridgeClient) {
         let system_inner = sui_client.get_system_inner_until_success().await;
         if let Some(dwallet_coordinator_id) = system_inner
             .into_init_version_for_tooling()
@@ -66,8 +66,8 @@ impl DWalletMPCService {
             match coordinator_state {
                 DWalletCoordinatorInner::V1(inner_state) => {
                     let mut dwallet_mpc_manager = self.epoch_store.get_dwallet_mpc_manager().await;
-                    dwallet_mpc_manager.update_last_active_session_sequence_number(
-                        inner_state.last_active_session_sequence_number,
+                    dwallet_mpc_manager.update_last_session_to_complete_in_current_epoch(
+                        inner_state.last_session_to_complete_in_current_epoch,
                     );
                 }
             }
@@ -97,7 +97,7 @@ impl DWalletMPCService {
                         })
                         .await;
                     info!(
-                        "successfully processed missed event from Sui, session: {:?}",
+                        "Successfully processed missed event from Sui, session: {:?}",
                         session_info.session_id
                     );
                 }
@@ -124,7 +124,7 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
-            self.update_last_active_session_sequence_number(&sui_client)
+            self.update_last_session_to_complete_in_current_epoch(&sui_client)
                 .await;
             if let Err(e) = self.read_events().await {
                 error!("failed to handle dWallet MPC events: {}", e);
@@ -158,11 +158,11 @@ impl DWalletMPCService {
             for event in events {
                 manager.handle_dwallet_db_event(event).await;
             }
-            let new_dwallet_messages_iter = tables
+            let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
                 .iter_with_bounds(Some(self.last_read_consensus_round + 1), None);
             let mut new_messages = vec![];
-            for (round, messages) in new_dwallet_messages_iter {
+            for (round, messages) in mpc_msgs_iter {
                 self.last_read_consensus_round = round;
                 new_messages.extend(messages);
             }

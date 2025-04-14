@@ -87,7 +87,7 @@ the SystemInnerVX version, or vice versa.
 -  [Function `active_committee`](#(ika_system=0x0)_system_active_committee)
 -  [Function `process_checkpoint_message_by_cap`](#(ika_system=0x0)_system_process_checkpoint_message_by_cap)
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_system_process_checkpoint_message_by_quorum)
--  [Function `request_mid_epoch`](#(ika_system=0x0)_system_request_mid_epoch)
+-  [Function `request_reconfig_mid_epoch`](#(ika_system=0x0)_system_request_reconfig_mid_epoch)
 -  [Function `request_lock_epoch_sessions`](#(ika_system=0x0)_system_request_lock_epoch_sessions)
 -  [Function `request_advance_epoch`](#(ika_system=0x0)_system_request_advance_epoch)
 -  [Function `request_dwallet_network_decryption_key_dkg_by_cap`](#(ika_system=0x0)_system_request_dwallet_network_decryption_key_dkg_by_cap)
@@ -1719,13 +1719,14 @@ Getter returning ids of the currently active validators.
 
 </details>
 
-<a name="(ika_system=0x0)_system_request_mid_epoch"></a>
+<a name="(ika_system=0x0)_system_request_reconfig_mid_epoch"></a>
 
-## Function `request_mid_epoch`
+## Function `request_reconfig_mid_epoch`
+
+Locks the committee of the next epoch to allow starting the reconfiguration process.
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_mid_epoch">request_mid_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, _ctx: &<a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_reconfig_mid_epoch">request_reconfig_mid_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, _ctx: &<a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1734,7 +1735,7 @@ Getter returning ids of the currently active validators.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_mid_epoch">request_mid_epoch</a>(self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, clock: &Clock, _ctx: &TxContext) {
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_reconfig_mid_epoch">request_reconfig_mid_epoch</a>(self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, clock: &Clock, _ctx: &TxContext) {
     <b>let</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a> = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
     <b>assert</b>!(clock.timestamp_ms() &gt; <a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>.epoch_start_timestamp_ms() + (<a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>.epoch_duration_ms() / 2), <a href="../ika_system/system.md#(ika_system=0x0)_system_EHaveNotReachedMidEpochTime">EHaveNotReachedMidEpochTime</a>);
     self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().process_mid_epoch();
@@ -1749,6 +1750,7 @@ Getter returning ids of the currently active validators.
 
 ## Function `request_lock_epoch_sessions`
 
+Locks the MPC sessions that should get completed as part of the current epoch.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_lock_epoch_sessions">request_lock_epoch_sessions</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, dwallet_coordinator: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">dwallet_2pc_mpc_secp256k1::DWalletCoordinator</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, _ctx: &<a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
@@ -1777,6 +1779,7 @@ Getter returning ids of the currently active validators.
 
 ## Function `request_advance_epoch`
 
+Advances the epoch to the next epoch.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_advance_epoch">request_advance_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, dwallet_coordinator: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">dwallet_2pc_mpc_secp256k1::DWalletCoordinator</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
@@ -1791,7 +1794,7 @@ Getter returning ids of the currently active validators.
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_advance_epoch">request_advance_epoch</a>(self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, dwallet_coordinator: &<b>mut</b> DWalletCoordinator, clock: &Clock, ctx: &<b>mut</b> TxContext) {
     <b>let</b> inner_system = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
     <b>let</b> inner_dwallet = dwallet_coordinator.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    <b>assert</b>!(inner_dwallet.should_advance_epoch(), <a href="../ika_system/system.md#(ika_system=0x0)_system_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
+    <b>assert</b>!(inner_dwallet.all_current_epoch_sessions_completed(), <a href="../ika_system/system.md#(ika_system=0x0)_system_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
     inner_system.advance_epoch(clock.timestamp_ms(), ctx);
     dwallet_coordinator.advance_epoch(inner_system.<a href="../ika_system/system.md#(ika_system=0x0)_system_active_committee">active_committee</a>());
 }

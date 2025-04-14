@@ -325,10 +325,10 @@ is_supported_hash_scheme
 request_dwallet_dkg_first_round
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-update_last_active_session_sequence_number
+update_last_session_to_complete_in_current_epoch
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-should_advance_epoch
+all_current_epoch_sessions_completed
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 remove_session_and_charge
@@ -1459,7 +1459,7 @@ process_checkpoint_message_by_cap
 process_checkpoint_message_by_quorum
 	public fun
 	0x0::system
-request_mid_epoch
+request_reconfig_mid_epoch
 	public fun
 	0x0::system
 request_lock_epoch_sessions
