@@ -60,7 +60,7 @@ public struct DWalletCoordinatorInner has store {
     /// Denotes wether the last_active_session_sequence_number field is locked or not.
     /// This field gets locked before performing the epoch switch.
     locked_last_active_session_sequence_number: bool,
-    /// The maximum number of active MPC sessions Ika nodes will may run during an epoch.
+    /// The maximum number of active MPC sessions Ika nodes may run during an epoch.
     /// Validators should complete every session they start before switching epochs.
     max_active_sessions_buffer: u64,
     // TODO: change it to versioned
