@@ -1,5 +1,4 @@
 use anyhow::Result;
-use std::collections::HashSet;
 use std::{
     fmt::{Debug, Display, Formatter, Write},
     fs,
@@ -16,14 +15,13 @@ use dwallet_classgroups_types::{
     write_class_groups_seed_to_file, ClassGroupsKeyPairAndProof,
 };
 use fastcrypto::traits::KeyPair;
-use fastcrypto::traits::ToFromBytes;
 use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
 use ika_config::{ika_config_dir, IKA_SUI_CONFIG};
 use ika_sui_client::ika_validator_transactions::{
     request_add_validator, request_add_validator_candidate, request_remove_validator, stake_ika,
 };
-use ika_types::crypto::{generate_proof_of_possession, AuthorityKeyPair};
+use ika_types::crypto::generate_proof_of_possession;
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::DEFAULT_COMMISSION_RATE;
 use serde::Serialize;
@@ -400,7 +398,7 @@ fn make_key_files(
         let kp = match key {
             Some(key) => {
                 println!(
-                    "Generated new key file {:?} based on sui.keystore file.",
+                    "Generated a new key file {:?} based on `sui.keystore` file.",
                     file_name
                 );
                 key
@@ -416,7 +414,8 @@ fn make_key_files(
     Ok(())
 }
 
-/// Reads the class groups key pair and proof from a file if it exists, otherwise generates it from the seed.
+/// Reads the class groups a key pair and proof from a file if it exists,
+/// otherwise generates it from the seed.
 /// The seed is the private key of the authority key pair.
 fn read_or_generate_seed_and_class_groups_key(
     file_path: PathBuf,

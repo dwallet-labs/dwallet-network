@@ -55,8 +55,7 @@ use sui_types::event::Event;
 use sui_types::id::ID;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::log::debug;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
 
@@ -155,7 +154,7 @@ impl DWalletMPCManager {
 
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
         if let Err(err) = self.handle_event(event.event, event.session_info).await {
-            error!("Failed to handle event with error: {:?}", err);
+            error!("failed to handle event with error: {:?}", err);
         }
     }
 
@@ -174,7 +173,8 @@ impl DWalletMPCManager {
                     error!("failed to handle the end of delivery with error: {:?}", err);
                 }
             }
-            DWalletMPCDBMessage::MPCSessionFailed(_session_id) => {
+            DWalletMPCDBMessage::MPCSessionFailed(session_id) => {
+                error!(session_id=?session_id, "dwallet MPC session failed");
                 // TODO (#524): Handle failed MPC sessions
             }
             DWalletMPCDBMessage::SessionFailedWithMaliciousParties(authority_name, report) => {
@@ -265,8 +265,10 @@ impl DWalletMPCManager {
     }
 
     /// Makes sure the first agreed-upon malicious report in a sign flow is equals to the request
-    /// that triggered the Sign Identifiable Abort flow. If it isn't, we mark the validator that
-    /// sent the request to start the Sign Identifiable Abort flow as malicious, as he sent a faulty
+    /// that triggered the Sign-Identifiable Abort flow.
+    /// If it isn't, we mark the validator that
+    /// sent the request to start the Sign-Identifiable Abort flow as malicious,
+    /// as he sent a faulty
     /// report.
     fn check_for_malicious_ia_report(&mut self, report: &MaliciousReport) -> DwalletMPCResult<()> {
         let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) else {
@@ -309,7 +311,7 @@ impl DWalletMPCManager {
         });
         if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
-                "Received an event for an existing session with session_id: {:?}",
+                "received an event for an existing session with `session_id`: {:?}",
                 session_info.session_id
             );
             if session.mpc_event_data.is_none() {
@@ -458,7 +460,7 @@ impl DWalletMPCManager {
             }
             let Some(event_data) = &oldest_pending_session.mpc_event_data else {
                 // This should never happen, as in the [`Self::get_ready_to_advance_sessions`] function
-                // we check if the session has an event data.
+                // we check if the session has event data.
                 error!(
                     "failed to get event data for session_id: {:?}",
                     oldest_pending_session.session_id
@@ -506,6 +508,13 @@ impl DWalletMPCManager {
             .get_malicious_actors_names()
             .contains(&message.authority)
         {
+            info!(
+                session_id=?message.session_id,
+                from_authority=?message.authority,
+                receiving_authority=?self.epoch_store()?.name,
+                crypto_round_number=?message.round_number,
+                "Received a message for from malicious authority",
+            );
             // Ignore a malicious actor's messages.
             return Ok(());
         }
@@ -513,8 +522,11 @@ impl DWalletMPCManager {
             Some(session) => session,
             None => {
                 warn!(
-                    "received a message for an MPC session ID: `{:?}` which an event has not yet received for",
-                    message.session_id
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    receiving_authority=?self.epoch_store()?.name,
+                    crypto_round_number=?message.round_number,
+                    "received a message for an MPC session ID, which an event has not yet received for"
                 );
                 self.push_new_mpc_session(&message.session_id, None);
                 // Safe to unwrap because we just added the session.
@@ -523,6 +535,13 @@ impl DWalletMPCManager {
         };
         match session.store_message(&message) {
             Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
+                info!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    receiving_authority=?self.epoch_store()?.name,
+                    crypto_round_number=?message.round_number,
+                    "Error storing message, malicious parties detected"
+                );
                 self.flag_parties_as_malicious(&malicious_parties)?;
                 Ok(())
             }

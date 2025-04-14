@@ -258,9 +258,9 @@ pub trait CheckpointMessageSuiNotify: Sync + Send + 'static {
 impl CheckpointMessageSuiNotify for SuiConnectorService {
     async fn notify_certified_checkpoint_message(
         &self,
-        signature: Vec<u8>,
-        signers: Vec<u16>,
-        message: Vec<u8>,
+        _signature: Vec<u8>,
+        _signers: Vec<u16>,
+        _message: Vec<u8>,
     ) -> IkaResult {
         Ok(())
     }
