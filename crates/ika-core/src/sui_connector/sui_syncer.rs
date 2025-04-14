@@ -8,7 +8,10 @@ use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
-use ika_types::error::IkaResult;
+use ika_types::committee::Committee;
+use ika_types::error::{IkaError, IkaResult};
+use ika_types::sui::system_inner_v1::BlsCommittee;
+use ika_types::sui::SystemInnerTrait;
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::spawn_logged_monitored_task;
@@ -16,6 +19,7 @@ use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
+use tokio::sync::OnceCell;
 use tokio::{
     sync::Notify,
     task::JoinHandle,
@@ -86,6 +90,56 @@ where
             ));
         }
         Ok(task_handles)
+    }
+
+    async fn sync_next_committee(
+        sui_client: Arc<SuiClient<C>>,
+        next_committee: Arc<OnceCell<Committee>>,
+    ) {
+        let system_inner = sui_client.get_system_inner_until_success().await;
+        let system_inner = system_inner.into_init_version_for_tooling();
+        match system_inner.get_ika_next_epoch_active_committee() {
+            Some(new_next_committee) => {
+                let validator_ids = new_next_committee
+                    .iter()
+                    .map(|(id, _)| id.clone())
+                    .collect_vec();
+                let validators = sui_client
+                    .get_validators_info_by_ids(&system_inner, validator_ids)
+                    .await
+                    .unwrap();
+                let validators_class_groups_public_key_and_proof = sui_client
+                    .get_class_groups_public_keys_and_proofs(&validators)
+                    .await
+                    .map_err(|e| {
+                        IkaError::SuiClientInternalError(format!(
+                            "can't get_class_groups_public_keys_and_proofs: {e}"
+                        ))
+                    })
+                    .unwrap();
+
+                let validators_class_groups_public_key_and_proof =
+                    validators_class_groups_public_key_and_proof
+                        .into_iter()
+                        .map(|(id, class_groups_public_key_and_proof)| {
+                            (
+                                new_next_committee.get(&id).unwrap().0,
+                                bcs::to_bytes(&class_groups_public_key_and_proof).unwrap(),
+                            )
+                        })
+                        .collect::<HashMap<_, _>>();
+
+                let committee = Committee::new(
+                    system_inner.epoch + 1,
+                    new_next_committee.values().cloned().collect(),
+                    validators_class_groups_public_key_and_proof,
+                );
+                if let Err(e) = next_committee.set(committee) {
+                    error!("Failed to set next committee: {e}");
+                }
+            }
+            None => {}
+        }
     }
 
     /// Sync the DwalletMPC network keys from the Sui client to the local store.

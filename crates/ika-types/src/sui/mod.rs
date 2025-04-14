@@ -1,9 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::committee::CommitteeWithNetworkMetadata;
-use crate::sui::system_inner_v1::DWalletCoordinatorInnerV1;
+use crate::committee::{Committee, StakeUnit};
+use crate::crypto::AuthorityName;
 use crate::sui::system_inner_v1::DWalletNetworkDecryptionKeyCap;
+use crate::sui::system_inner_v1::{BlsCommittee, DWalletCoordinatorInnerV1};
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use epoch_start_system::EpochStartSystem;
@@ -13,6 +14,7 @@ use move_core_types::language_storage::TypeTag;
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt;
 use sui_types::base_types::ObjectID;
 use sui_types::collection_types::TableVec;
@@ -136,6 +138,10 @@ pub trait SystemInnerTrait {
     fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
+    fn get_next_epoch_committee(&self) -> Option<BlsCommittee>;
+    fn get_ika_next_epoch_active_committee(
+        &self,
+    ) -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>>;
     // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata;
     // fn into_epoch_start_state(self) -> EpochStartSystemState;
 }
