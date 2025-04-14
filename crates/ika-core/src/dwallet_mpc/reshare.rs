@@ -138,7 +138,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
             encryption_scheme_public_parameters,
         )
         .map_err(|e| {
-            DwalletMPCError::TwoPCMPCError("falied to generate public input".to_string())
+            DwalletMPCError::TwoPCMPCError("failed to generate public input".to_string())
         })?;
 
         Ok(bcs::to_bytes(&public_input)?)
