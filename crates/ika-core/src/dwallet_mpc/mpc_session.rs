@@ -165,7 +165,7 @@ impl DWalletMPCSession {
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    "reached public output for session"
+                    "Reached public output (Finalize) for session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
@@ -344,7 +344,7 @@ impl DWalletMPCSession {
                     mpc_event_data.decryption_share.clone(),
                 )
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => advance_network_dkg(
+            MPCProtocolInitData::NetworkDkg(key_scheme, _init_event) => advance_network_dkg(
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
@@ -464,24 +464,53 @@ impl DWalletMPCSession {
             Some(message) => message,
             None => return Ok(()),
         };
+        let authority_name = self.epoch_store()?.name;
 
         match self.serialized_full_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
                 if party_to_msg.contains_key(&source_party_id) {
+                    error!(
+                        session_id=?message.session_id,
+                        from_authority=?message.authority,
+                        receiving_authority=?authority_name,
+                        crypto_round_number=?message.round_number,
+                        "Received a duplicate message from authority",
+                    );
                     // Duplicate.
                     // This should never happen, as the consensus uniqueness key contains only the origin authority,
                     // session ID and MPC round.
                     return Ok(());
                 }
+                info!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    receiving_authority=?authority_name,
+                    crypto_round_number=?message.round_number,
+                    "Inserting a message into the party to message maps",
+                );
                 party_to_msg.insert(source_party_id, message_bytes.clone());
             }
             // If next round.
             None if message.round_number == current_round => {
+                info!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    receiving_authority=?authority_name,
+                    crypto_round_number=?message.round_number,
+                    "Store message for a future round",
+                );
                 let mut map = HashMap::new();
                 map.insert(source_party_id, message_bytes.clone());
                 self.serialized_full_messages.push(map);
             }
             None => {
+                warn!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    receiving_authority=?authority_name,
+                    crypto_round_number=?message.round_number,
+                    "Store message for a future round",
+                );
                 // Unexpected round number; rounds should grow sequentially.
                 return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
             }
@@ -522,5 +551,24 @@ impl DWalletMPCSession {
                 malicious_parties: vec![],
             },
         }
+    }
+
+    /// Helper function to spawn a task for submitting messages to consensus.
+    fn spawn_submit_to_consensus(
+        tokio_runtime_handle: &Handle,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        messages: Vec<ConsensusTransaction>,
+    ) {
+        tokio_runtime_handle.spawn(async move {
+            for msg in messages {
+                if let Err(err) = consensus_adapter
+                    .submit_to_consensus(&vec![msg], &epoch_store)
+                    .await
+                {
+                    error!("failed to submit an MPC message to consensus: {:?}", err);
+                }
+            }
+        });
     }
 }

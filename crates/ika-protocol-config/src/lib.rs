@@ -8,7 +8,6 @@ use std::{
 };
 
 use clap::*;
-use move_vm_config::verifier::VerifierConfig;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use sui_protocol_config_macros::{
