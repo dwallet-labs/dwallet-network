@@ -129,7 +129,7 @@ where
         if clock.timestamp_ms
             > ika_system_state_inner.epoch_start_timestamp_ms()
                 + ika_system_state_inner.epoch_duration_ms()
-            && !coordinator.locked_last_active_session_sequence_number
+            && !coordinator.locked_last_session_to_complete_in_current_epoch
         {
             info!("calling lock last active session sequence number");
             if let Err(e) = Self::lock_last_active_session_sequence_number(
@@ -149,9 +149,9 @@ where
             }
         }
 
-        if coordinator.locked_last_active_session_sequence_number
-            && coordinator.first_session_sequence_number
-                == coordinator.last_active_session_sequence_number
+        if coordinator.locked_last_session_to_complete_in_current_epoch
+            && coordinator.number_of_completed_sessions
+                == coordinator.last_session_to_complete_in_current_epoch
             && system_inner_v1
                 .validators
                 .next_epoch_active_committee
