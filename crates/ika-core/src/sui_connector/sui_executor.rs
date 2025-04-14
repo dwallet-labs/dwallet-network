@@ -88,6 +88,10 @@ where
             error!("Failed to get dwallet_2pc_mpc_secp256k1_id when running epoch switch");
             return;
         };
+        let SystemInner::V1(system_inner_v1) = &ika_system_state_inner else {
+            error!("Failed to get system inner when running epoch switch");
+            return;
+        };
 
         let Some(sui_notifier) = self.sui_notifier.as_ref() else {
             error!("Failed to get sui notifier when running epoch switch");
@@ -97,6 +101,10 @@ where
         if clock.timestamp_ms
             > ika_system_state_inner.epoch_start_timestamp_ms()
                 + (ika_system_state_inner.epoch_duration_ms() / 2)
+            && system_inner_v1
+                .validators
+                .next_epoch_active_committee
+                .is_none()
         {
             info!("calling process mid epoch");
             if let Err(e) =
