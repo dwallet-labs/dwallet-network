@@ -97,7 +97,7 @@ impl DWalletMPCService {
                         })
                         .await;
                     info!(
-                        "successfully processed missed event from Sui, session: {:?}",
+                        "Successfully processed missed event from Sui, session: {:?}",
                         session_info.session_id
                     );
                 }
@@ -158,11 +158,11 @@ impl DWalletMPCService {
             for event in events {
                 manager.handle_dwallet_db_event(event).await;
             }
-            let new_dwallet_messages_iter = tables
+            let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
                 .iter_with_bounds(Some(self.last_read_consensus_round + 1), None);
             let mut new_messages = vec![];
-            for (round, messages) in new_dwallet_messages_iter {
+            for (round, messages) in mpc_msgs_iter {
                 self.last_read_consensus_round = round;
                 new_messages.extend(messages);
             }
