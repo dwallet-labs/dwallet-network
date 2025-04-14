@@ -140,7 +140,10 @@ where
             )
             .await
             {
-                error!("Failed to lock last active session sequence number: {:?}", e);
+                error!(
+                    "Failed to lock last active session sequence number: {:?}",
+                    e
+                );
             } else {
                 info!("Successfully locked last active session sequence number");
             }
@@ -149,6 +152,10 @@ where
         if coordinator.locked_last_active_session_sequence_number
             && coordinator.first_session_sequence_number
                 == coordinator.last_active_session_sequence_number
+            && system_inner_v1
+                .validators
+                .next_epoch_active_committee
+                .is_some()
         {
             info!("calling process request advance epoch");
             if let Err(e) = Self::process_request_advance_epoch(
