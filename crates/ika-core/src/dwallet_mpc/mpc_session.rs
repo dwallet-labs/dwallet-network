@@ -514,7 +514,6 @@ impl DWalletMPCSession {
         let authority_name = self.epoch_store()?.name;
 
         match self.serialized_full_messages.get_mut(message.round_number) {
-
             Some(party_to_msg) => {
                 if party_to_msg.contains_key(&source_party_id) {
                     error!(
@@ -610,7 +609,10 @@ impl DWalletMPCSession {
     ) {
         tokio_runtime_handle.spawn(async move {
             for msg in messages {
-                if let Err(err) = consensus_adapter.submit_to_consensus(&vec![msg], &epoch_store).await {
+                if let Err(err) = consensus_adapter
+                    .submit_to_consensus(&vec![msg], &epoch_store)
+                    .await
+                {
                     error!("failed to submit an MPC message to consensus: {:?}", err);
                 }
             }

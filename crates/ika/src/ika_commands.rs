@@ -63,7 +63,7 @@ use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionData, Tran
 use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
 use tempfile::tempdir;
 use tokio::runtime::Runtime;
-use tracing::{info};
+use tracing::info;
 
 const DEFAULT_EPOCH_DURATION_MS: u64 = 1000000000000;
 
