@@ -137,14 +137,12 @@ impl CryptographicComputationsOrchestrator {
                 err
             );
         }
+        let computation_channel_sender = self.computation_channel_sender.clone();
         rayon::spawn_fifo(move || {
             if let Err(err) = session.advance(&handle) {
                 error!("failed to advance session with error: {:?}", err);
-            }
-            if let Err(err) = self
-                .computation_channel_sender
-                .send(ComputationUpdate::Completed)
-            {
+            };
+            if let Err(err) = computation_channel_sender.send(ComputationUpdate::Completed) {
                 error!(
                     "Failed to send a finished computation message with error: {:?}",
                     err
