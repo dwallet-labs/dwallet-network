@@ -871,6 +871,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.push_back(key_cap);
 }
 
+// TODO (#857): Remove old epoch switch code.
 fun process_checkpoint_message(
     self: &mut SystemInnerV1,
     message: vector<u8>,
