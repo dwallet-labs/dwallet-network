@@ -96,7 +96,7 @@ pub struct DWalletMPCManager {
     /// The order of the sessions that have received quorum for their current round, but we have not
     /// yet received an event for from Sui.
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
-    pub(crate) last_active_session_sequence_number: u64,
+    pub(crate) last_session_to_complete_in_current_epoch: u64,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -154,27 +154,29 @@ impl DWalletMPCManager {
             malicious_handler: MaliciousHandler::new(epoch_store.committee().clone()),
             pending_for_computation_order: VecDeque::new(),
             pending_for_events_order: Default::default(),
-            last_active_session_sequence_number: 0,
+            last_session_to_complete_in_current_epoch: 0,
         })
     }
 
-    pub(crate) fn update_last_active_session_sequence_number(
+    pub(crate) fn update_last_session_to_complete_in_current_epoch(
         &mut self,
-        last_active_session_sequence_number: u64,
+        last_session_to_complete_in_current_epoch: u64,
     ) {
-        if last_active_session_sequence_number <= self.last_active_session_sequence_number {
+        if last_session_to_complete_in_current_epoch
+            <= self.last_session_to_complete_in_current_epoch
+        {
             return;
         }
-        for session_sequence_number in
-            self.last_active_session_sequence_number..=last_active_session_sequence_number
+        for session_sequence_number in self.last_session_to_complete_in_current_epoch
+            ..=last_session_to_complete_in_current_epoch
         {
             if let Some(session) = self.pending_sessions.remove(&session_sequence_number) {
-                info!(session_sequence_number=?session_sequence_number, new_last_active_session_sequence_number=?last_active_session_sequence_number, "adding session sequence number to active sessions");
+                info!(session_sequence_number=?session_sequence_number, new_last_session_to_complete_in_current_epoch=?last_session_to_complete_in_current_epoch, "adding session sequence number to active sessions");
 
                 self.mpc_sessions.insert(session.session_id, session);
             }
         }
-        self.last_active_session_sequence_number = last_active_session_sequence_number;
+        self.last_session_to_complete_in_current_epoch = last_session_to_complete_in_current_epoch;
     }
 
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
@@ -614,10 +616,10 @@ impl DWalletMPCManager {
             mpc_event_data,
             session_sequence_number,
         );
-        if session_sequence_number <= self.last_active_session_sequence_number {
+        if session_sequence_number <= self.last_session_to_complete_in_current_epoch {
             info!(
                 session_sequence_number=?session_sequence_number,
-                last_active_session_sequence_number=?self.last_active_session_sequence_number,
+                last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                 "Adding session to active sessions",
             );
             self.mpc_sessions
@@ -625,7 +627,7 @@ impl DWalletMPCManager {
         } else {
             info!(
                 session_sequence_number=?session_sequence_number,
-                last_active_session_sequence_number=?self.last_active_session_sequence_number,
+                last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                 "Adding session to pending sessions, as its sequence number is too high",
             );
             self.pending_sessions

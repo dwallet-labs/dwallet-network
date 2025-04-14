@@ -74,8 +74,8 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `approve_message`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_approve_message)
 -  [Function `is_supported_hash_scheme`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_is_supported_hash_scheme)
 -  [Function `request_dwallet_dkg_first_round`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_request_dwallet_dkg_first_round)
--  [Function `update_last_active_session_sequence_number`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_active_session_sequence_number)
--  [Function `should_advance_epoch`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_should_advance_epoch)
+-  [Function `update_last_session_to_complete_in_current_epoch`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch)
+-  [Function `all_current_epoch_sessions_completed`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed)
 -  [Function `remove_session_and_charge`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_session_and_charge)
 -  [Function `respond_dwallet_dkg_first_round`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_first_round)
 -  [Function `create_first_round_dwallet_mock`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_first_round_dwallet_mock)
@@ -183,7 +183,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <dd>
 </dd>
 <dt>
-<code>first_session_sequence_number: u64</code>
+<code>number_of_completed_sessions: u64</code>
 </dt>
 <dd>
 </dd>
@@ -193,24 +193,24 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <dd>
 </dd>
 <dt>
-<code>last_active_session_sequence_number: u64</code>
+<code>last_session_to_complete_in_current_epoch: u64</code>
 </dt>
 <dd>
- The last MPC session to start process in the current epoch.
+ The last MPC session to process in the current epoch.
  Validators should complete every session they start before switching epochs.
 </dd>
 <dt>
-<code>locked_last_active_session_sequence_number: bool</code>
+<code>locked_last_session_to_complete_in_current_epoch: bool</code>
 </dt>
 <dd>
- Denotes wether the last_active_session_sequence_number field is locked or not.
+ Denotes wether the last_session_to_complete_in_current_epoch field is locked or not.
  This field gets locked before performing the epoch switch.
 </dd>
 <dt>
 <code>max_active_sessions_buffer: u64</code>
 </dt>
 <dd>
- The maximum number of active MPC sessions Ika nodes will may run during an epoch.
+ The maximum number of active MPC sessions Ika nodes may run during an epoch.
  Validators should complete every session they start before switching epochs.
 </dd>
 <dt>
@@ -2655,11 +2655,11 @@ Supported hash schemes for message signing.
         current_epoch,
         sessions: object_table::new(ctx),
         session_start_events: bag::new(ctx),
-        first_session_sequence_number: 0,
+        number_of_completed_sessions: 0,
         next_session_sequence_number: 0,
-        last_active_session_sequence_number: 0,
+        last_session_to_complete_in_current_epoch: 0,
         max_active_sessions_buffer: 100,
-        locked_last_active_session_sequence_number: <b>false</b>,
+        locked_last_session_to_complete_in_current_epoch: <b>false</b>,
         dwallets: object_table::new(ctx),
         dwallet_network_decryption_keys: object_table::new(ctx),
         encryption_keys: object_table::new(ctx),
@@ -2899,8 +2899,8 @@ Supported hash schemes for message signing.
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     next_committee: BlsCommittee
 ) {
-    self.locked_last_active_session_sequence_number = <b>false</b>;
-    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_active_session_sequence_number">update_last_active_session_sequence_number</a>();
+    self.locked_last_session_to_complete_in_current_epoch = <b>false</b>;
+    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch">update_last_session_to_complete_in_current_epoch</a>();
     self.current_epoch = self.current_epoch + 1;
     self.previous_committee = self.active_committee;
     self.active_committee = next_committee;
@@ -3046,7 +3046,7 @@ Supported hash schemes for message signing.
     self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
-    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_active_session_sequence_number">update_last_active_session_sequence_number</a>();
+    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch">update_last_session_to_complete_in_current_epoch</a>();
     event
 }
 </code></pre>
@@ -3423,13 +3423,13 @@ the beginning of the DKG process.
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_active_session_sequence_number"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch"></a>
 
-## Function `update_last_active_session_sequence_number`
+## Function `update_last_session_to_complete_in_current_epoch`
 
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_active_session_sequence_number">update_last_active_session_sequence_number</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>)
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch">update_last_session_to_complete_in_current_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>)
 </code></pre>
 
 
@@ -3438,19 +3438,19 @@ the beginning of the DKG process.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_active_session_sequence_number">update_last_active_session_sequence_number</a>(self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>) {
-    <b>if</b> (self.locked_last_active_session_sequence_number) {
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch">update_last_session_to_complete_in_current_epoch</a>(self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>) {
+    <b>if</b> (self.locked_last_session_to_complete_in_current_epoch) {
         <b>return</b>
     };
-    <b>let</b> new_last_active_session_sequence_number = (
-        self.first_session_sequence_number + self.max_active_sessions_buffer
+    <b>let</b> new_last_session_to_complete_in_current_epoch = (
+        self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
         self.next_session_sequence_number - 1,
     );
-    <b>if</b> (self.last_active_session_sequence_number &gt;= new_last_active_session_sequence_number) {
+    <b>if</b> (self.last_session_to_complete_in_current_epoch &gt;= new_last_session_to_complete_in_current_epoch) {
         <b>return</b>
     };
-    self.last_active_session_sequence_number = new_last_active_session_sequence_number;
+    self.last_session_to_complete_in_current_epoch = new_last_session_to_complete_in_current_epoch;
 }
 </code></pre>
 
@@ -3458,13 +3458,13 @@ the beginning of the DKG process.
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_should_advance_epoch"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed"></a>
 
-## Function `should_advance_epoch`
+## Function `all_current_epoch_sessions_completed`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_should_advance_epoch">should_advance_epoch</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>): bool
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>): bool
 </code></pre>
 
 
@@ -3473,9 +3473,9 @@ the beginning of the DKG process.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_should_advance_epoch">should_advance_epoch</a>(self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>): bool {
-    <b>return</b> self.locked_last_active_session_sequence_number &&
-        self.first_session_sequence_number == self.last_active_session_sequence_number
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>): bool {
+    <b>return</b> self.locked_last_session_to_complete_in_current_epoch &&
+        self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch
 }
 </code></pre>
 
@@ -3499,8 +3499,8 @@ the beginning of the DKG process.
 
 
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_session_and_charge">remove_session_and_charge</a>&lt;E: <b>copy</b> + drop + store&gt;(self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>, session_sequence_number: u64) {
-    self.first_session_sequence_number = self.first_session_sequence_number + 1;
-    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_active_session_sequence_number">update_last_active_session_sequence_number</a>();
+    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
+    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch">update_last_session_to_complete_in_current_epoch</a>();
     <b>let</b> session = self.sessions.remove(session_sequence_number);
     <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSession">DWalletSession</a> {
         computation_fee_charged_ika,
