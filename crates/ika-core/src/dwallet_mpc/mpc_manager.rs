@@ -38,8 +38,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
-    MPCSessionSpecificState, MaliciousReport, SessionInfo, SignIASessionState,
-    StartPresignFirstRoundEvent,
+    MaliciousReport, SessionInfo, StartPresignFirstRoundEvent,
 };
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
@@ -225,7 +224,6 @@ impl DWalletMPCManager {
         match status {
             // Quorum reached, remove the malicious parties from the session messages.
             ReportStatus::QuorumReached => {
-                let _ = self.check_for_malicious_ia_report(&report);
                 if report.advance_result == AdvanceResult::Success {
                     // No need to re-perform the last step, as the advance was successful.
                     return Ok(());
@@ -250,46 +248,10 @@ impl DWalletMPCManager {
                         });
                 }
             }
-            ReportStatus::WaitingForQuorum => {
-                let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) else {
-                    return Err(DwalletMPCError::MPCSessionNotFound {
-                        session_id: report.session_id,
-                    });
-                };
-                session.check_for_sign_ia_start(reporting_authority, report);
-            }
+            ReportStatus::WaitingForQuorum => {}
             ReportStatus::OverQuorum => {}
         }
 
-        Ok(())
-    }
-
-    /// Makes sure the first agreed-upon malicious report in a sign flow is equals to the request
-    /// that triggered the Sign-Identifiable Abort flow.
-    /// If it isn't, we mark the validator that
-    /// sent the request to start the Sign-Identifiable Abort flow as malicious,
-    /// as he sent a faulty
-    /// report.
-    fn check_for_malicious_ia_report(&mut self, report: &MaliciousReport) -> DwalletMPCResult<()> {
-        let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) else {
-            return Err(DwalletMPCError::MPCSessionNotFound {
-                session_id: report.session_id,
-            });
-        };
-        let Some(MPCSessionSpecificState::Sign(ref mut sign_state)) =
-            &mut session.session_specific_state
-        else {
-            return Err(DwalletMPCError::AggregatedSignStateNotFound {
-                session_id: report.session_id,
-            });
-        };
-        if sign_state.verified_malicious_report.is_none() {
-            sign_state.verified_malicious_report = Some(report.clone());
-            if &sign_state.start_ia_flow_malicious_report != report {
-                self.malicious_handler
-                    .report_malicious_actors(&vec![sign_state.initiating_ia_authority]);
-            }
-        }
         Ok(())
     }
 
@@ -467,20 +429,11 @@ impl DWalletMPCManager {
                 );
                 continue;
             };
-            if matches!(event_data.init_protocol_data, MPCProtocolInitData::Sign(..)) {
-                if let Err(err) = self
-                    .cryptographic_computations_orchestrator
-                    .spawn_aggregated_sign(oldest_pending_session)
-                {
-                    error!("failed to spawn session with err: {:?}", err);
-                }
-            } else {
-                if let Err(err) = self
-                    .cryptographic_computations_orchestrator
-                    .spawn_session(&oldest_pending_session)
-                {
-                    error!("failed to spawn session with err: {:?}", err);
-                }
+            if let Err(err) = self
+                .cryptographic_computations_orchestrator
+                .spawn_session(&oldest_pending_session)
+            {
+                error!("failed to spawn session with err: {:?}", err);
             }
         }
     }
