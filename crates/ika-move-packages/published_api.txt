@@ -322,6 +322,12 @@ is_supported_hash_scheme
 request_dwallet_dkg_first_round
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+update_last_session_to_complete_in_current_epoch
+	fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+all_current_epoch_sessions_completed
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 remove_session_and_charge
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
@@ -464,7 +470,7 @@ inner_mut
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1
 inner
-	fun
+	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
 ValidatorCap
 	public struct

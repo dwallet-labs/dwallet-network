@@ -334,7 +334,7 @@ fun inner_mut(self: &mut DWalletCoordinator): &mut DWalletCoordinatorInner {
 }
 
 /// Get an immutable reference to `DWalletCoordinatorVX` from the `DWalletCoordinator`.
-fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
+public(package) fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow(&self.id, VERSION)
 }
