@@ -588,13 +588,16 @@ impl DWalletMPCManager {
 
     /// Spawns a new MPC session if the number of active sessions is below the limit.
     /// Otherwise, add the session to the pending queue.
-    pub(crate) fn push_new_mpc_session(
+    pub(super) fn push_new_mpc_session(
         &mut self,
         session_id: &ObjectID,
         mpc_event_data: Option<MPCEventData>,
         session_sequence_number: u64,
     ) -> DWalletMPCSession {
         if self.mpc_sessions.contains_key(&session_id) {
+            // This can happpen because the event will be loaded once from the `load_missed_events` function,
+            // and once by querying the events from Sui.
+            // These sessions are ignored since we already have them in the `mpc_sessions` map.
             warn!(
                 "received start flow event for session ID {:?} that already exists",
                 &session_id
@@ -620,7 +623,7 @@ impl DWalletMPCManager {
             info!(
                 session_sequence_number=?session_sequence_number,
                 last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-                "Adding session to active sessions",
+                "Adding MPC session to active sessions",
             );
             self.mpc_sessions
                 .insert(session_id.clone(), new_session.clone());
@@ -628,15 +631,11 @@ impl DWalletMPCManager {
             info!(
                 session_sequence_number=?session_sequence_number,
                 last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-                "Adding session to pending sessions, as its sequence number is too high",
+                "Adding MPC session to pending sessions, as its sequence number is too high",
             );
             self.pending_sessions
                 .insert(session_sequence_number, new_session.clone());
         }
-        info!(
-            "Added MPCSession to MPC manager for session_id {:?}",
-            session_id
-        );
         new_session
     }
 }

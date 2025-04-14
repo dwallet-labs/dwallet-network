@@ -190,6 +190,8 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <code>next_session_sequence_number: u64</code>
 </dt>
 <dd>
+ The last session sequence number that an event was emitted for.
+ i.e, the user requested this session, and the event was emitted for it.
 </dd>
 <dt>
 <code>last_session_to_complete_in_current_epoch: u64</code>
@@ -202,7 +204,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <code>locked_last_session_to_complete_in_current_epoch: bool</code>
 </dt>
 <dd>
- Denotes wether the last_session_to_complete_in_current_epoch field is locked or not.
+ Denotes wether the <code>last_session_to_complete_in_current_epoch</code> field is locked or not.
  This field gets locked before performing the epoch switch.
 </dd>
 <dt>
@@ -3402,6 +3404,10 @@ the beginning of the DKG process.
 
 ## Function `update_last_session_to_complete_in_current_epoch`
 
+Updates the <code>last_session_to_complete_in_current_epoch</code> field.
+We do this to ensure that the last session to complete in the current epoch is equal
+to the desired completed sessions count.
+This is part of the epoch switch logic.
 
 
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch">update_last_session_to_complete_in_current_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>)

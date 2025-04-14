@@ -53,11 +53,13 @@ public struct DWalletCoordinatorInner has store {
     sessions: ObjectTable<u64, DWalletSession>,
     session_start_events: Bag,
     number_of_completed_sessions: u64,
+    /// The last session sequence number that an event was emitted for.
+    /// i.e, the user requested this session, and the event was emitted for it.
     next_session_sequence_number: u64,
     /// The last MPC session to process in the current epoch.
     /// Validators should complete every session they start before switching epochs.
     last_session_to_complete_in_current_epoch: u64,
-    /// Denotes wether the last_session_to_complete_in_current_epoch field is locked or not.
+    /// Denotes wether the `last_session_to_complete_in_current_epoch` field is locked or not.
     /// This field gets locked before performing the epoch switch.
     locked_last_session_to_complete_in_current_epoch: bool,
     /// The maximum number of active MPC sessions Ika nodes may run during an epoch.
@@ -904,7 +906,6 @@ fun validate_active_and_get_public_output(
     }
 }
 
-#[allow(dead_code, unused_mut_parameter, unused_variable)]
 fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
@@ -1145,6 +1146,10 @@ public(package) fun request_dwallet_dkg_first_round(
     dwallet_cap
 }
 
+/// Updates the `last_session_to_complete_in_current_epoch` field.
+/// We do this to ensure that the last session to complete in the current epoch is equal
+/// to the desired completed sessions count.
+/// This is part of the epoch switch logic.
 fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinatorInner) {
     if (self.locked_last_session_to_complete_in_current_epoch) {
         return
