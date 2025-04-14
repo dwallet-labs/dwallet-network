@@ -6,16 +6,16 @@
 //! tasks when all cores are occupied.
 //!
 //! Key responsibilities:
-//! - Manages a queue of pending cryptographic computations
-//! - Tracks currently running sessions and available CPU cores
-//! - Handles session spawning and completion notifications
-//! - Implements special handling for aggregated sign operations
-//! - Ensures computations don't become redundant based on received messages
+//! — Manages a queue of pending cryptographic computations
+//! — Tracks currently running sessions and available CPU cores
+//! — Handles session spawning and completion notifications.
+//! — Implements special handling for aggregated sign operations
+//! — Ensures computations don't become redundant based on received messages
 //!
 //! The orchestrator uses a channel-based notification system to track computation status:
-//! - Sends `Started` notifications when computations begin
-//! - Sends `Completed` notifications when computations finish
-//! - Updates the running session count accordingly
+//! — Sends `Started` notifications when computations begin
+//! — Sends `Completed` notifications when computations finish
+//! — Updates the running sessions count accordingly
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::sign::SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS;
@@ -47,11 +47,11 @@ pub(crate) enum ComputationUpdate {
 /// It tracks available CPU cores and prevents launching tasks when all cores are occupied.
 ///
 /// Key responsibilities:
-/// - Manages a queue of pending cryptographic computations
-/// - Tracks currently running sessions and available CPU cores
-/// - Handles session spawning and completion notifications
-/// - Implements special handling for aggregated sign operations
-/// - Ensures computations don't become redundant based on received messages
+/// — Manages a queue of pending cryptographic computations
+/// — Tracks currently running sessions and available CPU cores
+/// — Handles session spawning and completion notifications
+/// — Implements special handling for aggregated sign operations
+/// — Ensures computations don't become redundant based on received messages
 pub(crate) struct CryptographicComputationsOrchestrator {
     /// The number of logical CPUs available for cryptographic computations on the validator's
     /// machine. Used to limit parallel task execution.
