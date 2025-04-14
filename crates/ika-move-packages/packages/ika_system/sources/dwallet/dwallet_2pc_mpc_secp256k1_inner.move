@@ -58,6 +58,7 @@ public struct DWalletCoordinatorInner has store {
     session_start_events: Bag,
     number_of_completed_sessions: u64,
     started_immediate_sessions_count: u64,
+    completed_immediate_sessions_count: u64,
     /// The last session sequence number that an event was emitted for.
     /// i.e, the user requested this session, and the event was emitted for it.
     next_session_sequence_number: u64,
@@ -769,6 +770,8 @@ public(package) fun create_dwallet_coordinator_inner(
         previous_committee: bls_committee::empty(),
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: option::none(),
+        completed_immediate_sessions_count: 0,
+        started_immediate_sessions_count: 0,
         extra_fields: bag::new(ctx),
     }
 }
@@ -1223,6 +1226,25 @@ public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinat
 fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
     self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
     self.update_last_session_to_complete_in_current_epoch();
+    let session = self.sessions.remove(session_sequence_number);
+    let DWalletSession {
+        computation_fee_charged_ika,
+        gas_fee_reimbursement_sui,
+        consensus_validation_fee_charged_ika,
+        dwallet_network_decryption_key_id,
+        id,
+        ..
+    } = session;
+    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
+    let _: DWalletEvent<E> = self.session_start_events.remove(id.to_inner());
+    object::delete(id);
+    dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
+    self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
+    self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+}
+
+fun remove_immediate_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
+    self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     let session = self.sessions.remove(session_sequence_number);
     let DWalletSession {
         computation_fee_charged_ika,
