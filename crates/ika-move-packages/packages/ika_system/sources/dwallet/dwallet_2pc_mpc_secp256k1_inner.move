@@ -802,7 +802,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
     });
     let mut zero_ika = coin::zero<IKA>(ctx);
     let mut zero_sui = coin::zero<SUI>(ctx);
-    event::emit(self.charge_and_create_current_epoch_dwallet_event(
+    event::emit(self.charge_and_create_immediate_dwallet_event(
         dwallet_network_decryption_key_id,
         dwallet_pricing::zero(),
         &mut zero_ika,
@@ -826,7 +826,7 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     session_sequence_number: u64
 ) {
     if (is_last) {
-        self.remove_session_and_charge<DWalletNetworkDKGDecryptionKeyRequestEvent>(session_sequence_number);
+        self.remove_immediate_session_and_charge<DWalletNetworkDKGDecryptionKeyRequestEvent>(session_sequence_number);
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.public_output.push_back(public_output);
