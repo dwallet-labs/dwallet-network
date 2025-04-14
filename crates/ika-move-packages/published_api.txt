@@ -1459,7 +1459,7 @@ process_checkpoint_message_by_cap
 process_checkpoint_message_by_quorum
 	public fun
 	0x0::system
-request_mid_epoch
+request_reconfig_mid_epoch
 	public fun
 	0x0::system
 request_lock_epoch_sessions
