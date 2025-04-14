@@ -68,7 +68,7 @@ impl IkaMovePackage {
         let mut ika_dependencies = Vec::new();
         for name in self.ika_dependencies.iter() {
             let Some(id) = ika_dependencies_map.get(*name) else {
-                return anyhow::bail!("Missing ika dependency {}", name);
+                bail!("Missing ika dependency {}", name);
             };
             ika_dependencies.push((name.to_string(), *id));
         }
@@ -93,7 +93,7 @@ impl IkaMovePackage {
             }
             for module_handle in module.module_handles.iter_mut() {
                 let name = cloned_module.identifier_at(module_handle.name);
-                for (n, id) in ika_dependencies.iter() {
+                for (n, _id) in ika_dependencies.iter() {
                     if name.as_str() == n {
                         module_handle.address =
                             AddressIdentifierIndex(*address_identifiers_map.get(n).unwrap());
