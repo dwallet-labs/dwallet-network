@@ -57,6 +57,7 @@ public struct DWalletCoordinatorInner has store {
     sessions: ObjectTable<u64, DWalletSession>,
     session_start_events: Bag,
     number_of_completed_sessions: u64,
+    started_immediate_sessions_count: u64,
     /// The last session sequence number that an event was emitted for.
     /// i.e, the user requested this session, and the event was emitted for it.
     next_session_sequence_number: u64,
@@ -376,6 +377,7 @@ public enum ECDSASignState has copy, drop, store {
 public struct DWalletEvent<E: copy + drop + store> has copy, drop, store {
     epoch: u64,
     session_sequence_number: u64,
+    immediate: bool,
     session_id: ID,
     event_data: E,
 }
@@ -937,6 +939,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         gas_fee_reimbursement_sui,
     };
     let event = DWalletEvent {
+        immediate: false,
         epoch: self.current_epoch,
         session_sequence_number,
         session_id: object::id(&session),
@@ -945,6 +948,48 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
+    self.update_last_session_to_complete_in_current_epoch();
+
+    event
+}
+
+fun charge_and_create_immediate_dwallet_event<E: copy + drop + store>(
+    self: &mut DWalletCoordinatorInner,
+    dwallet_network_decryption_key_id: ID,
+    pricing: PricingPerOperation,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
+    event_data: E,
+    ctx: &mut TxContext,
+): DWalletEvent<E> {
+    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
+
+    let computation_fee_charged_ika = payment_ika.split(pricing.computation_ika(), ctx).into_balance();
+
+    let consensus_validation_fee_charged_ika = payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance();
+    let gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
+
+    let session_sequence_number = self.next_session_sequence_number;
+    let session = DWalletSession {
+        id: object::new(ctx),
+        session_sequence_number,
+        dwallet_network_decryption_key_id,
+        consensus_validation_fee_charged_ika,
+        computation_fee_charged_ika,
+        gas_fee_reimbursement_sui,
+    };
+    let event = DWalletEvent {
+        epoch: self.current_epoch,
+        session_sequence_number,
+        session_id: object::id(&session),
+        event_data,
+        immediate: true,
+    };
+    self.session_start_events.add(session.id.to_inner(), event);
+    self.sessions.add(session_sequence_number, session);
+    self.started_immediate_sessions_count = self.started_immediate_sessions_count + 1;
+    self.next_session_sequence_number = session_sequence_number + 1;
+    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
     self.update_last_session_to_complete_in_current_epoch();
 
     event
