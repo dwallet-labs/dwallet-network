@@ -26,7 +26,7 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=50
+export VALIDATOR_NUM=5
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
@@ -44,15 +44,15 @@ export VALIDATORS_FILE=""
 # Validator Docker image name.
 export IMAGE_NAME="us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.5-arm64"
 # SUI fullnode URL.
-export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
-#export SUI_FULLNODE_RPC_URL="http://localhost:9000"
+#export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+export SUI_FULLNODE_RPC_URL="http://localhost:9000"
 # Sui Docker URL (only needed if you run Ika on Docker against localhost on non-linux).
 # If it's not against localhost, set it to the remote sui RPC.
-#export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
-export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
+#export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 # SUI Faucet URL.
-export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
-#export SUI_FAUCET_URL="http://localhost:9123/gas"
+#export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
+export SUI_FAUCET_URL="http://localhost:9123/gas"
 # Default sui epoch duration time.
 export EPOCH_DURATION_TIME=86400000
 # Sui chain identifier.
@@ -265,91 +265,198 @@ locals {
 EOF
 
 ############################
-# Request Tokens and Create Validator.yaml.
+# Request Tokens and Create Validator.yaml (Max 5 Parallel + Retry)
 ############################
-for entry in "${VALIDATORS_ARRAY[@]}"; do
-  # Split the tuple "validatorName:validatorHostname" into variables.
+
+request_and_generate_yaml() {
+  local entry="$1"
   IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
-  VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
+  local VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
 
   # Extract values from the validator.info file
+  local ACCOUNT_ADDRESS
   ACCOUNT_ADDRESS=$(yq e '.account_address' "${VALIDATOR_DIR}/validator.info")
+  local P2P_ADDR
   P2P_ADDR=$(yq e '.p2p_address' "${VALIDATOR_DIR}/validator.info")
 
   # Copy the validator template
   cp ../validator.template.yaml "$VALIDATOR_DIR/validator.yaml"
 
-  # Replace upper-case placeholders using yq (in-place)
+  # Replace placeholders using yq
   yq e ".\"sui-connector-config\".\"sui-rpc-url\" = \"$SUI_DOCKER_URL\"" -i "$VALIDATOR_DIR/validator.yaml"
   yq e ".\"sui-connector-config\".\"sui-chain-identifier\" = \"$SUI_CHAIN_IDENTIFIER\"" -i "$VALIDATOR_DIR/validator.yaml"
   yq e ".\"sui-connector-config\".\"ika-package-id\" = \"$IKA_PACKAGE_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
   yq e ".\"sui-connector-config\".\"ika-system-package-id\" = \"$IKA_SYSTEM_PACKAGE_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
   yq e ".\"sui-connector-config\".\"ika-system-object-id\" = \"$IKA_SYSTEM_OBJECT_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
 
-  # Replace external P2P address
-  yq e ".p2p-config.external-address = \"$P2P_ADDR\"" -i "$VALIDATOR_DIR"/validator.yaml
+  yq e ".p2p-config.external-address = \"$P2P_ADDR\"" -i "$VALIDATOR_DIR/validator.yaml"
 
-  # --- Request tokens from the faucet ---
-  curl -X POST --location "${SUI_FAUCET_URL}" \
-       -H "Content-Type: application/json" \
-       -d '{
+  # Request tokens from the faucet with retry
+  local attempt=1
+  local max_attempts=5
+  local sleep_time=2
+
+  echo "[Faucet] Requesting tokens for '$VALIDATOR_NAME' ($ACCOUNT_ADDRESS)..."
+
+  while (( attempt <= max_attempts )); do
+    response=$(curl -s -w "%{http_code}" -o "$VALIDATOR_DIR/faucet_response.json" -X POST --location "${SUI_FAUCET_URL}" \
+      -H "Content-Type: application/json" \
+      -d '{
             "FixedAmountRequest": {
               "recipient": "'"${ACCOUNT_ADDRESS}"'"
             }
-          }' | jq
+          }')
 
+    if [[ "$response" == "201" ]]; then
+      echo "[Faucet] ✅ Success for '$VALIDATOR_NAME'"
+      jq . "$VALIDATOR_DIR/faucet_response.json"
+      break
+    else
+      echo "[Faucet] ❌ Attempt $attempt failed with HTTP $response for '$VALIDATOR_NAME'"
+      (( attempt++ ))
+      sleep $(( sleep_time ** attempt ))
+    fi
+  done
+
+  if (( attempt > max_attempts )); then
+    echo "[Faucet] ❗ Failed to get tokens for '$VALIDATOR_NAME' after $max_attempts attempts."
+  fi
+}
+
+# Concurrency control (compatible with bash < 4.3)
+MAX_JOBS=5
+JOB_COUNT=0
+
+for entry in "${VALIDATORS_ARRAY[@]}"; do
+  request_and_generate_yaml "$entry" &
+
+  (( JOB_COUNT++ ))
+
+  if [[ $JOB_COUNT -ge $MAX_JOBS ]]; then
+    wait  # wait for all background jobs
+    JOB_COUNT=0
+  fi
 done
 
+# Wait for any remaining background jobs
+wait
+
+# This is needed later for the publisher, in oder to update the ika_sui_config.yaml.
+$BINARY_NAME validator config-env \
+    --ika-package-id "$IKA_PACKAGE_ID" \
+    --ika-system-package-id "$IKA_SYSTEM_PACKAGE_ID" \
+    --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID"
+
 ############################
-# Become Validator Candidate.
+# Become Validator Candidate (Max 5 Parallel Jobs)
 ############################
+
 # Array to store validator tuples
 VALIDATOR_TUPLES=()
+TMP_OUTPUT_DIR="/tmp/become_candidate_outputs"
+TUPLES_FILE="$TMP_OUTPUT_DIR/tuples.txt"
+mkdir -p "$TMP_OUTPUT_DIR"
+rm -f "$TUPLES_FILE"
+
+# Function to process a validator
+process_validator() {
+    local entry="$1"
+    IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
+    local VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
+    local OUTPUT_FILE="$TMP_OUTPUT_DIR/${VALIDATOR_NAME}_output.json"
+    local LOCAL_SUI_CONFIG_DIR="/tmp/sui_config_${VALIDATOR_NAME}"
+    local LOCAL_IKA_CONFIG_DIR="/tmp/ika_config_${VALIDATOR_NAME}"
+
+    echo "[Become Validator Candidate] Processing validator '$VALIDATOR_NAME' in directory '$VALIDATOR_DIR'"
+
+    rm -rf "$LOCAL_IKA_CONFIG_DIR"
+    mkdir -p "$LOCAL_IKA_CONFIG_DIR"
+
+    # Set up clean local SUI config dir
+    rm -rf "$LOCAL_SUI_CONFIG_DIR"
+    mkdir -p "$LOCAL_SUI_CONFIG_DIR"
+    cp -r "$VALIDATOR_DIR/$SUI_BACKUP_DIR/sui_config/"* "$LOCAL_SUI_CONFIG_DIR"
+    # Update keystore path in client.yaml to the current validator's sui.keystore
+    yq e ".keystore.File = \"$LOCAL_SUI_CONFIG_DIR/sui.keystore\"" -i "$LOCAL_SUI_CONFIG_DIR/client.yaml"
+
+    # Run validator config-env and become-candidate with isolated config dirs
+    SUI_CONFIG_DIR="$LOCAL_SUI_CONFIG_DIR" \
+    IKA_CONFIG_DIR="$LOCAL_IKA_CONFIG_DIR" \
+    $BINARY_NAME validator config-env \
+        --ika-package-id "$IKA_PACKAGE_ID" \
+        --ika-system-package-id "$IKA_SYSTEM_PACKAGE_ID" \
+        --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID"
+
+    SUI_CONFIG_DIR="$LOCAL_SUI_CONFIG_DIR" \
+    IKA_CONFIG_DIR="$LOCAL_IKA_CONFIG_DIR" \
+    $BINARY_NAME validator become-candidate "$VALIDATOR_DIR/validator.info" --json > "$OUTPUT_FILE"
+
+    # Validate and extract IDs
+    if jq empty "$OUTPUT_FILE" 2>/dev/null; then
+        VALIDATOR_ID=$(jq -r '.[1].validator_id' "$OUTPUT_FILE")
+        VALIDATOR_CAP_ID=$(jq -r '.[1].validator_cap_id' "$OUTPUT_FILE")
+        echo "[✓] Parsed validator_id=$VALIDATOR_ID, validator_cap_id=$VALIDATOR_CAP_ID for $VALIDATOR_NAME"
+        echo "$VALIDATOR_NAME:$VALIDATOR_ID:$VALIDATOR_CAP_ID" >> "$TUPLES_FILE"
+    else
+        echo "[ERROR] Invalid JSON from become-candidate for $VALIDATOR_NAME"
+        cat "$OUTPUT_FILE"
+    fi
+}
+
+# Launch jobs with a max concurrency of 5 using a simple counter
+MAX_JOBS=5
+JOB_COUNT=0
+
 for entry in "${VALIDATORS_ARRAY[@]}"; do
-      IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
-      VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
+    process_validator "$entry" &
 
-      echo "[Become Validator Candidate] Processing validator '$VALIDATOR_NAME' in directory '$VALIDATOR_DIR'"
+    (( JOB_COUNT++ ))
 
-      # Clear and recreate your SUI config directory.
-      rm -rf "$SUI_CONFIG_PATH"
-      mkdir -p "$SUI_CONFIG_PATH"
-
-      cp -r "$VALIDATOR_DIR/$SUI_BACKUP_DIR/sui_config/"* "$SUI_CONFIG_PATH"
-
-      # Validate the config-env
-      $BINARY_NAME validator config-env --ika-package-id "$IKA_PACKAGE_ID" \
-      --ika-system-package-id "$IKA_SYSTEM_PACKAGE_ID" \
-      --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID"
-
-      # Run become-candidate and store output
-      $BINARY_NAME validator become-candidate "$VALIDATOR_DIR/validator.info" --json > "$VALIDATOR_DIR/become-candidate.json"
-
-      # Extract validator_id and validator_cap_id
-      VALIDATOR_ID=$(jq -r '.[1].validator_id' "$VALIDATOR_DIR/become-candidate.json")
-      VALIDATOR_CAP_ID=$(jq -r '.[1].validator_cap_id' "$VALIDATOR_DIR/become-candidate.json")
-
-      # Store as tuple in an array
-      VALIDATOR_TUPLES+=("$VALIDATOR_ID:$VALIDATOR_CAP_ID")
+    if [[ $JOB_COUNT -ge $MAX_JOBS ]]; then
+        wait
+        JOB_COUNT=0
+    fi
 done
+
+# Final wait for any remaining jobs
+wait
+
+# Read tuples file after all jobs complete
+if [[ -f "$TUPLES_FILE" ]]; then
+    while IFS= read -r tuple; do
+        VALIDATOR_TUPLES+=("$tuple")
+    done < "$TUPLES_FILE"
+else
+    echo "[ERROR] Tuples file not found: $TUPLES_FILE"
+fi
+
+# Summary
+echo
+echo "✅ All validator tuples:"
+for tup in "${VALIDATOR_TUPLES[@]}"; do
+    echo "  $tup"
+done
+
 
 ############################
 # Stake Validators
 ############################
+set -x
+
 # Copy publisher sui_config to SUI_CONFIG_PATH
 rm -rf "$SUI_CONFIG_PATH"
 mkdir -p "$SUI_CONFIG_PATH"
-cp -r $PUBLISHER_DIR/sui_config/* "$SUI_CONFIG_PATH"
+cp -r "$PUBLISHER_DIR/sui_config/"* "$SUI_CONFIG_PATH"
 
 # Extract IKA_SUPPLY_ID (ika_coin_id) from publisher config
 IKA_SUPPLY_ID=$(jq -r '.ika_supply_id' "$PUBLISHER_CONFIG_FILE")
 
 # Stake Validators
 for entry in "${VALIDATOR_TUPLES[@]}"; do
-    # Split the tuple "validator_id:validator_cap_id"
-    IFS=":" read -r VALIDATOR_ID VALIDATOR_CAP_ID <<< "$entry"
+    # New format: validator_name:validator_id:validator_cap_id
+    IFS=":" read -r VALIDATOR_NAME VALIDATOR_ID VALIDATOR_CAP_ID <<< "$entry"
 
-    echo "Staking for Validator ID: $VALIDATOR_ID with IKA Coin ID: $IKA_SUPPLY_ID"
+    echo "Staking for Validator '$VALIDATOR_NAME' (ID: $VALIDATOR_ID) with IKA Coin ID: $IKA_SUPPLY_ID"
 
     # Execute the stake-validator command
     $BINARY_NAME validator stake-validator \
@@ -361,21 +468,26 @@ done
 ############################
 # Join Committee
 ############################
-# Loop through each validator tuple and join the committee.
-for i in "${!VALIDATOR_TUPLES[@]}"; do
-    # Extract validator_id and validator_cap_id from tuple
-    IFS=":" read -r VALIDATOR_ID VALIDATOR_CAP_ID <<< "${VALIDATOR_TUPLES[i]}"
 
-    # Extract corresponding validator hostname from VALIDATORS_ARRAY
-    IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "${VALIDATORS_ARRAY[i]}"
+for tuple in "${VALIDATOR_TUPLES[@]}"; do
+    IFS=":" read -r VALIDATOR_NAME VALIDATOR_ID VALIDATOR_CAP_ID <<< "$tuple"
 
-    # Copy the validator's sui_config before joining the committee
-    VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
+    # Find the validator's hostname based on its name
+    for entry in "${VALIDATORS_ARRAY[@]}"; do
+        IFS=":" read -r NAME HOSTNAME <<< "$entry"
+        if [[ "$NAME" == "$VALIDATOR_NAME" ]]; then
+            VALIDATOR_HOSTNAME="$HOSTNAME"
+            break
+        fi
+    done
+
+    # Copy sui_config and run join-committee
+    VALIDATOR_DIR="$VALIDATOR_HOSTNAME"
     rm -rf "$SUI_CONFIG_PATH"
     mkdir -p "$SUI_CONFIG_PATH"
     cp -r "$VALIDATOR_DIR/$SUI_BACKUP_DIR/sui_config/"* "$SUI_CONFIG_PATH"
 
-    echo "Joining committee for Validator Cap ID: $VALIDATOR_CAP_ID"
+    echo "Joining committee for Validator '$VALIDATOR_NAME' (Cap ID: $VALIDATOR_CAP_ID)"
 
     $BINARY_NAME validator join-committee \
         --validator-cap-id "$VALIDATOR_CAP_ID"

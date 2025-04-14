@@ -154,7 +154,7 @@ impl IkaValidatorCommand {
                 let pop = generate_proof_of_possession(&keypair, sender_sui_address);
 
                 let class_groups_public_key_and_proof = read_or_generate_seed_and_class_groups_key(
-                    // todo(zeev): rename this.
+                    // todo(zeev): rename this, make it really take default.
                         dir.join("class-groups.key"),
                         dir.join("class-groups.seed"),
                 )?;
@@ -372,10 +372,7 @@ impl Display for IkaValidatorCommandResponse {
 impl Debug for IkaValidatorCommandResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let string = serde_json::to_string_pretty(self);
-        let s = match string {
-            Ok(s) => s,
-            Err(err) => format!("{err}").red().to_string(),
-        };
+        let s = string.unwrap_or_else(|err| format!("{err}").red().to_string());
         write!(f, "{}", s)
     }
 }
