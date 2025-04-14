@@ -52,7 +52,7 @@ public struct DWalletCoordinatorInner has store {
     current_epoch: u64,
     sessions: ObjectTable<u64, DWalletSession>,
     session_start_events: Bag,
-    first_session_sequence_number: u64,
+    number_of_completed_sessions: u64,
     next_session_sequence_number: u64,
     /// The last MPC session to process in the current epoch.
     /// Validators should complete every session they start before switching epochs.
@@ -744,7 +744,7 @@ public(package) fun create_dwallet_coordinator_inner(
         current_epoch,
         sessions: object_table::new(ctx),
         session_start_events: bag::new(ctx),
-        first_session_sequence_number: 0,
+        number_of_completed_sessions: 0,
         next_session_sequence_number: 0,
         last_active_session_sequence_number: 0,
         max_active_sessions_buffer: 100,
@@ -1150,7 +1150,7 @@ fun update_last_active_session_sequence_number(self: &mut DWalletCoordinatorInne
         return
     };
     let new_last_active_session_sequence_number = (
-        self.first_session_sequence_number + self.max_active_sessions_buffer
+        self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
         self.next_session_sequence_number - 1,
     );
@@ -1162,11 +1162,11 @@ fun update_last_active_session_sequence_number(self: &mut DWalletCoordinatorInne
 
 public(package) fun should_advance_epoch(self: &DWalletCoordinatorInner): bool {
     return self.locked_last_active_session_sequence_number &&
-        self.first_session_sequence_number == self.last_active_session_sequence_number
+        self.number_of_completed_sessions == self.last_active_session_sequence_number
 }
 
 fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
-    self.first_session_sequence_number = self.first_session_sequence_number + 1;
+    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
     self.update_last_active_session_sequence_number();
     let session = self.sessions.remove(session_sequence_number);
     let DWalletSession {

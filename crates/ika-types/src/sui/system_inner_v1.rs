@@ -140,7 +140,7 @@ pub struct DWalletCoordinatorInnerV1 {
     pub current_epoch: u64,
     pub sessions: ObjectTable,
     pub session_start_events: Bag,
-    pub first_session_sequence_number: u64,
+    pub number_of_completed_sessions: u64,
     pub next_session_sequence_number: u64,
     pub last_active_session_sequence_number: u64,
     pub locked_last_active_session_sequence_number: bool,
