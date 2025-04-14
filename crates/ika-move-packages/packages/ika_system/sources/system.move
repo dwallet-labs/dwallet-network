@@ -647,12 +647,14 @@ public fun process_checkpoint_message_by_quorum(
     self.process_checkpoint_message_by_quorum(dwallet_2pc_mpc_secp256k1, signature, signers_bitmap, message, ctx);
 }
 
+/// Locks the committee of the next epoch to allow starting the reconfiguration process.
 public fun request_reconfig_mid_epoch(self: &mut System, clock: &Clock, _ctx: &TxContext) {
     let inner = self.inner_mut();
     assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms() / 2), EHaveNotReachedMidEpochTime);
     self.inner_mut().process_mid_epoch();
 }
 
+/// Locks the MPC sessions that should get completed as part of the current epoch.
 public fun request_lock_epoch_sessions(
     self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, _ctx: &TxContext
 ) {
@@ -661,6 +663,7 @@ public fun request_lock_epoch_sessions(
     dwallet_coordinator.inner_mut().lock_last_active_session_sequence_number();
 }
 
+/// Advances the epoch to the next epoch.
 public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, ctx: &mut TxContext) {
     let inner_system = self.inner_mut();
     let inner_dwallet = dwallet_coordinator.inner_mut();
