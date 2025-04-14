@@ -30,8 +30,8 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MPCSessionMessagesCollector,
-    MPCSessionSpecificState, MaliciousReport, PresignSessionState, SessionInfo, SignIASessionState,
-    StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
+    MaliciousReport, PresignSessionState, SessionInfo, StartEncryptedShareVerificationEvent,
+    StartPresignFirstRoundEvent,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
@@ -81,13 +81,11 @@ pub(super) struct DWalletMPCSession {
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
     pub(super) pending_quorum_for_highest_round_number: usize,
-    /// Contains state that is specific to the session's protocol, i.e. presign specific state in a presign session,
-    /// or sign specific state in a sign session.
-    pub(super) session_specific_state: Option<MPCSessionSpecificState>,
     party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
+    pub(crate) sequence_number: u64,
 }
 
 impl DWalletMPCSession {
@@ -100,6 +98,7 @@ impl DWalletMPCSession {
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         mpc_event_data: Option<MPCEventData>,
+        sequence_number: u64,
     ) -> Self {
         Self {
             status,
@@ -111,9 +110,9 @@ impl DWalletMPCSession {
             pending_quorum_for_highest_round_number: 0,
             party_id,
             weighted_threshold_access_structure,
-            session_specific_state: None,
             mpc_event_data,
             messages_collector: MPCSessionMessagesCollector::new(),
+            sequence_number,
         }
     }
 
@@ -169,11 +168,11 @@ impl DWalletMPCSession {
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    "reached public output for session"
+                    "Reached public output (Finalize) for session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
-                if !malicious_parties.is_empty() || self.is_verifying_sign_ia_report() {
+                if !malicious_parties.is_empty() {
                     self.report_malicious_actors(
                         tokio_runtime_handle,
                         malicious_parties,
@@ -223,48 +222,6 @@ impl DWalletMPCSession {
                 });
                 Err(e)
             }
-        }
-    }
-
-    /// Returns true if the session is still verifying that a Start Sign Identifiable Report
-    /// message is valid; false otherwise.
-    /// The Sign Identifiable Abort protocol differs from other protocols as,
-    /// besides verifying that the output is valid, we must also verify that the malicious report,
-    /// which caused all other validators to spend extra resources, was honest.
-    pub(crate) fn is_verifying_sign_ia_report(&self) -> bool {
-        let Some(MPCSessionSpecificState::Sign(sign_state)) = &self.session_specific_state else {
-            return false;
-        };
-        sign_state.verified_malicious_report.is_none()
-    }
-
-    /// Starts the Sign Identifiable Abort protocol if needed.
-    ///
-    /// In the aggregated signing protocol, a single malicious report is enough
-    /// to trigger the Sign-Identifiable Abort protocol.
-    /// In the Sign-Identifiable Abort protocol, each validator runs the final step,
-    /// agreeing on the malicious parties in the session and
-    /// removing their messages before the signing session continues as usual.
-    pub(crate) fn check_for_sign_ia_start(
-        &mut self,
-        reporting_authority: AuthorityName,
-        report: MaliciousReport,
-    ) {
-        let Some(mpc_event_data) = &self.mpc_event_data else {
-            // An event has not yet received for this session, so we cannot start the sign IA protocol.
-            return;
-        };
-        if matches!(
-            mpc_event_data.init_protocol_data,
-            MPCProtocolInitData::Sign(..)
-        ) && self.status == MPCSessionStatus::Active
-            && self.session_specific_state.is_none()
-        {
-            self.session_specific_state = Some(MPCSessionSpecificState::Sign(SignIASessionState {
-                start_ia_flow_malicious_report: report,
-                initiating_ia_authority: reporting_authority,
-                verified_malicious_report: None,
-            }))
         }
     }
 
@@ -390,7 +347,7 @@ impl DWalletMPCSession {
                     mpc_event_data.decryption_share.clone(),
                 )
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => advance_network_dkg(
+            MPCProtocolInitData::NetworkDkg(key_scheme, _init_event) => advance_network_dkg(
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
@@ -440,6 +397,9 @@ impl DWalletMPCSession {
                     malicious_parties: vec![],
                 })
             }
+            _ => {
+                unreachable!("Unsupported MPC protocol type")
+            }
         }
     }
 
@@ -454,6 +414,7 @@ impl DWalletMPCSession {
             message,
             self.session_id.clone(),
             self.pending_quorum_for_highest_round_number,
+            self.sequence_number,
         ))
     }
 
@@ -471,6 +432,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             output,
             SessionInfo {
+                sequence_number: self.sequence_number,
                 session_id: self.session_id.clone(),
                 mpc_round: mpc_event_data.init_protocol_data.clone(),
             },
@@ -510,24 +472,53 @@ impl DWalletMPCSession {
             Some(message) => message,
             None => return Ok(()),
         };
+        let authority_name = self.epoch_store()?.name;
 
         match self.serialized_full_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
                 if party_to_msg.contains_key(&source_party_id) {
+                    error!(
+                        session_id=?message.session_id,
+                        from_authority=?message.authority,
+                        receiving_authority=?authority_name,
+                        crypto_round_number=?message.round_number,
+                        "Received a duplicate message from authority",
+                    );
                     // Duplicate.
                     // This should never happen, as the consensus uniqueness key contains only the origin authority,
                     // session ID and MPC round.
                     return Ok(());
                 }
+                info!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    receiving_authority=?authority_name,
+                    crypto_round_number=?message.round_number,
+                    "Inserting a message into the party to message maps",
+                );
                 party_to_msg.insert(source_party_id, message_bytes.clone());
             }
             // If next round.
             None if message.round_number == current_round => {
+                info!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    receiving_authority=?authority_name,
+                    crypto_round_number=?message.round_number,
+                    "Store message for a future round",
+                );
                 let mut map = HashMap::new();
                 map.insert(source_party_id, message_bytes.clone());
                 self.serialized_full_messages.push(map);
             }
             None => {
+                warn!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    receiving_authority=?authority_name,
+                    crypto_round_number=?message.round_number,
+                    "Store message for a future round",
+                );
                 // Unexpected round number; rounds should grow sequentially.
                 return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
             }
@@ -568,5 +559,24 @@ impl DWalletMPCSession {
                 malicious_parties: vec![],
             },
         }
+    }
+
+    /// Helper function to spawn a task for submitting messages to consensus.
+    fn spawn_submit_to_consensus(
+        tokio_runtime_handle: &Handle,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        messages: Vec<ConsensusTransaction>,
+    ) {
+        tokio_runtime_handle.spawn(async move {
+            for msg in messages {
+                if let Err(err) = consensus_adapter
+                    .submit_to_consensus(&vec![msg], &epoch_store)
+                    .await
+                {
+                    error!("failed to submit an MPC message to consensus: {:?}", err);
+                }
+            }
+        });
     }
 }
