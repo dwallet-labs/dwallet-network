@@ -325,7 +325,7 @@ request_dwallet_dkg_first_round
 update_last_session_to_complete_in_current_epoch
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-should_advance_epoch
+all_current_epoch_sessions_completed
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 remove_session_and_charge

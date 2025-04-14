@@ -1160,7 +1160,7 @@ fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinat
     self.last_session_to_complete_in_current_epoch = new_last_session_to_complete_in_current_epoch;
 }
 
-public(package) fun should_advance_epoch(self: &DWalletCoordinatorInner): bool {
+public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinatorInner): bool {
     return self.locked_last_session_to_complete_in_current_epoch &&
         self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch
 }

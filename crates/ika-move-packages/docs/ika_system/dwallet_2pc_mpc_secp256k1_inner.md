@@ -74,7 +74,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `is_supported_hash_scheme`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_is_supported_hash_scheme)
 -  [Function `request_dwallet_dkg_first_round`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_request_dwallet_dkg_first_round)
 -  [Function `update_last_session_to_complete_in_current_epoch`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch)
--  [Function `should_advance_epoch`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_should_advance_epoch)
+-  [Function `all_current_epoch_sessions_completed`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed)
 -  [Function `remove_session_and_charge`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_session_and_charge)
 -  [Function `respond_dwallet_dkg_first_round`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_first_round)
 -  [Function `create_first_round_dwallet_mock`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_first_round_dwallet_mock)
@@ -195,7 +195,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <code>last_session_to_complete_in_current_epoch: u64</code>
 </dt>
 <dd>
- The last MPC session to start process in the current epoch.
+ The last MPC session to process in the current epoch.
  Validators should complete every session they start before switching epochs.
 </dd>
 <dt>
@@ -209,7 +209,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <code>max_active_sessions_buffer: u64</code>
 </dt>
 <dd>
- The maximum number of active MPC sessions Ika nodes will may run during an epoch.
+ The maximum number of active MPC sessions Ika nodes may run during an epoch.
  Validators should complete every session they start before switching epochs.
 </dd>
 <dt>
@@ -3433,13 +3433,13 @@ the beginning of the DKG process.
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_should_advance_epoch"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed"></a>
 
-## Function `should_advance_epoch`
+## Function `all_current_epoch_sessions_completed`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_should_advance_epoch">should_advance_epoch</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>): bool
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>): bool
 </code></pre>
 
 
@@ -3448,7 +3448,7 @@ the beginning of the DKG process.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_should_advance_epoch">should_advance_epoch</a>(self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>): bool {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>): bool {
     <b>return</b> self.locked_last_session_to_complete_in_current_epoch &&
         self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch
 }
