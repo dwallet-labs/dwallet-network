@@ -28,8 +28,7 @@ use std::hash::Hash;
 use std::sync::{Arc, Weak};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
-use tracing::error;
-use tracing::log::warn;
+use tracing::{error, warn};
 use twopc_mpc::sign::verify_signature;
 use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
