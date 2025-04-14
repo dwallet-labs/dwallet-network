@@ -55,6 +55,7 @@ pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
 
+mod reshare;
 pub(crate) mod sign;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
