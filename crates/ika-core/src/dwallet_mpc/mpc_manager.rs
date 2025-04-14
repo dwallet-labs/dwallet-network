@@ -162,11 +162,13 @@ impl DWalletMPCManager {
         &mut self,
         last_session_to_complete_in_current_epoch: u64,
     ) {
-        if last_session_to_complete_in_current_epoch <= self.last_session_to_complete_in_current_epoch {
+        if last_session_to_complete_in_current_epoch
+            <= self.last_session_to_complete_in_current_epoch
+        {
             return;
         }
-        for session_sequence_number in
-            self.last_session_to_complete_in_current_epoch..=last_session_to_complete_in_current_epoch
+        for session_sequence_number in self.last_session_to_complete_in_current_epoch
+            ..=last_session_to_complete_in_current_epoch
         {
             if let Some(session) = self.pending_sessions.remove(&session_sequence_number) {
                 info!(session_sequence_number=?session_sequence_number, new_last_session_to_complete_in_current_epoch=?last_session_to_complete_in_current_epoch, "adding session sequence number to active sessions");
