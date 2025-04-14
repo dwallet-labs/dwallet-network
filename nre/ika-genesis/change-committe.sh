@@ -1,11 +1,15 @@
 #!/bin/bash
 
+# f = 38
+# max vote = 12
+# q = 2f+1 = 77
+# n = 3f+1 = 115
 # Configuration variables (change these values as needed)
-TOTAL_VOTING_POWER=298
+TOTAL_VOTING_POWER=115
 # TOTAL_VOTING_POWER*2/3 + 1
-QUORUM_THRESHOLD=199
+QUORUM_THRESHOLD=77
 # Cap voting power of an individual validator at 10%.
-MAX_VOTING_POWER=10
+MAX_VOTING_POWER=12
 
 pushd ../../
 
