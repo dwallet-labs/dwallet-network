@@ -735,9 +735,11 @@ public(package) fun advance_epoch(
     let active_committee = self.active_committee();
     // Derive the computation price per unit size for the new epoch
     self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&active_committee);
-
-    let last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
-    self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
+    let mut last_processed_checkpoint_sequence_number = 0;
+    if (self.last_processed_checkpoint_sequence_number.is_some()) {
+        last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
+        self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
+    };
 
     event::emit(SystemEpochInfoEvent {
         epoch: self.epoch,
