@@ -1907,8 +1907,11 @@ gas coins.
     <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a> = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>();
     // Derive the computation price per unit size <b>for</b> the new <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>
     self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>);
-    <b>let</b> last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
-    self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
+    <b>let</b> <b>mut</b> last_processed_checkpoint_sequence_number = 0;
+    <b>if</b> (self.last_processed_checkpoint_sequence_number.is_some()) {
+        last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
+        self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
+    };
     event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemEpochInfoEvent">SystemEpochInfoEvent</a> {
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>,
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_protocol_version">protocol_version</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_protocol_version">protocol_version</a>,
