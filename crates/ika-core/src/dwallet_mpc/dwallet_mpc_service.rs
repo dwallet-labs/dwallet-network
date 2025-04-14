@@ -54,7 +54,7 @@ impl DWalletMPCService {
         }
     }
 
-    async fn update_last_active_session_sequence_number(&self, sui_client: &SuiBridgeClient) {
+    async fn update_last_session_to_complete_in_current_epoch(&self, sui_client: &SuiBridgeClient) {
         let system_inner = sui_client.get_system_inner_until_success().await;
         if let Some(dwallet_coordinator_id) = system_inner
             .into_init_version_for_tooling()
@@ -66,8 +66,8 @@ impl DWalletMPCService {
             match coordinator_state {
                 DWalletCoordinatorInner::V1(inner_state) => {
                     let mut dwallet_mpc_manager = self.epoch_store.get_dwallet_mpc_manager().await;
-                    dwallet_mpc_manager.update_last_active_session_sequence_number(
-                        inner_state.last_active_session_sequence_number,
+                    dwallet_mpc_manager.update_last_session_to_complete_in_current_epoch(
+                        inner_state.last_session_to_complete_in_current_epoch,
                     );
                 }
             }
@@ -124,7 +124,7 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
-            self.update_last_active_session_sequence_number(&sui_client)
+            self.update_last_session_to_complete_in_current_epoch(&sui_client)
                 .await;
             if let Err(e) = self.read_events().await {
                 error!("failed to handle dWallet MPC events: {}", e);
