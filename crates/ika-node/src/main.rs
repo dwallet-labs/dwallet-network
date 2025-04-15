@@ -116,6 +116,7 @@ fn main() {
 
     // let ika-node signal main to shutdown runtimes
     let (runtime_shutdown_tx, runtime_shutdown_rx) = broadcast::channel::<()>(1);
+    let chain_identifier = ChainIdentifier::from(config.sui_connector_config.clone().ika_system_object_id);
 
     runtimes.ika_node.spawn(async move {
         match ika_node::IkaNode::start_async(config, registry_service, VERSION).await {
@@ -150,7 +151,6 @@ fn main() {
 
     runtimes.metrics.spawn(async move {
         let node = node_once_cell_clone.get().await;
-        let chain_identifier = ChainIdentifier::from(config.sui_connector_config.ika_system_object_id);
         info!("Ika chain identifier: {chain_identifier}");
         prometheus_registry
             .register(mysten_metrics::uptime_metric(
