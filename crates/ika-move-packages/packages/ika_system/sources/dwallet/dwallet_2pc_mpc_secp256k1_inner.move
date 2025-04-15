@@ -57,6 +57,8 @@ public struct DWalletCoordinatorInner has store {
     sessions: ObjectTable<u64, DWalletSession>,
     session_start_events: Bag,
     number_of_completed_sessions: u64,
+    started_immediate_sessions_count: u64,
+    completed_immediate_sessions_count: u64,
     /// The last session sequence number that an event was emitted for.
     /// i.e, the user requested this session, and the event was emitted for it.
     next_session_sequence_number: u64,
@@ -392,6 +394,10 @@ public struct CreatedEncryptionKeyEvent has copy, drop, store {
 }
 
 public struct DWalletNetworkDKGDecryptionKeyRequestEvent has copy, drop, store {
+    dwallet_network_decryption_key_id: ID,
+}
+
+public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 }
 
@@ -767,6 +773,8 @@ public(package) fun create_dwallet_coordinator_inner(
         previous_committee: bls_committee::empty(),
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: option::none(),
+        completed_immediate_sessions_count: 0,
+        started_immediate_sessions_count: 0,
         extra_fields: bag::new(ctx),
     }
 }
@@ -797,7 +805,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
     });
     let mut zero_ika = coin::zero<IKA>(ctx);
     let mut zero_sui = coin::zero<SUI>(ctx);
-    event::emit(self.charge_and_create_current_epoch_dwallet_event(
+    event::emit(self.charge_and_create_immediate_dwallet_event(
         dwallet_network_decryption_key_id,
         dwallet_pricing::zero(),
         &mut zero_ika,
@@ -818,10 +826,9 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     public_output: vector<u8>,
     key_shares: vector<u8>,
     is_last: bool,
-    session_sequence_number: u64
 ) {
     if (is_last) {
-        self.remove_session_and_charge<DWalletNetworkDKGDecryptionKeyRequestEvent>(session_sequence_number);
+        self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.public_output.push_back(public_output);
@@ -860,6 +867,25 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
     copy_table_vec(&mut dwallet_network_decryption_key.previous_epoch_shares, &dwallet_network_decryption_key.current_epoch_shares);
     copy_table_vec(&mut dwallet_network_decryption_key.current_epoch_shares, &dwallet_network_decryption_key.next_epoch_shares);
+}
+
+public(package) fun emit_start_reshare_event(
+    self: &mut DWalletCoordinatorInner, key_cap: &DWalletNetworkDecryptionKeyCap, ctx: &mut TxContext
+) {
+    let mut zero_ika = coin::zero<IKA>(ctx);
+    let mut zero_sui = coin::zero<SUI>(ctx);
+    self.charge_and_create_immediate_dwallet_event(
+        key_cap.dwallet_network_decryption_key_id,
+        dwallet_pricing::zero(),
+        &mut zero_ika,
+        &mut zero_sui,
+        DWalletDecryptionKeyReshareRequestEvent {
+            dwallet_network_decryption_key_id: key_cap.dwallet_network_decryption_key_id
+        },
+        ctx,
+    );
+    zero_ika.destroy_zero();
+    zero_sui.destroy_zero();
 }
 
 fun get_active_dwallet_network_decryption_key(
@@ -946,6 +972,45 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
     self.update_last_session_to_complete_in_current_epoch();
+
+    event
+}
+
+fun charge_and_create_immediate_dwallet_event<E: copy + drop + store>(
+    self: &mut DWalletCoordinatorInner,
+    dwallet_network_decryption_key_id: ID,
+    pricing: PricingPerOperation,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
+    event_data: E,
+    ctx: &mut TxContext,
+): DWalletEvent<E> {
+    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
+
+    let computation_fee_charged_ika = payment_ika.split(pricing.computation_ika(), ctx).into_balance();
+
+    let consensus_validation_fee_charged_ika = payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance();
+    let gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
+
+    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
+    dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
+    self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
+    self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+    self.started_immediate_sessions_count = self.started_immediate_sessions_count + 1;
+
+    let event = DWalletEvent {
+        epoch: self.current_epoch,
+        session_sequence_number: self.next_session_sequence_number,
+        session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+        event_data,
+    };
+
+    // This special logic is here to allow the immediate session have a unique session sequenece number on the one hand,
+    // yet ignore it when deciding the last session to complete in the current epoch, as immediate sessions
+    // are special sessions that must get completed in the current epoch.
+    self.next_session_sequence_number = self.next_session_sequence_number + 1;
+    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
+    self.last_session_to_complete_in_current_epoch = self.last_session_to_complete_in_current_epoch + 1;
 
     event
 }
@@ -1172,7 +1237,8 @@ fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinat
 
 public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinatorInner): bool {
     return self.locked_last_session_to_complete_in_current_epoch &&
-        self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch
+        self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
+        self.completed_immediate_sessions_count == self.started_immediate_sessions_count
 }
 
 fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
@@ -2340,8 +2406,7 @@ fun process_checkpoint_message(
                 let public_output = bcs_body.peel_vec_u8();
                 let key_shares = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                let session_sequence_number = bcs_body.peel_u64();
-                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last, session_sequence_number);
+                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
             };
         i = i + 1;
     };
