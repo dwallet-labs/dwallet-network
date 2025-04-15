@@ -330,8 +330,6 @@ pub struct AuthorityPerEpochStore {
     /// wait for in-memory tasks for the epoch to finish. If node crashes at this stage validator
     /// will start with the new epoch(and will open instance of per-epoch store for a new epoch).
     epoch_alive: tokio::sync::RwLock<bool>,
-    initiate_process_mid_epoch: Mutex<StakeAggregator<(), true>>,
-    end_of_publish: Mutex<StakeAggregator<(), true>>,
 
     /// MutexTable for transaction locks (prevent concurrent execution of same transaction)
     mutex_table: MutexTable<MessageDigest>,
@@ -628,8 +626,6 @@ impl AuthorityPerEpochStore {
             executed_digests_notify_read: NotifyRead::new(),
             synced_checkpoint_notify_read: NotifyRead::new(),
             highest_synced_checkpoint: RwLock::new(0),
-            initiate_process_mid_epoch: Mutex::new(initiate_process_mid_epoch),
-            end_of_publish: Mutex::new(end_of_publish),
             mutex_table: MutexTable::new(MUTEX_TABLE_SIZE),
             epoch_open_time: current_time,
             mid_epoch_time: Default::default(),
@@ -1049,14 +1045,6 @@ impl AuthorityPerEpochStore {
 
         join_all(unprocessed_keys_registrations).await;
         Ok(())
-    }
-
-    pub fn has_sent_end_of_publish(&self, authority: &AuthorityName) -> IkaResult<bool> {
-        Ok(self
-            .end_of_publish
-            .try_lock()
-            .expect("No contention on end_of_publish lock")
-            .contains_key(authority))
     }
 
     pub fn clear_override_protocol_upgrade_buffer_stake(&self) -> IkaResult {
@@ -1715,21 +1703,12 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {
                 let authority = capabilities.authority;
-                if self
-                    .get_reconfig_state_read_lock_guard()
-                    .should_accept_consensus_certs()
-                {
-                    debug!(
-                        "Received CapabilityNotificationV2 from {:?}",
-                        authority.concise()
-                    );
-                    self.record_capabilities_v1(capabilities)?;
-                } else {
-                    debug!(
-                        "Ignoring CapabilityNotificationV2 from {:?} because of end of epoch",
-                        authority.concise()
-                    );
-                }
+                debug!(
+                    "Received CapabilityNotificationV2 from {:?}",
+                    authority.concise()
+                );
+                self.record_capabilities_v1(capabilities)?;
+
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {

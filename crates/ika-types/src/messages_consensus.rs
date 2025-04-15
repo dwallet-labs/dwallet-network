@@ -44,10 +44,6 @@ pub struct ConsensusTransaction {
 #[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub enum ConsensusTransactionKey {
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
-    InitiateProcessMidEpoch(AuthorityName),
-    EndOfPublish(AuthorityName),
-    CapabilityNotification(AuthorityName, u64 /* generation */),
-
     /// The message sent between MPC parties in a dwallet MPC session.
     DWalletMPCMessage(DWalletMPCMessageKey),
     /// The output of a dwallet MPC session.
@@ -63,16 +59,6 @@ impl Debug for ConsensusTransactionKey {
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
             }
-            Self::InitiateProcessMidEpoch(name) => {
-                write!(f, "InitiateProcessMidEpoch({:?})", name.concise())
-            }
-            Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
-            Self::CapabilityNotification(name, generation) => write!(
-                f,
-                "CapabilityNotification({:?}, {:?})",
-                name.concise(),
-                generation
-            ),
             Self::DWalletMPCMessage(message) => {
                 write!(f, "DWalletMPCMessage({:?})", message,)
             }
@@ -97,75 +83,9 @@ impl Debug for ConsensusTransactionKey {
 
 pub type MovePackageDigest = [u8; 32];
 
-/// Used to advertise capabilities of each authority via consensus. This allows validators to
-/// negotiate the creation of the AdvanceEpoch transaction.
-#[derive(Serialize, Deserialize, Clone, Hash)]
-pub struct AuthorityCapabilitiesV1 {
-    /// Originating authority - must match transaction source authority from consensus.
-    pub authority: AuthorityName,
-    /// Generation number set by sending authority. Used to determine which of multiple
-    /// AuthorityCapabilities messages from the same authority is the most recent.
-    ///
-    /// (Currently, we just set this to the current time in milliseconds since the epoch, but this
-    /// should not be interpreted as a timestamp.)
-    pub generation: u64,
-
-    /// ProtocolVersions that the authority supports.
-    pub supported_protocol_versions: SupportedProtocolVersionsWithHashes,
-
-    /// A list of package id to move package digest to
-    /// determine whether to do a protocol upgrade on sui.
-    pub available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
-}
-
-impl Debug for AuthorityCapabilitiesV1 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AuthorityCapabilities")
-            .field("authority", &self.authority.concise())
-            .field("generation", &self.generation)
-            .field(
-                "supported_protocol_versions",
-                &self.supported_protocol_versions,
-            )
-            .field("available_move_packages", &self.available_move_packages)
-            .finish()
-    }
-}
-
-impl AuthorityCapabilitiesV1 {
-    pub fn new(
-        authority: AuthorityName,
-        chain: Chain,
-        supported_protocol_versions: SupportedProtocolVersions,
-        available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
-    ) -> Self {
-        let generation = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Ika did not exist prior to 1970")
-            .as_millis()
-            .try_into()
-            .expect("This build of ika is not supported in the year 500,000,000");
-        Self {
-            authority,
-            generation,
-            supported_protocol_versions:
-                SupportedProtocolVersionsWithHashes::from_supported_versions(
-                    supported_protocol_versions,
-                    chain,
-                ),
-            available_move_packages,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConsensusTransactionKind {
     CheckpointSignature(Box<CheckpointSignatureMessage>),
-    InitiateProcessMidEpoch(AuthorityName),
-    EndOfPublish(AuthorityName),
-
-    CapabilityNotificationV1(AuthorityCapabilitiesV1),
-
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, MPCMessageSlice),
     /// Sending Authority and its MaliciousReport.
@@ -308,15 +228,6 @@ impl ConsensusTransaction {
                     data.checkpoint_message.auth_sig().authority,
                     data.checkpoint_message.sequence_number,
                 )
-            }
-            ConsensusTransactionKind::InitiateProcessMidEpoch(authority) => {
-                ConsensusTransactionKey::InitiateProcessMidEpoch(*authority)
-            }
-            ConsensusTransactionKind::EndOfPublish(authority) => {
-                ConsensusTransactionKey::EndOfPublish(*authority)
-            }
-            ConsensusTransactionKind::CapabilityNotificationV1(cap) => {
-                ConsensusTransactionKey::CapabilityNotification(cap.authority, cap.generation)
             }
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(DWalletMPCMessageKey {
