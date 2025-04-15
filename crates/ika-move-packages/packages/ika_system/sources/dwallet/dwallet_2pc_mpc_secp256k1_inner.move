@@ -973,6 +973,7 @@ fun charge_and_create_immediate_dwallet_event<E: copy + drop + store>(
     dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
     self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
     self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+    self.started_immediate_sessions_count = self.started_immediate_sessions_count + 1;
 
     let event = DWalletEvent {
         epoch: self.current_epoch,
