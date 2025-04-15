@@ -1109,11 +1109,6 @@ impl AuthorityState {
     }
 
     #[instrument(level = "error", skip_all)]
-    pub async fn create_initiate_process_mid_epoch(&self) -> MessageKind {
-        MessageKind::new_initiate_process_mid_epoch_message()
-    }
-
-    #[instrument(level = "error", skip_all)]
     pub async fn create_end_of_epoch_message(
         &self,
         epoch_store: &Arc<AuthorityPerEpochStore>,

@@ -114,8 +114,6 @@ pub struct Secp256K1NetworkDKGOutputSlice {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
 pub enum MessageKind {
-    InitiateProcessMidEpoch,
-
     /// A list of message to be run at the
     /// end of the epoch.
     EndOfEpoch(Vec<EndOfEpochMessageKind>),
@@ -137,7 +135,6 @@ impl MessageKind {
 
     pub fn name(&self) -> &'static str {
         match self {
-            Self::InitiateProcessMidEpoch => "InitiateProcessMidEpoch",
             Self::EndOfEpoch(_) => "EndOfEpoch",
             MessageKind::DwalletMPCNetworkDKGOutput(_) => "DwalletMPCNetworkDKGOutput",
             MessageKind::DwalletDKGFirstRoundOutput(_) => "DwalletDKGFirstRoundOutput",
@@ -149,10 +146,6 @@ impl MessageKind {
                 "DwalletPartialSignatureVerificationOutput"
             }
         }
-    }
-
-    pub fn new_initiate_process_mid_epoch_message() -> Self {
-        Self::InitiateProcessMidEpoch
     }
 
     pub fn new_end_of_epoch_message(messages: Vec<EndOfEpochMessageKind>) -> Self {
@@ -168,9 +161,6 @@ impl Display for MessageKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
         match &self {
-            Self::InitiateProcessMidEpoch => {
-                writeln!(writer, "MessageKind : InitiateProcessMidEpoch")?;
-            }
             Self::EndOfEpoch(_) => {
                 writeln!(writer, "MessageKind : EndOfEpoch")?;
             }

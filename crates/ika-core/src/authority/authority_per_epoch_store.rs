@@ -339,10 +339,6 @@ pub struct AuthorityPerEpochStore {
     /// ok because this is used for metric purposes and we could tolerate some skews occasionally.
     pub(crate) epoch_open_time: Instant,
 
-    /// The moment when epoch is reach mid round. We don't care much about crash recovery because it's
-    /// a metric that doesn't have to be available for each epoch.
-    mid_epoch_time: RwLock<Option<Instant>>,
-
     /// The moment when epoch is closed. We don't care much about crash recovery because it's
     /// a metric that doesn't have to be available for each epoch, and it's only used during
     /// the last few seconds of an epoch.
@@ -616,7 +612,6 @@ impl AuthorityPerEpochStore {
             highest_synced_checkpoint: RwLock::new(0),
             mutex_table: MutexTable::new(MUTEX_TABLE_SIZE),
             epoch_open_time: current_time,
-            mid_epoch_time: Default::default(),
             epoch_close_time: Default::default(),
             metrics,
             epoch_start_configuration,
@@ -1141,15 +1136,6 @@ impl AuthorityPerEpochStore {
 
     pub fn get_reconfig_state_write_lock_guard(&self) -> RwLockWriteGuard<ReconfigState> {
         self.reconfig_state_mem.write()
-    }
-
-    pub fn update_mid_epoch_time(&self) {
-        // Set mid_epoch_time for metric purpose.
-        let mut mid_epoch_time = self.mid_epoch_time.write();
-        if mid_epoch_time.is_none() {
-            // Only update it the first time epoch is closed.
-            *mid_epoch_time = Some(Instant::now());
-        }
     }
 
     pub fn close_user_certs(&self, mut lock_guard: RwLockWriteGuard<'_, ReconfigState>) {
