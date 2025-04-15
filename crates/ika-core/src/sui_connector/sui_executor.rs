@@ -291,7 +291,7 @@ where
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
         info!("Running `process_mid_epoch()`");
-        let (gas_coin, gas_obj_ref, owner) = sui_client
+        let (_gas_coin, gas_obj_ref, owner) = sui_client
             .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
             .await;
 
