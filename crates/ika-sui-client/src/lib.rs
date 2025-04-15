@@ -295,6 +295,7 @@ where
         }
     }
 
+    /// Retrieves Sui's System clock object.
     pub async fn get_clock(&self) -> IkaResult<Clock> {
         let result = self
             .inner
