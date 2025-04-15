@@ -989,6 +989,9 @@ fun charge_and_create_immediate_dwallet_event<E: copy + drop + store>(
     self.sessions.add(session_sequence_number, session);
     self.started_immediate_sessions_count = self.started_immediate_sessions_count + 1;
     self.next_session_sequence_number = session_sequence_number + 1;
+    // Increase the number of completed sessions by one to ignore this session in the regular sessions count, as it
+    // is an immediate session. The `next_session_sequence_number` should get incremented so this session will have
+    // a unique sequence number.
     self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
     self.update_last_session_to_complete_in_current_epoch();
 
