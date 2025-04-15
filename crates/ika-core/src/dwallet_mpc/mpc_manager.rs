@@ -96,7 +96,6 @@ pub struct DWalletMPCManager {
     /// yet received an event for from Sui.
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
-    pub(crate) next_active_committe: OnceCell<Committee>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -155,7 +154,6 @@ impl DWalletMPCManager {
             pending_for_computation_order: VecDeque::new(),
             pending_for_events_order: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
-            next_active_committe: OnceCell::new(),
         })
     }
 
@@ -684,21 +682,18 @@ impl DWalletMPCManager {
         new_session
     }
 
-    pub(super) fn set_next_active_committee(&mut self, upcoming_committee: Committee) {
-        match self.next_active_committe.set(upcoming_committee) {
-            Ok(_) => {
-                info!("set the next active committee");
-            }
-            Err(_) => {
-                error!("failed to set the next active committee");
-            }
-        }
-
     pub(super) async fn get_next_active_committee_until_success(&self) -> Committee {
         loop {
-            if let Some(next_active_committee) = self.next_active_committe.get() {
-                return next_active_committee.clone();
-            }
+            if let Ok(epoch_store) = self.epoch_store() {
+                if let Some(next_active_committee) = epoch_store
+                    .next_epoch_active_committee
+                    .read()
+                    .await
+                    .as_ref()
+                {
+                    return next_active_committee.clone();
+                }
+            };
             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         }
     }
