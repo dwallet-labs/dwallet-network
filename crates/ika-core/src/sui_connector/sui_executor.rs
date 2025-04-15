@@ -193,31 +193,36 @@ where
         message: Vec<u8>,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
-        metrics: &Arc<SuiConnectorMetrics>,
+        _metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
-        let gas_coins = sui_client
-            .get_gas_objects(sui_notifier.sui_address)
-            .await;
-
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let mut ptb = ProgrammableTransactionBuilder::new();
-        let gas_coin = gas_coins.first().unwrap();
+
         if gas_coins.len() > 1 {
-            let coins = gas_coins
+            info!("More than one gas coin was found, merging them into one gas coin.");
+            let coins: IkaResult<Vec<_>> = gas_coins
                 .iter()
                 .skip(1)
                 .map(|c| {
                     ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
-                        // Safe to unwrap as this function is only being called at the swarm config.
-                        .unwrap()
+                        .map_err(|e| {
+                            IkaError::SuiConnectorInternalError(format!(
+                                "error merging coin ProgrammableTransactionBuilder::input: {e}"
+                            ))
+                        })
                 })
-                .collect::<Vec<_>>();
+                .collect();
+
+            let coins = coins?;
+
             ptb.command(sui_types::transaction::Command::MergeCoins(
-                // Safe to unwrap as this function is only being called at the swarm config.
                 Argument::GasCoin,
-                // Keep the gas object out
-                coins.to_vec(),
+                coins,
             ));
         }
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("No gas coin found".to_string()))?;
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
 
@@ -250,6 +255,7 @@ where
                 "Can't ProgrammableTransactionBuilder::move_call: {e}"
             ))
         })?;
+
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
