@@ -156,12 +156,15 @@ where
         // Check if we can advance the epoch.
         let all_epoch_sessions_finished = coordinator.number_of_completed_sessions
             == coordinator.last_session_to_complete_in_current_epoch;
+        let all_immediate_sessions_completed = coordinator.number_of_completed_sessions
+            == coordinator.completed_immediate_sessions_count;
         let next_epoch_committee_exists = system_inner_v1
             .validators
             .next_epoch_active_committee
             .is_some();
         if coordinator.locked_last_session_to_complete_in_current_epoch
             && all_epoch_sessions_finished
+            && all_immediate_sessions_completed
             && next_epoch_committee_exists
         {
             info!("Calling `process_request_advance_epoch()`");
