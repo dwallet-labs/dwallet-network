@@ -4,23 +4,31 @@
 //! and forward them to the [`DWalletMPCManager`].
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::session_info_from_event;
+use crate::epoch::reconfiguration::ReconfigurationInitiator;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
-use ika_sui_client::SuiBridgeClient;
+use ika_sui_client::{SuiBridgeClient, SuiClient};
+use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
+use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
+use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
+use ika_types::sui::{DWalletCoordinatorInner, SystemInnerTrait};
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::{Duration, Instant, SystemTime};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::EpochId;
 use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
-use tokio::sync::{watch, Notify};
+use tokio::sync::{watch, Notify, OnceCell};
 use tokio::task::yield_now;
+use tokio::time;
 use tracing::{error, info, warn};
 use typed_store::Map;
 
@@ -47,6 +55,99 @@ impl DWalletMPCService {
         }
     }
 
+    async fn update_last_session_to_complete_in_current_epoch(&self, sui_client: &SuiBridgeClient) {
+        let system_inner = sui_client.get_system_inner_until_success().await;
+        if let Some(dwallet_coordinator_id) = system_inner
+            .into_init_version_for_tooling()
+            .dwallet_2pc_mpc_secp256k1_id
+        {
+            let coordinator_state = sui_client
+                .get_dwallet_coordinator_inner_until_success(dwallet_coordinator_id)
+                .await;
+            match coordinator_state {
+                DWalletCoordinatorInner::V1(inner_state) => {
+                    let mut dwallet_mpc_manager = self.epoch_store.get_dwallet_mpc_manager().await;
+                    dwallet_mpc_manager.update_last_session_to_complete_in_current_epoch(
+                        inner_state.last_session_to_complete_in_current_epoch,
+                    );
+                }
+            }
+        }
+    }
+
+    async fn sync_next_committee(
+        sui_client: Arc<SuiBridgeClient>,
+        next_committee: Arc<OnceCell<Committee>>,
+    ) {
+        while next_committee.get().is_none() {
+            let system_inner = sui_client.get_system_inner_until_success().await;
+            let system_inner = system_inner.into_init_version_for_tooling();
+
+            let Some(new_next_committee) = system_inner.get_ika_next_epoch_active_committee()
+            else {
+                info!("ika next epoch active committee not found, retrying...");
+                // sleep for a while before retrying
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                continue;
+            };
+
+            let validator_ids: Vec<_> = new_next_committee.keys().cloned().collect();
+
+            let validators = match sui_client
+                .get_validators_info_by_ids(&system_inner, validator_ids)
+                .await
+            {
+                Ok(v) => v,
+                Err(e) => {
+                    error!("failed to fetch validators info: {e}");
+                    continue;
+                }
+            };
+
+            let class_group_data = match sui_client
+                .get_class_groups_public_keys_and_proofs(&validators)
+                .await
+            {
+                Ok(data) => data,
+                Err(e) => {
+                    error!("can't get_class_groups_public_keys_and_proofs: {e}");
+                    continue;
+                }
+            };
+
+            let class_group_map = class_group_data
+                .into_iter()
+                .filter_map(|(id, class_groups)| {
+                    let voting_power = match new_next_committee.get(&id) {
+                        Some((power, _)) => *power,
+                        None => {
+                            error!("missing validator voting power for id: {id}");
+                            return None;
+                        }
+                    };
+
+                    match bcs::to_bytes(&class_groups) {
+                        Ok(bytes) => Some((voting_power, bytes)),
+                        Err(e) => {
+                            error!("failed to serialize class group for id {id}: {e}");
+                            None
+                        }
+                    }
+                })
+                .collect();
+
+            let committee = Committee::new(
+                system_inner.epoch + 1,
+                new_next_committee.values().cloned().collect(),
+                class_group_map,
+            );
+
+            if let Err(e) = next_committee.set(committee) {
+                error!("failed to set next committee: {e}");
+            }
+        }
+    }
+
     async fn load_missed_events(&self, sui_client: Arc<SuiBridgeClient>) {
         let epoch_store = self.epoch_store.clone();
         loop {
@@ -70,7 +171,7 @@ impl DWalletMPCService {
                         })
                         .await;
                     info!(
-                        "successfully processed missed event from Sui, session: {:?}",
+                        "Successfully processed missed event from Sui, session: {:?}",
                         session_info.session_id
                     );
                 }
@@ -89,6 +190,10 @@ impl DWalletMPCService {
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>) {
         self.load_missed_events(sui_client.clone()).await;
+        tokio::spawn(Self::sync_next_committee(
+            sui_client.clone(),
+            Arc::new(OnceCell::new()),
+        ));
         loop {
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
@@ -96,7 +201,9 @@ impl DWalletMPCService {
                 }
                 Ok(false) => (),
             };
-            tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MS)).await;
+            tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
+            self.update_last_session_to_complete_in_current_epoch(&sui_client)
+                .await;
             if let Err(e) = self.read_events().await {
                 error!("failed to handle dWallet MPC events: {}", e);
             }
@@ -129,11 +236,11 @@ impl DWalletMPCService {
             for event in events {
                 manager.handle_dwallet_db_event(event).await;
             }
-            let new_dwallet_messages_iter = tables
+            let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
                 .iter_with_bounds(Some(self.last_read_consensus_round + 1), None);
             let mut new_messages = vec![];
-            for (round, messages) in new_dwallet_messages_iter {
+            for (round, messages) in mpc_msgs_iter {
                 self.last_read_consensus_round = round;
                 new_messages.extend(messages);
             }

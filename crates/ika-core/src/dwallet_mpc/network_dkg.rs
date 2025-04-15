@@ -25,7 +25,7 @@ use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use sui_types::base_types::ObjectID;
-use tracing::log::{info, warn};
+use tracing::{info, warn};
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
@@ -423,6 +423,7 @@ fn network_dkg_secp256k1_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Secp256k1,
@@ -435,6 +436,7 @@ fn network_dkg_ristretto_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Ristretto,

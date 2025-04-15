@@ -3,7 +3,8 @@
 
 use super::{Element, SystemInnerTrait};
 use crate::committee::StakeUnit;
-use crate::crypto::AuthorityName;
+use crate::crypto::{AuthorityName, AuthorityPublicKey};
+use fastcrypto::traits::ToFromBytes;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use sui_types::balance::Balance;
@@ -143,8 +144,11 @@ pub struct DWalletCoordinatorInnerV1 {
     pub current_epoch: u64,
     pub sessions: ObjectTable,
     pub session_start_events: Bag,
-    pub first_session_sequence_number: u64,
+    pub number_of_completed_sessions: u64,
     pub next_session_sequence_number: u64,
+    pub last_session_to_complete_in_current_epoch: u64,
+    pub locked_last_session_to_complete_in_current_epoch: bool,
+    pub max_active_sessions_buffer: u64,
     pub dwallets: ObjectTable,
     pub dwallet_network_decryption_keys: ObjectTable,
     pub encryption_keys: ObjectTable,
@@ -251,7 +255,9 @@ impl SystemInnerTrait for SystemInnerV1 {
                     (
                         // AuthorityName is derived from the protocol public key,
                         // therefore it is safe to unwrap.
-                        AuthorityName::new(v.protocol_pubkey.clone().bytes.try_into().unwrap()),
+                        (&AuthorityPublicKey::from_bytes(v.protocol_pubkey.clone().bytes.as_ref())
+                            .unwrap())
+                            .into(),
                         v.voting_power,
                     ),
                 )

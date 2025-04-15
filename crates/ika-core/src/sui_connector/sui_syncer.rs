@@ -1,17 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-//! The SuiSyncer module is responsible for synchronizing Events emitted
-//! on Sui blockchain from concerned modules of ika_system package.
-
+//! The SuiSyncer module handles synchronizing Events emitted
+//! on the Sui blockchain from concerned modules of `ika_system` package.
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
-use ika_types::committee::Committee;
-use ika_types::error::{IkaError, IkaResult};
-use ika_types::sui::system_inner_v1::BlsCommittee;
-use ika_types::sui::SystemInnerTrait;
+use ika_types::error::IkaResult;
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::spawn_logged_monitored_task;
@@ -19,14 +15,12 @@ use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
-use tokio::sync::OnceCell;
 use tokio::{
     sync::Notify,
     task::JoinHandle,
     time::{self, Duration},
 };
-use tracing::log::error;
-use tracing::{info, warn};
+use tracing::{debug, error, info, warn};
 
 /// Map from contract address to their start cursor (exclusive)
 pub type SuiTargetModules = HashMap<Identifier, Option<EventID>>;
@@ -34,7 +28,7 @@ pub type SuiTargetModules = HashMap<Identifier, Option<EventID>>;
 pub struct SuiSyncer<C> {
     sui_client: Arc<SuiClient<C>>,
     // The last transaction that the syncer has fully processed.
-    // Syncer will resume post this transaction (i.e. exclusive), when it starts.
+    // Syncer will resume posting this transaction (i.e., exclusive) when it starts.
     cursors: SuiTargetModules,
     metrics: Arc<SuiConnectorMetrics>,
     perpetual_tables: Arc<AuthorityPerpetualTables>,
@@ -92,77 +86,6 @@ where
         Ok(task_handles)
     }
 
-    async fn sync_next_committee(
-        sui_client: Arc<SuiClient<C>>,
-        next_committee: Arc<OnceCell<Committee>>,
-    ) {
-        while next_committee.get().is_none() {
-            let system_inner = sui_client.get_system_inner_until_success().await;
-            let system_inner = system_inner.into_init_version_for_tooling();
-
-            let Some(new_next_committee) = system_inner.get_ika_next_epoch_active_committee()
-            else {
-                info!("ika next epoch active committee not found, retrying...");
-                continue;
-            };
-
-            let validator_ids: Vec<_> = new_next_committee.keys().cloned().collect();
-
-            let validators = match sui_client
-                .get_validators_info_by_ids(&system_inner, validator_ids)
-                .await
-            {
-                Ok(v) => v,
-                Err(e) => {
-                    error!("failed to fetch validators info: {e}");
-                    continue;
-                }
-            };
-
-            let class_group_data = match sui_client
-                .get_class_groups_public_keys_and_proofs(&validators)
-                .await
-            {
-                Ok(data) => data,
-                Err(e) => {
-                    error!("can't get_class_groups_public_keys_and_proofs: {e}");
-                    continue;
-                }
-            };
-
-            let class_group_map = class_group_data
-                .into_iter()
-                .filter_map(|(id, class_groups)| {
-                    let voting_power = match new_next_committee.get(&id) {
-                        Some((power, _)) => *power,
-                        None => {
-                            error!("missing validator voting power for id: {id}");
-                            return None;
-                        }
-                    };
-
-                    match bcs::to_bytes(&class_groups) {
-                        Ok(bytes) => Some((voting_power, bytes)),
-                        Err(e) => {
-                            error!("failed to serialize class group for id {id}: {e}");
-                            None
-                        }
-                    }
-                })
-                .collect();
-
-            let committee = Committee::new(
-                system_inner.epoch + 1,
-                new_next_committee.values().cloned().collect(),
-                class_group_map,
-            );
-
-            if let Err(e) = next_committee.set(committee) {
-                error!("failed to set next committee: {e}");
-            }
-        }
-    }
-
     /// Sync the DwalletMPC network keys from the Sui client to the local store.
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
@@ -201,7 +124,7 @@ where
                             dwallet_mpc_network_keys.add_new_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
                         {
                             error!(
-                                "Failed to add new key for `key_id`: {:?}, error: {:?}",
+                                "failed to add new key for `key_id`: {:?}, error: {:?}",
                                 key_id, e
                             );
                         }
@@ -212,7 +135,7 @@ where
 
     async fn run_event_listening_task(
         // The module where interested events are defined.
-        // module is always of ika system package.
+        // Module is always of ika system package.
         module: Identifier,
         mut cursor: Option<EventID>,
         sui_client: Arc<SuiClient<C>>,
@@ -220,7 +143,7 @@ where
         metrics: Arc<SuiConnectorMetrics>,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
     ) {
-        tracing::info!(?module, ?cursor, "Starting sui events listening task");
+        info!(?module, ?cursor, "Starting sui events listening task");
         let mut interval = time::interval(query_interval);
         interval.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
 
@@ -238,7 +161,7 @@ where
                     sui_client_clone.get_latest_checkpoint_sequence_number(),
                     Duration::from_secs(120)
                 ) else {
-                    tracing::error!("Failed to query latest checkpoint sequence number from sui client after retry");
+                    error!("failed to query the latest checkpoint sequence number from the sui client after retry");
                     continue;
                 };
                 last_synced_sui_checkpoints_metric.set(latest_checkpoint_sequence_number as i64);
@@ -251,152 +174,31 @@ where
                 sui_client.query_events_by_module(module.clone(), cursor),
                 Duration::from_secs(120)
             ) else {
-                tracing::error!("Failed to query events from sui client after retry");
+                error!("failed to query events from the sui client — retrying");
                 continue;
             };
 
             let len = events.data.len();
             if len != 0 {
                 if !events.has_next_page {
-                    // If this is the last page, it means we have processed all events up to the latest checkpoint
+                    // If this is the last page, it means we have processed all
+                    // events up to the latest checkpoint
                     // We can then update the latest checkpoint metric.
                     notify.notify_one();
                 }
                 perpetual_tables
                     .insert_pending_events(module.clone(), &events.data)
-                    .expect("Failed to insert pending events");
+                    // todo(zeev): this code can panic, check it.
+                    .expect("failed to insert pending events");
                 if let Some(next) = events.next_cursor {
                     cursor = Some(next);
                 }
-                tracing::info!(?module, ?cursor, "Observed {len} new Sui events");
+                info!(
+                    ?module,
+                    ?cursor,
+                    "Observed {len} new events from Sui network"
+                );
             }
         }
     }
 }
-//
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//
-//     use crate::{sui_client::SuiClient, sui_mock_client::SuiMockClient};
-//     use prometheus::Registry;
-//     use sui_json_rpc_types::EventPage;
-//     use sui_types::{digests::TransactionDigest, event::EventID, Identifier};
-//     use tokio::time::timeout;
-//
-//     #[tokio::test]
-//     async fn test_sui_syncer_basic() -> anyhow::Result<()> {
-//         telemetry_subscribers::init_for_testing();
-//         let registry = Registry::new();
-//         mysten_metrics::init_metrics(&registry);
-//         let metrics = Arc::new(SuiHandlerMetrics::new(&registry));
-//         let mock = SuiMockClient::default();
-//         let client = Arc::new(SuiClient::new_for_testing(mock.clone()));
-//         let module_foo = Identifier::new("Foo").unwrap();
-//         let module_bar = Identifier::new("Bar").unwrap();
-//         let empty_events = EventPage::empty();
-//         let cursor = EventID {
-//             tx_digest: TransactionDigest::random(),
-//             event_seq: 0,
-//         };
-//         add_event_response(&mock, module_foo.clone(), cursor, empty_events.clone());
-//         add_event_response(&mock, module_bar.clone(), cursor, empty_events.clone());
-//
-//         let target_modules = HashMap::from_iter(vec![
-//             (module_foo.clone(), Some(cursor)),
-//             (module_bar.clone(), Some(cursor)),
-//         ]);
-//         let interval = Duration::from_millis(200);
-//         let (_handles, mut events_rx) = SuiSyncer::new(client, target_modules, metrics.clone())
-//             .run(interval)
-//             .await
-//             .unwrap();
-//
-//         // Initially there are no events
-//         assert_no_more_events(interval, &mut events_rx).await;
-//
-//         mock.set_latest_checkpoint_sequence_number(999);
-//         // Module Foo has new events
-//         let mut event_1: SuiEvent = SuiEvent::random_for_testing();
-//         let package_id = BRIDGE_PACKAGE_ID;
-//         event_1.type_.address = package_id.into();
-//         event_1.type_.module = module_foo.clone();
-//         let module_foo_events_1: sui_json_rpc_types::Page<SuiEvent, EventID> = EventPage {
-//             data: vec![event_1.clone(), event_1.clone()],
-//             next_cursor: Some(event_1.id),
-//             has_next_page: false,
-//         };
-//         add_event_response(&mock, module_foo.clone(), event_1.id, empty_events.clone());
-//         add_event_response(
-//             &mock,
-//             module_foo.clone(),
-//             cursor,
-//             module_foo_events_1.clone(),
-//         );
-//
-//         let (identifier, received_events) = events_rx.recv().await.unwrap();
-//         assert_eq!(identifier, module_foo);
-//         assert_eq!(received_events.len(), 2);
-//         assert_eq!(received_events[0].id, event_1.id);
-//         assert_eq!(received_events[1].id, event_1.id);
-//         // No more
-//         assert_no_more_events(interval, &mut events_rx).await;
-//         assert_eq!(
-//             metrics
-//                 .last_synced_sui_checkpoints
-//                 .get_metric_with_label_values(&["Foo"])
-//                 .unwrap()
-//                 .get(),
-//             999
-//         );
-//
-//         // Module Bar has new events
-//         let mut event_2: SuiEvent = SuiEvent::random_for_testing();
-//         event_2.type_.address = package_id.into();
-//         event_2.type_.module = module_bar.clone();
-//         let module_bar_events_1 = EventPage {
-//             data: vec![event_2.clone()],
-//             next_cursor: Some(event_2.id),
-//             has_next_page: true, // Set to true so that the syncer will not update the last synced checkpoint
-//         };
-//         add_event_response(&mock, module_bar.clone(), event_2.id, empty_events.clone());
-//
-//         add_event_response(&mock, module_bar.clone(), cursor, module_bar_events_1);
-//
-//         let (identifier, received_events) = events_rx.recv().await.unwrap();
-//         assert_eq!(identifier, module_bar);
-//         assert_eq!(received_events.len(), 1);
-//         assert_eq!(received_events[0].id, event_2.id);
-//         // No more
-//         assert_no_more_events(interval, &mut events_rx).await;
-//         assert_eq!(
-//             metrics
-//                 .last_synced_sui_checkpoints
-//                 .get_metric_with_label_values(&["Bar"])
-//                 .unwrap()
-//                 .get(),
-//             0, // Not updated
-//         );
-//
-//         Ok(())
-//     }
-//
-//     async fn assert_no_more_events(
-//         interval: Duration,
-//         events_rx: &mut mysten_metrics::metered_channel::Receiver<(Identifier, Vec<SuiEvent>)>,
-//     ) {
-//         match timeout(interval * 2, events_rx.recv()).await {
-//             Err(_e) => (),
-//             other => panic!("Should have timed out, but got: {:?}", other),
-//         };
-//     }
-//
-//     fn add_event_response(
-//         mock: &SuiMockClient,
-//         module: Identifier,
-//         cursor: EventID,
-//         events: EventPage,
-//     ) {
-//         mock.add_event_response(BRIDGE_PACKAGE_ID, module.clone(), cursor, events.clone());
-//     }
-// }
