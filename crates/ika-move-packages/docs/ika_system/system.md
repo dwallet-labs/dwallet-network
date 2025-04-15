@@ -1797,6 +1797,7 @@ Advances the epoch to the next epoch.
     <b>assert</b>!(inner_dwallet.all_current_epoch_sessions_completed(), <a href="../ika_system/system.md#(ika_system=0x0)_system_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
     inner_system.advance_epoch(clock.timestamp_ms(), ctx);
     dwallet_coordinator.advance_epoch(inner_system.<a href="../ika_system/system.md#(ika_system=0x0)_system_active_committee">active_committee</a>());
+    inner_system.advance_network_keys(dwallet_coordinator);
 }
 </code></pre>
 
