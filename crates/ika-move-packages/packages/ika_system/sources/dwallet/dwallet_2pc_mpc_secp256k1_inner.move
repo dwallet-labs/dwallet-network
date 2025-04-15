@@ -397,6 +397,10 @@ public struct DWalletNetworkDKGDecryptionKeyRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 }
 
+public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
+    dwallet_network_decryption_key_id: ID,
+}
+
 /// An event emitted when the first round of the DKG process is completed.
 ///
 /// This event is emitted by the blockchain to notify the user about
@@ -863,6 +867,25 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
     copy_table_vec(&mut dwallet_network_decryption_key.previous_epoch_shares, &dwallet_network_decryption_key.current_epoch_shares);
     copy_table_vec(&mut dwallet_network_decryption_key.current_epoch_shares, &dwallet_network_decryption_key.next_epoch_shares);
+}
+
+public(package) fun emit_start_reshare_event(
+    self: &mut DWalletCoordinatorInner, key_cap: &DWalletNetworkDecryptionKeyCap, ctx: &mut TxContext
+) {
+    let mut zero_ika = coin::zero<IKA>(ctx);
+    let mut zero_sui = coin::zero<SUI>(ctx);
+    self.charge_and_create_immediate_dwallet_event(
+        key_cap.dwallet_network_decryption_key_id,
+        dwallet_pricing::zero(),
+        &mut zero_ika,
+        &mut zero_sui,
+        DWalletDecryptionKeyReshareRequestEvent {
+            dwallet_network_decryption_key_id: key_cap.dwallet_network_decryption_key_id
+        },
+        ctx,
+    );
+    zero_ika.destroy_zero();
+    zero_sui.destroy_zero();
 }
 
 fun get_active_dwallet_network_decryption_key(

@@ -13,7 +13,7 @@ use ika_system::bls_committee::{BlsCommittee};
 use ika_system::protocol_cap::ProtocolCap;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::dwallet_2pc_mpc_secp256k1::{Self, DWalletCoordinator};
-use ika_system::dwallet_2pc_mpc_secp256k1_inner::{DWalletNetworkDecryptionKeyCap};
+use ika_system::dwallet_2pc_mpc_secp256k1_inner::{DWalletNetworkDecryptionKeyCap, DWalletCoordinatorInner};
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::coin::Coin;
@@ -181,6 +181,12 @@ public(package) fun advance_network_keys(
     self: &SystemInnerV1, dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator
 ) {
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
+}
+
+public(package) fun emit_start_reshare_events(
+    self: &SystemInnerV1, dwallet_coordinator_inner: &mut DWalletCoordinatorInner, ctx: &mut TxContext
+) {
+    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
 }
 
 public(package) fun create_system_parameters(
