@@ -4,7 +4,6 @@ use crate::dwallet_mpc::dkg::{
     DKGSecondPartyPublicInputGenerator,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
-use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
@@ -23,25 +22,18 @@ use ika_types::messages_dwallet_mpc::{
     StartDKGSecondRoundEvent, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
 };
 use jsonrpsee::core::Serialize;
-use k256::ecdsa::hazmat::bits2field;
-use k256::elliptic_curve;
 use k256::elliptic_curve::ops::Reduce;
-use k256::U256;
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
-use rand_core::OsRng;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
 use std::collections::{HashMap, HashSet};
 use std::vec::Vec;
-use sui_json_rpc_types::SuiEvent;
-use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
+use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::{ID, UID};
-use tracing::warn;
 
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
-use twopc_mpc::secp256k1;
 
 mod cryptographic_computations_orchestrator;
 mod dkg;
@@ -82,7 +74,7 @@ pub(crate) fn party_ids_to_authority_names(
         .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
 }
 
-/// Rust version of the Move sui::dynamic_field::Field type
+/// Rust version of the Move sui::dynamic_field::Field type.
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Field<N, V> {
     pub id: UID,
@@ -90,8 +82,9 @@ pub struct Field<N, V> {
     pub value: V,
 }
 
-/// The type of the event is different when we receive an emitted event and when we fetch the event's dynamic field
-/// directly from Sui. This function first tried to deserialize the event as a [`DWalletMPCSuiEvent`], and if it fails,
+/// The type of the event is different when we receive an emitted event and when we
+/// fetch the event's the dynamic field directly from Sui.
+/// This function first tried to deserialize the event as a [`DWalletMPCSuiEvent`], and if it fails,
 /// it tries to deserialize it as a [`Field<ID, DWalletMPCSuiEvent<T>>`].
 fn deserialize_event_or_dynamic_field<T: DeserializeOwned + DWalletMPCEventTrait>(
     event_contents: &[u8],
@@ -166,6 +159,7 @@ fn start_encrypted_share_verification_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
     }
@@ -181,6 +175,7 @@ fn dkg_first_party_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent>,
 ) -> anyhow::Result<SessionInfo> {
     Ok(SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event),
     })
@@ -203,6 +198,7 @@ fn dkg_second_party_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: ObjectID::from(deserialized_event.session_id),
         mpc_round: MPCProtocolInitData::DKGSecond(deserialized_event.clone()),
     }
@@ -224,6 +220,7 @@ fn presign_party_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::Presign(deserialized_event),
     }
@@ -262,6 +259,7 @@ fn sign_public_input(
 
 fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEvent>) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::Sign(deserialized_event.clone()),
     }
@@ -271,6 +269,7 @@ fn get_verify_partial_signatures_session_info(
     deserialized_event: &DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
     }

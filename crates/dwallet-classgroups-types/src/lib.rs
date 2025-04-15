@@ -154,16 +154,3 @@ pub fn read_class_groups_seed_from_file<P: AsRef<std::path::Path>>(
         DwalletMPCError::FailedToReadCGKey(format!("failed to read class group seed: {:?}", e))
     })?)
 }
-
-/// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
-// Can't use the TryFrom trait as it leads to conflicting implementations.
-// Must use `anyhow::Result`, because this function is being used also in the centralized party crate.
-pub fn public_keys_from_dkg_output(
-    value: DKGDecentralizedOutput,
-) -> anyhow::Result<DWalletPublicKeys> {
-    Ok(DWalletPublicKeys {
-        centralized_public_share: bcs::to_bytes(&value.centralized_party_public_key_share)?,
-        decentralized_public_share: bcs::to_bytes(&value.public_key_share)?,
-        public_key: bcs::to_bytes(&value.public_key)?,
-    })
-}

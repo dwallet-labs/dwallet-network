@@ -5,9 +5,8 @@ use crate::committee::{Committee, EpochId, StakeUnit};
 use crate::error::{IkaError, IkaResult};
 use crate::intent::{Intent, IntentMessage, IntentScope};
 use anyhow::{anyhow, Error};
-use derive_more::{AsMut, AsRef, From};
+use derive_more::{AsRef, From};
 pub use enum_dispatch::enum_dispatch;
-use eyre::eyre;
 use fastcrypto::bls12381::min_pk::{
     BLS12381AggregateSignature, BLS12381AggregateSignatureAsBytes, BLS12381KeyPair,
     BLS12381PrivateKey, BLS12381PublicKey, BLS12381Signature,
