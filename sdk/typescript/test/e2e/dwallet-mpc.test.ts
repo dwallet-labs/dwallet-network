@@ -131,12 +131,15 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should sign full flow', async () => {
+		console.log('Creating dWallet...');
 		const dwalletID = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
+		console.log('Running Presign...');
 		const presignCompletion = await presign(conf, dwalletID.dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
+		console.log('Running Sign...');
 		await sign(
 			conf,
 			presignCompletion.presign_id,
