@@ -2107,43 +2107,12 @@ impl AuthorityPerEpochStore {
             .insert(&(checkpoint_seq, index), info)?)
     }
 
-    pub fn record_initiate_process_mid_epoch_quorum_time_metric(&self) {
-        if let Some(mid_epoch_time) = *self.mid_epoch_time.read() {
-            self.metrics
-                .epoch_initiate_process_mid_epoch_quorum_time_since_mid_epoch_reached_ms
-                .set(mid_epoch_time.elapsed().as_millis() as i64);
-        }
-    }
-
     pub(crate) fn record_epoch_pending_certs_process_time_metric(&self) {
         if let Some(epoch_close_time) = *self.epoch_close_time.read() {
             self.metrics
                 .epoch_pending_certs_processed_time_since_epoch_close_ms
                 .set(epoch_close_time.elapsed().as_millis() as i64);
         }
-    }
-
-    pub fn record_end_of_message_quorum_time_metric(&self) {
-        if let Some(epoch_close_time) = *self.epoch_close_time.read() {
-            self.metrics
-                .epoch_end_of_publish_quorum_time_since_epoch_close_ms
-                .set(epoch_close_time.elapsed().as_millis() as i64);
-        }
-    }
-
-    pub(crate) fn report_epoch_metrics_at_last_checkpoint(&self, checkpoint_count: u64) {
-        if let Some(epoch_close_time) = *self.epoch_close_time.read() {
-            self.metrics
-                .epoch_last_checkpoint_created_time_since_epoch_close_ms
-                .set(epoch_close_time.elapsed().as_millis() as i64);
-        }
-        info!(epoch=?self.epoch(), "Epoch statistics: checkpoint_count={:?}", checkpoint_count);
-        self.metrics
-            .epoch_checkpoint_count
-            .set(checkpoint_count as i64);
-        // self.metrics
-        //     .epoch_transaction_count
-        //     .set(stats.transaction_count as i64);
     }
 
     pub fn record_epoch_reconfig_start_time_metric(&self) {
