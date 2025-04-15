@@ -1464,36 +1464,13 @@ impl AuthorityPerEpochStore {
 
         // Only after batch is written, notify checkpoint service to start building any new
         // pending checkpoints.
-        if make_checkpoint {
             debug!(
                 ?consensus_commit_info.round,
                 "Notifying checkpoint service about new pending checkpoint(s)",
             );
             checkpoint_service.notify_checkpoint()?;
-        }
 
         self.process_notifications(&notifications, &end_of_publish_transactions);
-
-        if mid_epoch_round {
-            info!(
-                epoch=?self.epoch(),
-                mid_epoch_round=?mid_epoch_round,
-                "Notified last checkpoint"
-            );
-            self.record_initiate_process_mid_epoch_quorum_time_metric();
-        }
-
-        if final_round {
-            info!(
-                epoch=?self.epoch(),
-                // Accessing lock on purpose so that the compiler ensures
-                // the lock is not yet dropped.
-                lock=?lock.as_ref(),
-                final_round=?final_round,
-                "Notified last checkpoint"
-            );
-            self.record_end_of_message_quorum_time_metric();
-        }
 
         Ok(verified_messages)
     }
