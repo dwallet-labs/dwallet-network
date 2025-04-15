@@ -83,9 +83,45 @@ impl Debug for ConsensusTransactionKey {
 
 pub type MovePackageDigest = [u8; 32];
 
+/// Used to advertise capabilities of each authority via consensus. This allows validators to
+/// negotiate the creation of the AdvanceEpoch transaction.
+#[derive(Serialize, Deserialize, Clone, Hash)]
+pub struct AuthorityCapabilitiesV1 {
+    /// Originating authority - must match transaction source authority from consensus.
+    pub authority: AuthorityName,
+    /// Generation number set by sending authority. Used to determine which of multiple
+    /// AuthorityCapabilities messages from the same authority is the most recent.
+    ///
+    /// (Currently, we just set this to the current time in milliseconds since the epoch, but this
+    /// should not be interpreted as a timestamp.)
+    pub generation: u64,
+
+    /// ProtocolVersions that the authority supports.
+    pub supported_protocol_versions: SupportedProtocolVersionsWithHashes,
+
+    /// A list of package id to move package digest to
+    /// determine whether to do a protocol upgrade on sui.
+    pub available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
+}
+
+impl Debug for AuthorityCapabilitiesV1 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AuthorityCapabilities")
+            .field("authority", &self.authority.concise())
+            .field("generation", &self.generation)
+            .field(
+                "supported_protocol_versions",
+                &self.supported_protocol_versions,
+            )
+            .field("available_move_packages", &self.available_move_packages)
+            .finish()
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConsensusTransactionKind {
     CheckpointSignature(Box<CheckpointSignatureMessage>),
+    CapabilityNotificationV1(AuthorityCapabilitiesV1),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, MPCMessageSlice),
     /// Sending Authority and its MaliciousReport.

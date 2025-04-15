@@ -87,9 +87,7 @@ use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
     CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage,
 };
-use ika_types::messages_consensus::{
-    ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind,
-};
+use ika_types::messages_consensus::{AuthorityCapabilitiesV1, ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind};
 use ika_types::messages_consensus::{Round, TimestampMs};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
