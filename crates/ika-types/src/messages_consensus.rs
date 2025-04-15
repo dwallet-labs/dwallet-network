@@ -44,6 +44,7 @@ pub struct ConsensusTransaction {
 #[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub enum ConsensusTransactionKey {
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
+    CapabilityNotification(AuthorityName, u64 /* generation */),
     /// The message sent between MPC parties in a dwallet MPC session.
     DWalletMPCMessage(DWalletMPCMessageKey),
     /// The output of a dwallet MPC session.
@@ -59,6 +60,12 @@ impl Debug for ConsensusTransactionKey {
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
             }
+            Self::CapabilityNotification(name, generation) => write!(
+                f,
+                "CapabilityNotification({:?}, {:?})",
+                name.concise(),
+                generation
+            ),
             Self::DWalletMPCMessage(message) => {
                 write!(f, "DWalletMPCMessage({:?})", message,)
             }
@@ -234,6 +241,9 @@ impl ConsensusTransaction {
                     data.checkpoint_message.auth_sig().authority,
                     data.checkpoint_message.sequence_number,
                 )
+            }
+            ConsensusTransactionKind::CapabilityNotificationV1(cap) => {
+                ConsensusTransactionKey::CapabilityNotification(cap.authority, cap.generation)
             }
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(DWalletMPCMessageKey {

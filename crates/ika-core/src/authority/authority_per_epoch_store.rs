@@ -87,7 +87,10 @@ use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
     CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage,
 };
-use ika_types::messages_consensus::{AuthorityCapabilitiesV1, ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind};
+use ika_types::messages_consensus::{
+    AuthorityCapabilitiesV1, ConsensusTransaction, ConsensusTransactionKey,
+    ConsensusTransactionKind,
+};
 use ika_types::messages_consensus::{Round, TimestampMs};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
@@ -1297,6 +1300,22 @@ impl AuthorityPerEpochStore {
                     return None;
                 }
             }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind:
+                    ConsensusTransactionKind::CapabilityNotificationV1(AuthorityCapabilitiesV1 {
+                        authority,
+                        ..
+                    }),
+                ..
+            }) => {
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "CapabilityNotification authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
             SequencedConsensusTransactionKind::System(_) => {}
         }
         Some(VerifiedSequencedConsensusTransaction(transaction))
@@ -1627,6 +1646,28 @@ impl AuthorityPerEpochStore {
                 // be skipped when a batch is already part of a certificate, so we must also
                 // notify here.
                 checkpoint_service.notify_checkpoint_signature(self, info)?;
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::CapabilityNotificationV1(capabilities),
+                ..
+            }) => {
+                let authority = capabilities.authority;
+                if self
+                    .get_reconfig_state_read_lock_guard()
+                    .should_accept_consensus_certs()
+                {
+                    debug!(
+                        "Received CapabilityNotificationV2 from {:?}",
+                        authority.concise()
+                    );
+                    self.record_capabilities_v1(capabilities)?;
+                } else {
+                    debug!(
+                        "Ignoring CapabilityNotificationV2 from {:?} because of end of epoch",
+                        authority.concise()
+                    );
+                }
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
