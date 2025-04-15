@@ -2073,8 +2073,6 @@ pub(crate) struct ConsensusCommitOutput {
     // Consensus and reconfig state
     consensus_round: Round,
     consensus_messages_processed: BTreeSet<SequencedConsensusTransactionKey>,
-    initiate_process_mid_epoch: BTreeSet<AuthorityName>,
-    end_of_publish: BTreeSet<AuthorityName>,
     reconfig_state: Option<ReconfigState>,
     consensus_commit_stats: Option<ExecutionIndicesWithStats>,
 
@@ -2112,14 +2110,6 @@ impl ConsensusCommitOutput {
 
     pub(crate) fn set_dwallet_mpc_round_events(&mut self, new_value: Vec<DWalletMPCEvent>) {
         self.dwallet_mpc_round_events = new_value;
-    }
-
-    fn insert_initiate_process_mid_epoch(&mut self, authority: AuthorityName) {
-        self.initiate_process_mid_epoch.insert(authority);
-    }
-
-    fn insert_end_of_publish(&mut self, authority: AuthorityName) {
-        self.end_of_publish.insert(authority);
     }
 
     fn record_consensus_commit_stats(&mut self, stats: ExecutionIndicesWithStats) {

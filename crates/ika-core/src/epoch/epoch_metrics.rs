@@ -43,10 +43,6 @@ pub struct EpochMetrics {
     /// This is the duration of (1) through (2) above.
     pub epoch_pending_certs_processed_time_since_epoch_close_ms: IntGauge,
 
-    /// The interval from when the epoch is closed to when we receive 2f+1 EndOfPublish messages.
-    /// This is the duration of (1) through (3) above.
-    pub epoch_end_of_publish_quorum_time_since_epoch_close_ms: IntGauge,
-
     /// The interval from when the epoch is closed to when we created the last checkpoint of the
     /// epoch.
     /// This is the duration of (1) through (4) above.
@@ -138,11 +134,6 @@ impl EpochMetrics {
             epoch_pending_certs_processed_time_since_epoch_close_ms: register_int_gauge_with_registry!(
                 "epoch_pending_certs_processed_time_since_epoch_close_ms",
                 "Time interval from when epoch was closed to when all pending certificates are processed",
-                registry
-            ).unwrap(),
-            epoch_end_of_publish_quorum_time_since_epoch_close_ms: register_int_gauge_with_registry!(
-                "epoch_end_of_publish_quorum_time_since_epoch_close_ms",
-                "Time interval from when epoch was closed to when 2f+1 EndOfPublish messages are received",
                 registry
             ).unwrap(),
             epoch_last_checkpoint_created_time_since_epoch_close_ms: register_int_gauge_with_registry!(
