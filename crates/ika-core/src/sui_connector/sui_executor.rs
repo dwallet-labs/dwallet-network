@@ -299,7 +299,7 @@ where
     ) -> IkaResult<()> {
         info!("Running `process_mid_epoch()`");
         let (_gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
+            .get_gas_data(sui_notifier.gas_object_ref.0)
             .await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
@@ -349,7 +349,7 @@ where
     ) -> IkaResult<()> {
         info!("Process `lock_last_active_session_sequence_number()`");
         let (_gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
+            .get_gas_data(sui_notifier.gas_object_ref.0)
             .await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
@@ -404,7 +404,7 @@ where
     ) -> IkaResult<()> {
         info!("Running `process_request_advance_epoch()`");
         let (_gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
+            .get_gas_data(sui_notifier.gas_object_ref.0)
             .await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
@@ -462,7 +462,7 @@ where
         metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
         let (gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
+            .get_gas_data(sui_notifier.gas_object_ref.0)
             .await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
