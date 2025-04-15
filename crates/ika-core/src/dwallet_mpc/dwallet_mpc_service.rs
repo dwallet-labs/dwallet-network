@@ -75,77 +75,66 @@ impl DWalletMPCService {
         }
     }
 
-    async fn sync_next_committee(
-        sui_client: Arc<SuiBridgeClient>,
-        next_committee: Arc<OnceCell<Committee>>,
-    ) {
-        while next_committee.get().is_none() {
-            let system_inner = sui_client.get_system_inner_until_success().await;
-            let system_inner = system_inner.into_init_version_for_tooling();
+    async fn read_next_committee(sui_client: Arc<SuiBridgeClient>) -> Option<Committee> {
+        let system_inner = sui_client.get_system_inner_until_success().await;
+        let system_inner = system_inner.into_init_version_for_tooling();
 
-            let Some(new_next_committee) = system_inner.get_ika_next_epoch_active_committee()
-            else {
-                info!("ika next epoch active committee not found, retrying...");
-                // sleep for a while before retrying
-                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                continue;
-            };
+        let Some(new_next_committee) = system_inner.get_ika_next_epoch_active_committee() else {
+            info!("ika next epoch active committee not found...");
+            return None;
+        };
 
-            let validator_ids: Vec<_> = new_next_committee.keys().cloned().collect();
+        let validator_ids: Vec<_> = new_next_committee.keys().cloned().collect();
 
-            let validators = match sui_client
-                .get_validators_info_by_ids(&system_inner, validator_ids)
-                .await
-            {
-                Ok(v) => v,
-                Err(e) => {
-                    error!("failed to fetch validators info: {e}");
-                    continue;
-                }
-            };
-
-            let class_group_data = match sui_client
-                .get_class_groups_public_keys_and_proofs(&validators)
-                .await
-            {
-                Ok(data) => data,
-                Err(e) => {
-                    error!("can't get_class_groups_public_keys_and_proofs: {e}");
-                    continue;
-                }
-            };
-
-            let class_group_map = class_group_data
-                .into_iter()
-                .filter_map(|(id, class_groups)| {
-                    let voting_power = match new_next_committee.get(&id) {
-                        Some((power, _)) => *power,
-                        None => {
-                            error!("missing validator voting power for id: {id}");
-                            return None;
-                        }
-                    };
-
-                    match bcs::to_bytes(&class_groups) {
-                        Ok(bytes) => Some((voting_power, bytes)),
-                        Err(e) => {
-                            error!("failed to serialize class group for id {id}: {e}");
-                            None
-                        }
-                    }
-                })
-                .collect();
-
-            let committee = Committee::new(
-                system_inner.epoch + 1,
-                new_next_committee.values().cloned().collect(),
-                class_group_map,
-            );
-
-            if let Err(e) = next_committee.set(committee) {
-                error!("failed to set next committee: {e}");
+        let validators = match sui_client
+            .get_validators_info_by_ids(&system_inner, validator_ids)
+            .await
+        {
+            Ok(v) => v,
+            Err(e) => {
+                error!("failed to fetch validators info: {e}");
+                return None;
             }
-        }
+        };
+
+        let class_group_data = match sui_client
+            .get_class_groups_public_keys_and_proofs(&validators)
+            .await
+        {
+            Ok(data) => data,
+            Err(e) => {
+                error!("can't get_class_groups_public_keys_and_proofs: {e}");
+                return None;
+            }
+        };
+
+        let class_group_map = class_group_data
+            .into_iter()
+            .filter_map(|(id, class_groups)| {
+                let voting_power = match new_next_committee.get(&id) {
+                    Some((power, _)) => *power,
+                    None => {
+                        error!("missing validator voting power for id: {id}");
+                        return None;
+                    }
+                };
+
+                match bcs::to_bytes(&class_groups) {
+                    Ok(bytes) => Some((voting_power, bytes)),
+                    Err(e) => {
+                        error!("failed to serialize class group for id {id}: {e}");
+                        None
+                    }
+                }
+            })
+            .collect();
+
+        let committee = Committee::new(
+            system_inner.epoch + 1,
+            new_next_committee.values().cloned().collect(),
+            class_group_map,
+        );
+        Some(committee)
     }
 
     async fn load_missed_events(&self, sui_client: Arc<SuiBridgeClient>) {
@@ -189,11 +178,8 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>) {
+        let mut next_active_committee = None;
         self.load_missed_events(sui_client.clone()).await;
-        tokio::spawn(Self::sync_next_committee(
-            sui_client.clone(),
-            Arc::new(OnceCell::new()),
-        ));
         loop {
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
@@ -208,6 +194,15 @@ impl DWalletMPCService {
                 error!("failed to handle dWallet MPC events: {}", e);
             }
             let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
+            if next_active_committee.is_none() {
+                match Self::read_next_committee(sui_client.clone()).await {
+                    Some(committee) => {
+                        manager.set_next_active_committee(committee.clone());
+                        next_active_committee = Some(committee);
+                    }
+                    None => {}
+                };
+            }
             let Ok(tables) = self.epoch_store.tables() else {
                 error!("Failed to load DB tables from epoch store");
                 continue;
