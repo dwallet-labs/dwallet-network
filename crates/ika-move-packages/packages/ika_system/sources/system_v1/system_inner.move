@@ -976,7 +976,6 @@ fun process_checkpoint_message(
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_bool();
-                bcs_body.peel_u64();
             };
         i = i + 1;
     };
