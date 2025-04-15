@@ -636,25 +636,6 @@ impl SequencedConsensusTransaction {
         self.transaction.key()
     }
 
-    pub fn is_initiate_process_mid_epoch(&self) -> bool {
-        if let SequencedConsensusTransactionKind::External(ref transaction) = self.transaction {
-            matches!(
-                transaction.kind,
-                ConsensusTransactionKind::InitiateProcessMidEpoch(..)
-            )
-        } else {
-            false
-        }
-    }
-
-    pub fn is_end_of_publish(&self) -> bool {
-        if let SequencedConsensusTransactionKind::External(ref transaction) = self.transaction {
-            matches!(transaction.kind, ConsensusTransactionKind::EndOfPublish(..))
-        } else {
-            false
-        }
-    }
-
     pub fn is_system(&self) -> bool {
         matches!(
             self.transaction,

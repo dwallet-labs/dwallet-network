@@ -1361,11 +1361,7 @@ impl AuthorityPerEpochStore {
             Vec::with_capacity(verified_transactions.len());
         let mut end_of_publish_transactions = Vec::with_capacity(verified_transactions.len());
         for tx in verified_transactions {
-            if tx.0.is_initiate_process_mid_epoch() {
-                initiate_process_mid_epoch_transactions.push(tx);
-            } else if tx.0.is_end_of_publish() {
-                end_of_publish_transactions.push(tx);
-            } else if tx.0.is_system() {
+            if tx.0.is_system() {
                 system_transactions.push(tx);
             } else {
                 current_commit_sequenced_consensus_transactions.push(tx);
