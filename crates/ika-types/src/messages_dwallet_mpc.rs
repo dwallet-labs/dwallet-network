@@ -249,7 +249,7 @@ pub struct SessionInfo {
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
     pub mpc_round: MPCProtocolInitData,
-    pub immediate: bool,
+    pub is_immediate: bool,
 }
 
 pub trait DWalletMPCEventTrait {

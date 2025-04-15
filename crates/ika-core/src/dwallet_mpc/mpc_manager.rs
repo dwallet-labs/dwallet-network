@@ -315,6 +315,16 @@ impl DWalletMPCManager {
             if session.mpc_event_data.is_none() {
                 session.mpc_event_data = mpc_event_data;
             }
+            if session_info.is_immediate {
+                drop(session);
+                // Safe to unwrap, as we just checked that the session exists in the pending sessions.
+                let session = self
+                    .pending_sessions
+                    .remove(&session_info.sequence_number)
+                    .unwrap();
+                self.mpc_sessions
+                    .insert(session_info.session_id, session.clone());
+            }
         } else {
             self.push_new_mpc_session(
                 &session_info.session_id,
