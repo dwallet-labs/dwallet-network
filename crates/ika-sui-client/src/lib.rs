@@ -532,7 +532,7 @@ where
 
     pub async fn execute_transaction_block_with_effects(
         &self,
-        tx: sui_types::transaction::Transaction,
+        tx: Transaction,
     ) -> IkaResult<SuiTransactionBlockResponse> {
         self.inner.execute_transaction_block_with_effects(tx).await
     }

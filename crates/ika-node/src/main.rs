@@ -19,6 +19,7 @@ use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use mysten_common::sync::async_once_cell::AsyncOnceCell;
 use sui_types::committee::EpochId;
 use sui_types::multiaddr::Multiaddr;
+use ika_types::digests::ChainIdentifier;
 
 // Define the `GIT_REVISION` and `VERSION` consts
 bin_version::bin_version!();
@@ -146,11 +147,10 @@ fn main() {
     });
 
     let node_once_cell_clone = node_once_cell.clone();
-    runtimes.metrics.spawn(async move {
-        // todo(omer): what should we put in here?
-        let node = node_once_cell_clone.get().await;
-        let chain_identifier = "ika";
 
+    runtimes.metrics.spawn(async move {
+        let node = node_once_cell_clone.get().await;
+        let chain_identifier = ChainIdentifier::from(config.sui_connector_config.ika_system_object_id);
         info!("Ika chain identifier: {chain_identifier}");
         prometheus_registry
             .register(mysten_metrics::uptime_metric(
@@ -160,7 +160,7 @@ fn main() {
                     "fullnode"
                 },
                 VERSION,
-                chain_identifier,
+                &chain_identifier.to_string(),
             ))
             .unwrap();
 
