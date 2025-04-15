@@ -76,8 +76,11 @@ where
         }
     }
 
-    pub async fn run_epoch_switch(&self, sui_notifier: &SuiNotifier) {
-        let ika_system_state_inner = self.sui_client.get_system_inner_until_success().await;
+    pub async fn run_epoch_switch(
+        &self,
+        sui_notifier: &SuiNotifier,
+        ika_system_state_inner: &SystemInner,
+    ) {
         let Ok(clock) = self.sui_client.get_clock().await else {
             error!("Failed to get clock when running epoch switch");
             return;
@@ -213,7 +216,8 @@ where
                 .unwrap_or(0);
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
-                self.run_epoch_switch(sui_notifier).await;
+                self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
+                    .await;
                 if let Ok(Some(checkpoint_message)) = self
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
