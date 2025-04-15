@@ -304,7 +304,7 @@ where
                 IkaError::SuiClientInternalError(format!("Can't get the System clock from Sui: {e}"))
             })?;
         bcs::from_bytes::<Clock>(&result).map_err(|e| {
-            IkaError::SuiClientSerializationError(format!("Can't serialize System: {e}"))
+          IkaError::SuiClientSerializationError(format!("Can't deserialize Sui System clock: {e}"))
         })
     }
 
