@@ -260,7 +260,6 @@ pub trait DWalletMPCEventTrait {
 pub struct DWalletMPCSuiEvent<E: DWalletMPCEventTrait> {
     pub epoch: u64,
     pub session_sequence_number: u64,
-    pub immediate: bool,
     pub session_id: ObjectID,
     pub event_data: E,
 }

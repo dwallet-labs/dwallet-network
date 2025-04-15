@@ -378,7 +378,6 @@ public enum ECDSASignState has copy, drop, store {
 public struct DWalletEvent<E: copy + drop + store> has copy, drop, store {
     epoch: u64,
     session_sequence_number: u64,
-    immediate: bool,
     session_id: ID,
     event_data: E,
 }
