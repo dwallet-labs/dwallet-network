@@ -326,7 +326,7 @@ pub async fn pick_highest_balance_coin(
 mod tests {
     use super::*;
     use std::time::Duration;
-
+    use tracing::debug;
     async fn example_func_ok() -> anyhow::Result<()> {
         Ok(())
     }

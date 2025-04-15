@@ -1515,36 +1515,6 @@ impl AuthorityPerEpochStore {
         Ok(verified_messages)
     }
 
-    // Caller is not required to set ExecutionIndices with the right semantics in
-    // VerifiedSequencedConsensusTransaction.
-    // Also, ConsensusStats and hash will not be updated in the db with this function, unlike in
-    // process_consensus_transactions_and_commit_boundary().
-    #[cfg(any(test, feature = "test-utils"))]
-    pub async fn process_consensus_transactions_for_tests<C: CheckpointServiceNotify>(
-        self: &Arc<Self>,
-        transactions: Vec<SequencedConsensusTransaction>,
-        checkpoint_service: &Arc<C>,
-        authority_metrics: &Arc<AuthorityMetrics>,
-        skip_consensus_commit_prologue_in_test: bool,
-    ) -> IkaResult<Vec<VerifiedExecutableTransaction>> {
-        self.process_consensus_transactions_and_commit_boundary(
-            transactions,
-            &ExecutionIndicesWithStats::default(),
-            &ConsensusCommitInfo::new_for_test(
-                // if self.randomness_state_enabled() {
-                //     self.get_highest_pending_checkpoint_height() / 2 + 1
-                // } else {
-                //     self.get_highest_pending_checkpoint_height() + 1
-                // },
-                self.get_highest_pending_checkpoint_height() + 1,
-                0,
-                skip_consensus_commit_prologue_in_test,
-            ),
-            authority_metrics,
-        )
-        .await
-    }
-
     fn process_notifications(
         &self,
         notifications: &[SequencedConsensusTransactionKey],
