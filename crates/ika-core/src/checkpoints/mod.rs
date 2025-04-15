@@ -68,8 +68,6 @@ pub struct EpochStats {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PendingCheckpointInfo {
     pub timestamp_ms: CheckpointTimestamp,
-    pub mid_of_epoch: bool,
-    pub last_of_epoch: bool,
     pub checkpoint_height: CheckpointHeight,
 }
 
@@ -732,24 +730,11 @@ impl CheckpointBuilder {
             // - minimum interval has elapsed ...
             let current_timestamp = pending.details().timestamp_ms;
             let can_build = match last_timestamp {
-                    Some(last_timestamp) => {
-                        current_timestamp >= last_timestamp + min_checkpoint_interval_ms
-                    }
-                    None => true,
-                // - or, next PendingCheckpoint is last-of-epoch (since the last-of-epoch checkpoint
-                //   should be written separately) ...
-                } || checkpoints_iter
-                    .peek()
-                    .is_some_and(|(_, next_pending)| next_pending.details().last_of_epoch)
-                // - or, we have reached end of epoch.
-                    || pending.details().last_of_epoch
-                // - or, next PendingCheckpoint is mid-of-epoch (since the mid-of-epoch checkpoint
-                //   should be written separately) ...
-                || checkpoints_iter
-                    .peek()
-                    .is_some_and(|(_, next_pending)| next_pending.details().mid_of_epoch)
-                // - or, we have reached mid of epoch.
-                    || pending.details().mid_of_epoch;
+                Some(last_timestamp) => {
+                    current_timestamp >= last_timestamp + min_checkpoint_interval_ms
+                }
+                None => true,
+            };
             grouped_pending_checkpoints.push(pending);
             if !can_build {
                 debug!(
@@ -1016,8 +1001,6 @@ impl CheckpointBuilder {
     fn split_checkpoint_chunks(
         &self,
         messages: Vec<MessageKind>,
-        mid_of_epoch: bool,
-        last_of_epoch: bool,
     ) -> anyhow::Result<Vec<Vec<MessageKind>>> {
         let _guard = monitored_scope("CheckpointBuilder::split_checkpoint_chunks");
         let mut chunks = Vec::new();
@@ -1046,7 +1029,7 @@ impl CheckpointBuilder {
             chunk_size += size;
         }
 
-        if !chunk.is_empty() || (chunks.is_empty() && (mid_of_epoch || last_of_epoch)) {
+        if !chunk.is_empty() {
             // We intentionally create an empty chunk if there is no content provided
             // and `last_of_epoch` or `mid_of_epoch` to make an end of epoch message.
             // Important: if some conditions are added here later, we need to make sure we always
@@ -1145,8 +1128,6 @@ impl CheckpointBuilder {
 
         let chunks = self.split_checkpoint_chunks(
             all_messages,
-            details.mid_of_epoch,
-            details.last_of_epoch,
         )?;
         let chunks_count = chunks.len();
 
@@ -1165,8 +1146,6 @@ impl CheckpointBuilder {
                 self.epoch_store
                     .record_epoch_first_checkpoint_creation_time_metric();
             }
-            let mid_checkpoint_of_epoch = details.mid_of_epoch && index == chunks_count - 1;
-            let last_checkpoint_of_epoch = details.last_of_epoch && index == chunks_count - 1;
 
             let sequence_number = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0);
             last_checkpoint_seq = Some(sequence_number);
@@ -1185,34 +1164,10 @@ impl CheckpointBuilder {
                 messages.len()
             );
 
-            if mid_checkpoint_of_epoch {
-                messages.push(self.state.create_initiate_process_mid_epoch().await)
-            }
-
-            if last_checkpoint_of_epoch {
-                messages.push(
-                    self.state
-                        .create_end_of_epoch_message(&self.epoch_store, timestamp_ms)
-                        .await,
-                )
-            }
 
             let checkpoint_message =
                 CheckpointMessage::new(epoch, sequence_number, messages, timestamp_ms);
             checkpoint_message.report_checkpoint_age(&self.metrics.last_created_checkpoint_age);
-            if last_checkpoint_of_epoch {
-                info!(
-                    checkpoint_seq = sequence_number,
-                    "creating last checkpoint of epoch {}", epoch
-                );
-                self.epoch_store.report_epoch_metrics_at_last_checkpoint(
-                    sequence_number - self.previous_epoch_last_checkpoint_sequence_number,
-                );
-                // if let Some(stats) = self.tables.get_epoch_stats(epoch, &summary) {
-                //     self.epoch_store
-                //         .report_epoch_metrics_at_last_checkpoint(sequence_number + 1);
-                // }
-            }
             last_checkpoint = Some((sequence_number, checkpoint_message.clone()));
             checkpoints.push(checkpoint_message);
         }
@@ -2265,7 +2220,6 @@ mod tests {
                 .collect(),
             details: PendingCheckpointInfo {
                 timestamp_ms,
-                last_of_epoch: false,
                 checkpoint_height: i,
             },
         })
