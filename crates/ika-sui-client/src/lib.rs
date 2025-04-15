@@ -297,9 +297,10 @@ where
 
     /// Retrieves Sui's System clock object.
     pub async fn get_clock(&self) -> IkaResult<Clock> {
+        let sui_clock_address = "0x6";
         let result = self
             .inner
-            .get_clock(ObjectID::from_hex_literal("0x6").unwrap())
+            .get_clock(ObjectID::from_hex_literal(sui_clock_address).unwrap())
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
