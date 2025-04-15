@@ -58,9 +58,7 @@ impl LogCheckpointOutput {
 }
 
 #[async_trait]
-impl<T: SubmitToConsensus> CheckpointOutput
-    for SubmitCheckpointToConsensus<T>
-{
+impl<T: SubmitToConsensus> CheckpointOutput for SubmitCheckpointToConsensus<T> {
     #[instrument(level = "debug", skip_all)]
     async fn checkpoint_created(
         &self,

@@ -39,7 +39,7 @@ use tokio::time::{self};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_handler::{classify, SequencedConsensusTransactionKey};
 use crate::consensus_throughput_calculator::{ConsensusThroughputProfiler, Level};
-use crate::epoch::reconfiguration::{ReconfigState};
+use crate::epoch::reconfiguration::ReconfigState;
 use crate::metrics::LatencyObserver;
 use consensus_core::{BlockStatus, ConnectionStatus};
 use ika_protocol_config::ProtocolConfig;
