@@ -1283,7 +1283,7 @@ impl SuiClientInner for SuiSdkClient {
                     .filter_map(|r| r.data.map(|o| o.object_ref()))
                     .collect::<Vec<_>>()
                 );
-
+            
             match results {
                 Ok(gas_objs) => return gas_objs,
                 Err(err) => {
@@ -1294,3 +1294,279 @@ impl SuiClientInner for SuiSdkClient {
         }
     }
 }
+
+//
+// #[cfg(test)]
+// mod tests {
+//     use crate::crypto::BridgeAuthorityKeyPair;
+//     use crate::e2e_tests::test_utils::TestClusterWrapperBuilder;
+//     use crate::{
+//         events::{EmittedSuiToEthTokenBridgeV1, MoveTokenDepositedEvent},
+//         sui_mock_client::SuiMockClient,
+//         test_utils::{
+//             approve_action_with_validator_secrets, bridge_token, get_test_eth_to_sui_bridge_action,
+//             get_test_sui_to_eth_bridge_action,
+//         },
+//         types::SuiToEthBridgeAction,
+//     };
+//     use ethers::types::Address as EthAddress;
+//     use move_core_types::account_address::AccountAddress;
+//     use serde::{Deserialize, Serialize};
+//     use std::str::FromStr;
+//     use sui_types::bridge::{BridgeChainId, TOKEN_ID_SUI, TOKEN_ID_USDC};
+//     use sui_types::crypto::get_key_pair;
+//
+//     use super::*;
+//     use crate::events::{init_all_struct_tags, SuiToEthTokenBridgeV1};
+//
+//     #[tokio::test]
+//     async fn get_bridge_action_by_tx_digest_and_event_idx_maybe() {
+//         // Note: for random events generated in this test, we only care about
+//         // tx_digest and event_seq, so it's ok that package and module does
+//         // not match the query parameters.
+//         telemetry_subscribers::init_for_testing();
+//         let mock_client = SuiMockClient::default();
+//         let sui_client = SuiClient::new_for_testing(mock_client.clone());
+//         let tx_digest = TransactionDigest::random();
+//
+//         // Ensure all struct tags are inited
+//         init_all_struct_tags();
+//
+//         let sanitized_event_1 = EmittedSuiToEthTokenBridgeV1 {
+//             nonce: 1,
+//             sui_chain_id: BridgeChainId::SuiTestnet,
+//             sui_address: SuiAddress::random_for_testing_only(),
+//             eth_chain_id: BridgeChainId::EthSepolia,
+//             eth_address: EthAddress::random(),
+//             token_id: TOKEN_ID_SUI,
+//             amount_sui_adjusted: 100,
+//         };
+//         let emitted_event_1 = MoveTokenDepositedEvent {
+//             seq_num: sanitized_event_1.nonce,
+//             source_chain: sanitized_event_1.sui_chain_id as u8,
+//             sender_address: sanitized_event_1.sui_address.to_vec(),
+//             target_chain: sanitized_event_1.eth_chain_id as u8,
+//             target_address: sanitized_event_1.eth_address.as_bytes().to_vec(),
+//             token_type: sanitized_event_1.token_id,
+//             amount_sui_adjusted: sanitized_event_1.amount_sui_adjusted,
+//         };
+//
+//         let mut sui_event_1 = SuiEvent::random_for_testing();
+//         sui_event_1.type_ = SuiToEthTokenBridgeV1.get().unwrap().clone();
+//         sui_event_1.bcs = bcs::to_bytes(&emitted_event_1).unwrap();
+//
+//         #[derive(Serialize, Deserialize)]
+//         struct RandomStruct {}
+//
+//         let event_2: RandomStruct = RandomStruct {};
+//         // undeclared struct tag
+//         let mut sui_event_2 = SuiEvent::random_for_testing();
+//         sui_event_2.type_ = SuiToEthTokenBridgeV1.get().unwrap().clone();
+//         sui_event_2.type_.module = Identifier::from_str("unrecognized_module").unwrap();
+//         sui_event_2.bcs = bcs::to_bytes(&event_2).unwrap();
+//
+//         // Event 3 is defined in non-bridge package
+//         let mut sui_event_3 = sui_event_1.clone();
+//         sui_event_3.type_.address = AccountAddress::random();
+//
+//         mock_client.add_events_by_tx_digest(
+//             tx_digest,
+//             vec![
+//                 sui_event_1.clone(),
+//                 sui_event_2.clone(),
+//                 sui_event_1.clone(),
+//                 sui_event_3.clone(),
+//             ],
+//         );
+//         let expected_action_1 = BridgeAction::SuiToEthBridgeAction(SuiToEthBridgeAction {
+//             sui_tx_digest: tx_digest,
+//             sui_tx_event_index: 0,
+//             sui_bridge_event: sanitized_event_1.clone(),
+//         });
+//         assert_eq!(
+//             sui_client
+//                 .get_bridge_action_by_tx_digest_and_event_idx_maybe(&tx_digest, 0)
+//                 .await
+//                 .unwrap(),
+//             expected_action_1,
+//         );
+//         let expected_action_2 = BridgeAction::SuiToEthBridgeAction(SuiToEthBridgeAction {
+//             sui_tx_digest: tx_digest,
+//             sui_tx_event_index: 2,
+//             sui_bridge_event: sanitized_event_1.clone(),
+//         });
+//         assert_eq!(
+//             sui_client
+//                 .get_bridge_action_by_tx_digest_and_event_idx_maybe(&tx_digest, 2)
+//                 .await
+//                 .unwrap(),
+//             expected_action_2,
+//         );
+//         assert!(matches!(
+//             sui_client
+//                 .get_bridge_action_by_tx_digest_and_event_idx_maybe(&tx_digest, 1)
+//                 .await
+//                 .unwrap_err(),
+//             IkaError::NoBridgeEventsInTxPosition
+//         ),);
+//         assert!(matches!(
+//             sui_client
+//                 .get_bridge_action_by_tx_digest_and_event_idx_maybe(&tx_digest, 3)
+//                 .await
+//                 .unwrap_err(),
+//             IkaError::BridgeEventInUnrecognizedSuiPackage
+//         ),);
+//         assert!(matches!(
+//             sui_client
+//                 .get_bridge_action_by_tx_digest_and_event_idx_maybe(&tx_digest, 4)
+//                 .await
+//                 .unwrap_err(),
+//             IkaError::NoBridgeEventsInTxPosition
+//         ),);
+//
+//         // if the StructTag matches with unparsable bcs, it returns an error
+//         sui_event_2.type_ = SuiToEthTokenBridgeV1.get().unwrap().clone();
+//         mock_client.add_events_by_tx_digest(tx_digest, vec![sui_event_2]);
+//         sui_client
+//             .get_bridge_action_by_tx_digest_and_event_idx_maybe(&tx_digest, 2)
+//             .await
+//             .unwrap_err();
+//     }
+//
+//     // Test get_action_onchain_status.
+//     // Use validator secrets to bridge USDC from Ethereum initially.
+//     // TODO: we need an e2e test for this with published solidity contract and committee with BridgeNodes
+//     #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+//     async fn test_get_action_onchain_status_for_sui_to_eth_transfer() {
+//         telemetry_subscribers::init_for_testing();
+//         let mut bridge_keys = vec![];
+//         for _ in 0..=3 {
+//             let (_, kp): (_, BridgeAuthorityKeyPair) = get_key_pair();
+//             bridge_keys.push(kp);
+//         }
+//         let mut test_cluster = TestClusterWrapperBuilder::new()
+//             .with_bridge_authority_keys(bridge_keys)
+//             .with_deploy_tokens(true)
+//             .build()
+//             .await;
+//
+//         let sui_client_metrics = Arc::new(SuiHandlerMetrics::new_for_testing());
+//         let sui_client =
+//             SuiClient::new(&test_cluster.inner.fullnode_handle.rpc_url, sui_client_metrics)
+//                 .await
+//                 .unwrap();
+//         let bridge_authority_keys = test_cluster.authority_keys_clone();
+//
+//         // Wait until committee is set up
+//         test_cluster
+//             .trigger_reconfiguration_if_not_yet_and_assert_bridge_committee_initialized()
+//             .await;
+//         let context = &mut test_cluster.inner.wallet;
+//         let sender = context.active_address().unwrap();
+//         let usdc_amount = 5000000;
+//         let system_arg = sui_client
+//             .get_mutable_system_arg_must_succeed()
+//             .await;
+//         let id_token_map = sui_client.get_token_id_map().await.unwrap();
+//
+//         // 1. Create a Eth -> Sui Transfer (recipient is sender address), approve with validator secrets and assert its status to be Claimed
+//         let action = get_test_eth_to_sui_bridge_action(None, Some(usdc_amount), Some(sender), None);
+//         let usdc_object_ref = approve_action_with_validator_secrets(
+//             context,
+//             system_arg,
+//             action.clone(),
+//             &bridge_authority_keys,
+//             Some(sender),
+//             &id_token_map,
+//         )
+//         .await
+//         .unwrap();
+//
+//         let status = sui_client
+//             .inner
+//             .get_token_transfer_action_onchain_status(
+//                 system_arg,
+//                 action.chain_id() as u8,
+//                 action.seq_number(),
+//             )
+//             .await
+//             .unwrap();
+//         assert_eq!(status, BridgeActionStatus::Claimed);
+//
+//         // 2. Create a Sui -> Eth Transfer, approve with validator secrets and assert its status to be Approved
+//         // We need to actually send tokens to bridge to initialize the record.
+//         let eth_recv_address = EthAddress::random();
+//         let bridge_event = bridge_token(
+//             context,
+//             eth_recv_address,
+//             usdc_object_ref,
+//             id_token_map.get(&TOKEN_ID_USDC).unwrap().clone(),
+//             system_arg,
+//         )
+//         .await;
+//         assert_eq!(bridge_event.nonce, 0);
+//         assert_eq!(bridge_event.sui_chain_id, BridgeChainId::SuiCustom);
+//         assert_eq!(bridge_event.eth_chain_id, BridgeChainId::EthCustom);
+//         assert_eq!(bridge_event.eth_address, eth_recv_address);
+//         assert_eq!(bridge_event.sui_address, sender);
+//         assert_eq!(bridge_event.token_id, TOKEN_ID_USDC);
+//         assert_eq!(bridge_event.amount_sui_adjusted, usdc_amount);
+//
+//         let action = get_test_sui_to_eth_bridge_action(
+//             None,
+//             None,
+//             Some(bridge_event.nonce),
+//             Some(bridge_event.amount_sui_adjusted),
+//             Some(bridge_event.sui_address),
+//             Some(bridge_event.eth_address),
+//             Some(TOKEN_ID_USDC),
+//         );
+//         let status = sui_client
+//             .inner
+//             .get_token_transfer_action_onchain_status(
+//                 system_arg,
+//                 action.chain_id() as u8,
+//                 action.seq_number(),
+//             )
+//             .await
+//             .unwrap();
+//         // At this point, the record is created and the status is Pending
+//         assert_eq!(status, BridgeActionStatus::Pending);
+//
+//         // Approve it and assert its status to be Approved
+//         approve_action_with_validator_secrets(
+//             context,
+//             system_arg,
+//             action.clone(),
+//             &bridge_authority_keys,
+//             None,
+//             &id_token_map,
+//         )
+//         .await;
+//
+//         let status = sui_client
+//             .inner
+//             .get_token_transfer_action_onchain_status(
+//                 system_arg,
+//                 action.chain_id() as u8,
+//                 action.seq_number(),
+//             )
+//             .await
+//             .unwrap();
+//         assert_eq!(status, BridgeActionStatus::Approved);
+//
+//         // 3. Create a random action and assert its status as NotFound
+//         let action =
+//             get_test_sui_to_eth_bridge_action(None, None, Some(100), None, None, None, None);
+//         let status = sui_client
+//             .inner
+//             .get_token_transfer_action_onchain_status(
+//                 system_arg,
+//                 action.chain_id() as u8,
+//                 action.seq_number(),
+//             )
+//             .await
+//             .unwrap();
+//         assert_eq!(status, BridgeActionStatus::NotFound);
+//     }
+// }
