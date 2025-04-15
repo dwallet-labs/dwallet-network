@@ -199,7 +199,7 @@ where
         message: Vec<u8>,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
-        metrics: &Arc<SuiConnectorMetrics>,
+        _metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
         let gas_coins = sui_client
             .get_gas_objects(sui_notifier.sui_address)
