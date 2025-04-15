@@ -14,7 +14,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::PartyID;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::StartNetworkDKGEvent;
+use ika_types::messages_dwallet_mpc::{DWalletDecryptionKeyReshareRequestEvent, StartNetworkDKGEvent};
 use ika_types::messages_dwallet_mpc::StartPartialSignaturesVerificationEvent;
 use ika_types::messages_dwallet_mpc::{DBSuiEvent, StartDKGFirstRoundEvent, StartSignEvent};
 use ika_types::messages_dwallet_mpc::{
@@ -34,6 +34,7 @@ use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::{ID, UID};
 
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
+use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp256k1Party};
 
 mod cryptographic_computations_orchestrator;
 mod dkg;
@@ -438,6 +439,37 @@ pub(crate) async fn session_input_from_event(
                     .decryption_key(),
             )?),
         )),
+        t if t == &DWalletMPCSuiEvent::<DWalletDecryptionKeyReshareRequestEvent>::type_(
+            packages_config,
+        ) => {
+            let deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent> =
+                deserialize_event_or_dynamic_field(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager
+                .get_protocol_public_parameters(
+                    // The event is assign with a Secp256k1 dwallet.
+                    // Todo (#473): Support generic network key scheme
+                    &deserialized_event.event_data.dwallet_network_decryption_key_id,
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                )
+                .await;
+            Ok((
+                ReshareSecp256k1Party::generate_public_input(
+                    dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
+                    dwallet_mpc_manager.get_next_active_committee_until_success().await,
+                    protocol_public_parameters,
+                    dwallet_mpc_manager.get_decryption_key_share_public_parameters(
+                        // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
+                        // Todo (#473): Support generic network key scheme
+                        &deserialized_event
+                            .event_data
+                            .dwallet_network_decryption_key_id,
+                    )?,
+                )?,
+                Some(bcs::to_bytes(
+                    &dwallet_mpc_manager.
+                )?),
+            ))
+        }
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;

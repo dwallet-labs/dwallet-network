@@ -10,11 +10,11 @@ use mpc::{Party, Weight, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
-type ReshareSecp256k1Party = Secp256k1Party;
+pub(super) type ReshareSecp256k1Party = Secp256k1Party;
 pub(super) trait ResharePartyPublicInputGenerator: mpc::Party {
     /// Generates the public input required for the reshare protocol.
     fn generate_public_input(
-        committee: Committee,
+        committee: &Committee,
         new_committe: Committee,
         protocol_public_parameters: Vec<u8>,
         decryption_key_share_public_parameters: Vec<u8>,
@@ -52,11 +52,12 @@ fn current_tangible_party_id_to_upcoming(
 
 impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
     fn generate_public_input(
-        current_committee: Committee,
+        current_committee: &Committee,
         upcoming_committee: Committee,
         protocol_public_parameters: Vec<u8>,
         decryption_key_share_public_parameters: Vec<u8>,
     ) -> DwalletMPCResult<MPCPublicInput> {
+        let current_committee= current_committee.clone();
         let quorum_threshold = current_committee.quorum_threshold();
         let weighted_parties: HashMap<PartyID, Weight> = current_committee
             .voting_rights
