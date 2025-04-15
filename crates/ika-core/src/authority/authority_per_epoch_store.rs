@@ -1450,14 +1450,8 @@ impl AuthorityPerEpochStore {
         .await
     }
 
-    fn process_notifications(
-        &self,
-        notifications: &[SequencedConsensusTransactionKey],
-    ) {
-        for key in notifications
-            .iter()
-            .cloned()
-        {
+    fn process_notifications(&self, notifications: &[SequencedConsensusTransactionKey]) {
+        for key in notifications.iter().cloned() {
             self.consensus_notify_read.notify(&key, &());
         }
     }

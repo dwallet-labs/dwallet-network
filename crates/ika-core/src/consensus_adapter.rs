@@ -631,7 +631,7 @@ impl ConsensusAdapter {
         let _monitor = if !is_soft_bundle
             && matches!(
                 transactions[0].kind,
-                    ConsensusTransactionKind::CapabilityNotificationV1(_)
+                ConsensusTransactionKind::CapabilityNotificationV1(_)
             ) {
             let transaction_keys = transaction_keys.clone();
             Some(CancelOnDrop(spawn_monitored_task!(async {
