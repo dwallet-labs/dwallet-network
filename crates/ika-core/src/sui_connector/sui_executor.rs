@@ -96,15 +96,14 @@ where
             return;
         };
 
-        if clock.timestamp_ms
-            > ika_system_state_inner.epoch_start_timestamp_ms()
-                + (ika_system_state_inner.epoch_duration_ms() / 2)
-            && system_inner_v1
-                .validators
-                .next_epoch_active_committee
-                .is_none()
-        {
-            info!("calling process mid epoch");
+        let mid_epoch_time = ika_system_state_inner.epoch_start_timestamp_ms()
+            + (ika_system_state_inner.epoch_duration_ms() / 2);
+        let next_epoch_committee_is_empty = system_inner_v1
+            .validators
+            .next_epoch_active_committee
+            .is_none();
+        if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
+            info!("Calling `process_mid_epoch()`");
             if let Err(e) =
                 Self::process_mid_epoch(self.ika_system_package_id, &sui_notifier, &self.sui_client)
                     .await
