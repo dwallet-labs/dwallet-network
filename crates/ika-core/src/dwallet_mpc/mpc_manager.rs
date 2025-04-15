@@ -30,7 +30,7 @@ use futures::future::err;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_config::NodeConfig;
-use ika_types::committee::{EpochId, StakeUnit};
+use ika_types::committee::{Committee, EpochId, StakeUnit};
 use ika_types::crypto::AuthorityName;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::crypto::DefaultHash;
@@ -55,6 +55,7 @@ use sui_types::event::Event;
 use sui_types::id::ID;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::OnceCell;
 use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
@@ -95,6 +96,7 @@ pub struct DWalletMPCManager {
     /// yet received an event for from Sui.
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
+    pub(crate) next_active_committe: OnceCell<Committee>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -153,6 +155,7 @@ impl DWalletMPCManager {
             pending_for_computation_order: VecDeque::new(),
             pending_for_events_order: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
+            next_active_committe: OnceCell::new(),
         })
     }
 
@@ -609,5 +612,25 @@ impl DWalletMPCManager {
                 .insert(session_sequence_number, new_session.clone());
         }
         new_session
+    }
+
+    pub(super) fn set_next_active_committee(&mut self, upcoming_committee: Committee) {
+        match self.next_active_committe.set(upcoming_committee) {
+            Ok(_) => {
+                info!("set the next active committee");
+            }
+            Err(_) => {
+                error!("failed to set the next active committee");
+            }
+        }
+    }
+
+    pub(super) async fn get_next_active_committee_until_success(&self) -> Committee {
+        loop {
+            if let Some(next_active_committee) = self.next_active_committe.get() {
+                return next_active_committee.clone();
+            }
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        }
     }
 }
