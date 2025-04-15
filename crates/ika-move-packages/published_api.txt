@@ -181,6 +181,9 @@ CreatedEncryptionKeyEvent
 DWalletNetworkDKGDecryptionKeyRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+DWalletDecryptionKeyReshareRequestEvent
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 CompletedDWalletNetworkDKGDecryptionKeyEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
@@ -281,6 +284,9 @@ respond_dwallet_network_decryption_key_reconfiguration
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 advance_epoch_dwallet_network_decryption_key
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+emit_start_reshare_event
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 get_active_dwallet_network_decryption_key
@@ -1154,6 +1160,9 @@ create
 	public(package) fun
 	0x0::system_inner_v1
 advance_network_keys
+	public(package) fun
+	0x0::system_inner_v1
+emit_start_reshare_events
 	public(package) fun
 	0x0::system_inner_v1
 create_system_parameters

@@ -12,6 +12,7 @@ title: Module `(ika_system=0x0)::system_inner_v1`
 -  [Constants](#@Constants_0)
 -  [Function `create`](#(ika_system=0x0)_system_inner_v1_create)
 -  [Function `advance_network_keys`](#(ika_system=0x0)_system_inner_v1_advance_network_keys)
+-  [Function `emit_start_reshare_events`](#(ika_system=0x0)_system_inner_v1_emit_start_reshare_events)
 -  [Function `create_system_parameters`](#(ika_system=0x0)_system_inner_v1_create_system_parameters)
 -  [Function `initialize`](#(ika_system=0x0)_system_inner_v1_initialize)
 -  [Function `request_add_validator_candidate`](#(ika_system=0x0)_system_inner_v1_request_add_validator_candidate)
@@ -635,6 +636,32 @@ This function will be called only once in init.
     self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> DWalletCoordinator
 ) {
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.advance_epoch_dwallet_network_decryption_key(cap));
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_v1_emit_start_reshare_events"></a>
+
+## Function `emit_start_reshare_events`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_emit_start_reshare_events">emit_start_reshare_events</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, dwallet_coordinator_inner: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_emit_start_reshare_events">emit_start_reshare_events</a>(
+    self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>, dwallet_coordinator_inner: &<b>mut</b> DWalletCoordinatorInner, ctx: &<b>mut</b> TxContext
+) {
+    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
 }
 </code></pre>
 
