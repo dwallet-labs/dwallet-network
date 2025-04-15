@@ -76,7 +76,11 @@ where
         }
     }
 
-    pub async fn run_epoch_switch(
+    /// Checks whether `process_mid_epoch`, `lock_last_active_session_sequence_number`, or
+    /// `request_advance_epoch` can be called, and calls them if so.
+    ///
+    /// Anyone can call these functions based on the epoch and Sui's clock times.
+    async fn run_epoch_switch(
         &self,
         sui_notifier: &SuiNotifier,
         ika_system_state_inner: &SystemInner,
