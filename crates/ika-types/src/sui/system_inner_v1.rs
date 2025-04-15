@@ -3,7 +3,8 @@
 
 use super::{Element, SystemInnerTrait};
 use crate::committee::StakeUnit;
-use crate::crypto::AuthorityName;
+use crate::crypto::{AuthorityName, AuthorityPublicKey};
+use fastcrypto::traits::ToFromBytes;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use sui_types::balance::Balance;
@@ -254,7 +255,9 @@ impl SystemInnerTrait for SystemInnerV1 {
                     (
                         // AuthorityName is derived from the protocol public key,
                         // therefore it is safe to unwrap.
-                        AuthorityName::new(v.protocol_pubkey.clone().bytes.try_into().unwrap()),
+                        (&AuthorityPublicKey::from_bytes(v.protocol_pubkey.clone().bytes.as_ref())
+                            .unwrap())
+                            .into(),
                         v.voting_power,
                     ),
                 )
