@@ -941,7 +941,6 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         gas_fee_reimbursement_sui,
     };
     let event = DWalletEvent {
-        immediate: false,
         epoch: self.current_epoch,
         session_sequence_number,
         session_id: object::id(&session),
@@ -985,7 +984,6 @@ fun charge_and_create_immediate_dwallet_event<E: copy + drop + store>(
         session_sequence_number,
         session_id: object::id(&session),
         event_data,
-        immediate: true,
     };
     self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
