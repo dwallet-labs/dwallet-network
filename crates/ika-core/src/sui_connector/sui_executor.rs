@@ -109,9 +109,9 @@ where
                 Self::process_mid_epoch(self.ika_system_package_id, &sui_notifier, &self.sui_client)
                     .await
             {
-                error!("Failed to process mid epoch: {:?}", e);
+                error!("`process_mid_epoch()` failed: {:?}", e);
             } else {
-                info!("Successfully processed mid epoch");
+                info!("`process_mid_epoch()` successful");
             }
         }
 
