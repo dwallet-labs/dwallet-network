@@ -410,12 +410,6 @@ pub struct AuthorityEpochTables {
     /// This table contains current reconfiguration state for validator for current epoch
     reconfig_state: DBMap<u64, ReconfigState>,
 
-    /// Validators that have sent InitiateProcessMidEpoch message in this epoch
-    initiate_process_mid_epoch: DBMap<AuthorityName, ()>,
-
-    /// Validators that have sent EndOfPublish message in this epoch
-    end_of_publish: DBMap<AuthorityName, ()>,
-
     /// This table has information for the checkpoints for which we constructed all the data
     /// from consensus, but not yet constructed actual checkpoint.
     ///
@@ -583,12 +577,6 @@ impl AuthorityPerEpochStore {
         let epoch_id = committee.epoch;
 
         let tables = AuthorityEpochTables::open(epoch_id, parent_path, db_options.clone());
-        let initiate_process_mid_epoch = StakeAggregator::from_iter(
-            committee.clone(),
-            tables.initiate_process_mid_epoch.unbounded_iter(),
-        );
-        let end_of_publish =
-            StakeAggregator::from_iter(committee.clone(), tables.end_of_publish.unbounded_iter());
         let reconfig_state = tables
             .load_reconfig_state()
             .expect("Load reconfig state at initialization cannot fail");
@@ -2241,18 +2229,6 @@ impl ConsensusCommitOutput {
             self.consensus_messages_processed
                 .iter()
                 .map(|key| (key, true)),
-        )?;
-
-        batch.insert_batch(
-            &tables.initiate_process_mid_epoch,
-            self.initiate_process_mid_epoch
-                .iter()
-                .map(|authority| (authority, ())),
-        )?;
-
-        batch.insert_batch(
-            &tables.end_of_publish,
-            self.end_of_publish.iter().map(|authority| (authority, ())),
         )?;
 
         if let Some(reconfig_state) = &self.reconfig_state {
