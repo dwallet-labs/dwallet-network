@@ -326,11 +326,19 @@ impl DWalletMPCManager {
                     .insert(session_info.session_id, session.clone());
             }
         } else {
-            self.push_new_mpc_session(
-                &session_info.session_id,
-                mpc_event_data,
-                session_info.sequence_number,
-            );
+            if session_info.is_immediate {
+                self.push_mpc_immediate_session(
+                    &session_info.session_id,
+                    mpc_event_data,
+                    session_info.sequence_number,
+                );
+            } else {
+                self.push_new_mpc_session(
+                    &session_info.session_id,
+                    mpc_event_data,
+                    session_info.sequence_number,
+                );
+            }
         }
         Ok(())
     }
@@ -628,6 +636,48 @@ impl DWalletMPCManager {
             self.pending_sessions
                 .insert(session_sequence_number, new_session.clone());
         }
+        new_session
+    }
+
+    /// Spawns a new MPC session immediately.
+    pub(super) fn push_mpc_immediate_session(
+        &mut self,
+        session_id: &ObjectID,
+        mpc_event_data: Option<MPCEventData>,
+        session_sequence_number: u64,
+    ) -> DWalletMPCSession {
+        if self.mpc_sessions.contains_key(&session_id) {
+            // This can happpen because the event will be loaded once from the `load_missed_events` function,
+            // and once by querying the events from Sui.
+            // These sessions are ignored since we already have them in the `mpc_sessions` map.
+            warn!(
+                "received start flow event for session ID {:?} that already exists",
+                &session_id
+            );
+        }
+        info!(
+            "Received start MPC flow event for session ID {:?}",
+            session_id
+        );
+
+        let new_session = DWalletMPCSession::new(
+            self.epoch_store.clone(),
+            self.consensus_adapter.clone(),
+            self.epoch_id,
+            MPCSessionStatus::Active,
+            session_id.clone(),
+            self.party_id,
+            self.weighted_threshold_access_structure.clone(),
+            mpc_event_data,
+            session_sequence_number,
+        );
+        info!(
+            session_sequence_number=?session_sequence_number,
+            last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
+            "Adding MPC session to active sessions",
+        );
+        self.mpc_sessions
+            .insert(session_id.clone(), new_session.clone());
         new_session
     }
 }
