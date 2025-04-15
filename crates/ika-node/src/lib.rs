@@ -325,6 +325,8 @@ impl IkaNode {
             ika_system_package_id: config.sui_connector_config.ika_system_package_id,
             ika_system_object_id: config.sui_connector_config.system_id,
         };
+
+        let next_epoch_active_committee = Arc::new(tokio::sync::RwLock::new(None));
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
             committee.clone(),
@@ -335,6 +337,7 @@ impl IkaNode {
             chain_identifier.clone(),
             perpetual_tables.clone(),
             packages_config,
+            next_epoch_active_committee,
         );
 
         info!("created epoch store");
@@ -397,6 +400,7 @@ impl IkaNode {
                 sui_connector_metrics,
                 dwallet_network_keys.clone(),
                 epoch_store.get_weighted_threshold_access_structure()?,
+                epoch_store.next_epoch_active_committee.clone(),
             )
             .await?,
         );
