@@ -78,7 +78,6 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `update_last_session_to_complete_in_current_epoch`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch)
 -  [Function `all_current_epoch_sessions_completed`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed)
 -  [Function `remove_session_and_charge`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_session_and_charge)
--  [Function `remove_immediate_session_and_charge`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_immediate_session_and_charge)
 -  [Function `respond_dwallet_dkg_first_round`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_first_round)
 -  [Function `create_first_round_dwallet_mock`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_first_round_dwallet_mock)
 -  [Function `mock_create_dwallet`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_mock_create_dwallet)
@@ -2764,7 +2763,7 @@ Supported hash schemes for message signing.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: vector&lt;u8&gt;, key_shares: vector&lt;u8&gt;, is_last: bool, session_sequence_number: u64)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: vector&lt;u8&gt;, key_shares: vector&lt;u8&gt;, is_last: bool)
 </code></pre>
 
 
@@ -2779,10 +2778,9 @@ Supported hash schemes for message signing.
     public_output: vector&lt;u8&gt;,
     key_shares: vector&lt;u8&gt;,
     is_last: bool,
-    session_sequence_number: u64
 ) {
     <b>if</b> (is_last) {
-        self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_immediate_session_and_charge">remove_immediate_session_and_charge</a>&lt;<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletNetworkDKGDecryptionKeyRequestEvent">DWalletNetworkDKGDecryptionKeyRequestEvent</a>&gt;(session_sequence_number);
+        self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     };
     <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.public_output.push_back(public_output);
@@ -3100,27 +3098,23 @@ Supported hash schemes for message signing.
     <b>let</b> computation_fee_charged_ika = payment_ika.split(pricing.computation_ika(), ctx).into_balance();
     <b>let</b> consensus_validation_fee_charged_ika = payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance();
     <b>let</b> gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
-    <b>let</b> session_sequence_number = self.next_session_sequence_number;
-    <b>let</b> session = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSession">DWalletSession</a> {
-        id: object::new(ctx),
-        session_sequence_number,
-        dwallet_network_decryption_key_id,
-        consensus_validation_fee_charged_ika,
-        computation_fee_charged_ika,
-        gas_fee_reimbursement_sui,
-    };
+    <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
+    dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
+    self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
+    self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+    self.started_immediate_sessions_count = self.started_immediate_sessions_count + 1;
     <b>let</b> event = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a> {
         epoch: self.current_epoch,
-        session_sequence_number,
-        session_id: object::id(&session),
+        session_sequence_number: self.next_session_sequence_number,
+        session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
         event_data,
     };
-    self.session_start_events.add(session.id.to_inner(), event);
-    self.sessions.add(session_sequence_number, session);
-    self.started_immediate_sessions_count = self.started_immediate_sessions_count + 1;
-    self.next_session_sequence_number = session_sequence_number + 1;
+    // This special logic is here to allow the immediate session have a unique session sequenece number on the one hand,
+    // yet ignore it when deciding the last session to complete in the current epoch, <b>as</b> immediate sessions
+    // are special sessions that must get completed in the current epoch.
+    self.next_session_sequence_number = self.next_session_sequence_number + 1;
     self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
-    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch">update_last_session_to_complete_in_current_epoch</a>();
+    self.last_session_to_complete_in_current_epoch = self.last_session_to_complete_in_current_epoch + 1;
     event
 }
 </code></pre>
@@ -3580,45 +3574,6 @@ This is part of the epoch switch logic.
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_session_and_charge">remove_session_and_charge</a>&lt;E: <b>copy</b> + drop + store&gt;(self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>, session_sequence_number: u64) {
     self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
     self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch">update_last_session_to_complete_in_current_epoch</a>();
-    <b>let</b> session = self.sessions.remove(session_sequence_number);
-    <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSession">DWalletSession</a> {
-        computation_fee_charged_ika,
-        gas_fee_reimbursement_sui,
-        consensus_validation_fee_charged_ika,
-        dwallet_network_decryption_key_id,
-        id,
-        ..
-    } = session;
-    <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    <b>let</b> _: <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a>&lt;E&gt; = self.session_start_events.remove(id.to_inner());
-    object::delete(id);
-    dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
-    self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
-    self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_immediate_session_and_charge"></a>
-
-## Function `remove_immediate_session_and_charge`
-
-
-
-<pre><code><b>fun</b> remove_immediate_session_and_chargeE(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, session_sequence_number: u64)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_immediate_session_and_charge">remove_immediate_session_and_charge</a>&lt;E: <b>copy</b> + drop + store&gt;(self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>, session_sequence_number: u64) {
-    self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     <b>let</b> session = self.sessions.remove(session_sequence_number);
     <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletSession">DWalletSession</a> {
         computation_fee_charged_ika,
@@ -5271,8 +5226,7 @@ the function will abort with this error.
                 <b>let</b> public_output = bcs_body.peel_vec_u8();
                 <b>let</b> key_shares = bcs_body.peel_vec_u8();
                 <b>let</b> is_last = bcs_body.peel_bool();
-                <b>let</b> session_sequence_number = bcs_body.peel_u64();
-                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(dwallet_network_decryption_key_id, public_output, key_shares, is_last, session_sequence_number);
+                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
             };
         i = i + 1;
     };
