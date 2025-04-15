@@ -37,7 +37,7 @@ use std::str::from_utf8;
 use std::sync::Arc;
 use std::time::Duration;
 use sui_json_rpc_api::BridgeReadApiClient;
-use sui_json_rpc_types::{DevInspectResults, SuiData, SuiMoveValue, SuiObjectDataFilter, SuiObjectResponseQuery};
+use sui_json_rpc_types::{DevInspectResults, SuiData, SuiMoveValue};
 use sui_json_rpc_types::{EventFilter, Page, SuiEvent};
 use sui_json_rpc_types::{
     EventPage, SuiObjectDataOptions, SuiTransactionBlockResponse,
@@ -612,12 +612,12 @@ where
         }
     }
 
-    pub async fn get_gas_objects(
+    pub async fn get_gas_data_panic_if_not_gas(
         &self,
-        address: SuiAddress,
-    ) -> Vec<ObjectRef> {
+        gas_object_id: ObjectID,
+    ) -> (GasCoin, ObjectRef, Owner) {
         self.inner
-            .get_gas_objects(address)
+            .get_gas_data_panic_if_not_gas(gas_object_id)
             .await
     }
 }
@@ -699,10 +699,10 @@ pub trait SuiClientInner: Send + Sync {
         tx: Transaction,
     ) -> Result<SuiTransactionBlockResponse, IkaError>;
 
-    async fn get_gas_objects(
+    async fn get_gas_data_panic_if_not_gas(
         &self,
-        address: SuiAddress,
-    ) -> Vec<ObjectRef>;
+        gas_object_id: ObjectID,
+    ) -> (GasCoin, ObjectRef, Owner);
 
     async fn get_missed_events(
         &self,
@@ -1260,34 +1260,28 @@ impl SuiClientInner for SuiSdkClient {
         }
     }
 
-    async fn get_gas_objects(
+    async fn get_gas_data_panic_if_not_gas(
         &self,
-        address: SuiAddress,
-    ) -> Vec<ObjectRef> {
+        gas_object_id: ObjectID,
+    ) -> (GasCoin, ObjectRef, Owner) {
         loop {
-            let results = self
+            match self
                 .read_api()
-                .get_owned_objects(
-                    address,
-                    Some(SuiObjectResponseQuery::new(
-                        Some(SuiObjectDataFilter::StructType(GasCoin::type_())),
-                        Some(SuiObjectDataOptions::full_content()),
-                    )),
-                    None,
-                    None,
+                .get_object_with_options(
+                    gas_object_id,
+                    SuiObjectDataOptions::default().with_owner().with_content(),
                 )
                 .await
-                .map(|o| o
-                    .data
-                    .into_iter()
-                    .filter_map(|r| r.data.map(|o| o.object_ref()))
-                    .collect::<Vec<_>>()
-                );
-            
-            match results {
-                Ok(gas_objs) => return gas_objs,
-                Err(err) => {
-                    warn!("can't get gas objects for address {}: {}", address, err);
+                .map(|resp| resp.data)
+            {
+                Ok(Some(gas_obj)) => {
+                    let owner = gas_obj.owner.clone().expect("Owner is requested");
+                    let gas_coin = GasCoin::try_from(&gas_obj)
+                        .unwrap_or_else(|err| panic!("{} is not a gas coin: {err}", gas_object_id));
+                    return (gas_coin, gas_obj.object_ref(), owner);
+                }
+                other => {
+                    warn!("Can't get gas object: {:?}: {:?}", gas_object_id, other);
                     tokio::time::sleep(Duration::from_secs(5)).await;
                 }
             }

@@ -318,7 +318,7 @@ pub async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
 
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
-    let _ = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+    let _ = execute_sui_transaction(publisher_address, tx_kind, context).await?;
 
     Ok(())
 }
@@ -354,7 +354,7 @@ pub async fn ika_system_initialize(
 
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
-    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+    let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
 
     let object_changes = response.object_changes.unwrap();
 
@@ -477,7 +477,7 @@ pub async fn init_initialize(
 
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
-    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+    let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
 
     let object_changes = response.object_changes.unwrap();
 
@@ -568,7 +568,7 @@ async fn request_add_validator(
 
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
-    let _ = execute_sui_transaction(validator_address, tx_kind, context, vec![]).await?;
+    let _ = execute_sui_transaction(validator_address, tx_kind, context).await?;
 
     Ok(())
 }
@@ -581,7 +581,6 @@ async fn merge_coins(
         .get_all_gas_objects_owned_by_address(publisher_address)
         .await?;
     let mut ptb = ProgrammableTransactionBuilder::new();
-    let gas_coin = coins.first().unwrap();
     let coins = coins
         .iter()
         .skip(1)
@@ -594,12 +593,12 @@ async fn merge_coins(
 
     ptb.command(sui_types::transaction::Command::MergeCoins(
         // Safe to unwrap as this function is only being called at the swarm config.
-        Argument::GasCoin,
+        *coins.first().clone().unwrap(),
         // Keep the gas object out
-        coins.to_vec(),
+        coins[1..].to_vec(),
     ));
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
-    let _ = execute_sui_transaction(publisher_address, tx_kind, context, vec![gas_coin.0]).await?;
+    let _ = execute_sui_transaction(publisher_address, tx_kind, context).await?;
 
     Ok(())
 }
@@ -652,7 +651,7 @@ async fn stake_ika(
 
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
-    let _ = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+    let _ = execute_sui_transaction(publisher_address, tx_kind, context).await?;
 
     Ok(())
 }
@@ -686,7 +685,7 @@ pub async fn mint_ika(
 
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
-    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+    let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
 
     let object_changes = response.object_changes.unwrap();
 
@@ -798,7 +797,7 @@ async fn request_add_validator_candidate(
 
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
-    let response = execute_sui_transaction(validator_address, tx_kind, context, vec![]).await?;
+    let response = execute_sui_transaction(validator_address, tx_kind, context).await?;
 
     let object_changes = response.object_changes.unwrap();
 
@@ -928,7 +927,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     ptb.transfer_arg(publisher_address, Argument::Result(0));
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
-    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+    let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
 
     let object_changes = response.object_changes.unwrap();
 
@@ -1054,7 +1053,7 @@ async fn create_class_groups_public_key_and_proof_object(
     ptb.transfer_arg(publisher_address, Argument::Result(0));
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
-    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+    let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
 
     let object_changes = response
         .object_changes
@@ -1117,7 +1116,7 @@ async fn add_public_keys_and_proofs_with_rng(
         );
     }
     let tx_kind = TransactionKind::ProgrammableTransaction(first_ptb.finish());
-    execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+    execute_sui_transaction(publisher_address, tx_kind, context).await?;
     Ok(())
 }
 
@@ -1195,7 +1194,7 @@ async fn publish_package_to_sui(
         )
         .await?;
 
-    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+    let response = execute_sui_transaction(publisher_address, tx_kind, context).await?;
 
     let object_changes = response.object_changes.unwrap();
     Ok(object_changes)
@@ -1205,7 +1204,6 @@ pub(crate) async fn create_sui_transaction(
     signer: SuiAddress,
     tx_kind: TransactionKind,
     context: &mut WalletContext,
-    gas_payment: Vec<ObjectID>,
 ) -> Result<Transaction, anyhow::Error> {
     let gas_price = context.get_reference_gas_price().await?;
 
@@ -1217,7 +1215,7 @@ pub(crate) async fn create_sui_transaction(
 
     let tx_data = client
         .transaction_builder()
-        .tx_data(signer, tx_kind, gas_budget, gas_price, gas_payment, None)
+        .tx_data(signer, tx_kind, gas_budget, gas_price, vec![], None)
         .await?;
 
     let signature = context.config.keystore.sign_secure(
@@ -1236,9 +1234,8 @@ pub(crate) async fn execute_sui_transaction(
     signer: SuiAddress,
     tx_kind: TransactionKind,
     context: &mut WalletContext,
-    gas_payment: Vec<ObjectID>,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
-    let transaction = create_sui_transaction(signer, tx_kind, context, gas_payment).await?;
+    let transaction = create_sui_transaction(signer, tx_kind, context).await?;
 
     let response = context
         .execute_transaction_may_fail(transaction.clone())

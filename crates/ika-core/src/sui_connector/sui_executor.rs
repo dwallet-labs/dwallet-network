@@ -197,31 +197,13 @@ where
         message: Vec<u8>,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
-        metrics: &Arc<SuiConnectorMetrics>,
+        _metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
-        let gas_coins = sui_client
-            .get_gas_objects(sui_notifier.sui_address)
+        let (_gas_coin, gas_obj_ref, _owner) = sui_client
+            .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
             .await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
-        let gas_coin = gas_coins.first().unwrap();
-        if gas_coins.len() > 1 {
-            let coins = gas_coins
-                .iter()
-                .skip(1)
-                .map(|c| {
-                    ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
-                        // Safe to unwrap as this function is only being called at the swarm config.
-                        .unwrap()
-                })
-                .collect::<Vec<_>>();
-            ptb.command(sui_types::transaction::Command::MergeCoins(
-                // Safe to unwrap as this function is only being called at the swarm config.
-                Argument::GasCoin,
-                // Keep the gas object out
-                coins.to_vec(),
-            ));
-        }
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
 
@@ -259,7 +241,7 @@ where
             sui_notifier.sui_address,
             ptb.finish(),
             sui_client,
-            vec![*gas_coin],
+            vec![gas_obj_ref],
             &sui_notifier.sui_key,
         )
         .await;
