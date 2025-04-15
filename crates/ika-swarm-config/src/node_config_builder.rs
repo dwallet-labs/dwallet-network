@@ -142,7 +142,6 @@ impl ValidatorConfigBuilder {
                 ika_system_package_id,
                 ika_system_object_id,
                 notifier_client_key_pair: None,
-                notifier_client_gas_object: None,
                 sui_ika_system_module_last_processed_event_id_override: None,
             },
             db_path,
@@ -358,7 +357,6 @@ impl FullnodeConfigBuilder {
                 ika_system_package_id,
                 ika_system_object_id,
                 notifier_client_key_pair,
-                notifier_client_gas_object: None,
                 sui_ika_system_module_last_processed_event_id_override: None,
             },
             metrics_address: self
