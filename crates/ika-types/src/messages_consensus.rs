@@ -222,8 +222,4 @@ impl ConsensusTransaction {
             }
         }
     }
-
-    pub fn is_end_of_publish(&self) -> bool {
-        matches!(self.kind, ConsensusTransactionKind::EndOfPublish(_))
-    }
 }

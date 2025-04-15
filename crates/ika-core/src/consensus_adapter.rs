@@ -338,9 +338,6 @@ impl ConsensusAdapter {
             recovered.len()
         );
         for transaction in recovered {
-            if transaction.is_end_of_publish() {
-                info!(epoch=?epoch_store.epoch(), "Submitting EndOfPublish message to consensus");
-            }
             self.submit_unchecked(&[transaction], epoch_store);
         }
     }
