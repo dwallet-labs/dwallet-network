@@ -76,7 +76,14 @@ where
         }
     }
 
-    pub async fn run_epoch_switch(
+    /// Checks whether `process_mid_epoch`, `lock_last_active_session_sequence_number`, or
+    /// `request_advance_epoch` can be called, and calls them if so.
+    ///
+    /// Anyone can call these functions based on the epoch and Sui's clock times.
+    ///
+    /// We don't use Sui's previous epoch switch mechanism as it assumes checkpoints are being created all the time,
+    /// and in Ika, checkpoints are created only when there are new completed MPC sessions to write to Sui.
+    async fn run_epoch_switch(
         &self,
         sui_notifier: &SuiNotifier,
         ika_system_state_inner: &SystemInner,
@@ -96,22 +103,21 @@ where
             return;
         };
 
-        if clock.timestamp_ms
-            > ika_system_state_inner.epoch_start_timestamp_ms()
-                + (ika_system_state_inner.epoch_duration_ms() / 2)
-            && system_inner_v1
-                .validators
-                .next_epoch_active_committee
-                .is_none()
-        {
-            info!("calling process mid epoch");
+        let mid_epoch_time = ika_system_state_inner.epoch_start_timestamp_ms()
+            + (ika_system_state_inner.epoch_duration_ms() / 2);
+        let next_epoch_committee_is_empty = system_inner_v1
+            .validators
+            .next_epoch_active_committee
+            .is_none();
+        if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
+            info!("Calling `process_mid_epoch()`");
             if let Err(e) =
                 Self::process_mid_epoch(self.ika_system_package_id, &sui_notifier, &self.sui_client)
                     .await
             {
-                error!("Failed to process mid epoch: {:?}", e);
+                error!("`process_mid_epoch()` failed: {:?}", e);
             } else {
-                info!("Successfully processed mid epoch");
+                info!("`process_mid_epoch()` successful");
             }
         }
 
@@ -124,13 +130,13 @@ where
             return;
         };
 
-        if clock.timestamp_ms
-            > ika_system_state_inner.epoch_start_timestamp_ms()
-                + ika_system_state_inner.epoch_duration_ms()
-            && !coordinator.locked_last_session_to_complete_in_current_epoch
-        {
-            info!("calling lock last active session sequence number");
-            if let Err(e) = Self::lock_last_active_session_sequence_number(
+        // The Epoch was finished.
+        let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
+            + ika_system_state_inner.epoch_duration_ms();
+        let epoch_not_locked = !coordinator.locked_last_session_to_complete_in_current_epoch;
+        if clock.timestamp_ms > epoch_finish_time && epoch_not_locked {
+            info!("Calling `lock_last_active_session_sequence_number()`");
+            if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
                 self.ika_system_package_id,
                 dwallet_2pc_mpc_secp256k1_id,
                 &sui_notifier,
@@ -139,7 +145,7 @@ where
             .await
             {
                 error!(
-                    "Failed to lock last active session sequence number: {:?}",
+                    "failed to lock last active session sequence number: {:?}",
                     e
                 );
             } else {
@@ -147,15 +153,18 @@ where
             }
         }
 
+        // Check if we can advance the epoch.
+        let all_epoch_sessions_finished = coordinator.number_of_completed_sessions
+            == coordinator.last_session_to_complete_in_current_epoch;
+        let next_epoch_committee_exists = system_inner_v1
+            .validators
+            .next_epoch_active_committee
+            .is_some();
         if coordinator.locked_last_session_to_complete_in_current_epoch
-            && coordinator.number_of_completed_sessions
-                == coordinator.last_session_to_complete_in_current_epoch
-            && system_inner_v1
-                .validators
-                .next_epoch_active_committee
-                .is_some()
+            && all_epoch_sessions_finished
+            && next_epoch_committee_exists
         {
-            info!("calling process request advance epoch");
+            info!("Calling `process_request_advance_epoch()`");
             if let Err(e) = Self::process_request_advance_epoch(
                 self.ika_system_package_id,
                 dwallet_2pc_mpc_secp256k1_id,
@@ -164,7 +173,7 @@ where
             )
             .await
             {
-                error!("Failed to process request advance epoch: {:?}", e);
+                error!("failed to process request advance epoch: {:?}", e);
             } else {
                 info!("Successfully processed request advance epoch");
             }
@@ -288,10 +297,9 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
-        info!("process_mid_epoch");
-        let (gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
-            .await;
+        info!("Running `process_mid_epoch()`");
+        let (_gas_coin, gas_obj_ref, owner) =
+            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -312,7 +320,7 @@ where
         )
         .map_err(|e| {
             IkaError::SuiConnectorInternalError(format!(
-                "Can't ProgrammableTransactionBuilder::move_call: {e}"
+                "failed on ProgrammableTransactionBuilder::move_call: {e}"
             ))
         })?;
 
@@ -332,16 +340,15 @@ where
         Ok(())
     }
 
-    async fn lock_last_active_session_sequence_number(
+    async fn lock_last_session_to_complete_in_current_epoch(
         ika_system_package_id: ObjectID,
         dwallet_2pc_mpc_secp256k1_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
-        info!("process_lock_last_active_session_sequence_number");
-        let (gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
-            .await;
+        info!("Process `lock_last_active_session_sequence_number()`");
+        let (_gas_coin, gas_obj_ref, owner) =
+            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -352,7 +359,7 @@ where
             .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
             .await;
 
-        let mut args = vec![
+        let args = vec![
             CallArg::Object(ika_system_state_arg),
             CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
             CallArg::Object(clock_arg),
@@ -367,7 +374,7 @@ where
         )
         .map_err(|e| {
             IkaError::SuiConnectorInternalError(format!(
-                "Can't ProgrammableTransactionBuilder::move_call: {e}"
+                "failed on ProgrammableTransactionBuilder::move_call: {e}"
             ))
         })?;
 
@@ -393,10 +400,9 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
-        info!("process_request_advance_epoch");
-        let (gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
-            .await;
+        info!("Running `process_request_advance_epoch()`");
+        let (_gas_coin, gas_obj_ref, owner) =
+            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -407,7 +413,7 @@ where
             .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
             .await;
 
-        let mut args = vec![
+        let args = vec![
             CallArg::Object(ika_system_state_arg),
             CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
             CallArg::Object(clock_arg),
@@ -422,7 +428,7 @@ where
         )
         .map_err(|e| {
             IkaError::SuiConnectorInternalError(format!(
-                "Can't ProgrammableTransactionBuilder::move_call: {e}"
+                "failed on ProgrammableTransactionBuilder::move_call {e}"
             ))
         })?;
 
@@ -452,9 +458,8 @@ where
         sui_client: &Arc<SuiClient<C>>,
         metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
-        let (gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
-            .await;
+        let (gas_coin, gas_obj_ref, owner) =
+            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
