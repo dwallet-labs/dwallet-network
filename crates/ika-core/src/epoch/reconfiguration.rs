@@ -72,8 +72,3 @@ impl ReconfigState {
         !matches!(self.status, ReconfigCertStatus::RejectAllTx)
     }
 }
-
-pub trait ReconfigurationInitiator {
-    fn initiate_process_mid_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>);
-    fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>);
-}

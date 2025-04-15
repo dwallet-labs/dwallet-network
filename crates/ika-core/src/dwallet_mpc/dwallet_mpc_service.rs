@@ -7,7 +7,6 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::session_info_from_event;
-use crate::epoch::reconfiguration::ReconfigurationInitiator;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use ika_sui_client::{SuiBridgeClient, SuiClient};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};

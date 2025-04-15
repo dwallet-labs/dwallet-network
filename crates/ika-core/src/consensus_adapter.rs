@@ -39,7 +39,7 @@ use tokio::time::{self};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_handler::{classify, SequencedConsensusTransactionKey};
 use crate::consensus_throughput_calculator::{ConsensusThroughputProfiler, Level};
-use crate::epoch::reconfiguration::{ReconfigState, ReconfigurationInitiator};
+use crate::epoch::reconfiguration::{ReconfigState};
 use crate::metrics::LatencyObserver;
 use consensus_core::{BlockStatus, ConnectionStatus};
 use ika_protocol_config::ProtocolConfig;
@@ -1001,54 +1001,6 @@ pub struct NoopConsensusOverloadChecker {}
 impl ConsensusOverloadChecker for NoopConsensusOverloadChecker {
     fn check_consensus_overload(&self) -> IkaResult {
         Ok(())
-    }
-}
-
-impl ReconfigurationInitiator for Arc<ConsensusAdapter> {
-    /// This method is called at the middle of the epoch.
-    /// ConsensusAdapter will send InitiateProcessMidEpoch message immediately.
-    fn initiate_process_mid_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
-        info!(epoch=?epoch_store.epoch(), "Sending InitiateProcessMidEpoch message to consensus");
-        epoch_store.update_mid_epoch_time();
-        if let Err(err) = self.submit(
-            ConsensusTransaction::new_initiate_process_mid_epoch(self.authority),
-            None,
-            epoch_store,
-        ) {
-            warn!(
-                "Error when sending new initiate process mid epoch message: {:?}",
-                err
-            );
-        }
-    }
-
-    /// This method is called externally to begin reconfiguration
-    /// It transition reconfig state to reject new certificates from user
-    /// ConsensusAdapter will send EndOfPublish message once pending certificate queue is drained.
-    fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
-        let send_end_of_publish = {
-            let reconfig_guard = epoch_store.get_reconfig_state_write_lock_guard();
-            if !reconfig_guard.should_accept_user_certs() {
-                // Allow caller to call this method multiple times
-                return;
-            }
-            let pending_count = 0; //epoch_store.pending_consensus_certificates_count();
-            debug!(epoch=?epoch_store.epoch(), ?pending_count, "Trying to close epoch");
-            let send_end_of_publish = pending_count == 0;
-            epoch_store.close_user_certs(reconfig_guard);
-            send_end_of_publish
-            // reconfig_guard lock is dropped here.
-        };
-        if send_end_of_publish {
-            info!(epoch=?epoch_store.epoch(), "Sending EndOfPublish message to consensus");
-            if let Err(err) = self.submit(
-                ConsensusTransaction::new_end_of_publish(self.authority),
-                None,
-                epoch_store,
-            ) {
-                warn!("Error when sending end of publish message: {:?}", err);
-            }
-        }
     }
 }
 
