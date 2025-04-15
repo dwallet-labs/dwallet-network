@@ -88,7 +88,7 @@ use ika_types::messages_checkpoint::{
     CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage,
 };
 use ika_types::messages_consensus::{
-    AuthorityCapabilitiesV1, ConsensusTransaction, ConsensusTransactionKey,
+    ConsensusTransaction, ConsensusTransactionKey,
     ConsensusTransactionKind,
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
@@ -1300,46 +1300,6 @@ impl AuthorityPerEpochStore {
                     return None;
                 }
             }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::InitiateProcessMidEpoch(authority),
-                ..
-            }) => {
-                if &transaction.sender_authority() != authority {
-                    warn!(
-                        "InitiateProcessMidEpoch authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::EndOfPublish(authority),
-                ..
-            }) => {
-                if &transaction.sender_authority() != authority {
-                    warn!(
-                        "EndOfPublish authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind:
-                    ConsensusTransactionKind::CapabilityNotificationV1(AuthorityCapabilitiesV1 {
-                        authority,
-                        ..
-                    }),
-                ..
-            }) => {
-                if transaction.sender_authority() != *authority {
-                    warn!(
-                        "CapabilityNotification authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    return None;
-                }
-            }
             SequencedConsensusTransactionKind::System(_) => {}
         }
         Some(VerifiedSequencedConsensusTransaction(transaction))
@@ -1670,33 +1630,6 @@ impl AuthorityPerEpochStore {
                 // be skipped when a batch is already part of a certificate, so we must also
                 // notify here.
                 checkpoint_service.notify_checkpoint_signature(self, info)?;
-                Ok(ConsensusCertificateResult::ConsensusMessage)
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::InitiateProcessMidEpoch(_),
-                ..
-            }) => {
-                // these are partitioned earlier
-                panic!("process_consensus_transaction called with initiate-process-mid-epoch transaction");
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::EndOfPublish(_),
-                ..
-            }) => {
-                // these are partitioned earlier
-                panic!("process_consensus_transaction called with end-of-publish transaction");
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CapabilityNotificationV1(capabilities),
-                ..
-            }) => {
-                let authority = capabilities.authority;
-                debug!(
-                    "Received CapabilityNotificationV2 from {:?}",
-                    authority.concise()
-                );
-                self.record_capabilities_v1(capabilities)?;
-
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
