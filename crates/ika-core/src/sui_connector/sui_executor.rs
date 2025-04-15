@@ -146,15 +146,18 @@ where
             }
         }
 
+        // Check if we can advance the epoch.
+        let all_epoch_sessions_finished = coordinator.number_of_completed_sessions
+            == coordinator.last_session_to_complete_in_current_epoch;
+        let next_epoch_committee_exists = system_inner_v1
+            .validators
+            .next_epoch_active_committee
+            .is_some();
         if coordinator.locked_last_session_to_complete_in_current_epoch
-            && coordinator.number_of_completed_sessions
-                == coordinator.last_session_to_complete_in_current_epoch
-            && system_inner_v1
-                .validators
-                .next_epoch_active_committee
-                .is_some()
+            && all_epoch_sessions_finished
+            && next_epoch_committee_exists
         {
-            info!("calling process request advance epoch");
+            info!("Calling `process_request_advance_epoch()`");
             if let Err(e) = Self::process_request_advance_epoch(
                 self.ika_system_package_id,
                 dwallet_2pc_mpc_secp256k1_id,
@@ -163,7 +166,7 @@ where
             )
             .await
             {
-                error!("Failed to process request advance epoch: {:?}", e);
+                error!("failed to process request advance epoch: {:?}", e);
             } else {
                 info!("Successfully processed request advance epoch");
             }
