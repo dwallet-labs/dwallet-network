@@ -11,6 +11,7 @@ title: Module `(ika_system=0x0)::system_inner_v1`
 -  [Struct `SystemCheckpointInfoEvent`](#(ika_system=0x0)_system_inner_v1_SystemCheckpointInfoEvent)
 -  [Constants](#@Constants_0)
 -  [Function `create`](#(ika_system=0x0)_system_inner_v1_create)
+-  [Function `advance_network_keys`](#(ika_system=0x0)_system_inner_v1_advance_network_keys)
 -  [Function `create_system_parameters`](#(ika_system=0x0)_system_inner_v1_create_system_parameters)
 -  [Function `initialize`](#(ika_system=0x0)_system_inner_v1_initialize)
 -  [Function `request_add_validator_candidate`](#(ika_system=0x0)_system_inner_v1_request_add_validator_candidate)
@@ -608,6 +609,32 @@ This function will be called only once in init.
         extra_fields: bag::new(ctx),
     };
     system_state
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_v1_advance_network_keys"></a>
+
+## Function `advance_network_keys`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_network_keys">advance_network_keys</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">dwallet_2pc_mpc_secp256k1::DWalletCoordinator</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_network_keys">advance_network_keys</a>(
+    self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> DWalletCoordinator
+) {
+    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.advance_epoch_dwallet_network_decryption_key(cap));
 }
 </code></pre>
 

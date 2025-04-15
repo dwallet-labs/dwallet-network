@@ -177,6 +177,12 @@ public(package) fun create(
     system_state
 }
 
+public(package) fun advance_network_keys(
+    self: &SystemInnerV1, dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator
+) {
+    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
+}
+
 public(package) fun create_system_parameters(
     epoch_duration_ms: u64,
     stake_subsidy_start_epoch: u64,
