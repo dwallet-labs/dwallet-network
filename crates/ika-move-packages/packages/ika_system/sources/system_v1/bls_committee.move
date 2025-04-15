@@ -32,14 +32,14 @@ public struct CommitteeQuorumVerifiedEvent has copy, drop {
 /// opaque quantities whose meaning changes from epoch to epoch as the total amount staked shifts.
 /// Fixing the total voting power allows clients to hardcode the quorum threshold and total_voting power rather
 /// than recomputing these.
-const TOTAL_VOTING_POWER: u64 = 6;
+const TOTAL_VOTING_POWER: u64 = 115;
 
 /// Quorum threshold for our fixed voting power - any message signed by this much voting power can be trusted
 /// up to BFT assumptions
-const QUORUM_THRESHOLD: u64 = 4;
+const QUORUM_THRESHOLD: u64 = 77;
 
 // Cap voting power of an individual validator at 10%.
-const MAX_VOTING_POWER: u64 = 1;
+const MAX_VOTING_POWER: u64 = 12;
 
 const BLS_SIGNATURE_LEN: u64 = 96;
 

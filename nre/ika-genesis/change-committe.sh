@@ -1,15 +1,18 @@
 #!/bin/bash
 
 # f = 38
-# max vote = 12
-# q = 2f+1 = 77
-# n = 3f+1 = 115
+# max vote = 10% of Total ~= 12
+# q(threshold) = 2f+1 = 77
+# n(total) = 3f+1 = 115
 # Configuration variables (change these values as needed)
-TOTAL_VOTING_POWER=6
+TOTAL_VOTING_POWER=115
 # TOTAL_VOTING_POWER*2/3 + 1
-QUORUM_THRESHOLD=4
+QUORUM_THRESHOLD=77
 # Cap voting power of an individual validator at 10%.
-MAX_VOTING_POWER=1
+MAX_VOTING_POWER=12
+# Validity threshold for the committee.
+# f+1
+VALIDITY_THRESHOLD=39
 
 pushd ../../
 
@@ -47,6 +50,7 @@ echo "Updating Rust file at $RUST_FILE"
 sed -i '' \
     -e "s/pub const TOTAL_VOTING_POWER: StakeUnit = [0-9]*;/pub const TOTAL_VOTING_POWER: StakeUnit = $TOTAL_VOTING_POWER;/" \
     -e "s/pub const QUORUM_THRESHOLD: StakeUnit = .*$/pub const QUORUM_THRESHOLD: StakeUnit = $QUORUM_THRESHOLD;/" \
+    -e "s/pub const VALIDITY_THRESHOLD: StakeUnit = [0-9]*;/pub const VALIDITY_THRESHOLD: StakeUnit = $VALIDITY_THRESHOLD;/" \
     "$RUST_FILE"
 
 # Verify the changes.
