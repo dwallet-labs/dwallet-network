@@ -298,9 +298,8 @@ where
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
         info!("Running `process_mid_epoch()`");
-        let (_gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data(sui_notifier.gas_object_ref.0)
-            .await;
+        let (_gas_coin, gas_obj_ref, owner) =
+            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -348,9 +347,8 @@ where
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
         info!("Process `lock_last_active_session_sequence_number()`");
-        let (_gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data(sui_notifier.gas_object_ref.0)
-            .await;
+        let (_gas_coin, gas_obj_ref, owner) =
+            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -403,9 +401,8 @@ where
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
         info!("Running `process_request_advance_epoch()`");
-        let (_gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data(sui_notifier.gas_object_ref.0)
-            .await;
+        let (_gas_coin, gas_obj_ref, owner) =
+            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -461,9 +458,8 @@ where
         sui_client: &Arc<SuiClient<C>>,
         metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
-        let (gas_coin, gas_obj_ref, owner) = sui_client
-            .get_gas_data(sui_notifier.gas_object_ref.0)
-            .await;
+        let (gas_coin, gas_obj_ref, owner) =
+            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
