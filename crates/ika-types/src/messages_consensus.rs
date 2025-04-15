@@ -185,36 +185,6 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_initiate_process_mid_epoch(authority: AuthorityName) -> Self {
-        let mut hasher = DefaultHasher::new();
-        authority.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::InitiateProcessMidEpoch(authority),
-        }
-    }
-
-    pub fn new_end_of_publish(authority: AuthorityName) -> Self {
-        let mut hasher = DefaultHasher::new();
-        authority.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::EndOfPublish(authority),
-        }
-    }
-
-    pub fn new_capability_notification_v1(capabilities: AuthorityCapabilitiesV1) -> Self {
-        let mut hasher = DefaultHasher::new();
-        capabilities.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::CapabilityNotificationV1(capabilities),
-        }
-    }
-
     pub fn get_tracking_id(&self) -> u64 {
         (&self.tracking_id[..])
             .read_u64::<BigEndian>()
