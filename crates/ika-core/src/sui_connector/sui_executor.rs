@@ -136,7 +136,7 @@ where
         let epoch_not_locked = !coordinator.locked_last_session_to_complete_in_current_epoch;
         if clock.timestamp_ms > epoch_finish_time && epoch_not_locked {
             info!("Calling `lock_last_active_session_sequence_number()`");
-            if let Err(e) = Self::lock_last_active_session_sequence_number(
+            if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
                 self.ika_system_package_id,
                 dwallet_2pc_mpc_secp256k1_id,
                 &sui_notifier,
@@ -341,7 +341,7 @@ where
         Ok(())
     }
 
-    async fn lock_last_active_session_sequence_number(
+    async fn lock_last_session_to_complete_in_current_epoch(
         ika_system_package_id: ObjectID,
         dwallet_2pc_mpc_secp256k1_id: ObjectID,
         sui_notifier: &SuiNotifier,
