@@ -139,7 +139,7 @@ where
             .await
             {
                 error!(
-                    "Failed to lock last active session sequence number: {:?}",
+                    "failed to lock last active session sequence number: {:?}",
                     e
                 );
             } else {
