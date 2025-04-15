@@ -1,8 +1,5 @@
 use class_groups::reconfiguration::{PublicInput, Secp256k1Party};
-use class_groups::{
-    Secp256k1DecryptionKeySharePublicParameters, Secp256k1EncryptionSchemePublicParameters,
-    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
-};
+use class_groups::DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::MPCPublicInput;
 use group::{secp256k1, GroupElement, PartyID};
