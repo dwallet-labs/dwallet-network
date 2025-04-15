@@ -1357,9 +1357,6 @@ impl AuthorityPerEpochStore {
         let mut current_commit_sequenced_consensus_transactions =
             Vec::with_capacity(verified_transactions.len());
 
-        let mut initiate_process_mid_epoch_transactions =
-            Vec::with_capacity(verified_transactions.len());
-        let mut end_of_publish_transactions = Vec::with_capacity(verified_transactions.len());
         for tx in verified_transactions {
             if tx.0.is_system() {
                 system_transactions.push(tx);
@@ -1418,7 +1415,7 @@ impl AuthorityPerEpochStore {
         );
         checkpoint_service.notify_checkpoint()?;
 
-        self.process_notifications(&notifications, &end_of_publish_transactions);
+        self.process_notifications(&notifications);
 
         Ok(verified_messages)
     }
@@ -1456,12 +1453,10 @@ impl AuthorityPerEpochStore {
     fn process_notifications(
         &self,
         notifications: &[SequencedConsensusTransactionKey],
-        end_of_publish: &[VerifiedSequencedConsensusTransaction],
     ) {
         for key in notifications
             .iter()
             .cloned()
-            .chain(end_of_publish.iter().map(|tx| tx.0.transaction.key()))
         {
             self.consensus_notify_read.notify(&key, &());
         }
