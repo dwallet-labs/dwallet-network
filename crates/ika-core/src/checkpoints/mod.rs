@@ -1126,9 +1126,7 @@ impl CheckpointBuilder {
         //         .await?;
         // }
 
-        let chunks = self.split_checkpoint_chunks(
-            all_messages,
-        )?;
+        let chunks = self.split_checkpoint_chunks(all_messages)?;
         let chunks_count = chunks.len();
 
         let mut checkpoints = Vec::with_capacity(chunks_count);
@@ -1163,7 +1161,6 @@ impl CheckpointBuilder {
                 sequence_number,
                 messages.len()
             );
-
 
             let checkpoint_message =
                 CheckpointMessage::new(epoch, sequence_number, messages, timestamp_ms);

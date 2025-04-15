@@ -1464,11 +1464,11 @@ impl AuthorityPerEpochStore {
 
         // Only after batch is written, notify checkpoint service to start building any new
         // pending checkpoints.
-            debug!(
-                ?consensus_commit_info.round,
-                "Notifying checkpoint service about new pending checkpoint(s)",
-            );
-            checkpoint_service.notify_checkpoint()?;
+        debug!(
+            ?consensus_commit_info.round,
+            "Notifying checkpoint service about new pending checkpoint(s)",
+        );
+        checkpoint_service.notify_checkpoint()?;
 
         self.process_notifications(&notifications, &end_of_publish_transactions);
 
