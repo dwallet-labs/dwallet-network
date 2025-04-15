@@ -80,6 +80,9 @@ where
     /// `request_advance_epoch` can be called, and calls them if so.
     ///
     /// Anyone can call these functions based on the epoch and Sui's clock times.
+    ///
+    /// We don't use Sui's previous epoch switch mechanism as it assumes checkpoints are being created all the time,
+    /// and in Ika, checkpoints are created only when there are new completed MPC sessions to write to Sui.
     async fn run_epoch_switch(
         &self,
         sui_notifier: &SuiNotifier,
