@@ -314,7 +314,7 @@ where
         )
         .map_err(|e| {
             IkaError::SuiConnectorInternalError(format!(
-                "Can't ProgrammableTransactionBuilder::move_call: {e}"
+                "failed on ProgrammableTransactionBuilder::move_call: {e}"
             ))
         })?;
 
