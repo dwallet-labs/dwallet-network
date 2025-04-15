@@ -305,6 +305,16 @@ impl DWalletMPCManager {
             if session.mpc_event_data.is_none() {
                 session.mpc_event_data = mpc_event_data;
             }
+        } else if let Some(mut session) =
+            self.pending_sessions.get_mut(&session_info.sequence_number)
+        {
+            warn!(
+                "received an event for an existing session with `session_id`: {:?}",
+                session_info.session_id
+            );
+            if session.mpc_event_data.is_none() {
+                session.mpc_event_data = mpc_event_data;
+            }
         } else {
             self.push_new_mpc_session(
                 &session_info.session_id,
