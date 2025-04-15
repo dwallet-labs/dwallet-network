@@ -300,7 +300,9 @@ where
             .inner
             .get_clock(ObjectID::from_hex_literal("0x6").unwrap())
             .await
-            .map_err(|e| IkaError::SuiClientInternalError(format!("Can't get System: {e}")))?;
+            .map_err(|e| {
+                IkaError::SuiClientInternalError(format!("Can't get the System clock from Sui: {e}"))
+            })?;
         bcs::from_bytes::<Clock>(&result).map_err(|e| {
             IkaError::SuiClientSerializationError(format!("Can't serialize System: {e}"))
         })
