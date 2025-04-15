@@ -1021,11 +1021,6 @@ The output of a batched Sign session.
 <dd>
 </dd>
 <dt>
-<code>immediate: bool</code>
-</dt>
-<dd>
-</dd>
-<dt>
 <code>session_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
 <dd>
@@ -3060,7 +3055,6 @@ Supported hash schemes for message signing.
         gas_fee_reimbursement_sui,
     };
     <b>let</b> event = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a> {
-        immediate: <b>false</b>,
         epoch: self.current_epoch,
         session_sequence_number,
         session_id: object::id(&session),
@@ -3120,7 +3114,6 @@ Supported hash schemes for message signing.
         session_sequence_number,
         session_id: object::id(&session),
         event_data,
-        immediate: <b>true</b>,
     };
     self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
