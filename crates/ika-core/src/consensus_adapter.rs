@@ -591,18 +591,6 @@ impl ConsensusAdapter {
         let mut transaction_keys = Vec::new();
 
         for transaction in &transactions {
-            if matches!(
-                transaction.kind,
-                ConsensusTransactionKind::InitiateProcessMidEpoch(..)
-            ) {
-                info!(epoch=?epoch_store.epoch(), "Submitting InitiateProcessMidEpoch message to consensus");
-            }
-
-            if matches!(transaction.kind, ConsensusTransactionKind::EndOfPublish(..)) {
-                info!(epoch=?epoch_store.epoch(), "Submitting EndOfPublish message to consensus");
-                epoch_store.record_epoch_pending_certs_process_time_metric();
-            }
-
             let transaction_key = SequencedConsensusTransactionKey::External(transaction.key());
             transaction_keys.push(transaction_key);
         }

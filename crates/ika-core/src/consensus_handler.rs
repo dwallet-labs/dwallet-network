@@ -625,27 +625,6 @@ impl SequencedConsensusTransactionKind {
             SequencedConsensusTransactionKind::System(_txn) => 0,
         }
     }
-
-    pub fn is_initiate_process_mid_epoch(&self) -> bool {
-        match self {
-            SequencedConsensusTransactionKind::External(ext) => {
-                matches!(
-                    ext.kind,
-                    ConsensusTransactionKind::InitiateProcessMidEpoch(..)
-                )
-            }
-            SequencedConsensusTransactionKind::System(_) => false,
-        }
-    }
-
-    pub fn is_end_of_publish(&self) -> bool {
-        match self {
-            SequencedConsensusTransactionKind::External(ext) => {
-                matches!(ext.kind, ConsensusTransactionKind::EndOfPublish(..))
-            }
-            SequencedConsensusTransactionKind::System(_) => false,
-        }
-    }
 }
 
 impl SequencedConsensusTransaction {
