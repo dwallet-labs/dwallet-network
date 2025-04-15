@@ -340,8 +340,8 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
-        info!("process_lock_last_active_session_sequence_number");
-        let (gas_coin, gas_obj_ref, owner) = sui_client
+        info!("Process `lock_last_active_session_sequence_number()`");
+        let (_gas_coin, gas_obj_ref, owner) = sui_client
             .get_gas_data_panic_if_not_gas(sui_notifier.gas_object_ref.0)
             .await;
 
