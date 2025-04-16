@@ -35,40 +35,4 @@ impl Default for ReconfigState {
 }
 
 impl ReconfigState {
-    pub fn close_user_certs(&mut self) {
-        if matches!(self.status, ReconfigCertStatus::AcceptAllCerts) {
-            self.status = ReconfigCertStatus::RejectUserCerts;
-        }
-    }
-
-    pub fn is_reject_user_certs(&self) -> bool {
-        matches!(self.status, ReconfigCertStatus::RejectUserCerts)
-    }
-
-    pub fn close_all_certs(&mut self) {
-        self.status = ReconfigCertStatus::RejectAllCerts;
-    }
-
-    pub fn should_accept_user_certs(&self) -> bool {
-        matches!(self.status, ReconfigCertStatus::AcceptAllCerts)
-    }
-
-    pub fn should_accept_consensus_certs(&self) -> bool {
-        matches!(
-            self.status,
-            ReconfigCertStatus::AcceptAllCerts | ReconfigCertStatus::RejectUserCerts
-        )
-    }
-
-    pub fn is_reject_all_certs(&self) -> bool {
-        matches!(self.status, ReconfigCertStatus::RejectAllCerts)
-    }
-
-    pub fn close_all_tx(&mut self) {
-        self.status = ReconfigCertStatus::RejectAllTx;
-    }
-
-    pub fn should_accept_tx(&self) -> bool {
-        !matches!(self.status, ReconfigCertStatus::RejectAllTx)
-    }
 }

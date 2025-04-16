@@ -1138,23 +1138,6 @@ impl AuthorityPerEpochStore {
         self.reconfig_state_mem.write()
     }
 
-    pub fn close_user_certs(&self, mut lock_guard: RwLockWriteGuard<'_, ReconfigState>) {
-        lock_guard.close_user_certs();
-        self.store_reconfig_state(&lock_guard)
-            .expect("Updating reconfig state cannot fail");
-
-        // Set epoch_close_time for metric purpose.
-        let mut epoch_close_time = self.epoch_close_time.write();
-        if epoch_close_time.is_none() {
-            // Only update it the first time epoch is closed.
-            *epoch_close_time = Some(Instant::now());
-
-            self.user_certs_closed_notify
-                .notify()
-                .expect("user_certs_closed_notify called twice on same epoch store");
-        }
-    }
-
     pub async fn user_certs_closed_notify(&self) {
         self.user_certs_closed_notify.wait().await
     }
@@ -1624,21 +1607,11 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {
                 let authority = capabilities.authority;
-                if self
-                    .get_reconfig_state_read_lock_guard()
-                    .should_accept_consensus_certs()
-                {
-                    debug!(
-                        "Received CapabilityNotificationV2 from {:?}",
-                        authority.concise()
-                    );
-                    self.record_capabilities_v1(capabilities)?;
-                } else {
-                    debug!(
-                        "Ignoring CapabilityNotificationV2 from {:?} because of end of epoch",
-                        authority.concise()
-                    );
-                }
+                debug!(
+                    "Received CapabilityNotificationV2 from {:?}",
+                    authority.concise()
+                );
+                self.record_capabilities_v1(capabilities)?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
@@ -1705,14 +1678,6 @@ impl AuthorityPerEpochStore {
         &self,
         system_transaction: &Vec<MessageKind>,
     ) -> ConsensusCertificateResult {
-        if !self.get_reconfig_state_read_lock_guard().should_accept_tx() {
-            debug!(
-                "Ignoring system transaction of Ika large transaction {:?} because of end of epoch",
-                system_transaction
-            );
-            return ConsensusCertificateResult::IgnoredSystem;
-        }
-
         ConsensusCertificateResult::IkaBulkTransaction(system_transaction.clone())
     }
 
