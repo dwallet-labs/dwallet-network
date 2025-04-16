@@ -2161,6 +2161,7 @@ impl AuthorityPerEpochStore {
                     }
                 }
             }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => todo!(),
         }
     }
 

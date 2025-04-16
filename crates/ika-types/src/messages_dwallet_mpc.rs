@@ -61,6 +61,7 @@ pub enum MPCProtocolInitData {
     /// because the system does not support native functions.
     EncryptedShareVerification(DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>),
     PartialSignatureVerification(DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent>),
+    DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent>),
 }
 
 impl Display for MPCProtocolInitData {
@@ -76,6 +77,9 @@ impl Display for MPCProtocolInitData {
             }
             MPCProtocolInitData::PartialSignatureVerification(_) => {
                 write!(f, "PartialSignatureVerification")
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                write!(f, "DecryptionKeyReshare")
             }
         }
     }
@@ -94,6 +98,9 @@ impl Debug for MPCProtocolInitData {
             }
             MPCProtocolInitData::PartialSignatureVerification(_) => {
                 write!(f, "PartialSignatureVerification")
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                write!(f, "DecryptionKeyReshare")
             }
         }
     }

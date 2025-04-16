@@ -57,7 +57,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
         protocol_public_parameters: Vec<u8>,
         decryption_key_share_public_parameters: Vec<u8>,
     ) -> DwalletMPCResult<MPCPublicInput> {
-        let current_committee= current_committee.clone();
+        let current_committee = current_committee.clone();
         let quorum_threshold = current_committee.quorum_threshold();
         let weighted_parties: HashMap<PartyID, Weight> = current_committee
             .voting_rights
