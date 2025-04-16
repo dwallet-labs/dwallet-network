@@ -460,6 +460,7 @@ where
         .await
     }
 
+    /// Get the clock object arg for the shared system object on the chain.
     pub async fn get_clock_arg_must_succeed(&self) -> ObjectArg {
         static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
         *ARG.get_or_init(|| async move {
@@ -467,7 +468,7 @@ where
                 self.inner.get_shared_arg(ObjectID::from_single_byte(6)),
                 Duration::from_secs(30)
             ) else {
-                panic!("Failed to get system object arg after retries");
+                panic!("failed to get system object arg after retries");
             };
             system_arg
         })
@@ -1253,6 +1254,7 @@ impl SuiClientInner for SuiSdkClient {
         })
     }
 
+    /// Get the shared object arg for the shared system object on the chain.
     async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error> {
         let response = self
             .read_api()
@@ -1354,6 +1356,7 @@ impl SuiClientInner for SuiSdkClient {
         }
     }
 
+    // todo(zeev): remove this once the PR with merge all coins is merged.
     async fn get_gas_data(&self, gas_object_id: ObjectID) -> (GasCoin, ObjectRef, Owner) {
         loop {
             if let Ok(Some(gas_obj)) = self
