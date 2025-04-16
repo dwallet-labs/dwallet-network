@@ -789,11 +789,11 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         id,
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         current_epoch_shares: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         next_epoch_shares: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         previous_epoch_shares: table_vec::empty(ctx),
         public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
@@ -982,9 +982,9 @@ fun charge_and_create_immediate_dwallet_event<E: copy + drop + store>(
         event_data,
     };
 
-    // This special logic is here to allow the immediate session have a unique session sequenece number on the one hand,
-    // yet ignore it when deciding the last session to complete in the current epoch, as immediate sessions
-    // are special sessions that must get completed in the current epoch.
+    // This special logic is here to allow the immediate session have a unique session sequence number on the one hand,
+    // yet ignore (by ignoring lock) it when deciding the last session to complete in the current epoch,
+    // as immediate sessions are special sessions that must get completed in the current epoch.
     self.next_session_sequence_number = self.next_session_sequence_number + 1;
     self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
     self.last_session_to_complete_in_current_epoch = self.last_session_to_complete_in_current_epoch + 1;
@@ -1215,6 +1215,7 @@ fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinat
 public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinatorInner): bool {
     return self.locked_last_session_to_complete_in_current_epoch &&
         self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
+        // This is for special sessions such as Network DKG and Reconfiguration.
         self.completed_immediate_sessions_count == self.started_immediate_sessions_count
 }
 
