@@ -316,7 +316,7 @@ impl DWalletMPCManager {
                 session.mpc_event_data = mpc_event_data;
             }
             if session_info.is_immediate {
-                drop(session);
+                let _ = session;
                 // Safe to unwrap, as we just checked that the session exists in the pending sessions.
                 let session = self
                     .pending_sessions
