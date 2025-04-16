@@ -575,9 +575,6 @@ mod tests {
         for &num_validators in &test_cases {
             let mut signers = RoaringBitmap::new();
             for i in 0..num_validators {
-                if i % 2 == 0 {
-                    continue;
-                }
                 signers.insert(i);
             }
 
