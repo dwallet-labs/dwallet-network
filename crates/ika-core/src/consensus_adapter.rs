@@ -480,26 +480,9 @@ impl ConsensusAdapter {
         )
     }
 
-    /// This method blocks until transaction is persisted in local database
-    /// It then returns handle to async task, user can join this handle to await while transaction is processed by consensus
-    ///
-    /// This method guarantees that once submit(but not returned async handle) returns,
-    /// transaction is persisted and will eventually be sent to consensus even after restart
-    ///
-    /// When submitting a certificate caller **must** provide a ReconfigState lock guard
-    pub fn submit(
-        self: &Arc<Self>,
-        transaction: ConsensusTransaction,
-        lock: Option<&RwLockReadGuard<ReconfigState>>,
-        epoch_store: &Arc<AuthorityPerEpochStore>,
-    ) -> IkaResult<JoinHandle<()>> {
-        self.submit_batch(&[transaction], lock, epoch_store)
-    }
-
     pub fn submit_batch(
         self: &Arc<Self>,
         transactions: &[ConsensusTransaction],
-        lock: Option<&RwLockReadGuard<ReconfigState>>,
         epoch_store: &Arc<AuthorityPerEpochStore>,
     ) -> IkaResult<JoinHandle<()>> {
         // if transactions.len() > 1 {
@@ -1120,8 +1103,7 @@ impl SubmitToConsensus for Arc<ConsensusAdapter> {
         transactions: &[ConsensusTransaction],
         epoch_store: &Arc<AuthorityPerEpochStore>,
     ) -> IkaResult {
-        self.submit_batch(transactions, None, epoch_store)
-            .map(|_| ())
+        self.submit_batch(transactions, epoch_store).map(|_| ())
     }
 }
 

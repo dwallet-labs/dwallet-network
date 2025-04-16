@@ -403,9 +403,6 @@ pub struct AuthorityEpochTables {
     /// This field is written by a single process (consensus handler).
     last_consensus_stats: DBMap<u64, ExecutionIndicesWithStats>,
 
-    /// This table contains current reconfiguration state for validator for current epoch
-    reconfig_state: DBMap<u64, ReconfigState>,
-
     /// This table has information for the checkpoints for which we constructed all the data
     /// from consensus, but not yet constructed actual checkpoint.
     ///
@@ -498,14 +495,6 @@ impl AuthorityEpochTables {
         parent_path.join(format!("{}{}", EPOCH_DB_PREFIX, epoch))
     }
 
-    fn load_reconfig_state(&self) -> IkaResult<ReconfigState> {
-        let state = self
-            .reconfig_state
-            .get(&RECONFIG_STATE_INDEX)?
-            .unwrap_or_default();
-        Ok(state)
-    }
-
     pub fn get_all_pending_consensus_transactions(&self) -> Vec<ConsensusTransaction> {
         self.pending_consensus_transactions
             .unbounded_iter()
@@ -573,9 +562,6 @@ impl AuthorityPerEpochStore {
         let epoch_id = committee.epoch;
 
         let tables = AuthorityEpochTables::open(epoch_id, parent_path, db_options.clone());
-        let reconfig_state = tables
-            .load_reconfig_state()
-            .expect("Load reconfig state at initialization cannot fail");
 
         let epoch_alive_notify = NotifyOnce::new();
         assert_eq!(
@@ -601,7 +587,6 @@ impl AuthorityPerEpochStore {
             tables: ArcSwapOption::new(Some(Arc::new(tables))),
             parent_path: parent_path.to_path_buf(),
             db_options,
-            reconfig_state_mem: RwLock::new(reconfig_state),
             epoch_alive_notify,
             user_certs_closed_notify: NotifyOnce::new(),
             epoch_alive: tokio::sync::RwLock::new(true),
@@ -913,13 +898,6 @@ impl AuthorityPerEpochStore {
         self.epoch_start_state().protocol_version()
     }
 
-    pub fn store_reconfig_state(&self, new_state: &ReconfigState) -> IkaResult {
-        self.tables()?
-            .reconfig_state
-            .insert(&RECONFIG_STATE_INDEX, new_state)?;
-        Ok(())
-    }
-
     pub fn get_last_consensus_stats(&self) -> IkaResult<ExecutionIndicesWithStats> {
         match self
             .tables()?
@@ -1129,14 +1107,6 @@ impl AuthorityPerEpochStore {
     //     }
     //     Ok(())
     // }
-
-    pub fn get_reconfig_state_read_lock_guard(&self) -> RwLockReadGuard<ReconfigState> {
-        self.reconfig_state_mem.read()
-    }
-
-    pub fn get_reconfig_state_write_lock_guard(&self) -> RwLockWriteGuard<ReconfigState> {
-        self.reconfig_state_mem.write()
-    }
 
     pub async fn user_certs_closed_notify(&self) {
         self.user_certs_closed_notify.wait().await
@@ -2127,13 +2097,6 @@ impl ConsensusCommitOutput {
                 .iter()
                 .map(|key| (key, true)),
         )?;
-
-        if let Some(reconfig_state) = &self.reconfig_state {
-            batch.insert_batch(
-                &tables.reconfig_state,
-                [(RECONFIG_STATE_INDEX, reconfig_state)],
-            )?;
-        }
 
         if let Some(consensus_commit_stats) = &self.consensus_commit_stats {
             batch.insert_batch(

@@ -33,6 +33,3 @@ impl Default for ReconfigState {
         }
     }
 }
-
-impl ReconfigState {
-}
