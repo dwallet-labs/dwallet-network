@@ -495,20 +495,6 @@ where
         .await
     }
 
-    pub async fn get_clock_arg_must_succeed(&self) -> ObjectArg {
-        static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
-        *ARG.get_or_init(|| async move {
-            let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
-                self.inner.get_shared_arg(ObjectID::from_single_byte(6)),
-                Duration::from_secs(30)
-            ) else {
-                panic!("Failed to get system object arg after retries");
-            };
-            system_arg
-        })
-        .await
-    }
-
     /// Retrieves the dwallet_2pc_mpc_secp256k1_id object arg from the Sui chain.
     pub async fn get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(
         &self,
@@ -810,10 +796,6 @@ impl SuiClientInner for SuiSdkClient {
     }
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
-        self.read_api().get_move_object_bcs(system_id).await
-    }
-
-    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
         self.read_api().get_move_object_bcs(system_id).await
     }
 

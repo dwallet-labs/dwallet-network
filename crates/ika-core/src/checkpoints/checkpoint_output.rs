@@ -111,11 +111,6 @@ impl<T: SubmitToConsensus> CheckpointOutput for SubmitCheckpointToConsensus<T> {
                 .last_skipped_checkpoint_signature_submission
                 .set(checkpoint_seq as i64);
         }
-
-        if checkpoint_timestamp >= self.next_mid_epoch_timestamp_ms {
-            // initiate_process_mid_epoch is ok if called multiple times
-            self.sender.initiate_process_mid_epoch(epoch_store);
-        }
         Ok(())
     }
 }

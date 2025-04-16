@@ -204,7 +204,6 @@ where
 
         loop {
             interval.tick().await;
-            // self.run_epoch_switch().await;
             let ika_system_state_inner = self.sui_client.get_system_inner_until_success().await;
             let epoch_on_sui: u64 = ika_system_state_inner.epoch();
             if epoch_on_sui > epoch {
