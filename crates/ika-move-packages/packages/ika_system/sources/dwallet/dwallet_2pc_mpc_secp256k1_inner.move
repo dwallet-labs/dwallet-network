@@ -848,10 +848,30 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
     public_output: vector<u8>,
+    is_last: bool,
 ) {
+    if (is_last) {
+        self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
+    };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    // todo : split ooutput
     dwallet_network_decryption_key.next_reconfiguration_public_output.push_back(public_output);
+    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+        DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => {
+            if (is_last) {
+                event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
+                    dwallet_network_decryption_key_id,
+                });
+                DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration
+            } else {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
+            }
+        },
+        _ => abort EWrongState
+    };
+
+    // let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
+    // // todo : split ooutput
+    // dwallet_network_decryption_key.next_reconfiguration_public_output.push_back(public_output);
 }
 
 public(package) fun advance_epoch_dwallet_network_decryption_key(
@@ -881,6 +901,8 @@ public(package) fun emit_start_reshare_event(
         ctx,
     );
     event::emit(reshare_event);
+    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(key_cap.dwallet_network_decryption_key_id);
+    dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration;
     zero_ika.destroy_zero();
     zero_sui.destroy_zero();
 }
@@ -2389,6 +2411,11 @@ fun process_checkpoint_message(
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
                 self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, is_last);
+            } else if (message_data_type == 7) {
+                let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let public_output = bcs_body.peel_vec_u8();
+                let is_last = bcs_body.peel_bool();
+                self.respond_dwallet_network_decryption_key_reconfiguration(dwallet_network_decryption_key_id, public_output, is_last);
             };
         i = i + 1;
     };

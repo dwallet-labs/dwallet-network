@@ -956,9 +956,11 @@ impl SuiClientInner for SuiSdkClient {
                 .map_err(|e| {
                 Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e))
             })?;
-            if DWalletNetworkDecryptionKeyState::NetworkDKGCompleted != key_obj.state {
-                continue;
-            }
+            match key_obj.state {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+                | DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => continue,
+                _ => {}
+            };
             let network_dkg_public_output = self
                 .read_table_vec_as_raw_bytes(key_obj.network_dkg_public_output.contents.id)
                 .await?;

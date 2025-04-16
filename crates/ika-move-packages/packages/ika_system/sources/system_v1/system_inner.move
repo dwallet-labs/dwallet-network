@@ -964,6 +964,10 @@ fun process_checkpoint_message(
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_bool();
+            } else if (message_data_type == 7) {
+                bcs_body.peel_vec_u8();
+                bcs_body.peel_vec_u8();
+                bcs_body.peel_bool();
             };
         i = i + 1;
     };

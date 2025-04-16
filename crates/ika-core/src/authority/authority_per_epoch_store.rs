@@ -80,7 +80,8 @@ use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
     DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput, MessageKind,
-    PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkDKGOutputSlice, SignOutput,
+    PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkKeyPublicOutputSlice,
+    SignOutput,
 };
 use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
@@ -1728,7 +1729,7 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => match key_scheme {
                 DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                    let slices = Self::slice_network_dkg_into_messages(
+                    let slices = Self::slice_network_decryption_key_public_output_into_messages(
                         &init_event.event_data.dwallet_network_decryption_key_id,
                         output,
                     );
@@ -1743,16 +1744,27 @@ impl AuthorityPerEpochStore {
                     Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
                 }
             },
-            MPCProtocolInitData::DecryptionKeyReshare(_) => todo!(),
+            MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
+                let slices = Self::slice_network_decryption_key_public_output_into_messages(
+                    &init_event.event_data.dwallet_network_decryption_key_id,
+                    output,
+                );
+
+                let messages: Vec<_> = slices
+                    .into_iter()
+                    .map(|slice| MessageKind::DwalletMPCNetworkReshareOutput(slice))
+                    .collect();
+                Ok(self.process_consensus_system_bulk_transaction(&messages))
+            }
         }
     }
 
     /// Break down the key to slices because of chain transaction size limits.
     /// Limit 16 KB per Tx `pure` argument.
-    fn slice_network_dkg_into_messages(
+    fn slice_network_decryption_key_public_output_into_messages(
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
-    ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
+    ) -> Vec<Secp256K1NetworkKeyPublicOutputSlice> {
         let mut slices = Vec::new();
         let public_chunks = public_output.chunks(5 * 1024).collect_vec();
         let empty: &[u8] = &[];
@@ -1760,7 +1772,7 @@ impl AuthorityPerEpochStore {
         for i in 0..public_chunks.len() {
             // If the chunk is missing, use an empty slice, as the size of the slices can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
-            slices.push(Secp256K1NetworkDKGOutputSlice {
+            slices.push(Secp256K1NetworkKeyPublicOutputSlice {
                 dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
                     .clone()
                     .to_vec(),
