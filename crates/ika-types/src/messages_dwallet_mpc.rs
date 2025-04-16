@@ -3,15 +3,16 @@ use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyShares,
-    DWALLET_MPC_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_SIGN_ROUND_EVENT_STRUCT_NAME,
+    DWalletMPCNetworkKeyScheme, MPCMessageBuilder, MPCMessageSlice, MPCPublicInput, MessageState,
+    NetworkDecryptionKeyShares, DWALLET_MPC_EVENT_STRUCT_NAME,
+    START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
+    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
     START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
 };
+use group::PartyID;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
@@ -20,6 +21,8 @@ use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
+use std::collections::HashMap;
+use std::fmt::{Debug, Display};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
@@ -28,7 +31,7 @@ use sui_types::id::ID;
 use sui_types::message_envelope::Message;
 use sui_types::SUI_SYSTEM_ADDRESS;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
     DKGFirst(DWalletMPCSuiEvent<StartDKGFirstRoundEvent>),
@@ -60,12 +63,40 @@ pub enum MPCProtocolInitData {
     PartialSignatureVerification(DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent>),
 }
 
-/// The session-specific state of the MPC session.
-/// I.e., state needs to exist only in the sign protocol but is not required in the
-/// presign protocol.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum MPCSessionSpecificState {
-    Sign(SignIASessionState),
+impl Display for MPCProtocolInitData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MPCProtocolInitData::DKGFirst(_) => write!(f, "DKGFirst"),
+            MPCProtocolInitData::DKGSecond(_) => write!(f, "DKGSecond"),
+            MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
+            MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
+            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                write!(f, "EncryptedShareVerification")
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                write!(f, "PartialSignatureVerification")
+            }
+        }
+    }
+}
+
+impl Debug for MPCProtocolInitData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MPCProtocolInitData::DKGFirst(_) => write!(f, "DKGFirst"),
+            MPCProtocolInitData::DKGSecond(_) => write!(f, "DKGSecond"),
+            MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
+            MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
+            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                write!(f, "EncryptedShareVerification")
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                write!(f, "PartialSignatureVerification")
+            }
+        }
+    }
 }
 
 /// The optional state of the Presign session, if the first round party was
@@ -90,23 +121,6 @@ pub struct DBSuiEvent {
     pub contents: Vec<u8>,
 }
 
-/// The state of a sign-identifiable abort session.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct SignIASessionState {
-    /// The first report that triggered the beginning of the Sign-Identifiable Abort protocol,
-    /// in which, instead of having only one validator run the last sign step, every validator runs
-    /// the last step to agree on the malicious actors.
-    pub start_ia_flow_malicious_report: MaliciousReport,
-    /// The malicious report that has been agreed upon by a quorum of validators.
-    /// If this report
-    /// is different from the `start_ia_flow_malicious_report`, the authority that sent the
-    /// `start_ia_flow_malicious_report` is being marked as malicious.
-    pub verified_malicious_report: Option<MaliciousReport>,
-    /// The first authority that sent a [`MaliciousReport`] in this sign session and triggered
-    /// the beginning of the Sign-Identifiable Abort flow.
-    pub initiating_ia_authority: AuthorityName,
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DWalletMPCEvent {
     // TODO: remove event - do all parsing beforehand.
@@ -116,21 +130,12 @@ pub struct DWalletMPCEvent {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DWalletMPCOutputMessage {
-    pub output: Vec<u8>,
+    /// The authority that sent the output.
     pub authority: AuthorityName,
+    /// The session information of the MPC session.
     pub session_info: SessionInfo,
-}
-
-/// Metadata for a local MPC computation.
-/// Includes the session ID and the cryptographic round.
-///
-/// Used to remove a pending computation if a quorum of outputs for the session
-/// is received before the computation is spawned, or if a quorum of messages
-/// for the next round of the computation is received, making the old round redundant.
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
-pub struct DWalletMPCLocalComputationMetadata {
-    pub session_id: ObjectID,
-    pub crypto_round_number: usize,
+    /// The final value of the MPC session.
+    pub output: MPCMessageSlice,
 }
 
 /// The content of the system transaction that stores the MPC session output on the chain.
@@ -147,10 +152,11 @@ pub struct DWalletMPCOutput {
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct DWalletMPCMessage {
     /// The serialized message.
-    pub message: MPCMessage,
+    pub message: MPCMessageSlice,
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
+    pub session_sequence_number: u64,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
 }
@@ -159,6 +165,8 @@ pub struct DWalletMPCMessage {
 /// Used to make sure no message is being processed twice.
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct DWalletMPCMessageKey {
+    /// The serialized message.
+    pub message: MPCMessageSlice,
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
@@ -166,9 +174,76 @@ pub struct DWalletMPCMessageKey {
     pub round_number: usize,
 }
 
+/// Collects and reconstructs `MPCMessage`s from all parties across multiple rounds.
+/// This struct is useful for aggregating fragmented MPC messages from different
+/// parties, round by round, and reassembling them once all parts are received.
+#[derive(Clone)]
+pub struct MPCSessionMessagesCollector {
+    /// Each index corresponds to a round. Each round maps `PartyID` to its message builder.
+    pub messages: Vec<HashMap<PartyID, MPCMessageBuilder>>,
+}
+
+impl MPCSessionMessagesCollector {
+    /// Creates a new, empty message collector.
+    pub fn new() -> Self {
+        Self {
+            messages: Vec::new(),
+        }
+    }
+
+    /// Adds a message from a given party to the collector.
+    ///
+    /// If a complete message is reconstructed, it is returned as `Some(message)`.
+    /// Otherwise, returns `None`.
+    /// If the round number is beyond the current vector length, a new entry is created.
+    pub fn add_message(
+        &mut self,
+        party_id: PartyID,
+        new_message: DWalletMPCMessage,
+    ) -> Option<Vec<u8>> {
+        let messages_len = self.messages.len();
+        let round_number = new_message.round_number;
+        let message_fragment = new_message.message.clone();
+
+        match self.messages.get_mut(round_number) {
+            Some(party_to_msg) => {
+                let entry = party_to_msg.entry(party_id).or_insert_with(|| {
+                    let mut builder = MPCMessageBuilder::empty();
+                    builder.add_and_try_complete(message_fragment.clone());
+                    builder
+                });
+                entry.add_and_try_complete(message_fragment);
+                match &entry.messages {
+                    MessageState::Complete(msg) => Some(msg.clone()),
+                    MessageState::Incomplete(_) => None,
+                }
+            }
+
+            None if round_number >= messages_len => {
+                let mut round_map = HashMap::new();
+                let mut builder = MPCMessageBuilder::empty();
+                builder.add_and_try_complete(message_fragment.clone());
+                round_map.insert(party_id, builder.clone());
+                self.messages.push(round_map);
+
+                match &builder.messages {
+                    MessageState::Complete(msg) => Some(msg.clone()),
+                    MessageState::Incomplete(_) => None,
+                }
+            }
+
+            None => {
+                // Unexpected round number: probably older than expected
+                None
+            }
+        }
+    }
+}
+
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {
+    pub sequence_number: u64,
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
     /// The current MPC round in the protocol.
@@ -229,6 +304,7 @@ pub struct StartEncryptedShareVerificationEvent {
     pub encryption_key_id: ObjectID,
     pub encrypted_user_secret_key_share_id: ObjectID,
     pub source_encrypted_user_secret_key_share_id: ObjectID,
+    pub dwallet_mpc_network_key_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {

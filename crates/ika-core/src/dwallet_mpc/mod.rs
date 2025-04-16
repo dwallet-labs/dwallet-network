@@ -4,7 +4,6 @@ use crate::dwallet_mpc::dkg::{
     DKGSecondPartyPublicInputGenerator,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
-use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
@@ -22,23 +21,19 @@ use ika_types::messages_dwallet_mpc::{
     DWalletMPCEventTrait, DWalletMPCSuiEvent, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
     StartDKGSecondRoundEvent, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
 };
-use k256::ecdsa::hazmat::bits2field;
-use k256::elliptic_curve;
+use jsonrpsee::core::Serialize;
 use k256::elliptic_curve::ops::Reduce;
-use k256::U256;
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
-use rand_core::OsRng;
 use serde::de::DeserializeOwned;
+use serde::Deserialize;
 use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
 use std::collections::{HashMap, HashSet};
 use std::vec::Vec;
-use sui_json_rpc_types::SuiEvent;
-use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
-use tracing::warn;
+use sui_types::base_types::{EpochId, ObjectID};
+use sui_types::id::{ID, UID};
 
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
-use twopc_mpc::secp256k1;
 
 mod cryptographic_computations_orchestrator;
 mod dkg;
@@ -79,6 +74,26 @@ pub(crate) fn party_ids_to_authority_names(
         .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
 }
 
+/// Rust version of the Move sui::dynamic_field::Field type.
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct Field<N, V> {
+    pub id: UID,
+    pub name: N,
+    pub value: V,
+}
+
+/// The type of the event is different when we receive an emitted event and when we
+/// fetch the event's the dynamic field directly from Sui.
+/// This function first tried to deserialize the event as a [`DWalletMPCSuiEvent`], and if it fails,
+/// it tries to deserialize it as a [`Field<ID, DWalletMPCSuiEvent<T>>`].
+fn deserialize_event_or_dynamic_field<T: DeserializeOwned + DWalletMPCEventTrait>(
+    event_contents: &[u8],
+) -> Result<DWalletMPCSuiEvent<T>, bcs::Error> {
+    bcs::from_bytes::<DWalletMPCSuiEvent<T>>(event_contents).or_else(|_| {
+        bcs::from_bytes::<Field<ID, DWalletMPCSuiEvent<T>>>(event_contents).map(|field| field.value)
+    })
+}
+
 /// Parses the session info from the event and returns it.
 /// Return `None` if the event is not a DWallet MPC event.
 pub(crate) fn session_info_from_event(
@@ -87,23 +102,23 @@ pub(crate) fn session_info_from_event(
 ) -> anyhow::Result<Option<SessionInfo>> {
     match &event.type_ {
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =
-                bcs::from_bytes(&event.contents)?;
-            Ok(Some(dkg_first_party_session_info(deserialized_event)?))
+            Ok(Some(dkg_first_party_session_info(
+                deserialize_event_or_dynamic_field::<StartDKGFirstRoundEvent>(&event.contents)?,
+            )?))
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGSecondRoundEvent>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent> =
-                bcs::from_bytes(&event.contents)?;
-            Ok(Some(dkg_second_party_session_info(deserialized_event)))
+            Ok(Some(dkg_second_party_session_info(
+                deserialize_event_or_dynamic_field::<StartDKGSecondRoundEvent>(&event.contents)?,
+            )))
         }
         t if t == &DWalletMPCSuiEvent::<StartPresignFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(presign_party_session_info(deserialized_event)))
         }
         t if t == &DWalletMPCSuiEvent::<StartSignEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartSignEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(sign_party_session_info(&deserialized_event)))
         }
         t if t
@@ -112,14 +127,14 @@ pub(crate) fn session_info_from_event(
             ) =>
         {
             let deserialized_event: DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(get_verify_partial_signatures_session_info(
                 &deserialized_event,
             )))
         }
         t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(network_dkg::network_dkg_session_info(
                 deserialized_event,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
@@ -131,7 +146,7 @@ pub(crate) fn session_info_from_event(
             ) =>
         {
             let deserialized_event: DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent> =
-                bcs::from_bytes(&event.contents)?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(start_encrypted_share_verification_session_info(
                 deserialized_event,
             )))
@@ -144,6 +159,7 @@ fn start_encrypted_share_verification_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
     }
@@ -159,6 +175,7 @@ fn dkg_first_party_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent>,
 ) -> anyhow::Result<SessionInfo> {
     Ok(SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event),
     })
@@ -181,6 +198,7 @@ fn dkg_second_party_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: ObjectID::from(deserialized_event.session_id),
         mpc_round: MPCProtocolInitData::DKGSecond(deserialized_event.clone()),
     }
@@ -202,6 +220,7 @@ fn presign_party_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::Presign(deserialized_event),
     }
@@ -240,6 +259,7 @@ fn sign_public_input(
 
 fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEvent>) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::Sign(deserialized_event.clone()),
     }
@@ -249,6 +269,7 @@ fn get_verify_partial_signatures_session_info(
     deserialized_event: &DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
     }
@@ -389,7 +410,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 ///
 /// Returns an error if the event type does not correspond to any known MPC rounds
 /// or if deserialization fails.
-pub(crate) fn session_input_from_event(
+pub(crate) async fn session_input_from_event(
     event: DBSuiEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
@@ -412,26 +433,30 @@ pub(crate) fn session_input_from_event(
         )),
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =
-                bcs::from_bytes(&event.contents)?;
-            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-                // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
-                &deserialized_event
-                    .event_data
-                    .dwallet_network_decryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-            )?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager
+                .get_protocol_public_parameters(
+                    // The event is assign with a Secp256k1 dwallet.
+                    // Todo (#473): Support generic network key scheme
+                    &deserialized_event
+                        .event_data
+                        .dwallet_network_decryption_key_id,
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                )
+                .await;
             Ok((dkg_first_public_input(protocol_public_parameters)?, None))
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGSecondRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent> =
-                bcs::from_bytes(&event.contents)?;
-            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-                // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
-                &deserialized_event.event_data.dwallet_mpc_network_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-            )?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager
+                .get_protocol_public_parameters(
+                    // The event is assign with a Secp256k1 dwallet.
+                    // Todo (#473): Support generic network key scheme
+                    &deserialized_event.event_data.dwallet_mpc_network_key_id,
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                )
+                .await;
             Ok((
                 dkg_second_public_input(deserialized_event.event_data, protocol_public_parameters)?,
                 None,
@@ -439,15 +464,17 @@ pub(crate) fn session_input_from_event(
         }
         t if t == &DWalletMPCSuiEvent::<StartPresignFirstRoundEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent> =
-                bcs::from_bytes(&event.contents)?;
-            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-                // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
-                &deserialized_event
-                    .event_data
-                    .dwallet_network_decryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-            )?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager
+                .get_protocol_public_parameters(
+                    // The event is assign with a Secp256k1 dwallet.
+                    // Todo (#473): Support generic network key scheme
+                    &deserialized_event
+                        .event_data
+                        .dwallet_network_decryption_key_id,
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                )
+                .await;
             Ok((
                 presign_public_input(deserialized_event.event_data, protocol_public_parameters)?,
                 None,
@@ -455,13 +482,15 @@ pub(crate) fn session_input_from_event(
         }
         t if t == &DWalletMPCSuiEvent::<StartSignEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<StartSignEvent> =
-                bcs::from_bytes(&event.contents)?;
-            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-                // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
-                &deserialized_event.event_data.dwallet_mpc_network_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-            )?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager
+                .get_protocol_public_parameters(
+                    // The event is assign with a Secp256k1 dwallet.
+                    // Todo (#473): Support generic network key scheme
+                    &deserialized_event.event_data.dwallet_mpc_network_key_id,
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                )
+                .await;
             Ok((
                 sign_public_input(
                     &deserialized_event.event_data,
@@ -476,7 +505,17 @@ pub(crate) fn session_input_from_event(
                 packages_config,
             ) =>
         {
-            Ok((vec![], None))
+            let deserialized_event: DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent> =
+                bcs::from_bytes(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager
+                .get_protocol_public_parameters(
+                    // The event is assign with a Secp256k1 dwallet.
+                    // Todo (#473): Support generic network key scheme
+                    &deserialized_event.event_data.dwallet_mpc_network_key_id,
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                )
+                .await;
+            Ok((protocol_public_parameters, None))
         }
         t if t
             == &DWalletMPCSuiEvent::<StartPartialSignaturesVerificationEvent>::type_(
@@ -484,13 +523,15 @@ pub(crate) fn session_input_from_event(
             ) =>
         {
             let deserialized_event: DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent> =
-                bcs::from_bytes(&event.contents)?;
-            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-                // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
-                &deserialized_event.event_data.dwallet_mpc_network_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-            )?;
+                deserialize_event_or_dynamic_field(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager
+                .get_protocol_public_parameters(
+                    // The event is assign with a Secp256k1 dwallet.
+                    // Todo (#473): Support generic network key scheme
+                    &deserialized_event.event_data.dwallet_mpc_network_key_id,
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                )
+                .await;
             Ok((protocol_public_parameters, None))
         }
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),

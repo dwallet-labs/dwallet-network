@@ -1,15 +1,17 @@
-use class_groups::KnowledgeOfDiscreteLogUCProof;
 use class_groups::{
     construct_knowledge_of_decryption_key_public_parameters_per_crt_prime,
     construct_setup_parameters_per_crt_prime, generate_keypairs_per_crt_prime,
     generate_knowledge_of_decryption_key_proofs_per_crt_prime, CompactIbqf,
-    CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
+    KnowledgeOfDiscreteLogUCProof, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
 };
+use crypto_bigint::rand_core::{OsRng, RngCore};
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::encoding::{Base64, Encoding};
+use fastcrypto::traits::{FromUniformBytes, ToFromBytes};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
 
@@ -43,6 +45,8 @@ pub struct DWalletPublicKeys {
     pub public_key: Vec<u8>,
 }
 
+pub const RNG_SEED_SIZE: usize = 32;
+
 impl ClassGroupsKeyPairAndProof {
     pub fn new(
         decryption_key: ClassGroupsDecryptionKey,
@@ -70,7 +74,7 @@ impl ClassGroupsKeyPairAndProof {
 
 /// Generate a class groups keypair and proof from a seed.
 pub fn generate_class_groups_keypair_and_proof_from_seed(
-    seed: [u8; 32],
+    seed: [u8; RNG_SEED_SIZE],
 ) -> ClassGroupsKeyPairAndProof {
     let setup_parameters_per_crt_prime =
         construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER).unwrap();
@@ -87,10 +91,18 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
     let encryption_key_and_proof = generate_knowledge_of_decryption_key_proofs_per_crt_prime(
         language_public_parameters_per_crt_prime.clone(),
         decryption_key,
+        &mut rng,
     )
     .unwrap();
 
     ClassGroupsKeyPairAndProof::new(decryption_key, encryption_key_and_proof)
+}
+
+/// Generates a cryptographically secure random seed for class groups key generation.
+pub fn sample_seed() -> [u8; RNG_SEED_SIZE] {
+    let mut bytes = [0u8; RNG_SEED_SIZE];
+    OsRng.fill_bytes(&mut bytes);
+    bytes
 }
 
 /// Writes a class group key pair and proof, encoded in Base64,
@@ -106,6 +118,23 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + 
     Ok(Base64::encode(keypair.public_bytes()))
 }
 
+/// A wrapper around `ClassGroupsKeyPairAndProof` that ensures the deserialized value
+/// is constructed directly on the heap via `Box`, avoiding large stack allocations.
+///
+/// # Why This Exists
+///
+/// In debug builds, Rust has a significantly smaller stack size compared to release builds.
+/// Deserializing a large or deeply nested struct like `ClassGroupsKeyPairAndProof` directly
+/// can lead to a stack overflow if it's first constructed on the stack before being boxed.
+///
+/// By wrapping the struct inside a `Box` field (`inner`) within this wrapper, we allow the
+/// deserializer (`bcs::from_bytes`) to allocate the entire structure directly on the heap,
+/// bypassing the stack and preventing overflow.
+#[derive(Deserialize)]
+struct ClassGroupsKeyPairAndProofWrapper {
+    inner: Box<ClassGroupsKeyPairAndProof>,
+}
+
 /// Reads a class group key pair and proof (encoded in Base64) from a file.
 pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
     path: P,
@@ -114,19 +143,31 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
     let decoded = Base64::decode(contents.as_str())
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
-    let keypair: Box<ClassGroupsKeyPairAndProof> = Box::new(bcs::from_bytes(&decoded)?);
-    Ok(keypair)
+    let keypair: ClassGroupsKeyPairAndProofWrapper = bcs::from_bytes(&decoded)?;
+    Ok(keypair.inner)
 }
 
-/// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
-// Can't use the TryFrom trait as it leads to conflicting implementations.
-// Must use `anyhow::Result`, because this function is being used also in the centralized party crate.
-pub fn public_keys_from_dkg_output(
-    value: DKGDecentralizedOutput,
-) -> anyhow::Result<DWalletPublicKeys> {
-    Ok(DWalletPublicKeys {
-        centralized_public_share: bcs::to_bytes(&value.centralized_party_public_key_share)?,
-        decentralized_public_share: bcs::to_bytes(&value.public_key_share)?,
-        public_key: bcs::to_bytes(&value.public_key)?,
-    })
+/// Writes a class group key seed, encoded in Base64,
+/// to a file and returns the encoded seed string.
+pub fn write_class_groups_seed_to_file<P: AsRef<std::path::Path> + Clone>(
+    seed: [u8; RNG_SEED_SIZE],
+    path: P,
+) -> DwalletMPCResult<String> {
+    let contents = Base64::encode(seed);
+    std::fs::write(path.clone(), contents.clone())
+        .map_err(|e| DwalletMPCError::FailedToWriteCGKey(e.to_string()))?;
+    Ok(contents)
+}
+
+/// Reads a class group seed (encoded in Base64) from a file.
+pub fn read_class_groups_seed_from_file<P: AsRef<std::path::Path>>(
+    path: P,
+) -> DwalletMPCResult<[u8; RNG_SEED_SIZE]> {
+    let contents = std::fs::read_to_string(path)
+        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
+    let decoded = Base64::decode(contents.as_str())
+        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
+    Ok(decoded.try_into().map_err(|e| {
+        DwalletMPCError::FailedToReadCGKey(format!("failed to read class group seed: {:?}", e))
+    })?)
 }

@@ -8,15 +8,12 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::stake_aggregator::StakeAggregator;
 use group::PartyID;
-use ika_types::committee::{Committee, StakeUnit};
+use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
-use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::messages_dwallet_mpc::MaliciousReport;
-use mpc::Weight;
-use std::collections::{hash_map, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use sui_types::base_types::ObjectID;
-use tracing::error;
 
 /// A struct for managing malicious actors in MPC protocols.
 ///

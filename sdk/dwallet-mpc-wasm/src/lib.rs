@@ -56,9 +56,14 @@ pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErro
 pub fn encrypt_secret_share(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
 ) -> Result<JsValue, JsError> {
-    let encryption_and_proof =
-        encrypt_secret_key_share_and_prove(secret_key_share, encryption_key).map_err(to_js_err)?;
+    let encryption_and_proof = encrypt_secret_key_share_and_prove(
+        secret_key_share,
+        encryption_key,
+        network_decryption_key_public_output,
+    )
+    .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
 }
 

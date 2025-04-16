@@ -2,13 +2,10 @@
 //!
 //! It integrates the Sign party (representing a round in the protocol).
 
-use crate::dwallet_mpc::dkg::DKGSecondParty;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
-use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use mpc::{Party, PublicOutput};
-use sui_types::base_types::ObjectID;
+use mpc::Party;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
@@ -31,8 +28,8 @@ pub(super) type SignPublicInput =
 /// A trait for generating the public input for decentralized `Sign` round in the MPC protocol.
 ///
 /// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
-/// when accessing [`mpc::Party::PublicInput`].
-pub(super) trait SignPartyPublicInputGenerator: mpc::Party {
+/// when accessing [`Party::PublicInput`].
+pub(super) trait SignPartyPublicInputGenerator: Party {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
         dkg_output: MPCPublicOutput,

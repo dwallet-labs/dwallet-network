@@ -263,7 +263,7 @@ checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
 dependencies = [
  "commitment",
  "criterion",
@@ -299,7 +299,7 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
 dependencies = [
  "crypto-bigint",
  "group 0.1.0",
@@ -403,7 +403,7 @@ checksum = "43da5946c66ffcc7745f48db692ffbb10a83bfe0afd96235c5c2a4fb23994929"
 [[package]]
 name = "crypto-bigint"
 version = "0.6.0-rc.6"
-source = "git+https://github.com/erik-3milabs/crypto-bigint.git?rev=71d665a#71d665add85dfd3f9b2cbf1296c7cd31b2cbb93a"
+source = "git+https://github.com/erik-3milabs/crypto-bigint.git?rev=3c5fd81#3c5fd8155d734ae7fb37d85768f8dad59717329b"
 dependencies = [
  "hybrid-array",
  "num-traits",
@@ -638,7 +638,7 @@ dependencies = [
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -842,13 +842,14 @@ checksum = "a8d1add55171497b4705a648c6b583acafb01d58050a51727785f0b2c8e0a2b2"
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
 dependencies = [
  "crypto-bigint",
  "curve25519-dalek-ng",
  "getrandom",
  "itertools 0.13.0",
  "k256",
+ "rayon",
  "serde",
  "sha3 0.11.0-pre.4",
  "sha3 0.9.1",
@@ -914,7 +915,7 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
 dependencies = [
  "crypto-bigint",
  "getrandom",
@@ -1119,7 +1120,7 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -1189,7 +1190,7 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
 dependencies = [
  "commitment",
  "criterion",
@@ -1419,7 +1420,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
 dependencies = [
  "bulletproofs",
  "commitment",
@@ -2020,7 +2021,7 @@ dependencies = [
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
 dependencies = [
  "crypto-bigint",
  "crypto-primes",
@@ -2066,10 +2067,8 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?branch=ika#546dd26d2f3665de2934811f70fc2094327b4862"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
 dependencies = [
- "base64 0.22.1",
- "bcs",
  "class_groups",
  "commitment",
  "criterion",

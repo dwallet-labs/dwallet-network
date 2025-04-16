@@ -4,7 +4,8 @@
 use std::net::{IpAddr, SocketAddr};
 
 use dwallet_classgroups_types::{
-    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
+    generate_class_groups_keypair_and_proof_from_seed, sample_seed,
+    write_class_groups_seed_to_file, ClassGroupsKeyPairAndProof,
 };
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_config::local_ip_utils;
@@ -160,15 +161,8 @@ impl ValidatorInitializationConfigBuilder {
             .class_groups_key_pair_and_proof
             .clone()
             .unwrap_or_else(|| {
-                Box::new(generate_class_groups_keypair_and_proof_from_seed(
-                    protocol_key_pair
-                        .copy()
-                        .private()
-                        .as_bytes()
-                        .try_into()
-                        // Safe to unwrap because the key is 32 bytes.
-                        .unwrap(),
-                ))
+                let seed = sample_seed();
+                Box::new(generate_class_groups_keypair_and_proof_from_seed(seed))
             });
 
         let (consensus_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =

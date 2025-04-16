@@ -10,6 +10,7 @@ use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
 use byteorder::{BigEndian, ReadBytesExt};
+use dwallet_mpc_types::dwallet_mpc::{MPCMessageBuilder, MPCMessageSlice, MessageState};
 use fastcrypto::error::FastCryptoResult;
 use fastcrypto::groups::bls12381;
 use fastcrypto_tbls::dkg_v1;
@@ -17,6 +18,7 @@ use fastcrypto_zkp::bn254::zk_login::{JwkId, JWK};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -51,7 +53,7 @@ pub enum ConsensusTransactionKey {
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
-    DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
+    DWalletMPCOutput(MPCMessageSlice, ObjectID, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
 }
 
@@ -165,46 +167,75 @@ pub enum ConsensusTransactionKind {
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
 
     DWalletMPCMessage(DWalletMPCMessage),
-    DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
+    DWalletMPCOutput(AuthorityName, SessionInfo, MPCMessageSlice),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
 }
 
 impl ConsensusTransaction {
-    /// Create a new consensus transaction with the message to be sent to the other MPC parties.
-    pub fn new_dwallet_mpc_message(
+    /// Create new consensus transactions with the message to be sent to the other MPC parties.
+    pub fn new_dwallet_mpc_messages(
         authority: AuthorityName,
         message: Vec<u8>,
         session_id: ObjectID,
         round_number: usize,
-    ) -> Self {
-        let mut hasher = DefaultHasher::new();
-        session_id.into_bytes().hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCMessage(DWalletMPCMessage {
-                message,
-                authority,
-                round_number,
-                session_id,
-            }),
-        }
+        session_sequence_number: u64,
+    ) -> Vec<Self> {
+        // This size is arbitrary and might be changed in the future.
+        let messages = MPCMessageBuilder::split(message, 120 * 1024);
+        let messages = match messages.messages {
+            MessageState::Incomplete(messages) => messages,
+            MessageState::Complete(_) => panic!("should never happen "),
+        };
+
+        messages
+            .iter()
+            .map(|(sequence_number, message)| {
+                let mut hasher = DefaultHasher::new();
+                message.fragment.hash(&mut hasher);
+                let tracking_id = hasher.finish().to_le_bytes();
+                Self {
+                    tracking_id,
+                    kind: ConsensusTransactionKind::DWalletMPCMessage(DWalletMPCMessage {
+                        message: message.clone(),
+                        authority,
+                        round_number,
+                        session_id: session_id.clone(),
+                        session_sequence_number,
+                    }),
+                }
+            })
+            .collect()
     }
 
-    /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
+    /// Create new consensus transactions with the output of the MPC session to be sent to the parties.
     pub fn new_dwallet_mpc_output(
         authority: AuthorityName,
         output: Vec<u8>,
         session_info: SessionInfo,
-    ) -> Self {
-        let mut hasher = DefaultHasher::new();
-        output.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
-        }
+    ) -> Vec<Self> {
+        let messages = MPCMessageBuilder::split(output.clone(), 120 * 1024);
+        let messages = match messages.messages {
+            MessageState::Incomplete(messages) => messages,
+            MessageState::Complete(_) => panic!("should never happen "),
+        };
+
+        messages
+            .iter()
+            .map(|(_, message)| {
+                let mut hasher = DefaultHasher::new();
+                message.fragment.hash(&mut hasher);
+                let tracking_id = hasher.finish().to_le_bytes();
+                Self {
+                    tracking_id,
+                    kind: ConsensusTransactionKind::DWalletMPCOutput(
+                        authority,
+                        session_info.clone(),
+                        message.clone(),
+                    ),
+                }
+            })
+            .collect()
     }
 
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
@@ -289,6 +320,7 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(DWalletMPCMessageKey {
+                    message: message.message.clone(),
                     authority: message.authority.clone(),
                     session_id: message.session_id.clone(),
                     round_number: message.round_number,

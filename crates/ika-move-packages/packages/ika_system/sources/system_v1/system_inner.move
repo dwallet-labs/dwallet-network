@@ -125,7 +125,6 @@ public struct SystemCheckpointInfoEvent has copy, drop {
 const ELimitExceeded: u64 = 1;
 const EBpsTooLarge: u64 = 5;
 // const ESafeModeGasNotProcessed: u64 = 7;
-const EAdvancedToWrongEpoch: u64 = 8;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -176,6 +175,12 @@ public(package) fun create(
         extra_fields: bag::new(ctx),
     };
     system_state
+}
+
+public(package) fun advance_network_keys(
+    self: &SystemInnerV1, dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator
+) {
+    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
 }
 
 public(package) fun create_system_parameters(
@@ -677,8 +682,6 @@ public(package) fun update_candidate_validator_network_pubkey_bytes(
 /// 4. Update all validators.
 public(package) fun advance_epoch(
     self: &mut SystemInnerV1,
-    new_epoch: u64,
-    next_protocol_version: u64,
     epoch_start_timestamp_ms: u64, // Timestamp of the epoch start
     ctx: &mut TxContext,
 ) {
@@ -712,16 +715,13 @@ public(package) fun advance_epoch(
     total_reward.join(self.computation_reward.withdraw_all());
     total_reward.join(stake_subsidy);
     let total_reward_amount_before_distribution = total_reward.value();
-
     self.epoch = self.epoch + 1;
-    // Sanity check to make sure we are advancing to the right epoch.
-    assert!(new_epoch == self.epoch, EAdvancedToWrongEpoch);
 
     self
         .validators
         .advance_epoch(
             epoch,
-            new_epoch,
+            self.epoch,
             &mut total_reward,
             self.parameters.reward_slashing_rate,
 
@@ -738,14 +738,14 @@ public(package) fun advance_epoch(
     // remaining balance in `computation_reward`.
     self.computation_reward.join(total_reward);
 
-    self.protocol_version = next_protocol_version;
-
     let active_committee = self.active_committee();
     // Derive the computation price per unit size for the new epoch
     self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&active_committee);
-
-    let last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
-    self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
+    let mut last_processed_checkpoint_sequence_number = 0;
+    if (self.last_processed_checkpoint_sequence_number.is_some()) {
+        last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
+        self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
+    };
 
     event::emit(SystemEpochInfoEvent {
         epoch: self.epoch,
@@ -879,10 +879,11 @@ public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.push_back(key_cap);
 }
 
+// TODO (#857): Remove this entire redundant function
 fun process_checkpoint_message(
     self: &mut SystemInnerV1,
     message: vector<u8>,
-    ctx: &mut TxContext,
+    _ctx: &mut TxContext,
 ) {
     assert!(!self.active_committee().members().is_empty(), EActiveBlsCommitteeMustInitialize);
 
@@ -927,10 +928,9 @@ fun process_checkpoint_message(
                     let end_of_epch_message_type = bcs_body.peel_vec_length();
                     // AdvanceEpoch 
                     if(end_of_epch_message_type == 0) {
-                        let new_epoch = bcs_body.peel_u64();
-                        let next_protocol_version = bcs_body.peel_u64();
-                        let epoch_start_timestamp_ms = bcs_body.peel_u64();
-                        self.advance_epoch(new_epoch, next_protocol_version, epoch_start_timestamp_ms, ctx);
+                        bcs_body.peel_u64();
+                        bcs_body.peel_u64();
+                        bcs_body.peel_u64();
                     };
                     i = i + 1;
                 };
@@ -1089,7 +1089,6 @@ public(package) fun set_stake_subsidy_stake_subsidy_distribution_counter(
     self.protocol_treasury.set_stake_subsidy_distribution_counter(counter)
 }
 
-#[test_only]
 public(package) fun epoch_duration_ms(self: &SystemInnerV1): u64 {
     self.parameters.epoch_duration_ms
 }

@@ -1,9 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-//! The SuiExecutor module is responsible for executing process_checkpoint_message
-//! on Sui blockchain on ika_system package.
-
+//! The SuiExecutor module handles executing transactions
+//! on Sui blockchain for `ika_system` package.
 use crate::checkpoints::CheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
@@ -21,8 +20,9 @@ use ika_types::message::Secp256K1NetworkDKGOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::{
-    SystemInner, SystemInnerTrait, PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME,
-    SYSTEM_MODULE_NAME,
+    DWalletCoordinatorInner, SystemInner, SystemInnerTrait,
+    PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_ADVANCE_EPOCH_FUNCTION_NAME,
+    REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use itertools::Itertools;
 use mysten_metrics::spawn_logged_monitored_task;
@@ -75,18 +75,120 @@ where
         }
     }
 
+    /// Checks whether `process_mid_epoch`, `lock_last_active_session_sequence_number`, or
+    /// `request_advance_epoch` can be called, and calls them if so.
+    ///
+    /// Anyone can call these functions based on the epoch and Sui's clock times.
+    ///
+    /// We don't use Sui's previous epoch switch mechanism as it assumes checkpoints are
+    /// being created all the time, and in Ika,
+    /// checkpoints are created only when there are new completed MPC sessions to write to Sui.
+    async fn run_epoch_switch(
+        &self,
+        sui_notifier: &SuiNotifier,
+        ika_system_state_inner: &SystemInner,
+    ) {
+        let Ok(clock) = self.sui_client.get_clock().await else {
+            error!("failed to get clock when running epoch switch");
+            return;
+        };
+        let Some(dwallet_2pc_mpc_secp256k1_id) =
+            ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+        else {
+            error!("failed to get `dwallet_2pc_mpc_secp256k1_id` when running epoch switch");
+            return;
+        };
+        let SystemInner::V1(system_inner_v1) = &ika_system_state_inner;
+
+        let mid_epoch_time = ika_system_state_inner.epoch_start_timestamp_ms()
+            + (ika_system_state_inner.epoch_duration_ms() / 2);
+        let next_epoch_committee_is_empty = system_inner_v1
+            .validators
+            .next_epoch_active_committee
+            .is_none();
+        if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
+            info!("Calling `process_mid_epoch()`");
+            if let Err(e) =
+                Self::process_mid_epoch(self.ika_system_package_id, &sui_notifier, &self.sui_client)
+                    .await
+            {
+                error!("`process_mid_epoch()` failed: {:?}", e);
+            } else {
+                info!("`process_mid_epoch()` successful");
+            }
+        }
+
+        let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
+            .sui_client
+            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
+            .await
+        else {
+            error!("failed to get dwallet coordinator inner when running epoch switch");
+            return;
+        };
+
+        // The Epoch was finished.
+        let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
+            + ika_system_state_inner.epoch_duration_ms();
+        let epoch_not_locked = !coordinator.locked_last_session_to_complete_in_current_epoch;
+        if clock.timestamp_ms > epoch_finish_time && epoch_not_locked {
+            info!("Calling `lock_last_active_session_sequence_number()`");
+            if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
+                self.ika_system_package_id,
+                dwallet_2pc_mpc_secp256k1_id,
+                &sui_notifier,
+                &self.sui_client,
+            )
+            .await
+            {
+                error!(
+                    "failed to lock last active session sequence number: {:?}",
+                    e
+                );
+            } else {
+                info!("Successfully locked last active session sequence number");
+            }
+        }
+
+        // Check if we can advance the epoch.
+        let all_epoch_sessions_finished = coordinator.number_of_completed_sessions
+            == coordinator.last_session_to_complete_in_current_epoch;
+        let next_epoch_committee_exists = system_inner_v1
+            .validators
+            .next_epoch_active_committee
+            .is_some();
+        if coordinator.locked_last_session_to_complete_in_current_epoch
+            && all_epoch_sessions_finished
+            && next_epoch_committee_exists
+        {
+            info!("Calling `process_request_advance_epoch()`");
+            if let Err(e) = Self::process_request_advance_epoch(
+                self.ika_system_package_id,
+                dwallet_2pc_mpc_secp256k1_id,
+                &sui_notifier,
+                &self.sui_client,
+            )
+            .await
+            {
+                error!("failed to process request advance epoch: {:?}", e);
+            } else {
+                info!("Successfully processed request advance epoch");
+            }
+        }
+    }
+
     pub async fn run_epoch(
         &self,
         epoch: EpochId,
         run_with_range: Option<RunWithRange>,
     ) -> StopReason {
-        tracing::info!(
+        info!(
             "Starting sui connector SuiExecutor run_epoch for epoch {}",
             epoch
         );
         // check if we want to run this epoch based on RunWithRange condition value
         // we want to be inclusive of the defined RunWithRangeEpoch::Epoch
-        // i.e Epoch(N) means we will execute epoch N and stop when reaching N+1
+        // i.e Epoch(N) means we will execute epoch N and stop when reaching N+1.
         if run_with_range.map_or(false, |rwr| rwr.is_epoch_gt(epoch)) {
             info!(
                 "RunWithRange condition satisfied at {:?}, run_epoch={:?}",
@@ -103,7 +205,7 @@ where
             let epoch_on_sui: u64 = ika_system_state_inner.epoch();
             if epoch_on_sui > epoch {
                 fail_point_async!("crash");
-                debug!(epoch, "finished epoch");
+                info!(epoch, "Finished epoch");
                 let epoch_start_system_state = self
                     .sui_client
                     .get_epoch_start_system_until_success(&ika_system_state_inner)
@@ -120,6 +222,8 @@ where
                 .unwrap_or(0);
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
+                self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
+                    .await;
                 if let Ok(Some(checkpoint_message)) = self
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
@@ -176,13 +280,175 @@ where
         // Set to 15 because the limit is up to 16 (smaller than).
         let messages = message.chunks(15 * 1024).collect_vec();
         let empty: &[u8] = &[];
-        // max_checkpoint_size_bytes is 50KB, so we split the message into 4 slices
+        // max_checkpoint_size_bytes is 50KB, so we split the message into 4 slices.
         for i in 0..4 {
             // If the chunk is missing, use an empty slice, as the transaction must receive all arguments.
             let message = messages.get(i).unwrap_or(&empty).clone();
             slices.push(CallArg::Pure(bcs::to_bytes(message).unwrap()));
         }
         slices
+    }
+
+    async fn process_mid_epoch(
+        ika_system_package_id: ObjectID,
+        sui_notifier: &SuiNotifier,
+        sui_client: &Arc<SuiClient<C>>,
+    ) -> IkaResult<()> {
+        info!("Running `process_mid_epoch()`");
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
+
+        let mut ptb = ProgrammableTransactionBuilder::new();
+
+        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
+        let clock_arg = sui_client.get_clock_arg_must_succeed().await;
+
+        let args = vec![
+            CallArg::Object(ika_system_state_arg),
+            CallArg::Object(clock_arg),
+        ];
+
+        ptb.move_call(
+            ika_system_package_id,
+            SYSTEM_MODULE_NAME.into(),
+            REQUEST_MID_EPOCH_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        )
+        .map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!(
+                "failed on ProgrammableTransactionBuilder::move_call: {e}"
+            ))
+        })?;
+
+        let transaction = super::build_sui_transaction(
+            sui_notifier.sui_address,
+            ptb.finish(),
+            sui_client,
+            vec![*gas_coin],
+            &sui_notifier.sui_key,
+        )
+        .await;
+
+        sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn lock_last_session_to_complete_in_current_epoch(
+        ika_system_package_id: ObjectID,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        sui_notifier: &SuiNotifier,
+        sui_client: &Arc<SuiClient<C>>,
+    ) -> IkaResult<()> {
+        info!("Process `lock_last_active_session_sequence_number()`");
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
+
+        let mut ptb = ProgrammableTransactionBuilder::new();
+
+        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
+        let clock_arg = sui_client.get_clock_arg_must_succeed().await;
+
+        let dwallet_2pc_mpc_secp256k1_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+            .await;
+
+        let args = vec![
+            CallArg::Object(ika_system_state_arg),
+            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(clock_arg),
+        ];
+
+        ptb.move_call(
+            ika_system_package_id,
+            SYSTEM_MODULE_NAME.into(),
+            REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        )
+        .map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!(
+                "failed on ProgrammableTransactionBuilder::move_call: {e}"
+            ))
+        })?;
+
+        let transaction = super::build_sui_transaction(
+            sui_notifier.sui_address,
+            ptb.finish(),
+            sui_client,
+            vec![*gas_coin],
+            &sui_notifier.sui_key,
+        )
+        .await;
+
+        sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn process_request_advance_epoch(
+        ika_system_package_id: ObjectID,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        sui_notifier: &SuiNotifier,
+        sui_client: &Arc<SuiClient<C>>,
+    ) -> IkaResult<()> {
+        info!("Running `process_request_advance_epoch()`");
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
+
+        let mut ptb = ProgrammableTransactionBuilder::new();
+
+        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
+        let clock_arg = sui_client.get_clock_arg_must_succeed().await;
+
+        let dwallet_2pc_mpc_secp256k1_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+            .await;
+
+        let args = vec![
+            CallArg::Object(ika_system_state_arg),
+            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(clock_arg),
+        ];
+
+        ptb.move_call(
+            ika_system_package_id,
+            SYSTEM_MODULE_NAME.into(),
+            REQUEST_ADVANCE_EPOCH_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        )
+        .map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!(
+                "failed on ProgrammableTransactionBuilder::move_call {e}"
+            ))
+        })?;
+
+        let transaction = super::build_sui_transaction(
+            sui_notifier.sui_address,
+            ptb.finish(),
+            sui_client,
+            vec![*gas_coin],
+            &sui_notifier.sui_key,
+        )
+        .await;
+
+        sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        Ok(())
     }
 
     async fn handle_execution_task(
@@ -195,9 +461,10 @@ where
         sui_client: &Arc<SuiClient<C>>,
         _metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
-        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        
         let mut ptb = ProgrammableTransactionBuilder::new();
 
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         if gas_coins.len() > 1 {
             info!("More than one gas coin was found, merging them into one gas coin.");
             let coins: IkaResult<Vec<_>> = gas_coins
@@ -222,7 +489,7 @@ where
         }
         let gas_coin = gas_coins
             .first()
-            .ok_or_else(|| IkaError::SuiConnectorInternalError("No gas coin found".to_string()))?;
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
 
@@ -273,130 +540,3 @@ where
         Ok(())
     }
 }
-//
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//
-//     use crate::{sui_client::SuiClient, sui_mock_client::SuiMockClient};
-//     use prometheus::Registry;
-//     use sui_json_rpc_types::EventPage;
-//     use sui_types::{digests::TransactionDigest, event::EventID, Identifier};
-//     use tokio::time::timeout;
-//
-//     #[tokio::test]
-//     async fn test_sui_syncer_basic() -> anyhow::Result<()> {
-//         telemetry_subscribers::init_for_testing();
-//         let registry = Registry::new();
-//         mysten_metrics::init_metrics(&registry);
-//         let metrics = Arc::new(SuiHandlerMetrics::new(&registry));
-//         let mock = SuiMockClient::default();
-//         let client = Arc::new(SuiClient::new_for_testing(mock.clone()));
-//         let module_foo = Identifier::new("Foo").unwrap();
-//         let module_bar = Identifier::new("Bar").unwrap();
-//         let empty_events = EventPage::empty();
-//         let cursor = EventID {
-//             tx_digest: TransactionDigest::random(),
-//             event_seq: 0,
-//         };
-//         add_event_response(&mock, module_foo.clone(), cursor, empty_events.clone());
-//         add_event_response(&mock, module_bar.clone(), cursor, empty_events.clone());
-//
-//         let target_modules = HashMap::from_iter(vec![
-//             (module_foo.clone(), Some(cursor)),
-//             (module_bar.clone(), Some(cursor)),
-//         ]);
-//         let interval = Duration::from_millis(200);
-//         let (_handles, mut events_rx) = SuiExecutor::new(client, target_modules, metrics.clone())
-//             .run(interval)
-//             .await
-//             .unwrap();
-//
-//         // Initially there are no events
-//         assert_no_more_events(interval, &mut events_rx).await;
-//
-//         mock.set_latest_checkpoint_sequence_number(999);
-//         // Module Foo has new events
-//         let mut event_1: SuiEvent = SuiEvent::random_for_testing();
-//         let package_id = BRIDGE_PACKAGE_ID;
-//         event_1.type_.address = package_id.into();
-//         event_1.type_.module = module_foo.clone();
-//         let module_foo_events_1: sui_json_rpc_types::Page<SuiEvent, EventID> = EventPage {
-//             data: vec![event_1.clone(), event_1.clone()],
-//             next_cursor: Some(event_1.id),
-//             has_next_page: false,
-//         };
-//         add_event_response(&mock, module_foo.clone(), event_1.id, empty_events.clone());
-//         add_event_response(
-//             &mock,
-//             module_foo.clone(),
-//             cursor,
-//             module_foo_events_1.clone(),
-//         );
-//
-//         let (identifier, received_events) = events_rx.recv().await.unwrap();
-//         assert_eq!(identifier, module_foo);
-//         assert_eq!(received_events.len(), 2);
-//         assert_eq!(received_events[0].id, event_1.id);
-//         assert_eq!(received_events[1].id, event_1.id);
-//         // No more
-//         assert_no_more_events(interval, &mut events_rx).await;
-//         assert_eq!(
-//             metrics
-//                 .last_synced_sui_checkpoints
-//                 .get_metric_with_label_values(&["Foo"])
-//                 .unwrap()
-//                 .get(),
-//             999
-//         );
-//
-//         // Module Bar has new events
-//         let mut event_2: SuiEvent = SuiEvent::random_for_testing();
-//         event_2.type_.address = package_id.into();
-//         event_2.type_.module = module_bar.clone();
-//         let module_bar_events_1 = EventPage {
-//             data: vec![event_2.clone()],
-//             next_cursor: Some(event_2.id),
-//             has_next_page: true, // Set to true so that the syncer will not update the last synced checkpoint
-//         };
-//         add_event_response(&mock, module_bar.clone(), event_2.id, empty_events.clone());
-//
-//         add_event_response(&mock, module_bar.clone(), cursor, module_bar_events_1);
-//
-//         let (identifier, received_events) = events_rx.recv().await.unwrap();
-//         assert_eq!(identifier, module_bar);
-//         assert_eq!(received_events.len(), 1);
-//         assert_eq!(received_events[0].id, event_2.id);
-//         // No more
-//         assert_no_more_events(interval, &mut events_rx).await;
-//         assert_eq!(
-//             metrics
-//                 .last_synced_sui_checkpoints
-//                 .get_metric_with_label_values(&["Bar"])
-//                 .unwrap()
-//                 .get(),
-//             0, // Not updated
-//         );
-//
-//         Ok(())
-//     }
-//
-//     async fn assert_no_more_events(
-//         interval: Duration,
-//         events_rx: &mut mysten_metrics::metered_channel::Receiver<(Identifier, Vec<SuiEvent>)>,
-//     ) {
-//         match timeout(interval * 2, events_rx.recv()).await {
-//             Err(_e) => (),
-//             other => panic!("Should have timed out, but got: {:?}", other),
-//         };
-//     }
-//
-//     fn add_event_response(
-//         mock: &SuiMockClient,
-//         module: Identifier,
-//         cursor: EventID,
-//         events: EventPage,
-//     ) {
-//         mock.add_event_response(BRIDGE_PACKAGE_ID, module.clone(), cursor, events.clone());
-//     }
-// }

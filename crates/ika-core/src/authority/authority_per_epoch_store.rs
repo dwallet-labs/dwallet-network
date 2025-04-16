@@ -64,17 +64,16 @@ use crate::consensus_handler::{
 };
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::{
-    DWalletMPCOutputsVerifier, OutputResult, OutputVerificationResult,
+    DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
 };
 use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
-use crate::dwallet_mpc::{presign_public_input, session_info_from_event};
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
+    DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicOutput, NetworkDecryptionKeyShares,
 };
 use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
@@ -93,11 +92,11 @@ use ika_types::messages_consensus::{
     ConsensusTransactionKind,
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
     StartPresignFirstRoundEvent,
 };
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mpc::{Weight, WeightedThresholdAccessStructure};
@@ -1958,7 +1957,7 @@ impl AuthorityPerEpochStore {
         &self,
         origin_authority: AuthorityName,
         session_info: SessionInfo,
-        output: Vec<u8>,
+        output: MPCMessageSlice,
     ) -> IkaResult<ConsensusCertificateResult> {
         self.save_dwallet_mpc_output(DWalletMPCOutputMessage {
             output: output.clone(),
@@ -1975,20 +1974,24 @@ impl AuthorityPerEpochStore {
             .unwrap_or_else(|e| {
                 error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                 OutputVerificationResult {
-                    result: OutputResult::Malicious,
+                    result: OutputVerificationStatus::Malicious,
                     malicious_actors: vec![origin_authority],
                 }
             });
 
         match output_verification_result.result {
-            OutputResult::FirstQuorumReached => {
+            OutputVerificationStatus::FirstQuorumReached(output) => {
                 self.save_dwallet_mpc_completed_session(session_info.session_id)
                     .await;
                 self.process_dwallet_transaction(output, session_info)
                     .map_err(|e| IkaError::from(e))
             }
-            OutputResult::NotEnoughVotes => Ok(ConsensusCertificateResult::ConsensusMessage),
-            OutputResult::AlreadyCommitted | OutputResult::Malicious => {
+            OutputVerificationStatus::NotEnoughVotes => {
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            OutputVerificationStatus::AlreadyCommitted
+            | OutputVerificationStatus::Malicious
+            | OutputVerificationStatus::BuildingOutput => {
                 // Ignore this output,
                 // since there is nothing to do with it,
                 // at this stage.
@@ -2032,6 +2035,12 @@ impl AuthorityPerEpochStore {
         output: Vec<u8>,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<ConsensusCertificateResult> {
+        info!(
+            validator=?self.name,
+            mpc_protocol=?session_info.mpc_round,
+            session_id=?session_info.session_id,
+            "creating session output checkpoint transaction"
+        );
         let rejected = output == FAILED_SESSION_OUTPUT.to_vec();
         match &session_info.mpc_round {
             MPCProtocolInitData::DKGFirst(event_data) => {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::committee::CommitteeWithNetworkMetadata;
+use crate::sui::system_inner_v1::DWalletCoordinatorInnerV1;
 use crate::sui::system_inner_v1::DWalletNetworkDecryptionKeyCap;
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
@@ -64,6 +65,10 @@ pub const REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME: &IdentStr =
     ident_str!("request_remove_validator");
 pub const PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME: &IdentStr =
     ident_str!("process_checkpoint_message_by_quorum");
+pub const REQUEST_MID_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("request_reconfig_mid_epoch");
+pub const REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME: &IdentStr =
+    ident_str!("request_lock_epoch_sessions");
+pub const REQUEST_ADVANCE_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("request_advance_epoch");
 pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &IdentStr =
     ident_str!("request_dwallet_network_decryption_key_dkg_by_cap");
 
@@ -90,6 +95,15 @@ pub const IKA_SYSTEM_STATE_SIM_TEST_DEEP_V2: u64 = 18446744073709551607; // u64:
 /// Outside of this module, we only use it in testing.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct System {
+    pub id: ObjectID,
+    pub version: u64,
+    pub package_id: ObjectID,
+    pub new_package_id: Option<ObjectID>,
+}
+
+/// Rust version of the Move DWalletCoordinator type
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DWalletCoordinator {
     pub id: ObjectID,
     pub version: u64,
     pub package_id: ObjectID,
@@ -138,6 +152,12 @@ pub trait SystemInnerTrait {
 #[enum_dispatch(SystemInnerTrait)]
 pub enum SystemInner {
     V1(SystemInnerV1),
+}
+
+/// A wrapper around the different versions of the DWalletCoordinator.
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub enum DWalletCoordinatorInner {
+    V1(DWalletCoordinatorInnerV1),
 }
 
 /// This is the fixed type used by init.

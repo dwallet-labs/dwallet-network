@@ -7,9 +7,6 @@ module ika_system::class_groups_public_key_and_proof;
 
 use sui::table_vec;
 
-/// The total number of keys in a full Class Groups public key and proof set.
-const NUMBER_OF_KEYS: u64 = 13;
-
 /// `ClassGroupsPublicKeyAndProofBuilder` is used to construct a `ClassGroupsPublicKeyAndProof` object.
 public struct ClassGroupsPublicKeyAndProofBuilder has key, store {
     id: UID,
@@ -52,13 +49,10 @@ public fun add_public_key_and_proof(
 }
 
 /// Finalizes the construction of a `ClassGroupsPublicKeyAndProof` object.
-///
-/// This function fails if the number of stored public keys and proofs does not equal `NUMBER_OF_KEYS`.
 public fun finish(
     self: ClassGroupsPublicKeyAndProofBuilder,
     ctx: &mut TxContext,
 ): ClassGroupsPublicKeyAndProof {
-    assert!(self.public_keys_and_proofs.length() == NUMBER_OF_KEYS, 0);
     let ClassGroupsPublicKeyAndProofBuilder { id, public_keys_and_proofs } = self;
     id.delete();
     ClassGroupsPublicKeyAndProof { 

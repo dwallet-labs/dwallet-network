@@ -1,5 +1,6 @@
 use move_core_types::{ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt;
 use thiserror::Error;
 
@@ -30,6 +31,107 @@ pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
 
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
+
+/// Represents a chunk of an MPC message, with metadata for reassembly.
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
+pub struct MPCMessageSlice {
+    /// A fragment of the original message.
+    pub fragment: MPCMessage,
+    /// The position of this chunk in the original message sequence.
+    pub sequence_number: u64,
+    /// Total number of chunks in the message, used only in the first slice.
+    pub number_of_chunks: Option<usize>,
+}
+
+/// Represents the state of the message building process.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub enum MessageState {
+    /// All chunks received; full message reconstructed.
+    Complete(MPCMessage),
+    /// Still waiting on some chunks; maps sequence numbers to slices.
+    Incomplete(HashMap<u64, MPCMessageSlice>),
+}
+
+/// Builds and reconstructs messages from incoming slices.
+/// Some MPC messages might be greater than the maximum size of a consensus message limit.
+/// The `MPCMessageBuilder` is used to split the message into smaller chunks,
+/// to avoid exceeding the maximum size limit.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct MPCMessageBuilder {
+    /// Current state of the message.
+    pub messages: MessageState,
+}
+
+impl MPCMessageBuilder {
+    pub fn empty() -> Self {
+        Self {
+            messages: MessageState::Incomplete(HashMap::new()),
+        }
+    }
+
+    /// Splits a message into smaller chunks and returns a new builder with those chunks.
+    /// Ensures at least one chunk is created, even if the message is empty.
+    pub fn split(message: Vec<u8>, chunk_size: usize) -> Self {
+        let chunks: Vec<Vec<u8>> = if message.is_empty() {
+            // Ensure at least one slice for empty messages.
+            vec![vec![]]
+        } else {
+            message
+                .chunks(chunk_size)
+                .map(|chunk| chunk.to_vec())
+                .collect()
+        };
+
+        let number_of_chunks = chunks.len();
+
+        let messages = chunks
+            .into_iter()
+            .enumerate()
+            .map(|(i, message)| {
+                (
+                    i as u64,
+                    MPCMessageSlice {
+                        fragment: message,
+                        sequence_number: i as u64,
+                        number_of_chunks: if i == 0 { Some(number_of_chunks) } else { None },
+                    },
+                )
+            })
+            .collect();
+
+        Self {
+            messages: MessageState::Incomplete(messages),
+        }
+    }
+
+    /// Adds a message slice to the builder and attempts to complete the full message.
+    /// If all slices are present, the message state is updated to `Complete`.
+    pub fn add_and_try_complete(&mut self, message: MPCMessageSlice) {
+        if let MessageState::Incomplete(messages) = &mut self.messages {
+            messages.insert(message.sequence_number, message);
+
+            if let Some(slice) = messages.get(&0) {
+                if let Some(expected_chunks) = slice.number_of_chunks {
+                    if messages.len() == expected_chunks {
+                        let complete_message = (0..expected_chunks as u64)
+                            .map(|i| messages.get(&i))
+                            .collect::<Option<Vec<_>>>()
+                            .map(|slices| {
+                                slices
+                                    .into_iter()
+                                    .flat_map(|slice| slice.fragment.clone())
+                                    .collect::<Vec<_>>()
+                            });
+
+                        if let Some(message) = complete_message {
+                            self.messages = MessageState::Complete(message);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 /// Alias for an MPC public output.
 pub type MPCPublicOutput = Vec<u8>;
@@ -111,6 +213,7 @@ pub struct NetworkDecryptionKeyShares {
 
     /// Validators' verification keys.
     pub public_verification_keys: Vec<u8>,
+    pub setup_parameters_per_crt_prime: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
@@ -119,6 +222,7 @@ pub struct NetworkDecryptionKeyOnChainOutput {
     pub decryption_key_share_public_parameters: Vec<u8>,
     pub encryption_scheme_public_parameters: Vec<u8>,
     pub public_verification_keys: Vec<u8>,
+    pub setup_parameters_per_crt_prime: Vec<u8>,
 }
 
 #[repr(u8)]
@@ -157,6 +261,7 @@ impl NetworkDecryptionKeyShares {
                 .clone(),
             encryption_scheme_public_parameters: self.encryption_scheme_public_parameters.clone(),
             public_verification_keys: self.public_verification_keys.clone(),
+            setup_parameters_per_crt_prime: self.setup_parameters_per_crt_prime.clone(),
         }
     }
 }

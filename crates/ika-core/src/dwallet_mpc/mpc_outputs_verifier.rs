@@ -5,30 +5,21 @@
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::dkg::DKGSecondParty;
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
-use crate::dwallet_mpc::sign::SignFirstParty;
-use crate::dwallet_mpc::{message_digest, network_key_version_from_key_id};
 use crate::stake_aggregator::StakeAggregator;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{MPCMessageSlice, MPCPublicOutput};
 use group::{GroupElement, PartyID};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    MPCProtocolInitData, MPCSessionSpecificState, SessionInfo, StartSignEvent,
+    DWalletMPCMessage, MPCSessionMessagesCollector, SessionInfo,
 };
-use mpc::Party;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::{Arc, Weak};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
-use tracing::error;
-use tracing::log::warn;
-use twopc_mpc::sign::verify_signature;
-use twopc_mpc::{secp256k1, ProtocolPublicParameters};
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -53,6 +44,7 @@ pub struct DWalletMPCOutputsVerifier {
     pub(crate) last_processed_consensus_round: Round,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
+    output_collector: HashMap<ObjectID, MPCSessionMessagesCollector>,
 }
 
 /// The data needed to manage the outputs of an MPC session.
@@ -64,25 +56,26 @@ pub struct SessionOutputsData {
         HashMap<(MPCPublicOutput, SessionInfo), StakeAggregator<(), true>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
     pub authorities_that_sent_output: HashSet<AuthorityName>,
-    pub(crate) current_result: OutputResult,
+    pub(crate) current_result: OutputVerificationStatus,
 }
 
 /// The result of verifying an incoming output for an MPC session.
 /// We need to differentiate between a duplicate and a malicious output,
 /// as the output can be sent twice by honest parties.
 #[derive(PartialOrd, PartialEq, Clone)]
-pub enum OutputResult {
-    FirstQuorumReached,
+pub enum OutputVerificationStatus {
+    FirstQuorumReached(MPCPublicOutput),
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
     /// The output has already been verified and committed to the chain.
     /// This happens every time since all honest parties send the same output.
     AlreadyCommitted,
+    BuildingOutput,
 }
 
 pub struct OutputVerificationResult {
-    pub result: OutputResult,
+    pub result: OutputVerificationStatus,
     pub malicious_actors: Vec<AuthorityName>,
 }
 
@@ -102,6 +95,7 @@ impl DWalletMPCOutputsVerifier {
             voted_to_lock_committee: HashSet::new(),
             last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
+            output_collector: HashMap::new(),
         }
     }
 
@@ -133,76 +127,50 @@ impl DWalletMPCOutputsVerifier {
     // TODO (#311): or take any active action while syncing
     pub async fn try_verify_output(
         &mut self,
-        output: &Vec<u8>,
+        output: &MPCMessageSlice,
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<OutputVerificationResult> {
         let epoch_store = self.epoch_store()?;
         let committee = epoch_store.committee().clone();
+
+        let output = DWalletMPCMessage {
+            message: output.clone(),
+            authority: origin_authority.clone(),
+            session_id: session_info.session_id.clone(),
+            session_sequence_number: session_info.sequence_number,
+            round_number: 0,
+        };
+        let party_id = epoch_store.authority_name_to_party_id(&origin_authority)?;
+        // Access the session messages collector or create a new one if it doesn't exist.
+        let session_messages_collector = self
+            .output_collector
+            .entry(session_info.session_id.clone())
+            .or_insert_with(|| MPCSessionMessagesCollector::new());
+        let output = session_messages_collector.add_message(party_id, output);
+        let output = match output {
+            Some(output) => output,
+            None => {
+                return Ok(OutputVerificationResult {
+                    result: OutputVerificationStatus::BuildingOutput,
+                    malicious_actors: vec![],
+                });
+            }
+        };
+
         let ref mut session_output_data = self
             .mpc_sessions_outputs
             .entry(session_info.session_id)
             .or_insert(SessionOutputsData {
                 session_output_to_voting_authorities: HashMap::new(),
                 authorities_that_sent_output: HashSet::new(),
-                current_result: OutputResult::NotEnoughVotes,
+                current_result: OutputVerificationStatus::NotEnoughVotes,
             });
-        if session_output_data.current_result == OutputResult::AlreadyCommitted {
+        if session_output_data.current_result == OutputVerificationStatus::AlreadyCommitted {
             return Ok(OutputVerificationResult {
-                result: OutputResult::AlreadyCommitted,
+                result: OutputVerificationStatus::AlreadyCommitted,
                 malicious_actors: vec![],
             });
-        }
-        if let MPCProtocolInitData::Sign(_) = &session_info.mpc_round {
-            let mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
-            let Some(stored_sign_session) = mpc_manager.mpc_sessions.get(&session_info.session_id)
-            else {
-                warn!("received an output for a session that an event has not been received for: {:?}", session_info.session_id);
-                return Ok(OutputVerificationResult {
-                    result: OutputResult::NotEnoughVotes,
-                    malicious_actors: vec![],
-                });
-            };
-            let Some(mpc_event_data) = &stored_sign_session.mpc_event_data else {
-                warn!("received an output for a session that an event has not been received for: {:?}", session_info.session_id);
-                return Ok(OutputVerificationResult {
-                    result: OutputResult::NotEnoughVotes,
-                    malicious_actors: vec![],
-                });
-            };
-            let MPCProtocolInitData::Sign(sign_session_data) = &mpc_event_data.init_protocol_data
-            else {
-                warn!(
-                    "received sign session output for a non-sign session {:?}",
-                    session_info.session_id
-                );
-                return Ok(OutputVerificationResult {
-                    result: OutputResult::NotEnoughVotes,
-                    malicious_actors: vec![],
-                });
-            };
-            return match Self::verify_signature(&epoch_store, &sign_session_data.event_data, output)
-            {
-                Ok(res) => {
-                    session_output_data.current_result = OutputResult::AlreadyCommitted;
-                    let mut session_malicious_actors = res.malicious_actors;
-                    Ok(OutputVerificationResult {
-                        result: OutputResult::FirstQuorumReached,
-                        malicious_actors: session_malicious_actors,
-                    })
-                }
-                Err(err) => {
-                    // TODO (#549): Handle malicious behavior in aggregated sign flow
-                    error!(
-                        "received an invalid signature: {:?} for session: {:?}",
-                        err, session_info.session_id
-                    );
-                    Ok(OutputVerificationResult {
-                        result: OutputResult::Malicious,
-                        malicious_actors: vec![origin_authority],
-                    })
-                }
-            };
         }
         // Sent more than once.
         if session_output_data
@@ -211,7 +179,7 @@ impl DWalletMPCOutputsVerifier {
         {
             // Duplicate.
             return Ok(OutputVerificationResult {
-                result: OutputResult::AlreadyCommitted,
+                result: OutputVerificationStatus::AlreadyCommitted,
                 malicious_actors: vec![],
             });
         }
@@ -226,14 +194,14 @@ impl DWalletMPCOutputsVerifier {
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
         {
-            session_output_data.current_result = OutputResult::AlreadyCommitted;
+            session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
             return Ok(OutputVerificationResult {
-                result: OutputResult::FirstQuorumReached,
+                result: OutputVerificationStatus::FirstQuorumReached(output),
                 malicious_actors: vec![],
             });
         }
         Ok(OutputVerificationResult {
-            result: OutputResult::NotEnoughVotes,
+            result: OutputVerificationStatus::NotEnoughVotes,
             malicious_actors: vec![],
         })
     }
@@ -242,59 +210,6 @@ impl DWalletMPCOutputsVerifier {
         self.epoch_store
             .upgrade()
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
-    }
-
-    fn verify_signature(
-        epoch_store: &Arc<AuthorityPerEpochStore>,
-        sign_session_data: &StartSignEvent,
-        signature: &MPCPublicOutput,
-    ) -> DwalletMPCResult<OutputVerificationResult> {
-        let sign_output = bcs::from_bytes::<<SignFirstParty as Party>::PublicOutput>(&signature)?;
-        let dkg_output = bcs::from_bytes::<<DKGSecondParty as Party>::PublicOutput>(
-            &sign_session_data.dwallet_decentralized_public_output,
-        )?
-        .public_key;
-        let protocol_public_parameters = epoch_store
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .get_protocol_public_parameters(
-                &sign_session_data.dwallet_mpc_network_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-            )?;
-        let protocol_public_parameters: secp256k1::class_groups::ProtocolPublicParameters =
-            bcs::from_bytes(&protocol_public_parameters)?;
-        let dwallet_public_key = secp256k1::GroupElement::new(
-            dkg_output,
-            &protocol_public_parameters.as_ref().group_public_parameters,
-        )
-        .map_err(|e| {
-            DwalletMPCError::ClassGroupsError(format!(
-                "{}{}",
-                "Failed to create public key: ".to_string(),
-                e.to_string()
-            ))
-        })?;
-
-        if let Err(err) = verify_signature(
-            sign_output.0,
-            sign_output.1,
-            message_digest(
-                &sign_session_data.message,
-                &crate::dwallet_mpc::Hash::try_from(sign_session_data.hash_scheme)
-                    .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
-            )
-            .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
-            dwallet_public_key,
-        ) {
-            return Err(DwalletMPCError::SignatureVerificationFailed(
-                err.to_string(),
-            ));
-        }
-        Ok(OutputVerificationResult {
-            result: OutputResult::FirstQuorumReached,
-            malicious_actors: vec![],
-        })
     }
 
     /// Stores the session ID of the new MPC session,
@@ -307,7 +222,7 @@ impl DWalletMPCOutputsVerifier {
             SessionOutputsData {
                 session_output_to_voting_authorities: HashMap::new(),
                 authorities_that_sent_output: HashSet::new(),
-                current_result: OutputResult::NotEnoughVotes,
+                current_result: OutputVerificationStatus::NotEnoughVotes,
             },
         );
     }

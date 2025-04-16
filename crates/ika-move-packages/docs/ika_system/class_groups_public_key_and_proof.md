@@ -11,7 +11,6 @@ the full key must be split into parts and stored dynamically using <code>table_v
 
 -  [Struct `ClassGroupsPublicKeyAndProofBuilder`](#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder)
 -  [Struct `ClassGroupsPublicKeyAndProof`](#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof)
--  [Constants](#@Constants_0)
 -  [Function `empty`](#(ika_system=0x0)_class_groups_public_key_and_proof_empty)
 -  [Function `add_public_key_and_proof`](#(ika_system=0x0)_class_groups_public_key_and_proof_add_public_key_and_proof)
 -  [Function `finish`](#(ika_system=0x0)_class_groups_public_key_and_proof_finish)
@@ -102,21 +101,6 @@ This object can only be created using <code><a href="../ika_system/class_groups_
 
 </details>
 
-<a name="@Constants_0"></a>
-
-## Constants
-
-
-<a name="(ika_system=0x0)_class_groups_public_key_and_proof_NUMBER_OF_KEYS"></a>
-
-The total number of keys in a full Class Groups public key and proof set.
-
-
-<pre><code><b>const</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_NUMBER_OF_KEYS">NUMBER_OF_KEYS</a>: u64 = 13;
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_class_groups_public_key_and_proof_empty"></a>
 
 ## Function `empty`
@@ -189,8 +173,6 @@ must be split into two parts before being stored.
 
 Finalizes the construction of a <code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">ClassGroupsPublicKeyAndProof</a></code> object.
 
-This function fails if the number of stored public keys and proofs does not equal <code><a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_NUMBER_OF_KEYS">NUMBER_OF_KEYS</a></code>.
-
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_finish">finish</a>(self: (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProofBuilder</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>
 </code></pre>
@@ -205,7 +187,6 @@ This function fails if the number of stored public keys and proofs does not equa
     self: <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a>,
     ctx: &<b>mut</b> TxContext,
 ): <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">ClassGroupsPublicKeyAndProof</a> {
-    <b>assert</b>!(self.public_keys_and_proofs.length() == <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_NUMBER_OF_KEYS">NUMBER_OF_KEYS</a>, 0);
     <b>let</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a> { id, public_keys_and_proofs } = self;
     id.delete();
     <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">ClassGroupsPublicKeyAndProof</a> {

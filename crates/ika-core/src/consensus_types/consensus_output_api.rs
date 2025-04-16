@@ -3,7 +3,6 @@
 use std::{cmp::Ordering, fmt::Display};
 
 use consensus_core::{BlockAPI, CommitDigest, TransactionIndex, VerifiedBlock};
-use ika_protocol_config::ProtocolConfig;
 use ika_types::{
     digests::ConsensusCommitDigest,
     messages_consensus::{AuthorityIndex, ConsensusTransaction},
@@ -14,7 +13,7 @@ pub(crate) struct ParsedTransaction {
     pub(crate) transaction: ConsensusTransaction,
     // Whether the transaction was rejected in voting.
     pub(crate) rejected: bool,
-    // Bytes length of the serialized transaction
+    // Byte length of the serialized transaction.
     pub(crate) serialized_len: usize,
 }
 
@@ -29,7 +28,8 @@ pub(crate) trait ConsensusCommitAPI: Display {
     /// Returns a unique global index for each committed sub-dag.
     fn commit_sub_dag_index(&self) -> u64;
 
-    /// Returns all accepted and rejected transactions per block in the commit in deterministic order.
+    /// Returns all accepted and rejected transactions per block in the commit
+    /// in deterministic order.
     fn transactions(&self) -> Vec<(AuthorityIndex, Vec<ParsedTransaction>)>;
 
     /// Returns the digest of consensus output.
@@ -103,7 +103,7 @@ pub(crate) fn parse_block_transactions(
             let transaction = match bcs::from_bytes::<ConsensusTransaction>(tx.data()) {
                 Ok(transaction) => transaction,
                 Err(err) => {
-                    panic!("Failed to deserialize sequenced consensus transaction(this should not happen) {err} from {authority} at {round}");
+                    panic!("Failed to deserialize sequenced consensus transaction (this should not happen) {err} from {authority} at {round}");
                 },
             };
             let rejected = if rejected_idx < rejected_transactions.len() {

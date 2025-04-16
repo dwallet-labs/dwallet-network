@@ -71,6 +71,9 @@ public struct System has key {
 
 const EWrongInnerVersion: u64 = 0;
 const EInvalidMigration: u64 = 1;
+const EHaveNotReachedMidEpochTime: u64 = 2;
+const EHaveNotReachedEndEpochTime: u64 = 3;
+const ECannotAdvanceEpoch: u64 = 4;
 
 /// Flag to indicate the version of the ika system.
 const VERSION: u64 = 1;
@@ -642,6 +645,32 @@ public fun process_checkpoint_message_by_quorum(
 
     let self = self.inner_mut();
     self.process_checkpoint_message_by_quorum(dwallet_2pc_mpc_secp256k1, signature, signers_bitmap, message, ctx);
+}
+
+/// Locks the committee of the next epoch to allow starting the reconfiguration process.
+public fun request_reconfig_mid_epoch(self: &mut System, clock: &Clock, _ctx: &TxContext) {
+    let inner = self.inner_mut();
+    assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms() / 2), EHaveNotReachedMidEpochTime);
+    self.inner_mut().process_mid_epoch();
+}
+
+/// Locks the MPC sessions that should get completed as part of the current epoch.
+public fun request_lock_epoch_sessions(
+    self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, _ctx: &TxContext
+) {
+    let inner = self.inner_mut();
+    assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms()), EHaveNotReachedEndEpochTime);
+    dwallet_coordinator.inner_mut().lock_last_active_session_sequence_number();
+}
+
+/// Advances the epoch to the next epoch.
+public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, ctx: &mut TxContext) {
+    let inner_system = self.inner_mut();
+    let inner_dwallet = dwallet_coordinator.inner_mut();
+    assert!(inner_dwallet.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
+    inner_system.advance_epoch(clock.timestamp_ms(), ctx);
+    dwallet_coordinator.advance_epoch(inner_system.active_committee());
+    inner_system.advance_network_keys(dwallet_coordinator);
 }
 
 public fun request_dwallet_network_decryption_key_dkg_by_cap(

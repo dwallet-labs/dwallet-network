@@ -31,9 +31,7 @@ macro_rules! fp_ensure {
 }
 use crate::dwallet_mpc_error::DwalletMPCError;
 pub(crate) use fp_ensure;
-use sui_types::digests::TransactionEventsDigest;
 use sui_types::error::SuiError;
-use sui_types::execution_status::{CommandIndex, ExecutionFailureStatus};
 
 #[macro_export]
 macro_rules! exit_main {
