@@ -20,16 +20,3 @@ pub enum ReconfigCertStatus {
     // All tx rejected, including system tx.
     RejectAllTx,
 }
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ReconfigState {
-    status: ReconfigCertStatus,
-}
-
-impl Default for ReconfigState {
-    fn default() -> Self {
-        Self {
-            status: ReconfigCertStatus::AcceptAllCerts,
-        }
-    }
-}

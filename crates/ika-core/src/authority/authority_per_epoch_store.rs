@@ -69,7 +69,6 @@ use crate::dwallet_mpc::mpc_outputs_verifier::{
 use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::epoch::epoch_metrics::EpochMetrics;
-use crate::epoch::reconfiguration::ReconfigState;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
@@ -1992,7 +1991,6 @@ pub(crate) struct ConsensusCommitOutput {
     // Consensus and reconfig state
     consensus_round: Round,
     consensus_messages_processed: BTreeSet<SequencedConsensusTransactionKey>,
-    reconfig_state: Option<ReconfigState>,
     consensus_commit_stats: Option<ExecutionIndicesWithStats>,
 
     pending_checkpoints: Vec<PendingCheckpoint>,
@@ -2033,10 +2031,6 @@ impl ConsensusCommitOutput {
 
     fn record_consensus_commit_stats(&mut self, stats: ExecutionIndicesWithStats) {
         self.consensus_commit_stats = Some(stats);
-    }
-
-    fn store_reconfig_state(&mut self, state: ReconfigState) {
-        self.reconfig_state = Some(state);
     }
 
     fn record_consensus_message_processed(&mut self, key: SequencedConsensusTransactionKey) {
