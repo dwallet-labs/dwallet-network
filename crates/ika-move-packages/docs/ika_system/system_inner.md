@@ -2441,7 +2441,6 @@ Returns all the validators who are currently reporting <code>validator_id</code>
             } <b>else</b> <b>if</b> (message_data_type == 6) {
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
-                bcs_body.peel_vec_u8();
                 bcs_body.peel_bool();
             };
         i = i + 1;

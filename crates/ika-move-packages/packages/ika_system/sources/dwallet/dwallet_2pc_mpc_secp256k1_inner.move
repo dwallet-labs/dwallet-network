@@ -140,14 +140,12 @@ public struct DWalletNetworkDecryptionKey has key, store {
     dwallet_network_decryption_key_cap_id: ID,
     current_epoch: u64,
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    current_epoch_shares: table_vec::TableVec<vector<u8>>,
+    current_reconfiguration_public_output: table_vec::TableVec<vector<u8>>,
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    next_epoch_shares: table_vec::TableVec<vector<u8>>,
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    previous_epoch_shares: table_vec::TableVec<vector<u8>>,
+    next_reconfiguration_public_output: table_vec::TableVec<vector<u8>>,
 
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    public_output: table_vec::TableVec<vector<u8>>,
+    network_dkg_public_output: table_vec::TableVec<vector<u8>>,
     /// The fees paid for computation in IKA.
     computation_fee_charged_ika: Balance<IKA>,
     state: DWalletNetworkDecryptionKeyState,
@@ -156,6 +154,9 @@ public struct DWalletNetworkDecryptionKey has key, store {
 public enum DWalletNetworkDecryptionKeyState has copy, drop, store {
     AwaitingNetworkDKG,
     NetworkDKGCompleted,
+    AwaitingNetworkReconfiguration,
+    AwaitingNextEpochReconfiguration,
+    NetworkReconfigurationCompleted,
 }
 
 
@@ -409,7 +410,6 @@ public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
 public struct CompletedDWalletNetworkDKGDecryptionKeyEvent has copy, drop, store {
        dwallet_network_decryption_key_id: ID,
-       public_output: vector<u8>,
 }
 
 // DKG TYPES
@@ -794,12 +794,10 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
         //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-        current_epoch_shares: table_vec::empty(ctx),
+        current_reconfiguration_public_output: table_vec::empty(ctx),
         //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-        next_epoch_shares: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-        previous_epoch_shares: table_vec::empty(ctx),
-        public_output: table_vec::empty(ctx),
+        next_reconfiguration_public_output: table_vec::empty(ctx),
+        network_dkg_public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
         state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
@@ -823,22 +821,19 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
 public(package) fun respond_dwallet_network_decryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
-    public_output: vector<u8>,
-    key_shares: vector<u8>,
+    network_public_output: vector<u8>,
     is_last: bool,
 ) {
     if (is_last) {
         self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.public_output.push_back(public_output);
-    dwallet_network_decryption_key.current_epoch_shares.push_back(key_shares);
+    dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
     dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
         DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
             if (is_last) {
                 event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
                     dwallet_network_decryption_key_id,
-                    public_output
                 });
                 DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
             } else {
@@ -852,10 +847,11 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
 public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
-    key_shares: vector<u8>,
+    public_output: vector<u8>,
 ) {
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.next_epoch_shares.push_back(key_shares);
+    // todo : split ooutput
+    dwallet_network_decryption_key.next_reconfiguration_public_output.push_back(public_output);
 }
 
 public(package) fun advance_epoch_dwallet_network_decryption_key(
@@ -865,8 +861,8 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
     let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(cap.dwallet_network_decryption_key_id);
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
-    copy_table_vec(&mut dwallet_network_decryption_key.previous_epoch_shares, &dwallet_network_decryption_key.current_epoch_shares);
-    copy_table_vec(&mut dwallet_network_decryption_key.current_epoch_shares, &dwallet_network_decryption_key.next_epoch_shares);
+    // todo (change status)
+    copy_table_vec(&mut dwallet_network_decryption_key.current_reconfiguration_public_output, &dwallet_network_decryption_key.next_reconfiguration_public_output);
 }
 
 public(package) fun emit_start_reshare_event(
@@ -2391,9 +2387,8 @@ fun process_checkpoint_message(
             } else if (message_data_type == 6) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
-                let key_shares = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
+                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, is_last);
             };
         i = i + 1;
     };

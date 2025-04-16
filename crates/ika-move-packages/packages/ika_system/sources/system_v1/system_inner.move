@@ -963,7 +963,6 @@ fun process_checkpoint_message(
             } else if (message_data_type == 6) {
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
-                bcs_body.peel_vec_u8();
                 bcs_body.peel_bool();
             };
         i = i + 1;
