@@ -65,7 +65,7 @@ public struct DWalletCoordinatorInner has store {
     /// The last MPC session to process in the current epoch.
     /// Validators should complete every session they start before switching epochs.
     last_session_to_complete_in_current_epoch: u64,
-    /// Denotes weather the `last_session_to_complete_in_current_epoch` field is locked or not.
+    /// Denotes whether the `last_session_to_complete_in_current_epoch` field is locked or not.
     /// This field gets locked before performing the epoch switch.
     locked_last_session_to_complete_in_current_epoch: bool,
     /// The maximum number of active MPC sessions Ika nodes may run during an epoch.
