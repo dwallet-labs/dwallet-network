@@ -402,6 +402,10 @@ public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 }
 
+public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
+       dwallet_network_decryption_key_id: ID,
+}
+
 /// An event emitted when the first round of the DKG process is completed.
 ///
 /// This event is emitted by the blockchain to notify the user about
@@ -858,7 +862,7 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
     dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
         DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => {
             if (is_last) {
-                event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
+                event::emit(CompletedDWalletDecryptionKeyReshareEvent {
                     dwallet_network_decryption_key_id,
                 });
                 DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration
