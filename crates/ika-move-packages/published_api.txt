@@ -307,7 +307,7 @@ validate_active_and_get_public_output
 charge_and_create_current_epoch_dwallet_event
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-charge_and_create_immediate_dwallet_event
+create_immediate_dwallet_event
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 get_active_dwallet_and_public_output

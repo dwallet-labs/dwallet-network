@@ -68,7 +68,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `get_dwallet_mut`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet_mut)
 -  [Function `validate_active_and_get_public_output`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_validate_active_and_get_public_output)
 -  [Function `charge_and_create_current_epoch_dwallet_event`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge_and_create_current_epoch_dwallet_event)
--  [Function `charge_and_create_immediate_dwallet_event`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge_and_create_immediate_dwallet_event)
+-  [Function `create_immediate_dwallet_event`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_immediate_dwallet_event)
 -  [Function `get_active_dwallet_and_public_output`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_and_public_output)
 -  [Function `get_active_dwallet_and_public_output_mut`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_and_public_output_mut)
 -  [Function `get_active_encryption_key`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_encryption_key)
@@ -218,7 +218,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <code>locked_last_session_to_complete_in_current_epoch: bool</code>
 </dt>
 <dd>
- Denotes wether the <code>last_session_to_complete_in_current_epoch</code> field is locked or not.
+ Denotes whether the <code>last_session_to_complete_in_current_epoch</code> field is locked or not.
  This field gets locked before performing the epoch switch.
 </dd>
 <dt>
@@ -449,7 +449,7 @@ Represents a capability granting control over a specific dWallet network decrypt
 ## Struct `DWalletNetworkDecryptionKey`
 
 <code><a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletNetworkDecryptionKey">DWalletNetworkDecryptionKey</a></code> represents a network decryption key of
-the homomorphiclly encrypted netowrk share.
+the homomorphically encrypted network share.
 
 
 <pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletNetworkDecryptionKey">DWalletNetworkDecryptionKey</a> <b>has</b> key, store
@@ -1451,7 +1451,7 @@ similar to the MPC processes.
  belongs to the dWallet that its centralized
  secret share is being encrypted.
  This is not passed by the user,
- but taken from the blockhain during event creation.
+ but taken from the blockchain during event creation.
 </dd>
 <dt>
 <code>dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
@@ -2753,30 +2753,23 @@ Supported hash schemes for message signing.
         id,
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         current_epoch_shares: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         next_epoch_shares: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         previous_epoch_shares: table_vec::empty(ctx),
         public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
         state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
-    <b>let</b> <b>mut</b> zero_ika = coin::zero&lt;IKA&gt;(ctx);
-    <b>let</b> <b>mut</b> zero_sui = coin::zero&lt;SUI&gt;(ctx);
-    event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge_and_create_immediate_dwallet_event">charge_and_create_immediate_dwallet_event</a>(
+    event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_immediate_dwallet_event">create_immediate_dwallet_event</a>(
         dwallet_network_decryption_key_id,
-        <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_zero">dwallet_pricing::zero</a>(),
-        &<b>mut</b> zero_ika,
-        &<b>mut</b> zero_sui,
         <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletNetworkDKGDecryptionKeyRequestEvent">DWalletNetworkDKGDecryptionKeyRequestEvent</a> {
             dwallet_network_decryption_key_id
         },
         ctx,
     ));
-    zero_ika.destroy_zero();
-    zero_sui.destroy_zero();
     cap
 }
 </code></pre>
@@ -2912,20 +2905,13 @@ Supported hash schemes for message signing.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_emit_start_reshare_event">emit_start_reshare_event</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>, key_cap: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletNetworkDecryptionKeyCap">DWalletNetworkDecryptionKeyCap</a>, ctx: &<b>mut</b> TxContext
 ) {
-    <b>let</b> <b>mut</b> zero_ika = coin::zero&lt;IKA&gt;(ctx);
-    <b>let</b> <b>mut</b> zero_sui = coin::zero&lt;SUI&gt;(ctx);
-    event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge_and_create_immediate_dwallet_event">charge_and_create_immediate_dwallet_event</a>(
+    event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_immediate_dwallet_event">create_immediate_dwallet_event</a>(
         key_cap.dwallet_network_decryption_key_id,
-        <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_zero">dwallet_pricing::zero</a>(),
-        &<b>mut</b> zero_ika,
-        &<b>mut</b> zero_sui,
         <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDecryptionKeyReshareRequestEvent">DWalletDecryptionKeyReshareRequestEvent</a> {
             dwallet_network_decryption_key_id: key_cap.dwallet_network_decryption_key_id
         },
         ctx,
     ));
-    zero_ika.destroy_zero();
-    zero_sui.destroy_zero();
 }
 </code></pre>
 
@@ -3137,13 +3123,13 @@ Supported hash schemes for message signing.
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge_and_create_immediate_dwallet_event"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_immediate_dwallet_event"></a>
 
-## Function `charge_and_create_immediate_dwallet_event`
+## Function `create_immediate_dwallet_event`
 
 
 
-<pre><code><b>fun</b> charge_and_create_immediate_dwallet_eventE(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_PricingPerOperation">dwallet_pricing::PricingPerOperation</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, event_data: E, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">dwallet_2pc_mpc_secp256k1_inner::DWalletEvent</a>&lt;E&gt;
+<pre><code><b>fun</b> create_immediate_dwallet_eventE(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, event_data: E, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">dwallet_2pc_mpc_secp256k1_inner::DWalletEvent</a>&lt;E&gt;
 </code></pre>
 
 
@@ -3152,23 +3138,13 @@ Supported hash schemes for message signing.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge_and_create_immediate_dwallet_event">charge_and_create_immediate_dwallet_event</a>&lt;E: <b>copy</b> + drop + store&gt;(
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_immediate_dwallet_event">create_immediate_dwallet_event</a>&lt;E: <b>copy</b> + drop + store&gt;(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_network_decryption_key_id: ID,
-    pricing: PricingPerOperation,
-    payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
-    payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     event_data: E,
     ctx: &<b>mut</b> TxContext,
 ): <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a>&lt;E&gt; {
     <b>assert</b>!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EDWalletNetworkDecryptionKeyNotExist">EDWalletNetworkDecryptionKeyNotExist</a>);
-    <b>let</b> computation_fee_charged_ika = payment_ika.split(pricing.computation_ika(), ctx).into_balance();
-    <b>let</b> consensus_validation_fee_charged_ika = payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance();
-    <b>let</b> gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
-    <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
-    self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
-    self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
     self.started_immediate_sessions_count = self.started_immediate_sessions_count + 1;
     <b>let</b> event = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a> {
         epoch: self.current_epoch,
