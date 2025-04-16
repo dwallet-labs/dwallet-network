@@ -48,7 +48,6 @@ pub const DWALLET_2PC_MPC_SECP256K1_INNER_MODULE_NAME: &IdentStr =
 pub struct SuiNotifier {
     sui_key: SuiKeyPair,
     sui_address: SuiAddress,
-    gas_object_ref: ObjectRef,
 }
 
 pub struct SuiConnectorService {
@@ -161,37 +160,9 @@ impl SuiConnectorService {
         );
 
         let sui_address = SuiAddress::from(&sui_key.public());
-
-        let gas_object_id = match sui_connector_config.notifier_client_gas_object {
-            Some(id) => id,
-            None => {
-                let sui_client = SuiClientBuilder::default()
-                    .build(&sui_connector_config.sui_rpc_url)
-                    .await?;
-                let coin =
-                    // Minimum balance for gas object is 10 SUI
-                    pick_highest_balance_coin(sui_client.coin_read_api(), sui_address, 10_000_000_000)
-                        .await?;
-                coin.coin_object_id
-            }
-        };
-        let (gas_coin, gas_object_ref, owner) = sui_client
-            .get_gas_data_panic_if_not_gas(gas_object_id)
-            .await;
-        if owner != Owner::AddressOwner(sui_address) {
-            return Err(anyhow!("Gas object {:?} is not owned by sui connector client key's associated sui address {:?}, but {:?}", gas_object_id, sui_address, owner));
-        }
-        let balance = gas_coin.value();
-        sui_connector_metrics.gas_coin_balance.set(balance as i64);
-        info!(
-            "Starting sui connector with address: {:?}, gas object {:?}, balance: {}",
-            sui_address, gas_object_ref.0, balance,
-        );
-
         Ok(Some(SuiNotifier {
             sui_key,
             sui_address,
-            gas_object_ref,
         }))
     }
 
