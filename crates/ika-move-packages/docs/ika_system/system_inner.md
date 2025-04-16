@@ -2402,27 +2402,10 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     <b>while</b> (i &lt; len) {
         <b>let</b> message_data_type = bcs_body.peel_vec_length();
             <b>if</b> (message_data_type == 0) {
-                // InitiateProcessMidEpoch
-                self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_mid_epoch">process_mid_epoch</a>();
-            } <b>else</b> <b>if</b> (message_data_type == 1) {
-                // EndOfEpochMessage
-                <b>let</b> len = bcs_body.peel_vec_length();
-                <b>let</b> <b>mut</b> i = 0;
-                <b>while</b> (i &lt; len) {
-                    <b>let</b> end_of_epch_message_type = bcs_body.peel_vec_length();
-                    // AdvanceEpoch
-                    <b>if</b>(end_of_epch_message_type == 0) {
-                        bcs_body.peel_u64();
-                        bcs_body.peel_u64();
-                        bcs_body.peel_u64();
-                    };
-                    i = i + 1;
-                };
-            } <b>else</b> <b>if</b> (message_data_type == 2) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _first_round_output = bcs_body.peel_vec_u8();
                 bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 3) {
+            } <b>else</b> <b>if</b> (message_data_type == 1) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _public_output = bcs_body.peel_vec_u8();
@@ -2430,18 +2413,18 @@ Returns all the validators who are currently reporting <code>validator_id</code>
                 <b>let</b> _encryption_key_address = <a href="../sui/address.md#sui_address_from_bytes">sui::address::from_bytes</a>(bcs_body.peel_vec_u8());
                 <b>let</b> _rejected = bcs_body.peel_bool();
                 bcs_body.peel_u64();
-                } <b>else</b> <b>if</b> (message_data_type == 4) {
+                } <b>else</b> <b>if</b> (message_data_type == 2) {
                     bcs_body.peel_vec_u8();
                     bcs_body.peel_vec_u8();
                     bcs_body.peel_bool();
-            } <b>else</b> <b>if</b> (message_data_type == 6) {
+            } <b>else</b> <b>if</b> (message_data_type == 4) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 bcs_body.peel_vec_u8();
                 <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _presign = bcs_body.peel_vec_u8();
                 bcs_body.peel_bool();
                 bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 5) {
+            } <b>else</b> <b>if</b> (message_data_type == 3) {
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2449,13 +2432,13 @@ Returns all the validators who are currently reporting <code>validator_id</code>
                 <b>let</b> _is_future_sign = bcs_body.peel_bool();
                 <b>let</b> _rejected = bcs_body.peel_bool();
                 bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 7) {
+            } <b>else</b> <b>if</b> (message_data_type == 5) {
                 <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> _rejected = bcs_body.peel_bool();
                 bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 8) {
+            } <b>else</b> <b>if</b> (message_data_type == 6) {
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
