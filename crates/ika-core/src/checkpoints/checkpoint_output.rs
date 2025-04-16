@@ -111,6 +111,7 @@ impl<T: SubmitToConsensus> CheckpointOutput for SubmitCheckpointToConsensus<T> {
                 .last_skipped_checkpoint_signature_submission
                 .set(checkpoint_seq as i64);
         }
+
         Ok(())
     }
 }
