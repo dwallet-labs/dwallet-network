@@ -505,17 +505,24 @@ where
             .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
             .await;
 
-        println!("`signers_bitmap` @ handle_execution_task: {:?}", signers_bitmap);
+        println!(
+            "`signers_bitmap` @ handle_execution_task: {:?}",
+            signers_bitmap
+        );
 
         let messages = Self::break_down_checkpoint_message(message);
         let mut args = vec![
             CallArg::Object(ika_system_state_arg),
             CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
-                IkaError::SuiConnectorSerializationError(format!("can't serialize `signature`: {e}"))
+                IkaError::SuiConnectorSerializationError(format!(
+                    "can't serialize `signature`: {e}"
+                ))
             })?),
             CallArg::Pure(bcs::to_bytes(&signers_bitmap).map_err(|e| {
-                IkaError::SuiConnectorSerializationError(format!("can't serialize `signers_bitmap`: {e}"))
+                IkaError::SuiConnectorSerializationError(format!(
+                    "can't serialize `signers_bitmap`: {e}"
+                ))
             })?),
         ];
         args.extend(messages);
