@@ -293,7 +293,7 @@ request_and_generate_yaml() {
 
   # Request tokens from the faucet with retry
   local attempt=1
-  local max_attempts=5
+  local max_attempts=10
   local sleep_time=2
 
   echo "[Faucet] Requesting tokens for '$VALIDATOR_NAME' ($ACCOUNT_ADDRESS)..."
