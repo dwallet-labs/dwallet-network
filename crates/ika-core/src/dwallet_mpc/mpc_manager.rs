@@ -193,7 +193,7 @@ impl DWalletMPCManager {
                     error!(
                         ?err,
                         session_id=?message.session_id,
-                        from_authority=?message.authority
+                        from_authority=?message.authority,
                         "failed to handle an MPC message with error"
                     );
                 }
