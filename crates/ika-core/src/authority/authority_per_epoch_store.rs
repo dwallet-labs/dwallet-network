@@ -1726,25 +1726,23 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => {
-                match key_scheme {
-                    DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                        let slices = Self::slice_network_dkg_into_messages(
-                            &init_event.event_data.dwallet_network_decryption_key_id,
-                            output,
-                        );
+            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => match key_scheme {
+                DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                    let slices = Self::slice_network_dkg_into_messages(
+                        &init_event.event_data.dwallet_network_decryption_key_id,
+                        output,
+                    );
 
-                        let messages: Vec<_> = slices
-                            .into_iter()
-                            .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
-                            .collect();
-                        Ok(self.process_consensus_system_bulk_transaction(&messages))
-                    }
-                    DWalletMPCNetworkKeyScheme::Ristretto => {
-                        Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
-                    }
+                    let messages: Vec<_> = slices
+                        .into_iter()
+                        .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
+                        .collect();
+                    Ok(self.process_consensus_system_bulk_transaction(&messages))
                 }
-            }
+                DWalletMPCNetworkKeyScheme::Ristretto => {
+                    Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
+                }
+            },
             MPCProtocolInitData::DecryptionKeyReshare(_) => todo!(),
         }
     }
