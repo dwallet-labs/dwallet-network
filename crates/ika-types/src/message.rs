@@ -129,10 +129,6 @@ pub enum MessageKind {
 }
 
 impl MessageKind {
-    pub fn is_end_of_epoch_tx(&self) -> bool {
-        matches!(self, MessageKind::EndOfEpoch(_))
-    }
-
     pub fn name(&self) -> &'static str {
         match self {
             Self::EndOfEpoch(_) => "EndOfEpoch",
@@ -146,10 +142,6 @@ impl MessageKind {
                 "DwalletPartialSignatureVerificationOutput"
             }
         }
-    }
-
-    pub fn new_end_of_epoch_message(messages: Vec<EndOfEpochMessageKind>) -> Self {
-        Self::EndOfEpoch(messages)
     }
 
     pub fn digest(&self) -> MessageDigest {

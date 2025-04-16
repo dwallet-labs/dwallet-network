@@ -1087,39 +1087,6 @@ impl AuthorityState {
     }
 
     #[instrument(level = "error", skip_all)]
-    pub async fn create_end_of_epoch_message(
-        &self,
-        epoch_store: &Arc<AuthorityPerEpochStore>,
-        epoch_start_timestamp_ms: CheckpointTimestamp,
-    ) -> MessageKind {
-        let mut messages = Vec::new();
-
-        let next_epoch = epoch_store.epoch() + 1;
-
-        let buffer_stake_bps = epoch_store.get_effective_buffer_stake_bps();
-
-        let (next_epoch_protocol_version, next_epoch_move_packages) =
-            Self::choose_protocol_version_and_system_packages_v1(
-                epoch_store.protocol_version(),
-                epoch_store.protocol_config(),
-                epoch_store.committee(),
-                epoch_store
-                    .get_capabilities_v1()
-                    .expect("read capabilities from db cannot fail"),
-                buffer_stake_bps,
-            );
-
-        messages.push(EndOfEpochMessageKind::new_advance_epoch(
-            next_epoch,
-            next_epoch_protocol_version,
-            epoch_start_timestamp_ms,
-            next_epoch_move_packages,
-        ));
-
-        MessageKind::new_end_of_epoch_message(messages)
-    }
-
-    #[instrument(level = "error", skip_all)]
     async fn reopen_epoch_db(
         &self,
         cur_epoch_store: &AuthorityPerEpochStore,
