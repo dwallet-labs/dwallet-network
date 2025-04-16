@@ -95,6 +95,7 @@ pub struct DWalletMPCManager {
     /// yet received an event for from Sui.
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
+    pub(crate) last_session_that_reached_quorum: u64,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.

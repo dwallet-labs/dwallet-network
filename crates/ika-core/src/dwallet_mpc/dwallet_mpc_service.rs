@@ -29,6 +29,7 @@ use tokio::task::yield_now;
 use tokio::time;
 use tracing::{error, info, warn};
 use typed_store::Map;
+use crate::dwallet_mpc::mpc_session::MPCEventData;
 
 const READ_INTERVAL_MS: u64 = 100;
 
@@ -142,9 +143,15 @@ impl DWalletMPCService {
                 continue;
             };
             for session_id in completed_sessions {
-                manager.mpc_sessions.get_mut(&session_id).map(|session| {
+                let sequence_number = manager.mpc_sessions.get_mut(&session_id).map(|session| {
                     session.status = MPCSessionStatus::Finished;
+                    session.sequence_number
                 });
+                if let Some(sequence_number) = sequence_number {
+                    if sequence_number > manager.last_session_that_reached_quorum {
+                        manager.last_session_that_reached_quorum = sequence_number;
+                    }
+                }
             }
             let Ok(events) = self
                 .epoch_store
