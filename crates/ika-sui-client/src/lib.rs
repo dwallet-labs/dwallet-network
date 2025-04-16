@@ -36,7 +36,9 @@ use std::str::from_utf8;
 use std::sync::Arc;
 use std::time::Duration;
 use sui_json_rpc_api::BridgeReadApiClient;
-use sui_json_rpc_types::{DevInspectResults, SuiData, SuiMoveValue};
+use sui_json_rpc_types::{
+    DevInspectResults, SuiData, SuiMoveValue, SuiObjectDataFilter, SuiObjectResponseQuery,
+};
 use sui_json_rpc_types::{EventFilter, Page, SuiEvent};
 use sui_json_rpc_types::{
     EventPage, SuiObjectDataOptions, SuiTransactionBlockResponse,
@@ -294,17 +296,6 @@ where
         }
     }
 
-    pub async fn get_class_groups_public_keys_and_proofs(
-        &self,
-        validators: &Vec<ValidatorInnerV1>,
-    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
-        let validators_class_groups_public_key_and_proof = self
-            .inner
-            .get_class_groups_public_keys_and_proofs(&validators)
-            .await?;
-        Ok(validators_class_groups_public_key_and_proof)
-    }
-
     /// Retrieves Sui's System clock object.
     pub async fn get_clock(&self) -> IkaResult<Clock> {
         let sui_clock_address = "0x6";
@@ -322,6 +313,17 @@ where
                 "Can't deserialize Sui System clock: {e}"
             ))
         })
+    }
+
+    pub async fn get_class_groups_public_keys_and_proofs(
+        &self,
+        validators: &Vec<ValidatorInnerV1>,
+    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
+        let validators_class_groups_public_key_and_proof = self
+            .inner
+            .get_class_groups_public_keys_and_proofs(&validators)
+            .await?;
+        Ok(validators_class_groups_public_key_and_proof)
     }
 
     pub async fn get_epoch_start_system(
@@ -477,6 +479,7 @@ where
         .await
     }
 
+    /// Get the clock object arg for the shared system object on the chain.
     pub async fn get_clock_arg_must_succeed(&self) -> ObjectArg {
         static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
         *ARG.get_or_init(|| async move {
@@ -484,7 +487,7 @@ where
                 self.inner.get_shared_arg(ObjectID::from_single_byte(6)),
                 Duration::from_secs(30)
             ) else {
-                panic!("Failed to get system object arg after retries");
+                panic!("failed to get system object arg after retries");
             };
             system_arg
         })
@@ -663,17 +666,8 @@ where
         }
     }
 
-    pub async fn get_gas_data_panic_if_not_gas(
-        &self,
-        gas_object_id: ObjectID,
-    ) -> (GasCoin, ObjectRef, Owner) {
-        self.inner
-            .get_gas_data_panic_if_not_gas(gas_object_id)
-            .await
-    }
-
-    pub async fn get_gas_data(&self, gas_object_id: ObjectID) -> (GasCoin, ObjectRef, Owner) {
-        self.inner.get_gas_data(gas_object_id).await
+    pub async fn get_gas_objects(&self, address: SuiAddress) -> Vec<ObjectRef> {
+        self.inner.get_gas_objects(address).await
     }
 }
 
@@ -757,11 +751,8 @@ pub trait SuiClientInner: Send + Sync {
         tx: Transaction,
     ) -> Result<SuiTransactionBlockResponse, IkaError>;
 
-    async fn get_gas_data_panic_if_not_gas(
-        &self,
-        gas_object_id: ObjectID,
-    ) -> (GasCoin, ObjectRef, Owner);
-    async fn get_gas_data(&self, gas_object_id: ObjectID) -> (GasCoin, ObjectRef, Owner);
+    async fn get_gas_objects(&self, address: SuiAddress) -> Vec<ObjectRef>;
+
     async fn get_missed_events(
         &self,
         events_bag_id: ObjectID,
@@ -1274,6 +1265,7 @@ impl SuiClientInner for SuiSdkClient {
         })
     }
 
+    /// Get the shared object arg for the shared system object on the chain.
     async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error> {
         let response = self
             .read_api()
@@ -1347,52 +1339,34 @@ impl SuiClientInner for SuiSdkClient {
         }
     }
 
-    async fn get_gas_data_panic_if_not_gas(
-        &self,
-        gas_object_id: ObjectID,
-    ) -> (GasCoin, ObjectRef, Owner) {
+    async fn get_gas_objects(&self, address: SuiAddress) -> Vec<ObjectRef> {
         loop {
-            match self
+            let results = self
                 .read_api()
-                .get_object_with_options(
-                    gas_object_id,
-                    SuiObjectDataOptions::default().with_owner().with_content(),
+                .get_owned_objects(
+                    address,
+                    Some(SuiObjectResponseQuery::new(
+                        Some(SuiObjectDataFilter::StructType(GasCoin::type_())),
+                        Some(SuiObjectDataOptions::full_content()),
+                    )),
+                    None,
+                    None,
                 )
                 .await
-                .map(|resp| resp.data)
-            {
-                Ok(Some(gas_obj)) => {
-                    let owner = gas_obj.owner.clone().expect("Owner is requested");
-                    let gas_coin = GasCoin::try_from(&gas_obj)
-                        .unwrap_or_else(|err| panic!("{} is not a gas coin: {err}", gas_object_id));
-                    return (gas_coin, gas_obj.object_ref(), owner);
-                }
-                other => {
-                    warn!("Can't get gas object: {:?}: {:?}", gas_object_id, other);
+                .map(|o| {
+                    o.data
+                        .into_iter()
+                        .filter_map(|r| r.data.map(|o| o.object_ref()))
+                        .collect::<Vec<_>>()
+                });
+
+            match results {
+                Ok(gas_objs) => return gas_objs,
+                Err(err) => {
+                    warn!("can't get gas objects for address {}: {}", address, err);
                     tokio::time::sleep(Duration::from_secs(5)).await;
                 }
             }
-        }
-    }
-
-    async fn get_gas_data(&self, gas_object_id: ObjectID) -> (GasCoin, ObjectRef, Owner) {
-        loop {
-            if let Ok(Some(gas_obj)) = self
-                .read_api()
-                .get_object_with_options(
-                    gas_object_id,
-                    SuiObjectDataOptions::default().with_owner().with_content(),
-                )
-                .await
-                .map(|resp| resp.data)
-            {
-                let owner = gas_obj.owner.clone().expect("Owner is requested");
-                if let Ok(gas_coin) = GasCoin::try_from(&gas_obj) {
-                    return (gas_coin, gas_obj.object_ref(), owner);
-                }
-            }
-            warn!("Can't get gas object: {:?}", gas_object_id);
-            tokio::time::sleep(Duration::from_secs(5)).await;
         }
     }
 }

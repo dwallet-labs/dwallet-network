@@ -83,13 +83,6 @@ pub struct SuiConnectorConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notifier_client_key_pair: Option<KeyPairWithPath>,
 
-    /// Only for sui connector notifiers, don't set `notifier_client_key_pair` otherwise.
-    /// The gas object to use for paying for gas fees for the client. It needs to
-    /// be owned by the address associated with sui client key. If not set
-    /// and `notifier_client_key_pair` is set, it will query and use the gas object with highest
-    /// amount for the account.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub notifier_client_gas_object: Option<ObjectID>,
     /// Override the last processed EventID for sui module `ika_system`.
     /// When set, SuiSyncer will start from this cursor (exclusively) instead of the one in storage.
     /// If the cursor is not found in storage or override, the query will start from genesis.

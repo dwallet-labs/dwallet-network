@@ -104,10 +104,6 @@ pub(crate) fn session_info_from_event(
     event: DBSuiEvent,
     packages_config: &IkaPackagesConfig,
 ) -> anyhow::Result<Option<SessionInfo>> {
-    println!("event: {:?}", event.type_);
-    // println!("reshare event type: {:?}", DWalletMPCSuiEvent::<DWalletDecryptionKeyReshareRequestEvent>::type_(
-    //     packages_config,
-    // ));
     match &event.type_ {
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
             Ok(Some(dkg_first_party_session_info(

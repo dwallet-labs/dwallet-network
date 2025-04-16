@@ -130,7 +130,7 @@ pub mod authority_per_epoch_store;
 pub mod authority_perpetual_tables;
 pub mod epoch_start_configuration;
 
-/// Prometheus metrics which can be displayed in Grafana, queried and alerted on
+/// Prometheus metrics which can be displayed in Grafana, queried and alerted on.
 pub struct AuthorityMetrics {
     tx_orders: IntCounter,
     total_certs: IntCounter,

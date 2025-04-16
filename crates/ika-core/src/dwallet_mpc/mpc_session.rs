@@ -137,7 +137,11 @@ impl DWalletMPCSession {
                 malicious_parties,
                 message,
             }) => {
-                println!("round number: {:?}", self.serialized_full_messages.len());
+                info!(
+                    "session {:?} advanced on round {:?}",
+                    self.session_id,
+                    self.serialized_full_messages.len()
+                );
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
@@ -165,7 +169,7 @@ impl DWalletMPCSession {
                 private_output: _,
                 public_output,
             }) => {
-                println!("public output length: {}", public_output.len());
+                info!("session {:?} finalized successfully", self.session_id);
                 info!(
                     // Safe to unwrap as advance can only be called after the event is received.
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
@@ -486,6 +490,9 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+        if message.round_number == 0 {
+            return Err(DwalletMPCError::MessageForFirstMPCStep);
+        }
         let source_party_id = self
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;

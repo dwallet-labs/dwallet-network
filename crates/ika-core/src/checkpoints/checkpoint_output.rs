@@ -5,9 +5,7 @@ use super::{CheckpointMetrics, CheckpointStore};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::StableSyncAuthoritySigner;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::sui_connector::CheckpointMessageSuiNotify;
 use async_trait::async_trait;
-use fastcrypto::traits::ToFromBytes;
 use ika_types::crypto::AuthorityName;
 use ika_types::error::IkaResult;
 use ika_types::message_envelope::Message;
@@ -16,7 +14,6 @@ use ika_types::messages_checkpoint::{
     SignedCheckpointMessage, VerifiedCheckpointMessage,
 };
 use ika_types::messages_consensus::ConsensusTransaction;
-use itertools::Itertools;
 use std::sync::Arc;
 use tracing::{debug, info, instrument, trace};
 
