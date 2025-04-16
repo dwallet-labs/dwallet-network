@@ -397,6 +397,7 @@ impl DWalletMPCSession {
                     malicious_parties: vec![],
                 })
             }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => todo!(),
             _ => {
                 unreachable!("Unsupported MPC protocol type")
             }
