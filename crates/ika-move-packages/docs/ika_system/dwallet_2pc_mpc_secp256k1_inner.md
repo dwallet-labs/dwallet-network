@@ -2725,11 +2725,11 @@ Supported hash schemes for message signing.
         id,
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         current_epoch_shares: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         next_epoch_shares: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         previous_epoch_shares: table_vec::empty(ctx),
         public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
@@ -3109,9 +3109,9 @@ Supported hash schemes for message signing.
         session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
         event_data,
     };
-    // This special logic is here to allow the immediate session have a unique session sequenece number on the one hand,
-    // yet ignore it when deciding the last session to complete in the current epoch, <b>as</b> immediate sessions
-    // are special sessions that must get completed in the current epoch.
+    // This special logic is here to allow the immediate session have a unique session sequence number on the one hand,
+    // yet ignore (by ignoring lock) it when deciding the last session to complete in the current epoch,
+    // <b>as</b> immediate sessions are special sessions that must get completed in the current epoch.
     self.next_session_sequence_number = self.next_session_sequence_number + 1;
     self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
     self.last_session_to_complete_in_current_epoch = self.last_session_to_complete_in_current_epoch + 1;
@@ -3548,6 +3548,7 @@ This is part of the epoch switch logic.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>): bool {
     <b>return</b> self.locked_last_session_to_complete_in_current_epoch &&
         self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
+        // This is <b>for</b> special sessions such <b>as</b> Network DKG and Reconfiguration.
         self.completed_immediate_sessions_count == self.started_immediate_sessions_count
 }
 </code></pre>
