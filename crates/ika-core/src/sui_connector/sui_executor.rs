@@ -160,7 +160,7 @@ where
         // Check if we can advance the epoch.
         let all_epoch_sessions_finished = coordinator.number_of_completed_sessions
             == coordinator.last_session_to_complete_in_current_epoch;
-        let all_immediate_sessions_completed = coordinator.number_of_completed_sessions
+        let all_immediate_sessions_completed = coordinator.started_immediate_sessions_count
             == coordinator.completed_immediate_sessions_count;
         let next_epoch_committee_exists = system_inner_v1
             .validators
