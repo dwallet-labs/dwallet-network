@@ -44,10 +44,7 @@ pub struct ConsensusTransaction {
 #[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub enum ConsensusTransactionKey {
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
-    InitiateProcessMidEpoch(AuthorityName),
-    EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
-
     /// The message sent between MPC parties in a dwallet MPC session.
     DWalletMPCMessage(DWalletMPCMessageKey),
     /// The output of a dwallet MPC session.
@@ -63,10 +60,6 @@ impl Debug for ConsensusTransactionKey {
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
             }
-            Self::InitiateProcessMidEpoch(name) => {
-                write!(f, "InitiateProcessMidEpoch({:?})", name.concise())
-            }
-            Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
             Self::CapabilityNotification(name, generation) => write!(
                 f,
                 "CapabilityNotification({:?}, {:?})",
@@ -132,40 +125,10 @@ impl Debug for AuthorityCapabilitiesV1 {
     }
 }
 
-impl AuthorityCapabilitiesV1 {
-    pub fn new(
-        authority: AuthorityName,
-        chain: Chain,
-        supported_protocol_versions: SupportedProtocolVersions,
-        available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
-    ) -> Self {
-        let generation = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Ika did not exist prior to 1970")
-            .as_millis()
-            .try_into()
-            .expect("This build of ika is not supported in the year 500,000,000");
-        Self {
-            authority,
-            generation,
-            supported_protocol_versions:
-                SupportedProtocolVersionsWithHashes::from_supported_versions(
-                    supported_protocol_versions,
-                    chain,
-                ),
-            available_move_packages,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConsensusTransactionKind {
     CheckpointSignature(Box<CheckpointSignatureMessage>),
-    InitiateProcessMidEpoch(AuthorityName),
-    EndOfPublish(AuthorityName),
-
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
-
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, MPCMessageSlice),
     /// Sending Authority and its MaliciousReport.
@@ -265,36 +228,6 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_initiate_process_mid_epoch(authority: AuthorityName) -> Self {
-        let mut hasher = DefaultHasher::new();
-        authority.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::InitiateProcessMidEpoch(authority),
-        }
-    }
-
-    pub fn new_end_of_publish(authority: AuthorityName) -> Self {
-        let mut hasher = DefaultHasher::new();
-        authority.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::EndOfPublish(authority),
-        }
-    }
-
-    pub fn new_capability_notification_v1(capabilities: AuthorityCapabilitiesV1) -> Self {
-        let mut hasher = DefaultHasher::new();
-        capabilities.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::CapabilityNotificationV1(capabilities),
-        }
-    }
-
     pub fn get_tracking_id(&self) -> u64 {
         (&self.tracking_id[..])
             .read_u64::<BigEndian>()
@@ -308,12 +241,6 @@ impl ConsensusTransaction {
                     data.checkpoint_message.auth_sig().authority,
                     data.checkpoint_message.sequence_number,
                 )
-            }
-            ConsensusTransactionKind::InitiateProcessMidEpoch(authority) => {
-                ConsensusTransactionKey::InitiateProcessMidEpoch(*authority)
-            }
-            ConsensusTransactionKind::EndOfPublish(authority) => {
-                ConsensusTransactionKey::EndOfPublish(*authority)
             }
             ConsensusTransactionKind::CapabilityNotificationV1(cap) => {
                 ConsensusTransactionKey::CapabilityNotification(cap.authority, cap.generation)
@@ -340,9 +267,5 @@ impl ConsensusTransaction {
                 )
             }
         }
-    }
-
-    pub fn is_end_of_publish(&self) -> bool {
-        matches!(self.kind, ConsensusTransactionKind::EndOfPublish(_))
     }
 }

@@ -119,8 +119,6 @@ impl ConsensusClient for LazyMysticetiClient {
         if !is_soft_bundle
             && matches!(
                 transactions[0].kind,
-                ConsensusTransactionKind::InitiateProcessMidEpoch(_)
-                    | ConsensusTransactionKind::EndOfPublish(_)
                     | ConsensusTransactionKind::CapabilityNotificationV1(_)
             )
         {

@@ -39,7 +39,6 @@ use tokio::time::{self};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_handler::{classify, SequencedConsensusTransactionKey};
 use crate::consensus_throughput_calculator::{ConsensusThroughputProfiler, Level};
-use crate::epoch::reconfiguration::{ReconfigState, ReconfigurationInitiator};
 use crate::metrics::LatencyObserver;
 use consensus_core::{BlockStatus, ConnectionStatus};
 use ika_protocol_config::ProtocolConfig;
@@ -338,9 +337,6 @@ impl ConsensusAdapter {
             recovered.len()
         );
         for transaction in recovered {
-            if transaction.is_end_of_publish() {
-                info!(epoch=?epoch_store.epoch(), "Submitting EndOfPublish message to consensus");
-            }
             self.submit_unchecked(&[transaction], epoch_store);
         }
     }
@@ -483,26 +479,9 @@ impl ConsensusAdapter {
         )
     }
 
-    /// This method blocks until transaction is persisted in local database
-    /// It then returns handle to async task, user can join this handle to await while transaction is processed by consensus
-    ///
-    /// This method guarantees that once submit(but not returned async handle) returns,
-    /// transaction is persisted and will eventually be sent to consensus even after restart
-    ///
-    /// When submitting a certificate caller **must** provide a ReconfigState lock guard
-    pub fn submit(
-        self: &Arc<Self>,
-        transaction: ConsensusTransaction,
-        lock: Option<&RwLockReadGuard<ReconfigState>>,
-        epoch_store: &Arc<AuthorityPerEpochStore>,
-    ) -> IkaResult<JoinHandle<()>> {
-        self.submit_batch(&[transaction], lock, epoch_store)
-    }
-
     pub fn submit_batch(
         self: &Arc<Self>,
         transactions: &[ConsensusTransaction],
-        lock: Option<&RwLockReadGuard<ReconfigState>>,
         epoch_store: &Arc<AuthorityPerEpochStore>,
     ) -> IkaResult<JoinHandle<()>> {
         // if transactions.len() > 1 {
@@ -594,18 +573,6 @@ impl ConsensusAdapter {
         let mut transaction_keys = Vec::new();
 
         for transaction in &transactions {
-            if matches!(
-                transaction.kind,
-                ConsensusTransactionKind::InitiateProcessMidEpoch(..)
-            ) {
-                info!(epoch=?epoch_store.epoch(), "Submitting InitiateProcessMidEpoch message to consensus");
-            }
-
-            if matches!(transaction.kind, ConsensusTransactionKind::EndOfPublish(..)) {
-                info!(epoch=?epoch_store.epoch(), "Submitting EndOfPublish message to consensus");
-                epoch_store.record_epoch_pending_certs_process_time_metric();
-            }
-
             let transaction_key = SequencedConsensusTransactionKey::External(transaction.key());
             transaction_keys.push(transaction_key);
         }
@@ -646,8 +613,7 @@ impl ConsensusAdapter {
         let _monitor = if !is_soft_bundle
             && matches!(
                 transactions[0].kind,
-                ConsensusTransactionKind::EndOfPublish(_)
-                    | ConsensusTransactionKind::CapabilityNotificationV1(_)
+                ConsensusTransactionKind::CapabilityNotificationV1(_)
             ) {
             let transaction_keys = transaction_keys.clone();
             Some(CancelOnDrop(spawn_monitored_task!(async {
@@ -1004,54 +970,6 @@ impl ConsensusOverloadChecker for NoopConsensusOverloadChecker {
     }
 }
 
-impl ReconfigurationInitiator for Arc<ConsensusAdapter> {
-    /// This method is called at the middle of the epoch.
-    /// ConsensusAdapter will send InitiateProcessMidEpoch message immediately.
-    fn initiate_process_mid_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
-        info!(epoch=?epoch_store.epoch(), "Sending InitiateProcessMidEpoch message to consensus");
-        epoch_store.update_mid_epoch_time();
-        if let Err(err) = self.submit(
-            ConsensusTransaction::new_initiate_process_mid_epoch(self.authority),
-            None,
-            epoch_store,
-        ) {
-            warn!(
-                "Error when sending new initiate process mid epoch message: {:?}",
-                err
-            );
-        }
-    }
-
-    /// This method is called externally to begin reconfiguration
-    /// It transition reconfig state to reject new certificates from user
-    /// ConsensusAdapter will send EndOfPublish message once pending certificate queue is drained.
-    fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
-        let send_end_of_publish = {
-            let reconfig_guard = epoch_store.get_reconfig_state_write_lock_guard();
-            if !reconfig_guard.should_accept_user_certs() {
-                // Allow caller to call this method multiple times
-                return;
-            }
-            let pending_count = 0; //epoch_store.pending_consensus_certificates_count();
-            debug!(epoch=?epoch_store.epoch(), ?pending_count, "Trying to close epoch");
-            let send_end_of_publish = pending_count == 0;
-            epoch_store.close_user_certs(reconfig_guard);
-            send_end_of_publish
-            // reconfig_guard lock is dropped here.
-        };
-        if send_end_of_publish {
-            info!(epoch=?epoch_store.epoch(), "Sending EndOfPublish message to consensus");
-            if let Err(err) = self.submit(
-                ConsensusTransaction::new_end_of_publish(self.authority),
-                None,
-                epoch_store,
-            ) {
-                warn!("Error when sending end of publish message: {:?}", err);
-            }
-        }
-    }
-}
-
 struct CancelOnDrop<T>(JoinHandle<T>);
 
 impl<T> Deref for CancelOnDrop<T> {
@@ -1184,8 +1102,7 @@ impl SubmitToConsensus for Arc<ConsensusAdapter> {
         transactions: &[ConsensusTransaction],
         epoch_store: &Arc<AuthorityPerEpochStore>,
     ) -> IkaResult {
-        self.submit_batch(transactions, None, epoch_store)
-            .map(|_| ())
+        self.submit_batch(transactions, epoch_store).map(|_| ())
     }
 }
 

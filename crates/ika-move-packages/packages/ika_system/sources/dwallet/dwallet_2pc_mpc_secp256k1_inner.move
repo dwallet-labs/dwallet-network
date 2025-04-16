@@ -2315,26 +2315,12 @@ fun process_checkpoint_message(
             // Messages with `message_data_type` 1 & 2 are handled by the system module,
             // but their bytes must be extracted here to allow correct parsing of types 3 and above.
             // This step only extracts the bytes without further processing.
-            if (message_data_type == 1) {
-                // EndOfEpochMessage
-                let len = bcs_body.peel_vec_length();
-                let mut i = 0;
-                while (i < len) {
-                    let end_of_epch_message_type = bcs_body.peel_vec_length();
-                    // AdvanceEpoch
-                    if(end_of_epch_message_type == 0) {
-                        bcs_body.peel_u64();
-                        bcs_body.peel_u64();
-                        bcs_body.peel_u64();
-                    };
-                    i = i + 1;
-                };
-            } else if (message_data_type == 2) {
+            if (message_data_type == 0) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
                 let session_sequence_number = bcs_body.peel_u64();
                 self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, session_sequence_number);
-            } else if (message_data_type == 3) {
+            } else if (message_data_type == 1) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
@@ -2352,7 +2338,7 @@ fun process_checkpoint_message(
                     session_sequence_number,
                     ctx,
                 );
-            } else if (message_data_type == 4) {
+            } else if (message_data_type == 2) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
@@ -2363,7 +2349,7 @@ fun process_checkpoint_message(
                     rejected,
                     session_sequence_number,
                 );
-            } else if (message_data_type == 5) {
+            } else if (message_data_type == 3) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2380,7 +2366,7 @@ fun process_checkpoint_message(
                     rejected,
                     session_sequence_number
                 );
-            } else if (message_data_type == 7) {
+            } else if (message_data_type == 5) {
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2393,7 +2379,7 @@ fun process_checkpoint_message(
                     rejected,
                     session_sequence_number
                 );
-            } else if (message_data_type == 6) {
+            } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let presign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2401,7 +2387,7 @@ fun process_checkpoint_message(
                 let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
                 self.respond_ecdsa_presign(dwallet_id, presign_id, session_id, presign, rejected, session_sequence_number);
-            } else if (message_data_type == 8) {
+            } else if (message_data_type == 6) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let key_shares = bcs_body.peel_vec_u8();

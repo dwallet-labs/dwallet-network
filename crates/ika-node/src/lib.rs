@@ -68,7 +68,6 @@ use ika_core::consensus_validator::{IkaTxValidator, IkaTxValidatorMetrics};
 use ika_core::epoch::committee_store::CommitteeStore;
 use ika_core::epoch::consensus_store_pruner::ConsensusStorePruner;
 use ika_core::epoch::epoch_metrics::EpochMetrics;
-use ika_core::epoch::reconfiguration::ReconfigurationInitiator;
 use ika_core::storage::RocksDbStore;
 use mysten_metrics::{spawn_monitored_task, RegistryService};
 use mysten_network::server::ServerBuilder;
@@ -576,19 +575,6 @@ impl IkaNode {
         self.config.db_checkpoint_path()
     }
 
-    // Init reconfig process by starting to reject user certs
-    pub async fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) -> IkaResult {
-        info!("close_epoch (current epoch = {})", epoch_store.epoch());
-        self.validator_components
-            .lock()
-            .await
-            .as_ref()
-            .ok_or_else(|| IkaError::from("Node is not a validator"))?
-            .consensus_adapter
-            .close_epoch(epoch_store);
-        Ok(())
-    }
-
     pub fn clear_override_protocol_upgrade_buffer_stake(&self, epoch: EpochId) -> IkaResult {
         self.state
             .clear_override_protocol_upgrade_buffer_stake(epoch)
@@ -601,13 +587,6 @@ impl IkaNode {
     ) -> IkaResult {
         self.state
             .set_override_protocol_upgrade_buffer_stake(epoch, buffer_stake_bps)
-    }
-
-    // Testing-only API to start epoch close process.
-    // For production code, please use the non-testing version.
-    pub async fn close_epoch_for_testing(&self) -> IkaResult {
-        let epoch_store = self.state.epoch_store_for_testing();
-        self.close_epoch(&epoch_store).await
     }
 
     async fn start_state_archival(
@@ -963,16 +942,6 @@ impl IkaNode {
             sender: consensus_adapter,
             signer: state.secret.clone(),
             authority: config.protocol_public_key(),
-            next_mid_epoch_timestamp_ms: epoch_start_timestamp_ms
-                .checked_add(
-                    epoch_duration_ms
-                        .checked_div(2)
-                        .expect("Overflow calculating epoch_duration_ms / 2"),
-                )
-                .expect("Overflow calculating next_mid_epoch_timestamp_ms"),
-            next_reconfiguration_timestamp_ms: epoch_start_timestamp_ms
-                .checked_add(epoch_duration_ms)
-                .expect("Overflow calculating next_reconfiguration_timestamp_ms"),
             metrics: checkpoint_metrics.clone(),
         });
 
@@ -1046,48 +1015,6 @@ impl IkaNode {
             let run_with_range = self.config.run_with_range;
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
-
-            // Advertise capabilities to committee, if we are a validator.
-            if let Some(components) = &*self.validator_components.lock().await {
-                // TODO: without this sleep, the consensus message is not delivered reliably.
-                tokio::time::sleep(Duration::from_millis(1)).await;
-
-                let config = cur_epoch_store.protocol_config();
-                //let binary_config = to_binary_config(config);
-                let transaction = ConsensusTransaction::new_capability_notification_v1(
-                    AuthorityCapabilitiesV1::new(
-                        self.state.name,
-                        Chain::Mainnet,
-                        //cur_epoch_store.get_chain_identifier().chain(),
-                        self.config
-                            .supported_protocol_versions
-                            .expect("Supported versions should be populated")
-                            // no need to send digests of versions less than the current version
-                            .truncate_below(config.version),
-                        self.sui_connector_service
-                            .get_available_move_packages()
-                            .await?,
-                        // self.state
-                        //     .get_available_system_packages(&binary_config)
-                        //     .await,
-                    ),
-                );
-                info!(?transaction, "submitting capabilities to consensus");
-                components
-                    .consensus_adapter
-                    .submit(transaction, None, &cur_epoch_store)?;
-
-                let cur_epoch_store = cur_epoch_store.clone();
-                let name = self.state.name.clone();
-                let consensus_adapter = components.consensus_adapter.clone();
-
-                let versions = self
-                    .config
-                    .supported_protocol_versions
-                    .expect("Supported versions should be populated")
-                    // no need to send digests of versions less than the current version
-                    .truncate_below(config.version);
-            }
 
             let stop_condition = self
                 .sui_connector_service
