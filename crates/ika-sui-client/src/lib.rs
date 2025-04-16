@@ -652,10 +652,6 @@ where
     pub async fn get_gas_objects(&self, address: SuiAddress) -> Vec<ObjectRef> {
         self.inner.get_gas_objects(address).await
     }
-
-    pub async fn get_gas_data(&self, gas_object_id: ObjectID) -> (GasCoin, ObjectRef, Owner) {
-        self.inner.get_gas_data(gas_object_id).await
-    }
 }
 
 /// Use a trait to abstract over the SuiSDKClient and SuiMockClient for testing.
@@ -782,10 +778,6 @@ impl SuiClientInner for SuiSdkClient {
     }
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
-        self.read_api().get_move_object_bcs(system_id).await
-    }
-
-    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
         self.read_api().get_move_object_bcs(system_id).await
     }
 
@@ -1354,27 +1346,6 @@ impl SuiClientInner for SuiSdkClient {
                     tokio::time::sleep(Duration::from_secs(5)).await;
                 }
             }
-        }
-    }
-
-    async fn get_gas_data(&self, gas_object_id: ObjectID) -> (GasCoin, ObjectRef, Owner) {
-        loop {
-            if let Ok(Some(gas_obj)) = self
-                .read_api()
-                .get_object_with_options(
-                    gas_object_id,
-                    SuiObjectDataOptions::default().with_owner().with_content(),
-                )
-                .await
-                .map(|resp| resp.data)
-            {
-                let owner = gas_obj.owner.clone().expect("Owner is requested");
-                if let Ok(gas_coin) = GasCoin::try_from(&gas_obj) {
-                    return (gas_coin, gas_obj.object_ref(), owner);
-                }
-            }
-            warn!("Can't get gas object: {:?}", gas_object_id);
-            tokio::time::sleep(Duration::from_secs(5)).await;
         }
     }
 }
