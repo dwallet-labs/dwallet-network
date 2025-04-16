@@ -1150,6 +1150,9 @@ SystemCheckpointInfoEvent
 create
 	public(package) fun
 	0x0::system_inner_v1
+advance_network_keys
+	public(package) fun
+	0x0::system_inner_v1
 create_system_parameters
 	public(package) fun
 	0x0::system_inner_v1

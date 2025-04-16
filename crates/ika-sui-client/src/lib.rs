@@ -48,6 +48,7 @@ use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
 use sui_types::balance::Balance;
 use sui_types::base_types::SequenceNumber;
 use sui_types::base_types::{EpochId, ObjectRef};
+use sui_types::clock::Clock;
 use sui_types::collection_types::TableVec;
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
@@ -294,6 +295,25 @@ where
         }
     }
 
+    /// Retrieves Sui's System clock object.
+    pub async fn get_clock(&self) -> IkaResult<Clock> {
+        let sui_clock_address = "0x6";
+        let result = self
+            .inner
+            .get_clock(ObjectID::from_hex_literal(sui_clock_address).unwrap())
+            .await
+            .map_err(|e| {
+                IkaError::SuiClientInternalError(format!(
+                    "Can't get the System clock from Sui: {e}"
+                ))
+            })?;
+        bcs::from_bytes::<Clock>(&result).map_err(|e| {
+            IkaError::SuiClientSerializationError(format!(
+                "Can't deserialize Sui System clock: {e}"
+            ))
+        })
+    }
+
     pub async fn get_epoch_start_system(
         &self,
         ika_system_state_inner: &SystemInner,
@@ -434,6 +454,21 @@ where
                 Duration::from_secs(30)
             ) else {
                 panic!("Failed to get system object arg after retries");
+            };
+            system_arg
+        })
+        .await
+    }
+
+    /// Get the clock object arg for the shared system object on the chain.
+    pub async fn get_clock_arg_must_succeed(&self) -> ObjectArg {
+        static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
+        *ARG.get_or_init(|| async move {
+            let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
+                self.inner.get_shared_arg(ObjectID::from_single_byte(6)),
+                Duration::from_secs(30)
+            ) else {
+                panic!("failed to get system object arg after retries");
             };
             system_arg
         })
@@ -620,6 +655,10 @@ where
             .get_gas_data_panic_if_not_gas(gas_object_id)
             .await
     }
+
+    pub async fn get_gas_data(&self, gas_object_id: ObjectID) -> (GasCoin, ObjectRef, Owner) {
+        self.inner.get_gas_data(gas_object_id).await
+    }
 }
 
 /// Use a trait to abstract over the SuiSDKClient and SuiMockClient for testing.
@@ -644,7 +683,7 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_latest_checkpoint_sequence_number(&self) -> Result<u64, Self::Error>;
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
-
+    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
     async fn get_dwallet_coordinator(
         &self,
         dwallet_coordinator_id: ObjectID,
@@ -688,6 +727,8 @@ pub trait SuiClientInner: Send + Sync {
 
     async fn get_mutable_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error>;
 
+    async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error>;
+
     async fn get_available_move_packages(
         &self,
         //chain: sui_protocol_config::Chain,
@@ -704,6 +745,7 @@ pub trait SuiClientInner: Send + Sync {
         &self,
         gas_object_id: ObjectID,
     ) -> (GasCoin, ObjectRef, Owner);
+    async fn get_gas_data(&self, gas_object_id: ObjectID) -> (GasCoin, ObjectRef, Owner);
     async fn get_missed_events(
         &self,
         events_bag_id: ObjectID,
@@ -746,6 +788,10 @@ impl SuiClientInner for SuiSdkClient {
     }
 
     async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
+        self.read_api().get_move_object_bcs(system_id).await
+    }
+
+    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
         self.read_api().get_move_object_bcs(system_id).await
     }
 
@@ -1208,6 +1254,28 @@ impl SuiClientInner for SuiSdkClient {
         })
     }
 
+    /// Get the shared object arg for the shared system object on the chain.
+    async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error> {
+        let response = self
+            .read_api()
+            .get_object_with_options(system_id, SuiObjectDataOptions::new().with_owner())
+            .await?;
+        let Some(Owner::Shared {
+            initial_shared_version,
+        }) = response.owner()
+        else {
+            return Err(Self::Error::DataError(format!(
+                "Failed to load ika system state owner {:?}",
+                system_id
+            )));
+        };
+        Ok(ObjectArg::SharedObject {
+            id: system_id,
+            initial_shared_version,
+            mutable: false,
+        })
+    }
+
     async fn get_available_move_packages(
         &self,
         //chain: sui_protocol_config::Chain,
@@ -1285,6 +1353,28 @@ impl SuiClientInner for SuiSdkClient {
                     tokio::time::sleep(Duration::from_secs(5)).await;
                 }
             }
+        }
+    }
+
+    // todo(zeev): remove this once the PR with merge all coins is merged.
+    async fn get_gas_data(&self, gas_object_id: ObjectID) -> (GasCoin, ObjectRef, Owner) {
+        loop {
+            if let Ok(Some(gas_obj)) = self
+                .read_api()
+                .get_object_with_options(
+                    gas_object_id,
+                    SuiObjectDataOptions::default().with_owner().with_content(),
+                )
+                .await
+                .map(|resp| resp.data)
+            {
+                let owner = gas_obj.owner.clone().expect("Owner is requested");
+                if let Ok(gas_coin) = GasCoin::try_from(&gas_obj) {
+                    return (gas_coin, gas_obj.object_ref(), owner);
+                }
+            }
+            warn!("Can't get gas object: {:?}", gas_object_id);
+            tokio::time::sleep(Duration::from_secs(5)).await;
         }
     }
 }

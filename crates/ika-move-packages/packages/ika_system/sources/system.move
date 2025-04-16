@@ -670,6 +670,7 @@ public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DW
     assert!(inner_dwallet.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
     inner_system.advance_epoch(clock.timestamp_ms(), ctx);
     dwallet_coordinator.advance_epoch(inner_system.active_committee());
+    inner_system.advance_network_keys(dwallet_coordinator);
 }
 
 public fun request_dwallet_network_decryption_key_dkg_by_cap(
