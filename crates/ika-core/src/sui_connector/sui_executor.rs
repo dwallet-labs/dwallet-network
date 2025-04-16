@@ -464,7 +464,6 @@ where
         sui_client: &Arc<SuiClient<C>>,
         _metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
-        
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
@@ -525,7 +524,6 @@ where
                 "Can't ProgrammableTransactionBuilder::move_call: {e}"
             ))
         })?;
-
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
