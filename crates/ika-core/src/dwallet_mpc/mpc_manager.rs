@@ -191,8 +191,13 @@ impl DWalletMPCManager {
                 self.perform_cryptographic_computation();
             }
             DWalletMPCDBMessage::Message(message) => {
-                if let Err(err) = self.handle_message(message) {
-                    error!("failed to handle an MPC message with error: {:?}", err);
+                if let Err(err) = self.handle_message(message.clone()) {
+                    error!(
+                        ?err,
+                        session_id=?message.session_id,
+                        from_authority=?message.authority,
+                        "failed to handle an MPC message with error"
+                    );
                 }
             }
             DWalletMPCDBMessage::EndOfDelivery => {
@@ -552,7 +557,7 @@ impl DWalletMPCManager {
         };
         match session.store_message(&message) {
             Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
-                info!(
+                error!(
                     session_id=?message.session_id,
                     from_authority=?message.authority,
                     receiving_authority=?self.epoch_store()?.name,
