@@ -183,21 +183,21 @@ impl fmt::Display for MPCSessionStatus {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
+pub enum NetworkDecryptionKeyOutputType {
+    NetworkDkg,
+    Reshare,
+}
+
 /// Rust representation of the Move struct `NetworkDecryptionKeyShares`
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
 pub struct NetworkDecryptionKeyShares {
     /// The epoch of the last version update.
     pub epoch: u64,
 
-    /// Decryption key shares for the current epoch.
-    /// These keys together represent the network decryption key.
-    /// Each key is encrypted with the class groups key of each validator.
-    /// So only the validator can decrypt their own key.
-    pub current_epoch_encryptions_of_shares_per_crt_prime: Vec<u8>,
+    pub state: NetworkDecryptionKeyOutputType,
 
-    /// Decryption key shares for the previous epoch.
-    /// Updated at the reconfiguration.
-    pub previous_epoch_encryptions_of_shares_per_crt_prime: Vec<u8>,
+    pub public_output: MPCPublicOutput,
 
     /// Public parameters from the network DKG, used to create the
     /// protocol public parameters.
@@ -207,13 +207,6 @@ pub struct NetworkDecryptionKeyShares {
     /// The public parameters of the decryption key shares,
     /// updated only after a successful network DKG.
     pub decryption_key_share_public_parameters: Vec<u8>,
-
-    /// The network encryption key, updated only after a successful network DKG.
-    pub encryption_key: Vec<u8>,
-
-    /// Validators' verification keys.
-    pub public_verification_keys: Vec<u8>,
-    pub setup_parameters_per_crt_prime: Vec<u8>,
 }
 
 #[repr(u8)]

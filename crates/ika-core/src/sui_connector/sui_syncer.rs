@@ -5,7 +5,7 @@
 //! on the Sui blockchain from concerned modules of `ika_system` package.
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::dwallet_mpc::network_dkg::{
-    dwallet_mpc_network_key_from_session_output, DwalletMPCNetworkKeys,
+    create_dwallet_mpc_network_decryption_key_from_onchain_public_output, DwalletMPCNetworkKeys,
 };
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
@@ -193,11 +193,11 @@ where
                 .map(|(key_id, key_data)| {
                     (
                         *key_id,
-                        dwallet_mpc_network_key_from_session_output(
+                        create_dwallet_mpc_network_decryption_key_from_onchain_public_output(
                             key_data.current_epoch,
                             DWalletMPCNetworkKeyScheme::Secp256k1,
                             &weighted_threshold_access_structure,
-                            &key_data.network_dkg_public_output,
+                            &key_data,
                         ),
                     )
                 })
@@ -215,8 +215,8 @@ where
                         }
                     };
                     if let Some(local_dec_key_shares) = local_network_decryption_keys.get(&key_id) {
-                        info!("Updating the network key for `key_id`: {:?}", key_id);
                         if *local_dec_key_shares != network_dec_key_shares {
+                        info!("Updating the network key for `key_id`: {:?}", key_id);
                             if let Err(e) =
                                 dwallet_mpc_network_keys.update_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
                             {
