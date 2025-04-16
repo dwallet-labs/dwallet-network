@@ -1238,7 +1238,7 @@ fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinat
 public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinatorInner): bool {
     return self.locked_last_session_to_complete_in_current_epoch &&
         self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
-        self.completed_immediate_sessions_count == self.started_immediate_sessions_count
+        self.completed_immediate_sessions_count + 1 == self.started_immediate_sessions_count
 }
 
 fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
