@@ -4,10 +4,14 @@
 //! The SuiSyncer module handles synchronizing Events emitted
 //! on the Sui blockchain from concerned modules of `ika_system` package.
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
+use crate::dwallet_mpc::network_dkg::{
+    dwallet_mpc_network_key_from_session_output, DwalletMPCNetworkKeys,
+};
 use crate::sui_connector::metrics::SuiConnectorMetrics;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::Committee;
+use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::IkaResult;
 use ika_types::sui::SystemInnerTrait;
 use itertools::Itertools;
@@ -184,12 +188,32 @@ where
                 .unwrap_or_else(|e| {
                     warn!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
-                });
+                })
+                .iter()
+                .map(|(key_id, key_data)| {
+                    (
+                        *key_id,
+                        dwallet_mpc_network_key_from_session_output(
+                            key_data.current_epoch,
+                            DWalletMPCNetworkKeyScheme::Secp256k1,
+                            &weighted_threshold_access_structure,
+                            &key_data.network_dkg_public_output,
+                        ),
+                    )
+                })
+                .collect::<HashMap<_, DwalletMPCResult<NetworkDecryptionKeyShares>>>();
             let mut local_network_decryption_keys =
                 dwallet_mpc_network_keys.network_decryption_keys();
             network_decryption_keys
                 .into_iter()
                 .for_each(|(key_id, network_dec_key_shares)| {
+                    let network_dec_key_shares = match network_dec_key_shares {
+                        Ok(val) => val,
+                        Err(e) => {
+                            error!("failed to create network decryption key shares for key_id: {:?}: {}", key_id, e);
+                            return;
+                        }
+                    };
                     if let Some(local_dec_key_shares) = local_network_decryption_keys.get(&key_id) {
                         info!("Updating the network key for `key_id`: {:?}", key_id);
                         if *local_dec_key_shares != network_dec_key_shares {
