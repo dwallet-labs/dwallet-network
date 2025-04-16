@@ -20,6 +20,7 @@ use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::network_dkg::{advance_network_dkg, DwalletMPCNetworkKeys};
 use crate::dwallet_mpc::presign::PresignParty;
+use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{
     message_digest, party_id_to_authority_name, party_ids_to_authority_names, presign,
@@ -35,7 +36,6 @@ use ika_types::messages_dwallet_mpc::{
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
-use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -402,21 +402,26 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
                 let public_input = bcs::from_bytes(public_input)?;
-                let decryption_shares_primes = mpc_event_data.decryption_share.iter().map(|(party_id, share)| {
-                    (*party_id, share.decryption_key_share)
-                }).collect::<HashMap<_, _>>();
+                let decryption_shares_primes = mpc_event_data
+                    .decryption_share
+                    .iter()
+                    .map(|(party_id, share)| (*party_id, share.decryption_key_share))
+                    .collect::<HashMap<_, _>>();
                 crate::dwallet_mpc::advance_and_serialize::<ReshareSecp256k1Party>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
                     public_input,
-                    (bcs::from_bytes(
-                        &mpc_event_data
-                            .private_input
-                            .clone()
-                            .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
-                    )? , decryption_shares_primes),
+                    (
+                        bcs::from_bytes(
+                            &mpc_event_data
+                                .private_input
+                                .clone()
+                                .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
+                        )?,
+                        decryption_shares_primes,
+                    ),
                 )
             }
             _ => {

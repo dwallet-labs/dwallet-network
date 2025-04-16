@@ -471,7 +471,7 @@ fn generate_ristretto_dkg_party_public_input(
     bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))
 }
 
-pub(crate) fn dwallet_mpc_network_key_from_session_output(
+pub fn dwallet_mpc_network_key_from_session_output(
     epoch: u64,
     key_scheme: DWalletMPCNetworkKeyScheme,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,

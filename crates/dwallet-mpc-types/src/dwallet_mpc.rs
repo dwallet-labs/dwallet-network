@@ -216,15 +216,6 @@ pub struct NetworkDecryptionKeyShares {
     pub setup_parameters_per_crt_prime: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
-pub struct NetworkDecryptionKeyOnChainOutput {
-    pub encryption_key: Vec<u8>,
-    pub decryption_key_share_public_parameters: Vec<u8>,
-    pub encryption_scheme_public_parameters: Vec<u8>,
-    pub public_verification_keys: Vec<u8>,
-    pub setup_parameters_per_crt_prime: Vec<u8>,
-}
-
 #[repr(u8)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash, Copy)]
 pub enum DWalletMPCNetworkKeyScheme {
@@ -252,18 +243,18 @@ impl TryFrom<u8> for DWalletMPCNetworkKeyScheme {
     }
 }
 
-impl NetworkDecryptionKeyShares {
-    pub fn get_on_chain_output(&self) -> NetworkDecryptionKeyOnChainOutput {
-        NetworkDecryptionKeyOnChainOutput {
-            encryption_key: self.encryption_key.clone(),
-            decryption_key_share_public_parameters: self
-                .decryption_key_share_public_parameters
-                .clone(),
-            encryption_scheme_public_parameters: self.encryption_scheme_public_parameters.clone(),
-            public_verification_keys: self.public_verification_keys.clone(),
-            setup_parameters_per_crt_prime: self.setup_parameters_per_crt_prime.clone(),
-        }
-    }
-}
+// impl NetworkDecryptionKeyShares {
+//     pub fn get_on_chain_output(&self) -> NetworkDecryptionKeyOnChainOutput {
+//         NetworkDecryptionKeyOnChainOutput {
+//             encryption_key: self.encryption_key.clone(),
+//             decryption_key_share_public_parameters: self
+//                 .decryption_key_share_public_parameters
+//                 .clone(),
+//             encryption_scheme_public_parameters: self.encryption_scheme_public_parameters.clone(),
+//             public_verification_keys: self.public_verification_keys.clone(),
+//             setup_parameters_per_crt_prime: self.setup_parameters_per_crt_prime.clone(),
+//         }
+//     }
+// }
 
 pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
