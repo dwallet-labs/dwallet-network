@@ -169,7 +169,9 @@ impl DWalletMPCManager {
             ..=last_session_to_complete_in_current_epoch
         {
             if let Some(session) = self.pending_sessions.remove(&session_sequence_number) {
-                info!(session_sequence_number=?session_sequence_number, new_last_session_to_complete_in_current_epoch=?last_session_to_complete_in_current_epoch, "adding session sequence number to active sessions");
+                info!(session_sequence_number=?session_sequence_number,
+                      new_last_session_to_complete_in_current_epoch=?last_session_to_complete_in_current_epoch,
+                     "Adding session sequence number to active sessions");
 
                 self.mpc_sessions.insert(session.session_id, session);
             }
@@ -314,18 +316,20 @@ impl DWalletMPCManager {
             self.pending_sessions.get_mut(&session_info.sequence_number)
         {
             warn!(
-                "received an event for an existing session with `session_id`: {:?}",
+                "received an event for an existing pending session with `session_id`: {:?}",
                 session_info.session_id
             );
             if session.mpc_event_data.is_none() {
                 session.mpc_event_data = mpc_event_data;
             }
             if session_info.is_immediate {
-                drop(session);
-                // Safe to unwrap, as we just checked that the session exists in the pending sessions.
+                let _ = session;
                 let session = self
                     .pending_sessions
                     .remove(&session_info.sequence_number)
+                    // Safe to unwrap,
+                    // as we just checked
+                    // that the session exists in the pending sessions.
                     .unwrap();
                 self.mpc_sessions
                     .insert(session_info.session_id, session.clone());
@@ -652,16 +656,18 @@ impl DWalletMPCManager {
         session_sequence_number: u64,
     ) -> DWalletMPCSession {
         if self.mpc_sessions.contains_key(&session_id) {
-            // This can happpen because the event will be loaded once from the `load_missed_events` function,
-            // and once by querying the events from Sui.
+            // This can happen because the event will be loaded once from the `load_missed_events`
+            // function, and once by querying the events from Sui.
             // These sessions are ignored since we already have them in the `mpc_sessions` map.
             warn!(
-                "received start flow event for session ID {:?} that already exists",
+                "received start flow event for an immediate session ID {:?} that already exists",
                 &session_id
             );
+            // Unwrap is safe since we just checked that the session exists in the map.
+            return self.mpc_sessions.get(session_id).unwrap().clone();
         }
         info!(
-            "Received start MPC flow event for session ID {:?}",
+            "Received start MPC flow event for immediate session ID: {:?}",
             session_id
         );
 
@@ -679,7 +685,7 @@ impl DWalletMPCManager {
         info!(
             session_sequence_number=?session_sequence_number,
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-            "Adding MPC session to active sessions",
+            "Adding MPC an immediate session to active sessions",
         );
         self.mpc_sessions
             .insert(session_id.clone(), new_session.clone());
