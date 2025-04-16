@@ -1356,6 +1356,7 @@ impl SuiClientInner for SuiSdkClient {
         }
     }
 
+    // todo(zeev): remove this once the PR with merge all coins is merged.
     async fn get_gas_data(&self, gas_object_id: ObjectID) -> (GasCoin, ObjectRef, Owner) {
         loop {
             if let Ok(Some(gas_obj)) = self
