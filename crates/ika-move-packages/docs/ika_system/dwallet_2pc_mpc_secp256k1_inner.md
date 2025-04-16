@@ -2914,7 +2914,7 @@ Supported hash schemes for message signing.
 ) {
     <b>let</b> <b>mut</b> zero_ika = coin::zero&lt;IKA&gt;(ctx);
     <b>let</b> <b>mut</b> zero_sui = coin::zero&lt;SUI&gt;(ctx);
-    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge_and_create_immediate_dwallet_event">charge_and_create_immediate_dwallet_event</a>(
+    <b>let</b> reshare_event = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge_and_create_immediate_dwallet_event">charge_and_create_immediate_dwallet_event</a>(
         key_cap.dwallet_network_decryption_key_id,
         <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_zero">dwallet_pricing::zero</a>(),
         &<b>mut</b> zero_ika,
@@ -2924,6 +2924,7 @@ Supported hash schemes for message signing.
         },
         ctx,
     );
+    event::emit(reshare_event);
     zero_ika.destroy_zero();
     zero_sui.destroy_zero();
 }

@@ -874,7 +874,7 @@ public(package) fun emit_start_reshare_event(
 ) {
     let mut zero_ika = coin::zero<IKA>(ctx);
     let mut zero_sui = coin::zero<SUI>(ctx);
-    self.charge_and_create_immediate_dwallet_event(
+    let reshare_event = self.charge_and_create_immediate_dwallet_event(
         key_cap.dwallet_network_decryption_key_id,
         dwallet_pricing::zero(),
         &mut zero_ika,
@@ -884,6 +884,7 @@ public(package) fun emit_start_reshare_event(
         },
         ctx,
     );
+    event::emit(reshare_event);
     zero_ika.destroy_zero();
     zero_sui.destroy_zero();
 }
