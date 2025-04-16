@@ -101,7 +101,7 @@ interface IKASystemStateInner {
 interface DWalletNetworkDecryptionKey {
 	fields: {
 		id: { id: string };
-		public_output: Uint8Array;
+		network_dkg_public_output: Uint8Array;
 	};
 }
 
@@ -162,7 +162,7 @@ export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 }
 
 export function isDWalletNetworkDecryptionKey(obj: any): obj is DWalletNetworkDecryptionKey {
-	return obj?.fields?.public_output !== undefined;
+	return obj?.fields?.network_dkg_public_output !== undefined;
 }
 
 export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
@@ -316,11 +316,12 @@ export async function getNetworkDecryptionKeyPublicOutputID(
 		!networkDecryptionKey ||
 		!isMoveObject(networkDecryptionKey?.data?.content) ||
 		!isDWalletNetworkDecryptionKey(networkDecryptionKey.data.content) ||
-		!isMoveObject(networkDecryptionKey.data.content.fields.public_output)
+		!isMoveObject(networkDecryptionKey.data.content.fields.network_dkg_public_output)
 	) {
 		throw new Error(`invalid network decryption key object: ${networkDecryptionKeyId}`);
 	}
-	return networkDecryptionKey.data.content.fields.public_output.fields.contents.fields.id?.id;
+	return networkDecryptionKey.data.content.fields.network_dkg_public_output.fields.contents.fields
+		.id?.id;
 }
 
 async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint8Array> {

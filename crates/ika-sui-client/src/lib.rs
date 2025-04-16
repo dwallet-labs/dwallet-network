@@ -8,9 +8,7 @@ use core::panic;
 use dwallet_classgroups_types::{
     ClassGroupsEncryptionKeyAndProof, SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEYS,
 };
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
 use fastcrypto::traits::ToFromBytes;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::error::{IkaError, IkaResult};

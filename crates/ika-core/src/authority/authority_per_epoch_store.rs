@@ -755,21 +755,6 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
-    // /// Retrieves the decryption key shares for the current epoch if they exist in the system state.
-    // ///
-    // /// The data is sourced from the epoch's initial system state.
-    // /// The returned value is a map where:
-    // /// - The key represents the key scheme (e.g., Secp256k1, Ristretto, etc.).
-    // /// - The value is a vector of [`NetworkDecryptionKeyShares`],
-    // ///   which contains all versions of the encrypted decryption key shares.
-    // pub(crate) fn load_decryption_key_shares_from_system_state(
-    //     &self,
-    // ) -> HashMap<ObjectID, NetworkDecryptionKeyShares> {
-    //     match self.epoch_start_state() {
-    //         EpochStartSystem::V1(data) => data.get_dwallet_network_decryption_keys().clone(),
-    //     }
-    // }
-
     /// Return the [`DWalletMPCOutputsVerifier`].
     /// Uses a Mutex because the instance is initialized from a different thread.
     pub async fn get_dwallet_mpc_outputs_verifier(
@@ -1742,22 +1727,8 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => {
-                // let weighted_threshold_access_structure =
-                //     self.get_weighted_threshold_access_structure()?;
-                //
-                // let key =
-                //     crate::dwallet_mpc::network_dkg::dwallet_mpc_network_key_from_session_output(
-                //         self.epoch(),
-                //         *key_scheme,
-                //         &weighted_threshold_access_structure,
-                //         &output,
-                //     )?;
-
                 match key_scheme {
                     DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                        // let public_output = bcs::to_bytes(&key.get_on_chain_output())
-                        //     .map_err(|e| DwalletMPCError::BcsError(e))?;
-
                         let slices = Self::slice_network_dkg_into_messages(
                             &init_event.event_data.dwallet_network_decryption_key_id,
                             output,
