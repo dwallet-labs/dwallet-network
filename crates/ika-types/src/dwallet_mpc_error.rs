@@ -126,6 +126,9 @@ pub enum DwalletMPCError {
     #[error("unsupported network DKG key scheme")]
     UnsupportedNetworkDKGKeyScheme,
 
+    #[error("the first MPC step should not not receive any messages from the other parties")]
+    MessageForFirstMPCStep,
+
     #[error("failed to find the event driven data")]
     MissingEventDrivenData,
 }
