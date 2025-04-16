@@ -189,7 +189,7 @@ impl DWalletMPCManager {
                 self.perform_cryptographic_computation();
             }
             DWalletMPCDBMessage::Message(message) => {
-                if let Err(err) = self.handle_message(message) {
+                if let Err(err) = self.handle_message(message.clone()) {
                     error!(
                         ?err,
                         session_id=?message.session_id,
