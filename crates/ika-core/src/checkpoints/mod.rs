@@ -446,12 +446,6 @@ impl CheckpointStore {
             &self.certified_checkpoints,
             [(checkpoint.sequence_number(), checkpoint.serializable_ref())],
         )?;
-        if checkpoint.is_last_checkpoint_of_epoch() {
-            batch.insert_batch(
-                &self.epoch_last_checkpoint_map,
-                [(&checkpoint.epoch(), checkpoint.sequence_number())],
-            )?;
-        }
         batch.write()?;
 
         // if let Some(local_checkpoint) = self

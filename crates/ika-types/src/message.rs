@@ -2,51 +2,14 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::committee::{EpochId, ProtocolVersion};
 use crate::crypto::default_hash;
 use crate::digests::MessageDigest;
-use crate::messages_consensus::MovePackageDigest;
 use fastcrypto::hash::HashFunction;
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use strum::IntoStaticStr;
-use sui_types::base_types::*;
-
-/// EndOfEpochMessageKind
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
-pub enum EndOfEpochMessageKind {
-    AdvanceEpoch {
-        /// The next (to become) epoch ID.
-        epoch: EpochId,
-        /// The protocol version in effect in the new epoch.
-        protocol_version: ProtocolVersion,
-        /// Unix timestamp when epoch started
-        epoch_start_timestamp_ms: u64,
-        /// Ika move packages (package id) to be upgraded and their
-        /// move packages digest of the new version
-        move_packages: Vec<(ObjectID, MovePackageDigest)>,
-        // to version this struct, do not add new fields. Instead, add a AdvanceEpoch to
-        // MessageKind.
-    },
-}
-
-impl EndOfEpochMessageKind {
-    pub fn new_advance_epoch(
-        next_epoch: EpochId,
-        protocol_version: ProtocolVersion,
-        epoch_start_timestamp_ms: u64,
-        move_packages: Vec<(ObjectID, MovePackageDigest)>,
-    ) -> Self {
-        Self::AdvanceEpoch {
-            epoch: next_epoch,
-            protocol_version,
-            epoch_start_timestamp_ms,
-            move_packages,
-        }
-    }
-}
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct DKGFirstRoundOutput {
@@ -114,11 +77,6 @@ pub struct Secp256K1NetworkDKGOutputSlice {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
 pub enum MessageKind {
-    /// A list of message to be run at the
-    /// end of the epoch.
-    EndOfEpoch(Vec<EndOfEpochMessageKind>),
-
-    // .. more action types go here
     DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
     DwalletEncryptedUserShare(EncryptedUserShareOutput),
@@ -131,7 +89,6 @@ pub enum MessageKind {
 impl MessageKind {
     pub fn name(&self) -> &'static str {
         match self {
-            Self::EndOfEpoch(_) => "EndOfEpoch",
             MessageKind::DwalletMPCNetworkDKGOutput(_) => "DwalletMPCNetworkDKGOutput",
             MessageKind::DwalletDKGFirstRoundOutput(_) => "DwalletDKGFirstRoundOutput",
             MessageKind::DwalletDKGSecondRoundOutput(_) => "DwalletDKGSecondRoundOutput",
@@ -153,9 +110,6 @@ impl Display for MessageKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
         match &self {
-            Self::EndOfEpoch(_) => {
-                writeln!(writer, "MessageKind : EndOfEpoch")?;
-            }
             MessageKind::DwalletMPCNetworkDKGOutput(output) => {
                 writeln!(
                     writer,

@@ -112,12 +112,6 @@ impl CheckpointMessage {
             })
             .ok();
     }
-
-    pub fn is_last_checkpoint_of_epoch(&self) -> bool {
-        self.messages
-            .iter()
-            .any(|kind| matches!(kind, MessageKind::EndOfEpoch(_)))
-    }
 }
 
 impl Display for CheckpointMessage {
