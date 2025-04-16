@@ -2433,7 +2433,6 @@ Returns all the validators who are currently reporting <code>validator_id</code>
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_vec_u8();
                 bcs_body.peel_bool();
-                bcs_body.peel_u64();
             };
         i = i + 1;
     };
