@@ -184,6 +184,9 @@ DWalletNetworkDKGDecryptionKeyRequestEvent
 DWalletDecryptionKeyReshareRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+CompletedDWalletDecryptionKeyReshareEvent
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 CompletedDWalletNetworkDKGDecryptionKeyEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner

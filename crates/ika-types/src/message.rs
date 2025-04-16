@@ -68,7 +68,7 @@ pub struct PartialSignatureVerificationOutput {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct Secp256K1NetworkDKGOutputSlice {
+pub struct Secp256K1NetworkKeyPublicOutputSlice {
     pub dwallet_network_decryption_key_id: Vec<u8>,
     pub public_output: Vec<u8>,
     pub is_last: bool,
@@ -82,7 +82,8 @@ pub enum MessageKind {
     DwalletSign(SignOutput),
     DwalletPresign(PresignOutput),
     DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
-    DwalletMPCNetworkDKGOutput(Secp256K1NetworkDKGOutputSlice),
+    DwalletMPCNetworkDKGOutput(Secp256K1NetworkKeyPublicOutputSlice),
+    DwalletMPCNetworkReshareOutput(Secp256K1NetworkKeyPublicOutputSlice),
 }
 
 impl MessageKind {
@@ -97,6 +98,7 @@ impl MessageKind {
             MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
                 "DwalletPartialSignatureVerificationOutput"
             }
+            MessageKind::DwalletMPCNetworkReshareOutput(_) => "DwalletMPCNetworkReshareOutput",
         }
     }
 
@@ -136,6 +138,9 @@ impl Display for MessageKind {
                     writer,
                     "MessageKind : DwalletPartialSignatureVerificationOutput"
                 )?;
+            }
+            MessageKind::DwalletMPCNetworkReshareOutput(_) => {
+                writeln!(writer, "MessageKind : DwalletMPCNetworkReshareOutput")?;
             }
         }
         write!(f, "{}", writer)
