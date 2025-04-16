@@ -3615,7 +3615,7 @@ This is part of the epoch switch logic.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>): bool {
     <b>return</b> self.locked_last_session_to_complete_in_current_epoch &&
         self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
-        self.completed_immediate_sessions_count == self.started_immediate_sessions_count
+        self.completed_immediate_sessions_count + 1 == self.started_immediate_sessions_count
 }
 </code></pre>
 
