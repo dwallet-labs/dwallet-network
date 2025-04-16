@@ -6,27 +6,14 @@ use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMe
 use crate::messages_dwallet_mpc::{
     DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
 };
-use crate::supported_protocol_versions::{
-    Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
-};
+use crate::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
 use byteorder::{BigEndian, ReadBytesExt};
 use dwallet_mpc_types::dwallet_mpc::{MPCMessageBuilder, MPCMessageSlice, MessageState};
-use fastcrypto::error::FastCryptoResult;
-use fastcrypto::groups::bls12381;
-use fastcrypto_tbls::dkg_v1;
-use fastcrypto_zkp::bn254::zk_login::{JwkId, JWK};
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
-use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
-use sui_types::base_types::{
-    ConciseableName, EpochId, ObjectID, ObjectRef, SequenceNumber, SuiAddress, TransactionDigest,
-};
-use sui_types::digests::ConsensusCommitDigest;
+use sui_types::base_types::{ConciseableName, ObjectID};
 pub use sui_types::messages_consensus::{AuthorityIndex, TimestampMs, TransactionIndex};
 
 // todo(omersadika): remove that and import from sui_types::messages_consensus once it u64
