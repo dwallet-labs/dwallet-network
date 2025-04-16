@@ -303,8 +303,6 @@ pub struct AuthorityPerEpochStore {
     parent_path: PathBuf,
     db_options: Option<Options>,
 
-    /// In-memory cache of the content from the reconfig_state db table.
-    reconfig_state_mem: RwLock<ReconfigState>,
     consensus_notify_read: NotifyRead<SequencedConsensusTransactionKey, ()>,
 
     // Subscribers will get notified when a transaction is executed via checkpoint execution.
