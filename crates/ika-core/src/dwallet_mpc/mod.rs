@@ -145,6 +145,17 @@ pub(crate) fn session_info_from_event(
             )?))
         }
         t if t
+            == &DWalletMPCSuiEvent::<DWalletDecryptionKeyReshareRequestEvent>::type_(
+                packages_config,
+            ) =>
+        {
+            let deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent> =
+                deserialize_event_or_dynamic_field(&event.contents)?;
+            Ok(Some(
+                reshare::network_decryption_key_reshare_secp256k1_session_info(deserialized_event),
+            ))
+        }
+        t if t
             == &DWalletMPCSuiEvent::<StartEncryptedShareVerificationEvent>::type_(
                 packages_config,
             ) =>

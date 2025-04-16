@@ -65,7 +65,7 @@ use tempfile::tempdir;
 use tokio::runtime::Runtime;
 use tracing::info;
 
-const DEFAULT_EPOCH_DURATION_MS: u64 = 60_000;
+const DEFAULT_EPOCH_DURATION_MS: u64 = 120_000;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Parser)]
