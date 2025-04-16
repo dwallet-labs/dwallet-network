@@ -31,7 +31,7 @@ use sui_json_rpc_types::SuiEvent;
 use sui_macros::fail_point_async;
 use sui_types::base_types::ObjectID;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{CallArg, ObjectArg, Transaction, TransactionKind};
+use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
 use tokio::{
@@ -298,8 +298,10 @@ where
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
         info!("Running `process_mid_epoch()`");
-        let (_gas_coin, gas_obj_ref, _owner) =
-            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -328,7 +330,7 @@ where
             sui_notifier.sui_address,
             ptb.finish(),
             sui_client,
-            vec![gas_obj_ref],
+            vec![*gas_coin],
             &sui_notifier.sui_key,
         )
         .await;
@@ -347,8 +349,10 @@ where
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
         info!("Process `lock_last_active_session_sequence_number()`");
-        let (_gas_coin, gas_obj_ref, _owner) =
-            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -382,7 +386,7 @@ where
             sui_notifier.sui_address,
             ptb.finish(),
             sui_client,
-            vec![gas_obj_ref],
+            vec![*gas_coin],
             &sui_notifier.sui_key,
         )
         .await;
@@ -401,8 +405,10 @@ where
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
         info!("Running `process_request_advance_epoch()`");
-        let (_gas_coin, gas_obj_ref, _owner) =
-            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -436,7 +442,7 @@ where
             sui_notifier.sui_address,
             ptb.finish(),
             sui_client,
-            vec![gas_obj_ref],
+            vec![*gas_coin],
             &sui_notifier.sui_key,
         )
         .await;
@@ -458,10 +464,35 @@ where
         sui_client: &Arc<SuiClient<C>>,
         _metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
-        let (_gas_coin, gas_obj_ref, _owner) =
-            sui_client.get_gas_data(sui_notifier.gas_object_ref.0).await;
-
+        
         let mut ptb = ProgrammableTransactionBuilder::new();
+
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        if gas_coins.len() > 1 {
+            info!("More than one gas coin was found, merging them into one gas coin.");
+            let coins: IkaResult<Vec<_>> = gas_coins
+                .iter()
+                .skip(1)
+                .map(|c| {
+                    ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
+                        .map_err(|e| {
+                            IkaError::SuiConnectorInternalError(format!(
+                                "error merging coin ProgrammableTransactionBuilder::input: {e}"
+                            ))
+                        })
+                })
+                .collect();
+
+            let coins = coins?;
+
+            ptb.command(sui_types::transaction::Command::MergeCoins(
+                Argument::GasCoin,
+                coins,
+            ));
+        }
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
 
@@ -495,11 +526,12 @@ where
             ))
         })?;
 
+
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
             ptb.finish(),
             sui_client,
-            vec![gas_obj_ref],
+            vec![*gas_coin],
             &sui_notifier.sui_key,
         )
         .await;
