@@ -179,6 +179,7 @@ impl ConsensusTransaction {
         message: Vec<u8>,
         session_id: ObjectID,
         round_number: usize,
+        session_sequence_number: u64,
     ) -> Vec<Self> {
         // This size is arbitrary and might be changed in the future.
         let messages = MPCMessageBuilder::split(message, 120 * 1024);
@@ -200,6 +201,7 @@ impl ConsensusTransaction {
                         authority,
                         round_number,
                         session_id: session_id.clone(),
+                        session_sequence_number,
                     }),
                 }
             })

@@ -424,11 +424,13 @@ fn network_dkg_secp256k1_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Secp256k1,
             deserialized_event,
         ),
+        is_immediate: true,
     }
 }
 
@@ -436,11 +438,13 @@ fn network_dkg_ristretto_session_info(
     deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent>,
 ) -> SessionInfo {
     SessionInfo {
+        sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Ristretto,
             deserialized_event,
         ),
+        is_immediate: true,
     }
 }
 

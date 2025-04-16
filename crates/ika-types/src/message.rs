@@ -110,7 +110,6 @@ pub struct Secp256K1NetworkDKGOutputSlice {
     pub public_output: Vec<u8>,
     pub key_shares: Vec<u8>,
     pub is_last: bool,
-    pub session_sequence_number: u64,
 }
 
 // Note: the order of these fields and the number must correspond to the Move code in

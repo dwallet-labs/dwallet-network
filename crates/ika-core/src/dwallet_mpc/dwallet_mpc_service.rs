@@ -4,16 +4,22 @@
 //! and forward them to the [`DWalletMPCManager`].
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::session_info_from_event;
+use crate::epoch::reconfiguration::ReconfigurationInitiator;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
-use ika_sui_client::SuiBridgeClient;
+use ika_sui_client::{SuiBridgeClient, SuiClient};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
+use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
+use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
+use ika_types::sui::DWalletCoordinatorInner;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::{Duration, Instant, SystemTime};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::EpochId;
 use sui_types::event::EventID;
@@ -21,6 +27,7 @@ use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
 use tokio::task::yield_now;
+use tokio::time;
 use tracing::{error, info, warn};
 use typed_store::Map;
 
@@ -44,6 +51,26 @@ impl DWalletMPCService {
             epoch_id: epoch_store.epoch(),
             notify: Arc::new(Notify::new()),
             exit,
+        }
+    }
+
+    async fn update_last_session_to_complete_in_current_epoch(&self, sui_client: &SuiBridgeClient) {
+        let system_inner = sui_client.get_system_inner_until_success().await;
+        if let Some(dwallet_coordinator_id) = system_inner
+            .into_init_version_for_tooling()
+            .dwallet_2pc_mpc_secp256k1_id
+        {
+            let coordinator_state = sui_client
+                .get_dwallet_coordinator_inner_until_success(dwallet_coordinator_id)
+                .await;
+            match coordinator_state {
+                DWalletCoordinatorInner::V1(inner_state) => {
+                    let mut dwallet_mpc_manager = self.epoch_store.get_dwallet_mpc_manager().await;
+                    dwallet_mpc_manager.update_last_session_to_complete_in_current_epoch(
+                        inner_state.last_session_to_complete_in_current_epoch,
+                    );
+                }
+            }
         }
     }
 
@@ -96,7 +123,9 @@ impl DWalletMPCService {
                 }
                 Ok(false) => (),
             };
-            tokio::time::sleep(tokio::time::Duration::from_millis(READ_INTERVAL_MS)).await;
+            tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
+            self.update_last_session_to_complete_in_current_epoch(&sui_client)
+                .await;
             if let Err(e) = self.read_events().await {
                 error!("failed to handle dWallet MPC events: {}", e);
             }

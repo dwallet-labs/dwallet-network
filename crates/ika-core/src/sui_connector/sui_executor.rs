@@ -1,9 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-//! The SuiExecutor module handles executing process_checkpoint_message
-//! on Sui blockchain on `ika_system` package.
-
+//! The SuiExecutor module handles executing transactions
+//! on Sui blockchain for `ika_system` package.
 use crate::checkpoints::CheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
@@ -21,8 +20,9 @@ use ika_types::message::Secp256K1NetworkDKGOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::{
-    SystemInner, SystemInnerTrait, PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME,
-    SYSTEM_MODULE_NAME,
+    DWalletCoordinatorInner, SystemInner, SystemInnerTrait,
+    PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_ADVANCE_EPOCH_FUNCTION_NAME,
+    REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use itertools::Itertools;
 use mysten_metrics::spawn_logged_monitored_task;
@@ -76,6 +76,111 @@ where
         }
     }
 
+    /// Checks whether `process_mid_epoch`, `lock_last_active_session_sequence_number`, or
+    /// `request_advance_epoch` can be called, and calls them if so.
+    ///
+    /// Anyone can call these functions based on the epoch and Sui's clock times.
+    ///
+    /// We don't use Sui's previous epoch switch mechanism as it assumes checkpoints are
+    /// being created all the time, and in Ika,
+    /// checkpoints are created only when there are new completed MPC sessions to write to Sui.
+    async fn run_epoch_switch(
+        &self,
+        sui_notifier: &SuiNotifier,
+        ika_system_state_inner: &SystemInner,
+    ) {
+        let Ok(clock) = self.sui_client.get_clock().await else {
+            error!("failed to get clock when running epoch switch");
+            return;
+        };
+        let Some(dwallet_2pc_mpc_secp256k1_id) =
+            ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+        else {
+            error!("failed to get `dwallet_2pc_mpc_secp256k1_id` when running epoch switch");
+            return;
+        };
+        let SystemInner::V1(system_inner_v1) = &ika_system_state_inner;
+
+        let mid_epoch_time = ika_system_state_inner.epoch_start_timestamp_ms()
+            + (ika_system_state_inner.epoch_duration_ms() / 2);
+        let next_epoch_committee_is_empty = system_inner_v1
+            .validators
+            .next_epoch_active_committee
+            .is_none();
+        if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
+            info!("Calling `process_mid_epoch()`");
+            if let Err(e) =
+                Self::process_mid_epoch(self.ika_system_package_id, &sui_notifier, &self.sui_client)
+                    .await
+            {
+                error!("`process_mid_epoch()` failed: {:?}", e);
+            } else {
+                info!("`process_mid_epoch()` successful");
+            }
+        }
+
+        let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
+            .sui_client
+            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
+            .await
+        else {
+            error!("failed to get dwallet coordinator inner when running epoch switch");
+            return;
+        };
+
+        // The Epoch was finished.
+        let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
+            + ika_system_state_inner.epoch_duration_ms();
+        let epoch_not_locked = !coordinator.locked_last_session_to_complete_in_current_epoch;
+        if clock.timestamp_ms > epoch_finish_time && epoch_not_locked {
+            info!("Calling `lock_last_active_session_sequence_number()`");
+            if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
+                self.ika_system_package_id,
+                dwallet_2pc_mpc_secp256k1_id,
+                &sui_notifier,
+                &self.sui_client,
+            )
+            .await
+            {
+                error!(
+                    "failed to lock last active session sequence number: {:?}",
+                    e
+                );
+            } else {
+                info!("Successfully locked last active session sequence number");
+            }
+        }
+
+        // Check if we can advance the epoch.
+        let all_epoch_sessions_finished = coordinator.number_of_completed_sessions
+            == coordinator.last_session_to_complete_in_current_epoch;
+        let all_immediate_sessions_completed = coordinator.started_immediate_sessions_count
+            == coordinator.completed_immediate_sessions_count;
+        let next_epoch_committee_exists = system_inner_v1
+            .validators
+            .next_epoch_active_committee
+            .is_some();
+        if coordinator.locked_last_session_to_complete_in_current_epoch
+            && all_epoch_sessions_finished
+            && all_immediate_sessions_completed
+            && next_epoch_committee_exists
+        {
+            info!("Calling `process_request_advance_epoch()`");
+            if let Err(e) = Self::process_request_advance_epoch(
+                self.ika_system_package_id,
+                dwallet_2pc_mpc_secp256k1_id,
+                &sui_notifier,
+                &self.sui_client,
+            )
+            .await
+            {
+                error!("failed to process request advance epoch: {:?}", e);
+            } else {
+                info!("Successfully processed request advance epoch");
+            }
+        }
+    }
+
     pub async fn run_epoch(
         &self,
         epoch: EpochId,
@@ -121,6 +226,8 @@ where
                 .unwrap_or(0);
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
+                self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
+                    .await;
                 if let Ok(Some(checkpoint_message)) = self
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
@@ -191,6 +298,168 @@ where
         slices
     }
 
+    async fn process_mid_epoch(
+        ika_system_package_id: ObjectID,
+        sui_notifier: &SuiNotifier,
+        sui_client: &Arc<SuiClient<C>>,
+    ) -> IkaResult<()> {
+        info!("Running `process_mid_epoch()`");
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
+
+        let mut ptb = ProgrammableTransactionBuilder::new();
+
+        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
+        let clock_arg = sui_client.get_clock_arg_must_succeed().await;
+
+        let args = vec![
+            CallArg::Object(ika_system_state_arg),
+            CallArg::Object(clock_arg),
+        ];
+
+        ptb.move_call(
+            ika_system_package_id,
+            SYSTEM_MODULE_NAME.into(),
+            REQUEST_MID_EPOCH_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        )
+        .map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!(
+                "failed on ProgrammableTransactionBuilder::move_call: {e}"
+            ))
+        })?;
+
+        let transaction = super::build_sui_transaction(
+            sui_notifier.sui_address,
+            ptb.finish(),
+            sui_client,
+            vec![*gas_coin],
+            &sui_notifier.sui_key,
+        )
+        .await;
+
+        sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn lock_last_session_to_complete_in_current_epoch(
+        ika_system_package_id: ObjectID,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        sui_notifier: &SuiNotifier,
+        sui_client: &Arc<SuiClient<C>>,
+    ) -> IkaResult<()> {
+        info!("Process `lock_last_active_session_sequence_number()`");
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
+
+        let mut ptb = ProgrammableTransactionBuilder::new();
+
+        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
+        let clock_arg = sui_client.get_clock_arg_must_succeed().await;
+
+        let dwallet_2pc_mpc_secp256k1_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+            .await;
+
+        let args = vec![
+            CallArg::Object(ika_system_state_arg),
+            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(clock_arg),
+        ];
+
+        ptb.move_call(
+            ika_system_package_id,
+            SYSTEM_MODULE_NAME.into(),
+            REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        )
+        .map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!(
+                "failed on ProgrammableTransactionBuilder::move_call: {e}"
+            ))
+        })?;
+
+        let transaction = super::build_sui_transaction(
+            sui_notifier.sui_address,
+            ptb.finish(),
+            sui_client,
+            vec![*gas_coin],
+            &sui_notifier.sui_key,
+        )
+        .await;
+
+        sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn process_request_advance_epoch(
+        ika_system_package_id: ObjectID,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        sui_notifier: &SuiNotifier,
+        sui_client: &Arc<SuiClient<C>>,
+    ) -> IkaResult<()> {
+        info!("Running `process_request_advance_epoch()`");
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
+
+        let mut ptb = ProgrammableTransactionBuilder::new();
+
+        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
+        let clock_arg = sui_client.get_clock_arg_must_succeed().await;
+
+        let dwallet_2pc_mpc_secp256k1_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+            .await;
+
+        let args = vec![
+            CallArg::Object(ika_system_state_arg),
+            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(clock_arg),
+        ];
+
+        ptb.move_call(
+            ika_system_package_id,
+            SYSTEM_MODULE_NAME.into(),
+            REQUEST_ADVANCE_EPOCH_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        )
+        .map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!(
+                "failed on ProgrammableTransactionBuilder::move_call {e}"
+            ))
+        })?;
+
+        let transaction = super::build_sui_transaction(
+            sui_notifier.sui_address,
+            ptb.finish(),
+            sui_client,
+            vec![*gas_coin],
+            &sui_notifier.sui_key,
+        )
+        .await;
+
+        sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        Ok(())
+    }
+
     async fn handle_execution_task(
         ika_system_package_id: ObjectID,
         dwallet_2pc_mpc_secp256k1_id: ObjectID,
@@ -201,9 +470,10 @@ where
         sui_client: &Arc<SuiClient<C>>,
         _metrics: &Arc<SuiConnectorMetrics>,
     ) -> IkaResult<()> {
-        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+
         let mut ptb = ProgrammableTransactionBuilder::new();
 
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         if gas_coins.len() > 1 {
             info!("More than one gas coin was found, merging them into one gas coin.");
             let coins: IkaResult<Vec<_>> = gas_coins
@@ -228,7 +498,7 @@ where
         }
         let gas_coin = gas_coins
             .first()
-            .ok_or_else(|| IkaError::SuiConnectorInternalError("No gas coin found".to_string()))?;
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
 

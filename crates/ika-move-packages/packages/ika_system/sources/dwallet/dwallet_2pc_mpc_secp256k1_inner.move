@@ -48,12 +48,29 @@ fun copy_table_vec(dest: &mut TableVec<vector<u8>>, src: &TableVec<vector<u8>>) 
 
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
+public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
+    self.locked_last_session_to_complete_in_current_epoch = true;
+}
+
 public struct DWalletCoordinatorInner has store {
     current_epoch: u64,
     sessions: ObjectTable<u64, DWalletSession>,
     session_start_events: Bag,
-    first_session_sequence_number: u64,
+    number_of_completed_sessions: u64,
+    started_immediate_sessions_count: u64,
+    completed_immediate_sessions_count: u64,
+    /// The last session sequence number that an event was emitted for.
+    /// i.e, the user requested this session, and the event was emitted for it.
     next_session_sequence_number: u64,
+    /// The last MPC session to process in the current epoch.
+    /// Validators should complete every session they start before switching epochs.
+    last_session_to_complete_in_current_epoch: u64,
+    /// Denotes wether the `last_session_to_complete_in_current_epoch` field is locked or not.
+    /// This field gets locked before performing the epoch switch.
+    locked_last_session_to_complete_in_current_epoch: bool,
+    /// The maximum number of active MPC sessions Ika nodes may run during an epoch.
+    /// Validators should complete every session they start before switching epochs.
+    max_active_sessions_buffer: u64,
     // TODO: change it to versioned
     /// The key is the ID of `DWallet`.
     dwallets: ObjectTable<ID, DWallet>,
@@ -735,8 +752,12 @@ public(package) fun create_dwallet_coordinator_inner(
         current_epoch,
         sessions: object_table::new(ctx),
         session_start_events: bag::new(ctx),
-        first_session_sequence_number: 0,
+        number_of_completed_sessions: 0,
         next_session_sequence_number: 0,
+        last_session_to_complete_in_current_epoch: 0,
+        // TODO (#856): Allow configuring the max_active_session_buffer field
+        max_active_sessions_buffer: 100,
+        locked_last_session_to_complete_in_current_epoch: false,
         dwallets: object_table::new(ctx),
         dwallet_network_decryption_keys: object_table::new(ctx),
         encryption_keys: object_table::new(ctx),
@@ -748,6 +769,8 @@ public(package) fun create_dwallet_coordinator_inner(
         previous_committee: bls_committee::empty(),
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: option::none(),
+        completed_immediate_sessions_count: 0,
+        started_immediate_sessions_count: 0,
         extra_fields: bag::new(ctx),
     }
 }
@@ -766,11 +789,11 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         id,
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         current_epoch_shares: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         next_epoch_shares: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         previous_epoch_shares: table_vec::empty(ctx),
         public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
@@ -778,7 +801,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
     });
     let mut zero_ika = coin::zero<IKA>(ctx);
     let mut zero_sui = coin::zero<SUI>(ctx);
-    event::emit(self.charge_and_create_current_epoch_dwallet_event(
+    event::emit(self.charge_and_create_immediate_dwallet_event(
         dwallet_network_decryption_key_id,
         dwallet_pricing::zero(),
         &mut zero_ika,
@@ -799,10 +822,9 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     public_output: vector<u8>,
     key_shares: vector<u8>,
     is_last: bool,
-    session_sequence_number: u64
 ) {
     if (is_last) {
-        self.remove_session_and_charge<DWalletNetworkDKGDecryptionKeyRequestEvent>(session_sequence_number);
+        self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.public_output.push_back(public_output);
@@ -856,6 +878,8 @@ public(package) fun advance_epoch(
     self: &mut DWalletCoordinatorInner,
     next_committee: BlsCommittee
 ) {
+    self.locked_last_session_to_complete_in_current_epoch = false;
+    self.update_last_session_to_complete_in_current_epoch();
     self.current_epoch = self.current_epoch + 1;
     self.previous_committee = self.active_committee;
     self.active_committee = next_committee;
@@ -890,7 +914,6 @@ fun validate_active_and_get_public_output(
     }
 }
 
-#[allow(dead_code, unused_mut_parameter, unused_variable)]
 fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
@@ -925,6 +948,46 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
+    self.update_last_session_to_complete_in_current_epoch();
+
+    event
+}
+
+fun charge_and_create_immediate_dwallet_event<E: copy + drop + store>(
+    self: &mut DWalletCoordinatorInner,
+    dwallet_network_decryption_key_id: ID,
+    pricing: PricingPerOperation,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
+    event_data: E,
+    ctx: &mut TxContext,
+): DWalletEvent<E> {
+    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
+
+    let computation_fee_charged_ika = payment_ika.split(pricing.computation_ika(), ctx).into_balance();
+
+    let consensus_validation_fee_charged_ika = payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance();
+    let gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
+
+    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
+    dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
+    self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
+    self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+    self.started_immediate_sessions_count = self.started_immediate_sessions_count + 1;
+
+    let event = DWalletEvent {
+        epoch: self.current_epoch,
+        session_sequence_number: self.next_session_sequence_number,
+        session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+        event_data,
+    };
+
+    // This special logic is here to allow the immediate session have a unique session sequence number on the one hand,
+    // yet ignore (by ignoring lock) it when deciding the last session to complete in the current epoch,
+    // as immediate sessions are special sessions that must get completed in the current epoch.
+    self.next_session_sequence_number = self.next_session_sequence_number + 1;
+    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
+    self.last_session_to_complete_in_current_epoch = self.last_session_to_complete_in_current_epoch + 1;
 
     event
 }
@@ -1130,8 +1193,35 @@ public(package) fun request_dwallet_dkg_first_round(
     dwallet_cap
 }
 
+/// Updates the `last_session_to_complete_in_current_epoch` field.
+/// We do this to ensure that the last session to complete in the current epoch is equal
+/// to the desired completed sessions count.
+/// This is part of the epoch switch logic.
+fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinatorInner) {
+    if (self.locked_last_session_to_complete_in_current_epoch) {
+        return
+    };
+    let new_last_session_to_complete_in_current_epoch = (
+        self.number_of_completed_sessions + self.max_active_sessions_buffer
+    ).min(
+        self.next_session_sequence_number - 1,
+    );
+    if (self.last_session_to_complete_in_current_epoch >= new_last_session_to_complete_in_current_epoch) {
+        return
+    };
+    self.last_session_to_complete_in_current_epoch = new_last_session_to_complete_in_current_epoch;
+}
+
+public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinatorInner): bool {
+    return self.locked_last_session_to_complete_in_current_epoch &&
+        self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
+        // This is for special sessions such as Network DKG and Reconfiguration.
+        self.completed_immediate_sessions_count == self.started_immediate_sessions_count
+}
+
 fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
-    self.first_session_sequence_number = self.first_session_sequence_number + 1;
+    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
+    self.update_last_session_to_complete_in_current_epoch();
     let session = self.sessions.remove(session_sequence_number);
     let DWalletSession {
         computation_fee_charged_ika,
@@ -2211,9 +2301,9 @@ fun process_checkpoint_message(
                     let end_of_epch_message_type = bcs_body.peel_vec_length();
                     // AdvanceEpoch
                     if(end_of_epch_message_type == 0) {
-                        let _new_epoch = bcs_body.peel_u64();
-                        let _next_protocol_version = bcs_body.peel_u64();
-                        let _epoch_start_timestamp_ms = bcs_body.peel_u64();
+                        bcs_body.peel_u64();
+                        bcs_body.peel_u64();
+                        bcs_body.peel_u64();
                     };
                     i = i + 1;
                 };
@@ -2294,8 +2384,7 @@ fun process_checkpoint_message(
                 let public_output = bcs_body.peel_vec_u8();
                 let key_shares = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                let session_sequence_number = bcs_body.peel_u64();
-                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last, session_sequence_number);
+                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
             };
         i = i + 1;
     };

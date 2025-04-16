@@ -265,6 +265,9 @@ ECDSASignState
 copy_table_vec
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+lock_last_active_session_sequence_number
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 create_dwallet_coordinator_inner
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
@@ -298,6 +301,9 @@ validate_active_and_get_public_output
 charge_and_create_current_epoch_dwallet_event
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+charge_and_create_immediate_dwallet_event
+	fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 get_active_dwallet_and_public_output
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
@@ -320,6 +326,12 @@ is_supported_hash_scheme
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 request_dwallet_dkg_first_round
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+update_last_session_to_complete_in_current_epoch
+	fun
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+all_current_epoch_sessions_completed
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 remove_session_and_charge
@@ -461,10 +473,10 @@ migrate
 	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
 inner_mut
-	fun
+	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
 inner
-	fun
+	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
 ValidatorCap
 	public struct
@@ -1141,6 +1153,9 @@ SystemCheckpointInfoEvent
 create
 	public(package) fun
 	0x0::system_inner_v1
+advance_network_keys
+	public(package) fun
+	0x0::system_inner_v1
 create_system_parameters
 	public(package) fun
 	0x0::system_inner_v1
@@ -1309,6 +1324,9 @@ authorize_update_message
 commit_upgrade
 	public(package) fun
 	0x0::system_inner_v1
+epoch_duration_ms
+	public(package) fun
+	0x0::system_inner_v1
 System
 	public struct
 	0x0::system
@@ -1445,6 +1463,15 @@ process_checkpoint_message_by_cap
 	public fun
 	0x0::system
 process_checkpoint_message_by_quorum
+	public fun
+	0x0::system
+request_reconfig_mid_epoch
+	public fun
+	0x0::system
+request_lock_epoch_sessions
+	public fun
+	0x0::system
+request_advance_epoch
 	public fun
 	0x0::system
 request_dwallet_network_decryption_key_dkg_by_cap

@@ -30,8 +30,8 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MPCSessionMessagesCollector,
-    MPCSessionSpecificState, MaliciousReport, PresignSessionState, SessionInfo, SignIASessionState,
-    StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
+    MaliciousReport, PresignSessionState, SessionInfo, StartEncryptedShareVerificationEvent,
+    StartPresignFirstRoundEvent,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
@@ -81,14 +81,11 @@ pub(super) struct DWalletMPCSession {
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
     pub(super) pending_quorum_for_highest_round_number: usize,
-    /// Contains a state specific to the session's protocol,
-    /// i.e., presign specific state in a presign session,
-    /// or sign specific state in a sign session.
-    pub(super) session_specific_state: Option<MPCSessionSpecificState>,
     party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
+    pub(crate) sequence_number: u64,
 }
 
 impl DWalletMPCSession {
@@ -101,6 +98,7 @@ impl DWalletMPCSession {
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         mpc_event_data: Option<MPCEventData>,
+        sequence_number: u64,
     ) -> Self {
         Self {
             status,
@@ -112,9 +110,9 @@ impl DWalletMPCSession {
             pending_quorum_for_highest_round_number: 0,
             party_id,
             weighted_threshold_access_structure,
-            session_specific_state: None,
             mpc_event_data,
             messages_collector: MPCSessionMessagesCollector::new(),
+            sequence_number,
         }
     }
 
@@ -174,7 +172,7 @@ impl DWalletMPCSession {
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
-                if !malicious_parties.is_empty() || self.is_verifying_sign_ia_report() {
+                if !malicious_parties.is_empty() {
                     self.report_malicious_actors(
                         tokio_runtime_handle,
                         malicious_parties,
@@ -227,49 +225,7 @@ impl DWalletMPCSession {
         }
     }
 
-    /// Returns true if the session is still verifying that a Start Sign Identifiable Report
-    /// message is valid; false otherwise.
-    /// The Sign Identifiable Abort protocol differs from other protocols as,
-    /// besides verifying that the output is valid, we must also verify that the malicious report,
-    /// which caused all other validators to spend extra resources, was honest.
-    pub(crate) fn is_verifying_sign_ia_report(&self) -> bool {
-        let Some(MPCSessionSpecificState::Sign(sign_state)) = &self.session_specific_state else {
-            return false;
-        };
-        sign_state.verified_malicious_report.is_none()
-    }
-
-    /// Starts the Sign-Identifiable Abort protocol if needed.
-    ///
-    /// In the aggregated signing protocol, a single malicious report is enough
-    /// to trigger the Sign-Identifiable Abort protocol.
-    /// In the Sign-Identifiable Abort protocol, each validator runs the final step,
-    /// agreeing on the malicious parties in the session and
-    /// removing their messages before the signing session continues as usual.
-    pub(crate) fn check_for_sign_ia_start(
-        &mut self,
-        reporting_authority: AuthorityName,
-        report: MaliciousReport,
-    ) {
-        let Some(mpc_event_data) = &self.mpc_event_data else {
-            // An event has not yet received for this session, so we cannot start the sign IA protocol.
-            return;
-        };
-        if matches!(
-            mpc_event_data.init_protocol_data,
-            MPCProtocolInitData::Sign(..)
-        ) && self.status == MPCSessionStatus::Active
-            && self.session_specific_state.is_none()
-        {
-            self.session_specific_state = Some(MPCSessionSpecificState::Sign(SignIASessionState {
-                start_ia_flow_malicious_report: report,
-                initiating_ia_authority: reporting_authority,
-                verified_malicious_report: None,
-            }))
-        }
-    }
-
-    /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
+    /// In the Sign Identifiable Abort protocol, each validator sends a malicious report, even
     /// if no malicious actors are found. This is necessary to reach agreement on a malicious report
     /// and to punish the validator who started the Sign IA report if they sent a faulty report.
     fn report_malicious_actors(
@@ -441,6 +397,9 @@ impl DWalletMPCSession {
                     malicious_parties: vec![],
                 })
             }
+            _ => {
+                unreachable!("Unsupported MPC protocol type")
+            }
         }
     }
 
@@ -455,6 +414,7 @@ impl DWalletMPCSession {
             message,
             self.session_id.clone(),
             self.pending_quorum_for_highest_round_number,
+            self.sequence_number,
         ))
     }
 
@@ -472,8 +432,10 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             output,
             SessionInfo {
+                sequence_number: self.sequence_number,
                 session_id: self.session_id.clone(),
                 mpc_round: mpc_event_data.init_protocol_data.clone(),
+                is_immediate: false,
             },
         ))
     }

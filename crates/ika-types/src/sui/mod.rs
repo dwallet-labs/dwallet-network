@@ -65,6 +65,10 @@ pub const REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME: &IdentStr =
     ident_str!("request_remove_validator");
 pub const PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME: &IdentStr =
     ident_str!("process_checkpoint_message_by_quorum");
+pub const REQUEST_MID_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("request_reconfig_mid_epoch");
+pub const REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME: &IdentStr =
+    ident_str!("request_lock_epoch_sessions");
+pub const REQUEST_ADVANCE_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("request_advance_epoch");
 pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &IdentStr =
     ident_str!("request_dwallet_network_decryption_key_dkg_by_cap");
 
