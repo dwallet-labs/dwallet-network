@@ -35,6 +35,7 @@ use ika_types::messages_dwallet_mpc::{
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
+use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -136,6 +137,7 @@ impl DWalletMPCSession {
                 malicious_parties,
                 message,
             }) => {
+                println!("round number: {:?}", self.serialized_full_messages.len());
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
@@ -163,6 +165,7 @@ impl DWalletMPCSession {
                 private_output: _,
                 public_output,
             }) => {
+                println!("public output length: {}", public_output.len());
                 info!(
                     // Safe to unwrap as advance can only be called after the event is received.
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
@@ -397,7 +400,25 @@ impl DWalletMPCSession {
                     malicious_parties: vec![],
                 })
             }
-            MPCProtocolInitData::DecryptionKeyReshare(_) => todo!(),
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                let public_input = bcs::from_bytes(public_input)?;
+                let decryption_shares_primes = mpc_event_data.decryption_share.iter().map(|(party_id, share)| {
+                    (*party_id, share.decryption_key_share)
+                }).collect::<HashMap<_, _>>();
+                crate::dwallet_mpc::advance_and_serialize::<ReshareSecp256k1Party>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.serialized_full_messages.clone(),
+                    public_input,
+                    (bcs::from_bytes(
+                        &mpc_event_data
+                            .private_input
+                            .clone()
+                            .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
+                    )? , decryption_shares_primes),
+                )
+            }
             _ => {
                 unreachable!("Unsupported MPC protocol type")
             }

@@ -140,14 +140,12 @@ public struct DWalletNetworkDecryptionKey has key, store {
     dwallet_network_decryption_key_cap_id: ID,
     current_epoch: u64,
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    current_epoch_shares: table_vec::TableVec<vector<u8>>,
+    current_reconfiguration_public_output: table_vec::TableVec<vector<u8>>,
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    next_epoch_shares: table_vec::TableVec<vector<u8>>,
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    previous_epoch_shares: table_vec::TableVec<vector<u8>>,
+    next_reconfiguration_public_output: table_vec::TableVec<vector<u8>>,
 
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    public_output: table_vec::TableVec<vector<u8>>,
+    network_dkg_public_output: table_vec::TableVec<vector<u8>>,
     /// The fees paid for computation in IKA.
     computation_fee_charged_ika: Balance<IKA>,
     state: DWalletNetworkDecryptionKeyState,
@@ -156,6 +154,9 @@ public struct DWalletNetworkDecryptionKey has key, store {
 public enum DWalletNetworkDecryptionKeyState has copy, drop, store {
     AwaitingNetworkDKG,
     NetworkDKGCompleted,
+    AwaitingNetworkReconfiguration,
+    AwaitingNextEpochReconfiguration,
+    NetworkReconfigurationCompleted,
 }
 
 

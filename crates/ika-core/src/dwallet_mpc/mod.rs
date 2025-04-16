@@ -486,7 +486,13 @@ pub(crate) async fn session_input_from_event(
                             .dwallet_network_decryption_key_id,
                     )?,
                 )?,
-                None,
+                Some(bcs::to_bytes(
+                    &dwallet_mpc_manager
+                        .node_config
+                        .class_groups_key_pair_and_proof
+                        .class_groups_keypair()
+                        .decryption_key(),
+                )?),
             ))
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
