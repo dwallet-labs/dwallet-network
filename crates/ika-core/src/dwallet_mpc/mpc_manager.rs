@@ -190,6 +190,7 @@ impl DWalletMPCManager {
             }
             DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message) {
+                    // todo(itay): add data similar to the one in the `handle_event` function
                     error!("failed to handle an MPC message with error: {:?}", err);
                 }
             }
@@ -548,7 +549,7 @@ impl DWalletMPCManager {
         };
         match session.store_message(&message) {
             Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
-                info!(
+                error!(
                     session_id=?message.session_id,
                     from_authority=?message.authority,
                     receiving_authority=?self.epoch_store()?.name,
