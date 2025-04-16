@@ -988,45 +988,6 @@ fun create_immediate_dwallet_event<E: copy + drop + store>(
     event
 }
 
-fun charge_and_create_immediate_dwallet_event<E: copy + drop + store>(
-    self: &mut DWalletCoordinatorInner,
-    dwallet_network_decryption_key_id: ID,
-    pricing: PricingPerOperation,
-    payment_ika: &mut Coin<IKA>,
-    payment_sui: &mut Coin<SUI>,
-    event_data: E,
-    ctx: &mut TxContext,
-): DWalletEvent<E> {
-    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
-
-    let computation_fee_charged_ika = payment_ika.split(pricing.computation_ika(), ctx).into_balance();
-
-    let consensus_validation_fee_charged_ika = payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance();
-    let gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
-
-    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
-    self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
-    self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-    self.started_immediate_sessions_count = self.started_immediate_sessions_count + 1;
-
-    let event = DWalletEvent {
-        epoch: self.current_epoch,
-        session_sequence_number: self.next_session_sequence_number,
-        session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
-        event_data,
-    };
-
-    // This special logic is here to allow the immediate session have a unique session sequenece number on the one hand,
-    // yet ignore it when deciding the last session to complete in the current epoch, as immediate sessions
-    // are special sessions that must get completed in the current epoch.
-    self.next_session_sequence_number = self.next_session_sequence_number + 1;
-    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
-    self.last_session_to_complete_in_current_epoch = self.last_session_to_complete_in_current_epoch + 1;
-
-    event
-}
-
 fun get_active_dwallet_and_public_output(
     self: &DWalletCoordinatorInner,
     dwallet_id: ID,
