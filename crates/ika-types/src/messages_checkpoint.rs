@@ -3,34 +3,22 @@
 
 use crate::committee::{EpochId, ProtocolVersion, StakeUnit};
 use crate::crypto::{
-    default_hash, AccountKeyPair, AggregateAuthoritySignature, AuthorityName, AuthoritySignInfo,
-    AuthoritySignInfoTrait, AuthorityStrongQuorumSignInfo,
+    default_hash, AggregateAuthoritySignature, AuthoritySignInfo, AuthoritySignInfoTrait,
+    AuthorityStrongQuorumSignInfo,
 };
-use crate::digests::{Digest, MessageDigest};
 use crate::error::IkaResult;
-use crate::ika_serde::AsProtocolVersion;
-use crate::intent::{Intent, IntentMessage, IntentScope};
+use crate::intent::{Intent, IntentScope};
 use crate::message_envelope::{Envelope, Message, TrustedEnvelope, VerifiedEnvelope};
 use crate::{committee::Committee, error::IkaError};
-use anyhow::Result;
-use fastcrypto::hash::MultisetHash;
 use ika_protocol_config::ProtocolConfig;
-use once_cell::sync::OnceCell;
 use prometheus::Histogram;
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::fmt::{Debug, Display, Formatter};
-use std::slice::Iter;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use sui_types::base_types::{random_object_ref, ExecutionData, VerifiedExecutionData};
-use sui_types::crypto::{get_key_pair, RandomnessRound};
 use sui_types::effects::{TestEffectsBuilder, TransactionEffectsAPI};
-use sui_types::gas::GasCostSummary;
-use sui_types::signature::GenericSignature;
 use sui_types::storage::ReadStore;
 use sui_types::sui_serde::BigInt;
-use sui_types::sui_serde::Readable;
 use sui_types::transaction::{Transaction, TransactionData};
 use tap::TapFallible;
 use tracing::warn;
@@ -111,12 +99,6 @@ impl CheckpointMessage {
                 )
             })
             .ok();
-    }
-
-    pub fn is_last_checkpoint_of_epoch(&self) -> bool {
-        self.messages
-            .iter()
-            .any(|kind| matches!(kind, MessageKind::EndOfEpoch(_)))
     }
 }
 

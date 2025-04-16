@@ -459,6 +459,9 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+        if message.round_number == 0 {
+            return Err(DwalletMPCError::MessageForFirstMPCStep);
+        }
         let source_party_id = self
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;

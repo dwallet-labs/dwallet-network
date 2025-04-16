@@ -34,7 +34,6 @@ use sui::client_commands::{
 };
 use sui_config::{sui_config_dir, SUI_CLIENT_CONFIG, SUI_KEYSTORE_FILENAME};
 use sui_keys::keystore::{FileBasedKeystore, InMemKeystore, Keystore};
-use sui_sdk::rpc_types::{ObjectChange, SuiObjectDataOptions, SuiTransactionBlockResponseOptions};
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::SuiClient;
 
@@ -43,14 +42,7 @@ use ika_move_packages::IkaMovePackage;
 use ika_swarm::memory::Swarm;
 use ika_swarm_config::network_config::NetworkConfig;
 use ika_swarm_config::network_config_builder::ConfigBuilder;
-use ika_swarm_config::node_config_builder::FullnodeConfigBuilder;
-use ika_swarm_config::validator_initialization_config::{
-    ValidatorInitializationConfig, DEFAULT_NUMBER_OF_AUTHORITIES,
-};
-use ika_types::governance::{
-    MIN_VALIDATOR_JOINING_STAKE_NIKA, VALIDATOR_LOW_STAKE_GRACE_PERIOD,
-    VALIDATOR_LOW_STAKE_THRESHOLD_NIKA, VALIDATOR_VERY_LOW_STAKE_THRESHOLD_NIKA,
-};
+use ika_swarm_config::validator_initialization_config::DEFAULT_NUMBER_OF_AUTHORITIES;
 use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
 use ika_types::sui::System;
 use sui_keys::keystore::AccountKeystore;

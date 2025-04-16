@@ -24,9 +24,6 @@ pub struct EpochMetrics {
     /// Total amount of computation rewards in the epoch.
     pub epoch_total_computation_reward: IntGauge,
 
-    /// The interval from when mid-epoch reached to when we receive 2f+1 InitiateProcessMidEpoch messages.
-    pub epoch_initiate_process_mid_epoch_quorum_time_since_mid_epoch_reached_ms: IntGauge,
-
     // An active validator reconfigures through the following steps:
     // 1. Halt validator (a.k.a. close epoch) and stop accepting user transaction certs.
     // 2. Finishes processing all pending certificates and then send EndOfPublish message.
@@ -42,10 +39,6 @@ pub struct EpochMetrics {
     /// certificates are processed (i.e. ready to send EndOfPublish message).
     /// This is the duration of (1) through (2) above.
     pub epoch_pending_certs_processed_time_since_epoch_close_ms: IntGauge,
-
-    /// The interval from when the epoch is closed to when we receive 2f+1 EndOfPublish messages.
-    /// This is the duration of (1) through (3) above.
-    pub epoch_end_of_publish_quorum_time_since_epoch_close_ms: IntGauge,
 
     /// The interval from when the epoch is closed to when we created the last checkpoint of the
     /// epoch.
@@ -130,19 +123,9 @@ impl EpochMetrics {
                 "Total amount of computation rewards in the epoch",
                 registry
             ).unwrap(),
-            epoch_initiate_process_mid_epoch_quorum_time_since_mid_epoch_reached_ms: register_int_gauge_with_registry!(
-                "epoch_initiate_process_mid_epoch_quorum_time_since_mid_epoch_reached_ms",
-                "The interval from when mid-epoch reached to when we receive 2f+1 InitiateProcessMidEpoch messages",
-                registry
-            ).unwrap(),
             epoch_pending_certs_processed_time_since_epoch_close_ms: register_int_gauge_with_registry!(
                 "epoch_pending_certs_processed_time_since_epoch_close_ms",
                 "Time interval from when epoch was closed to when all pending certificates are processed",
-                registry
-            ).unwrap(),
-            epoch_end_of_publish_quorum_time_since_epoch_close_ms: register_int_gauge_with_registry!(
-                "epoch_end_of_publish_quorum_time_since_epoch_close_ms",
-                "Time interval from when epoch was closed to when 2f+1 EndOfPublish messages are received",
                 registry
             ).unwrap(),
             epoch_last_checkpoint_created_time_since_epoch_close_ms: register_int_gauge_with_registry!(

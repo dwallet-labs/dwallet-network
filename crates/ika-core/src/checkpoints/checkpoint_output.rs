@@ -5,10 +5,7 @@ use super::{CheckpointMetrics, CheckpointStore};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::StableSyncAuthoritySigner;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::epoch::reconfiguration::ReconfigurationInitiator;
-use crate::sui_connector::CheckpointMessageSuiNotify;
 use async_trait::async_trait;
-use fastcrypto::traits::ToFromBytes;
 use ika_types::crypto::AuthorityName;
 use ika_types::error::IkaResult;
 use ika_types::message_envelope::Message;
@@ -17,7 +14,6 @@ use ika_types::messages_checkpoint::{
     SignedCheckpointMessage, VerifiedCheckpointMessage,
 };
 use ika_types::messages_consensus::ConsensusTransaction;
-use itertools::Itertools;
 use std::sync::Arc;
 use tracing::{debug, info, instrument, trace};
 
@@ -43,8 +39,6 @@ pub struct SubmitCheckpointToConsensus<T> {
     pub sender: T,
     pub signer: StableSyncAuthoritySigner,
     pub authority: AuthorityName,
-    pub next_mid_epoch_timestamp_ms: u64,
-    pub next_reconfiguration_timestamp_ms: u64,
     pub metrics: Arc<CheckpointMetrics>,
 }
 
@@ -61,9 +55,7 @@ impl LogCheckpointOutput {
 }
 
 #[async_trait]
-impl<T: SubmitToConsensus + ReconfigurationInitiator> CheckpointOutput
-    for SubmitCheckpointToConsensus<T>
-{
+impl<T: SubmitToConsensus> CheckpointOutput for SubmitCheckpointToConsensus<T> {
     #[instrument(level = "debug", skip_all)]
     async fn checkpoint_created(
         &self,
@@ -91,9 +83,7 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> CheckpointOutput
 
         if Some(checkpoint_seq) > highest_verified_checkpoint {
             debug!(
-                "Sending checkpoint signature at sequence {checkpoint_seq} to consensus, timestamp {checkpoint_timestamp}.
-                {}ms left till end of epoch at timestamp {}",
-                self.next_reconfiguration_timestamp_ms.saturating_sub(checkpoint_timestamp), self.next_reconfiguration_timestamp_ms
+                "Sending checkpoint signature at sequence {checkpoint_seq} to consensus, timestamp {checkpoint_timestamp}."
             );
 
             let summary = SignedCheckpointMessage::new(
@@ -122,10 +112,6 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> CheckpointOutput
                 .set(checkpoint_seq as i64);
         }
 
-        if checkpoint_timestamp >= self.next_mid_epoch_timestamp_ms {
-            // initiate_process_mid_epoch is ok if called multiple times
-            self.sender.initiate_process_mid_epoch(epoch_store);
-        }
         Ok(())
     }
 }
