@@ -528,11 +528,9 @@ impl<C> ConsensusHandler<C> {
 pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
     match &transaction.kind {
         ConsensusTransactionKind::CheckpointSignature(_) => "checkpoint_signature",
-        ConsensusTransactionKind::InitiateProcessMidEpoch(_) => "initiate_process_mid_epoch",
-        ConsensusTransactionKind::EndOfPublish(_) => "end_of_publish",
-        ConsensusTransactionKind::CapabilityNotificationV1(_) => "capability_notification_v1",
         ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
         ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
+        ConsensusTransactionKind::CapabilityNotificationV1(_) => "capability_notification_v1",
         ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..) => {
             "dwallet_mpc_session_failed_with_malicious"
         }
@@ -627,27 +625,6 @@ impl SequencedConsensusTransactionKind {
             SequencedConsensusTransactionKind::System(_txn) => 0,
         }
     }
-
-    pub fn is_initiate_process_mid_epoch(&self) -> bool {
-        match self {
-            SequencedConsensusTransactionKind::External(ext) => {
-                matches!(
-                    ext.kind,
-                    ConsensusTransactionKind::InitiateProcessMidEpoch(..)
-                )
-            }
-            SequencedConsensusTransactionKind::System(_) => false,
-        }
-    }
-
-    pub fn is_end_of_publish(&self) -> bool {
-        match self {
-            SequencedConsensusTransactionKind::External(ext) => {
-                matches!(ext.kind, ConsensusTransactionKind::EndOfPublish(..))
-            }
-            SequencedConsensusTransactionKind::System(_) => false,
-        }
-    }
 }
 
 impl SequencedConsensusTransaction {
@@ -657,25 +634,6 @@ impl SequencedConsensusTransaction {
 
     pub fn key(&self) -> SequencedConsensusTransactionKey {
         self.transaction.key()
-    }
-
-    pub fn is_initiate_process_mid_epoch(&self) -> bool {
-        if let SequencedConsensusTransactionKind::External(ref transaction) = self.transaction {
-            matches!(
-                transaction.kind,
-                ConsensusTransactionKind::InitiateProcessMidEpoch(..)
-            )
-        } else {
-            false
-        }
-    }
-
-    pub fn is_end_of_publish(&self) -> bool {
-        if let SequencedConsensusTransactionKind::External(ref transaction) = self.transaction {
-            matches!(transaction.kind, ConsensusTransactionKind::EndOfPublish(..))
-        } else {
-            false
-        }
     }
 
     pub fn is_system(&self) -> bool {

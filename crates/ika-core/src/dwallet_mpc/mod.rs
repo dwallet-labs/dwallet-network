@@ -162,6 +162,7 @@ fn start_encrypted_share_verification_session_info(
         sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
+        is_immediate: false,
     }
 }
 
@@ -178,6 +179,7 @@ fn dkg_first_party_session_info(
         sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event),
+        is_immediate: false,
     })
 }
 
@@ -201,6 +203,7 @@ fn dkg_second_party_session_info(
         sequence_number: deserialized_event.session_sequence_number,
         session_id: ObjectID::from(deserialized_event.session_id),
         mpc_round: MPCProtocolInitData::DKGSecond(deserialized_event.clone()),
+        is_immediate: false,
     }
 }
 
@@ -223,6 +226,7 @@ fn presign_party_session_info(
         sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::Presign(deserialized_event),
+        is_immediate: false,
     }
 }
 
@@ -262,6 +266,7 @@ fn sign_party_session_info(deserialized_event: &DWalletMPCSuiEvent<StartSignEven
         sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::Sign(deserialized_event.clone()),
+        is_immediate: false,
     }
 }
 
@@ -272,6 +277,7 @@ fn get_verify_partial_signatures_session_info(
         sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
+        is_immediate: false,
     }
 }
 

@@ -648,9 +648,12 @@ public fun process_checkpoint_message_by_quorum(
 }
 
 /// Locks the committee of the next epoch to allow starting the reconfiguration process.
-public fun request_reconfig_mid_epoch(self: &mut System, clock: &Clock, _ctx: &TxContext) {
+public fun request_reconfig_mid_epoch(
+    self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, ctx: &mut TxContext
+) {
     let inner = self.inner_mut();
     assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms() / 2), EHaveNotReachedMidEpochTime);
+    inner.emit_start_reshare_events(dwallet_coordinator.inner_mut(), ctx);
     self.inner_mut().process_mid_epoch();
 }
 
@@ -670,6 +673,7 @@ public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DW
     assert!(inner_dwallet.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
     inner_system.advance_epoch(clock.timestamp_ms(), ctx);
     dwallet_coordinator.advance_epoch(inner_system.active_committee());
+    inner_system.advance_network_keys(dwallet_coordinator);
 }
 
 public fun request_dwallet_network_decryption_key_dkg_by_cap(
