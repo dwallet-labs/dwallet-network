@@ -27,7 +27,7 @@ const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
 
 // TODO: move to utils
-fun copy_table_vec(dest: &mut TableVec<vector<u8>>, src: &TableVec<vector<u8>>) {
+fun copy_table_vec_and_destroy(dest: &mut TableVec<vector<u8>>, src: &mut TableVec<vector<u8>>) {
     while (!dest.is_empty()) {
         dest.pop_back();
     };
@@ -43,7 +43,10 @@ fun copy_table_vec(dest: &mut TableVec<vector<u8>>, src: &TableVec<vector<u8>>) 
         };
         dest.push_back(new_vec);
         i = i + 1;
-    }
+    };
+    while (!src.is_empty()) {
+        src.pop_back();
+    };
 }
 
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
@@ -874,8 +877,8 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
     let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(cap.dwallet_network_decryption_key_id);
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
-    // todo (change status)
-    copy_table_vec(&mut dwallet_network_decryption_key.current_reconfiguration_public_output, &dwallet_network_decryption_key.next_reconfiguration_public_output);
+    dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::NetworkReconfigurationCompleted;
+    copy_table_vec_and_destroy(&mut dwallet_network_decryption_key.current_reconfiguration_public_output, &mut dwallet_network_decryption_key.next_reconfiguration_public_output);
 }
 
 public(package) fun emit_start_reshare_event(
