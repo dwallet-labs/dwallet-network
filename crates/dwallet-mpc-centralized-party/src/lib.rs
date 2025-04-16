@@ -108,6 +108,7 @@ pub fn create_dkg_output(
     key_scheme: u8,
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
+    public_output_type: NetworkDecryptionKeyOutputType,
 ) -> anyhow::Result<CentralizedDKGWasmResult> {
     let (decentralized_first_round_public_output, _): <<AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty as Party>::PublicOutput =
         bcs::from_bytes(&decentralized_first_round_public_output)
@@ -115,6 +116,7 @@ pub fn create_dkg_output(
     let public_parameters = bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
         network_decryption_key_public_output,
         key_scheme,
+        public_output_type.into(),
     )?)?;
 
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
@@ -157,6 +159,7 @@ pub fn advance_centralized_sign_party(
     presign: Vec<u8>,
     message: Vec<u8>,
     hash_type: u8,
+    public_output_type: u8,
 ) -> anyhow::Result<SignedMessage> {
     let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_public_output)?;
     let centralized_public_output = twopc_mpc::class_groups::DKGCentralizedPartyOutput::<
@@ -179,6 +182,7 @@ pub fn advance_centralized_sign_party(
             bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
                 network_decryption_key_public_output.clone(),
                 key_scheme,
+                public_output_type.into(),
             )?)?,
         ));
 
@@ -268,11 +272,13 @@ pub fn encrypt_secret_key_share_and_prove(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
     network_decryption_key_public_output: Vec<u8>,
+    public_output_type: NetworkDecryptionKeyOutputType,
 ) -> anyhow::Result<Vec<u8>> {
     let protocol_public_params: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_decryption_key_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u8,
+            public_output_type.into(),
         )?)?;
 
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<

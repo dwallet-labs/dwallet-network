@@ -9,11 +9,12 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import type { DWallet, EncryptedDWalletData } from './globals.js';
 import {
 	checkpointCreationTime,
 	delay,
+	DWallet,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
+	EncryptedDWalletData,
 	fetchCompletedEvent,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
@@ -26,6 +27,7 @@ import {
 	isMoveObject,
 	isStartSessionEvent,
 	MPCKeyScheme,
+	NetworkDecryptionKeyPublicOutputType,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 import type { Config, SharedObjectData } from './globals.ts';
@@ -66,6 +68,7 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 export async function createDWallet(
 	conf: Config,
 	networkDecryptionKeyPublicOutput: Uint8Array,
+	networkDecryptionKeyPublicOutputType: NetworkDecryptionKeyPublicOutputType,
 ): Promise<DWallet> {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
@@ -74,6 +77,7 @@ export async function createDWallet(
 		firstRoundOutputResult,
 		networkDecryptionKeyPublicOutput,
 		classGroupsSecpKeyPair,
+		networkDecryptionKeyPublicOutputType,
 	);
 	await acceptEncryptedUserShare(conf, dwalletOutput.completionEvent);
 	return {
@@ -95,6 +99,7 @@ export async function launchDKGSecondRound(
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	networkDecryptionKeyPublicOutput: Uint8Array,
 	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
+	networkDecryptionKeyPublicOutputType: NetworkDecryptionKeyPublicOutputType,
 ): Promise<SecondResult> {
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
@@ -103,6 +108,7 @@ export async function launchDKGSecondRound(
 			Uint8Array.from(firstRoundOutputResult.output),
 			// Remove the 0x prefix.
 			firstRoundOutputResult.sessionID.slice(2),
+			networkDecryptionKeyPublicOutputType,
 		);
 
 	const dWalletStateData = await getDWalletSecpState(conf);
