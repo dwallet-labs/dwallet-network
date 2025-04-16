@@ -65,7 +65,7 @@ public struct DWalletCoordinatorInner has store {
     /// The last MPC session to process in the current epoch.
     /// Validators should complete every session they start before switching epochs.
     last_session_to_complete_in_current_epoch: u64,
-    /// Denotes wether the `last_session_to_complete_in_current_epoch` field is locked or not.
+    /// Denotes weather the `last_session_to_complete_in_current_epoch` field is locked or not.
     /// This field gets locked before performing the epoch switch.
     locked_last_session_to_complete_in_current_epoch: bool,
     /// The maximum number of active MPC sessions Ika nodes may run during an epoch.
@@ -134,7 +134,7 @@ public struct DWalletNetworkDecryptionKeyCap has key, store {
 }
 
 /// `DWalletNetworkDecryptionKey` represents a network decryption key of
-/// the homomorphiclly encrypted netowrk share.
+/// the homomorphically encrypted network share.
 public struct DWalletNetworkDecryptionKey has key, store {
     id: UID,
     dwallet_network_decryption_key_cap_id: ID,
@@ -525,7 +525,7 @@ public struct EncryptedShareVerificationRequestEvent has copy, drop, store {
     /// belongs to the dWallet that its centralized
     /// secret share is being encrypted.
     /// This is not passed by the user,
-    /// but taken from the blockhain during event creation.
+    /// but taken from the blockchain during event creation.
     public_output: vector<u8>,
 
     /// The ID of the dWallet that this encrypted secret key share belongs to.
@@ -793,11 +793,11 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         id,
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         current_epoch_shares: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         next_epoch_shares: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+        // TODO: make sure to include class group type and version inside the bytes with the rust code
         previous_epoch_shares: table_vec::empty(ctx),
         public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
