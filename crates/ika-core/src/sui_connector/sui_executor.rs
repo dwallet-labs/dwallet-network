@@ -283,7 +283,7 @@ where
         // Set to 15 because the limit is up to 16 (smaller than).
         let messages = message.chunks(15 * 1024).collect_vec();
         let empty: &[u8] = &[];
-        // max_checkpoint_size_bytes is 50KB, so we split the message into 4 slices.
+        // `max_checkpoint_size_bytes` is 50KB, so we split the message into 4 slices.
         for i in 0..4 {
             // If the chunk is missing, use an empty slice, as the transaction must receive all arguments.
             let message = messages.get(i).unwrap_or(&empty).clone();
