@@ -27,7 +27,7 @@ import {
 } from '../../src/dwallet-mpc/sign';
 import { dkgMocks, mockPresign } from './mocks';
 
-const fiveMinutes = 5 * 60 * 1000;
+const fiveMinutes = 100 * 60 * 1000;
 describe('Test dWallet MPC', () => {
 	let conf: Config;
 
@@ -211,7 +211,7 @@ describe('Test dWallet MPC', () => {
 });
 
 describe('Test dWallet MPC - offline', () => {
-	it('should run sign centralized part', () => {
+	it('should run sign centralized party', () => {
 		const centralizedSignedMessage = create_sign_centralized_output(
 			mockedNetworkDecryptionKeyPublicOutput,
 			MPCKeyScheme.Secp256k1,

@@ -462,9 +462,7 @@ impl DWalletMPCSession {
         let source_party_id = self
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;
-
         let current_round = self.serialized_full_messages.len();
-
         let authority_name = self.epoch_store()?.name;
 
         match self.serialized_full_messages.get_mut(message.round_number) {
