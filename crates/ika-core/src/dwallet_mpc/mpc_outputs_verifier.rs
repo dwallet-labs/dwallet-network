@@ -67,8 +67,7 @@ pub enum OutputVerificationStatus {
     NotEnoughVotes,
     /// The output has already been verified and committed to the chain.
     /// This happens every time since all honest parties send the same output.
-    AlreadyCommitted,
-    BuildingOutput,
+    AlreadyCommitted
 }
 
 pub struct OutputVerificationResult {
