@@ -45,6 +45,7 @@ pub struct DWalletMPCOutputsVerifier {
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     output_collector: HashMap<ObjectID, MPCSessionMessagesCollector>,
+    pub(crate) number_of_completed_sessions: u64,
 }
 
 /// The data needed to manage the outputs of an MPC session.
@@ -96,6 +97,7 @@ impl DWalletMPCOutputsVerifier {
             last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
             output_collector: HashMap::new(),
+            number_of_completed_sessions: 0,
         }
     }
 
@@ -195,6 +197,7 @@ impl DWalletMPCOutputsVerifier {
             .is_quorum_reached()
         {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
+            self.number_of_completed_sessions += 1;
             return Ok(OutputVerificationResult {
                 result: OutputVerificationStatus::FirstQuorumReached(output),
                 malicious_actors: vec![],
