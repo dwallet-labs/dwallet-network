@@ -1611,8 +1611,7 @@ impl AuthorityPerEpochStore {
             OutputVerificationStatus::NotEnoughVotes => {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
-            OutputVerificationStatus::AlreadyCommitted
-            | OutputVerificationStatus::Malicious => {
+            OutputVerificationStatus::AlreadyCommitted | OutputVerificationStatus::Malicious => {
                 // Ignore this output,
                 // since there is nothing to do with it,
                 // at this stage.
