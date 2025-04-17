@@ -449,6 +449,15 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+        // TODO (#876): Set the maximum message size to the smallest size possible.
+        info!(
+            session_id=?message.session_id,
+            from_authority=?message.authority,
+            receiving_authority=?self.epoch_store()?.name,
+            crypto_round_number=?message.round_number,
+            message_size_bytes=?message.message.len(),
+            "Received DWallet mpc message",
+        );
         if message.round_number == 0 {
             return Err(DwalletMPCError::MessageForFirstMPCStep);
         }

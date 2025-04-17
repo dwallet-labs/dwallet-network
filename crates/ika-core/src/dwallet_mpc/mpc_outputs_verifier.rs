@@ -18,6 +18,7 @@ use std::hash::Hash;
 use std::sync::{Arc, Weak};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
+use tracing::info;
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -126,6 +127,14 @@ impl DWalletMPCOutputsVerifier {
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<OutputVerificationResult> {
+        // TODO (#876): Set the maximum message size to the smallest size possible.
+        info!(
+            session_id=?session_info.session_id,
+            from_authority=?origin_authority,
+            receiving_authority=?self.epoch_store()?.name,
+            output_size_bytes=?output.len(),
+            "Received DWallet mpc output",
+        );
         let epoch_store = self.epoch_store()?;
         let committee = epoch_store.committee().clone();
 
