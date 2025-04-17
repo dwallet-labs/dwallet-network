@@ -158,6 +158,32 @@ impl ConsensusTransaction {
             .collect()
     }
 
+    /// Create new consensus transactions with the message to be sent to the other MPC parties.
+    pub fn new_dwallet_mpc_message(
+        authority: AuthorityName,
+        message: Vec<u8>,
+        session_id: ObjectID,
+        round_number: usize,
+        session_sequence_number: u64,
+    ) -> Self {
+        let mut hasher = DefaultHasher::new();
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::DWalletMPCMessage(DWalletMPCMessage {
+                message: MPCMessageSlice {
+                    sequence_number: session_sequence_number,
+                    fragment: message,
+                    number_of_chunks: None,
+                },
+                authority,
+                round_number,
+                session_id: session_id.clone(),
+                session_sequence_number,
+            }),
+        }
+    }
+
     /// Create new consensus transactions with the output of the MPC session to be sent to the parties.
     pub fn new_dwallet_mpc_output(
         authority: AuthorityName,

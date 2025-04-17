@@ -124,6 +124,24 @@ impl DWalletMPCSession {
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
+    pub async fn send_big_message(&self) -> DwalletMPCResult<()> {
+        let msg = ConsensusTransaction::new_dwallet_mpc_message(
+            self.epoch_store()?.name,
+            vec![8u8; 12000 * 1024],
+            self.session_id.clone(),
+            self.pending_quorum_for_highest_round_number,
+            self.sequence_number,
+        );
+        if let Err(err) = self
+            .consensus_adapter
+            .submit_to_consensus(&vec![msg], &self.epoch_store()?)
+            .await
+        {
+            error!("failed to submit an MPC message to consensus: {:?}", err);
+        };
+        Ok(())
+    }
+
     /// Advances the MPC session and sends the advancement result to the other validators.
     /// The consensus submission logic is being spawned as a separate tokio task, as it's an IO
     /// heavy task.
@@ -146,15 +164,29 @@ impl DWalletMPCSession {
                     )?;
                 }
                 let message = self.construct_new_dwallet_mpc_messages(message)?;
+                let msg = ConsensusTransaction::new_dwallet_mpc_message(
+                    self.epoch_store()?.name,
+                    vec![8u8; 1200 * 1024],
+                    self.session_id.clone(),
+                    self.pending_quorum_for_highest_round_number,
+                    self.sequence_number,
+                );
+
                 tokio_runtime_handle.spawn(async move {
-                    for msg in message {
-                        if let Err(err) = consensus_adapter
-                            .submit_to_consensus(&vec![msg], &epoch_store)
-                            .await
-                        {
-                            error!("failed to submit an MPC message to consensus: {:?}", err);
-                        }
-                    }
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![msg], &epoch_store)
+                        .await
+                    {
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
+                    };
+                    // for msg in message {
+                    //     if let Err(err) = consensus_adapter
+                    //         .submit_to_consensus(&vec![msg], &epoch_store)
+                    //         .await
+                    //     {
+                    //         error!("failed to submit an MPC message to consensus: {:?}", err);
+                    //     }
+                    // }
                 });
                 Ok(())
             }

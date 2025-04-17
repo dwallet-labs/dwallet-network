@@ -44,6 +44,7 @@ use ika_types::messages_dwallet_mpc::{
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use rayon::ThreadPoolBuilder;
+use schemars::schema::InstanceType::Object;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -95,6 +96,7 @@ pub struct DWalletMPCManager {
     /// yet received an event for from Sui.
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
+    pub(crate) sent_itay_test: u64,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -153,6 +155,7 @@ impl DWalletMPCManager {
             pending_for_computation_order: VecDeque::new(),
             pending_for_events_order: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
+            sent_itay_test: 0,
         })
     }
 
@@ -180,9 +183,9 @@ impl DWalletMPCManager {
     }
 
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
-        if let Err(err) = self.handle_event(event.event, event.session_info).await {
-            error!("failed to handle event with error: {:?}", err);
-        }
+        // if let Err(err) = self.handle_event(event.event, event.session_info).await {
+        //     error!("failed to handle event with error: {:?}", err);
+        // }
     }
 
     pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
@@ -226,6 +229,24 @@ impl DWalletMPCManager {
     /// or perform the first step of the flow.
     /// We parallelize the advances with `Rayon` to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> IkaResult {
+        if self.sent_itay_test == 0 {
+            self.sent_itay_test = 1;
+            let new_session = DWalletMPCSession::new(
+                self.epoch_store.clone(),
+                self.consensus_adapter.clone(),
+                self.epoch_id,
+                MPCSessionStatus::Active,
+                ObjectID::random(),
+                self.party_id,
+                self.weighted_threshold_access_structure.clone(),
+                None,
+                77,
+            );
+            if let Err(err) = new_session.send_big_message().await {
+                error!("failed to send big message with error: {:?}", err);
+            }
+        }
+
         let ready_sessions_response = self.get_ready_to_advance_sessions()?;
         if !ready_sessions_response.malicious_actors.is_empty() {
             self.flag_parties_as_malicious(&ready_sessions_response.malicious_actors)?;

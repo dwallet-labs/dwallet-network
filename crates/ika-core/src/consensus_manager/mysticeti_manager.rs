@@ -148,7 +148,7 @@ impl ConsensusManagerTrait for MysticetiManager {
         }
 
         // This can only be changed for all validators together at the same epoch
-        let protocol_config = if epoch >= 0 {
+        let mut protocol_config = if epoch >= 0 {
             sui_protocol_config::ProtocolConfig::get_for_version(
                 sui_protocol_config::ProtocolVersion::new(70),
                 sui_protocol_config::Chain::Mainnet,
@@ -159,7 +159,8 @@ impl ConsensusManagerTrait for MysticetiManager {
                 sui_protocol_config::Chain::Mainnet,
             )
         };
-
+        protocol_config.set_consensus_max_transaction_size_bytes_for_testing(120000 * 1024);
+        protocol_config.set_consensus_max_transactions_in_block_bytes_for_testing(120000 * 1024);
         let authority = ConsensusAuthority::start(
             protocol_config.consensus_network(),
             own_index,
