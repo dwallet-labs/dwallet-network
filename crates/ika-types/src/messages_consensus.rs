@@ -8,7 +8,6 @@ use crate::messages_dwallet_mpc::{
 };
 use crate::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
 use byteorder::{BigEndian, ReadBytesExt};
-use dwallet_mpc_types::dwallet_mpc::{MPCMessageSlice};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Formatter};
@@ -37,7 +36,7 @@ pub enum ConsensusTransactionKey {
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
-    DWalletMPCOutput(MPCMessageSlice, ObjectID, AuthorityName),
+    DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
 }
 

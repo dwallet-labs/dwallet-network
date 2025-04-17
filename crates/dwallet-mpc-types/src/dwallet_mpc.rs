@@ -32,18 +32,6 @@ pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
 
-/// Represents a chunk of an MPC message, with metadata for reassembly.
-#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
-pub struct MPCMessageSlice {
-    /// A fragment of the original message.
-    pub fragment: MPCMessage,
-    /// The position of this chunk in the original message sequence.
-    pub sequence_number: u64,
-    /// Total number of chunks in the message, used only in the first slice.
-    pub number_of_chunks: Option<usize>,
-}
-
-
 /// Alias for an MPC public output.
 pub type MPCPublicOutput = Vec<u8>;
 

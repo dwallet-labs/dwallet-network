@@ -3,7 +3,7 @@ use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicInput,
+    DWalletMPCNetworkKeyScheme,  MPCPublicInput,
     NetworkDecryptionKeyShares, DWALLET_MPC_EVENT_STRUCT_NAME,
     START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
     START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
@@ -135,7 +135,7 @@ pub struct DWalletMPCOutputMessage {
     /// The session information of the MPC session.
     pub session_info: SessionInfo,
     /// The final value of the MPC session.
-    pub output: MPCMessageSlice,
+    pub output: Vec<u8>,
 }
 
 /// The content of the system transaction that stores the MPC session output on the chain.
