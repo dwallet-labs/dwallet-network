@@ -197,7 +197,7 @@ pub async fn request_add_validator_candidate(
     context: &mut WalletContext,
     validator_initialization_metadata: &ValidatorInfo,
     ika_system_package_id: ObjectID,
-    system_id: ObjectID,
+    ika_system_object_id: ObjectID,
     class_groups_pubkey_and_proof_obj_ref: ObjectRef,
     gas_budget: u64,
 ) -> Result<(SuiTransactionBlockResponse, ObjectID, ObjectID), anyhow::Error> {
@@ -266,7 +266,7 @@ pub async fn request_add_validator_candidate(
         REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
         args,
         gas_budget,
-        system_id,
+        ika_system_object_id,
         ika_system_package_id,
         ptb,
     )
@@ -313,8 +313,8 @@ pub async fn request_add_validator_candidate(
 pub async fn stake_ika(
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
-    system_id: ObjectID,
-    ika_coin_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    ika_supply_id: ObjectID,
     validator_id: ObjectID,
     stake_amount: u64,
     gas_budget: u64,
@@ -323,7 +323,7 @@ pub async fn stake_ika(
     let mut client = context.get_client().await?;
     let ika_supply_ref = client
         .transaction_builder()
-        .get_object_ref(ika_coin_id)
+        .get_object_ref(ika_supply_id)
         .await?;
 
     let ika_supply_id_arg =
@@ -342,7 +342,7 @@ pub async fn stake_ika(
         REQUEST_ADD_STAKE_FUNCTION_NAME,
         call_args,
         gas_budget,
-        system_id,
+        ika_system_object_id,
         ika_system_package_id,
         ptb,
     )
@@ -352,7 +352,7 @@ pub async fn stake_ika(
 pub async fn request_add_validator(
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
-    system_id: ObjectID,
+    ika_system_object_id: ObjectID,
     validator_cap_id: ObjectID,
     gas_budget: u64,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
@@ -372,7 +372,7 @@ pub async fn request_add_validator(
         REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
         call_args,
         gas_budget,
-        system_id,
+        ika_system_object_id,
         ika_system_package_id,
         ptb,
     )
@@ -382,7 +382,7 @@ pub async fn request_add_validator(
 pub async fn request_remove_validator(
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
-    system_id: ObjectID,
+    ika_system_object_id: ObjectID,
     validator_cap_id: ObjectID,
     gas_budget: u64,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
@@ -402,7 +402,7 @@ pub async fn request_remove_validator(
         REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
         call_args,
         gas_budget,
-        system_id,
+        ika_system_object_id,
         ika_system_package_id,
         ptb,
     )
@@ -415,7 +415,7 @@ async fn construct_unsigned_ika_system_txn(
     function: &'static IdentStr,
     call_args: Vec<Argument>,
     gas_budget: u64,
-    ika_system_id: ObjectID,
+    ika_system_object_id: ObjectID,
     ika_system_package_id: ObjectID,
     mut ptb: ProgrammableTransactionBuilder,
 ) -> anyhow::Result<TransactionData> {
@@ -425,7 +425,10 @@ async fn construct_unsigned_ika_system_txn(
         .get_client()
         .await?
         .read_api()
-        .get_object_with_options(ika_system_id, SuiObjectDataOptions::new().with_owner())
+        .get_object_with_options(
+            ika_system_object_id,
+            SuiObjectDataOptions::new().with_owner(),
+        )
         .await?
         .data
         .ok_or(anyhow::Error::msg("failed to get object data"))?
@@ -435,7 +438,7 @@ async fn construct_unsigned_ika_system_txn(
     };
 
     let mut args = vec![ptb.input(CallArg::Object(ObjectArg::SharedObject {
-        id: ika_system_id,
+        id: ika_system_object_id,
         initial_shared_version,
         mutable: true,
     }))?];
@@ -517,7 +520,7 @@ pub async fn call_ika_system(
     function: &'static IdentStr,
     call_args: Vec<Argument>,
     gas_budget: u64,
-    ika_system_id: ObjectID,
+    ika_system_object_id: ObjectID,
     ika_system_package_id: ObjectID,
     ptb: ProgrammableTransactionBuilder,
 ) -> anyhow::Result<SuiTransactionBlockResponse> {
@@ -528,7 +531,7 @@ pub async fn call_ika_system(
         function,
         call_args,
         gas_budget,
-        ika_system_id,
+        ika_system_object_id,
         ika_system_package_id,
         ptb,
     )

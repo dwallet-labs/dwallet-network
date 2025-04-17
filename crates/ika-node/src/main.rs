@@ -14,6 +14,7 @@ use ika_config::{Config, NodeConfig};
 use ika_core::runtime::IkaRuntimes;
 use ika_node::metrics;
 use ika_telemetry::send_telemetry_event;
+use ika_types::digests::ChainIdentifier;
 use ika_types::messages_checkpoint::CheckpointSequenceNumber;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use mysten_common::sync::async_once_cell::AsyncOnceCell;
@@ -115,6 +116,8 @@ fn main() {
 
     // let ika-node signal main to shutdown runtimes
     let (runtime_shutdown_tx, runtime_shutdown_rx) = broadcast::channel::<()>(1);
+    let chain_identifier =
+        ChainIdentifier::from(config.sui_connector_config.clone().ika_system_object_id);
 
     runtimes.ika_node.spawn(async move {
         match ika_node::IkaNode::start_async(config, registry_service, VERSION).await {
@@ -146,13 +149,9 @@ fn main() {
     });
 
     let node_once_cell_clone = node_once_cell.clone();
+
     runtimes.metrics.spawn(async move {
         let node = node_once_cell_clone.get().await;
-        let chain_identifier = match node.state().get_chain_identifier() {
-            Some(chain_identifier) => chain_identifier.to_string(),
-            None => "unknown".to_string(),
-        };
-
         info!("Ika chain identifier: {chain_identifier}");
         prometheus_registry
             .register(mysten_metrics::uptime_metric(
@@ -162,7 +161,7 @@ fn main() {
                     "fullnode"
                 },
                 VERSION,
-                chain_identifier.as_str(),
+                &chain_identifier.to_string(),
             ))
             .unwrap();
 
