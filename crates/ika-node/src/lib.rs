@@ -309,7 +309,8 @@ impl IkaNode {
         // let committee = committee_store
         //     .get_committee(&cur_epoch)?
         //     .expect("Committee of the current epoch must exist");
-        let chain_identifier = ChainIdentifier::from(config.sui_connector_config.ika_system_object_id);
+        let chain_identifier =
+            ChainIdentifier::from(config.sui_connector_config.ika_system_object_id);
 
         let epoch_start_configuration = EpochStartConfiguration::new(epoch_start_system_state)
             .expect("EpochStartConfiguration construction cannot fail");
