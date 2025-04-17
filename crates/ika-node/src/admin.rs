@@ -93,7 +93,6 @@ pub async fn run_admin_server(node: Arc<IkaNode>, port: u16, tracing_handle: Tra
             CLEAR_BUFFER_STAKE_ROUTE,
             post(clear_override_protocol_upgrade_buffer_stake),
         )
-        .route(FORCE_CLOSE_EPOCH, post(force_close_epoch))
         .route(TRACING_ROUTE, post(enable_tracing))
         .route(TRACING_RESET_ROUTE, post(reset_tracing))
         .with_state(Arc::new(app_state));
@@ -279,32 +278,6 @@ async fn set_override_protocol_upgrade_buffer_stake(
         Ok(()) => (
             StatusCode::OK,
             format!("protocol upgrade buffer stake set to '{}'\n", buffer_bps),
-        ),
-        Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
-    }
-}
-
-async fn force_close_epoch(
-    State(state): State<Arc<AppState>>,
-    epoch: Query<Epoch>,
-) -> (StatusCode, String) {
-    let Query(Epoch {
-        epoch: expected_epoch,
-    }) = epoch;
-    let epoch_store = state.node.state().load_epoch_store_one_call_per_task();
-    let actual_epoch = epoch_store.epoch();
-    if actual_epoch != expected_epoch {
-        let err = IkaError::WrongEpoch {
-            expected_epoch,
-            actual_epoch,
-        };
-        return (StatusCode::INTERNAL_SERVER_ERROR, err.to_string());
-    }
-
-    match state.node.close_epoch(&epoch_store).await {
-        Ok(()) => (
-            StatusCode::OK,
-            "close_epoch() called successfully\n".to_string(),
         ),
         Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
     }

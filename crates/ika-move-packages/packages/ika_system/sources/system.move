@@ -648,9 +648,12 @@ public fun process_checkpoint_message_by_quorum(
 }
 
 /// Locks the committee of the next epoch to allow starting the reconfiguration process.
-public fun request_reconfig_mid_epoch(self: &mut System, clock: &Clock, _ctx: &TxContext) {
+public fun request_reconfig_mid_epoch(
+    self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, ctx: &mut TxContext
+) {
     let inner = self.inner_mut();
     assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms() / 2), EHaveNotReachedMidEpochTime);
+    inner.emit_start_reshare_events(dwallet_coordinator.inner_mut(), ctx);
     self.inner_mut().process_mid_epoch();
 }
 

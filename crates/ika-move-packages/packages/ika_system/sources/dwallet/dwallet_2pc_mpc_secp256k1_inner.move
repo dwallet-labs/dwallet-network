@@ -14,12 +14,12 @@ use sui::sui::SUI;
 use sui::object_table::{Self, ObjectTable};
 use sui::balance::{Self, Balance};
 use sui::bcs;
-use sui::coin::{Self, Coin};
+use sui::coin::{Coin};
 use sui::bag::{Self, Bag};
 use sui::event;
 use sui::ed25519::ed25519_verify;
 use ika_system::address;
-use ika_system::dwallet_pricing::{Self, DWalletPricing2PcMpcSecp256K1, PricingPerOperation};
+use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1, PricingPerOperation};
 use ika_system::bls_committee::{Self, BlsCommittee};
 
 /// Supported hash schemes for message signing.
@@ -65,7 +65,7 @@ public struct DWalletCoordinatorInner has store {
     /// The last MPC session to process in the current epoch.
     /// Validators should complete every session they start before switching epochs.
     last_session_to_complete_in_current_epoch: u64,
-    /// Denotes wether the `last_session_to_complete_in_current_epoch` field is locked or not.
+    /// Denotes whether the `last_session_to_complete_in_current_epoch` field is locked or not.
     /// This field gets locked before performing the epoch switch.
     locked_last_session_to_complete_in_current_epoch: bool,
     /// The maximum number of active MPC sessions Ika nodes may run during an epoch.
@@ -134,7 +134,7 @@ public struct DWalletNetworkDecryptionKeyCap has key, store {
 }
 
 /// `DWalletNetworkDecryptionKey` represents a network decryption key of
-/// the homomorphiclly encrypted netowrk share.
+/// the homomorphically encrypted network share.
 public struct DWalletNetworkDecryptionKey has key, store {
     id: UID,
     dwallet_network_decryption_key_cap_id: ID,
@@ -397,6 +397,10 @@ public struct DWalletNetworkDKGDecryptionKeyRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 }
 
+public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
+    dwallet_network_decryption_key_id: ID,
+}
+
 /// An event emitted when the first round of the DKG process is completed.
 ///
 /// This event is emitted by the blockchain to notify the user about
@@ -521,7 +525,7 @@ public struct EncryptedShareVerificationRequestEvent has copy, drop, store {
     /// belongs to the dWallet that its centralized
     /// secret share is being encrypted.
     /// This is not passed by the user,
-    /// but taken from the blockhain during event creation.
+    /// but taken from the blockchain during event creation.
     public_output: vector<u8>,
 
     /// The ID of the dWallet that this encrypted secret key share belongs to.
@@ -799,20 +803,13 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         computation_fee_charged_ika: balance::zero(),
         state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
-    let mut zero_ika = coin::zero<IKA>(ctx);
-    let mut zero_sui = coin::zero<SUI>(ctx);
-    event::emit(self.charge_and_create_immediate_dwallet_event(
+    event::emit(self.create_immediate_dwallet_event(
         dwallet_network_decryption_key_id,
-        dwallet_pricing::zero(),
-        &mut zero_ika,
-        &mut zero_sui,
         DWalletNetworkDKGDecryptionKeyRequestEvent {
             dwallet_network_decryption_key_id
         },
         ctx,
     ));
-    zero_ika.destroy_zero();
-    zero_sui.destroy_zero();
     cap
 }
 
@@ -863,6 +860,18 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
     copy_table_vec(&mut dwallet_network_decryption_key.previous_epoch_shares, &dwallet_network_decryption_key.current_epoch_shares);
     copy_table_vec(&mut dwallet_network_decryption_key.current_epoch_shares, &dwallet_network_decryption_key.next_epoch_shares);
+}
+
+public(package) fun emit_start_reshare_event(
+    self: &mut DWalletCoordinatorInner, key_cap: &DWalletNetworkDecryptionKeyCap, ctx: &mut TxContext
+) {
+    event::emit(self.create_immediate_dwallet_event(
+        key_cap.dwallet_network_decryption_key_id,
+        DWalletDecryptionKeyReshareRequestEvent {
+            dwallet_network_decryption_key_id: key_cap.dwallet_network_decryption_key_id
+        },
+        ctx,
+    ));
 }
 
 fun get_active_dwallet_network_decryption_key(
@@ -953,26 +962,13 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     event
 }
 
-fun charge_and_create_immediate_dwallet_event<E: copy + drop + store>(
+fun create_immediate_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
-    pricing: PricingPerOperation,
-    payment_ika: &mut Coin<IKA>,
-    payment_sui: &mut Coin<SUI>,
     event_data: E,
     ctx: &mut TxContext,
 ): DWalletEvent<E> {
     assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
-
-    let computation_fee_charged_ika = payment_ika.split(pricing.computation_ika(), ctx).into_balance();
-
-    let consensus_validation_fee_charged_ika = payment_ika.split(pricing.consensus_validation_ika(), ctx).into_balance();
-    let gas_fee_reimbursement_sui = payment_sui.split(pricing.gas_fee_reimbursement_sui(), ctx).into_balance();
-
-    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
-    self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
-    self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
     self.started_immediate_sessions_count = self.started_immediate_sessions_count + 1;
 
     let event = DWalletEvent {
@@ -982,9 +978,9 @@ fun charge_and_create_immediate_dwallet_event<E: copy + drop + store>(
         event_data,
     };
 
-    // This special logic is here to allow the immediate session have a unique session sequence number on the one hand,
-    // yet ignore (by ignoring lock) it when deciding the last session to complete in the current epoch,
-    // as immediate sessions are special sessions that must get completed in the current epoch.
+    // This special logic is here to allow the immediate session have a unique session sequenece number on the one hand,
+    // yet ignore it when deciding the last session to complete in the current epoch, as immediate sessions
+    // are special sessions that must get completed in the current epoch.
     self.next_session_sequence_number = self.next_session_sequence_number + 1;
     self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
     self.last_session_to_complete_in_current_epoch = self.last_session_to_complete_in_current_epoch + 1;
@@ -1215,7 +1211,6 @@ fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinat
 public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinatorInner): bool {
     return self.locked_last_session_to_complete_in_current_epoch &&
         self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
-        // This is for special sessions such as Network DKG and Reconfiguration.
         self.completed_immediate_sessions_count == self.started_immediate_sessions_count
 }
 
@@ -2293,26 +2288,12 @@ fun process_checkpoint_message(
             // Messages with `message_data_type` 1 & 2 are handled by the system module,
             // but their bytes must be extracted here to allow correct parsing of types 3 and above.
             // This step only extracts the bytes without further processing.
-            if (message_data_type == 1) {
-                // EndOfEpochMessage
-                let len = bcs_body.peel_vec_length();
-                let mut i = 0;
-                while (i < len) {
-                    let end_of_epch_message_type = bcs_body.peel_vec_length();
-                    // AdvanceEpoch
-                    if(end_of_epch_message_type == 0) {
-                        bcs_body.peel_u64();
-                        bcs_body.peel_u64();
-                        bcs_body.peel_u64();
-                    };
-                    i = i + 1;
-                };
-            } else if (message_data_type == 2) {
+            if (message_data_type == 0) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
                 let session_sequence_number = bcs_body.peel_u64();
                 self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, session_sequence_number);
-            } else if (message_data_type == 3) {
+            } else if (message_data_type == 1) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
@@ -2330,7 +2311,7 @@ fun process_checkpoint_message(
                     session_sequence_number,
                     ctx,
                 );
-            } else if (message_data_type == 4) {
+            } else if (message_data_type == 2) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
@@ -2341,7 +2322,7 @@ fun process_checkpoint_message(
                     rejected,
                     session_sequence_number,
                 );
-            } else if (message_data_type == 5) {
+            } else if (message_data_type == 3) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2358,7 +2339,7 @@ fun process_checkpoint_message(
                     rejected,
                     session_sequence_number
                 );
-            } else if (message_data_type == 7) {
+            } else if (message_data_type == 5) {
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2371,7 +2352,7 @@ fun process_checkpoint_message(
                     rejected,
                     session_sequence_number
                 );
-            } else if (message_data_type == 6) {
+            } else if (message_data_type == 4) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let presign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2379,7 +2360,7 @@ fun process_checkpoint_message(
                 let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
                 self.respond_ecdsa_presign(dwallet_id, presign_id, session_id, presign, rejected, session_sequence_number);
-            } else if (message_data_type == 8) {
+            } else if (message_data_type == 6) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let key_shares = bcs_body.peel_vec_u8();

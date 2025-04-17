@@ -5,23 +5,17 @@ use arc_swap::ArcSwapOption;
 use enum_dispatch::enum_dispatch;
 use fastcrypto::groups::bls12381;
 use fastcrypto_tbls::dkg_v1;
-use fastcrypto_tbls::nodes::PartyId;
-use fastcrypto_zkp::bn254::zk_login::{JwkId, OIDCProvider, JWK};
-use fastcrypto_zkp::bn254::zk_login_api::ZkLoginEnv;
 use futures::future::{join_all, select, Either};
 use futures::FutureExt;
 use ika_types::committee::Committee;
 use ika_types::committee::CommitteeTrait;
-use ika_types::crypto::{
-    AuthorityName, AuthorityPublicKeyBytes, AuthoritySignInfo, AuthorityStrongQuorumSignInfo,
-};
+use ika_types::crypto::AuthorityName;
 use ika_types::digests::ChainIdentifier;
 use ika_types::error::{IkaError, IkaResult};
-use itertools::{izip, Itertools};
+use itertools::Itertools;
 use parking_lot::RwLock;
-use parking_lot::{Mutex, RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -32,12 +26,7 @@ use sui_types::base_types::{ConciseableName, ObjectRef, SuiAddress};
 use sui_types::base_types::{EpochId, ObjectID, SequenceNumber};
 use sui_types::crypto::RandomnessRound;
 use sui_types::signature::GenericSignature;
-use sui_types::storage::{BackingPackageStore, InputKey, ObjectStore};
-use sui_types::transaction::{
-    AuthenticatorStateUpdate, CertifiedTransaction, InputObjectKind, SenderSignedData, Transaction,
-    TransactionDataAPI, TransactionKey, TransactionKind, VerifiedCertificate,
-    VerifiedSignedTransaction, VerifiedTransaction,
-};
+use sui_types::transaction::TransactionKey;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, instrument, trace, warn};
 use typed_store::rocks::{read_size_from_env, ReadWriteOptions};
@@ -69,11 +58,10 @@ use crate::dwallet_mpc::mpc_outputs_verifier::{
 use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::epoch::epoch_metrics::EpochMetrics;
-use crate::epoch::reconfiguration::ReconfigState;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicOutput, NetworkDecryptionKeyShares,
+    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
 };
 use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
@@ -124,7 +112,6 @@ use typed_store::{retry_transaction_forever, Map};
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
 const LAST_CONSENSUS_STATS_ADDR: u64 = 0;
-const RECONFIG_STATE_INDEX: u64 = 0;
 const OVERRIDE_PROTOCOL_UPGRADE_BUFFER_STAKE_INDEX: u64 = 0;
 pub const EPOCH_DB_PREFIX: &str = "epoch_";
 
@@ -303,8 +290,6 @@ pub struct AuthorityPerEpochStore {
     parent_path: PathBuf,
     db_options: Option<Options>,
 
-    /// In-memory cache of the content from the reconfig_state db table.
-    reconfig_state_mem: RwLock<ReconfigState>,
     consensus_notify_read: NotifyRead<SequencedConsensusTransactionKey, ()>,
 
     // Subscribers will get notified when a transaction is executed via checkpoint execution.
@@ -330,8 +315,6 @@ pub struct AuthorityPerEpochStore {
     /// wait for in-memory tasks for the epoch to finish. If node crashes at this stage validator
     /// will start with the new epoch(and will open instance of per-epoch store for a new epoch).
     epoch_alive: tokio::sync::RwLock<bool>,
-    initiate_process_mid_epoch: Mutex<StakeAggregator<(), true>>,
-    end_of_publish: Mutex<StakeAggregator<(), true>>,
 
     /// MutexTable for transaction locks (prevent concurrent execution of same transaction)
     mutex_table: MutexTable<MessageDigest>,
@@ -340,10 +323,6 @@ pub struct AuthorityPerEpochStore {
     /// value could be skewed if the node crashed and restarted in the middle of the epoch. That's
     /// ok because this is used for metric purposes and we could tolerate some skews occasionally.
     pub(crate) epoch_open_time: Instant,
-
-    /// The moment when epoch is reach mid round. We don't care much about crash recovery because it's
-    /// a metric that doesn't have to be available for each epoch.
-    mid_epoch_time: RwLock<Option<Instant>>,
 
     /// The moment when epoch is closed. We don't care much about crash recovery because it's
     /// a metric that doesn't have to be available for each epoch, and it's only used during
@@ -408,15 +387,6 @@ pub struct AuthorityEpochTables {
     /// transactions, and accumulated stats of consensus output.
     /// This field is written by a single process (consensus handler).
     last_consensus_stats: DBMap<u64, ExecutionIndicesWithStats>,
-
-    /// This table contains current reconfiguration state for validator for current epoch
-    reconfig_state: DBMap<u64, ReconfigState>,
-
-    /// Validators that have sent InitiateProcessMidEpoch message in this epoch
-    initiate_process_mid_epoch: DBMap<AuthorityName, ()>,
-
-    /// Validators that have sent EndOfPublish message in this epoch
-    end_of_publish: DBMap<AuthorityName, ()>,
 
     /// This table has information for the checkpoints for which we constructed all the data
     /// from consensus, but not yet constructed actual checkpoint.
@@ -510,14 +480,6 @@ impl AuthorityEpochTables {
         parent_path.join(format!("{}{}", EPOCH_DB_PREFIX, epoch))
     }
 
-    fn load_reconfig_state(&self) -> IkaResult<ReconfigState> {
-        let state = self
-            .reconfig_state
-            .get(&RECONFIG_STATE_INDEX)?
-            .unwrap_or_default();
-        Ok(state)
-    }
-
     pub fn get_all_pending_consensus_transactions(&self) -> Vec<ConsensusTransaction> {
         self.pending_consensus_transactions
             .unbounded_iter()
@@ -585,15 +547,6 @@ impl AuthorityPerEpochStore {
         let epoch_id = committee.epoch;
 
         let tables = AuthorityEpochTables::open(epoch_id, parent_path, db_options.clone());
-        let initiate_process_mid_epoch = StakeAggregator::from_iter(
-            committee.clone(),
-            tables.initiate_process_mid_epoch.unbounded_iter(),
-        );
-        let end_of_publish =
-            StakeAggregator::from_iter(committee.clone(), tables.end_of_publish.unbounded_iter());
-        let reconfig_state = tables
-            .load_reconfig_state()
-            .expect("Load reconfig state at initialization cannot fail");
 
         let epoch_alive_notify = NotifyOnce::new();
         assert_eq!(
@@ -619,7 +572,6 @@ impl AuthorityPerEpochStore {
             tables: ArcSwapOption::new(Some(Arc::new(tables))),
             parent_path: parent_path.to_path_buf(),
             db_options,
-            reconfig_state_mem: RwLock::new(reconfig_state),
             epoch_alive_notify,
             user_certs_closed_notify: NotifyOnce::new(),
             epoch_alive: tokio::sync::RwLock::new(true),
@@ -628,11 +580,8 @@ impl AuthorityPerEpochStore {
             executed_digests_notify_read: NotifyRead::new(),
             synced_checkpoint_notify_read: NotifyRead::new(),
             highest_synced_checkpoint: RwLock::new(0),
-            initiate_process_mid_epoch: Mutex::new(initiate_process_mid_epoch),
-            end_of_publish: Mutex::new(end_of_publish),
             mutex_table: MutexTable::new(MUTEX_TABLE_SIZE),
             epoch_open_time: current_time,
-            mid_epoch_time: Default::default(),
             epoch_close_time: Default::default(),
             metrics,
             epoch_start_configuration,
@@ -934,13 +883,6 @@ impl AuthorityPerEpochStore {
         self.epoch_start_state().protocol_version()
     }
 
-    pub fn store_reconfig_state(&self, new_state: &ReconfigState) -> IkaResult {
-        self.tables()?
-            .reconfig_state
-            .insert(&RECONFIG_STATE_INDEX, new_state)?;
-        Ok(())
-    }
-
     pub fn get_last_consensus_stats(&self) -> IkaResult<ExecutionIndicesWithStats> {
         match self
             .tables()?
@@ -1051,14 +993,6 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
-    pub fn has_sent_end_of_publish(&self, authority: &AuthorityName) -> IkaResult<bool> {
-        Ok(self
-            .end_of_publish
-            .try_lock()
-            .expect("No contention on end_of_publish lock")
-            .contains_key(authority))
-    }
-
     pub fn clear_override_protocol_upgrade_buffer_stake(&self) -> IkaResult {
         warn!(
             epoch = ?self.epoch(),
@@ -1158,40 +1092,6 @@ impl AuthorityPerEpochStore {
     //     }
     //     Ok(())
     // }
-
-    pub fn get_reconfig_state_read_lock_guard(&self) -> RwLockReadGuard<ReconfigState> {
-        self.reconfig_state_mem.read()
-    }
-
-    pub fn get_reconfig_state_write_lock_guard(&self) -> RwLockWriteGuard<ReconfigState> {
-        self.reconfig_state_mem.write()
-    }
-
-    pub fn update_mid_epoch_time(&self) {
-        // Set mid_epoch_time for metric purpose.
-        let mut mid_epoch_time = self.mid_epoch_time.write();
-        if mid_epoch_time.is_none() {
-            // Only update it the first time epoch is closed.
-            *mid_epoch_time = Some(Instant::now());
-        }
-    }
-
-    pub fn close_user_certs(&self, mut lock_guard: RwLockWriteGuard<'_, ReconfigState>) {
-        lock_guard.close_user_certs();
-        self.store_reconfig_state(&lock_guard)
-            .expect("Updating reconfig state cannot fail");
-
-        // Set epoch_close_time for metric purpose.
-        let mut epoch_close_time = self.epoch_close_time.write();
-        if epoch_close_time.is_none() {
-            // Only update it the first time epoch is closed.
-            *epoch_close_time = Some(Instant::now());
-
-            self.user_certs_closed_notify
-                .notify()
-                .expect("user_certs_closed_notify called twice on same epoch store");
-        }
-    }
 
     pub async fn user_certs_closed_notify(&self) {
         self.user_certs_closed_notify.wait().await
@@ -1325,30 +1225,6 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::InitiateProcessMidEpoch(authority),
-                ..
-            }) => {
-                if &transaction.sender_authority() != authority {
-                    warn!(
-                        "InitiateProcessMidEpoch authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::EndOfPublish(authority),
-                ..
-            }) => {
-                if &transaction.sender_authority() != authority {
-                    warn!(
-                        "EndOfPublish authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind:
                     ConsensusTransactionKind::CapabilityNotificationV1(AuthorityCapabilitiesV1 {
                         authority,
@@ -1405,15 +1281,8 @@ impl AuthorityPerEpochStore {
         let mut current_commit_sequenced_consensus_transactions =
             Vec::with_capacity(verified_transactions.len());
 
-        let mut initiate_process_mid_epoch_transactions =
-            Vec::with_capacity(verified_transactions.len());
-        let mut end_of_publish_transactions = Vec::with_capacity(verified_transactions.len());
         for tx in verified_transactions {
-            if tx.0.is_initiate_process_mid_epoch() {
-                initiate_process_mid_epoch_transactions.push(tx);
-            } else if tx.0.is_end_of_publish() {
-                end_of_publish_transactions.push(tx);
-            } else if tx.0.is_system() {
+            if tx.0.is_system() {
                 system_transactions.push(tx);
             } else {
                 current_commit_sequenced_consensus_transactions.push(tx);
@@ -1434,12 +1303,10 @@ impl AuthorityPerEpochStore {
             .chain(sequenced_transactions)
             .collect();
 
-        let (mut verified_messages, notifications, lock, mid_epoch_round, final_round) = self
+        let (mut verified_messages, notifications) = self
             .process_consensus_transactions(
                 &mut output,
                 &consensus_transactions,
-                &initiate_process_mid_epoch_transactions,
-                &end_of_publish_transactions,
                 checkpoint_service,
                 consensus_commit_info,
                 //&mut roots,
@@ -1449,31 +1316,16 @@ impl AuthorityPerEpochStore {
         //self.finish_consensus_certificate_process_with_batch(&mut output, &verified_transactions)?;
         output.record_consensus_commit_stats(consensus_stats.clone());
 
-        // Create pending checkpoints if we are still accepting tx.
-        let should_accept_tx = if let Some(lock) = &lock {
-            lock.should_accept_tx()
-        } else {
-            // It is ok to just release lock here as functions called by this one are the
-            // only place that transition reconfig state, and this function itself is always
-            // executed from consensus task. At this point if the lock was not already provided
-            // above, we know we won't be transitioning state for this commit.
-            self.get_reconfig_state_read_lock_guard().should_accept_tx()
-        };
-        let make_checkpoint = should_accept_tx || final_round;
-        if make_checkpoint {
-            let checkpoint_height = consensus_commit_info.round;
+        let checkpoint_height = consensus_commit_info.round;
 
-            let pending_checkpoint = PendingCheckpoint::V1(PendingCheckpointV1 {
-                messages: verified_messages.clone(),
-                details: PendingCheckpointInfo {
-                    timestamp_ms: consensus_commit_info.timestamp,
-                    mid_of_epoch: mid_epoch_round,
-                    last_of_epoch: final_round,
-                    checkpoint_height,
-                },
-            });
-            self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
-        }
+        let pending_checkpoint = PendingCheckpoint::V1(PendingCheckpointV1 {
+            messages: verified_messages.clone(),
+            details: PendingCheckpointInfo {
+                timestamp_ms: consensus_commit_info.timestamp,
+                checkpoint_height,
+            },
+        });
+        self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
 
         let mut batch = self.db_batch()?;
         output.write_to_batch(self, &mut batch)?;
@@ -1481,50 +1333,19 @@ impl AuthorityPerEpochStore {
 
         // Only after batch is written, notify checkpoint service to start building any new
         // pending checkpoints.
-        if make_checkpoint {
-            debug!(
-                ?consensus_commit_info.round,
-                "Notifying checkpoint service about new pending checkpoint(s)",
-            );
-            checkpoint_service.notify_checkpoint()?;
-        }
+        debug!(
+            ?consensus_commit_info.round,
+            "Notifying checkpoint service about new pending checkpoint(s)",
+        );
+        checkpoint_service.notify_checkpoint()?;
 
-        self.process_notifications(&notifications, &end_of_publish_transactions);
-
-        if mid_epoch_round {
-            info!(
-                epoch=?self.epoch(),
-                mid_epoch_round=?mid_epoch_round,
-                "Notified last checkpoint"
-            );
-            self.record_initiate_process_mid_epoch_quorum_time_metric();
-        }
-
-        if final_round {
-            info!(
-                epoch=?self.epoch(),
-                // Accessing lock on purpose so that the compiler ensures
-                // the lock is not yet dropped.
-                lock=?lock.as_ref(),
-                final_round=?final_round,
-                "Notified last checkpoint"
-            );
-            self.record_end_of_message_quorum_time_metric();
-        }
+        self.process_notifications(&notifications);
 
         Ok(verified_messages)
     }
 
-    fn process_notifications(
-        &self,
-        notifications: &[SequencedConsensusTransactionKey],
-        end_of_publish: &[VerifiedSequencedConsensusTransaction],
-    ) {
-        for key in notifications
-            .iter()
-            .cloned()
-            .chain(end_of_publish.iter().map(|tx| tx.0.transaction.key()))
-        {
+    fn process_notifications(&self, notifications: &[SequencedConsensusTransactionKey]) {
+        for key in notifications.iter().cloned() {
             self.consensus_notify_read.notify(&key, &());
         }
     }
@@ -1539,8 +1360,6 @@ impl AuthorityPerEpochStore {
         &self,
         output: &mut ConsensusCommitOutput,
         transactions: &[VerifiedSequencedConsensusTransaction],
-        initiate_process_mid_epoch_transactions: &[VerifiedSequencedConsensusTransaction],
-        end_of_publish_transactions: &[VerifiedSequencedConsensusTransaction],
         checkpoint_service: &Arc<C>,
         consensus_commit_info: &ConsensusCommitInfo,
         //roots: &mut BTreeSet<MessageDigest>,
@@ -1548,9 +1367,6 @@ impl AuthorityPerEpochStore {
     ) -> IkaResult<(
         Vec<MessageKind>,                      // transactions to schedule
         Vec<SequencedConsensusTransactionKey>, // keys to notify as complete
-        Option<RwLockWriteGuard<ReconfigState>>,
-        bool, // true if mid-epoch round
-        bool, // true if final round
     )> {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transactions");
 
@@ -1638,177 +1454,7 @@ impl AuthorityPerEpochStore {
 
         let verified_certificates: Vec<_> = verified_certificates.into();
 
-        let mid_epoch_round = self.process_initiate_process_mid_epoch_transactions(
-            output,
-            initiate_process_mid_epoch_transactions,
-        )?;
-
-        let (lock, final_round) = self.process_end_of_publish_transactions_and_reconfig(
-            output,
-            end_of_publish_transactions,
-        )?;
-
-        Ok((
-            verified_certificates,
-            notifications,
-            lock,
-            mid_epoch_round,
-            final_round,
-        ))
-    }
-
-    fn process_initiate_process_mid_epoch_transactions(
-        &self,
-        output: &mut ConsensusCommitOutput,
-        transactions: &[VerifiedSequencedConsensusTransaction],
-    ) -> IkaResult<
-        bool, // true if mid-epoch round
-    > {
-        for transaction in transactions {
-            let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
-                transaction,
-                ..
-            }) = transaction;
-
-            if let SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::InitiateProcessMidEpoch(authority),
-                ..
-            }) = transaction
-            {
-                debug!(
-                    "Received InitiateProcessMidEpoch for epoch {} from {:?}",
-                    self.committee.epoch,
-                    authority.concise()
-                );
-
-                let collected_initiate_process_mid_epoch = {
-                    let mut initiate_process_mid_epoch_stake = self.initiate_process_mid_epoch.try_lock()
-                        .expect("No contention on Authority::initiate_process_mid_epoch as it is only accessed from consensus handler");
-                    if !initiate_process_mid_epoch_stake.has_quorum() {
-                        output.insert_initiate_process_mid_epoch(*authority);
-                        initiate_process_mid_epoch_stake
-                            .insert_generic(*authority, ())
-                            .is_quorum_reached()
-                    } else {
-                        // If we past the stage where we are accepting consensus certificates we also don't record initiate process mid-epoch message messages
-                        debug!("Ignoring initiate process mid-epoch message from validator {:?} as we already collected enough initiate process mid-epoch message messages", authority.concise());
-                        false
-                    }
-                    // initiate_process_mid_epoch lock is released here.
-                };
-
-                // Important: we actually rely here on fact that ConsensusHandler panics if its
-                // operation returns error. If some day we won't panic in ConsensusHandler on error
-                // we need to figure out here how to revert in-memory state of .initiate_process_mid_epoch
-                // when write fails.
-                output.record_consensus_message_processed(transaction.key());
-                if collected_initiate_process_mid_epoch {
-                    debug!(
-                        "Collected enough initiate_process_mid_epoch messages for epoch {} with last message from validator {:?}",
-                        self.committee.epoch,
-                        authority.concise(),
-                    );
-                    return Ok(true);
-                }
-            } else {
-                panic!(
-                    "process_initiate_process_mid_epoch called with non-initiate-process-mid-epoch transaction"
-                );
-            }
-        }
-        Ok(false)
-    }
-
-    fn process_end_of_publish_transactions_and_reconfig(
-        &self,
-        output: &mut ConsensusCommitOutput,
-        transactions: &[VerifiedSequencedConsensusTransaction],
-    ) -> IkaResult<(
-        Option<RwLockWriteGuard<ReconfigState>>,
-        bool, // true if final round
-    )> {
-        let mut lock = None;
-
-        for transaction in transactions {
-            let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
-                transaction,
-                ..
-            }) = transaction;
-
-            if let SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::EndOfPublish(authority),
-                ..
-            }) = transaction
-            {
-                debug!(
-                    "Received EndOfPublish for epoch {} from {:?}",
-                    self.committee.epoch,
-                    authority.concise()
-                );
-
-                // It is ok to just release lock here as this function is the only place that transition into RejectAllCerts state
-                // And this function itself is always executed from consensus task
-                let collected_end_of_publish = if lock.is_none()
-                    && self
-                        .get_reconfig_state_read_lock_guard()
-                        .should_accept_consensus_certs()
-                {
-                    output.insert_end_of_publish(*authority);
-                    self.end_of_publish.try_lock()
-                        .expect("No contention on Authority::end_of_publish as it is only accessed from consensus handler")
-                        .insert_generic(*authority, ()).is_quorum_reached()
-                    // end_of_publish lock is released here.
-                } else {
-                    // If we past the stage where we are accepting consensus certificates we also don't record end of publish messages
-                    debug!("Ignoring end of publish message from validator {:?} as we already collected enough end of publish messages", authority.concise());
-                    false
-                };
-
-                if collected_end_of_publish {
-                    assert!(lock.is_none());
-                    debug!(
-                        "Collected enough end_of_publish messages for epoch {} with last message from validator {:?}",
-                        self.committee.epoch,
-                        authority.concise(),
-                    );
-                    let mut l = self.get_reconfig_state_write_lock_guard();
-                    l.close_all_certs();
-                    output.store_reconfig_state(l.clone());
-                    // Holding this lock until end of process_consensus_transactions_and_commit_boundary() where we write batch to DB
-                    lock = Some(l);
-                };
-                // Important: we actually rely here on fact that ConsensusHandler panics if its
-                // operation returns error. If some day we won't panic in ConsensusHandler on error
-                // we need to figure out here how to revert in-memory state of .end_of_publish
-                // and .reconfig_state when write fails.
-                output.record_consensus_message_processed(transaction.key());
-            } else {
-                panic!(
-                    "process_end_of_publish_transactions_and_reconfig called with non-end-of-publish transaction"
-                );
-            }
-        }
-
-        // Determine if we're ready to advance reconfig state to RejectAllTx.
-        let is_reject_all_certs = if let Some(lock) = &lock {
-            lock.is_reject_all_certs()
-        } else {
-            // It is ok to just release lock here as this function is the only place that
-            // transitions into RejectAllTx state, and this function itself is always
-            // executed from consensus task.
-            self.get_reconfig_state_read_lock_guard()
-                .is_reject_all_certs()
-        };
-
-        if !is_reject_all_certs {
-            return Ok((lock, false));
-        }
-
-        // Acquire lock to advance state if we don't already have it.
-        let mut lock = lock.unwrap_or_else(|| self.get_reconfig_state_write_lock_guard());
-        lock.close_all_tx();
-        output.store_reconfig_state(lock.clone());
-        Ok((Some(lock), true))
+        Ok((verified_certificates, notifications))
     }
 
     #[instrument(level = "trace", skip_all)]
@@ -1882,39 +1528,15 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::InitiateProcessMidEpoch(_),
-                ..
-            }) => {
-                // these are partitioned earlier
-                panic!("process_consensus_transaction called with initiate-process-mid-epoch transaction");
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::EndOfPublish(_),
-                ..
-            }) => {
-                // these are partitioned earlier
-                panic!("process_consensus_transaction called with end-of-publish transaction");
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::CapabilityNotificationV1(capabilities),
                 ..
             }) => {
                 let authority = capabilities.authority;
-                if self
-                    .get_reconfig_state_read_lock_guard()
-                    .should_accept_consensus_certs()
-                {
-                    debug!(
-                        "Received CapabilityNotificationV2 from {:?}",
-                        authority.concise()
-                    );
-                    self.record_capabilities_v1(capabilities)?;
-                } else {
-                    debug!(
-                        "Ignoring CapabilityNotificationV2 from {:?} because of end of epoch",
-                        authority.concise()
-                    );
-                }
+                debug!(
+                    "Received CapabilityNotificationV2 from {:?}",
+                    authority.concise()
+                );
+                self.record_capabilities_v1(capabilities)?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
@@ -1927,7 +1549,7 @@ impl AuthorityPerEpochStore {
         &self,
         origin_authority: AuthorityName,
         session_info: SessionInfo,
-        output: MPCMessageSlice,
+        output: Vec<u8>,
     ) -> IkaResult<ConsensusCertificateResult> {
         self.save_dwallet_mpc_output(DWalletMPCOutputMessage {
             output: output.clone(),
@@ -1959,9 +1581,7 @@ impl AuthorityPerEpochStore {
             OutputVerificationStatus::NotEnoughVotes => {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
-            OutputVerificationStatus::AlreadyCommitted
-            | OutputVerificationStatus::Malicious
-            | OutputVerificationStatus::BuildingOutput => {
+            OutputVerificationStatus::AlreadyCommitted | OutputVerificationStatus::Malicious => {
                 // Ignore this output,
                 // since there is nothing to do with it,
                 // at this stage.
@@ -1974,14 +1594,6 @@ impl AuthorityPerEpochStore {
         &self,
         system_transaction: &MessageKind,
     ) -> ConsensusCertificateResult {
-        if !self.get_reconfig_state_read_lock_guard().should_accept_tx() {
-            debug!(
-                "Ignoring system transaction {:?} because of end of epoch",
-                system_transaction.digest()
-            );
-            return ConsensusCertificateResult::IgnoredSystem;
-        }
-
         ConsensusCertificateResult::IkaTransaction(system_transaction.clone())
     }
 
@@ -1989,14 +1601,6 @@ impl AuthorityPerEpochStore {
         &self,
         system_transaction: &Vec<MessageKind>,
     ) -> ConsensusCertificateResult {
-        if !self.get_reconfig_state_read_lock_guard().should_accept_tx() {
-            debug!(
-                "Ignoring system transaction of Ika large transaction {:?} because of end of epoch",
-                system_transaction
-            );
-            return ConsensusCertificateResult::IgnoredSystem;
-        }
-
         ConsensusCertificateResult::IkaBulkTransaction(system_transaction.clone())
     }
 
@@ -2303,43 +1907,12 @@ impl AuthorityPerEpochStore {
             .insert(&(checkpoint_seq, index), info)?)
     }
 
-    pub fn record_initiate_process_mid_epoch_quorum_time_metric(&self) {
-        if let Some(mid_epoch_time) = *self.mid_epoch_time.read() {
-            self.metrics
-                .epoch_initiate_process_mid_epoch_quorum_time_since_mid_epoch_reached_ms
-                .set(mid_epoch_time.elapsed().as_millis() as i64);
-        }
-    }
-
     pub(crate) fn record_epoch_pending_certs_process_time_metric(&self) {
         if let Some(epoch_close_time) = *self.epoch_close_time.read() {
             self.metrics
                 .epoch_pending_certs_processed_time_since_epoch_close_ms
                 .set(epoch_close_time.elapsed().as_millis() as i64);
         }
-    }
-
-    pub fn record_end_of_message_quorum_time_metric(&self) {
-        if let Some(epoch_close_time) = *self.epoch_close_time.read() {
-            self.metrics
-                .epoch_end_of_publish_quorum_time_since_epoch_close_ms
-                .set(epoch_close_time.elapsed().as_millis() as i64);
-        }
-    }
-
-    pub(crate) fn report_epoch_metrics_at_last_checkpoint(&self, checkpoint_count: u64) {
-        if let Some(epoch_close_time) = *self.epoch_close_time.read() {
-            self.metrics
-                .epoch_last_checkpoint_created_time_since_epoch_close_ms
-                .set(epoch_close_time.elapsed().as_millis() as i64);
-        }
-        info!(epoch=?self.epoch(), "Epoch statistics: checkpoint_count={:?}", checkpoint_count);
-        self.metrics
-            .epoch_checkpoint_count
-            .set(checkpoint_count as i64);
-        // self.metrics
-        //     .epoch_transaction_count
-        //     .set(stats.transaction_count as i64);
     }
 
     pub fn record_epoch_reconfig_start_time_metric(&self) {
@@ -2377,9 +1950,6 @@ pub(crate) struct ConsensusCommitOutput {
     // Consensus and reconfig state
     consensus_round: Round,
     consensus_messages_processed: BTreeSet<SequencedConsensusTransactionKey>,
-    initiate_process_mid_epoch: BTreeSet<AuthorityName>,
-    end_of_publish: BTreeSet<AuthorityName>,
-    reconfig_state: Option<ReconfigState>,
     consensus_commit_stats: Option<ExecutionIndicesWithStats>,
 
     pending_checkpoints: Vec<PendingCheckpoint>,
@@ -2418,20 +1988,8 @@ impl ConsensusCommitOutput {
         self.dwallet_mpc_round_events = new_value;
     }
 
-    fn insert_initiate_process_mid_epoch(&mut self, authority: AuthorityName) {
-        self.initiate_process_mid_epoch.insert(authority);
-    }
-
-    fn insert_end_of_publish(&mut self, authority: AuthorityName) {
-        self.end_of_publish.insert(authority);
-    }
-
     fn record_consensus_commit_stats(&mut self, stats: ExecutionIndicesWithStats) {
         self.consensus_commit_stats = Some(stats);
-    }
-
-    fn store_reconfig_state(&mut self, state: ReconfigState) {
-        self.reconfig_state = Some(state);
     }
 
     fn record_consensus_message_processed(&mut self, key: SequencedConsensusTransactionKey) {
@@ -2490,25 +2048,6 @@ impl ConsensusCommitOutput {
                 .iter()
                 .map(|key| (key, true)),
         )?;
-
-        batch.insert_batch(
-            &tables.initiate_process_mid_epoch,
-            self.initiate_process_mid_epoch
-                .iter()
-                .map(|authority| (authority, ())),
-        )?;
-
-        batch.insert_batch(
-            &tables.end_of_publish,
-            self.end_of_publish.iter().map(|authority| (authority, ())),
-        )?;
-
-        if let Some(reconfig_state) = &self.reconfig_state {
-            batch.insert_batch(
-                &tables.reconfig_state,
-                [(RECONFIG_STATE_INDEX, reconfig_state)],
-            )?;
-        }
 
         if let Some(consensus_commit_stats) = &self.consensus_commit_stats {
             batch.insert_batch(

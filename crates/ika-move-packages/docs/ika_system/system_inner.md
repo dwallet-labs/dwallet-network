@@ -12,6 +12,7 @@ title: Module `(ika_system=0x0)::system_inner_v1`
 -  [Constants](#@Constants_0)
 -  [Function `create`](#(ika_system=0x0)_system_inner_v1_create)
 -  [Function `advance_network_keys`](#(ika_system=0x0)_system_inner_v1_advance_network_keys)
+-  [Function `emit_start_reshare_events`](#(ika_system=0x0)_system_inner_v1_emit_start_reshare_events)
 -  [Function `create_system_parameters`](#(ika_system=0x0)_system_inner_v1_create_system_parameters)
 -  [Function `initialize`](#(ika_system=0x0)_system_inner_v1_initialize)
 -  [Function `request_add_validator_candidate`](#(ika_system=0x0)_system_inner_v1_request_add_validator_candidate)
@@ -635,6 +636,32 @@ This function will be called only once in init.
     self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> DWalletCoordinator
 ) {
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.advance_epoch_dwallet_network_decryption_key(cap));
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_v1_emit_start_reshare_events"></a>
+
+## Function `emit_start_reshare_events`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_emit_start_reshare_events">emit_start_reshare_events</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, dwallet_coordinator_inner: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_emit_start_reshare_events">emit_start_reshare_events</a>(
+    self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>, dwallet_coordinator_inner: &<b>mut</b> DWalletCoordinatorInner, ctx: &<b>mut</b> TxContext
+) {
+    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
 }
 </code></pre>
 
@@ -2370,73 +2397,6 @@ Returns all the validators who are currently reporting <code>validator_id</code>
         sequence_number,
         timestamp_ms,
     });
-    <b>let</b> len = bcs_body.peel_vec_length();
-    <b>let</b> <b>mut</b> i = 0;
-    <b>while</b> (i &lt; len) {
-        <b>let</b> message_data_type = bcs_body.peel_vec_length();
-            <b>if</b> (message_data_type == 0) {
-                // InitiateProcessMidEpoch
-                self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_mid_epoch">process_mid_epoch</a>();
-            } <b>else</b> <b>if</b> (message_data_type == 1) {
-                // EndOfEpochMessage
-                <b>let</b> len = bcs_body.peel_vec_length();
-                <b>let</b> <b>mut</b> i = 0;
-                <b>while</b> (i &lt; len) {
-                    <b>let</b> end_of_epch_message_type = bcs_body.peel_vec_length();
-                    // AdvanceEpoch
-                    <b>if</b>(end_of_epch_message_type == 0) {
-                        bcs_body.peel_u64();
-                        bcs_body.peel_u64();
-                        bcs_body.peel_u64();
-                    };
-                    i = i + 1;
-                };
-            } <b>else</b> <b>if</b> (message_data_type == 2) {
-                <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> _first_round_output = bcs_body.peel_vec_u8();
-                bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 3) {
-                <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> _public_output = bcs_body.peel_vec_u8();
-                <b>let</b> _encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
-                <b>let</b> _encryption_key_address = <a href="../sui/address.md#sui_address_from_bytes">sui::address::from_bytes</a>(bcs_body.peel_vec_u8());
-                <b>let</b> _rejected = bcs_body.peel_bool();
-                bcs_body.peel_u64();
-                } <b>else</b> <b>if</b> (message_data_type == 4) {
-                    bcs_body.peel_vec_u8();
-                    bcs_body.peel_vec_u8();
-                    bcs_body.peel_bool();
-            } <b>else</b> <b>if</b> (message_data_type == 6) {
-                <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                bcs_body.peel_vec_u8();
-                <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> _presign = bcs_body.peel_vec_u8();
-                bcs_body.peel_bool();
-                bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 5) {
-                <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> _sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> _signature = bcs_body.peel_vec_u8();
-                <b>let</b> _is_future_sign = bcs_body.peel_bool();
-                <b>let</b> _rejected = bcs_body.peel_bool();
-                bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 7) {
-                <b>let</b> _session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> _dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> _partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                <b>let</b> _rejected = bcs_body.peel_bool();
-                bcs_body.peel_u64();
-            } <b>else</b> <b>if</b> (message_data_type == 8) {
-                bcs_body.peel_vec_u8();
-                bcs_body.peel_vec_u8();
-                bcs_body.peel_vec_u8();
-                bcs_body.peel_bool();
-            };
-        i = i + 1;
-    };
-    self.total_messages_processed = self.total_messages_processed + i;
 }
 </code></pre>
 

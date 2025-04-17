@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
 };
 use sui_config::Config;
-use sui_types::{base_types::SuiAddress, crypto::Signable, multiaddr::Multiaddr};
+use sui_types::{base_types::SuiAddress, multiaddr::Multiaddr};
 
 use clap::*;
 use colored::Colorize;

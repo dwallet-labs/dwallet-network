@@ -82,7 +82,7 @@ pub struct SuiConnectorConfig {
     /// Path of the file where sui client key (any SuiKeyPair) is stored.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notifier_client_key_pair: Option<KeyPairWithPath>,
-    
+
     /// Override the last processed EventID for sui module `ika_system`.
     /// When set, SuiSyncer will start from this cursor (exclusively) instead of the one in storage.
     /// If the cursor is not found in storage or override, the query will start from genesis.
