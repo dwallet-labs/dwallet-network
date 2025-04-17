@@ -629,6 +629,10 @@ mod tests {
         // Optionally: verify that the 10th bit is set
         let byte_index = 9 / 8;
         let bit_position = 9 % 8;
-        assert_eq!((bitmap[byte_index] >> bit_position) & 1, 1, "Expected bit at index 9 to be set");
+        assert_eq!(
+            (bitmap[byte_index] >> bit_position) & 1,
+            1,
+            "Expected bit at index 9 to be set"
+        );
     }
 }
