@@ -222,7 +222,6 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(DWalletMPCMessageKey {
-                    message: message.message.clone(),
                     authority: message.authority.clone(),
                     session_id: message.session_id.clone(),
                     round_number: message.round_number,

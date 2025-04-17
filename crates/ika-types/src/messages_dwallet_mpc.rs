@@ -165,8 +165,6 @@ pub struct DWalletMPCMessage {
 /// Used to make sure no message is being processed twice.
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct DWalletMPCMessageKey {
-    /// The serialized message.
-    pub message: MPCMessageSlice,
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
