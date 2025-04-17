@@ -152,7 +152,7 @@ pub struct DWalletMPCOutput {
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct DWalletMPCMessage {
     /// The serialized message.
-    pub message: MPCMessageSlice,
+    pub message: Vec<u8>,
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,

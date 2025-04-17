@@ -145,15 +145,13 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
-                let message = self.construct_new_dwallet_mpc_messages(message)?;
+                let message = self.new_dwallet_mpc_message(message)?;
                 tokio_runtime_handle.spawn(async move {
-                    for msg in message {
-                        if let Err(err) = consensus_adapter
-                            .submit_to_consensus(&vec![msg], &epoch_store)
-                            .await
-                        {
-                            error!("failed to submit an MPC message to consensus: {:?}", err);
-                        }
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![message], &epoch_store)
+                        .await
+                    {
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
                     }
                 });
                 Ok(())
@@ -403,18 +401,18 @@ impl DWalletMPCSession {
         }
     }
 
-    /// Create new consensus transactions with the message to be sent to the other MPC parties.
+    /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     /// Returns Error only if the epoch switched in the middle and was not available.
-    fn construct_new_dwallet_mpc_messages(
+    fn new_dwallet_mpc_message(
         &self,
         message: MPCMessage,
-    ) -> DwalletMPCResult<Vec<ConsensusTransaction>> {
-        Ok(ConsensusTransaction::new_dwallet_mpc_messages(
+    ) -> DwalletMPCResult<ConsensusTransaction> {
+        Ok(ConsensusTransaction::new_dwallet_mpc_message(
             self.epoch_store()?.name,
             message,
             self.session_id.clone(),
             self.pending_quorum_for_highest_round_number,
-            self.sequence_number,
+            self.sequence_number
         ))
     }
 
