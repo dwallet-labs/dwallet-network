@@ -277,7 +277,7 @@ impl IkaNode {
                 sui_client_metrics,
                 config.sui_connector_config.ika_package_id,
                 config.sui_connector_config.ika_system_package_id,
-                config.sui_connector_config.system_id,
+                config.sui_connector_config.ika_system_object_id,
             )
             .await?,
         );
@@ -309,7 +309,7 @@ impl IkaNode {
         // let committee = committee_store
         //     .get_committee(&cur_epoch)?
         //     .expect("Committee of the current epoch must exist");
-        let chain_identifier = ChainIdentifier::from(config.sui_connector_config.system_id);
+        let chain_identifier = ChainIdentifier::from(config.sui_connector_config.ika_system_object_id);
 
         let epoch_start_configuration = EpochStartConfiguration::new(epoch_start_system_state)
             .expect("EpochStartConfiguration construction cannot fail");
@@ -322,7 +322,7 @@ impl IkaNode {
         let packages_config = IkaPackagesConfig {
             ika_package_id: config.sui_connector_config.ika_package_id,
             ika_system_package_id: config.sui_connector_config.ika_system_package_id,
-            ika_system_object_id: config.sui_connector_config.system_id,
+            ika_system_object_id: config.sui_connector_config.ika_system_object_id,
         };
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),

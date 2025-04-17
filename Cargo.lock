@@ -5421,6 +5421,7 @@ dependencies = [
  "anemo",
  "anyhow",
  "bcs",
+ "clap",
  "dwallet-classgroups-types",
  "fastcrypto",
  "flate2",

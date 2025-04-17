@@ -17,7 +17,7 @@ pub struct NetworkConfig {
     pub validator_initialization_configs: Vec<ValidatorInitializationConfig>,
     pub ika_package_id: ObjectID,
     pub ika_system_package_id: ObjectID,
-    pub system_id: ObjectID,
+    pub ika_system_object_id: ObjectID,
 }
 
 impl Config for NetworkConfig {}

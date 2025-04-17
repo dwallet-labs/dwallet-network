@@ -61,7 +61,7 @@ use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicOutput, NetworkDecryptionKeyShares,
+    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
 };
 use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
@@ -1344,36 +1344,6 @@ impl AuthorityPerEpochStore {
         Ok(verified_messages)
     }
 
-    // Caller is not required to set ExecutionIndices with the right semantics in
-    // VerifiedSequencedConsensusTransaction.
-    // Also, ConsensusStats and hash will not be updated in the db with this function, unlike in
-    // process_consensus_transactions_and_commit_boundary().
-    #[cfg(any(test, feature = "test-utils"))]
-    pub async fn process_consensus_transactions_for_tests<C: CheckpointServiceNotify>(
-        self: &Arc<Self>,
-        transactions: Vec<SequencedConsensusTransaction>,
-        checkpoint_service: &Arc<C>,
-        authority_metrics: &Arc<AuthorityMetrics>,
-        skip_consensus_commit_prologue_in_test: bool,
-    ) -> IkaResult<Vec<VerifiedExecutableTransaction>> {
-        self.process_consensus_transactions_and_commit_boundary(
-            transactions,
-            &ExecutionIndicesWithStats::default(),
-            &ConsensusCommitInfo::new_for_test(
-                // if self.randomness_state_enabled() {
-                //     self.get_highest_pending_checkpoint_height() / 2 + 1
-                // } else {
-                //     self.get_highest_pending_checkpoint_height() + 1
-                // },
-                self.get_highest_pending_checkpoint_height() + 1,
-                0,
-                skip_consensus_commit_prologue_in_test,
-            ),
-            authority_metrics,
-        )
-        .await
-    }
-
     fn process_notifications(&self, notifications: &[SequencedConsensusTransactionKey]) {
         for key in notifications.iter().cloned() {
             self.consensus_notify_read.notify(&key, &());
@@ -1579,7 +1549,7 @@ impl AuthorityPerEpochStore {
         &self,
         origin_authority: AuthorityName,
         session_info: SessionInfo,
-        output: MPCMessageSlice,
+        output: Vec<u8>,
     ) -> IkaResult<ConsensusCertificateResult> {
         self.save_dwallet_mpc_output(DWalletMPCOutputMessage {
             output: output.clone(),
@@ -1611,9 +1581,7 @@ impl AuthorityPerEpochStore {
             OutputVerificationStatus::NotEnoughVotes => {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
-            OutputVerificationStatus::AlreadyCommitted
-            | OutputVerificationStatus::Malicious
-            | OutputVerificationStatus::BuildingOutput => {
+            OutputVerificationStatus::AlreadyCommitted | OutputVerificationStatus::Malicious => {
                 // Ignore this output,
                 // since there is nothing to do with it,
                 // at this stage.
@@ -1775,13 +1743,16 @@ impl AuthorityPerEpochStore {
         session_sequence_number: u64,
     ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
         let mut slices = Vec::new();
-        let public_chunks = public_output.chunks(5 * 1024).collect_vec();
-        let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
+        // We set a total of 5 KB since we need 6 KB buffer for other params.
+        let five_kbytes = 5 * 1024;
+        let public_chunks = public_output.chunks(five_kbytes).collect_vec();
+        let key_shares_chunks = key_shares.chunks(five_kbytes).collect_vec();
         let empty: &[u8] = &[];
         // Take the max of the two lengths to ensure we have enough slices.
         let total_slices = public_chunks.len().max(key_shares_chunks.len());
         for i in 0..total_slices {
-            // If the chunk is missing, use an empty slice, as the size of the slices can be different.
+            // If the chunk is missing, use an empty slice,
+            // as the size of the input can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
             let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
             slices.push(Secp256K1NetworkDKGOutputSlice {

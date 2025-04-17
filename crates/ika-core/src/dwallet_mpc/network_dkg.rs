@@ -349,6 +349,7 @@ pub(crate) fn advance_network_dkg(
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
 ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+    // todo(zeev): move the mock to a func.
     #[cfg(not(feature = "with-network-dkg"))]
     {
         let secret_shares = shared_wasm_class_groups::decryption_key_shares(party_id);

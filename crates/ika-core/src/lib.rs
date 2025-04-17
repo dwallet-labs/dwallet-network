@@ -14,8 +14,6 @@ pub(crate) mod consensus_types;
 pub mod consensus_validator;
 pub mod epoch;
 pub mod metrics;
-#[cfg(any(test, feature = "test-utils"))]
-pub mod mock_consensus;
 pub mod mysticeti_adapter;
 mod scoring_decision;
 mod stake_aggregator;
