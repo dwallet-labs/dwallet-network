@@ -60,13 +60,13 @@ where
         query_interval: Duration,
         dwallet_mpc_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        next_epoch_active_committee: Arc<RwLock<Option<Committee>>>,
+        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
         tokio::spawn(Self::sync_next_committee(
             sui_client_clone.clone(),
-            next_epoch_active_committee,
+            next_epoch_committee,
         ));
         if let Some(dwallet_mpc_network_keys) = dwallet_mpc_network_keys {
             // Todo (#810): Check the usage adding the task handle to the task_handles vector.
@@ -96,19 +96,19 @@ where
 
     async fn sync_next_committee(
         sui_client: Arc<SuiClient<C>>,
-        next_epoch_active_committee: Arc<RwLock<Option<Committee>>>,
+        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
     ) {
         loop {
-            if let Some(_) = next_epoch_active_committee.read().await.as_ref() {
-                info!("next epoch active committee already set, skipping sync");
+            if let Some(_) = next_epoch_committee.read().await.as_ref() {
+                info!("The next epoch committee already set, skipping sync");
                 return;
             } else {
-                info!("next epoch active committee not set, syncing...");
+                info!("The next epoch committee wasn't set, syncing...");
             };
             let system_inner = sui_client.get_system_inner_until_success().await;
             let system_inner = system_inner.into_init_version_for_tooling();
 
-            let Some(new_next_committee) = system_inner.get_ika_next_epoch_active_committee()
+            let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee()
             else {
                 info!("ika next epoch active committee not found, retrying...");
                 continue;
@@ -165,7 +165,7 @@ where
                 class_group_map,
             );
 
-            let mut committee_lock = next_epoch_active_committee.write().await;
+            let mut committee_lock = next_epoch_committee.write().await;
             *committee_lock = Some(committee);
         }
     }

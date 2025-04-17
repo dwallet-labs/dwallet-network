@@ -104,7 +104,7 @@ where
             + (ika_system_state_inner.epoch_duration_ms() / 2);
         let next_epoch_committee_is_empty = system_inner_v1
             .validators
-            .next_epoch_active_committee
+            .next_epoch_committee
             .is_none();
         if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
             info!("Calling `process_mid_epoch()`");
@@ -157,7 +157,7 @@ where
             == coordinator.completed_immediate_sessions_count;
         let next_epoch_committee_exists = system_inner_v1
             .validators
-            .next_epoch_active_committee
+            .next_epoch_committee
             .is_some();
         if coordinator.locked_last_session_to_complete_in_current_epoch
             && all_epoch_sessions_finished

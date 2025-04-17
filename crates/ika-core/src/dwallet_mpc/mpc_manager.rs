@@ -697,7 +697,7 @@ impl DWalletMPCManager {
         loop {
             if let Ok(epoch_store) = self.epoch_store() {
                 if let Some(next_active_committee) = epoch_store
-                    .next_epoch_active_committee
+                    .next_epoch_committee
                     .read()
                     .await
                     .as_ref()
