@@ -2,7 +2,7 @@ use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCMessageBuilder, MPCMessageSlice, MPCPrivateInput,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCMessageSlice, MPCPrivateInput,
     MPCPublicInput, MPCSessionStatus, MessageState,
 };
 use group::PartyID;

@@ -8,7 +8,7 @@ use crate::messages_dwallet_mpc::{
 };
 use crate::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
 use byteorder::{BigEndian, ReadBytesExt};
-use dwallet_mpc_types::dwallet_mpc::{MPCMessageBuilder, MPCMessageSlice, MessageState};
+use dwallet_mpc_types::dwallet_mpc::{MPCMessageSlice, MessageState};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Formatter};
@@ -146,34 +146,19 @@ impl ConsensusTransaction {
         }
     }
 
-    /// Create new consensus transactions with the output of the MPC session to be sent to the parties.
+    /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
     pub fn new_dwallet_mpc_output(
         authority: AuthorityName,
         output: Vec<u8>,
         session_info: SessionInfo,
-    ) -> Vec<Self> {
-        let messages = MPCMessageBuilder::split(output.clone(), 120 * 1024);
-        let messages = match messages.messages {
-            MessageState::Incomplete(messages) => messages,
-            MessageState::Complete(_) => panic!("should never happen "),
-        };
-
-        messages
-            .iter()
-            .map(|(_, message)| {
-                let mut hasher = DefaultHasher::new();
-                message.fragment.hash(&mut hasher);
-                let tracking_id = hasher.finish().to_le_bytes();
-                Self {
-                    tracking_id,
-                    kind: ConsensusTransactionKind::DWalletMPCOutput(
-                        authority,
-                        session_info.clone(),
-                        message.clone(),
-                    ),
-                }
-            })
-            .collect()
+    ) -> Self {
+        let mut hasher = DefaultHasher::new();
+        output.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
+        }
     }
 
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
