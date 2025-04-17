@@ -292,7 +292,7 @@ where
         // `max_checkpoint_size_bytes` is 50KB, so we split the message into 4 slices.
         for i in 0..4 {
             // If the chunk is missing, use an empty slice, as the transaction must receive all arguments.
-            let message = messages.get(i).unwrap_or(&empty);
+            let message = messages.get(i).unwrap_or(&empty).clone();
             slices.push(CallArg::Pure(bcs::to_bytes(message).unwrap()));
         }
         slices
