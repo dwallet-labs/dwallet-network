@@ -66,8 +66,8 @@ pub enum MPCProtocolInitData {
 impl Display for MPCProtocolInitData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MPCProtocolInitData::DKGFirst(_) => write!(f, "DKGFirst"),
-            MPCProtocolInitData::DKGSecond(_) => write!(f, "DKGSecond"),
+            MPCProtocolInitData::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
+            MPCProtocolInitData::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
             MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
             MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
             MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
