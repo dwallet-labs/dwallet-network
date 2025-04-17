@@ -500,7 +500,11 @@ pub(crate) fn create_dwallet_mpc_network_decryption_key_from_onchain_public_outp
             )
         }
         DWalletNetworkDecryptionKeyState::NetworkReconfigurationCompleted => {
-            Err(DwalletMPCError::InvalidMPCPartyType)
+            create_dwallet_mpc_network_decryption_key_from_reshare_public_output(
+                epoch,
+                weighted_threshold_access_structure,
+                &key_data.network_dkg_public_output,
+            )
         }
         DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
             Err(DwalletMPCError::NetworkDecryptionKeyNotReady)
