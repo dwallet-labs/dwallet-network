@@ -87,6 +87,7 @@ impl EpochStartSystem {
                 epoch_duration_ms: state.epoch_duration_ms,
                 active_validators: state.active_validators.clone(),
                 dwallet_network_decryption_keys: state.dwallet_network_decryption_keys.clone(),
+                max_active_sessions_buffer: 0,
             }),
         }
     }
@@ -116,6 +117,7 @@ impl EpochStartSystemV1 {
             epoch_duration_ms: 1000,
             active_validators: vec![],
             dwallet_network_decryption_keys: HashMap::new(),
+            max_active_sessions_buffer: 0,
         }
     }
 }
