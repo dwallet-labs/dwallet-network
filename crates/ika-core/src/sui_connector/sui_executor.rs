@@ -601,4 +601,33 @@ mod tests {
             // assert_bitmap_has_indices(&bitmap, &indices);
         }
     }
+
+    #[test]
+    fn test_calculate_signers_bitmap_with_index_exceeding_bitmap_size() {
+        // Simulate a case where there are more validators than entries in the bitmap.
+        let num_validators = 10;
+        let mut signers = RoaringBitmap::new();
+
+        // Add the 9th index (zero-based),
+        // which is out of bounds if bitmap only accounts for 8.
+        signers.insert(9);
+
+        let bitmap = SuiExecutor::<SuiSdkClient>::calculate_signers_bitmap(&signers);
+        println!("Bitmap: {:?}", bitmap);
+
+        // Bitmap should be large enough to include index 9.
+        // Index 9 needs 2 bytes.
+        let required_length = (9 / 8) + 1;
+        assert!(
+            bitmap.len() >= required_length,
+            "Bitmap is too small: expected at least {} bytes for validator index 9, got {}",
+            required_length,
+            bitmap.len()
+        );
+
+        // Optionally: verify that the 10th bit is set
+        let byte_index = 9 / 8;
+        let bit_position = 9 % 8;
+        assert_eq!((bitmap[byte_index] >> bit_position) & 1, 1, "Expected bit at index 9 to be set");
+    }
 }
