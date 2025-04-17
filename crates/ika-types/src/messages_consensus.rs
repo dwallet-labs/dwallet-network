@@ -140,7 +140,7 @@ impl ConsensusTransaction {
                 authority,
                 round_number,
                 session_id,
-                session_sequence_number: 0,
+                session_sequence_number,
             }),
         }
     }
