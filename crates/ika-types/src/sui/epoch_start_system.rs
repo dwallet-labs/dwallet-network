@@ -60,6 +60,7 @@ impl EpochStartSystem {
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
         dwallet_network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyShares>,
+        max_active_sessions_buffer: u64,
     ) -> Self {
         Self::V1(EpochStartSystemV1 {
             epoch,
@@ -68,6 +69,7 @@ impl EpochStartSystem {
             epoch_duration_ms,
             active_validators,
             dwallet_network_decryption_keys,
+            max_active_sessions_buffer,
         })
     }
 
@@ -98,6 +100,7 @@ pub struct EpochStartSystemV1 {
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
     dwallet_network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyShares>,
+    pub max_active_sessions_buffer: u64,
 }
 
 impl EpochStartSystemV1 {

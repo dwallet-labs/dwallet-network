@@ -481,7 +481,6 @@ impl IkaNode {
 
         let connection_monitor_status = Arc::new(connection_monitor_status);
         let ika_node_metrics = Arc::new(IkaNodeMetrics::new(&registry_service.default_registry()));
-
         let validator_components = if state.is_validator(&epoch_store) {
             let components = Self::construct_validator_components(
                 config.clone(),
