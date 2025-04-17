@@ -6,14 +6,12 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::stake_aggregator::StakeAggregator;
-use dwallet_mpc_types::dwallet_mpc::{ MPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::MPCPublicOutput;
 use group::{GroupElement, PartyID};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{
-    DWalletMPCMessage, SessionInfo,
-};
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, SessionInfo};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;

@@ -3,10 +3,10 @@ use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme,  MPCPublicInput,
-    NetworkDecryptionKeyShares, DWALLET_MPC_EVENT_STRUCT_NAME,
-    START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
-    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
+    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyShares,
+    DWALLET_MPC_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
+    START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
+    START_SIGN_ROUND_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,

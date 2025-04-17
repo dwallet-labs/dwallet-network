@@ -2,8 +2,7 @@ use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage,  MPCPrivateInput,
-    MPCPublicInput, MPCSessionStatus,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPublicInput, MPCSessionStatus,
 };
 use group::PartyID;
 use itertools::Itertools;
@@ -29,9 +28,8 @@ use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DWalletMPCMessage, MPCProtocolInitData,
-    MaliciousReport, PresignSessionState, SessionInfo, StartEncryptedShareVerificationEvent,
-    StartPresignFirstRoundEvent,
+    AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState,
+    SessionInfo, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
@@ -172,15 +170,14 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
-                let consensus_message =
-                    self.new_dwallet_mpc_message(public_output.clone())?;
+                let consensus_message = self.new_dwallet_mpc_message(public_output.clone())?;
                 tokio_runtime_handle.spawn(async move {
-                        if let Err(err) = consensus_adapter
-                            .submit_to_consensus(&vec![consensus_message], &epoch_store)
-                            .await
-                        {
-                            error!("failed to submit an MPC message to consensus: {:?}", err);
-                        }
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![consensus_message], &epoch_store)
+                        .await
+                    {
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
+                    }
                 });
                 Ok(())
             }
@@ -202,12 +199,12 @@ impl DWalletMPCSession {
                 let consensus_message =
                     self.new_dwallet_mpc_message(FAILED_SESSION_OUTPUT.to_vec())?;
                 tokio_runtime_handle.spawn(async move {
-                        if let Err(err) = consensus_adapter
-                            .submit_to_consensus(&vec![consensus_message], &epoch_store)
-                            .await
-                        {
-                            error!("failed to submit an MPC message to consensus: {:?}", err);
-                        }
+                    if let Err(err) = consensus_adapter
+                        .submit_to_consensus(&vec![consensus_message], &epoch_store)
+                        .await
+                    {
+                        error!("failed to submit an MPC message to consensus: {:?}", err);
+                    }
                 });
                 Err(e)
             }
