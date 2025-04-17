@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{Element, SystemInnerTrait};
+use crate::committee::StakeUnit;
+use crate::crypto::{AuthorityName, AuthorityPublicKey};
+use fastcrypto::traits::ToFromBytes;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use sui_types::balance::Balance;
 use sui_types::base_types::ObjectID;
 use sui_types::coin::TreasuryCap;
@@ -74,7 +78,7 @@ pub struct ValidatorSetV1 {
     pub total_stake: u64,
     pub validators: ObjectTable,
     pub active_committee: BlsCommittee,
-    pub next_epoch_active_committee: Option<BlsCommittee>,
+    pub next_epoch_committee: Option<BlsCommittee>,
     pub previous_committee: BlsCommittee,
     pub pending_active_validators: Vec<ObjectID>,
     pub at_risk_validators: VecMap<ID, u64>,
@@ -224,6 +228,45 @@ impl SystemInnerTrait for SystemInnerV1 {
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap> {
         &self.dwallet_2pc_mpc_secp256k1_network_decryption_keys
+    }
+
+    fn get_ika_next_epoch_committee(
+        &self,
+    ) -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>> {
+        let Some(next_epoch_committee) = self.validators.next_epoch_committee.as_ref()
+        else {
+            return None;
+        };
+
+        let allowed_ids: Vec<_> = next_epoch_committee
+            .members
+            .iter()
+            .map(|member| member.validator_id)
+            .collect();
+
+        let voting_rights = self
+            .validators
+            .next_epoch_committee
+            .clone()?
+            .members
+            .iter()
+            .filter(|v| allowed_ids.contains(&v.validator_id))
+            .map(|v| {
+                (
+                    v.validator_id,
+                    (
+                        // AuthorityName is derived from the protocol public key,
+                        // therefore it is safe to unwrap.
+                        (&AuthorityPublicKey::from_bytes(v.protocol_pubkey.clone().bytes.as_ref())
+                            .unwrap())
+                            .into(),
+                        v.voting_power,
+                    ),
+                )
+            })
+            .collect();
+
+        Some(voting_rights)
     }
 
     //
