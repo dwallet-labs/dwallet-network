@@ -161,6 +161,10 @@ impl ConsensusManagerTrait for MysticetiManager {
         };
 
         // TODO (#873): Implement a production grade configuration upgrade mechanism
+        // We use the `_for_testing` functions because they are currently the only way
+        // to modify Sui's protocol configuration from external crates.
+        // I have opened an [issue](https://github.com/MystenLabs/sui/issues/21891)
+        // in the Sui repository to address this limitation.
         protocol_config.set_consensus_max_transaction_size_bytes_for_testing(500 * 1024 * 1024);
         protocol_config
             .set_consensus_max_transactions_in_block_bytes_for_testing(500 * 1024 * 1024);
