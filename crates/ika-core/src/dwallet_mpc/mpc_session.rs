@@ -173,16 +173,14 @@ impl DWalletMPCSession {
                     )?;
                 }
                 let consensus_message =
-                    self.construct_new_dwallet_mpc_output_messages(public_output.clone())?;
+                    self.new_dwallet_mpc_message(public_output.clone())?;
                 tokio_runtime_handle.spawn(async move {
-                    for msg in consensus_message {
                         if let Err(err) = consensus_adapter
-                            .submit_to_consensus(&vec![msg], &epoch_store)
+                            .submit_to_consensus(&vec![consensus_message], &epoch_store)
                             .await
                         {
                             error!("failed to submit an MPC message to consensus: {:?}", err);
                         }
-                    }
                 });
                 Ok(())
             }
@@ -202,16 +200,14 @@ impl DWalletMPCSession {
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 let consensus_message =
-                    self.construct_new_dwallet_mpc_output_messages(FAILED_SESSION_OUTPUT.to_vec())?;
+                    self.new_dwallet_mpc_message(FAILED_SESSION_OUTPUT.to_vec())?;
                 tokio_runtime_handle.spawn(async move {
-                    for msg in consensus_message {
                         if let Err(err) = consensus_adapter
                             .submit_to_consensus(&vec![msg], &epoch_store)
                             .await
                         {
                             error!("failed to submit an MPC message to consensus: {:?}", err);
                         }
-                    }
                 });
                 Err(e)
             }
@@ -408,28 +404,6 @@ impl DWalletMPCSession {
             self.session_id.clone(),
             self.pending_quorum_for_highest_round_number,
             self.sequence_number,
-        ))
-    }
-
-    /// Create new consensus transactions with the flow result (output) to be
-    /// sent to the other MPC parties.
-    /// Errors if the epoch was switched in the middle and was not available.
-    fn construct_new_dwallet_mpc_output_messages(
-        &self,
-        output: Vec<u8>,
-    ) -> DwalletMPCResult<Vec<ConsensusTransaction>> {
-        let Some(mpc_event_data) = &self.mpc_event_data else {
-            return Err(DwalletMPCError::MissingEventDrivenData);
-        };
-        Ok(ConsensusTransaction::new_dwallet_mpc_output(
-            self.epoch_store()?.name,
-            output,
-            SessionInfo {
-                sequence_number: self.sequence_number,
-                session_id: self.session_id.clone(),
-                mpc_round: mpc_event_data.init_protocol_data.clone(),
-                is_immediate: false,
-            },
         ))
     }
 

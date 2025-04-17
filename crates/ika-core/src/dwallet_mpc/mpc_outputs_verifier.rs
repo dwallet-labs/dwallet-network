@@ -170,7 +170,7 @@ impl DWalletMPCOutputsVerifier {
         {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
             return Ok(OutputVerificationResult {
-                result: OutputVerificationStatus::FirstQuorumReached(output),
+                result: OutputVerificationStatus::FirstQuorumReached(output.clone()),
                 malicious_actors: vec![],
             });
         }
