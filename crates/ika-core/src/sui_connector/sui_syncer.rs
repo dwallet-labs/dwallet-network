@@ -103,17 +103,14 @@ where
         next_epoch_active_committee: Arc<RwLock<Option<Committee>>>,
     ) {
         loop {
-            if let Some(_) = next_epoch_active_committee.read().await.as_ref() {
-                info!("next epoch active committee already set, skipping sync");
-                return;
-            } else {
-                info!("next epoch active committee not set, syncing...");
-            };
+            time::sleep(Duration::from_secs(2)).await;
             let system_inner = sui_client.get_system_inner_until_success().await;
             let system_inner = system_inner.into_init_version_for_tooling();
 
             let Some(new_next_committee) = system_inner.get_ika_next_epoch_active_committee()
             else {
+                let mut committee_lock = next_epoch_active_committee.write().await;
+                *committee_lock = None;
                 info!("ika next epoch active committee not found, retrying...");
                 continue;
             };
@@ -145,16 +142,17 @@ where
             let class_group_map = class_group_data
                 .into_iter()
                 .filter_map(|(id, class_groups)| {
-                    let voting_power = match new_next_committee.get(&id) {
-                        Some((power, _)) => *power,
+                    let authority_name = match new_next_committee.get(&id) {
+                        Some((authority_name, _)) => *authority_name,
                         None => {
                             error!("missing validator voting power for id: {id}");
+                            println!("missing validator voting power for id: {id}");
                             return None;
                         }
                     };
 
                     match bcs::to_bytes(&class_groups) {
-                        Ok(bytes) => Some((voting_power, bytes)),
+                        Ok(bytes) => Some((authority_name, bytes)),
                         Err(e) => {
                             error!("failed to serialize class group for id {id}: {e}");
                             None
@@ -172,6 +170,8 @@ where
             let mut committee_lock = next_epoch_active_committee.write().await;
             *committee_lock = Some(committee);
         }
+
+        panic!("Syncing next committee failed");
     }
 
     /// Sync the DwalletMPC network keys from the Sui client to the local store.

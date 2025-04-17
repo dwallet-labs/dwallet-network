@@ -241,43 +241,6 @@ impl DwalletMPCNetworkKeys {
         Ok(())
     }
 
-    fn new_dwallet_mpc_network_key(
-        dkg_output_bytes: Vec<u8>,
-        key_scheme: DWalletMPCNetworkKeyScheme,
-        epoch: u64,
-        access_structure: &WeightedThresholdAccessStructure,
-    ) -> DwalletMPCResult<NetworkDecryptionKeyShares> {
-        // Note: this `key_scheme` is not the scheme of the network key itself,
-        // but to create Secp256k1 DSA key pairs, with the network key,
-        // we need to take into account the key scheme.
-        match key_scheme {
-            DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                let dkg_output: <Secp256k1Party as mpc::Party>::PublicOutput =
-                    bcs::from_bytes(&dkg_output_bytes)?;
-                Ok(NetworkDecryptionKeyShares {
-                    epoch,
-                    state: NetworkDecryptionKeyPublicOutputType::NetworkDkg,
-                    public_output: dkg_output_bytes,
-                    encryption_scheme_public_parameters: bcs::to_bytes(
-                        &dkg_output.default_encryption_scheme_public_parameters::<
-                            secp256k1::GroupElement
-                        >().map_err(|e| DwalletMPCError::ClassGroupsError(e.to_string()))?)?,
-                    decryption_key_share_public_parameters: bcs::to_bytes(
-                        &dkg_output.default_decryption_key_share_public_parameters::<
-                            secp256k1::GroupElement
-                        >(access_structure).map_err(|e|DwalletMPCError::ClassGroupsError(e.to_string()))?)?,
-                })
-            }
-            DWalletMPCNetworkKeyScheme::Ristretto => Ok(NetworkDecryptionKeyShares {
-                epoch,
-                state: NetworkDecryptionKeyPublicOutputType::NetworkDkg,
-                public_output: dkg_output_bytes,
-                encryption_scheme_public_parameters: vec![],
-                decryption_key_share_public_parameters: vec![],
-            }),
-        }
-    }
-
     /// Returns all the decryption key shares for any specified key ID.
     pub fn get_decryption_key_share(
         &self,
@@ -503,7 +466,7 @@ pub(crate) fn create_dwallet_mpc_network_decryption_key_from_onchain_public_outp
             create_dwallet_mpc_network_decryption_key_from_reshare_public_output(
                 epoch,
                 weighted_threshold_access_structure,
-                &key_data.network_dkg_public_output,
+                &key_data.current_reconfiguration_public_output,
             )
         }
         DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {

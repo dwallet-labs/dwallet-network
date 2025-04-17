@@ -27,27 +27,27 @@ const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
 
 // TODO: move to utils
-fun copy_table_vec_and_destroy(dest: &mut TableVec<vector<u8>>, src: &mut TableVec<vector<u8>>) {
-    while (!dest.is_empty()) {
-        dest.pop_back();
-    };
-    let mut i = 0;
-    while (i < src.length()) {
-        let vec = src.borrow(i);
-        let vec_len = vec.length();
-        let mut j = 0;
-        let mut new_vec: vector<u8> = vector[];
-        while (j < vec_len) {
-            new_vec.push_back(*(vec.borrow(j)));
-            j = j + 1;
-        };
-        dest.push_back(new_vec);
-        i = i + 1;
-    };
-    while (!src.is_empty()) {
-        src.pop_back();
-    };
-}
+// fun copy_table_vec_and_destroy(dest: &mut TableVec<vector<u8>>, src: &mut TableVec<vector<u8>>) {
+//     while (!dest.is_empty()) {
+//         dest.pop_back();
+//     };
+//     let mut i = 0;
+//     while (i < src.length()) {
+//         let vec = src.borrow(i);
+//         let vec_len = vec.length();
+//         let mut j = 0;
+//         let mut new_vec: vector<u8> = vector[];
+//         while (j < vec_len) {
+//             new_vec.push_back(*(vec.borrow(j)));
+//             j = j + 1;
+//         };
+//         dest.push_back(new_vec);
+//         i = i + 1;
+//     };
+//     while (!src.is_empty()) {
+//         src.pop_back();
+//     };
+// }
 
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
@@ -143,12 +143,10 @@ public struct DWalletNetworkDecryptionKey has key, store {
     dwallet_network_decryption_key_cap_id: ID,
     current_epoch: u64,
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    current_reconfiguration_public_output: table_vec::TableVec<vector<u8>>,
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    next_reconfiguration_public_output: table_vec::TableVec<vector<u8>>,
+    reconfiguration_public_outputs: sui::table::Table<u64, TableVec<vector<u8>>>,
 
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    network_dkg_public_output: table_vec::TableVec<vector<u8>>,
+    network_dkg_public_output: TableVec<vector<u8>>,
     /// The fees paid for computation in IKA.
     computation_fee_charged_ika: Balance<IKA>,
     state: DWalletNetworkDecryptionKeyState,
@@ -801,9 +799,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
         //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-        current_reconfiguration_public_output: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-        next_reconfiguration_public_output: table_vec::empty(ctx),
+        reconfiguration_public_outputs: sui::table::new(ctx),
         network_dkg_public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
         state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
@@ -854,7 +850,9 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
         self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.next_reconfiguration_public_output.push_back(public_output);
+    assert!((dwallet_network_decryption_key.reconfiguration_public_outputs.contains(dwallet_network_decryption_key.current_epoch +1)), 0);
+    let next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
+    next_reconfiguration_public_output.push_back(public_output);
     dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
         DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => {
             if (is_last) {
@@ -878,7 +876,6 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
     dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::NetworkReconfigurationCompleted;
-    copy_table_vec_and_destroy(&mut dwallet_network_decryption_key.current_reconfiguration_public_output, &mut dwallet_network_decryption_key.next_reconfiguration_public_output);
 }
 
 public(package) fun emit_start_reshare_event(
@@ -886,6 +883,7 @@ public(package) fun emit_start_reshare_event(
 ) {
     let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(key_cap.dwallet_network_decryption_key_id); 
     dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration;
+    dwallet_network_decryption_key.reconfiguration_public_outputs.add(dwallet_network_decryption_key.current_epoch + 1, table_vec::empty(ctx));
     event::emit(self.create_immediate_dwallet_event(
         key_cap.dwallet_network_decryption_key_id,
         DWalletDecryptionKeyReshareRequestEvent {

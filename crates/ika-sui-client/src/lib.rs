@@ -50,7 +50,7 @@ use sui_types::balance::Balance;
 use sui_types::base_types::SequenceNumber;
 use sui_types::base_types::{EpochId, ObjectRef};
 use sui_types::clock::Clock;
-use sui_types::collection_types::TableVec;
+use sui_types::collection_types::{Table, TableVec};
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
 use sui_types::id::{ID, UID};
@@ -709,6 +709,12 @@ pub trait SuiClientInner: Send + Sync {
         network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
     ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>, self::Error>;
 
+    async fn get_current_reconfiguration_public_output(
+        &self,
+        epoch_id: EpochId,
+        table_id: ObjectID,
+    ) -> Result<ObjectID, Self::Error>;
+
     async fn read_table_vec_as_raw_bytes(&self, table_id: ObjectID)
         -> Result<Vec<u8>, self::Error>;
 
@@ -949,20 +955,31 @@ impl SuiClientInner for SuiSdkClient {
             })?;
             match key_obj.state {
                 DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-                | DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => continue,
+                | DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
+                | DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration => continue,
                 _ => {}
             };
+
             let network_dkg_public_output = self
                 .read_table_vec_as_raw_bytes(key_obj.network_dkg_public_output.contents.id)
                 .await?;
-            let current_reconfiguration_public_output = self
-                .read_table_vec_as_raw_bytes(
-                    key_obj.current_reconfiguration_public_output.contents.id,
-                )
-                .await?;
-            let next_reconfiguration_public_output = self
-                .read_table_vec_as_raw_bytes(key_obj.next_reconfiguration_public_output.contents.id)
-                .await?;
+            let current_reconfiguration_public_output =
+                if let Ok(current_reconfiguration_public_output_id) = self
+                    .get_current_reconfiguration_public_output(
+                        key_obj.current_epoch,
+                        key_obj.reconfiguration_public_outputs.id,
+                    )
+                    .await
+                {
+                    self.read_table_vec_as_raw_bytes(current_reconfiguration_public_output_id)
+                        .await?
+                } else {
+                    warn!(
+                        "reconfiguration output for current epoch {:?} not found",
+                        key_obj.current_epoch
+                    );
+                    vec![]
+                };
 
             network_decryption_keys.insert(
                 key_id,
@@ -972,13 +989,65 @@ impl SuiClientInner for SuiSdkClient {
                         .dwallet_network_decryption_key_cap_id,
                     current_epoch: key_obj.current_epoch,
                     current_reconfiguration_public_output,
-                    next_reconfiguration_public_output,
                     network_dkg_public_output,
                     state: key_obj.state,
                 },
             );
         }
         Ok(network_decryption_keys)
+    }
+
+    async fn get_current_reconfiguration_public_output(
+        &self,
+        epoch_id: EpochId,
+        table_id: ObjectID,
+    ) -> Result<ObjectID, Self::Error> {
+        let mut cursor = None;
+        loop {
+            let dynamic_fields = self
+                .read_api()
+                .get_dynamic_fields(table_id, cursor, None)
+                .await
+                .map_err(|e| {
+                    Error::DataError(format!(
+                        "can't get dynamic fields of table {:?}: {:?}",
+                        table_id, e
+                    ))
+                })?;
+
+            for df in dynamic_fields.data.iter() {
+                let object_id = df.object_id;
+                let dynamic_field_response = self
+                    .read_api()
+                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                    .await?;
+                let resp = dynamic_field_response.into_object().map_err(|e| {
+                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+                })?;
+                let raw_data = resp.bcs.ok_or(Error::DataError(format!(
+                    "object {:?} has no bcs data",
+                    object_id
+                )))?;
+                let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(format!(
+                    "object {:?} is not a MoveObject",
+                    object_id
+                )))?;
+                let reconfig_public_output =
+                    bcs::from_bytes::<Field<u64, Table>>(&raw_move_obj.bcs_bytes)?;
+                if reconfig_public_output.name == epoch_id {
+                    return Ok(reconfig_public_output.value.id);
+                }
+            }
+
+            cursor = dynamic_fields.next_cursor;
+            if !dynamic_fields.has_next_page {
+                break;
+            }
+        }
+        Err(Error::DataError(format!(
+            "Failed to load current reconfiguration public output for epoch {:?} from table {:?}",
+            epoch_id, table_id
+        )))
     }
 
     async fn read_table_vec_as_raw_bytes(

@@ -55,7 +55,6 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Enum `ECDSAPresignState`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSAPresignState)
 -  [Enum `ECDSASignState`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSASignState)
 -  [Constants](#@Constants_1)
--  [Function `copy_table_vec_and_destroy`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_copy_table_vec_and_destroy)
 -  [Function `lock_last_active_session_sequence_number`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_lock_last_active_session_sequence_number)
 -  [Function `create_dwallet_coordinator_inner`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_dwallet_coordinator_inner)
 -  [Function `request_dwallet_network_decryption_key_dkg`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_request_dwallet_network_decryption_key_dkg)
@@ -479,12 +478,7 @@ the homomorphically encrypted network share.
 <dd>
 </dd>
 <dt>
-<code>current_reconfiguration_public_output: <a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;</code>
-</dt>
-<dd>
-</dd>
-<dt>
-<code>next_reconfiguration_public_output: <a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;</code>
+<code>reconfiguration_public_outputs: <a href="../sui/table.md#sui_table_Table">sui::table::Table</a>&lt;u64, <a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;&gt;</code>
 </dt>
 <dd>
 </dd>
@@ -2640,48 +2634,6 @@ Supported hash schemes for message signing.
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_copy_table_vec_and_destroy"></a>
-
-## Function `copy_table_vec_and_destroy`
-
-
-
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_copy_table_vec_and_destroy">copy_table_vec_and_destroy</a>(dest: &<b>mut</b> <a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;, src: &<b>mut</b> <a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_copy_table_vec_and_destroy">copy_table_vec_and_destroy</a>(dest: &<b>mut</b> TableVec&lt;vector&lt;u8&gt;&gt;, src: &<b>mut</b> TableVec&lt;vector&lt;u8&gt;&gt;) {
-    <b>while</b> (!dest.is_empty()) {
-        dest.pop_back();
-    };
-    <b>let</b> <b>mut</b> i = 0;
-    <b>while</b> (i &lt; src.length()) {
-        <b>let</b> vec = src.borrow(i);
-        <b>let</b> vec_len = vec.length();
-        <b>let</b> <b>mut</b> j = 0;
-        <b>let</b> <b>mut</b> new_vec: vector&lt;u8&gt; = vector[];
-        <b>while</b> (j &lt; vec_len) {
-            new_vec.push_back(*(vec.borrow(j)));
-            j = j + 1;
-        };
-        dest.push_back(new_vec);
-        i = i + 1;
-    };
-    <b>while</b> (!src.is_empty()) {
-        src.pop_back();
-    };
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_lock_last_active_session_sequence_number"></a>
 
 ## Function `lock_last_active_session_sequence_number`
@@ -2789,9 +2741,7 @@ Supported hash schemes for message signing.
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
         //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-        current_reconfiguration_public_output: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-        next_reconfiguration_public_output: table_vec::empty(ctx),
+        reconfiguration_public_outputs: <a href="../sui/table.md#sui_table_new">sui::table::new</a>(ctx),
         network_dkg_public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
         state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
@@ -2882,7 +2832,9 @@ Supported hash schemes for message signing.
         self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     };
     <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.next_reconfiguration_public_output.push_back(public_output);
+    <b>assert</b>!((dwallet_network_decryption_key.reconfiguration_public_outputs.contains(dwallet_network_decryption_key.current_epoch +1)), 0);
+    <b>let</b> next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
+    next_reconfiguration_public_output.push_back(public_output);
     dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
         DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration =&gt; {
             <b>if</b> (is_last) {
@@ -2926,7 +2878,6 @@ Supported hash schemes for message signing.
     <b>assert</b>!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EIncorrectCap">EIncorrectCap</a>);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
     dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::NetworkReconfigurationCompleted;
-    <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_copy_table_vec_and_destroy">copy_table_vec_and_destroy</a>(&<b>mut</b> dwallet_network_decryption_key.current_reconfiguration_public_output, &<b>mut</b> dwallet_network_decryption_key.next_reconfiguration_public_output);
 }
 </code></pre>
 
@@ -2954,6 +2905,7 @@ Supported hash schemes for message signing.
 ) {
     <b>let</b> dwallet_network_decryption_key = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_network_decryption_key">get_active_dwallet_network_decryption_key</a>(key_cap.dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration;
+    dwallet_network_decryption_key.reconfiguration_public_outputs.add(dwallet_network_decryption_key.current_epoch + 1, table_vec::empty(ctx));
     event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_immediate_dwallet_event">create_immediate_dwallet_event</a>(
         key_cap.dwallet_network_decryption_key_id,
         <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDecryptionKeyReshareRequestEvent">DWalletDecryptionKeyReshareRequestEvent</a> {

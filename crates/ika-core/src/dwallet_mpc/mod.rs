@@ -32,6 +32,7 @@ use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
 use std::collections::{HashMap, HashSet};
 use std::vec::Vec;
+use itertools::Itertools;
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::{ID, UID};
 
@@ -342,7 +343,13 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     ) {
         Ok(res) => res,
         Err(e) => {
-            let general_error = DwalletMPCError::TwoPCMPCError(format!("{:?}", e));
+            let general_error = DwalletMPCError::TwoPCMPCError(format!("MPC error in party {party_id} session {} at round #{} {:?}", session_id, messages.len() + 1, e));
+            println!("messages in current round: {:?}", messages.last().unwrap().keys().copied().collect_vec());
+            println!("MPC error in party {party_id} session {} at round #{} {:?}", session_id, messages.len() + 1, e);
+            // std::fs::write(
+            //     format!("public_input{}.bin", session_id),
+            //     bcs::to_bytes::<<ReshareSecp256k1Party as mpc::Party>::PublicInput>(&public_input)?,
+            // ).expect("TODO: panic message");
             return match e.into() {
                 // No threshold was reached, so we can't proceed.
                 mpc::Error::ThresholdNotReached { honest_subset } => {

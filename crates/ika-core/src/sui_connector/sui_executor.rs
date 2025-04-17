@@ -25,6 +25,7 @@ use ika_types::sui::{
     REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use itertools::Itertools;
+use move_core_types::ident_str;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
@@ -413,6 +414,13 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
+        // Self::process_request_advance_network_keys(
+        //     ika_system_package_id,
+        //     dwallet_2pc_mpc_secp256k1_id,
+        //     sui_notifier,
+        //     sui_client,
+        // )
+        // .await?;
         info!("Running `process_request_advance_epoch()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -438,6 +446,60 @@ where
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
             REQUEST_ADVANCE_EPOCH_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        )
+        .map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!(
+                "failed on ProgrammableTransactionBuilder::move_call {e}"
+            ))
+        })?;
+
+        let transaction = super::build_sui_transaction(
+            sui_notifier.sui_address,
+            ptb.finish(),
+            sui_client,
+            vec![*gas_coin],
+            &sui_notifier.sui_key,
+        )
+        .await;
+
+        sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn process_request_advance_network_keys(
+        ika_system_package_id: ObjectID,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        sui_notifier: &SuiNotifier,
+        sui_client: &Arc<SuiClient<C>>,
+    ) -> IkaResult<()> {
+        info!("Running `request_advance_network_keys()`");
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
+
+        let mut ptb = ProgrammableTransactionBuilder::new();
+
+        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
+
+        let dwallet_2pc_mpc_secp256k1_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+            .await;
+
+        let args = vec![
+            CallArg::Object(ika_system_state_arg),
+            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+        ];
+
+        ptb.move_call(
+            ika_system_package_id,
+            SYSTEM_MODULE_NAME.into(),
+            ident_str!("request_advance_network_keys").into(),
             vec![],
             args,
         )

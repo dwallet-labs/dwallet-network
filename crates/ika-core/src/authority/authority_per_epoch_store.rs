@@ -831,7 +831,8 @@ impl AuthorityPerEpochStore {
             chain_identifier,
             perpetual_tables,
             self.packages_config.clone(),
-            Arc::new(tokio::sync::RwLock::new(None)),
+            self.next_epoch_active_committee
+                .clone(),
         )
     }
 

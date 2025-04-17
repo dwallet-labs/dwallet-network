@@ -268,9 +268,6 @@ ECDSAPresignState
 ECDSASignState
 	public enum
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-copy_table_vec_and_destroy
-	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
 lock_last_active_session_sequence_number
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
@@ -1484,6 +1481,9 @@ request_lock_epoch_sessions
 	public fun
 	0x0::system
 request_advance_epoch
+	public fun
+	0x0::system
+request_advance_network_keys
 	public fun
 	0x0::system
 request_dwallet_network_decryption_key_dkg_by_cap
