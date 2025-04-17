@@ -160,6 +160,7 @@ impl ConsensusManagerTrait for MysticetiManager {
             )
         };
 
+        // TODO (#873): Implement a production grade configuration upgrade mechanism
         protocol_config.set_consensus_max_transaction_size_bytes_for_testing(500 * 1024 * 1024);
         protocol_config
             .set_consensus_max_transactions_in_block_bytes_for_testing(500 * 1024 * 1024);
