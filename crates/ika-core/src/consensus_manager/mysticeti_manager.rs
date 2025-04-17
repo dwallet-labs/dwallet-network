@@ -160,6 +160,9 @@ impl ConsensusManagerTrait for MysticetiManager {
             )
         };
 
+        protocol_config.set_consensus_max_transaction_size_bytes_for_testing(500 * 1024 * 1024);
+        protocol_config
+            .set_consensus_max_transactions_in_block_bytes_for_testing(500 * 1024 * 1024);
         let authority = ConsensusAuthority::start(
             protocol_config.consensus_network(),
             own_index,
