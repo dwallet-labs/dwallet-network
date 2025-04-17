@@ -191,7 +191,7 @@ impl DWalletMPCManager {
                 self.perform_cryptographic_computation();
             }
             DWalletMPCDBMessage::Message(message) => {
-                if let Err(err) = self.handle_message(message.clone()) {
+                if let Err(err) = self.handle_message(message.clone()).await {
                     error!(
                         ?err,
                         session_id=?message.session_id,
@@ -544,17 +544,17 @@ impl DWalletMPCManager {
         let session = match self.mpc_sessions.get_mut(&message.session_id) {
             Some(session) => session,
             None => {
-                if message.session_sequence_number
-                    > self.last_session_that_reached_quorum + self.max_active_sessions_buffer
-                {
-                    error!(
-                        session_id=?message.session_id,
-                        from_authority=?message.authority,
-                        receiving_authority=?self.epoch_store()?.name,
-                        crypto_round_number=?message.round_number,
-                        "received a session that cannot exist, as its sequence number is too high",
-                    );
-                }
+                // if message.session_sequence_number
+                //     > self.last_session_that_reached_quorum + self.max_active_sessions_buffer
+                // {
+                //     error!(
+                //         session_id=?message.session_id,
+                //         from_authority=?message.authority,
+                //         receiving_authority=?self.epoch_store()?.name,
+                //         crypto_round_number=?message.round_number,
+                //         "received a session that cannot exist, as its sequence number is too high",
+                //     );
+                // }
                 warn!(
                     session_id=?message.session_id,
                     from_authority=?message.authority,
