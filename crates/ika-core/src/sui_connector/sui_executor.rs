@@ -272,6 +272,7 @@ where
     fn calculate_signers_bitmap(signers_map: &RoaringBitmap) -> Vec<u8> {
         let max_singers_bytes = signers_map.max().unwrap_or(0).div_ceil(8) as usize;
         // The bitmap is 1 byte larger than the number of signers to accommodate the last byte.
+        // TODO (#877): Fix the signers bitmap in edge cases
         let mut signers_bitmap = vec![0u8; max_singers_bytes];
         for singer in signers_map.iter() {
             // Set the i-th bit to 1,
