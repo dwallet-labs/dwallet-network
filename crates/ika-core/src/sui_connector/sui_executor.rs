@@ -505,7 +505,7 @@ where
             .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
             .await;
 
-        println!(
+        info!(
             "`signers_bitmap` @ handle_execution_task: {:?}",
             signers_bitmap
         );
