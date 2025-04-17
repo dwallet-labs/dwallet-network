@@ -412,7 +412,7 @@ impl DWalletMPCSession {
             message,
             self.session_id.clone(),
             self.pending_quorum_for_highest_round_number,
-            self.sequence_number
+            self.sequence_number,
         ))
     }
 
@@ -466,14 +466,6 @@ impl DWalletMPCSession {
 
         let current_round = self.serialized_full_messages.len();
 
-        let message_bytes = self
-            .messages_collector
-            .add_message(source_party_id, message.clone());
-
-        let message_bytes = match message_bytes {
-            Some(message) => message,
-            None => return Ok(()),
-        };
         let authority_name = self.epoch_store()?.name;
 
         match self.serialized_full_messages.get_mut(message.round_number) {
@@ -498,7 +490,7 @@ impl DWalletMPCSession {
                     crypto_round_number=?message.round_number,
                     "Inserting a message into the party to message maps",
                 );
-                party_to_msg.insert(source_party_id, message_bytes.clone());
+                party_to_msg.insert(source_party_id, message.message.clone());
             }
             // If next round.
             None if message.round_number == current_round => {
@@ -510,7 +502,7 @@ impl DWalletMPCSession {
                     "Store message for a future round",
                 );
                 let mut map = HashMap::new();
-                map.insert(source_party_id, message_bytes.clone());
+                map.insert(source_party_id, message.message.clone());
                 self.serialized_full_messages.push(map);
             }
             None => {
