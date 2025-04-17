@@ -515,7 +515,10 @@ impl DWalletMPCManager {
 
     /// Handles a message by forwarding it to the relevant MPC session.
     /// If the session does not exist, punish the sender.
-    pub(crate) async fn handle_message(&mut self, message: DWalletMPCMessage) -> DwalletMPCResult<()> {
+    pub(crate) async fn handle_message(
+        &mut self,
+        message: DWalletMPCMessage,
+    ) -> DwalletMPCResult<()> {
         info!(
             session_id=?message.session_id,
             from_authority=?message.authority,
@@ -541,8 +544,9 @@ impl DWalletMPCManager {
         let session = match self.mpc_sessions.get_mut(&message.session_id) {
             Some(session) => session,
             None => {
-                self.epoch_store()?.get_dwallet_mpc_outputs_verifier().await.mpc_sessions_outputs
-                if message.session_sequence_number > self.last_session_that_reached_quorum + self.max_active_sessions_buffer {
+                if message.session_sequence_number
+                    > self.last_session_that_reached_quorum + self.max_active_sessions_buffer
+                {
                     error!(
                         session_id=?message.session_id,
                         from_authority=?message.authority,
