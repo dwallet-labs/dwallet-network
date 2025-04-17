@@ -203,7 +203,7 @@ impl DWalletMPCSession {
                     self.new_dwallet_mpc_message(FAILED_SESSION_OUTPUT.to_vec())?;
                 tokio_runtime_handle.spawn(async move {
                         if let Err(err) = consensus_adapter
-                            .submit_to_consensus(&vec![msg], &epoch_store)
+                            .submit_to_consensus(&vec![consensus_message], &epoch_store)
                             .await
                         {
                             error!("failed to submit an MPC message to consensus: {:?}", err);
