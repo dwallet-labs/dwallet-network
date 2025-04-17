@@ -16,14 +16,12 @@ pub fn create_dkg_centralized_output(
     key_scheme: u8,
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
-    public_output_type: u8,
 ) -> Result<JsValue, JsError> {
     let dkg_centralized_result = &create_dkg_output(
         network_decryption_key_public_output,
         key_scheme,
         decentralized_first_round_public_output,
         session_id,
-        public_output_type,
     )
     .map_err(|e| JsError::new(&e.to_string()))?;
     serde_wasm_bindgen::to_value(&(
@@ -59,13 +57,11 @@ pub fn encrypt_secret_share(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
     network_decryption_key_public_output: Vec<u8>,
-    public_output_type: u8,
 ) -> Result<JsValue, JsError> {
     let encryption_and_proof = encrypt_secret_key_share_and_prove(
         secret_key_share,
         encryption_key,
         network_decryption_key_public_output,
-        public_output_type,
     )
     .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
@@ -124,7 +120,6 @@ pub fn create_sign_centralized_output(
     presign: Vec<u8>,
     message: Vec<u8>,
     hash_type: u8,
-    public_output_type: u8,
 ) -> Result<JsValue, JsError> {
     let signed_message = advance_centralized_sign_party(
         network_decryption_key_public_output,
@@ -134,7 +129,6 @@ pub fn create_sign_centralized_output(
         presign,
         message,
         hash_type,
-        public_output_type,
     )
     .map_err(|e| JsError::new(&e.to_string()))?;
 

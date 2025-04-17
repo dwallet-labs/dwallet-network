@@ -189,15 +189,15 @@ where
                     warn!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 })
-                .iter()
+                .into_iter()
                 .map(|(key_id, key_data)| {
                     (
-                        *key_id,
+                        key_id,
                         create_dwallet_mpc_network_decryption_key_from_onchain_public_output(
                             key_data.current_epoch,
                             DWalletMPCNetworkKeyScheme::Secp256k1,
                             &weighted_threshold_access_structure,
-                            &key_data,
+                            key_data,
                         ),
                     )
                 })

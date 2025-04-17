@@ -12,11 +12,12 @@ use class_groups::dkg::{
 };
 use class_groups::{
     DecryptionKeyShare, SecretKeyShareSizedInteger, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+    SECRET_KEY_SHARE_LIMBS,
 };
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyOutputType, NetworkDecryptionKeyShares,
+    DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicOutputType, NetworkDecryptionKeyShares,
 };
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -25,6 +26,7 @@ use ika_types::messages_dwallet_mpc::{
     DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, DWalletNetworkDecryptionKeyState,
     MPCProtocolInitData, SessionInfo, StartNetworkDKGEvent,
 };
+use mpc::secret_sharing::shamir::over_the_integers::PrecomputedValues;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
@@ -82,7 +84,7 @@ fn get_decryption_key_shares_from_public_output(
     #[cfg(feature = "with-network-dkg")]
     {
         match shares.state {
-            NetworkDecryptionKeyOutputType::NetworkDkg => {
+            NetworkDecryptionKeyPublicOutputType::NetworkDkg => {
                 let dkg_public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(&shares.public_output)?;
 
@@ -95,7 +97,7 @@ fn get_decryption_key_shares_from_public_output(
                     .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
                 Ok(secret_shares)
             }
-            NetworkDecryptionKeyOutputType::Reshare => {
+            NetworkDecryptionKeyPublicOutputType::Reshare => {
                 let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(&shares.public_output)?;
                 let secret_shares = public_output.decrypt_decryption_key_shares(
@@ -254,7 +256,7 @@ impl DwalletMPCNetworkKeys {
                     bcs::from_bytes(&dkg_output_bytes)?;
                 Ok(NetworkDecryptionKeyShares {
                     epoch,
-                    state: NetworkDecryptionKeyOutputType::NetworkDkg,
+                    state: NetworkDecryptionKeyPublicOutputType::NetworkDkg,
                     public_output: dkg_output_bytes,
                     encryption_scheme_public_parameters: bcs::to_bytes(
                         &dkg_output.default_encryption_scheme_public_parameters::<
@@ -268,7 +270,7 @@ impl DwalletMPCNetworkKeys {
             }
             DWalletMPCNetworkKeyScheme::Ristretto => Ok(NetworkDecryptionKeyShares {
                 epoch,
-                state: NetworkDecryptionKeyOutputType::NetworkDkg,
+                state: NetworkDecryptionKeyPublicOutputType::NetworkDkg,
                 public_output: dkg_output_bytes,
                 encryption_scheme_public_parameters: vec![],
                 decryption_key_share_public_parameters: vec![],
@@ -528,7 +530,7 @@ fn create_dwallet_mpc_network_decryption_key_from_reshare_public_output(
         .map_err(|e| DwalletMPCError::ClassGroupsError(e.to_string()))?;
     Ok(NetworkDecryptionKeyShares {
         epoch,
-        state: NetworkDecryptionKeyOutputType::Reshare,
+        state: NetworkDecryptionKeyPublicOutputType::Reshare,
         public_output: public_output_bytes.to_vec(),
         encryption_scheme_public_parameters: bcs::to_bytes(&encryption_scheme_public_parameters)?,
         decryption_key_share_public_parameters: bcs::to_bytes(
@@ -558,7 +560,7 @@ fn create_dwallet_mpc_network_decryption_key_from_network_dkg_public_output(
 
             Ok(NetworkDecryptionKeyShares {
                 epoch,
-                state: NetworkDecryptionKeyOutputType::NetworkDkg,
+                state: NetworkDecryptionKeyPublicOutputType::NetworkDkg,
                 public_output: public_output_bytes.to_vec(),
                 encryption_scheme_public_parameters: bcs::to_bytes(
                     &encryption_scheme_public_parameters,

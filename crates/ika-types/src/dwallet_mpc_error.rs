@@ -75,7 +75,7 @@ pub enum DwalletMPCError {
     #[error("missing dwallet mpc decryption key shares")]
     MissingDwalletMPCDecryptionKeyShares,
 
-    #[error("missing dwallet mpc network key version")]
+    #[error("network decryption key is not ready for use")]
     NetworkDecryptionKeyNotReady,
 
     #[error("failed to lock the mutex")]

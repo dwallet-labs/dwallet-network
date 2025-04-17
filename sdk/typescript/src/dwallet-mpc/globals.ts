@@ -76,11 +76,6 @@ export async function getObjectWithType<TObject>(
 	return objContent;
 }
 
-export enum NetworkDecryptionKeyPublicOutputType {
-	NetworkDKG = 1,
-	Reshare = 2,
-}
-
 // Mocked network DKG output used for testing purposes in non-production environments.
 export const mockedNetworkDecryptionKeyPublicOutput = Uint8Array.from(
 	Buffer.from(

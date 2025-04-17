@@ -184,7 +184,7 @@ impl fmt::Display for MPCSessionStatus {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
-pub enum NetworkDecryptionKeyOutputType {
+pub enum NetworkDecryptionKeyPublicOutputType {
     NetworkDkg,
     Reshare,
 }
@@ -195,7 +195,7 @@ pub struct NetworkDecryptionKeyShares {
     /// The epoch of the last version update.
     pub epoch: u64,
 
-    pub state: NetworkDecryptionKeyOutputType,
+    pub state: NetworkDecryptionKeyPublicOutputType,
 
     pub public_output: MPCPublicOutput,
 

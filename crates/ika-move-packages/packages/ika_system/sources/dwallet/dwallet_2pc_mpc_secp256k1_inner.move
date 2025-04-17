@@ -884,6 +884,8 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
 public(package) fun emit_start_reshare_event(
     self: &mut DWalletCoordinatorInner, key_cap: &DWalletNetworkDecryptionKeyCap, ctx: &mut TxContext
 ) {
+    let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(key_cap.dwallet_network_decryption_key_id); 
+    dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration;
     event::emit(self.create_immediate_dwallet_event(
         key_cap.dwallet_network_decryption_key_id,
         DWalletDecryptionKeyReshareRequestEvent {
@@ -898,7 +900,7 @@ fun get_active_dwallet_network_decryption_key(
     dwallet_network_decryption_key_id: ID,
 ): &mut DWalletNetworkDecryptionKey {
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    assert!(dwallet_network_decryption_key.state == DWalletNetworkDecryptionKeyState::NetworkDKGCompleted, EDWalletNetworkDecryptionKeyNotActive);
+    assert!(dwallet_network_decryption_key.state != DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG, EDWalletNetworkDecryptionKeyNotActive);
     dwallet_network_decryption_key
 }
 

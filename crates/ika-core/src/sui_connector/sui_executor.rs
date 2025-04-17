@@ -109,7 +109,7 @@ where
         if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
             info!("Calling `process_mid_epoch()`");
             if let Err(e) =
-                Self::process_mid_epoch(self.ika_system_package_id, &sui_notifier, &self.sui_client)
+                Self::process_mid_epoch(self.ika_system_package_id, dwallet_2pc_mpc_secp256k1_id, &sui_notifier, &self.sui_client)
                     .await
             {
                 error!("`process_mid_epoch()` failed: {:?}", e);
@@ -294,6 +294,7 @@ where
 
     async fn process_mid_epoch(
         ika_system_package_id: ObjectID,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
@@ -307,9 +308,13 @@ where
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
+        let dwallet_2pc_mpc_secp256k1_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+            .await;
 
         let args = vec![
             CallArg::Object(ika_system_state_arg),
+            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
             CallArg::Object(clock_arg),
         ];
 

@@ -14,7 +14,6 @@ import {
 	isStartSessionEvent,
 	mockedNetworkDecryptionKeyPublicOutput,
 	MPCKeyScheme,
-	NetworkDecryptionKeyPublicOutputType,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 import type { Config } from './globals.ts';
@@ -60,7 +59,6 @@ export async function sign(
 	secretKey: Uint8Array,
 	hash = Hash.KECCAK256,
 	networkDecryptionKeyPublicOutput: Uint8Array = mockedNetworkDecryptionKeyPublicOutput,
-	networkDecryptionKeyPublicOutputType: NetworkDecryptionKeyPublicOutputType = NetworkDecryptionKeyPublicOutputType.NetworkDKG,
 ): Promise<CompletedSignEvent> {
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
@@ -75,7 +73,6 @@ export async function sign(
 		presign.state.fields.presign,
 		message,
 		hash,
-		networkDecryptionKeyPublicOutputType,
 	);
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
