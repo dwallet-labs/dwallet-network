@@ -3,7 +3,7 @@ use commitment::CommitmentSizedNumber;
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCMessageSlice, MPCPrivateInput,
-    MPCPublicInput, MPCSessionStatus, MessageState,
+    MPCPublicInput, MPCSessionStatus,
 };
 use group::PartyID;
 use itertools::Itertools;

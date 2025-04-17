@@ -43,24 +43,6 @@ pub struct MPCMessageSlice {
     pub number_of_chunks: Option<usize>,
 }
 
-/// Represents the state of the message building process.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub enum MessageState {
-    /// All chunks received; full message reconstructed.
-    Complete(MPCMessage),
-    /// Still waiting on some chunks; maps sequence numbers to slices.
-    Incomplete(HashMap<u64, MPCMessageSlice>),
-}
-
-/// Builds and reconstructs messages from incoming slices.
-/// Some MPC messages might be greater than the maximum size of a consensus message limit.
-/// The `MPCMessageBuilder` is used to split the message into smaller chunks,
-/// to avoid exceeding the maximum size limit.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct MPCMessageBuilder {
-    /// Current state of the message.
-    pub messages: MessageState,
-}
 
 /// Alias for an MPC public output.
 pub type MPCPublicOutput = Vec<u8>;
