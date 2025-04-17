@@ -170,7 +170,8 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
-                let consensus_message = self.new_dwallet_mpc_message(public_output.clone())?;
+                let consensus_message = self
+                    .new_dwallet_mpc_output_message(public_output.clone(), self.sequence_number)?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
@@ -196,8 +197,10 @@ impl DWalletMPCSession {
                 error!("failed to advance the MPC session: {:?}", e);
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
-                let consensus_message =
-                    self.new_dwallet_mpc_message(FAILED_SESSION_OUTPUT.to_vec())?;
+                let consensus_message = self.new_dwallet_mpc_output_message(
+                    FAILED_SESSION_OUTPUT.to_vec(),
+                    self.sequence_number,
+                )?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
@@ -209,6 +212,29 @@ impl DWalletMPCSession {
                 Err(e)
             }
         }
+    }
+
+    /// Create a new consensus transaction with the flow result (output) to be
+    /// sent to the other MPC parties.
+    /// Errors if the epoch was switched in the middle and was not available.
+    fn new_dwallet_mpc_output_message(
+        &self,
+        output: Vec<u8>,
+        sequence_number: u64,
+    ) -> DwalletMPCResult<ConsensusTransaction> {
+        let Some(mpc_event_data) = &self.mpc_event_data else {
+            return Err(DwalletMPCError::MissingEventDrivenData);
+        };
+        Ok(ConsensusTransaction::new_dwallet_mpc_output(
+            self.epoch_store()?.name,
+            output,
+            SessionInfo {
+                sequence_number,
+                session_id: self.session_id.clone(),
+                mpc_round: mpc_event_data.init_protocol_data.clone(),
+                is_immediate: false,
+            },
+        ))
     }
 
     /// In the Sign Identifiable Abort protocol, each validator sends a malicious report, even
