@@ -108,9 +108,13 @@ where
             .is_none();
         if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
             info!("Calling `process_mid_epoch()`");
-            if let Err(e) =
-                Self::process_mid_epoch(self.ika_system_package_id, dwallet_2pc_mpc_secp256k1_id, &sui_notifier, &self.sui_client)
-                    .await
+            if let Err(e) = Self::process_mid_epoch(
+                self.ika_system_package_id,
+                dwallet_2pc_mpc_secp256k1_id,
+                &sui_notifier,
+                &self.sui_client,
+            )
+            .await
             {
                 error!("`process_mid_epoch()` failed: {:?}", e);
             } else {
