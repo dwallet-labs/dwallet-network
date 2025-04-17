@@ -24,7 +24,6 @@ use ika_types::sui::{
     VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
 };
 use move_core_types::language_storage::StructTag;
-use serde::Serialize;
 use shared_crypto::intent::Intent;
 use std::collections::HashMap;
 use std::fs::File;
@@ -35,7 +34,6 @@ use sui::client_commands::{
 };
 use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
-use sui_sdk::apis::CoinReadApi;
 use sui_sdk::rpc_types::SuiTransactionBlockEffectsAPI;
 use sui_sdk::rpc_types::{
     ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
@@ -127,10 +125,14 @@ pub async fn init_ika_on_sui(
         validator_addresses.push(validator_address);
     }
 
-    futures::future::join_all(request_tokens_from_faucet_futures)
-        .await
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?;
+    for future in request_tokens_from_faucet_futures {
+        future.await?;
+    }
+
+    // futures::future::join_all(request_tokens_from_faucet_futures)
+    //     .await
+    //     .into_iter()
+    //     .collect::<Result<Vec<_>, _>>()?;
 
     let ika_package = ika_move_packages::BuiltInIkaMovePackages::get_package_by_name("ika");
     let ika_system_package =
@@ -522,7 +524,10 @@ pub async fn init_initialize(
 
     let response = client
         .read_api()
-        .get_object_with_options(ika_system_object_id, SuiObjectDataOptions::new().with_owner())
+        .get_object_with_options(
+            ika_system_object_id,
+            SuiObjectDataOptions::new().with_owner(),
+        )
         .await?;
 
     let Some(Owner::Shared {
@@ -532,7 +537,11 @@ pub async fn init_initialize(
         return Err(anyhow::Error::msg("Owner does not exist"));
     };
 
-    Ok((ika_system_object_id, protocol_cap_id, initial_shared_version))
+    Ok((
+        ika_system_object_id,
+        protocol_cap_id,
+        initial_shared_version,
+    ))
 }
 
 async fn request_add_validator(

@@ -291,6 +291,13 @@ impl DWalletMPCSession {
         let public_input = &mpc_event_data.public_input;
         match &mpc_event_data.init_protocol_data {
             MPCProtocolInitData::DKGFirst(..) => {
+                info!(
+                    mpc_protocol=?mpc_event_data.init_protocol_data,
+                    validator=?self.epoch_store()?.name,
+                    session_id=?self.session_id,
+                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    "Advancing DKG first party",
+                );
                 let public_input = bcs::from_bytes(public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
                     session_id,
