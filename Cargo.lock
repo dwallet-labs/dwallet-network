@@ -5242,6 +5242,7 @@ dependencies = [
  "mysten-service",
  "parking_lot 0.12.3",
  "prometheus",
+ "rayon",
  "reqwest 0.12.12",
  "serde",
  "sui-macros",
