@@ -243,7 +243,7 @@ Event emitted after verifing quorum of signature.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_MAX_VOTING_POWER">MAX_VOTING_POWER</a>: u64 = 12;
+<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_MAX_VOTING_POWER">MAX_VOTING_POWER</a>: u64 = 4;
 </code></pre>
 
 
@@ -268,7 +268,7 @@ Fixing the total voting power allows clients to hardcode the quorum threshold an
 than recomputing these.
 
 
-<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_TOTAL_VOTING_POWER">TOTAL_VOTING_POWER</a>: u64 = 115;
+<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_TOTAL_VOTING_POWER">TOTAL_VOTING_POWER</a>: u64 = 37;
 </code></pre>
 
 
