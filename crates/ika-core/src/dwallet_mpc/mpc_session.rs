@@ -109,7 +109,7 @@ impl DWalletMPCSession {
         }
     }
 
-    pub(crate) fn clear_dynamic_possibly_large_data(&mut self) {
+    pub(crate) fn clear_data(&mut self) {
         self.mpc_event_data = None;
         self.serialized_full_messages = Default::default();
     }

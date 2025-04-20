@@ -58,7 +58,7 @@ struct SessionOutputsData {
 }
 
 impl SessionOutputsData {
-    fn clear_dynamic_possibly_large_data(&mut self) {
+    fn clear_data(&mut self) {
         self.session_output_to_voting_authorities.clear();
         self.authorities_that_sent_output.clear();
     }
@@ -182,7 +182,7 @@ impl DWalletMPCOutputsVerifier {
             .is_quorum_reached()
         {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
-            session_output_data.clear_dynamic_possibly_large_data();
+            session_output_data.clear_data();
             return Ok(OutputVerificationResult {
                 result: OutputVerificationStatus::FirstQuorumReached(output.clone()),
                 malicious_actors: vec![],
