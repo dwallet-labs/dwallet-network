@@ -38,13 +38,13 @@ pub type CommitteeDigest = [u8; 32];
 /// as easily understandable basis points (e.g., voting_power: 100 = 1%, voting_power: 1 = 0.01%).
 /// Fixing the total voting power allows clients to hardcode the quorum threshold and total_voting power rather
 /// than recomputing these.
-pub const TOTAL_VOTING_POWER: StakeUnit = 37;
+pub const TOTAL_VOTING_POWER: StakeUnit = 115;
 /// Quorum threshold for our fixed voting power--any message signed by this much voting power can be trusted
 /// up to BFT assumptions
-pub const QUORUM_THRESHOLD: StakeUnit = 25;
+pub const QUORUM_THRESHOLD: StakeUnit = 77;
 
 /// Validity threshold defined by f+1
-pub const VALIDITY_THRESHOLD: StakeUnit = 13;
+pub const VALIDITY_THRESHOLD: StakeUnit = 39;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq)]
 pub struct Committee {
