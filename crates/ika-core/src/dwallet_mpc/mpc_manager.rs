@@ -468,7 +468,7 @@ impl DWalletMPCManager {
                 ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
                 self.pending_for_computation_order
                     .push_back(ready_to_advance_session);
-                self.pending_for_computation_order.remove(index);
+                self.pending_for_events_order.remove(index);
             }
         }
         while !self.pending_for_computation_order.is_empty() {
