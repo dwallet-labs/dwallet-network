@@ -41,7 +41,7 @@ pub type CommitteeDigest = [u8; 32];
 pub const TOTAL_VOTING_POWER: StakeUnit = 37;
 /// Quorum threshold for our fixed voting power--any message signed by this much voting power can be trusted
 /// up to BFT assumptions
-pub const QUORUM_THRESHOLD: StakeUnit = 77;
+pub const QUORUM_THRESHOLD: StakeUnit = 25;
 
 /// Validity threshold defined by f+1
 pub const VALIDITY_THRESHOLD: StakeUnit = 13;

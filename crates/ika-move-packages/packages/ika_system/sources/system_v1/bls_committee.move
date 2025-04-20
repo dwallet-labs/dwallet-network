@@ -36,7 +36,7 @@ const TOTAL_VOTING_POWER: u64 = 37;
 
 /// Quorum threshold for our fixed voting power - any message signed by this much voting power can be trusted
 /// up to BFT assumptions
-const QUORUM_THRESHOLD: u64 = 77;
+const QUORUM_THRESHOLD: u64 = 25;
 
 // Cap voting power of an individual validator at 10%.
 const MAX_VOTING_POWER: u64 = 4;

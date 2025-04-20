@@ -2,26 +2,16 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::bail;
-use move_binary_format::binary_config::BinaryConfig;
-use move_binary_format::compatibility::Compatibility;
 use move_binary_format::file_format::AddressIdentifierIndex;
 use move_binary_format::CompiledModule;
-use move_core_types::gas_algebra::InternalGas;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Formatter;
-use sui_protocol_config::ProtocolConfig;
-use sui_types::base_types::ObjectRef;
-use sui_types::storage::ObjectStore;
 use sui_types::{
     base_types::ObjectID,
-    digests::TransactionDigest,
-    move_package::MovePackage,
-    object::{Object, OBJECT_START_VERSION},
     MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID,
 };
-use tracing::error;
 
 /// Represents a system package in the framework, that's built from the source code inside
 /// ika-framework.

@@ -254,7 +254,7 @@ Quorum threshold for our fixed voting power - any message signed by this much vo
 up to BFT assumptions
 
 
-<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_QUORUM_THRESHOLD">QUORUM_THRESHOLD</a>: u64 = 77;
+<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_QUORUM_THRESHOLD">QUORUM_THRESHOLD</a>: u64 = 25;
 </code></pre>
 
 
