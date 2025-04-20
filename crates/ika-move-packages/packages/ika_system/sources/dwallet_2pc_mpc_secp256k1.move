@@ -69,13 +69,6 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
     self.inner_mut().request_dwallet_network_decryption_key_dkg(ctx)
 }
 
-public(package) fun advance_epoch_dwallet_network_decryption_key(
-    self: &mut DWalletCoordinator,
-    cap: &DWalletNetworkDecryptionKeyCap,
-) {
-    self.inner_mut().advance_epoch_dwallet_network_decryption_key(cap);
-}
-
 public(package) fun advance_epoch(
     self: &mut DWalletCoordinator,
     committee: BlsCommittee,

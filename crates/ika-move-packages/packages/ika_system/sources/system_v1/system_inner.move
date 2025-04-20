@@ -178,7 +178,7 @@ public(package) fun create(
 }
 
 public(package) fun advance_network_keys(
-    self: &SystemInnerV1, dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator
+    self: &SystemInnerV1, dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinatorInner
 ) {
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
 }
@@ -717,14 +717,16 @@ public(package) fun advance_epoch(
 
     let computation_reward_amount_before_distribution = self.computation_reward.value();
 
+    let epoch_computation_reward = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee());
+
     let stake_subsidy_amount = stake_subsidy.value();
     let mut total_reward = sui::balance::zero<IKA>();
     // add here previously rewarded money
+    total_reward.join(epoch_computation_reward);
     total_reward.join(self.computation_reward.withdraw_all());
     total_reward.join(stake_subsidy);
     let total_reward_amount_before_distribution = total_reward.value();
     self.epoch = self.epoch + 1;
-
     self
         .validators
         .advance_epoch(
@@ -754,6 +756,8 @@ public(package) fun advance_epoch(
         last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
         self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
     };
+
+    self.advance_network_keys(dwallet_coordinator);
 
     event::emit(SystemEpochInfoEvent {
         epoch: self.epoch,
@@ -823,6 +827,13 @@ public(package) fun pool_exchange_rates(
 public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
     let validator_set = &self.validators;
     validator_set.active_committee()
+}
+
+public(package) fun next_epoch_active_committee(self: &SystemInnerV1): BlsCommittee {
+    let validator_set = &self.validators;
+    let next_epoch_active_committee = validator_set.next_epoch_active_committee();
+    assert!(next_epoch_active_committee.is_some(), EBpsTooLarge);
+    return next_epoch_active_committee.borrow()
 }
 
 fun verify_cap(
