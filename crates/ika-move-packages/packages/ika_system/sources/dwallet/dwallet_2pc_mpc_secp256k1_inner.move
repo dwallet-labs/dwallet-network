@@ -87,6 +87,7 @@ public struct DWalletCoordinatorInner has store {
     /// Sui gas fee reimbursement to fund the network writing tx responses to sui.
     gas_fee_reimbursement_sui: Balance<SUI>,
     /// The fees paid for consensus validation in IKA.
+    // this should get returned from the advance epoch function
     consensus_validation_fee_charged_ika: Balance<IKA>,
     /// The active committees.
     active_committee: BlsCommittee,
@@ -854,6 +855,7 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
 public(package) fun advance_epoch_dwallet_network_decryption_key(
     self: &mut DWalletCoordinatorInner,
     cap: &DWalletNetworkDecryptionKeyCap,
+    // todo: return balance of ika of the key
 ) {
     let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(cap.dwallet_network_decryption_key_id);
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
@@ -892,6 +894,7 @@ public(package) fun advance_epoch(
     self.current_epoch = self.current_epoch + 1;
     self.previous_committee = self.active_committee;
     self.active_committee = next_committee;
+    // return the money
 }
 
 fun get_dwallet(
