@@ -883,8 +883,8 @@ public(package) fun process_checkpoint_message_by_quorum(
     self.active_committee().verify_certificate(epoch, &signature, &signers_bitmap, &intent_bytes);
 
     self.process_checkpoint_message(message, ctx);
+    // TODO: seperate this to its own process
     dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
-
 }
 
 public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
