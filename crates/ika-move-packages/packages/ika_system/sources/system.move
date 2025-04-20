@@ -629,7 +629,7 @@ public fun process_checkpoint_message_by_cap(
 // TODO: split dwallet_2pc_mpc_secp256k1 to its own checkpoint
 public fun process_checkpoint_message_by_quorum(
     self: &mut System,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    _dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     mut message: vector<u8>,
