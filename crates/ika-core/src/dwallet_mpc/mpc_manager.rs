@@ -561,6 +561,7 @@ impl DWalletMPCManager {
                     from_authority=?message.authority,
                     receiving_authority=?self.epoch_store()?.name,
                     crypto_round_number=?message.round_number,
+                    malicious_parties=?malicious_parties,
                     "Error storing message, malicious parties detected"
                 );
                 self.flag_parties_as_malicious(&malicious_parties)?;
