@@ -855,7 +855,6 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
 public(package) fun advance_epoch_dwallet_network_decryption_key(
     self: &mut DWalletCoordinatorInner,
     cap: &DWalletNetworkDecryptionKeyCap,
-    // todo: return balance of ika of the key
 ): Balance<IKA> {
     let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(cap.dwallet_network_decryption_key_id);
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
