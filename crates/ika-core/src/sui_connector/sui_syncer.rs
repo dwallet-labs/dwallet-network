@@ -217,6 +217,7 @@ where
                     if let Some(local_dec_key_shares) = local_network_decryption_keys.get(&key_id) {
                         if *local_dec_key_shares != network_dec_key_shares {
                         info!("Updating the network key for `key_id`: {:?}", key_id);
+                            println!("Updating the network key for `key_id`: {:?}", key_id);
                             if let Err(e) =
                                 dwallet_mpc_network_keys.update_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
                             {
