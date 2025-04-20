@@ -726,7 +726,6 @@ public(package) fun advance_epoch(
 
     let stake_subsidy_amount = stake_subsidy.value();
     let mut total_reward = sui::balance::zero<IKA>();
-    // add here previously rewarded money
     total_reward.join(epoch_computation_reward);
     total_reward.join(self.computation_reward.withdraw_all());
     total_reward.join(stake_subsidy);
