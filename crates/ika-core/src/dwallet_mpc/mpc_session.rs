@@ -109,6 +109,11 @@ impl DWalletMPCSession {
         }
     }
 
+    pub(crate) fn clear_dynamic_possibly_large_data(&mut self) {
+        self.mpc_event_data = None;
+        self.serialized_full_messages = Default::default();
+    }
+
     /// Returns the epoch store.
     /// Errors if the epoch was switched in the middle.
     fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
