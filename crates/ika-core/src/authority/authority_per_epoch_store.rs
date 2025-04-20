@@ -61,7 +61,7 @@ use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicOutput, NetworkDecryptionKeyShares,
+    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
 };
 use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
@@ -1072,27 +1072,6 @@ impl AuthorityPerEpochStore {
         Ok(result?)
     }
 
-    // fn finish_consensus_certificate_process_with_batch(
-    //     &self,
-    //     output: &mut ConsensusCommitOutput,
-    //     certificates: &[VerifiedExecutableTransaction],
-    // ) -> IkaResult {
-    //     output.insert_pending_execution(certificates);
-    //
-    //     if cfg!(debug_assertions) {
-    //         for certificate in certificates {
-    //             // User signatures are written in the same batch as consensus certificate processed flag,
-    //             // which means we won't attempt to insert this twice for the same tx digest
-    //             assert!(!self
-    //                 .tables()?
-    //                 .user_signatures_for_checkpoints
-    //                 .contains_key(certificate.digest())
-    //                 .unwrap());
-    //         }
-    //     }
-    //     Ok(())
-    // }
-
     pub async fn user_certs_closed_notify(&self) {
         self.user_certs_closed_notify.wait().await
     }
@@ -1344,36 +1323,6 @@ impl AuthorityPerEpochStore {
         Ok(verified_messages)
     }
 
-    // Caller is not required to set ExecutionIndices with the right semantics in
-    // VerifiedSequencedConsensusTransaction.
-    // Also, ConsensusStats and hash will not be updated in the db with this function, unlike in
-    // process_consensus_transactions_and_commit_boundary().
-    #[cfg(any(test, feature = "test-utils"))]
-    pub async fn process_consensus_transactions_for_tests<C: CheckpointServiceNotify>(
-        self: &Arc<Self>,
-        transactions: Vec<SequencedConsensusTransaction>,
-        checkpoint_service: &Arc<C>,
-        authority_metrics: &Arc<AuthorityMetrics>,
-        skip_consensus_commit_prologue_in_test: bool,
-    ) -> IkaResult<Vec<VerifiedExecutableTransaction>> {
-        self.process_consensus_transactions_and_commit_boundary(
-            transactions,
-            &ExecutionIndicesWithStats::default(),
-            &ConsensusCommitInfo::new_for_test(
-                // if self.randomness_state_enabled() {
-                //     self.get_highest_pending_checkpoint_height() / 2 + 1
-                // } else {
-                //     self.get_highest_pending_checkpoint_height() + 1
-                // },
-                self.get_highest_pending_checkpoint_height() + 1,
-                0,
-                skip_consensus_commit_prologue_in_test,
-            ),
-            authority_metrics,
-        )
-        .await
-    }
-
     fn process_notifications(&self, notifications: &[SequencedConsensusTransactionKey]) {
         for key in notifications.iter().cloned() {
             self.consensus_notify_read.notify(&key, &());
@@ -1579,7 +1528,7 @@ impl AuthorityPerEpochStore {
         &self,
         origin_authority: AuthorityName,
         session_info: SessionInfo,
-        output: MPCMessageSlice,
+        output: Vec<u8>,
     ) -> IkaResult<ConsensusCertificateResult> {
         self.save_dwallet_mpc_output(DWalletMPCOutputMessage {
             output: output.clone(),
@@ -1611,9 +1560,7 @@ impl AuthorityPerEpochStore {
             OutputVerificationStatus::NotEnoughVotes => {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
-            OutputVerificationStatus::AlreadyCommitted
-            | OutputVerificationStatus::Malicious
-            | OutputVerificationStatus::BuildingOutput => {
+            OutputVerificationStatus::AlreadyCommitted | OutputVerificationStatus::Malicious => {
                 // Ignore this output,
                 // since there is nothing to do with it,
                 // at this stage.

@@ -6,20 +6,19 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::stake_aggregator::StakeAggregator;
-use dwallet_mpc_types::dwallet_mpc::{MPCMessageSlice, MPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::MPCPublicOutput;
 use group::{GroupElement, PartyID};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{
-    DWalletMPCMessage, MPCSessionMessagesCollector, SessionInfo,
-};
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, SessionInfo};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::{Arc, Weak};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
+use tracing::info;
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -44,20 +43,26 @@ pub struct DWalletMPCOutputsVerifier {
     pub(crate) last_processed_consensus_round: Round,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
-    output_collector: HashMap<ObjectID, MPCSessionMessagesCollector>,
     pub(crate) number_of_completed_sessions: u64,
 }
 
 /// The data needed to manage the outputs of an MPC session.
-pub struct SessionOutputsData {
+struct SessionOutputsData {
     /// Maps session's output to the authorities that voted for it.
     /// The key must contain the session info, and the output to prevent
     /// malicious behavior, such as sending the correct output, but from a faulty session.
-    pub session_output_to_voting_authorities:
+    session_output_to_voting_authorities:
         HashMap<(MPCPublicOutput, SessionInfo), StakeAggregator<(), true>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
-    pub authorities_that_sent_output: HashSet<AuthorityName>,
-    pub(crate) current_result: OutputVerificationStatus,
+    authorities_that_sent_output: HashSet<AuthorityName>,
+    current_result: OutputVerificationStatus,
+}
+
+impl SessionOutputsData {
+    fn clear_data(&mut self) {
+        self.session_output_to_voting_authorities.clear();
+        self.authorities_that_sent_output.clear();
+    }
 }
 
 /// The result of verifying an incoming output for an MPC session.
@@ -72,7 +77,6 @@ pub enum OutputVerificationStatus {
     /// The output has already been verified and committed to the chain.
     /// This happens every time since all honest parties send the same output.
     AlreadyCommitted,
-    BuildingOutput,
 }
 
 pub struct OutputVerificationResult {
@@ -96,7 +100,6 @@ impl DWalletMPCOutputsVerifier {
             voted_to_lock_committee: HashSet::new(),
             last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
-            output_collector: HashMap::new(),
             number_of_completed_sessions: 0,
         }
     }
@@ -129,36 +132,20 @@ impl DWalletMPCOutputsVerifier {
     // TODO (#311): or take any active action while syncing
     pub async fn try_verify_output(
         &mut self,
-        output: &MPCMessageSlice,
+        output: &Vec<u8>,
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<OutputVerificationResult> {
+        // TODO (#876): Set the maximum message size to the smallest size possible.
+        info!(
+            session_id=?session_info.session_id,
+            from_authority=?origin_authority,
+            receiving_authority=?self.epoch_store()?.name,
+            output_size_bytes=?output.len(),
+            "Received DWallet mpc output",
+        );
         let epoch_store = self.epoch_store()?;
         let committee = epoch_store.committee().clone();
-
-        let output = DWalletMPCMessage {
-            message: output.clone(),
-            authority: origin_authority.clone(),
-            session_id: session_info.session_id.clone(),
-            session_sequence_number: session_info.sequence_number,
-            round_number: 0,
-        };
-        let party_id = epoch_store.authority_name_to_party_id(&origin_authority)?;
-        // Access the session messages collector or create a new one if it doesn't exist.
-        let session_messages_collector = self
-            .output_collector
-            .entry(session_info.session_id.clone())
-            .or_insert_with(|| MPCSessionMessagesCollector::new());
-        let output = session_messages_collector.add_message(party_id, output);
-        let output = match output {
-            Some(output) => output,
-            None => {
-                return Ok(OutputVerificationResult {
-                    result: OutputVerificationStatus::BuildingOutput,
-                    malicious_actors: vec![],
-                });
-            }
-        };
 
         let ref mut session_output_data = self
             .mpc_sessions_outputs
@@ -198,8 +185,9 @@ impl DWalletMPCOutputsVerifier {
         {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
             self.number_of_completed_sessions += 1;
+            session_output_data.clear_data();
             return Ok(OutputVerificationResult {
-                result: OutputVerificationStatus::FirstQuorumReached(output),
+                result: OutputVerificationStatus::FirstQuorumReached(output.clone()),
                 malicious_actors: vec![],
             });
         }

@@ -1111,26 +1111,4 @@ impl AuthorityState {
         self.epoch_store.store(new_epoch_store.clone());
         Ok(new_epoch_store)
     }
-
-    #[cfg(test)]
-    pub(crate) fn iter_live_object_set_for_testing(
-        &self,
-    ) -> impl Iterator<Item = authority_perpetual_tables::LiveObject> + '_ {
-        let include_wrapped_object = !self
-            .epoch_store_for_testing()
-            .protocol_config()
-            .simplified_unwrap_then_delete();
-        self.get_accumulator_store()
-            .iter_cached_live_object_set_for_testing(include_wrapped_object)
-    }
-
-    #[cfg(test)]
-    pub(crate) fn shutdown_execution_for_test(&self) {
-        self.tx_execution_shutdown
-            .lock()
-            .take()
-            .unwrap()
-            .send(())
-            .unwrap();
-    }
 }
