@@ -483,6 +483,7 @@ impl DWalletMPCManager {
                 info!("No available CPUs for cryptographic computations, waiting for a free CPU");
                 return;
             }
+            // Safe to unwrap, as we just checked that the queue is not empty.
             let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
             let live_session = self
                 .mpc_sessions
