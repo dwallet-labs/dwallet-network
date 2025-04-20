@@ -1483,9 +1483,6 @@ request_lock_epoch_sessions
 request_advance_epoch
 	public fun
 	0x0::system
-request_advance_network_keys
-	public fun
-	0x0::system
 request_dwallet_network_decryption_key_dkg_by_cap
 	public fun
 	0x0::system

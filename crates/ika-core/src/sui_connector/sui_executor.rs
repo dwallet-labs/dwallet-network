@@ -18,6 +18,7 @@ use ika_types::governance::{
 };
 use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
+use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::{
     DWalletCoordinatorInner, SystemInner, SystemInnerTrait,
@@ -106,7 +107,10 @@ where
             .validators
             .next_epoch_active_committee
             .is_none();
-        if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
+        if clock.timestamp_ms > mid_epoch_time
+            && next_epoch_committee_is_empty
+            && self.is_network_dkg_complete_for_all_keys().await
+        {
             info!("Calling `process_mid_epoch()`");
             if let Err(e) = Self::process_mid_epoch(
                 self.ika_system_package_id,
@@ -182,6 +186,24 @@ where
                 info!("Successfully processed request advance epoch");
             }
         }
+    }
+
+    async fn is_network_dkg_complete_for_all_keys(&self) -> bool {
+        let network_decryption_keys = match self.sui_client.get_dwallet_mpc_network_keys().await {
+            Ok(network_decryption_keys) => network_decryption_keys,
+            Err(e) => {
+                error!("failed to get dwallet MPC network keys: {e}");
+                return false;
+            }
+        };
+
+        for (_, key) in network_decryption_keys.iter() {
+            if key.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG {
+                return false;
+            }
+        }
+
+        true
     }
 
     pub async fn run_epoch(

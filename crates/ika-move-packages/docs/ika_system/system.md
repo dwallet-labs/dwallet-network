@@ -90,7 +90,6 @@ the SystemInnerVX version, or vice versa.
 -  [Function `request_reconfig_mid_epoch`](#(ika_system=0x0)_system_request_reconfig_mid_epoch)
 -  [Function `request_lock_epoch_sessions`](#(ika_system=0x0)_system_request_lock_epoch_sessions)
 -  [Function `request_advance_epoch`](#(ika_system=0x0)_system_request_advance_epoch)
--  [Function `request_advance_network_keys`](#(ika_system=0x0)_system_request_advance_network_keys)
 -  [Function `request_dwallet_network_decryption_key_dkg_by_cap`](#(ika_system=0x0)_system_request_dwallet_network_decryption_key_dkg_by_cap)
 -  [Function `authorize_update_message_by_cap`](#(ika_system=0x0)_system_authorize_update_message_by_cap)
 -  [Function `commit_upgrade`](#(ika_system=0x0)_system_commit_upgrade)
@@ -202,6 +201,15 @@ the SystemInnerVX version, or vice versa.
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="(ika_system=0x0)_system_ECannotAdvanceEpoch"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>: u64 = 4;
+</code></pre>
+
 
 
 <a name="(ika_system=0x0)_system_EHaveNotReachedEndEpochTime"></a>
@@ -1789,35 +1797,10 @@ Advances the epoch to the next epoch.
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_advance_epoch">request_advance_epoch</a>(self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, dwallet_coordinator: &<b>mut</b> DWalletCoordinator, clock: &Clock, ctx: &<b>mut</b> TxContext) {
     <b>let</b> inner_system = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
     <b>let</b> inner_dwallet = dwallet_coordinator.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    <b>assert</b>!(inner_dwallet.all_current_epoch_sessions_completed(), 5);
+    <b>assert</b>!(inner_dwallet.all_current_epoch_sessions_completed(), <a href="../ika_system/system.md#(ika_system=0x0)_system_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
     inner_system.advance_epoch(clock.timestamp_ms(), ctx);
     dwallet_coordinator.advance_epoch(inner_system.<a href="../ika_system/system.md#(ika_system=0x0)_system_active_committee">active_committee</a>());
     inner_system.advance_network_keys(dwallet_coordinator);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_system_request_advance_network_keys"></a>
-
-## Function `request_advance_network_keys`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_advance_network_keys">request_advance_network_keys</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, dwallet_coordinator: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">dwallet_2pc_mpc_secp256k1::DWalletCoordinator</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_advance_network_keys">request_advance_network_keys</a>(self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, dwallet_coordinator: &<b>mut</b> DWalletCoordinator) {
-    <b>let</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a> = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    <a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>.advance_network_keys(dwallet_coordinator);
 }
 </code></pre>
 
