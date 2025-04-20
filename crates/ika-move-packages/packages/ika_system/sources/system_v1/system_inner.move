@@ -863,7 +863,6 @@ public(package) fun process_checkpoint_message_by_cap(
 
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut SystemInnerV1,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
 
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
