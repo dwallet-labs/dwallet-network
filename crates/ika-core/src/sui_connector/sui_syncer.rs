@@ -146,7 +146,6 @@ where
                         Some((authority_name, _)) => *authority_name,
                         None => {
                             error!("missing validator voting power for id: {id}");
-                            println!("missing validator voting power for id: {id}");
                             return None;
                         }
                     };
@@ -170,8 +169,6 @@ where
             let mut committee_lock = next_epoch_active_committee.write().await;
             *committee_lock = Some(committee);
         }
-
-        panic!("Syncing next committee failed");
     }
 
     /// Sync the DwalletMPC network keys from the Sui client to the local store.
@@ -217,7 +214,6 @@ where
                     if let Some(local_dec_key_shares) = local_network_decryption_keys.get(&key_id) {
                         if *local_dec_key_shares != network_dec_key_shares {
                         info!("Updating the network key for `key_id`: {:?}", key_id);
-                            println!("Updating the network key for `key_id`: {:?}", key_id);
                             if let Err(e) =
                                 dwallet_mpc_network_keys.update_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
                             {

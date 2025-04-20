@@ -26,29 +26,6 @@ use ika_system::bls_committee::{Self, BlsCommittee};
 const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
 
-// TODO: move to utils
-// fun copy_table_vec_and_destroy(dest: &mut TableVec<vector<u8>>, src: &mut TableVec<vector<u8>>) {
-//     while (!dest.is_empty()) {
-//         dest.pop_back();
-//     };
-//     let mut i = 0;
-//     while (i < src.length()) {
-//         let vec = src.borrow(i);
-//         let vec_len = vec.length();
-//         let mut j = 0;
-//         let mut new_vec: vector<u8> = vector[];
-//         while (j < vec_len) {
-//             new_vec.push_back(*(vec.borrow(j)));
-//             j = j + 1;
-//         };
-//         dest.push_back(new_vec);
-//         i = i + 1;
-//     };
-//     while (!src.is_empty()) {
-//         src.pop_back();
-//     };
-// }
-
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
 public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {

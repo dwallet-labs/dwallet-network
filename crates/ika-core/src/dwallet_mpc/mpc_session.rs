@@ -170,7 +170,10 @@ impl DWalletMPCSession {
                 private_output: _,
                 public_output,
             }) => {
-                info!("session {:?} finalized successfully, malicious_parties {:?}", self.session_id, malicious_parties);
+                info!(
+                    "session {:?} finalized successfully, malicious_parties {:?}",
+                    self.session_id, malicious_parties
+                );
                 info!(
                     // Safe to unwrap as advance can only be called after the event is received.
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
@@ -298,13 +301,8 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::DKGSecond(event_data) => {
-                std::fs::write(
-                    format!("public_input{}.bin", session_id),
-                    public_input,
-                ).expect("TODO: panic message");
                 let public_input: <DKGSecondParty as mpc::Party>::PublicInput =
                     bcs::from_bytes(public_input)?;
-
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,
                     self.party_id,

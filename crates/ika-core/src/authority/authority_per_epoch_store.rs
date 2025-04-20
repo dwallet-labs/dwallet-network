@@ -831,8 +831,7 @@ impl AuthorityPerEpochStore {
             chain_identifier,
             perpetual_tables,
             self.packages_config.clone(),
-            self.next_epoch_active_committee
-                .clone(),
+            self.next_epoch_active_committee.clone(),
         )
     }
 
