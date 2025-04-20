@@ -61,3 +61,8 @@ jobs:
           cd sdk/typescript
           pnpm install
           npm run build
+
+      - name: Run TS full flow with network DKG test
+        run: |
+          cd sdk/typescript
+          npx vitest run --disableConsoleIntercept test/e2e/dwallet-mpc.test.ts -t="Test dWallet MPC should sign full flow with on-chain network DKG output"
