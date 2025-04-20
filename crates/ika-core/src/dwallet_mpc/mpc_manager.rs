@@ -464,6 +464,10 @@ impl DWalletMPCManager {
                 continue;
             };
             if live_session.mpc_event_data.is_some() {
+                info!(
+                    session_id=?pending_for_event_session.session_id,
+                    "Received event data for session"
+                );
                 let mut ready_to_advance_session = pending_for_event_session.clone();
                 ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
                 self.pending_for_computation_order
@@ -476,6 +480,7 @@ impl DWalletMPCManager {
                 .cryptographic_computations_orchestrator
                 .can_spawn_session()
             {
+                info!("No available CPUs for cryptographic computations, waiting for a free CPU");
                 return;
             }
             let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
@@ -484,17 +489,12 @@ impl DWalletMPCManager {
                 .get(&oldest_pending_session.session_id)
                 .unwrap();
             if live_session.status != MPCSessionStatus::Active {
-                continue;
-            }
-            let Some(event_data) = &oldest_pending_session.mpc_event_data else {
-                // This should never happen, as in the [`Self::get_ready_to_advance_sessions`] function
-                // we check if the session has event data.
-                error!(
-                    "failed to get event data for session_id: {:?}",
-                    oldest_pending_session.session_id
+                info!(
+                    session_id=?oldest_pending_session.session_id,
+                    "Session is not active, skipping"
                 );
                 continue;
-            };
+            }
             if let Err(err) = self
                 .cryptographic_computations_orchestrator
                 .spawn_session(&oldest_pending_session)
