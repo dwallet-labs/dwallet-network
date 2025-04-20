@@ -46,22 +46,15 @@ pub struct DWalletMPCOutputsVerifier {
 }
 
 /// The data needed to manage the outputs of an MPC session.
-struct SessionOutputsData {
+pub struct SessionOutputsData {
     /// Maps session's output to the authorities that voted for it.
     /// The key must contain the session info, and the output to prevent
     /// malicious behavior, such as sending the correct output, but from a faulty session.
-    session_output_to_voting_authorities:
+    pub session_output_to_voting_authorities:
         HashMap<(MPCPublicOutput, SessionInfo), StakeAggregator<(), true>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
-    authorities_that_sent_output: HashSet<AuthorityName>,
-    current_result: OutputVerificationStatus,
-}
-
-impl SessionOutputsData {
-    fn clear_data(&mut self) {
-        self.session_output_to_voting_authorities.clear();
-        self.authorities_that_sent_output.clear();
-    }
+    pub authorities_that_sent_output: HashSet<AuthorityName>,
+    pub(crate) current_result: OutputVerificationStatus,
 }
 
 /// The result of verifying an incoming output for an MPC session.
@@ -182,7 +175,6 @@ impl DWalletMPCOutputsVerifier {
             .is_quorum_reached()
         {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
-            session_output_data.clear_data();
             return Ok(OutputVerificationResult {
                 result: OutputVerificationStatus::FirstQuorumReached(output.clone()),
                 malicious_actors: vec![],

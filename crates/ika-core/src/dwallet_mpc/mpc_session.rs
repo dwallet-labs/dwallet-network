@@ -109,12 +109,6 @@ impl DWalletMPCSession {
         }
     }
 
-    pub(crate) fn clear_data(&mut self) {
-        info!(session_id=?self.session_id, "Clearing MPC session data");
-        self.mpc_event_data = None;
-        self.serialized_full_messages = Default::default();
-    }
-
     /// Returns the epoch store.
     /// Errors if the epoch was switched in the middle.
     fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {

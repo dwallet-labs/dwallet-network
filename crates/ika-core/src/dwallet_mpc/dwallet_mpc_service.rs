@@ -149,7 +149,6 @@ impl DWalletMPCService {
             };
             for session_id in completed_sessions {
                 manager.mpc_sessions.get_mut(&session_id).map(|session| {
-                    session.clear_data();
                     session.status = MPCSessionStatus::Finished;
                 });
             }
