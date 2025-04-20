@@ -37,7 +37,9 @@ use std::str::from_utf8;
 use std::sync::Arc;
 use std::time::Duration;
 use sui_json_rpc_api::BridgeReadApiClient;
-use sui_json_rpc_types::{DevInspectResults, SuiData, SuiMoveValue, SuiObjectDataFilter, SuiObjectResponseQuery};
+use sui_json_rpc_types::{
+    DevInspectResults, SuiData, SuiMoveValue, SuiObjectDataFilter, SuiObjectResponseQuery,
+};
 use sui_json_rpc_types::{EventFilter, Page, SuiEvent};
 use sui_json_rpc_types::{
     EventPage, SuiObjectDataOptions, SuiTransactionBlockResponse,
@@ -647,13 +649,8 @@ where
         }
     }
 
-    pub async fn get_gas_objects(
-        &self,
-        address: SuiAddress,
-    ) -> Vec<ObjectRef> {
-        self.inner
-            .get_gas_objects(address)
-            .await
+    pub async fn get_gas_objects(&self, address: SuiAddress) -> Vec<ObjectRef> {
+        self.inner.get_gas_objects(address).await
     }
 }
 
@@ -742,10 +739,7 @@ pub trait SuiClientInner: Send + Sync {
         tx: Transaction,
     ) -> Result<SuiTransactionBlockResponse, IkaError>;
 
-    async fn get_gas_objects(
-        &self,
-        address: SuiAddress,
-    ) -> Vec<ObjectRef>;
+    async fn get_gas_objects(&self, address: SuiAddress) -> Vec<ObjectRef>;
 
     async fn get_missed_events(
         &self,
@@ -1337,10 +1331,7 @@ impl SuiClientInner for SuiSdkClient {
         }
     }
 
-    async fn get_gas_objects(
-        &self,
-        address: SuiAddress,
-    ) -> Vec<ObjectRef> {
+    async fn get_gas_objects(&self, address: SuiAddress) -> Vec<ObjectRef> {
         loop {
             let results = self
                 .read_api()
@@ -1354,12 +1345,12 @@ impl SuiClientInner for SuiSdkClient {
                     None,
                 )
                 .await
-                .map(|o| o
-                    .data
-                    .into_iter()
-                    .filter_map(|r| r.data.map(|o| o.object_ref()))
-                    .collect::<Vec<_>>()
-                );
+                .map(|o| {
+                    o.data
+                        .into_iter()
+                        .filter_map(|r| r.data.map(|o| o.object_ref()))
+                        .collect::<Vec<_>>()
+                });
 
             match results {
                 Ok(gas_objs) => return gas_objs,

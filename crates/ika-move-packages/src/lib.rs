@@ -8,10 +8,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Formatter;
-use sui_types::{
-    base_types::ObjectID,
-    MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID,
-};
+use sui_types::{base_types::ObjectID, MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID};
 
 /// Represents a system package in the framework, that's built from the source code inside
 /// ika-framework.

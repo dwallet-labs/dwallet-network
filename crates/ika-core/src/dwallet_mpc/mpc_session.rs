@@ -110,7 +110,7 @@ impl DWalletMPCSession {
     }
 
     pub(crate) fn clear_data(&mut self) {
-        info!("Clearing MPC session data");
+        info!(session_id=?self.session_id, "Clearing MPC session data");
         self.mpc_event_data = None;
         self.serialized_full_messages = Default::default();
     }

@@ -155,8 +155,8 @@ impl IkaValidatorCommand {
 
                 let class_groups_public_key_and_proof = read_or_generate_seed_and_class_groups_key(
                     // todo(zeev): rename this, make it really take default.
-                        dir.join("class-groups.key"),
-                        dir.join("class-groups.seed"),
+                    dir.join("class-groups.key"),
+                    dir.join("class-groups.seed"),
                 )?;
 
                 let validator_info = ValidatorInfo {
