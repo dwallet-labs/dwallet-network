@@ -575,7 +575,7 @@ mod tests {
 
     #[test]
     fn test_calculate_signers_bitmap_various_sizes() {
-        let test_cases = vec![4, 8, 12, 48, 50, 115, 200, 300];
+        let test_cases = vec![4, 8, 9, 12, 48, 50, 115, 200, 300];
 
         for &num_validators in &test_cases {
             let mut signers = RoaringBitmap::new();
