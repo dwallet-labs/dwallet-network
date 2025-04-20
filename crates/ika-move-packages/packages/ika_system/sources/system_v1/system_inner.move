@@ -124,6 +124,7 @@ public struct SystemCheckpointInfoEvent has copy, drop {
 // Errors
 const ELimitExceeded: u64 = 1;
 const EBpsTooLarge: u64 = 5;
+const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 6;
 // const ESafeModeGasNotProcessed: u64 = 7;
 
 #[error]
@@ -837,7 +838,7 @@ public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
 public(package) fun next_epoch_active_committee(self: &SystemInnerV1): BlsCommittee {
     let validator_set = &self.validators;
     let next_epoch_active_committee = validator_set.next_epoch_active_committee();
-    assert!(next_epoch_active_committee.is_some(), EBpsTooLarge);
+    assert!(next_epoch_active_committee.is_some(), ENextCommitteeNotSetOnAdvanceEpoch);
     return *next_epoch_active_committee.borrow()
 }
 
