@@ -460,31 +460,19 @@ pub(crate) fn create_dwallet_mpc_network_decryption_key_from_onchain_public_outp
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     key_data: DWalletNetworkDecryptionKeyData,
 ) -> DwalletMPCResult<NetworkDecryptionKeyShares> {
-    println!(
-        "create_dwallet_mpc_network_decryption_key_from_onchain_public_output() state: {:?}",
-        key_data.state
-    );
-    match key_data.state {
-        DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-        | DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
-        | DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration => {
-            create_dwallet_mpc_network_decryption_key_from_network_dkg_public_output(
-                epoch,
-                key_scheme,
-                weighted_threshold_access_structure,
-                &key_data.network_dkg_public_output,
-            )
-        }
-        DWalletNetworkDecryptionKeyState::NetworkReconfigurationCompleted => {
-            create_dwallet_mpc_network_decryption_key_from_reshare_public_output(
-                epoch,
-                weighted_threshold_access_structure,
-                &key_data.current_reconfiguration_public_output,
-            )
-        }
-        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
-            Err(DwalletMPCError::NetworkDecryptionKeyNotReady)
-        }
+    if (key_data.current_reconfiguration_public_output.is_empty()) {
+        create_dwallet_mpc_network_decryption_key_from_network_dkg_public_output(
+            epoch,
+            key_scheme,
+            weighted_threshold_access_structure,
+            &key_data.network_dkg_public_output,
+        )
+    } else {
+        create_dwallet_mpc_network_decryption_key_from_reshare_public_output(
+            epoch,
+            weighted_threshold_access_structure,
+            &key_data.current_reconfiguration_public_output,
+        )
     }
 }
 

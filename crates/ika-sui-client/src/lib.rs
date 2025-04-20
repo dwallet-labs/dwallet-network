@@ -352,6 +352,23 @@ where
                     .await
                     .unwrap_or_default();
 
+                let mut network_decryption_keys_data = HashMap::new();
+                for (key_id, key) in network_decryption_keys.iter() {
+                    let network_decryption_key = match self
+                        .inner
+                        .get_network_decryption_key_with_full_data(key)
+                        .await
+                    {
+                        Ok(key) => key,
+                        Err(e) => {
+                            return Err(IkaError::SuiClientInternalError(format!(
+                                "can't get_network_decryption_key_with_full_data: {e}"
+                            )));
+                        }
+                    };
+                    network_decryption_keys_data.insert(key_id.clone(), network_decryption_key);
+                }
+
                 let validators_class_groups_public_key_and_proof = self
                     .inner
                     .get_class_groups_public_keys_and_proofs(&validators)
@@ -402,7 +419,7 @@ where
                     ika_system_state_inner.epoch_start_timestamp_ms,
                     ika_system_state_inner.epoch_duration_ms(),
                     validators,
-                    network_decryption_keys.clone(),
+                    network_decryption_keys_data,
                 );
 
                 Ok(epoch_start_system_state)
@@ -609,7 +626,7 @@ where
 
     pub async fn get_dwallet_mpc_network_keys(
         &self,
-    ) -> IkaResult<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>> {
+    ) -> IkaResult<HashMap<ObjectID, DWalletNetworkDecryptionKey>> {
         let system_inner = self.get_system_inner_until_success().await;
         Ok(self
             .inner
@@ -622,6 +639,20 @@ where
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!("Can't get_network_decryption_keys: {e}"))
             })?)
+    }
+
+    pub async fn get_network_decryption_key_with_full_data(
+        &self,
+        network_decryption_key: &DWalletNetworkDecryptionKey,
+    ) -> IkaResult<DWalletNetworkDecryptionKeyData> {
+        self.inner
+            .get_network_decryption_key_with_full_data(network_decryption_key)
+            .await
+            .map_err(|e| {
+                IkaError::SuiClientInternalError(format!(
+                    "Can't get_network_decryption_key_with_full_data: {e}"
+                ))
+            })
     }
 
     pub async fn get_dwallet_coordinator_inner_until_success(
@@ -707,7 +738,12 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_network_decryption_keys(
         &self,
         network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
-    ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>, self::Error>;
+    ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error>;
+
+    async fn get_network_decryption_key_with_full_data(
+        &self,
+        network_decryption_key: &DWalletNetworkDecryptionKey,
+    ) -> Result<DWalletNetworkDecryptionKeyData, self::Error>;
 
     async fn get_current_reconfiguration_public_output(
         &self,
@@ -930,7 +966,7 @@ impl SuiClientInner for SuiSdkClient {
     async fn get_network_decryption_keys(
         &self,
         network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
-    ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>, self::Error> {
+    ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error> {
         let mut network_decryption_keys = HashMap::new();
         for cap in network_decryption_caps {
             let key_id = cap.dwallet_network_decryption_key_id;
@@ -949,52 +985,50 @@ impl SuiClientInner for SuiSdkClient {
                 "object {:?} is not a MoveObject",
                 key_id
             )))?;
-            let key_obj = bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes)
-                .map_err(|e| {
-                Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e))
-            })?;
-            match key_obj.state {
-                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-                | DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
-                | DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration => continue,
-                _ => {}
-            };
-
-            let network_dkg_public_output = self
-                .read_table_vec_as_raw_bytes(key_obj.network_dkg_public_output.contents.id)
-                .await?;
-            let current_reconfiguration_public_output =
-                if let Ok(current_reconfiguration_public_output_id) = self
-                    .get_current_reconfiguration_public_output(
-                        key_obj.current_epoch,
-                        key_obj.reconfiguration_public_outputs.id,
-                    )
-                    .await
-                {
-                    self.read_table_vec_as_raw_bytes(current_reconfiguration_public_output_id)
-                        .await?
-                } else {
-                    warn!(
-                        "reconfiguration output for current epoch {:?} not found",
-                        key_obj.current_epoch
-                    );
-                    vec![]
-                };
 
             network_decryption_keys.insert(
                 key_id,
-                DWalletNetworkDecryptionKeyData {
-                    id: key_obj.id,
-                    dwallet_network_decryption_key_cap_id: key_obj
-                        .dwallet_network_decryption_key_cap_id,
-                    current_epoch: key_obj.current_epoch,
-                    current_reconfiguration_public_output,
-                    network_dkg_public_output,
-                    state: key_obj.state,
-                },
+                bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes).map_err(
+                    |e| Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e)),
+                )?,
             );
         }
         Ok(network_decryption_keys)
+    }
+
+    async fn get_network_decryption_key_with_full_data(
+        &self,
+        key: &DWalletNetworkDecryptionKey,
+    ) -> Result<DWalletNetworkDecryptionKeyData, self::Error> {
+        let network_dkg_public_output = self
+            .read_table_vec_as_raw_bytes(key.network_dkg_public_output.contents.id)
+            .await?;
+        let current_reconfiguration_public_output =
+            if let Ok(current_reconfiguration_public_output_id) = self
+                .get_current_reconfiguration_public_output(
+                    key.current_epoch,
+                    key.reconfiguration_public_outputs.id,
+                )
+                .await
+            {
+                self.read_table_vec_as_raw_bytes(current_reconfiguration_public_output_id)
+                    .await?
+            } else {
+                warn!(
+                    "reconfiguration output for current epoch {:?} not found",
+                    key.current_epoch
+                );
+                vec![]
+            };
+
+        Ok(DWalletNetworkDecryptionKeyData {
+            id: key.id,
+            dwallet_network_decryption_key_cap_id: key.dwallet_network_decryption_key_cap_id,
+            current_epoch: key.current_epoch,
+            current_reconfiguration_public_output,
+            network_dkg_public_output,
+            state: key.state.clone(),
+        })
     }
 
     async fn get_current_reconfiguration_public_output(
