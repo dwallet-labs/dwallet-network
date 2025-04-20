@@ -735,8 +735,8 @@ const EIncorrectCap: u64 = 11;
 const EUnverifiedCap: u64 = 12;
 const EInvalidSource: u64 =13;
 const EDWalletNetworkDecryptionKeyNotActive: u64 = 14;
-const EInvalidPresign: u64 = 10;
-const ECannotAdvanceEpoch: u64 = 11;
+const EInvalidPresign: u64 = 15;
+const ECannotAdvanceEpoch: u64 = 16;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
