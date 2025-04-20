@@ -629,7 +629,7 @@ public fun process_checkpoint_message_by_cap(
 // TODO: split dwallet_2pc_mpc_secp256k1 to its own checkpoint
 public fun process_checkpoint_message_by_quorum(
     self: &mut System,
-    _dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     mut message: vector<u8>,
@@ -643,7 +643,7 @@ public fun process_checkpoint_message_by_quorum(
     message.append(message4);
 
     let self = self.inner_mut();
-    self.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+    self.process_checkpoint_message_by_quorum(dwallet_2pc_mpc_secp256k1, signature, signers_bitmap, message, ctx);
 }
 
 /// Locks the committee of the next epoch to allow starting the reconfiguration process.

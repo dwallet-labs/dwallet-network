@@ -869,7 +869,7 @@ public(package) fun process_checkpoint_message_by_cap(
 
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut SystemInnerV1,
-
+    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
@@ -883,6 +883,8 @@ public(package) fun process_checkpoint_message_by_quorum(
     self.active_committee().verify_certificate(epoch, &signature, &signers_bitmap, &intent_bytes);
 
     self.process_checkpoint_message(message, ctx);
+    dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+
 }
 
 public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
