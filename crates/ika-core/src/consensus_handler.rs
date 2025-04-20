@@ -301,9 +301,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 }
             }
         }
-        info!(?transactions, "Parsed transactions");
-
-        info!(?transactions, "Parsed transactions");
+        info!(num_txs=transactions.len(), "Parsed transactions");
         for (i, authority) in self.committee.authorities() {
             let hostname = &authority.hostname;
             self.metrics
