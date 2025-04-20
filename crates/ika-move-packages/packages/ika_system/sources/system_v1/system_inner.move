@@ -833,7 +833,7 @@ public(package) fun next_epoch_active_committee(self: &SystemInnerV1): BlsCommit
     let validator_set = &self.validators;
     let next_epoch_active_committee = validator_set.next_epoch_active_committee();
     assert!(next_epoch_active_committee.is_some(), EBpsTooLarge);
-    return next_epoch_active_committee.borrow()
+    return *next_epoch_active_committee.borrow()
 }
 
 fun verify_cap(
