@@ -736,6 +736,7 @@ const EUnverifiedCap: u64 = 12;
 const EInvalidSource: u64 =13;
 const EDWalletNetworkDecryptionKeyNotActive: u64 = 14;
 const EInvalidPresign: u64 = 10;
+const ECannotAdvanceEpoch: u64 = 11;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -888,13 +889,16 @@ fun get_active_dwallet_network_decryption_key(
 public(package) fun advance_epoch(
     self: &mut DWalletCoordinatorInner,
     next_committee: BlsCommittee
-) {
+): Balance<IKA> {
+    assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
     self.locked_last_session_to_complete_in_current_epoch = false;
     self.update_last_session_to_complete_in_current_epoch();
     self.current_epoch = self.current_epoch + 1;
     self.previous_committee = self.active_committee;
     self.active_committee = next_committee;
-    // return the money
+    let mut epoch_consensus_validation_fee_charged_ika = sui::balance::zero<IKA>();
+    epoch_consensus_validation_fee_charged_ika.join(self.consensus_validation_fee_charged_ika.withdraw_all());
+    return epoch_consensus_validation_fee_charged_ika
 }
 
 fun get_dwallet(
