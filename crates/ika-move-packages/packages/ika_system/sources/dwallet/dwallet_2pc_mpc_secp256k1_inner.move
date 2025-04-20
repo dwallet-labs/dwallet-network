@@ -87,7 +87,6 @@ public struct DWalletCoordinatorInner has store {
     /// Sui gas fee reimbursement to fund the network writing tx responses to sui.
     gas_fee_reimbursement_sui: Balance<SUI>,
     /// The fees paid for consensus validation in IKA.
-    // this should get returned from the advance epoch function
     consensus_validation_fee_charged_ika: Balance<IKA>,
     /// The active committees.
     active_committee: BlsCommittee,
