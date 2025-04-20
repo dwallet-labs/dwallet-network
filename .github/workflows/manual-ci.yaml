@@ -1,0 +1,18 @@
+name: Manual CI Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: 'Optional note'
+        required: false
+        default: 'Testing from PR branch'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print branch and note
+        run: |
+          echo "Branch: ${{ github.ref }}"
+          echo "Note: ${{ github.event.inputs.note }}"
