@@ -272,8 +272,7 @@ where
     fn calculate_signers_bitmap(signers_map: &RoaringBitmap) -> Vec<u8> {
         let max_singers_bytes = signers_map.max().unwrap_or(0).div_ceil(8) as usize;
         // The bitmap is 1 byte larger than the number of signers to accommodate the last byte.
-        // TODO (#877): Fix the signers bitmap in edge cases
-        let mut signers_bitmap = vec![0u8; max_singers_bytes];
+        let mut signers_bitmap = vec![0u8; max_singers_bytes + 1];
         for singer in signers_map.iter() {
             // Set the i-th bit to 1,
             let byte_index = (singer / 8) as usize;
@@ -576,7 +575,7 @@ mod tests {
 
     #[test]
     fn test_calculate_signers_bitmap_various_sizes() {
-        let test_cases = vec![4, 8, 12, 48, 50, 115, 200, 300];
+        let test_cases = vec![4, 8, 9, 12, 48, 50, 115, 200, 300];
 
         for &num_validators in &test_cases {
             let mut signers = RoaringBitmap::new();
