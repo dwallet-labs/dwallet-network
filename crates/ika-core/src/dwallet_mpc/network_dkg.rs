@@ -102,7 +102,6 @@ fn get_decryption_key_shares_from_public_output(
             let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                 bcs::from_bytes(&shares.public_output)?;
             let n_factorial = PrecomputedValues::<
-                SECRET_KEY_SHARE_LIMBS,
                 group::Value<secp256k1::Scalar>,
             >::factorial(
                 weighted_threshold_access_structure.number_of_virtual_parties()

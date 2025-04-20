@@ -2,6 +2,8 @@
 //!
 //! It integrates the Sign party (representing a round in the protocol).
 
+use std::collections::HashSet;
+use group::PartyID;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -37,6 +39,7 @@ pub(super) trait SignPartyPublicInputGenerator: Party {
         presign: MPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
+        expected_decrypters: HashSet<PartyID>,
     ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
@@ -48,8 +51,10 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         presign: MPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
+        expected_decrypters: HashSet<PartyID>,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let public_input = SignPublicInput::from((
+            expected_decrypters,
             bcs::from_bytes(&protocol_public_parameters)?,
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::HashedMessage>(
                 &message,

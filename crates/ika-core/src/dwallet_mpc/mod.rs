@@ -255,6 +255,13 @@ fn sign_public_input(
         // Todo (#473): Support generic network key scheme
         &deserialized_event.dwallet_mpc_network_key_id,
     )?;
+    // Todo (#893): Add missing expected_decrypters logic
+    let weighted_parties = dwallet_mpc_manager
+        .epoch_store()?
+        .committee().voting_rights.len();
+    let expected_decrypters = (1..=weighted_parties)
+        .map(|party_id| party_id as PartyID)
+        .collect::<HashSet<PartyID>>();
     Ok(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
@@ -272,6 +279,7 @@ fn sign_public_input(
             deserialized_event.presign.clone(),
             deserialized_event.message_centralized_signature.clone(),
             bcs::from_bytes(&decryption_pp)?,
+            expected_decrypters,
         )?,
     )
 }
