@@ -13,6 +13,7 @@ env:
   RUST_MIN_STACK: 16777216
   # Change to specific Rust release to pin or `stable` for the latest stable version.
   rust_stable: "1.81"
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
   GH_PRIVATE_REPO_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN }}
 
 jobs:
