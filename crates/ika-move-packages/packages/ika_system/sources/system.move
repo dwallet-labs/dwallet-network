@@ -670,8 +670,7 @@ public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DW
     let inner_system = self.inner_mut();
     let inner_dwallet = dwallet_coordinator.inner_mut();
     inner_system.advance_epoch(inner_dwallet, clock.timestamp_ms(), ctx);
-    // should retrieve ika balance here
-    dwallet_coordinator.advance_epoch(inner_system.active_committee());
+    let _epoch_computation_reward = dwallet_coordinator.advance_epoch(inner_system.active_committee());
     // todo move within advance epoch, pass clock instead of timestamp
     inner_system.advance_network_keys(dwallet_coordinator);
 }

@@ -1,6 +1,7 @@
 module ika_system::dwallet_2pc_mpc_secp256k1;
 
 use ika::ika::IKA;
+use sui::balance::Balance;
 use sui::sui::SUI;
 use sui::coin::{Coin};
 use sui::dynamic_field;
@@ -78,8 +79,8 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
 public(package) fun advance_epoch(
     self: &mut DWalletCoordinator,
     committee: BlsCommittee,
-) {
-    self.inner_mut().advance_epoch(committee);
+): Balance<IKA> {
+    self.inner_mut().advance_epoch(committee)
 }
 
 public fun get_active_encryption_key(
