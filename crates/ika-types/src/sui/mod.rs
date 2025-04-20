@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::committee::CommitteeWithNetworkMetadata;
-use crate::sui::system_inner_v1::DWalletCoordinatorInnerV1;
+use crate::sui::system_inner_v1::{DWalletCoordinatorInnerV1, ValidatorSetV1};
 use crate::sui::system_inner_v1::DWalletNetworkDecryptionKeyCap;
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
@@ -140,6 +140,7 @@ pub trait SystemInnerTrait {
     fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
+    fn validators(&self) -> &ValidatorSetV1;
     // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata;
     // fn into_epoch_start_state(self) -> EpochStartSystemState;
 }
