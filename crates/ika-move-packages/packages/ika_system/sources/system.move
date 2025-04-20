@@ -670,9 +670,6 @@ public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DW
     let inner_system = self.inner_mut();
     let inner_dwallet = dwallet_coordinator.inner_mut();
     inner_system.advance_epoch(inner_dwallet, clock.timestamp_ms(), ctx);
-
-    // todo move within advance epoch, pass clock instead of timestamp
-    inner_system;
 }
 
 public fun request_dwallet_network_decryption_key_dkg_by_cap(
