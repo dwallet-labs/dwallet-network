@@ -653,6 +653,7 @@ public fun request_reconfig_mid_epoch(
 ) {
     let inner = self.inner_mut();
     assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms() / 2), EHaveNotReachedMidEpochTime);
+    // add check -> key state
     inner.emit_start_reshare_events(dwallet_coordinator.inner_mut(), ctx);
     self.inner_mut().process_mid_epoch();
 }
