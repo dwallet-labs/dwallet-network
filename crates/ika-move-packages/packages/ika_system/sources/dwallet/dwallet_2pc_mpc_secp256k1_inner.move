@@ -856,12 +856,15 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
     self: &mut DWalletCoordinatorInner,
     cap: &DWalletNetworkDecryptionKeyCap,
     // todo: return balance of ika of the key
-) {
+): Balance<IKA> {
     let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(cap.dwallet_network_decryption_key_id);
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
     copy_table_vec(&mut dwallet_network_decryption_key.previous_epoch_shares, &dwallet_network_decryption_key.current_epoch_shares);
     copy_table_vec(&mut dwallet_network_decryption_key.current_epoch_shares, &dwallet_network_decryption_key.next_epoch_shares);
+    let mut epoch_computation_fee_charged_ika = sui::balance::zero<IKA>();
+    epoch_computation_fee_charged_ika.join(dwallet_network_decryption_key.computation_fee_charged_ika.withdraw_all());
+    return epoch_computation_fee_charged_ika
 }
 
 public(package) fun emit_start_reshare_event(

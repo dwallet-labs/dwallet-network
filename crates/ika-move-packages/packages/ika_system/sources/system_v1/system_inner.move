@@ -179,8 +179,13 @@ public(package) fun create(
 
 public(package) fun advance_network_keys(
     self: &SystemInnerV1, dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinatorInner
-) {
-    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
+): Balance<IKA> {
+    let mut total_reward = sui::balance::zero<IKA>();
+
+    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| {
+        total_reward.join(dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
+    });
+    return total_reward
 }
 
 public(package) fun emit_start_reshare_events(
