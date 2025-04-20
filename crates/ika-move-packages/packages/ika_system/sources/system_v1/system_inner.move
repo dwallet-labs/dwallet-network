@@ -762,7 +762,8 @@ public(package) fun advance_epoch(
         self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
     };
 
-    self.advance_network_keys(dwallet_coordinator);
+    let decryption_keys_rewards = self.advance_network_keys(dwallet_coordinator);
+    self.computation_reward.join(decryption_keys_rewards);
 
     event::emit(SystemEpochInfoEvent {
         epoch: self.epoch,
