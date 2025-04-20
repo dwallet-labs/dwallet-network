@@ -425,7 +425,10 @@ async fn construct_unsigned_ika_system_txn(
         .get_client()
         .await?
         .read_api()
-        .get_object_with_options(ika_system_object_id, SuiObjectDataOptions::new().with_owner())
+        .get_object_with_options(
+            ika_system_object_id,
+            SuiObjectDataOptions::new().with_owner(),
+        )
         .await?
         .data
         .ok_or(anyhow::Error::msg("failed to get object data"))?

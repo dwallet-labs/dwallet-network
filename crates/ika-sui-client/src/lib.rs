@@ -680,7 +680,7 @@ pub trait SuiClientInner: Send + Sync {
 
     async fn get_system(&self, ika_system_object_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
 
-    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
+    async fn get_clock(&self, clock_obj_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
 
     async fn get_dwallet_coordinator(
         &self,
@@ -723,9 +723,12 @@ pub trait SuiClientInner: Send + Sync {
         validators: Vec<Validator>,
     ) -> Result<Vec<Vec<u8>>, Self::Error>;
 
-    async fn get_mutable_shared_arg(&self, ika_system_object_id: ObjectID) -> Result<ObjectArg, Self::Error>;
+    async fn get_mutable_shared_arg(
+        &self,
+        ika_system_object_id: ObjectID,
+    ) -> Result<ObjectArg, Self::Error>;
 
-    async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error>;
+    async fn get_shared_arg(&self, obj_id: ObjectID) -> Result<ObjectArg, Self::Error>;
 
     async fn get_available_move_packages(
         &self,
@@ -786,11 +789,13 @@ impl SuiClientInner for SuiSdkClient {
     }
 
     async fn get_system(&self, ika_system_object_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
-        self.read_api().get_move_object_bcs(ika_system_object_id).await
+        self.read_api()
+            .get_move_object_bcs(ika_system_object_id)
+            .await
     }
 
-    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
-        self.read_api().get_move_object_bcs(system_id).await
+    async fn get_clock(&self, clock_obj_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
+        self.read_api().get_move_object_bcs(clock_obj_id).await
     }
 
     async fn get_dwallet_coordinator(
@@ -1231,10 +1236,16 @@ impl SuiClientInner for SuiSdkClient {
         Ok(validator_inners)
     }
 
-    async fn get_mutable_shared_arg(&self, ika_system_object_id: ObjectID) -> Result<ObjectArg, Self::Error> {
+    async fn get_mutable_shared_arg(
+        &self,
+        ika_system_object_id: ObjectID,
+    ) -> Result<ObjectArg, Self::Error> {
         let response = self
             .read_api()
-            .get_object_with_options(ika_system_object_id, SuiObjectDataOptions::new().with_owner())
+            .get_object_with_options(
+                ika_system_object_id,
+                SuiObjectDataOptions::new().with_owner(),
+            )
             .await?;
         let Some(Owner::Shared {
             initial_shared_version,
@@ -1253,10 +1264,10 @@ impl SuiClientInner for SuiSdkClient {
     }
 
     /// Get the shared object arg for the shared system object on the chain.
-    async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error> {
+    async fn get_shared_arg(&self, obj_id: ObjectID) -> Result<ObjectArg, Self::Error> {
         let response = self
             .read_api()
-            .get_object_with_options(system_id, SuiObjectDataOptions::new().with_owner())
+            .get_object_with_options(obj_id, SuiObjectDataOptions::new().with_owner())
             .await?;
         let Some(Owner::Shared {
             initial_shared_version,
@@ -1264,11 +1275,11 @@ impl SuiClientInner for SuiSdkClient {
         else {
             return Err(Self::Error::DataError(format!(
                 "Failed to load ika system state owner {:?}",
-                system_id
+                obj_id
             )));
         };
         Ok(ObjectArg::SharedObject {
-            id: system_id,
+            id: obj_id,
             initial_shared_version,
             mutable: false,
         })

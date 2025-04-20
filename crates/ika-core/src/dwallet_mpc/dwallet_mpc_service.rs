@@ -23,6 +23,7 @@ use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::EpochId;
 use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
+use tokio::sync::watch::error::RecvError;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
 use tokio::task::yield_now;
@@ -117,7 +118,12 @@ impl DWalletMPCService {
         self.load_missed_events(sui_client.clone()).await;
         loop {
             match self.exit.has_changed() {
-                Ok(true) | Err(_) => {
+                Ok(true) => {
+                    error!("DWalletMPCService exit signal received");
+                    break;
+                }
+                Err(err) => {
+                    error!("Failed to check DWalletMPCService exit signal: {:?}", err);
                     break;
                 }
                 Ok(false) => (),
@@ -143,6 +149,7 @@ impl DWalletMPCService {
             };
             for session_id in completed_sessions {
                 manager.mpc_sessions.get_mut(&session_id).map(|session| {
+                    session.clear_data();
                     session.status = MPCSessionStatus::Finished;
                 });
             }

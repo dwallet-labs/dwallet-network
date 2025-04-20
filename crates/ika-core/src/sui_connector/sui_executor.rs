@@ -272,6 +272,7 @@ where
     fn calculate_signers_bitmap(signers_map: &RoaringBitmap) -> Vec<u8> {
         let max_singers_bytes = signers_map.max().unwrap_or(0).div_ceil(8) as usize;
         // The bitmap is 1 byte larger than the number of signers to accommodate the last byte.
+        // TODO (#877): Fix the signers bitmap in edge cases
         let mut signers_bitmap = vec![0u8; max_singers_bytes];
         for singer in signers_map.iter() {
             // Set the i-th bit to 1,
@@ -292,7 +293,7 @@ where
         // `max_checkpoint_size_bytes` is 50KB, so we split the message into 4 slices.
         for i in 0..4 {
             // If the chunk is missing, use an empty slice, as the transaction must receive all arguments.
-            let message = messages.get(i).unwrap_or(&empty).clone();
+            let message = messages.get(i).unwrap_or(&empty);
             slices.push(CallArg::Pure(bcs::to_bytes(message).unwrap()));
         }
         slices
@@ -505,17 +506,24 @@ where
             .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
             .await;
 
-        println!("`signers_bitmap` @ handle_execution_task: {:?}", signers_bitmap);
+        info!(
+            "`signers_bitmap` @ handle_execution_task: {:?}",
+            signers_bitmap
+        );
 
         let messages = Self::break_down_checkpoint_message(message);
         let mut args = vec![
             CallArg::Object(ika_system_state_arg),
             CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
-                IkaError::SuiConnectorSerializationError(format!("can't serialize `signature`: {e}"))
+                IkaError::SuiConnectorSerializationError(format!(
+                    "can't serialize `signature`: {e}"
+                ))
             })?),
             CallArg::Pure(bcs::to_bytes(&signers_bitmap).map_err(|e| {
-                IkaError::SuiConnectorSerializationError(format!("can't serialize `signers_bitmap`: {e}"))
+                IkaError::SuiConnectorSerializationError(format!(
+                    "can't serialize `signers_bitmap`: {e}"
+                ))
             })?),
         ];
         args.extend(messages);
@@ -573,9 +581,6 @@ mod tests {
         for &num_validators in &test_cases {
             let mut signers = RoaringBitmap::new();
             for i in 0..num_validators {
-                if i % 2 == 0 {
-                    continue;
-                }
                 signers.insert(i);
             }
 
@@ -596,5 +601,38 @@ mod tests {
             let indices: Vec<u32> = (0..num_validators).collect();
             // assert_bitmap_has_indices(&bitmap, &indices);
         }
+    }
+
+    #[test]
+    fn test_calculate_signers_bitmap_with_index_exceeding_bitmap_size() {
+        // Simulate a case where there are more validators than entries in the bitmap.
+        let num_validators = 10;
+        let mut signers = RoaringBitmap::new();
+
+        // Add the 9th index (zero-based),
+        // which is out of bounds if bitmap only accounts for 8.
+        signers.insert(9);
+
+        let bitmap = SuiExecutor::<SuiSdkClient>::calculate_signers_bitmap(&signers);
+        println!("Bitmap: {:?}", bitmap);
+
+        // Bitmap should be large enough to include index 9.
+        // Index 9 needs 2 bytes.
+        let required_length = (9 / 8) + 1;
+        assert!(
+            bitmap.len() >= required_length,
+            "Bitmap is too small: expected at least {} bytes for validator index 9, got {}",
+            required_length,
+            bitmap.len()
+        );
+
+        // Optionally: verify that the 10th bit is set
+        let byte_index = 9 / 8;
+        let bit_position = 9 % 8;
+        assert_eq!(
+            (bitmap[byte_index] >> bit_position) & 1,
+            1,
+            "Expected bit at index 9 to be set"
+        );
     }
 }

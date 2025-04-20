@@ -1746,20 +1746,3 @@ impl CheckpointServiceNotify for CheckpointService {
         Ok(())
     }
 }
-
-// test helper
-pub struct CheckpointServiceNoop {}
-impl CheckpointServiceNotify for CheckpointServiceNoop {
-    fn notify_checkpoint_signature(
-        &self,
-        _: &AuthorityPerEpochStore,
-        _: &CheckpointSignatureMessage,
-    ) -> IkaResult {
-        Ok(())
-    }
-
-    fn notify_checkpoint(&self) -> IkaResult {
-        Ok(())
-    }
-}
-

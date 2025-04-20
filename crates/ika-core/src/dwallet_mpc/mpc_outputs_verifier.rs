@@ -18,6 +18,7 @@ use std::hash::Hash;
 use std::sync::{Arc, Weak};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
+use tracing::info;
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -45,15 +46,22 @@ pub struct DWalletMPCOutputsVerifier {
 }
 
 /// The data needed to manage the outputs of an MPC session.
-pub struct SessionOutputsData {
+struct SessionOutputsData {
     /// Maps session's output to the authorities that voted for it.
     /// The key must contain the session info, and the output to prevent
     /// malicious behavior, such as sending the correct output, but from a faulty session.
-    pub session_output_to_voting_authorities:
+    session_output_to_voting_authorities:
         HashMap<(MPCPublicOutput, SessionInfo), StakeAggregator<(), true>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
-    pub authorities_that_sent_output: HashSet<AuthorityName>,
-    pub(crate) current_result: OutputVerificationStatus,
+    authorities_that_sent_output: HashSet<AuthorityName>,
+    current_result: OutputVerificationStatus,
+}
+
+impl SessionOutputsData {
+    fn clear_data(&mut self) {
+        self.session_output_to_voting_authorities.clear();
+        self.authorities_that_sent_output.clear();
+    }
 }
 
 /// The result of verifying an incoming output for an MPC session.
@@ -126,6 +134,14 @@ impl DWalletMPCOutputsVerifier {
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<OutputVerificationResult> {
+        // TODO (#876): Set the maximum message size to the smallest size possible.
+        info!(
+            session_id=?session_info.session_id,
+            from_authority=?origin_authority,
+            receiving_authority=?self.epoch_store()?.name,
+            output_size_bytes=?output.len(),
+            "Received DWallet mpc output",
+        );
         let epoch_store = self.epoch_store()?;
         let committee = epoch_store.committee().clone();
 
@@ -166,6 +182,7 @@ impl DWalletMPCOutputsVerifier {
             .is_quorum_reached()
         {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
+            session_output_data.clear_data();
             return Ok(OutputVerificationResult {
                 result: OutputVerificationStatus::FirstQuorumReached(output.clone()),
                 malicious_actors: vec![],

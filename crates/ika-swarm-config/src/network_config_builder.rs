@@ -134,7 +134,7 @@ impl<R> ConfigBuilder<R> {
 
     pub fn deterministic_committee_validators(mut self, keys: Vec<AccountKeyPair>) -> Self {
         self.committee = CommitteeConfig::Deterministic((
-            NonZeroUsize::new(keys.len()).expect("Validator keys should be non empty"),
+            NonZeroUsize::new(keys.len()).expect("Validator keys should be non-empty"),
             Some(keys),
         ));
         self

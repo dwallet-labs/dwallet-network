@@ -244,6 +244,15 @@ impl IkaNode {
         registry_service: RegistryService,
         software_version: &'static str,
     ) -> Result<Arc<IkaNode>> {
+        if let Err(err) = rayon::ThreadPoolBuilder::new()
+            .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
+            .build_global()
+        {
+            // This error will get printed while running the testing chain using Swarm,
+            // as all the validators start on the same process,
+            // therefore Rayon can't configure a thread pool more than once.
+            error!("Failed to create rayon thread pool: {:?}", err);
+        }
         NodeConfigMetrics::new(&registry_service.default_registry()).record_metrics(&config);
         let mut config = config.clone();
         if config.supported_protocol_versions.is_none() {
@@ -309,7 +318,8 @@ impl IkaNode {
         // let committee = committee_store
         //     .get_committee(&cur_epoch)?
         //     .expect("Committee of the current epoch must exist");
-        let chain_identifier = ChainIdentifier::from(config.sui_connector_config.ika_system_object_id);
+        let chain_identifier =
+            ChainIdentifier::from(config.sui_connector_config.ika_system_object_id);
 
         let epoch_start_configuration = EpochStartConfiguration::new(epoch_start_system_state)
             .expect("EpochStartConfiguration construction cannot fail");
