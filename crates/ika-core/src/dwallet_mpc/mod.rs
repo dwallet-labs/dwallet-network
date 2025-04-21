@@ -258,7 +258,9 @@ fn sign_public_input(
     // Todo (#893): Add missing expected_decrypters logic
     let weighted_parties = dwallet_mpc_manager
         .epoch_store()?
-        .committee().voting_rights.len();
+        .committee()
+        .voting_rights
+        .len();
     let expected_decrypters = (1..=weighted_parties)
         .map(|party_id| party_id as PartyID)
         .collect::<HashSet<PartyID>>();

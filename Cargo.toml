@@ -75,11 +75,11 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
 k256 = { git = "https://github.com/RustCrypto/elliptic-curves.git", tag = "k256/v0.14.0-pre.2", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], rev = "ff2b7035"}
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "ff2b7035", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "parallel", "benchmarking"], rev = "ff2b7035"}
-group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "ff2b7035"}
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "ff2b7035"}
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], rev = "add86161"}
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "add86161", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "parallel", "benchmarking"], rev = "add86161"}
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "add86161"}
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "add86161"}
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
