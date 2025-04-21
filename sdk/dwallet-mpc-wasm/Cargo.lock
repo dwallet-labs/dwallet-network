@@ -263,8 +263,10 @@ checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=da324eef#da324eeffb3ae465e9cb7c4836810c9a1480d751"
 dependencies = [
+ "base64 0.22.1",
+ "bcs",
  "commitment",
  "criterion",
  "crypto-bigint",
@@ -299,7 +301,7 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=da324eef#da324eeffb3ae465e9cb7c4836810c9a1480d751"
 dependencies = [
  "crypto-bigint",
  "group 0.1.0",
@@ -638,7 +640,7 @@ dependencies = [
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=da324eef#da324eeffb3ae465e9cb7c4836810c9a1480d751"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -842,7 +844,7 @@ checksum = "a8d1add55171497b4705a648c6b583acafb01d58050a51727785f0b2c8e0a2b2"
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=da324eef#da324eeffb3ae465e9cb7c4836810c9a1480d751"
 dependencies = [
  "crypto-bigint",
  "curve25519-dalek-ng",
@@ -915,7 +917,7 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=da324eef#da324eeffb3ae465e9cb7c4836810c9a1480d751"
 dependencies = [
  "crypto-bigint",
  "getrandom",
@@ -1120,7 +1122,7 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=da324eef#da324eeffb3ae465e9cb7c4836810c9a1480d751"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -1190,7 +1192,7 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=da324eef#da324eeffb3ae465e9cb7c4836810c9a1480d751"
 dependencies = [
  "commitment",
  "criterion",
@@ -1420,7 +1422,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=da324eef#da324eeffb3ae465e9cb7c4836810c9a1480d751"
 dependencies = [
  "bulletproofs",
  "commitment",
@@ -2021,7 +2023,7 @@ dependencies = [
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=da324eef#da324eeffb3ae465e9cb7c4836810c9a1480d751"
 dependencies = [
  "crypto-bigint",
  "crypto-primes",
@@ -2067,7 +2069,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=89b4de87#89b4de87de81fa30b862724175116ceff39b2070"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=da324eef#da324eeffb3ae465e9cb7c4836810c9a1480d751"
 dependencies = [
  "class_groups",
  "commitment",

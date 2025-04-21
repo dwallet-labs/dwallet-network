@@ -31,5 +31,15 @@ move-clippy = [
 [build]
 rustflags = ["-C", "force-frame-pointers=yes", "-C", "force-unwind-tables=yes"]
 
+# Workaround for a known WebAssembly stack size limitation.
+# The network DKG public output is too large to deserialize directly in the default WASM memory configuration,
+# resulting in a "RuntimeError: memory access out of bounds" during execution.
+# To mitigate this, we apply a memory-related workaround as described in:
+# https://cprimozic.net/notes/posts/fixing-rust-wasm-memory-access-out-of-bounds/#a-workaround.
+[target.wasm32-unknown-unknown]
+rustflags = [
+    "-C", "link-args=-z stack-size=15000000",
+]
+
 [env]
 RUST_MIN_STACK = "16777216"
