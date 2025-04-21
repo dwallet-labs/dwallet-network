@@ -17,7 +17,6 @@ dwallet-mpc-types.workspace = true
 k256.workspace = true
 sha2 = "0.10.8"
 sha3 = "0.10.8"
-dwallet-classgroups-types.workspace = true
 
 [lints]
 workspace = true

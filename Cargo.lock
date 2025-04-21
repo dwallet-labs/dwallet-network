@@ -10773,7 +10773,6 @@ dependencies = [
  "base64 0.21.7",
  "bcs",
  "class_groups",
- "dwallet-classgroups-types",
  "dwallet-mpc-types",
  "group 0.1.0",
  "k256 0.14.0-pre.2",
