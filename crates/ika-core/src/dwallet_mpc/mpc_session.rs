@@ -461,6 +461,18 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+        // This happens because we clear the session when it is finished, and change the status,
+        // so we might receive a message with delay, and it's irrelevant.
+        if self.status != MPCSessionStatus::Active {
+            warn!(
+                session_id=?message.session_id,
+                from_authority=?message.authority,
+                receiving_authority=?self.epoch_store()?.name,
+                crypto_round_number=?message.round_number,
+                "Received a message for a session that is not active",
+            );
+            return Ok(());
+        }
         // TODO (#876): Set the maximum message size to the smallest size possible.
         info!(
             session_id=?message.session_id,
@@ -471,12 +483,18 @@ impl DWalletMPCSession {
             "Received DWallet mpc message",
         );
         if message.round_number == 0 {
+            error!(
+                session_id=?message.session_id,
+                from_authority=?message.authority,
+                receiving_authority=?self.epoch_store()?.name,
+                crypto_round_number=?message.round_number,
+                "Received a message for round zero",
+            );
             return Err(DwalletMPCError::MessageForFirstMPCStep);
         }
         let source_party_id = self
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;
-
         let current_round = self.serialized_full_messages.len();
 
         let authority_name = self.epoch_store()?.name;
@@ -505,26 +523,27 @@ impl DWalletMPCSession {
                 );
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
-            // If next round.
             None if message.round_number == current_round => {
                 info!(
                     session_id=?message.session_id,
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
-                    "Store message for a future round",
+                    "Store message for the current round",
                 );
                 let mut map = HashMap::new();
                 map.insert(source_party_id, message.message.clone());
                 self.serialized_full_messages.push(map);
             }
+            // Received a message for a future round (above the current round).
+            // If it happens, there is an issue with the consensus.
             None => {
-                warn!(
+                error!(
                     session_id=?message.session_id,
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
-                    "Store message for a future round",
+                    "Received a message for two or more rounds above known round for session",
                 );
                 // Unexpected round number; rounds should grow sequentially.
                 return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));

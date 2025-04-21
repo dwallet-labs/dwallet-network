@@ -5,7 +5,6 @@ use std::{
     env,
     path::{Path, PathBuf},
 };
-use tonic_build::manual::{Builder, Method, Service};
 
 type Result<T> = ::std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
