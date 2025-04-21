@@ -7,7 +7,9 @@ use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
+use ika_types::committee::Committee;
 use ika_types::error::IkaResult;
+use ika_types::sui::SystemInnerTrait;
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::spawn_logged_monitored_task;
@@ -15,6 +17,7 @@ use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
+use tokio::sync::RwLock;
 use tokio::{
     sync::Notify,
     task::JoinHandle,
@@ -57,10 +60,15 @@ where
         query_interval: Duration,
         dwallet_mpc_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
+        tokio::spawn(Self::sync_next_committee(
+            sui_client_clone.clone(),
+            next_epoch_committee,
+        ));
         if let Some(dwallet_mpc_network_keys) = dwallet_mpc_network_keys {
             // Todo (#810): Check the usage adding the task handle to the task_handles vector.
             tokio::spawn(Self::sync_dwallet_network_keys(
@@ -85,6 +93,81 @@ where
             ));
         }
         Ok(task_handles)
+    }
+
+    async fn sync_next_committee(
+        sui_client: Arc<SuiClient<C>>,
+        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
+    ) {
+        loop {
+            if let Some(_) = next_epoch_committee.read().await.as_ref() {
+                info!("The next epoch committee already set, skipping sync");
+                return;
+            } else {
+                info!("The next epoch committee wasn't set, syncing...");
+            };
+            let system_inner = sui_client.get_system_inner_until_success().await;
+            let system_inner = system_inner.into_init_version_for_tooling();
+
+            let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
+                info!("ika next epoch active committee not found, retrying...");
+                continue;
+            };
+
+            let validator_ids: Vec<_> = new_next_committee.keys().cloned().collect();
+
+            let validators = match sui_client
+                .get_validators_info_by_ids(&system_inner, validator_ids)
+                .await
+            {
+                Ok(v) => v,
+                Err(e) => {
+                    error!("failed to fetch validators info: {e}");
+                    continue;
+                }
+            };
+
+            let class_group_encryption_keys_and_proofs = match sui_client
+                .get_class_groups_public_keys_and_proofs(&validators)
+                .await
+            {
+                Ok(data) => data,
+                Err(e) => {
+                    error!("can't get_class_groups_public_keys_and_proofs: {e}");
+                    continue;
+                }
+            };
+
+            let class_group_encryption_keys_and_proofs = class_group_encryption_keys_and_proofs
+                .into_iter()
+                .filter_map(|(id, class_groups)| {
+                    let voting_power = match new_next_committee.get(&id) {
+                        Some((power, _)) => *power,
+                        None => {
+                            error!("missing validator voting power for id: {id}");
+                            return None;
+                        }
+                    };
+
+                    match bcs::to_bytes(&class_groups) {
+                        Ok(bytes) => Some((voting_power, bytes)),
+                        Err(e) => {
+                            error!("failed to serialize class group for id {id}: {e}");
+                            None
+                        }
+                    }
+                })
+                .collect();
+
+            let committee = Committee::new(
+                system_inner.epoch + 1,
+                new_next_committee.values().cloned().collect(),
+                class_group_encryption_keys_and_proofs,
+            );
+
+            let mut committee_lock = next_epoch_committee.write().await;
+            *committee_lock = Some(committee);
+        }
     }
 
     /// Sync the DwalletMPC network keys from the Sui client to the local store.
