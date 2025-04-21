@@ -154,7 +154,9 @@ public struct DWalletNetworkDecryptionKey has key, store {
 public enum DWalletNetworkDecryptionKeyState has copy, drop, store {
     AwaitingNetworkDKG,
     NetworkDKGCompleted,
+    /// Reconfiguration request was sent to the network, but didn't finish yet.
     AwaitingNetworkReconfiguration,
+    /// Reconfiguration request finished, but we didn't switch an epoch yet.
     AwaitingNextEpochReconfiguration,
     NetworkReconfigurationCompleted,
 }
@@ -817,16 +819,16 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
     network_public_output: vector<u8>,
-    is_last: bool,
+    is_last_chunuk: bool,
 ) {
-    if (is_last) {
+    if (is_last_chunuk) {
         self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
     dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
         DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
-            if (is_last) {
+            if (is_last_chunuk) {
                 event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
                     dwallet_network_decryption_key_id,
                 });
