@@ -3,29 +3,20 @@
 
 use crate::committee::StakeUnit;
 use crate::crypto::AuthorityName;
-use crate::sui::system_inner_v1::DWalletCoordinatorInnerV1;
 use crate::sui::system_inner_v1::DWalletNetworkDecryptionKeyCap;
-use anyhow::Result;
+use crate::sui::system_inner_v1::{DWalletCoordinatorInnerV1, ValidatorSetV1};
 use enum_dispatch::enum_dispatch;
-use epoch_start_system::EpochStartSystem;
-use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt;
 use sui_types::base_types::ObjectID;
 use sui_types::collection_types::TableVec;
-use sui_types::dynamic_field::{
-    get_dynamic_field_from_store, get_dynamic_field_object_from_store, Field,
-};
-use sui_types::error::SuiError;
-use sui_types::object::{MoveObject, Object};
 use sui_types::storage::ObjectStore;
 use sui_types::versioned::Versioned;
-use sui_types::{id::UID, MoveTypeTagTrait};
+use sui_types::MoveTypeTagTrait;
 use system_inner_v1::SystemInnerV1;
 use system_inner_v1::UpgradeCap;
 use validator_inner_v1::ValidatorInnerV1;
@@ -142,11 +133,9 @@ pub trait SystemInnerTrait {
     fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
-    fn get_ika_next_epoch_active_committee(
-        &self,
-    ) -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>>;
-    // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata;
-    // fn into_epoch_start_state(self) -> EpochStartSystemState;
+    fn get_ika_next_epoch_committee(&self)
+        -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>>;
+    fn validators(&self) -> &ValidatorSetV1;
 }
 
 /// IkaSystemIkaSystemStateInnerState provides an abstraction over multiple versions of the inner IkaSystemStateInner object.

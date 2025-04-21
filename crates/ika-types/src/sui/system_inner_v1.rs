@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use sui_types::balance::Balance;
 use sui_types::base_types::ObjectID;
 use sui_types::coin::TreasuryCap;
-use sui_types::collection_types::{Bag, Table, TableVec, VecMap, VecSet};
+use sui_types::collection_types::{Bag, Table, VecMap, VecSet};
 use sui_types::id::ID;
 
 /// Rust version of the Move ika::ika_system::SystemParameters type
@@ -78,7 +78,7 @@ pub struct ValidatorSetV1 {
     pub total_stake: u64,
     pub validators: ObjectTable,
     pub active_committee: BlsCommittee,
-    pub next_epoch_active_committee: Option<BlsCommittee>,
+    pub next_epoch_committee: Option<BlsCommittee>,
     pub previous_committee: BlsCommittee,
     pub pending_active_validators: Vec<ObjectID>,
     pub at_risk_validators: VecMap<ID, u64>,
@@ -230,15 +230,18 @@ impl SystemInnerTrait for SystemInnerV1 {
         &self.dwallet_2pc_mpc_secp256k1_network_decryption_keys
     }
 
-    fn get_ika_next_epoch_active_committee(
+    fn validators(&self) -> &ValidatorSetV1 {
+        &self.validators
+    }
+
+    fn get_ika_next_epoch_committee(
         &self,
     ) -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>> {
-        let Some(next_epoch_committee) = self.validators.next_epoch_active_committee.as_ref()
-        else {
+        let Some(next_epoch_committee) = self.validators.next_epoch_committee.as_ref() else {
             return None;
         };
 
-        let allowed_ids: Vec<_> = next_epoch_committee
+        let upcoming_committee_validator_ids: Vec<_> = next_epoch_committee
             .members
             .iter()
             .map(|member| member.validator_id)
@@ -246,17 +249,17 @@ impl SystemInnerTrait for SystemInnerV1 {
 
         let voting_rights = self
             .validators
-            .next_epoch_active_committee
+            .next_epoch_committee
             .clone()?
             .members
             .iter()
-            .filter(|v| allowed_ids.contains(&v.validator_id))
+            .filter(|v| upcoming_committee_validator_ids.contains(&v.validator_id))
             .map(|v| {
                 (
                     v.validator_id,
                     (
-                        // AuthorityName is derived from the protocol public key,
-                        // therefore it is safe to unwrap.
+                        // AuthorityName is derived from the protocol public key;
+                        // therefore, it is safe to unwrap.
                         (&AuthorityPublicKey::from_bytes(v.protocol_pubkey.clone().bytes.as_ref())
                             .unwrap())
                             .into(),
@@ -268,59 +271,6 @@ impl SystemInnerTrait for SystemInnerV1 {
 
         Some(voting_rights)
     }
-
-    //
-    // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata {
-    //     let validators = self
-    //         .validators
-    //         .active_validators
-    //         .iter()
-    //         .map(|validator| {
-    //             let verified_metadata = validator.verified_metadata();
-    //             let name = verified_metadata.ika_pubkey_bytes();
-    //             (
-    //                 name,
-    //                 (
-    //                     validator.voting_power,
-    //                     NetworkMetadata {
-    //                         network_address: verified_metadata.network_address.clone(),
-    //                         consensus_address: verified_metadata.consensus_address.clone(),
-    //                         network_public_key: Some(verified_metadata.network_pubkey.clone()),
-    //                     },
-    //                 ),
-    //             )
-    //         })
-    //         .collect();
-    //     CommitteeWithNetworkMetadata::new(self.epoch, validators)
-    // }
-    //
-    // fn into_epoch_start_state(self) -> EpochStartSystemState {
-    //     EpochStartSystemState::new_v1(
-    //         self.epoch,
-    //         self.protocol_version,
-    //         self.computation_price_per_unit_size,
-    //         self.epoch_start_timestamp_ms,
-    //         self.parameters.epoch_duration_ms,
-    //         self.validators
-    //             .active_validators
-    //             .iter()
-    //             .map(|validator| {
-    //                 let metadata = validator.verified_metadata();
-    //                 EpochStartValidatorInfoV1 {
-    //                     sui_address: metadata.proof_of_possession_sender,
-    //                     protocol_pubkey: metadata.protocol_pubkey.clone(),
-    //                     network_pubkey: metadata.network_pubkey.clone(),
-    //                     consensus_pubkey: metadata.consensus_pubkey.clone(),
-    //                     ika_network_address: metadata.network_address.clone(),
-    //                     p2p_address: metadata.p2p_address.clone(),
-    //                     consensus_address: metadata.consensus_address.clone(),
-    //                     voting_power: validator.voting_power,
-    //                     hostname: metadata.name.clone(),
-    //                 }
-    //             })
-    //             .collect(),
-    //     )
-    // }
 }
 
 /// Rust version of the Move ika_system::validator_cap::ValidatorCap type

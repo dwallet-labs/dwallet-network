@@ -133,7 +133,7 @@ impl<R> ConfigBuilder<R> {
 
     pub fn deterministic_committee_validators(mut self, keys: Vec<AccountKeyPair>) -> Self {
         self.committee = CommitteeConfig::Deterministic((
-            NonZeroUsize::new(keys.len()).expect("Validator keys should be non empty"),
+            NonZeroUsize::new(keys.len()).expect("Validator keys should be non-empty"),
             Some(keys),
         ));
         self
@@ -330,7 +330,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
         if let Some(protocol_version) = self.protocol_version {
             initiation_parameters.protocol_version = protocol_version.as_u64();
         }
-        let (ika_package_id, ika_system_package_id, system_id, publisher_keypair) =
+        let (ika_package_id, ika_system_package_id, ika_system_object_id, publisher_keypair) =
             crate::sui_client::init_ika_on_sui(
                 &validator_initialization_configs,
                 self.sui_fullnode_rpc_url.to_string(),
@@ -380,7 +380,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                     self.sui_fullnode_rpc_url.clone(),
                     ika_package_id,
                     ika_system_package_id,
-                    system_id,
+                    ika_system_object_id,
                 )
             })
             .collect();
@@ -413,7 +413,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                     self.sui_fullnode_rpc_url.clone(),
                     ika_package_id,
                     ika_system_package_id,
-                    system_id,
+                    ika_system_object_id,
                     notifier_client_key_pair,
                 );
                 fullnode_configs.push(config);
@@ -425,7 +425,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
             validator_initialization_configs,
             ika_package_id,
             ika_system_package_id,
-            system_id,
+            ika_system_object_id,
         })
     }
 }

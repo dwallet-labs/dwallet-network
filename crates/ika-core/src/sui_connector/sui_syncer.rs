@@ -64,13 +64,14 @@ where
         query_interval: Duration,
         dwallet_mpc_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        next_epoch_active_committee: Arc<RwLock<Option<Committee>>>,
+        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
+        info!("Starting SuiSyncer");
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
         tokio::spawn(Self::sync_next_committee(
             sui_client_clone.clone(),
-            next_epoch_active_committee,
+            next_epoch_committee,
         ));
         if let Some(dwallet_mpc_network_keys) = dwallet_mpc_network_keys {
             // Todo (#810): Check the usage adding the task handle to the task_handles vector.
@@ -100,20 +101,19 @@ where
 
     async fn sync_next_committee(
         sui_client: Arc<SuiClient<C>>,
-        next_epoch_active_committee: Arc<RwLock<Option<Committee>>>,
+        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
     ) {
         loop {
-            if let Some(_) = next_epoch_active_committee.read().await.as_ref() {
-                info!("next epoch active committee already set, skipping sync");
+            if let Some(_) = next_epoch_committee.read().await.as_ref() {
+                info!("The next epoch committee already set, skipping sync");
                 return;
             } else {
-                info!("next epoch active committee not set, syncing...");
+                info!("The next epoch committee wasn't set, syncing...");
             };
             let system_inner = sui_client.get_system_inner_until_success().await;
             let system_inner = system_inner.into_init_version_for_tooling();
 
-            let Some(new_next_committee) = system_inner.get_ika_next_epoch_active_committee()
-            else {
+            let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
                 info!("ika next epoch active committee not found, retrying...");
                 continue;
             };
@@ -131,7 +131,7 @@ where
                 }
             };
 
-            let class_group_data = match sui_client
+            let class_group_encryption_keys_and_proofs = match sui_client
                 .get_class_groups_public_keys_and_proofs(&validators)
                 .await
             {
@@ -142,7 +142,7 @@ where
                 }
             };
 
-            let class_group_map = class_group_data
+            let class_group_encryption_keys_and_proofs = class_group_encryption_keys_and_proofs
                 .into_iter()
                 .filter_map(|(id, class_groups)| {
                     let voting_power = match new_next_committee.get(&id) {
@@ -166,10 +166,10 @@ where
             let committee = Committee::new(
                 system_inner.epoch + 1,
                 new_next_committee.values().cloned().collect(),
-                class_group_map,
+                class_group_encryption_keys_and_proofs,
             );
 
-            let mut committee_lock = next_epoch_active_committee.write().await;
+            let mut committee_lock = next_epoch_committee.write().await;
             *committee_lock = Some(committee);
         }
     }
@@ -186,7 +186,7 @@ where
                 .get_dwallet_mpc_network_keys()
                 .await
                 .unwrap_or_else(|e| {
-                    warn!("failed to fetch dwallet MPC network keys: {e}");
+                    error!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 })
                 .iter()
@@ -215,8 +215,8 @@ where
                         }
                     };
                     if let Some(local_dec_key_shares) = local_network_decryption_keys.get(&key_id) {
-                        info!("Updating the network key for `key_id`: {:?}", key_id);
                         if *local_dec_key_shares != network_dec_key_shares {
+                            info!("Updating the network key for `key_id`: {:?}", key_id);
                             if let Err(e) =
                                 dwallet_mpc_network_keys.update_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
                             {

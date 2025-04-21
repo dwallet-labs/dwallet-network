@@ -19,6 +19,7 @@ use ika_types::governance::{
 use ika_types::message::Secp256K1NetworkDKGOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
+use ika_types::sui::system_inner_v1::BlsCommittee;
 use ika_types::sui::{
     DWalletCoordinatorInner, SystemInner, SystemInnerTrait,
     PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_ADVANCE_EPOCH_FUNCTION_NAME,
@@ -26,6 +27,7 @@ use ika_types::sui::{
 };
 use itertools::Itertools;
 use mysten_metrics::spawn_logged_monitored_task;
+use roaring::RoaringBitmap;
 use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
 use sui_macros::fail_point_async;
@@ -39,7 +41,7 @@ use tokio::{
     task::JoinHandle,
     time::{self, Duration},
 };
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum StopReason {
@@ -102,10 +104,8 @@ where
 
         let mid_epoch_time = ika_system_state_inner.epoch_start_timestamp_ms()
             + (ika_system_state_inner.epoch_duration_ms() / 2);
-        let next_epoch_committee_is_empty = system_inner_v1
-            .validators
-            .next_epoch_active_committee
-            .is_none();
+        let next_epoch_committee_is_empty =
+            system_inner_v1.validators.next_epoch_committee.is_none();
         if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
             info!("Calling `process_mid_epoch()`");
             if let Err(e) =
@@ -155,10 +155,7 @@ where
             == coordinator.last_session_to_complete_in_current_epoch;
         let all_immediate_sessions_completed = coordinator.started_immediate_sessions_count
             == coordinator.completed_immediate_sessions_count;
-        let next_epoch_committee_exists = system_inner_v1
-            .validators
-            .next_epoch_active_committee
-            .is_some();
+        let next_epoch_committee_exists = system_inner_v1.validators.next_epoch_committee.is_some();
         if coordinator.locked_last_session_to_complete_in_current_epoch
             && all_epoch_sessions_finished
             && all_immediate_sessions_completed
@@ -191,7 +188,7 @@ where
         );
         // check if we want to run this epoch based on RunWithRange condition value
         // we want to be inclusive of the defined RunWithRangeEpoch::Epoch
-        // i.e Epoch(N) means we will execute epoch N and stop when reaching N+1.
+        // i.e Epoch(N) means we will execute the epoch N and stop when reaching N+1.
         if run_with_range.map_or(false, |rwr| rwr.is_epoch_gt(epoch)) {
             info!(
                 "RunWithRange condition satisfied at {:?}, run_epoch={:?}",
@@ -234,14 +231,17 @@ where
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
                         ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
+                        let active_members: BlsCommittee =
+                            ika_system_state_inner.validators().clone().active_committee;
                         let auth_sig = checkpoint_message.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
-                        let signers_bitmap = Self::calculate_signers_bitmap(auth_sig);
+                        let signers_bitmap =
+                            Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
                         let message =
                             bcs::to_bytes::<CheckpointMessage>(&checkpoint_message.into_message())
                                 .expect("Serializing checkpoint message cannot fail");
 
-                        info!("signers_bitmap: {:?}", signers_bitmap);
+                        info!("Signers_bitmap: {:?}", signers_bitmap);
 
                         let task = Self::handle_execution_task(
                             self.ika_system_package_id,
@@ -268,10 +268,17 @@ where
         }
     }
 
-    fn calculate_signers_bitmap(auth_sig: &AuthorityStrongQuorumSignInfo) -> Vec<u8> {
-        let mut signers_bitmap = vec![0u8; auth_sig.signers_map.len().div_ceil(8) as usize];
-        for i in auth_sig.signers_map.iter() {
-            signers_bitmap[(i / 8) as usize] |= 1u8 << (i % 8);
+    fn calculate_signers_bitmap(
+        signers_map: &RoaringBitmap,
+        active_committee: &BlsCommittee,
+    ) -> Vec<u8> {
+        let committee_size = active_committee.members.len();
+        let mut signers_bitmap = vec![0u8; committee_size.div_ceil(8)];
+        for singer in signers_map.iter() {
+            // Set the i-th bit to 1,
+            let byte_index = (singer / 8) as usize;
+            let bit_index = singer % 8;
+            signers_bitmap[byte_index] |= 1u8 << bit_index;
         }
         signers_bitmap
     }
@@ -283,10 +290,10 @@ where
         // Set to 15 because the limit is up to 16 (smaller than).
         let messages = message.chunks(15 * 1024).collect_vec();
         let empty: &[u8] = &[];
-        // max_checkpoint_size_bytes is 50KB, so we split the message into 4 slices.
+        // `max_checkpoint_size_bytes` is 50KB, so we split the message into 4 slices.
         for i in 0..4 {
             // If the chunk is missing, use an empty slice, as the transaction must receive all arguments.
-            let message = messages.get(i).unwrap_or(&empty).clone();
+            let message = messages.get(i).unwrap_or(&empty);
             slices.push(CallArg::Pure(bcs::to_bytes(message).unwrap()));
         }
         slices
@@ -499,15 +506,24 @@ where
             .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
             .await;
 
+        info!(
+            "`signers_bitmap` @ handle_execution_task: {:?}",
+            signers_bitmap
+        );
+
         let messages = Self::break_down_checkpoint_message(message);
         let mut args = vec![
             CallArg::Object(ika_system_state_arg),
             CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
-                IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
+                IkaError::SuiConnectorSerializationError(format!(
+                    "can't serialize `signature`: {e}"
+                ))
             })?),
             CallArg::Pure(bcs::to_bytes(&signers_bitmap).map_err(|e| {
-                IkaError::SuiConnectorSerializationError(format!("Can't bcs::to_bytes: {e}"))
+                IkaError::SuiConnectorSerializationError(format!(
+                    "can't serialize `signers_bitmap`: {e}"
+                ))
             })?),
         ];
         args.extend(messages);
@@ -539,5 +555,84 @@ where
             .await?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use roaring::RoaringBitmap;
+    use sui_sdk::SuiClient as SuiSdkClient;
+
+    /// Test helper: assert that each expected validator index has its bit set in the output bitmap.
+    fn assert_bitmap_has_indices(bitmap: &[u8], indices: &[u32]) {
+        for &i in indices {
+            let byte = bitmap[(i / 8) as usize];
+            let bit = (byte >> (i % 8)) & 1;
+            assert_eq!(bit, 1, "Bit for validator {} should be set", i);
+        }
+        println!("{:?}", bitmap);
+    }
+
+    #[test]
+    fn test_calculate_signers_bitmap_various_sizes() {
+        let test_cases = vec![4, 8, 9, 12, 48, 50, 115, 200, 300];
+
+        for &num_validators in &test_cases {
+            let mut signers = RoaringBitmap::new();
+            for i in 0..num_validators {
+                signers.insert(i);
+            }
+
+            let bitmap = SuiExecutor::<SuiSdkClient>::calculate_signers_bitmap(&signers);
+            println!("Bitmap: {:?}", bitmap);
+
+            // Ensure the bitmap is large enough.
+            let expected_size = (num_validators / 8) as usize;
+            assert!(
+                bitmap.len() >= expected_size,
+                "Bitmap too small for {} validators: got {}, expected at least {}",
+                num_validators,
+                bitmap.len(),
+                expected_size
+            );
+
+            // Validate that all expected bits are set
+            let indices: Vec<u32> = (0..num_validators).collect();
+            // assert_bitmap_has_indices(&bitmap, &indices);
+        }
+    }
+
+    #[test]
+    fn test_calculate_signers_bitmap_with_index_exceeding_bitmap_size() {
+        // Simulate a case where there are more validators than entries in the bitmap.
+        let num_validators = 10;
+        let mut signers = RoaringBitmap::new();
+
+        // Add the 9th index (zero-based),
+        // which is out of bounds if bitmap only accounts for 8.
+        signers.insert(9);
+
+        let bitmap = SuiExecutor::<SuiSdkClient>::calculate_signers_bitmap(&signers);
+        println!("Bitmap: {:?}", bitmap);
+
+        // Bitmap should be large enough to include index 9.
+        // Index 9 needs 2 bytes.
+        let required_length = (9 / 8) + 1;
+        assert!(
+            bitmap.len() >= required_length,
+            "Bitmap is too small: expected at least {} bytes for validator index 9, got {}",
+            required_length,
+            bitmap.len()
+        );
+
+        // Optionally: verify that the 10th bit is set
+        let byte_index = 9 / 8;
+        let bit_position = 9 % 8;
+        assert_eq!(
+            (bitmap[byte_index] >> bit_position) & 1,
+            1,
+            "Expected bit at index 9 to be set"
+        );
     }
 }

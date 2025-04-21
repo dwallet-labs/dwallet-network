@@ -14,7 +14,7 @@ export const checkpointCreationTime = 2000;
 interface IkaConfig {
 	ika_package_id: string;
 	ika_system_package_id: string;
-	ika_system_obj_id: string;
+	ika_system_object_id: string;
 }
 
 export interface Config {
@@ -167,10 +167,10 @@ export function isDWalletNetworkDecryptionKey(obj: any): obj is DWalletNetworkDe
 
 export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 	const dynamicFields = await c.client.getDynamicFields({
-		parentId: c.ikaConfig.ika_system_obj_id,
+		parentId: c.ikaConfig.ika_system_object_id,
 	});
 	const innerSystemState = await c.client.getDynamicFieldObject({
-		parentId: c.ikaConfig.ika_system_obj_id,
+		parentId: c.ikaConfig.ika_system_object_id,
 		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
 	});
 	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
@@ -370,10 +370,10 @@ export async function getNetworkDecryptionKeyPublicOutput(c: Config): Promise<Ui
 
 export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	const dynamicFields = await c.client.getDynamicFields({
-		parentId: c.ikaConfig.ika_system_obj_id,
+		parentId: c.ikaConfig.ika_system_object_id,
 	});
 	const innerSystemState = await c.client.getDynamicFieldObject({
-		parentId: c.ikaConfig.ika_system_obj_id,
+		parentId: c.ikaConfig.ika_system_object_id,
 		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
 	});
 	if (!isIKASystemStateInner(innerSystemState.data?.content)) {

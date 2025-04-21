@@ -152,7 +152,7 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(
-                reshare::network_decryption_key_reshare_secp256k1_session_info(deserialized_event),
+                reshare::network_decryption_key_reshare_session_info_from_event(deserialized_event),
             ))
         }
         t if t
@@ -409,7 +409,12 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
                 Ok(value) => {
                     valid_messages.insert(*party_id, value);
                 }
-                Err(_) => {
+                Err(e) => {
+                    tracing::error!(
+                        party_id=?party_id,
+                        error=?e,
+                        "malicious party detected — failed to deserialize a message from party"
+                    );
                     malicious_parties.push(*party_id);
                 }
             }
@@ -472,9 +477,7 @@ pub(crate) async fn session_input_from_event(
             Ok((
                 ReshareSecp256k1Party::generate_public_input(
                     dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
-                    dwallet_mpc_manager
-                        .get_next_active_committee_until_success()
-                        .await,
+                    dwallet_mpc_manager.must_get_next_active_committee().await,
                     protocol_public_parameters,
                     dwallet_mpc_manager.get_decryption_key_share_public_parameters(
                         &deserialized_event
