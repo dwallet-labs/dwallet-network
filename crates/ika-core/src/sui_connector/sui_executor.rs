@@ -19,6 +19,7 @@ use ika_types::governance::{
 use ika_types::message::Secp256K1NetworkDKGOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
+use ika_types::sui::system_inner_v1::BlsCommittee;
 use ika_types::sui::{
     DWalletCoordinatorInner, SystemInner, SystemInnerTrait,
     PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_ADVANCE_EPOCH_FUNCTION_NAME,
@@ -235,9 +236,12 @@ where
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
                         ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
+                        let active_members: BlsCommittee =
+                            ika_system_state_inner.validators().clone().active_committee;
                         let auth_sig = checkpoint_message.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
-                        let signers_bitmap = Self::calculate_signers_bitmap(&auth_sig.signers_map);
+                        let signers_bitmap =
+                            Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
                         let message =
                             bcs::to_bytes::<CheckpointMessage>(&checkpoint_message.into_message())
                                 .expect("Serializing checkpoint message cannot fail");
@@ -269,10 +273,12 @@ where
         }
     }
 
-    fn calculate_signers_bitmap(signers_map: &RoaringBitmap) -> Vec<u8> {
-        let max_singers_bytes = signers_map.max().unwrap_or(0).div_ceil(8) as usize;
-        // The bitmap is 1 byte larger than the number of signers to accommodate the last byte.
-        let mut signers_bitmap = vec![0u8; max_singers_bytes + 1];
+    fn calculate_signers_bitmap(
+        signers_map: &RoaringBitmap,
+        active_committee: &BlsCommittee,
+    ) -> Vec<u8> {
+        let committee_size = active_committee.members.len();
+        let mut signers_bitmap = vec![0u8; committee_size.div_ceil(8)];
         for singer in signers_map.iter() {
             // Set the i-th bit to 1,
             let byte_index = (singer / 8) as usize;
