@@ -477,9 +477,7 @@ pub(crate) async fn session_input_from_event(
             Ok((
                 ReshareSecp256k1Party::generate_public_input(
                     dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
-                    dwallet_mpc_manager
-                        .must_get_next_active_committee()
-                        .await,
+                    dwallet_mpc_manager.must_get_next_active_committee().await,
                     protocol_public_parameters,
                     dwallet_mpc_manager.get_decryption_key_share_public_parameters(
                         &deserialized_event
