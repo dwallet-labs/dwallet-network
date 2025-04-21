@@ -103,7 +103,7 @@ where
 
     async fn sync_next_committee(
         sui_client: Arc<SuiClient<C>>,
-        next_epoch_active_committee: Arc<RwLock<Option<Committee>>>,
+        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
     ) {
         loop {
             time::sleep(Duration::from_secs(2)).await;
@@ -111,7 +111,7 @@ where
             let system_inner = system_inner.into_init_version_for_tooling();
 
             let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
-                let mut committee_lock = next_epoch_active_committee.write().await;
+                let mut committee_lock = next_epoch_committee.write().await;
                 *committee_lock = None;
                 debug!("ika next epoch active committee not found, retrying...");
                 continue;
@@ -130,7 +130,7 @@ where
                 }
             };
 
-            let class_group_data = match sui_client
+            let class_group_encryption_keys_and_proofs = match sui_client
                 .get_class_groups_public_keys_and_proofs(&validators)
                 .await
             {
@@ -141,13 +141,13 @@ where
                 }
             };
 
-            let class_group_map = class_group_data
+            let class_group_encryption_keys_and_proofs = class_group_encryption_keys_and_proofs
                 .into_iter()
                 .filter_map(|(id, class_groups)| {
                     let authority_name = match new_next_committee.get(&id) {
                         Some((authority_name, _)) => *authority_name,
                         None => {
-                            error!("missing validator voting power for id: {id}");
+                            error!("missing validator authority name for id: {id}");
                             return None;
                         }
                     };
@@ -165,10 +165,10 @@ where
             let committee = Committee::new(
                 system_inner.epoch + 1,
                 new_next_committee.values().cloned().collect(),
-                class_group_map,
+                class_group_encryption_keys_and_proofs,
             );
 
-            let mut committee_lock = next_epoch_active_committee.write().await;
+            let mut committee_lock = next_epoch_committee.write().await;
             *committee_lock = Some(committee);
         }
     }
