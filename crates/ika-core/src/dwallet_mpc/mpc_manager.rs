@@ -609,7 +609,9 @@ impl DWalletMPCManager {
         mpc_event_data: Option<MPCEventData>,
         session_sequence_number: u64,
     ) -> DWalletMPCSession {
-        if self.mpc_sessions.contains_key(&session_id) {
+        if self.mpc_sessions.contains_key(&session_id)
+            || self.pending_sessions.contains_key(&session_sequence_number)
+        {
             // This can happpen because the event will be loaded once from the `load_missed_events` function,
             // and once by querying the events from Sui.
             // These sessions are ignored since we already have them in the `mpc_sessions` map.
