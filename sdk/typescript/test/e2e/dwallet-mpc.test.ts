@@ -58,6 +58,10 @@ describe('Test dWallet MPC', () => {
 
 	it('read the network decryption key', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		const networkDecryptionKeyPublicOutputBase64 = Buffer.from(
+			networkDecryptionKeyPublicOutput,
+		).toString('base64');
+		console.log(`networkDecryptionKeyPublicOutput: ${networkDecryptionKeyPublicOutputBase64}`);
 		console.log(`networkDecryptionKeyPublicOutput: ${networkDecryptionKeyPublicOutput}`);
 	});
 

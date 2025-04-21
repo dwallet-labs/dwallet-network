@@ -101,17 +101,12 @@ fn get_decryption_key_shares_from_public_output(
         NetworkDecryptionKeyPublicOutputType::Reshare => {
             let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                 bcs::from_bytes(&shares.public_output)?;
-            let n_factorial = PrecomputedValues::<
-                group::Value<secp256k1::Scalar>,
-            >::factorial(
-                weighted_threshold_access_structure.number_of_virtual_parties()
-            );
+
             let secret_shares = public_output
                 .decrypt_decryption_key_shares::<secp256k1::GroupElement>(
                     party_id,
                     weighted_threshold_access_structure,
                     decryption_key,
-                    n_factorial,
                 )
                 .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
             Ok(secret_shares)
