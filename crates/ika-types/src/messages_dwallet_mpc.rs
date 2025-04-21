@@ -498,7 +498,6 @@ pub enum DWalletNetworkDecryptionKeyState {
     NetworkDKGCompleted,
 }
 
-// Todo (yael): change this to the real event
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct DWalletDecryptionKeyReshareRequestEvent {
     pub dwallet_network_decryption_key_id: ObjectID,
