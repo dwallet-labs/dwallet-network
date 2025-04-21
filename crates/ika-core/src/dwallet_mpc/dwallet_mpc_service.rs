@@ -125,7 +125,7 @@ impl DWalletMPCService {
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>) {
         self.load_missed_events(sui_client.clone()).await;
-        let start_time = SystemTime::now()
+        let mut start_time = SystemTime::now()
             .duration_since(UNIX_EPOCH).unwrap();
         loop {
             match self.exit.has_changed() {
@@ -149,6 +149,8 @@ impl DWalletMPCService {
                 if let Err(e) = self.read_events().await {
                     error!("failed to handle dWallet MPC events: {}", e);
                 }
+                start_time = SystemTime::now()
+                    .duration_since(UNIX_EPOCH).unwrap();
             }
             let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
             let Ok(tables) = self.epoch_store.tables() else {
