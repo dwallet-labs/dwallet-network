@@ -196,26 +196,37 @@ impl DWalletMPCService {
         let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
-            .filter_map(|(id, event)| {
-                let Ok(event) = bcs::from_bytes::<DBSuiEvent>(event) else {
-                    return None;
-                };
-                let Ok(Some(session_info)) =
-                    session_info_from_event(event.clone(), &self.epoch_store.packages_config)
-                else {
-                    return None;
-                };
-                info!(
-                    mpc_protocol=?session_info.mpc_round,
-                    session_id=?session_info.session_id,
-                    validator=?self.epoch_store.name,
-                    "Received start event for session"
-                );
-                let event = DWalletMPCEvent {
-                    event,
-                    session_info,
-                };
-                Some(event)
+            .filter_map(|(id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
+                Ok(event) => {
+                    match session_info_from_event(event.clone(), &self.epoch_store.packages_config)
+                    {
+                        Ok(Some(session_info)) => {
+                            info!(
+                                mpc_protocol=?session_info.mpc_round,
+                                session_id=?session_info.session_id,
+                                validator=?self.epoch_store.name,
+                                "Received start event for session"
+                            );
+                            let event = DWalletMPCEvent {
+                                event,
+                                session_info,
+                            };
+                            Some(event)
+                        }
+                        Ok(None) => {
+                            error!("Failed to extract session info from event");
+                            None
+                        }
+                        Err(e) => {
+                            error!("Error getting session info from event: {}", e);
+                            None
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to deserialize event: {}", e);
+                    None
+                }
             })
             .collect();
 
