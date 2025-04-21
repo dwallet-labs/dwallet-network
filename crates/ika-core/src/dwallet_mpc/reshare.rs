@@ -64,6 +64,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
     ) -> DwalletMPCResult<MPCPublicInput> {
         let current_committee = current_committee.clone();
         let quorum_threshold = current_committee.quorum_threshold();
+
         let current_access_structure =
             create_access_structure(&current_committee, quorum_threshold)?;
         let upcoming_access_structure =

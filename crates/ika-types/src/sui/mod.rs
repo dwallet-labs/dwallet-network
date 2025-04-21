@@ -5,7 +5,6 @@ use crate::committee::StakeUnit;
 use crate::crypto::AuthorityName;
 use crate::sui::system_inner_v1::DWalletNetworkDecryptionKeyCap;
 use crate::sui::system_inner_v1::{DWalletCoordinatorInnerV1, ValidatorSetV1};
-use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;

@@ -19,6 +19,7 @@ use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::network_dkg::{advance_network_dkg, DwalletMPCNetworkKeys};
 use crate::dwallet_mpc::presign::PresignParty;
+use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{
     message_digest, party_id_to_authority_name, party_ids_to_authority_names, presign,
@@ -134,6 +135,14 @@ impl DWalletMPCSession {
                 malicious_parties,
                 message,
             }) => {
+                info!(
+                    // Safe to unwrap as advance can only be called after the event is received.
+                    mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
+                    session_id=?self.session_id,
+                    validator=?self.epoch_store()?.name,
+                    round=?self.serialized_full_messages.len(),
+                    "Advanced MPC session"
+                );
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
@@ -421,7 +430,30 @@ impl DWalletMPCSession {
                     malicious_parties: vec![],
                 })
             }
-            MPCProtocolInitData::DecryptionKeyReshare(_) => todo!(),
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                let public_input = bcs::from_bytes(public_input)?;
+                let decryption_key_shares = mpc_event_data
+                    .decryption_share
+                    .iter()
+                    .map(|(party_id, share)| (*party_id, share.decryption_key_share))
+                    .collect::<HashMap<_, _>>();
+                crate::dwallet_mpc::advance_and_serialize::<ReshareSecp256k1Party>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.serialized_full_messages.clone(),
+                    public_input,
+                    (
+                        bcs::from_bytes(
+                            &mpc_event_data
+                                .private_input
+                                .clone()
+                                .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
+                        )?,
+                        decryption_key_shares,
+                    ),
+                )
+            }
             _ => {
                 unreachable!("Unsupported MPC protocol type")
             }
