@@ -242,7 +242,7 @@ impl DWalletMPCSession {
         ))
     }
 
-    /// In the Sign Identifiable Abort protocol, each validator sends a malicious report, even
+    /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
     /// if no malicious actors are found. This is necessary to reach agreement on a malicious report
     /// and to punish the validator who started the Sign IA report if they sent a faulty report.
     fn report_malicious_actors(
