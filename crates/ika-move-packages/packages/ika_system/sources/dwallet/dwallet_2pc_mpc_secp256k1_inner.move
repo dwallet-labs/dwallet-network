@@ -797,9 +797,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         id,
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
         current_reconfiguration_public_output: table_vec::empty(ctx),
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
         next_reconfiguration_public_output: table_vec::empty(ctx),
         network_dkg_public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
@@ -874,7 +872,6 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
     let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(cap.dwallet_network_decryption_key_id);
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
-    // todo (change status)
     copy_table_vec(&mut dwallet_network_decryption_key.current_reconfiguration_public_output, &dwallet_network_decryption_key.next_reconfiguration_public_output);
 }
 

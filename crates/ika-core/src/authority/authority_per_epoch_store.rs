@@ -61,7 +61,7 @@ use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessageSlice, MPCPublicOutput, NetworkDecryptionKeyShares,
+    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyShares,
 };
 use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
@@ -349,7 +349,7 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
-    pub next_epoch_active_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
+    pub next_epoch_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -544,7 +544,7 @@ impl AuthorityPerEpochStore {
         chain_identifier: ChainIdentifier,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         packages_config: IkaPackagesConfig,
-        next_epoch_active_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
+        next_epoch_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
     ) -> Arc<Self> {
         let current_time = Instant::now();
         let epoch_id = committee.epoch;
@@ -599,7 +599,7 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_network_keys: OnceCell::new(),
             perpetual_tables,
             packages_config,
-            next_epoch_active_committee,
+            next_epoch_committee,
         });
 
         s.update_buffer_stake_metric();
@@ -1062,27 +1062,6 @@ impl AuthorityPerEpochStore {
         Ok(result?)
     }
 
-    // fn finish_consensus_certificate_process_with_batch(
-    //     &self,
-    //     output: &mut ConsensusCommitOutput,
-    //     certificates: &[VerifiedExecutableTransaction],
-    // ) -> IkaResult {
-    //     output.insert_pending_execution(certificates);
-    //
-    //     if cfg!(debug_assertions) {
-    //         for certificate in certificates {
-    //             // User signatures are written in the same batch as consensus certificate processed flag,
-    //             // which means we won't attempt to insert this twice for the same tx digest
-    //             assert!(!self
-    //                 .tables()?
-    //                 .user_signatures_for_checkpoints
-    //                 .contains_key(certificate.digest())
-    //                 .unwrap());
-    //         }
-    //     }
-    //     Ok(())
-    // }
-
     pub async fn user_certs_closed_notify(&self) {
         self.user_certs_closed_notify.wait().await
     }
@@ -1334,36 +1313,6 @@ impl AuthorityPerEpochStore {
         Ok(verified_messages)
     }
 
-    // Caller is not required to set ExecutionIndices with the right semantics in
-    // VerifiedSequencedConsensusTransaction.
-    // Also, ConsensusStats and hash will not be updated in the db with this function, unlike in
-    // process_consensus_transactions_and_commit_boundary().
-    #[cfg(any(test, feature = "test-utils"))]
-    pub async fn process_consensus_transactions_for_tests<C: CheckpointServiceNotify>(
-        self: &Arc<Self>,
-        transactions: Vec<SequencedConsensusTransaction>,
-        checkpoint_service: &Arc<C>,
-        authority_metrics: &Arc<AuthorityMetrics>,
-        skip_consensus_commit_prologue_in_test: bool,
-    ) -> IkaResult<Vec<VerifiedExecutableTransaction>> {
-        self.process_consensus_transactions_and_commit_boundary(
-            transactions,
-            &ExecutionIndicesWithStats::default(),
-            &ConsensusCommitInfo::new_for_test(
-                // if self.randomness_state_enabled() {
-                //     self.get_highest_pending_checkpoint_height() / 2 + 1
-                // } else {
-                //     self.get_highest_pending_checkpoint_height() + 1
-                // },
-                self.get_highest_pending_checkpoint_height() + 1,
-                0,
-                skip_consensus_commit_prologue_in_test,
-            ),
-            authority_metrics,
-        )
-        .await
-    }
-
     fn process_notifications(&self, notifications: &[SequencedConsensusTransactionKey]) {
         for key in notifications.iter().cloned() {
             self.consensus_notify_read.notify(&key, &());
@@ -1569,7 +1518,7 @@ impl AuthorityPerEpochStore {
         &self,
         origin_authority: AuthorityName,
         session_info: SessionInfo,
-        output: MPCMessageSlice,
+        output: Vec<u8>,
     ) -> IkaResult<ConsensusCertificateResult> {
         self.save_dwallet_mpc_output(DWalletMPCOutputMessage {
             output: output.clone(),
@@ -1601,9 +1550,7 @@ impl AuthorityPerEpochStore {
             OutputVerificationStatus::NotEnoughVotes => {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
-            OutputVerificationStatus::AlreadyCommitted
-            | OutputVerificationStatus::Malicious
-            | OutputVerificationStatus::BuildingOutput => {
+            OutputVerificationStatus::AlreadyCommitted | OutputVerificationStatus::Malicious => {
                 // Ignore this output,
                 // since there is nothing to do with it,
                 // at this stage.
@@ -1755,7 +1702,9 @@ impl AuthorityPerEpochStore {
         public_output: Vec<u8>,
     ) -> Vec<Secp256K1NetworkKeyPublicOutputSlice> {
         let mut slices = Vec::new();
-        let public_chunks = public_output.chunks(5 * 1024).collect_vec();
+        // We set a total of 5 KB since we need 6 KB buffer for other params.
+        let five_kbytes = 5 * 1024;
+        let public_chunks = public_output.chunks(five_kbytes).collect_vec();
         let empty: &[u8] = &[];
         // Take the max of the two lengths to ensure we have enough slices.
         for i in 0..public_chunks.len() {
