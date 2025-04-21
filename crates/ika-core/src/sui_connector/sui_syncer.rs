@@ -5,10 +5,10 @@
 //! on the Sui blockchain from concerned modules of `ika_system` package.
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::dwallet_mpc::network_dkg::{
-    create_dwallet_mpc_network_decryption_key_from_onchain_public_output, DwalletMPCNetworkKeys,
+    instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output, DwalletMPCNetworkKeys,
 };
 use crate::sui_connector::metrics::SuiConnectorMetrics;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyShares};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -267,13 +267,13 @@ where
         sui_client: &SuiClient<C>,
         network_dec_key_shares: &DWalletNetworkDecryptionKey,
         access_structure: &WeightedThresholdAccessStructure,
-    ) -> DwalletMPCResult<NetworkDecryptionKeyShares> {
+    ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
         let output = sui_client
             .get_network_decryption_key_with_full_data(network_dec_key_shares)
             .await
             .map_err(|e| DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
 
-        create_dwallet_mpc_network_decryption_key_from_onchain_public_output(
+        instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
             output.current_epoch,
             DWalletMPCNetworkKeyScheme::Secp256k1,
             access_structure,

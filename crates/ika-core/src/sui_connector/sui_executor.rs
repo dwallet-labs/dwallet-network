@@ -109,7 +109,7 @@ where
             system_inner_v1.validators.next_epoch_committee.is_none();
         if clock.timestamp_ms > mid_epoch_time
             && next_epoch_committee_is_empty
-            && self.is_network_dkg_complete_for_all_keys().await
+            && self.is_completed_network_dkg_for_all_keys().await
         {
             info!("Calling `process_mid_epoch()`");
             if let Err(e) = Self::process_mid_epoch(
@@ -185,7 +185,7 @@ where
         }
     }
 
-    async fn is_network_dkg_complete_for_all_keys(&self) -> bool {
+    async fn is_completed_network_dkg_for_all_keys(&self) -> bool {
         let network_decryption_keys = match self.sui_client.get_dwallet_mpc_network_keys().await {
             Ok(network_decryption_keys) => network_decryption_keys,
             Err(e) => {

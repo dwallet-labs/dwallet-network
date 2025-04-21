@@ -819,18 +819,17 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
     public_output: vector<u8>,
-    is_last: bool,
+    is_last_chunk: bool,
 ) {
-    if (is_last) {
+    if (is_last_chunk) {
         self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    assert!((dwallet_network_decryption_key.reconfiguration_public_outputs.contains(dwallet_network_decryption_key.current_epoch +1)), 0);
     let next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
     next_reconfiguration_public_output.push_back(public_output);
     dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
         DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => {
-            if (is_last) {
+            if (is_last_chunk) {
                 event::emit(CompletedDWalletDecryptionKeyReshareEvent {
                     dwallet_network_decryption_key_id,
                 });

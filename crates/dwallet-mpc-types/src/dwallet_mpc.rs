@@ -85,23 +85,18 @@ pub enum NetworkDecryptionKeyPublicOutputType {
     Reshare,
 }
 
-/// Rust representation of the Move struct `NetworkDecryptionKeyShares`
+/// Network decryption key shares for the MPC protocol.
+/// Created for each DKG protocol and modified for each Reshare Protocol.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
-pub struct NetworkDecryptionKeyShares {
+pub struct NetworkDecryptionKeyPublicData {
     /// The epoch of the last version update.
     pub epoch: u64,
 
     pub state: NetworkDecryptionKeyPublicOutputType,
-
     pub public_output: MPCPublicOutput,
 
-    /// Public parameters from the network DKG, used to create the
-    /// protocol public parameters.
-    /// Updated only after a successful network DKG.
-    pub encryption_scheme_public_parameters: Vec<u8>,
-
     /// The public parameters of the decryption key shares,
-    /// updated only after a successful network DKG.
+    /// updated only after a successful network DKG or Reshare.
     pub decryption_key_share_public_parameters: Vec<u8>,
 }
 
