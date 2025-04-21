@@ -558,7 +558,6 @@ pub fn read_authority_keypair_from_file(path: &PathBuf) -> AuthorityKeyPair {
 /// Wrapper struct for ClassGroupsKeyPair that can be deserialized from a file path.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ClassGroupsKeyPairWithPath {
-    #[serde(flatten)]
     location: ClassGroupsKeyPairLocation,
 
     #[serde(skip)]
