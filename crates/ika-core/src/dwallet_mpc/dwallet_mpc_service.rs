@@ -82,24 +82,33 @@ impl DWalletMPCService {
                 .await
             else {
                 error!("failed to fetch missed dWallet MPC events from Sui");
-                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             };
             let mut dwallet_mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
             for event in events {
-                if let Ok(Some(session_info)) =
-                    session_info_from_event(event.clone(), &epoch_store.packages_config)
-                {
-                    dwallet_mpc_manager
-                        .handle_dwallet_db_event(DWalletMPCEvent {
-                            event,
-                            session_info: session_info.clone(),
-                        })
-                        .await;
-                    info!(
-                        "Successfully processed missed event from Sui, session: {:?}",
-                        session_info.session_id
-                    );
+                match session_info_from_event(event.clone(), &epoch_store.packages_config) {
+                    Ok(Some(session_info)) => {
+                        dwallet_mpc_manager
+                            .handle_dwallet_db_event(DWalletMPCEvent {
+                                event,
+                                session_info: session_info.clone(),
+                            })
+                            .await;
+                        info!(
+                            session_id=?session_info.session_id,
+                            sequence_number=?session_info.sequence_number,
+                            is_immediate=?session_info.is_immediate,
+                            mpc_round=?session_info.mpc_round,
+                            "Successfully processed missed event from Sui"
+                        );
+                    }
+                    Ok(None) => {
+                        error!("Failed to extract session info from event");
+                    }
+                    Err(e) => {
+                        error!("Error processing event: {}", e);
+                    }
                 }
             }
             return;
