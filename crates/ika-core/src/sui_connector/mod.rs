@@ -68,7 +68,7 @@ impl SuiConnectorService {
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        next_epoch_active_committee: Arc<RwLock<Option<Committee>>>,
+        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
@@ -100,7 +100,7 @@ impl SuiConnectorService {
             Duration::from_secs(2),
             dwallet_network_keys,
             weighted_threshold_access_structure,
-            next_epoch_active_committee,
+            next_epoch_committee,
         )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to start sui syncer"))?;
@@ -300,13 +300,13 @@ pub async fn pick_highest_balance_coin(
 mod tests {
     use super::*;
     use std::time::Duration;
-
+    use tracing::debug;
     async fn example_func_ok() -> anyhow::Result<()> {
         Ok(())
     }
 
     async fn example_func_err() -> anyhow::Result<()> {
-        tracing::info!("example_func_err");
+        info!("example_func_err");
         Err(anyhow::anyhow!(""))
     }
 
