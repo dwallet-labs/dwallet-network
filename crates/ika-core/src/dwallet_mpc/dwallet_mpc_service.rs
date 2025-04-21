@@ -129,6 +129,7 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
+            info!("Running DWalletMPCService loop");
             self.update_last_session_to_complete_in_current_epoch(&sui_client)
                 .await;
             if let Err(e) = self.read_events().await {
