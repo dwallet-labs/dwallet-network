@@ -511,23 +511,6 @@ pub enum DWalletNetworkDecryptionKeyState {
     NetworkReconfigurationCompleted,
 }
 
-// Todo (yael): change this to the real event
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct DWalletDecryptionKeyReshareRequestEvent {
-    pub dwallet_network_decryption_key_id: ObjectID,
-}
-
-impl DWalletMPCEventTrait for DWalletDecryptionKeyReshareRequestEvent {
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_system_package_id,
-            name: ident_str!("DWalletDecryptionKeyReshareRequestEvent").to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct DWalletDecryptionKeyReshareRequestEvent {
     pub dwallet_network_decryption_key_id: ObjectID,

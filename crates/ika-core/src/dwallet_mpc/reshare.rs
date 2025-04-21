@@ -64,16 +64,6 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
     ) -> DwalletMPCResult<MPCPublicInput> {
         let current_committee = current_committee.clone();
         let quorum_threshold = current_committee.quorum_threshold();
-        let weighted_parties: HashMap<PartyID, Weight> = current_committee
-            .voting_rights
-            .iter()
-            .map(|(name, weight)| {
-                Ok((
-                    authority_name_to_party_id_with_committee(&current_committee, name)?,
-                    *weight as Weight,
-                ))
-            })
-            .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
 
         let current_access_structure =
             create_access_structure(&current_committee, quorum_threshold)?;
