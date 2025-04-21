@@ -430,7 +430,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
                 let public_input = bcs::from_bytes(public_input)?;
-                let decryption_shares_primes = mpc_event_data
+                let decryption_key_shares = mpc_event_data
                     .decryption_share
                     .iter()
                     .map(|(party_id, share)| (*party_id, share.decryption_key_share))
@@ -448,7 +448,7 @@ impl DWalletMPCSession {
                                 .clone()
                                 .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                         )?,
-                        decryption_shares_primes,
+                        decryption_key_shares,
                     ),
                 )
             }
