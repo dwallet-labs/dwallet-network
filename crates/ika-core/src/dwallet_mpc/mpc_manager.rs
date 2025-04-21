@@ -484,6 +484,7 @@ impl DWalletMPCManager {
                 info!("No available CPUs for cryptographic computations, waiting for a free CPU");
                 return;
             }
+            // Safe to unwrap, as we just checked that the queue is not empty.
             let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
             let live_session = self
                 .mpc_sessions
@@ -562,6 +563,7 @@ impl DWalletMPCManager {
                     from_authority=?message.authority,
                     receiving_authority=?self.epoch_store()?.name,
                     crypto_round_number=?message.round_number,
+                    malicious_parties=?malicious_parties,
                     "Error storing message, malicious parties detected"
                 );
                 self.flag_parties_as_malicious(&malicious_parties)?;

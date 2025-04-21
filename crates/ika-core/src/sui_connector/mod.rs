@@ -115,10 +115,10 @@ impl SuiConnectorService {
 
     pub async fn run_epoch(
         &self,
-        epoch: EpochId,
+        epoch_id: EpochId,
         run_with_range: Option<RunWithRange>,
     ) -> StopReason {
-        self.sui_executor.run_epoch(epoch, run_with_range).await
+        self.sui_executor.run_epoch(epoch_id, run_with_range).await
     }
 
     async fn prepare_for_sui(

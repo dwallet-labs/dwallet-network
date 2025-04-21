@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use sui_types::balance::Balance;
 use sui_types::base_types::ObjectID;
 use sui_types::coin::TreasuryCap;
-use sui_types::collection_types::{Bag, Table, TableVec, VecMap, VecSet};
+use sui_types::collection_types::{Bag, Table, VecMap, VecSet};
 use sui_types::id::ID;
 
 /// Rust version of the Move ika::ika_system::SystemParameters type
@@ -228,6 +228,10 @@ impl SystemInnerTrait for SystemInnerV1 {
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap> {
         &self.dwallet_2pc_mpc_secp256k1_network_decryption_keys
+    }
+
+    fn validators(&self) -> &ValidatorSetV1 {
+        &self.validators
     }
 
     fn get_ika_next_epoch_committee(

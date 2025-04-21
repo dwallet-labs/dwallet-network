@@ -2,26 +2,13 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::bail;
-use move_binary_format::binary_config::BinaryConfig;
-use move_binary_format::compatibility::Compatibility;
 use move_binary_format::file_format::AddressIdentifierIndex;
 use move_binary_format::CompiledModule;
-use move_core_types::gas_algebra::InternalGas;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Formatter;
-use sui_protocol_config::ProtocolConfig;
-use sui_types::base_types::ObjectRef;
-use sui_types::storage::ObjectStore;
-use sui_types::{
-    base_types::ObjectID,
-    digests::TransactionDigest,
-    move_package::MovePackage,
-    object::{Object, OBJECT_START_VERSION},
-    MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID,
-};
-use tracing::error;
+use sui_types::{base_types::ObjectID, MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID};
 
 /// Represents a system package in the framework, that's built from the source code inside
 /// ika-framework.
@@ -68,7 +55,7 @@ impl IkaMovePackage {
         let mut ika_dependencies = Vec::new();
         for name in self.ika_dependencies.iter() {
             let Some(id) = ika_dependencies_map.get(*name) else {
-                return anyhow::bail!("Missing ika dependency {}", name);
+                bail!("Missing ika dependency {}", name);
             };
             ika_dependencies.push((name.to_string(), *id));
         }
@@ -93,7 +80,7 @@ impl IkaMovePackage {
             }
             for module_handle in module.module_handles.iter_mut() {
                 let name = cloned_module.identifier_at(module_handle.name);
-                for (n, id) in ika_dependencies.iter() {
+                for (n, _id) in ika_dependencies.iter() {
                     if name.as_str() == n {
                         module_handle.address =
                             AddressIdentifierIndex(*address_identifiers_map.get(n).unwrap());

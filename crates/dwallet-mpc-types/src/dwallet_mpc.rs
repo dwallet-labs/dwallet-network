@@ -1,6 +1,5 @@
 use move_core_types::{ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fmt;
 use thiserror::Error;
 
@@ -65,7 +64,6 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 ///   This status indicates that the session cannot proceed further.
 #[derive(Clone, PartialEq, Debug)]
 pub enum MPCSessionStatus {
-    Pending,
     Active,
     Finished,
     Failed,
@@ -74,7 +72,6 @@ pub enum MPCSessionStatus {
 impl fmt::Display for MPCSessionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MPCSessionStatus::Pending => write!(f, "Pending"),
             MPCSessionStatus::Active => write!(f, "Active"),
             MPCSessionStatus::Finished => write!(f, "Finished"),
             MPCSessionStatus::Failed => write!(f, "Failed"),
