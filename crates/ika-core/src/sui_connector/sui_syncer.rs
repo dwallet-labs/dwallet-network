@@ -62,6 +62,7 @@ where
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         next_epoch_committee: Arc<RwLock<Option<Committee>>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
+        info!("Starting SuiSyncer");
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
         tokio::spawn(Self::sync_next_committee(
@@ -137,7 +138,7 @@ where
                 }
             };
 
-            let class_group_map = class_group_encryption_keys_and_proofs
+            let class_group_encryption_keys_and_proofs = class_group_encryption_keys_and_proofs
                 .into_iter()
                 .filter_map(|(id, class_groups)| {
                     let voting_power = match new_next_committee.get(&id) {
@@ -161,7 +162,7 @@ where
             let committee = Committee::new(
                 system_inner.epoch + 1,
                 new_next_committee.values().cloned().collect(),
-                class_group_map,
+                class_group_encryption_keys_and_proofs,
             );
 
             let mut committee_lock = next_epoch_committee.write().await;
@@ -181,7 +182,7 @@ where
                 .get_dwallet_mpc_network_keys()
                 .await
                 .unwrap_or_else(|e| {
-                    warn!("failed to fetch dwallet MPC network keys: {e}");
+                    error!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 });
             let mut local_network_decryption_keys =
@@ -190,8 +191,8 @@ where
                 .into_iter()
                 .for_each(|(key_id, network_dec_key_shares)| {
                     if let Some(local_dec_key_shares) = local_network_decryption_keys.get(&key_id) {
-                        info!("Updating the network key for `key_id`: {:?}", key_id);
                         if *local_dec_key_shares != network_dec_key_shares {
+                            info!("Updating the network key for `key_id`: {:?}", key_id);
                             if let Err(e) =
                                 dwallet_mpc_network_keys.update_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
                             {

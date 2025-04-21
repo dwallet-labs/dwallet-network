@@ -950,7 +950,7 @@ where
                 info!("State sync from archive is complete. Checkpoints downloaded = {:?}, Txns downloaded = {:?}", checkpoint_counter.load(Ordering::Relaxed), action_counter.load(Ordering::Relaxed));
             }
         } else {
-            warn!("Failed to find an archive reader to complete the state sync request");
+            debug!("Failed to find an archive reader to complete the state sync request");
         }
         tokio::time::sleep(Duration::from_secs(5)).await;
     }

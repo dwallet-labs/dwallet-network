@@ -1727,13 +1727,16 @@ impl AuthorityPerEpochStore {
         session_sequence_number: u64,
     ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
         let mut slices = Vec::new();
-        let public_chunks = public_output.chunks(5 * 1024).collect_vec();
-        let key_shares_chunks = key_shares.chunks(5 * 1024).collect_vec();
+        // We set a total of 5 KB since we need 6 KB buffer for other params.
+        let five_kbytes = 5 * 1024;
+        let public_chunks = public_output.chunks(five_kbytes).collect_vec();
+        let key_shares_chunks = key_shares.chunks(five_kbytes).collect_vec();
         let empty: &[u8] = &[];
         // Take the max of the two lengths to ensure we have enough slices.
         let total_slices = public_chunks.len().max(key_shares_chunks.len());
         for i in 0..total_slices {
-            // If the chunk is missing, use an empty slice, as the size of the slices can be different.
+            // If the chunk is missing, use an empty slice,
+            // as the size of the input can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
             let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
             slices.push(Secp256K1NetworkDKGOutputSlice {

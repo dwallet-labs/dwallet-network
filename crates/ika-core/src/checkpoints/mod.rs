@@ -824,7 +824,7 @@ impl CheckpointBuilder {
         // let mut all_tx_digests =
         //     Vec::with_capacity(new_checkpoints.iter().map(|(_, c)| c.size()).sum());
 
-        for (checkpoint_message) in &new_checkpoints {
+        for checkpoint_message in &new_checkpoints {
             debug!(
                 checkpoint_commit_height = height,
                 checkpoint_seq = checkpoint_message.sequence_number,

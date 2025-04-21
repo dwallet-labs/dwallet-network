@@ -3,8 +3,9 @@
 
 use crate::committee::StakeUnit;
 use crate::crypto::AuthorityName;
-use crate::sui::system_inner_v1::DWalletCoordinatorInnerV1;
 use crate::sui::system_inner_v1::DWalletNetworkDecryptionKeyCap;
+use crate::sui::system_inner_v1::{DWalletCoordinatorInnerV1, ValidatorSetV1};
+use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
@@ -135,6 +136,7 @@ pub trait SystemInnerTrait {
     ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
     fn get_ika_next_epoch_committee(&self)
         -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>>;
+    fn validators(&self) -> &ValidatorSetV1;
 }
 
 /// IkaSystemIkaSystemStateInnerState provides an abstraction over multiple versions of the inner IkaSystemStateInner object.
