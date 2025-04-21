@@ -16,7 +16,7 @@ use ika_types::governance::{
     MIN_VALIDATOR_JOINING_STAKE_NIKA, VALIDATOR_LOW_STAKE_GRACE_PERIOD,
     VALIDATOR_LOW_STAKE_THRESHOLD_NIKA, VALIDATOR_VERY_LOW_STAKE_THRESHOLD_NIKA,
 };
-use ika_types::message::Secp256K1NetworkDKGOutputSlice;
+use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;

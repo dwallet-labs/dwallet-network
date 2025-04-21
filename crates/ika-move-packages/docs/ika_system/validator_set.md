@@ -145,7 +145,7 @@ title: Module `(ika_system=0x0)::validator_set`
 <code>validators: <a href="../sui/object_table.md#sui_object_table_ObjectTable">sui::object_table::ObjectTable</a>&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>&gt;</code>
 </dt>
 <dd>
- A talbe that contains all validators
+ A tale that contains all validators
 </dd>
 <dt>
 <code><a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>: (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a></code>
@@ -170,9 +170,9 @@ title: Module `(ika_system=0x0)::validator_set`
 <code>pending_active_validators: vector&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;</code>
 </dt>
 <dd>
- The next list of peding active validators to be next_epoch_committee.
+ The next list of pending active validators to be next_epoch_committee.
  It will start from the last next_epoch_committee and will be
- process between middle of the epochs and will be finlize
+ process between middle of the epochs and will be finalize
  at the middle of the epoch.
 </dd>
 <dt>
@@ -1260,7 +1260,7 @@ It does the following things:
 
 ## Function `effectuate_staged_metadata`
 
-Effectutate pending next epoch metadata if they are staged.
+Effectuate pending next epoch metadata if they are staged.
 
 
 <pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_effectuate_staged_metadata">effectuate_staged_metadata</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>)
