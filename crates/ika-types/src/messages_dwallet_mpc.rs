@@ -61,6 +61,7 @@ pub enum MPCProtocolInitData {
     /// because the system does not support native functions.
     EncryptedShareVerification(DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>),
     PartialSignatureVerification(DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent>),
+    DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent>),
 }
 
 impl Display for MPCProtocolInitData {
@@ -76,6 +77,9 @@ impl Display for MPCProtocolInitData {
             }
             MPCProtocolInitData::PartialSignatureVerification(_) => {
                 write!(f, "PartialSignatureVerification")
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                write!(f, "DecryptionKeyReshare")
             }
         }
     }
@@ -94,6 +98,9 @@ impl Debug for MPCProtocolInitData {
             }
             MPCProtocolInitData::PartialSignatureVerification(_) => {
                 write!(f, "PartialSignatureVerification")
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                write!(f, "DecryptionKeyReshare")
             }
         }
     }
@@ -489,4 +496,20 @@ pub struct DWalletNetworkDecryptionKey {
 pub enum DWalletNetworkDecryptionKeyState {
     AwaitingNetworkDKG,
     NetworkDKGCompleted,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub struct DWalletDecryptionKeyReshareRequestEvent {
+    pub dwallet_network_decryption_key_id: ObjectID,
+}
+
+impl DWalletMPCEventTrait for DWalletDecryptionKeyReshareRequestEvent {
+    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
+        StructTag {
+            address: *packages_config.ika_system_package_id,
+            name: ident_str!("DWalletDecryptionKeyReshareRequestEvent").to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }

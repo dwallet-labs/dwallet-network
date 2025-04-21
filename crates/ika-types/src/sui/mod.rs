@@ -137,8 +137,6 @@ pub trait SystemInnerTrait {
     fn get_ika_next_epoch_committee(&self)
         -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>>;
     fn validators(&self) -> &ValidatorSetV1;
-    // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata;
-    // fn into_epoch_start_state(self) -> EpochStartSystemState;
 }
 
 /// IkaSystemIkaSystemStateInnerState provides an abstraction over multiple versions of the inner IkaSystemStateInner object.
