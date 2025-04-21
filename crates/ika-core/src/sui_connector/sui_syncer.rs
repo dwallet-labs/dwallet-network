@@ -113,7 +113,7 @@ where
             let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
                 let mut committee_lock = next_epoch_active_committee.write().await;
                 *committee_lock = None;
-                info!("ika next epoch active committee not found, retrying...");
+                debug!("ika next epoch active committee not found, retrying...");
                 continue;
             };
 
