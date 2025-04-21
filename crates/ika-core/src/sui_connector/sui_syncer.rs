@@ -108,8 +108,7 @@ where
             let system_inner = sui_client.get_system_inner_until_success().await;
             let system_inner = system_inner.into_init_version_for_tooling();
 
-            let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee()
-            else {
+            let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
                 info!("ika next epoch active committee not found, retrying...");
                 continue;
             };
@@ -127,7 +126,7 @@ where
                 }
             };
 
-            let class_group_data = match sui_client
+            let class_group_encryption_keys_and_proofs = match sui_client
                 .get_class_groups_public_keys_and_proofs(&validators)
                 .await
             {
@@ -138,7 +137,7 @@ where
                 }
             };
 
-            let class_group_map = class_group_data
+            let class_group_map = class_group_encryption_keys_and_proofs
                 .into_iter()
                 .filter_map(|(id, class_groups)| {
                     let voting_power = match new_next_committee.get(&id) {

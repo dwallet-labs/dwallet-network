@@ -696,11 +696,8 @@ impl DWalletMPCManager {
     pub(super) async fn get_next_active_committee_until_success(&self) -> Committee {
         loop {
             if let Ok(epoch_store) = self.epoch_store() {
-                if let Some(next_active_committee) = epoch_store
-                    .next_epoch_committee
-                    .read()
-                    .await
-                    .as_ref()
+                if let Some(next_active_committee) =
+                    epoch_store.next_epoch_committee.read().await.as_ref()
                 {
                     return next_active_committee.clone();
                 }

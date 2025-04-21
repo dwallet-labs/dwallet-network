@@ -133,9 +133,8 @@ pub trait SystemInnerTrait {
     fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
-    fn get_ika_next_epoch_committee(
-        &self,
-    ) -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>>;
+    fn get_ika_next_epoch_committee(&self)
+        -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>>;
 }
 
 /// IkaSystemIkaSystemStateInnerState provides an abstraction over multiple versions of the inner IkaSystemStateInner object.

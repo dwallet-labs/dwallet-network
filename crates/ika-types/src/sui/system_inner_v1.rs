@@ -233,12 +233,11 @@ impl SystemInnerTrait for SystemInnerV1 {
     fn get_ika_next_epoch_committee(
         &self,
     ) -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>> {
-        let Some(next_epoch_committee) = self.validators.next_epoch_committee.as_ref()
-        else {
+        let Some(next_epoch_committee) = self.validators.next_epoch_committee.as_ref() else {
             return None;
         };
 
-        let allowed_ids: Vec<_> = next_epoch_committee
+        let upcoming_committee_validator_ids: Vec<_> = next_epoch_committee
             .members
             .iter()
             .map(|member| member.validator_id)
@@ -250,7 +249,7 @@ impl SystemInnerTrait for SystemInnerV1 {
             .clone()?
             .members
             .iter()
-            .filter(|v| allowed_ids.contains(&v.validator_id))
+            .filter(|v| upcoming_committee_validator_ids.contains(&v.validator_id))
             .map(|v| {
                 (
                     v.validator_id,
