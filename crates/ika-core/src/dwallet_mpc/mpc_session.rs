@@ -136,9 +136,12 @@ impl DWalletMPCSession {
                 message,
             }) => {
                 info!(
-                    "session {:?} advanced on round {:?}",
-                    self.session_id,
-                    self.serialized_full_messages.len()
+                    // Safe to unwrap as advance can only be called after the event is received.
+                    mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
+                    session_id=?self.session_id,
+                    validator=?self.epoch_store()?.name,
+                    round=?self.serialized_full_messages.len(),
+                    "Reached public output (Finalize) for session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
@@ -165,7 +168,6 @@ impl DWalletMPCSession {
                 private_output: _,
                 public_output,
             }) => {
-                info!("session {:?} finalized successfully", self.session_id);
                 info!(
                     // Safe to unwrap as advance can only be called after the event is received.
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
@@ -249,7 +251,7 @@ impl DWalletMPCSession {
         ))
     }
 
-    /// In the Sign Identifiable Abort protocol, each validator sends a malicious report, even
+    /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
     /// if no malicious actors are found. This is necessary to reach agreement on a malicious report
     /// and to punish the validator who started the Sign IA report if they sent a faulty report.
     fn report_malicious_actors(
