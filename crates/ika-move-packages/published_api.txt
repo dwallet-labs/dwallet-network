@@ -1006,7 +1006,7 @@ is_duplicate_validator
 is_duplicate_with_active_validator
 	fun
 	0x0::validator_set
-is_duplicate_with_next_epoch_active_committee
+is_duplicate_with_next_epoch_committee
 	fun
 	0x0::validator_set
 is_duplicate_with_pending_validator
@@ -1102,7 +1102,7 @@ undo_report_validator_impl
 active_committee
 	public fun
 	0x0::validator_set
-next_epoch_active_committee
+next_epoch_committee
 	public fun
 	0x0::validator_set
 next_pending_active_validators

@@ -115,7 +115,7 @@ pub struct SuiClient<P> {
     sui_client_metrics: Arc<SuiClientMetrics>,
     ika_package_id: ObjectID,
     ika_system_package_id: ObjectID,
-    system_id: ObjectID,
+    ika_system_object_id: ObjectID,
 }
 
 pub type SuiBridgeClient = SuiClient<SuiSdkClient>;
@@ -126,7 +126,7 @@ impl SuiBridgeClient {
         sui_client_metrics: Arc<SuiClientMetrics>,
         ika_package_id: ObjectID,
         ika_system_package_id: ObjectID,
-        system_id: ObjectID,
+        ika_system_object_id: ObjectID,
     ) -> anyhow::Result<Self> {
         let inner = SuiClientBuilder::default()
             .build(rpc_url)
@@ -139,7 +139,7 @@ impl SuiBridgeClient {
             sui_client_metrics,
             ika_package_id,
             ika_system_package_id,
-            system_id,
+            ika_system_object_id,
         };
         self_.describe().await?;
         Ok(self_)
@@ -203,7 +203,7 @@ where
             // TODO(omersadika) fix that random
             ika_package_id: ObjectID::random(),
             ika_system_package_id: ObjectID::random(),
-            system_id: ObjectID::random(),
+            ika_system_object_id: ObjectID::random(),
         }
     }
 
@@ -263,7 +263,7 @@ where
     pub async fn get_system_inner(&self) -> IkaResult<SystemInner> {
         let result = self
             .inner
-            .get_system(self.system_id)
+            .get_system(self.ika_system_object_id)
             .await
             .map_err(|e| IkaError::SuiClientInternalError(format!("Can't get System: {e}")))?;
         let wrapper = bcs::from_bytes::<System>(&result).map_err(|e| {
@@ -274,7 +274,7 @@ where
             1 => {
                 let result = self
                     .inner
-                    .get_system_inner(self.system_id, wrapper.version)
+                    .get_system_inner(self.ika_system_object_id, wrapper.version)
                     .await
                     .map_err(|e| {
                         IkaError::SuiClientInternalError(format!("Can't get SystemInner v1: {e}"))
@@ -319,11 +319,9 @@ where
         &self,
         validators: &Vec<ValidatorInnerV1>,
     ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
-        let validators_class_groups_public_key_and_proof = self
-            .inner
+        self.inner
             .get_class_groups_public_keys_and_proofs(&validators)
-            .await?;
-        Ok(validators_class_groups_public_key_and_proof)
+            .await
     }
 
     pub async fn get_epoch_start_system(
@@ -427,6 +425,7 @@ where
         }
     }
 
+    /// Get the validators' info by their IDs.
     pub async fn get_validators_info_by_ids(
         &self,
         ika_system_state_inner: &SystemInnerV1,
@@ -441,14 +440,16 @@ where
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
-                    "Can't get_validators_from_object_table: {e}"
+                    "failure in `get_validators_from_object_table()`: {e}"
                 ))
             })?;
         let validators = validators
             .iter()
             .map(|v| {
                 bcs::from_bytes::<Validator>(&v).map_err(|e| {
-                    IkaError::SuiClientSerializationError(format!("Can't serialize Validator: {e}"))
+                    IkaError::SuiClientSerializationError(format!(
+                        "failed to de-serialize Validator info: {e}"
+                    ))
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -458,24 +459,26 @@ where
             .get_validator_inners(validators)
             .await
             .map_err(|e| {
-                IkaError::SuiClientInternalError(format!("Can't get_validator_inners: {e}"))
+                IkaError::SuiClientInternalError(format!(
+                    "failure in `get_validator_inners()`: {e}"
+                ))
             })?;
+
         let validators = validators
             .iter()
             .map(|v| {
                 bcs::from_bytes::<Field<u64, ValidatorInnerV1>>(&v).map_err(|e| {
                     IkaError::SuiClientSerializationError(format!(
-                        "Can't serialize ValidatorInnerV1: {e}"
+                        "failure to de-serialize ValidatorInnerV1: {e}"
                     ))
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        let validators = validators
+        Ok(validators
             .iter()
             .map(|v| v.value.clone())
-            .collect::<Vec<_>>();
-        Ok(validators)
+            .collect::<Vec<_>>())
     }
 
     /// Get the mutable system object arg on chain.
@@ -486,7 +489,7 @@ where
         static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
         *ARG.get_or_init(|| async move {
             let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
-                self.inner.get_mutable_shared_arg(self.system_id),
+                self.inner.get_mutable_shared_arg(self.ika_system_object_id),
                 Duration::from_secs(30)
             ) else {
                 panic!("Failed to get system object arg after retries");
@@ -603,7 +606,7 @@ where
 
     pub async fn execute_transaction_block_with_effects(
         &self,
-        tx: sui_types::transaction::Transaction,
+        tx: Transaction,
     ) -> IkaResult<SuiTransactionBlockResponse> {
         self.inner.execute_transaction_block_with_effects(tx).await
     }
@@ -723,8 +726,10 @@ pub trait SuiClientInner: Send + Sync {
 
     async fn get_latest_checkpoint_sequence_number(&self) -> Result<u64, Self::Error>;
 
-    async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
-    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
+    async fn get_system(&self, ika_system_object_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
+
+    async fn get_clock(&self, clock_obj_id: ObjectID) -> Result<Vec<u8>, Self::Error>;
+
     async fn get_dwallet_coordinator(
         &self,
         dwallet_coordinator_id: ObjectID,
@@ -756,7 +761,7 @@ pub trait SuiClientInner: Send + Sync {
 
     async fn get_system_inner(
         &self,
-        system_id: ObjectID,
+        ika_system_object_id: ObjectID,
         version: u64,
     ) -> Result<Vec<u8>, Self::Error>;
 
@@ -777,9 +782,12 @@ pub trait SuiClientInner: Send + Sync {
         validators: Vec<Validator>,
     ) -> Result<Vec<Vec<u8>>, Self::Error>;
 
-    async fn get_mutable_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error>;
+    async fn get_mutable_shared_arg(
+        &self,
+        ika_system_object_id: ObjectID,
+    ) -> Result<ObjectArg, Self::Error>;
 
-    async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error>;
+    async fn get_shared_arg(&self, obj_id: ObjectID) -> Result<ObjectArg, Self::Error>;
 
     async fn get_available_move_packages(
         &self,
@@ -836,12 +844,14 @@ impl SuiClientInner for SuiSdkClient {
             .await
     }
 
-    async fn get_system(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
-        self.read_api().get_move_object_bcs(system_id).await
+    async fn get_system(&self, ika_system_object_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
+        self.read_api()
+            .get_move_object_bcs(ika_system_object_id)
+            .await
     }
 
-    async fn get_clock(&self, system_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
-        self.read_api().get_move_object_bcs(system_id).await
+    async fn get_clock(&self, clock_obj_id: ObjectID) -> Result<Vec<u8>, Self::Error> {
+        self.read_api().get_move_object_bcs(clock_obj_id).await
     }
 
     async fn get_dwallet_coordinator(
@@ -1140,12 +1150,12 @@ impl SuiClientInner for SuiSdkClient {
 
     async fn get_system_inner(
         &self,
-        system_id: ObjectID,
+        ika_system_object_id: ObjectID,
         version: u64,
     ) -> Result<Vec<u8>, Self::Error> {
         let dynamic_fields = self
             .read_api()
-            .get_dynamic_fields(system_id, None, None)
+            .get_dynamic_fields(ika_system_object_id, None, None)
             .await?;
         let dynamic_field = dynamic_fields.data.iter().find(|df| {
             df.name.type_ == TypeTag::U64
@@ -1159,7 +1169,7 @@ impl SuiClientInner for SuiSdkClient {
         if let Some(dynamic_field) = dynamic_field {
             let result = self
                 .read_api()
-                .get_dynamic_field_object(system_id, dynamic_field.name.clone())
+                .get_dynamic_field_object(ika_system_object_id, dynamic_field.name.clone())
                 .await?;
 
             if let Some(dynamic_field) = result.data {
@@ -1182,7 +1192,7 @@ impl SuiClientInner for SuiSdkClient {
         }
         Err(Error::DataError(format!(
             "Failed to load ika system state inner object with ID {:?} and version {:?}",
-            system_id, version
+            ika_system_object_id, version
         )))
     }
 
@@ -1349,10 +1359,16 @@ impl SuiClientInner for SuiSdkClient {
         Ok(validator_inners)
     }
 
-    async fn get_mutable_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error> {
+    async fn get_mutable_shared_arg(
+        &self,
+        ika_system_object_id: ObjectID,
+    ) -> Result<ObjectArg, Self::Error> {
         let response = self
             .read_api()
-            .get_object_with_options(system_id, SuiObjectDataOptions::new().with_owner())
+            .get_object_with_options(
+                ika_system_object_id,
+                SuiObjectDataOptions::new().with_owner(),
+            )
             .await?;
         let Some(Owner::Shared {
             initial_shared_version,
@@ -1360,21 +1376,21 @@ impl SuiClientInner for SuiSdkClient {
         else {
             return Err(Self::Error::DataError(format!(
                 "Failed to load ika system state owner {:?}",
-                system_id
+                ika_system_object_id
             )));
         };
         Ok(ObjectArg::SharedObject {
-            id: system_id,
+            id: ika_system_object_id,
             initial_shared_version,
             mutable: true,
         })
     }
 
     /// Get the shared object arg for the shared system object on the chain.
-    async fn get_shared_arg(&self, system_id: ObjectID) -> Result<ObjectArg, Self::Error> {
+    async fn get_shared_arg(&self, obj_id: ObjectID) -> Result<ObjectArg, Self::Error> {
         let response = self
             .read_api()
-            .get_object_with_options(system_id, SuiObjectDataOptions::new().with_owner())
+            .get_object_with_options(obj_id, SuiObjectDataOptions::new().with_owner())
             .await?;
         let Some(Owner::Shared {
             initial_shared_version,
@@ -1382,11 +1398,11 @@ impl SuiClientInner for SuiSdkClient {
         else {
             return Err(Self::Error::DataError(format!(
                 "Failed to load ika system state owner {:?}",
-                system_id
+                obj_id
             )));
         };
         Ok(ObjectArg::SharedObject {
-            id: system_id,
+            id: obj_id,
             initial_shared_version,
             mutable: false,
         })

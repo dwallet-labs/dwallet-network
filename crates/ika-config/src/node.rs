@@ -76,7 +76,7 @@ pub struct SuiConnectorConfig {
     /// The move package id of ika_system on sui.
     pub ika_system_package_id: ObjectID,
     /// The object id of ika_system_state on sui.
-    pub system_id: ObjectID,
+    pub ika_system_object_id: ObjectID,
 
     /// Only for sui connector notifiers, don't set `notifier_client_key_pair` otherwise.
     /// Path of the file where sui client key (any SuiKeyPair) is stored.
@@ -558,6 +558,7 @@ pub fn read_authority_keypair_from_file(path: &PathBuf) -> AuthorityKeyPair {
 /// Wrapper struct for ClassGroupsKeyPair that can be deserialized from a file path.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ClassGroupsKeyPairWithPath {
+    #[serde(flatten)]
     location: ClassGroupsKeyPairLocation,
 
     #[serde(skip)]
@@ -565,6 +566,7 @@ pub struct ClassGroupsKeyPairWithPath {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Eq)]
+#[serde(untagged)]
 enum ClassGroupsKeyPairLocation {
     InPlace {
         value: Arc<ClassGroupsKeyPairAndProof>,

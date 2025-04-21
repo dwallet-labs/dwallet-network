@@ -119,10 +119,7 @@ public struct DWalletNetworkDecryptionKey has key, store {
     id: UID,
     dwallet_network_decryption_key_cap_id: ID,
     current_epoch: u64,
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
     reconfiguration_public_outputs: sui::table::Table<u64, TableVec<vector<u8>>>,
-
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
     network_dkg_public_output: TableVec<vector<u8>>,
     /// The fees paid for computation in IKA.
     computation_fee_charged_ika: Balance<IKA>,
@@ -132,7 +129,9 @@ public struct DWalletNetworkDecryptionKey has key, store {
 public enum DWalletNetworkDecryptionKeyState has copy, drop, store {
     AwaitingNetworkDKG,
     NetworkDKGCompleted,
+    /// Reconfiguration request was sent to the network, but didn't finish yet.
     AwaitingNetworkReconfiguration,
+    /// Reconfiguration request finished, but we didn't switch an epoch yet.
     AwaitingNextEpochReconfiguration,
     NetworkReconfigurationCompleted,
 }
@@ -775,7 +774,6 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         id,
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
-        //TODO: make sure to include class gorup type and version inside the bytes with the rust code
         reconfiguration_public_outputs: sui::table::new(ctx),
         network_dkg_public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
@@ -795,16 +793,16 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
     network_public_output: vector<u8>,
-    is_last: bool,
+    is_last_chunk: bool,
 ) {
-    if (is_last) {
+    if (is_last_chunk) {
         self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
     dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
         DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
-            if (is_last) {
+            if (is_last_chunk) {
                 event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
                     dwallet_network_decryption_key_id,
                 });

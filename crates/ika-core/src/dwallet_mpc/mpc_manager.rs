@@ -43,7 +43,6 @@ use ika_types::messages_dwallet_mpc::{
 };
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
-use rayon::ThreadPoolBuilder;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -474,11 +473,15 @@ impl DWalletMPCManager {
                 continue;
             };
             if live_session.mpc_event_data.is_some() {
+                info!(
+                    session_id=?pending_for_event_session.session_id,
+                    "Received event data for session"
+                );
                 let mut ready_to_advance_session = pending_for_event_session.clone();
                 ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
                 self.pending_for_computation_order
                     .push_back(ready_to_advance_session);
-                self.pending_for_computation_order.remove(index);
+                self.pending_for_events_order.remove(index);
             }
         }
         while !self.pending_for_computation_order.is_empty() {
@@ -486,25 +489,22 @@ impl DWalletMPCManager {
                 .cryptographic_computations_orchestrator
                 .can_spawn_session()
             {
+                info!("No available CPUs for cryptographic computations, waiting for a free CPU");
                 return;
             }
+            // Safe to unwrap, as we just checked that the queue is not empty.
             let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
             let live_session = self
                 .mpc_sessions
                 .get(&oldest_pending_session.session_id)
                 .unwrap();
             if live_session.status != MPCSessionStatus::Active {
-                continue;
-            }
-            let Some(event_data) = &oldest_pending_session.mpc_event_data else {
-                // This should never happen, as in the [`Self::get_ready_to_advance_sessions`] function
-                // we check if the session has event data.
-                error!(
-                    "failed to get event data for session_id: {:?}",
-                    oldest_pending_session.session_id
+                info!(
+                    session_id=?oldest_pending_session.session_id,
+                    "Session is not active, skipping"
                 );
                 continue;
-            };
+            }
             if let Err(err) = self
                 .cryptographic_computations_orchestrator
                 .spawn_session(&oldest_pending_session)
@@ -571,6 +571,7 @@ impl DWalletMPCManager {
                     from_authority=?message.authority,
                     receiving_authority=?self.epoch_store()?.name,
                     crypto_round_number=?message.round_number,
+                    malicious_parties=?malicious_parties,
                     "Error storing message, malicious parties detected"
                 );
                 self.flag_parties_as_malicious(&malicious_parties)?;
@@ -612,7 +613,9 @@ impl DWalletMPCManager {
         mpc_event_data: Option<MPCEventData>,
         session_sequence_number: u64,
     ) -> DWalletMPCSession {
-        if self.mpc_sessions.contains_key(&session_id) {
+        if self.mpc_sessions.contains_key(&session_id)
+            || self.pending_sessions.contains_key(&session_sequence_number)
+        {
             // This can happpen because the event will be loaded once from the `load_missed_events` function,
             // and once by querying the events from Sui.
             // These sessions are ignored since we already have them in the `mpc_sessions` map.
@@ -701,19 +704,15 @@ impl DWalletMPCManager {
         new_session
     }
 
-    pub(super) async fn get_next_active_committee_until_success(&self) -> Committee {
+    pub(super) async fn must_get_next_active_committee(&self) -> Committee {
         loop {
             if let Ok(epoch_store) = self.epoch_store() {
-                if let Some(next_active_committee) = epoch_store
-                    .next_epoch_active_committee
-                    .read()
-                    .await
-                    .as_ref()
+                if let Some(next_active_committee) =
+                    epoch_store.next_epoch_committee.read().await.as_ref()
                 {
                     return next_active_committee.clone();
                 }
             };
-            info!("Waiting for the next active committee to be available");
             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         }
     }

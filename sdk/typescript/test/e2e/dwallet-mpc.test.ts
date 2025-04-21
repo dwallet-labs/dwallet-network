@@ -127,12 +127,15 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should sign full flow', async () => {
+		console.log('Creating dWallet...');
 		const dwalletID = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
+		console.log('Running Presign...');
 		const presignCompletion = await presign(conf, dwalletID.dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
+		console.log('Running Sign...');
 		await sign(
 			conf,
 			presignCompletion.presign_id,
@@ -183,18 +186,21 @@ describe('Test dWallet MPC', () => {
 
 	it('should sign full flow with on-chain network DKG output', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
-		console.log(`dWallet has been created successfully: ${dwalletID}`);
+		console.log('Creating dWallet...');
+		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
+		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
 		await delay(checkpointCreationTime);
-		const presignCompletion = await presign(conf, dwalletID.dwalletID);
+		console.log('Starting Presign...');
+		const presignCompletion = await presign(conf, dwallet.dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
+		console.log('Running Sign...');
 		await sign(
 			conf,
 			presignCompletion.presign_id,
-			dwalletID.dwallet_cap_id,
+			dwallet.dwallet_cap_id,
 			Buffer.from('hello world'),
-			dwalletID.secret_share,
+			dwallet.secret_share,
 			Hash.KECCAK256,
 			networkDecryptionKeyPublicOutput,
 		);
@@ -202,7 +208,7 @@ describe('Test dWallet MPC', () => {
 });
 
 describe('Test dWallet MPC - offline', () => {
-	it('should run sign centralized part', () => {
+	it('should run sign centralized party', () => {
 		const centralizedSignedMessage = create_sign_centralized_output(
 			mockedNetworkDecryptionKeyPublicOutput,
 			MPCKeyScheme.Secp256k1,

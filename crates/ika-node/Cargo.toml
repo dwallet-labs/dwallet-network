@@ -53,6 +53,10 @@ move-vm-profiler.workspace = true
 sui-types.workspace = true
 sui-storage.workspace = true
 ika-sui-client.workspace = true
+rayon = "1.10.0"
 
 [target.'cfg(msim)'.dependencies]
 sui-simulator.workspace = true
+
+[features]
+with-network-dkg = ["ika-core/with-network-dkg"]

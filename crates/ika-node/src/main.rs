@@ -14,6 +14,7 @@ use ika_config::{Config, NodeConfig};
 use ika_core::runtime::IkaRuntimes;
 use ika_node::metrics;
 use ika_telemetry::send_telemetry_event;
+use ika_types::digests::ChainIdentifier;
 use ika_types::messages_checkpoint::CheckpointSequenceNumber;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use mysten_common::sync::async_once_cell::AsyncOnceCell;
@@ -59,9 +60,11 @@ fn main() {
     );
     config.supported_protocol_versions = Some(SupportedProtocolVersions::SYSTEM_DEFAULT);
 
-    // match run_with_range args
+    // Match run_with_range args
     // this means that we always modify the config used to start the node
-    // for run_with_range. i.e if this is set in the config, it is ignored. only the cli args
+    // for run_with_range.
+    // I.e., if this is set in the config, it is ignored.
+    // Only the cli args
     // enable/disable run_with_range
     match (args.run_with_range_epoch, args.run_with_range_checkpoint) {
         (None, Some(checkpoint)) => {
@@ -113,8 +116,10 @@ fn main() {
     let node_once_cell = Arc::new(AsyncOnceCell::<Arc<ika_node::IkaNode>>::new());
     let node_once_cell_clone = node_once_cell.clone();
 
-    // let ika-node signal main to shutdown runtimes
+    // Let ika-node signal main to shut runtimes.
     let (runtime_shutdown_tx, runtime_shutdown_rx) = broadcast::channel::<()>(1);
+    let chain_identifier =
+        ChainIdentifier::from(config.sui_connector_config.clone().ika_system_object_id);
 
     runtimes.ika_node.spawn(async move {
         match ika_node::IkaNode::start_async(config, registry_service, VERSION).await {
@@ -132,7 +137,8 @@ fn main() {
         let node = node_once_cell_clone.get().await;
         let mut shutdown_rx = node.subscribe_to_shutdown_channel();
 
-        // when we get a shutdown signal from ika-node, forward it on to the runtime_shutdown_channel here in
+        // When we get a shutdown signal from ika-node,
+        // forward it on to the `runtime_shutdown_channel` here in
         // main to signal runtimes to all shutdown.
         tokio::select! {
            _ = shutdown_rx.recv() => {
@@ -146,13 +152,9 @@ fn main() {
     });
 
     let node_once_cell_clone = node_once_cell.clone();
+
     runtimes.metrics.spawn(async move {
         let node = node_once_cell_clone.get().await;
-        let chain_identifier = match node.state().get_chain_identifier() {
-            Some(chain_identifier) => chain_identifier.to_string(),
-            None => "unknown".to_string(),
-        };
-
         info!("Ika chain identifier: {chain_identifier}");
         prometheus_registry
             .register(mysten_metrics::uptime_metric(
@@ -162,7 +164,7 @@ fn main() {
                     "fullnode"
                 },
                 VERSION,
-                chain_identifier.as_str(),
+                &chain_identifier.to_string(),
             ))
             .unwrap();
 
@@ -185,7 +187,7 @@ fn main() {
         .unwrap()
         .block_on(wait_termination(runtime_shutdown_rx));
 
-    // Drop and wait all runtimes on main thread
+    // Drop and wait for all runtimes on the main thread.
     drop(runtimes);
 }
 
@@ -198,7 +200,7 @@ async fn wait_termination(mut shutdown_rx: tokio::sync::broadcast::Receiver<()>)
 }
 
 #[cfg(unix)]
-async fn wait_termination(mut shutdown_rx: tokio::sync::broadcast::Receiver<()>) {
+async fn wait_termination(mut shutdown_rx: broadcast::Receiver<()>) {
     use futures::FutureExt;
     use tokio::signal::unix::*;
 
