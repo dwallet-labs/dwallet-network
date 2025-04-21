@@ -104,7 +104,7 @@ impl DWalletMPCService {
                         );
                     }
                     Ok(None) => {
-                        error!("Failed to extract session info from event");
+                        error!("Failed to extract session info from missed event");
                     }
                     Err(e) => {
                         error!("Error processing event: {}", e);
