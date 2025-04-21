@@ -141,7 +141,7 @@ impl DWalletMPCSession {
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
                     round=?self.serialized_full_messages.len(),
-                    "Reached public output (Finalize) for session"
+                    "Advanced MPC session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
