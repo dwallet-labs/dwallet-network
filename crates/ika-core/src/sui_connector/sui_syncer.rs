@@ -138,7 +138,7 @@ where
                 }
             };
 
-            let class_group_map = class_group_encryption_keys_and_proofs
+            let class_group_encryption_keys_and_proofs = class_group_encryption_keys_and_proofs
                 .into_iter()
                 .filter_map(|(id, class_groups)| {
                     let voting_power = match new_next_committee.get(&id) {
@@ -162,7 +162,7 @@ where
             let committee = Committee::new(
                 system_inner.epoch + 1,
                 new_next_committee.values().cloned().collect(),
-                class_group_map,
+                class_group_encryption_keys_and_proofs,
             );
 
             let mut committee_lock = next_epoch_committee.write().await;

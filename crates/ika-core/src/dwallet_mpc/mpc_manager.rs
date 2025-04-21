@@ -694,13 +694,13 @@ impl DWalletMPCManager {
         new_session
     }
 
-    pub(super) async fn get_next_active_committee_until_success(&self) -> Committee {
+    pub(super) async fn must_get_next_active_committee(&self) -> &Committee {
         loop {
             if let Ok(epoch_store) = self.epoch_store() {
                 if let Some(next_active_committee) =
                     epoch_store.next_epoch_committee.read().await.as_ref()
                 {
-                    return next_active_committee.clone();
+                    return next_active_committee;
                 }
             };
             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
