@@ -40,8 +40,8 @@ use sui_types::event::EventID;
 use sui_types::multiaddr::Multiaddr;
 use tracing::info;
 
-pub const LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL: &'static str = "http://127.0.0.1:9000";
-pub const LOCAL_DEFAULT_SUI_FAUCET_URL: &'static str = "http://127.0.0.1:9123/gas";
+pub const LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL: &'static str = "https://fullnode.sui.beta.devnet.ika-network.net:443";
+pub const LOCAL_DEFAULT_SUI_FAUCET_URL: &'static str = "https://faucet.sui.beta.devnet.ika-network.net:443/gas";
 
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
