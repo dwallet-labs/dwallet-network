@@ -29,7 +29,7 @@ use sui::vec_set::{Self, VecSet};
 public struct ValidatorSet has store {
     /// Total amount of stake from all active validators at the beginning of the epoch.
     total_stake: u64,
-    /// A talbe that contains all validators
+    /// A tale that contains all validators
     validators: ObjectTable<ID, Validator>,
     /// The current list of active committee of validators.
     active_committee: BlsCommittee,
@@ -38,9 +38,9 @@ public struct ValidatorSet has store {
     next_epoch_committee: Option<BlsCommittee>,
     /// The current list of previous committee of validators.
     previous_committee: BlsCommittee,
-    /// The next list of peding active validators to be next_epoch_committee.
+    /// The next list of pending active validators to be next_epoch_committee.
     /// It will start from the last next_epoch_committee and will be
-    /// process between middle of the epochs and will be finlize
+    /// process between middle of the epochs and will be finalize
     /// at the middle of the epoch.
     pending_active_validators: vector<ID>,
     /// Table storing the number of epochs during which a validator's stake has been below the low stake threshold.
@@ -566,7 +566,7 @@ fun update_and_process_low_stake_departures(
     }
 }
 
-/// Effectutate pending next epoch metadata if they are staged.
+/// Effectuate pending next epoch metadata if they are staged.
 fun effectuate_staged_metadata(self: &mut ValidatorSet) {
     let members = *self.active_committee.members();
     members.do!(|member| {

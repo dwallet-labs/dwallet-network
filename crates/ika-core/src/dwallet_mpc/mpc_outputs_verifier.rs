@@ -140,7 +140,7 @@ impl DWalletMPCOutputsVerifier {
             from_authority=?origin_authority,
             receiving_authority=?self.epoch_store()?.name,
             output_size_bytes=?output.len(),
-            "Received DWallet mpc output",
+            "Received DWallet MPC output",
         );
         let epoch_store = self.epoch_store()?;
         let committee = epoch_store.committee().clone();

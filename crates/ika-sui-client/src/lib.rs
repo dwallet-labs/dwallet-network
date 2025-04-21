@@ -320,11 +320,9 @@ where
         &self,
         validators: &Vec<ValidatorInnerV1>,
     ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
-        let validators_class_groups_public_key_and_proof = self
-            .inner
+        self.inner
             .get_class_groups_public_keys_and_proofs(&validators)
-            .await?;
-        Ok(validators_class_groups_public_key_and_proof)
+            .await
     }
 
     pub async fn get_epoch_start_system(
@@ -411,6 +409,7 @@ where
         }
     }
 
+    /// Get the validators' info by their IDs.
     pub async fn get_validators_info_by_ids(
         &self,
         ika_system_state_inner: &SystemInnerV1,
@@ -425,14 +424,16 @@ where
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
-                    "Can't get_validators_from_object_table: {e}"
+                    "failure in `get_validators_from_object_table()`: {e}"
                 ))
             })?;
         let validators = validators
             .iter()
             .map(|v| {
                 bcs::from_bytes::<Validator>(&v).map_err(|e| {
-                    IkaError::SuiClientSerializationError(format!("Can't serialize Validator: {e}"))
+                    IkaError::SuiClientSerializationError(format!(
+                        "failed to de-serialize Validator info: {e}"
+                    ))
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -442,24 +443,26 @@ where
             .get_validator_inners(validators)
             .await
             .map_err(|e| {
-                IkaError::SuiClientInternalError(format!("Can't get_validator_inners: {e}"))
+                IkaError::SuiClientInternalError(format!(
+                    "failure in `get_validator_inners()`: {e}"
+                ))
             })?;
+
         let validators = validators
             .iter()
             .map(|v| {
                 bcs::from_bytes::<Field<u64, ValidatorInnerV1>>(&v).map_err(|e| {
                     IkaError::SuiClientSerializationError(format!(
-                        "Can't serialize ValidatorInnerV1: {e}"
+                        "failure to de-serialize ValidatorInnerV1: {e}"
                     ))
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        let validators = validators
+        Ok(validators
             .iter()
             .map(|v| v.value.clone())
-            .collect::<Vec<_>>();
-        Ok(validators)
+            .collect::<Vec<_>>())
     }
 
     /// Get the mutable system object arg on chain.
