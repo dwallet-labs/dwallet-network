@@ -16,7 +16,7 @@ use ika_types::governance::{
     MIN_VALIDATOR_JOINING_STAKE_NIKA, VALIDATOR_LOW_STAKE_GRACE_PERIOD,
     VALIDATOR_LOW_STAKE_THRESHOLD_NIKA, VALIDATOR_VERY_LOW_STAKE_THRESHOLD_NIKA,
 };
-use ika_types::message::Secp256K1NetworkDKGOutputSlice;
+use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
@@ -104,10 +104,8 @@ where
 
         let mid_epoch_time = ika_system_state_inner.epoch_start_timestamp_ms()
             + (ika_system_state_inner.epoch_duration_ms() / 2);
-        let next_epoch_committee_is_empty = system_inner_v1
-            .validators
-            .next_epoch_active_committee
-            .is_none();
+        let next_epoch_committee_is_empty =
+            system_inner_v1.validators.next_epoch_committee.is_none();
         if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
             info!("Calling `process_mid_epoch()`");
             if let Err(e) =
@@ -157,10 +155,7 @@ where
             == coordinator.last_session_to_complete_in_current_epoch;
         let all_immediate_sessions_completed = coordinator.started_immediate_sessions_count
             == coordinator.completed_immediate_sessions_count;
-        let next_epoch_committee_exists = system_inner_v1
-            .validators
-            .next_epoch_active_committee
-            .is_some();
+        let next_epoch_committee_exists = system_inner_v1.validators.next_epoch_committee.is_some();
         if coordinator.locked_last_session_to_complete_in_current_epoch
             && all_epoch_sessions_finished
             && all_immediate_sessions_completed

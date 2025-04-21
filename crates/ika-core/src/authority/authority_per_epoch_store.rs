@@ -69,7 +69,8 @@ use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
     DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput, MessageKind,
-    PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkDKGOutputSlice, SignOutput,
+    PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkKeyPublicOutputSlice,
+    SignOutput,
 };
 use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
@@ -348,6 +349,7 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
+    pub next_epoch_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -542,6 +544,7 @@ impl AuthorityPerEpochStore {
         chain_identifier: ChainIdentifier,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         packages_config: IkaPackagesConfig,
+        next_epoch_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
     ) -> Arc<Self> {
         let current_time = Instant::now();
         let epoch_id = committee.epoch;
@@ -596,6 +599,7 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_network_keys: OnceCell::new(),
             perpetual_tables,
             packages_config,
+            next_epoch_committee,
         });
 
         s.update_buffer_stake_metric();
@@ -741,21 +745,6 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
-    /// Retrieves the decryption key shares for the current epoch if they exist in the system state.
-    ///
-    /// The data is sourced from the epoch's initial system state.
-    /// The returned value is a map where:
-    /// - The key represents the key scheme (e.g., Secp256k1, Ristretto, etc.).
-    /// - The value is a vector of [`NetworkDecryptionKeyShares`],
-    ///   which contains all versions of the encrypted decryption key shares.
-    pub(crate) fn load_decryption_key_shares_from_system_state(
-        &self,
-    ) -> HashMap<ObjectID, NetworkDecryptionKeyShares> {
-        match self.epoch_start_state() {
-            EpochStartSystem::V1(data) => data.get_dwallet_network_decryption_keys().clone(),
-        }
-    }
-
     /// Return the [`DWalletMPCOutputsVerifier`].
     /// Uses a Mutex because the instance is initialized from a different thread.
     pub async fn get_dwallet_mpc_outputs_verifier(
@@ -842,6 +831,7 @@ impl AuthorityPerEpochStore {
             chain_identifier,
             perpetual_tables,
             self.packages_config.clone(),
+            Arc::new(tokio::sync::RwLock::new(None)),
         )
     }
 
@@ -1673,74 +1663,59 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => {
-                let weighted_threshold_access_structure =
-                    self.get_weighted_threshold_access_structure()?;
+            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => match key_scheme {
+                DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                    let slices = Self::slice_network_decryption_key_public_output_into_messages(
+                        &init_event.event_data.dwallet_network_decryption_key_id,
+                        output,
+                    );
 
-                let key =
-                    crate::dwallet_mpc::network_dkg::dwallet_mpc_network_key_from_session_output(
-                        self.epoch(),
-                        *key_scheme,
-                        &weighted_threshold_access_structure,
-                        &output,
-                    )?;
-
-                match key_scheme {
-                    DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                        let public_output = bcs::to_bytes(&key.get_on_chain_output())
-                            .map_err(|e| DwalletMPCError::BcsError(e))?;
-
-                        let key_shares = key.current_epoch_encryptions_of_shares_per_crt_prime;
-
-                        let slices = Self::slice_network_dkg_into_messages(
-                            &init_event.event_data.dwallet_network_decryption_key_id,
-                            public_output,
-                            key_shares,
-                            init_event.session_sequence_number,
-                        );
-
-                        let messages: Vec<_> = slices
-                            .into_iter()
-                            .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
-                            .collect();
-                        Ok(self.process_consensus_system_bulk_transaction(&messages))
-                    }
-                    DWalletMPCNetworkKeyScheme::Ristretto => {
-                        Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
-                    }
+                    let messages: Vec<_> = slices
+                        .into_iter()
+                        .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
+                        .collect();
+                    Ok(self.process_consensus_system_bulk_transaction(&messages))
                 }
+                DWalletMPCNetworkKeyScheme::Ristretto => {
+                    Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
+                }
+            },
+            MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
+                let slices = Self::slice_network_decryption_key_public_output_into_messages(
+                    &init_event.event_data.dwallet_network_decryption_key_id,
+                    output,
+                );
+
+                let messages: Vec<_> = slices
+                    .into_iter()
+                    .map(|slice| MessageKind::DwalletMPCNetworkReshareOutput(slice))
+                    .collect();
+                Ok(self.process_consensus_system_bulk_transaction(&messages))
             }
         }
     }
 
     /// Break down the key to slices because of chain transaction size limits.
     /// Limit 16 KB per Tx `pure` argument.
-    fn slice_network_dkg_into_messages(
+    fn slice_network_decryption_key_public_output_into_messages(
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
-        key_shares: Vec<u8>,
-        session_sequence_number: u64,
-    ) -> Vec<Secp256K1NetworkDKGOutputSlice> {
+    ) -> Vec<Secp256K1NetworkKeyPublicOutputSlice> {
         let mut slices = Vec::new();
         // We set a total of 5 KB since we need 6 KB buffer for other params.
         let five_kbytes = 5 * 1024;
         let public_chunks = public_output.chunks(five_kbytes).collect_vec();
-        let key_shares_chunks = key_shares.chunks(five_kbytes).collect_vec();
         let empty: &[u8] = &[];
         // Take the max of the two lengths to ensure we have enough slices.
-        let total_slices = public_chunks.len().max(key_shares_chunks.len());
-        for i in 0..total_slices {
-            // If the chunk is missing, use an empty slice,
-            // as the size of the input can be different.
+        for i in 0..public_chunks.len() {
+            // If the chunk is missing, use an empty slice, as the size of the slices can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
-            let key_chunk = key_shares_chunks.get(i).unwrap_or(&empty);
-            slices.push(Secp256K1NetworkDKGOutputSlice {
+            slices.push(Secp256K1NetworkKeyPublicOutputSlice {
                 dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
                     .clone()
                     .to_vec(),
                 public_output: (*public_chunk).to_vec(),
-                key_shares: (*key_chunk).to_vec(),
-                is_last: i == total_slices - 1,
+                is_last: i == public_chunks.len() - 1,
             });
         }
         slices

@@ -61,6 +61,7 @@ pub enum MPCProtocolInitData {
     /// because the system does not support native functions.
     EncryptedShareVerification(DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>),
     PartialSignatureVerification(DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent>),
+    DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent>),
 }
 
 impl Display for MPCProtocolInitData {
@@ -76,6 +77,9 @@ impl Display for MPCProtocolInitData {
             }
             MPCProtocolInitData::PartialSignatureVerification(_) => {
                 write!(f, "PartialSignatureVerification")
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                write!(f, "DecryptionKeyReshare")
             }
         }
     }
@@ -94,6 +98,9 @@ impl Debug for MPCProtocolInitData {
             }
             MPCProtocolInitData::PartialSignatureVerification(_) => {
                 write!(f, "PartialSignatureVerification")
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                write!(f, "DecryptionKeyReshare")
             }
         }
     }
@@ -475,12 +482,22 @@ pub struct DWalletNetworkDecryptionKey {
     pub id: ObjectID,
     pub dwallet_network_decryption_key_cap_id: ObjectID,
     pub current_epoch: u64,
-    pub current_epoch_shares: TableVec,
-    pub next_epoch_shares: TableVec,
-    pub previous_epoch_shares: TableVec,
-    pub public_output: TableVec,
+    pub current_reconfiguration_public_output: TableVec,
+    pub next_reconfiguration_public_output: TableVec,
+    pub network_dkg_public_output: TableVec,
     /// The fees paid for computation in IKA.
     pub computation_fee_charged_ika: Balance,
+    pub state: DWalletNetworkDecryptionKeyState,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DWalletNetworkDecryptionKeyData {
+    pub id: ObjectID,
+    pub dwallet_network_decryption_key_cap_id: ObjectID,
+    pub current_epoch: u64,
+    pub current_reconfiguration_public_output: Vec<u8>,
+    pub next_reconfiguration_public_output: Vec<u8>,
+    pub network_dkg_public_output: Vec<u8>,
     pub state: DWalletNetworkDecryptionKeyState,
 }
 
@@ -489,4 +506,23 @@ pub struct DWalletNetworkDecryptionKey {
 pub enum DWalletNetworkDecryptionKeyState {
     AwaitingNetworkDKG,
     NetworkDKGCompleted,
+    AwaitingNetworkReconfiguration,
+    AwaitingNextEpochReconfiguration,
+    NetworkReconfigurationCompleted,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub struct DWalletDecryptionKeyReshareRequestEvent {
+    pub dwallet_network_decryption_key_id: ObjectID,
+}
+
+impl DWalletMPCEventTrait for DWalletDecryptionKeyReshareRequestEvent {
+    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
+        StructTag {
+            address: *packages_config.ika_system_package_id,
+            name: ident_str!("DWalletDecryptionKeyReshareRequestEvent").to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }

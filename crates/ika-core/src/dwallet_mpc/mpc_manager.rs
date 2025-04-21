@@ -30,7 +30,7 @@ use futures::future::err;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_config::NodeConfig;
-use ika_types::committee::{EpochId, StakeUnit};
+use ika_types::committee::{Committee, EpochId, StakeUnit};
 use ika_types::crypto::AuthorityName;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::crypto::DefaultHash;
@@ -54,6 +54,7 @@ use sui_types::event::Event;
 use sui_types::id::ID;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::OnceCell;
 use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
@@ -300,6 +301,10 @@ impl DWalletMPCManager {
             decryption_share: match session_info.mpc_round {
                 MPCProtocolInitData::Sign(init_event) => self
                     .get_decryption_key_shares(&init_event.event_data.dwallet_mpc_network_key_id)?,
+                MPCProtocolInitData::DecryptionKeyReshare(init_event) => self
+                    .get_decryption_key_shares(
+                        &init_event.event_data.dwallet_network_decryption_key_id,
+                    )?,
                 _ => HashMap::new(),
             },
         });
@@ -604,7 +609,9 @@ impl DWalletMPCManager {
         mpc_event_data: Option<MPCEventData>,
         session_sequence_number: u64,
     ) -> DWalletMPCSession {
-        if self.mpc_sessions.contains_key(&session_id) {
+        if self.mpc_sessions.contains_key(&session_id)
+            || self.pending_sessions.contains_key(&session_sequence_number)
+        {
             // This can happpen because the event will be loaded once from the `load_missed_events` function,
             // and once by querying the events from Sui.
             // These sessions are ignored since we already have them in the `mpc_sessions` map.
@@ -691,5 +698,18 @@ impl DWalletMPCManager {
         self.mpc_sessions
             .insert(session_id.clone(), new_session.clone());
         new_session
+    }
+
+    pub(super) async fn must_get_next_active_committee(&self) -> Committee {
+        loop {
+            if let Ok(epoch_store) = self.epoch_store() {
+                if let Some(next_active_committee) =
+                    epoch_store.next_epoch_committee.read().await.as_ref()
+                {
+                    return next_active_committee.clone();
+                }
+            };
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        }
     }
 }
