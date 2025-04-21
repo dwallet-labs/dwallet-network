@@ -843,7 +843,6 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
     public_output: vector<u8>,
 ) {
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    // todo : split ooutput
     dwallet_network_decryption_key.next_reconfiguration_public_output.push_back(public_output);
 }
 

@@ -156,7 +156,7 @@ where
                     match bcs::to_bytes(&class_groups) {
                         Ok(bytes) => Some((voting_power, bytes)),
                         Err(e) => {
-                            error!("failed to serialize class group for id {id}: {e}");
+                            error!("failed to serialize class group for ID {id}: {e}");
                             None
                         }
                     }
