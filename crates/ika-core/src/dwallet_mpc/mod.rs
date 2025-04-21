@@ -409,7 +409,12 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
                 Ok(value) => {
                     valid_messages.insert(*party_id, value);
                 }
-                Err(_) => {
+                Err(e) => {
+                    tracing::error!(
+                        party_id=?party_id,
+                        error=?e,
+                        "malicious party detected — failed to deserialize a message from party"
+                    );
                     malicious_parties.push(*party_id);
                 }
             }

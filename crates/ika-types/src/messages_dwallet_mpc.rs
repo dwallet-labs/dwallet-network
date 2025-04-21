@@ -3,10 +3,10 @@ use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessageBuilder, MPCMessageSlice, MPCPublicInput, MessageState,
-    NetworkDecryptionKeyShares, DWALLET_MPC_EVENT_STRUCT_NAME,
-    START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
-    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
+    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyShares,
+    DWALLET_MPC_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
+    START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
+    START_SIGN_ROUND_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
@@ -67,8 +67,8 @@ pub enum MPCProtocolInitData {
 impl Display for MPCProtocolInitData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MPCProtocolInitData::DKGFirst(_) => write!(f, "DKGFirst"),
-            MPCProtocolInitData::DKGSecond(_) => write!(f, "DKGSecond"),
+            MPCProtocolInitData::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
+            MPCProtocolInitData::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
             MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
             MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
             MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
@@ -88,8 +88,8 @@ impl Display for MPCProtocolInitData {
 impl Debug for MPCProtocolInitData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MPCProtocolInitData::DKGFirst(_) => write!(f, "DKGFirst"),
-            MPCProtocolInitData::DKGSecond(_) => write!(f, "DKGSecond"),
+            MPCProtocolInitData::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
+            MPCProtocolInitData::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
             MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
             MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
             MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
@@ -142,7 +142,7 @@ pub struct DWalletMPCOutputMessage {
     /// The session information of the MPC session.
     pub session_info: SessionInfo,
     /// The final value of the MPC session.
-    pub output: MPCMessageSlice,
+    pub output: Vec<u8>,
 }
 
 /// The content of the system transaction that stores the MPC session output on the chain.
@@ -159,7 +159,7 @@ pub struct DWalletMPCOutput {
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct DWalletMPCMessage {
     /// The serialized message.
-    pub message: MPCMessageSlice,
+    pub message: Vec<u8>,
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
@@ -172,79 +172,11 @@ pub struct DWalletMPCMessage {
 /// Used to make sure no message is being processed twice.
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct DWalletMPCMessageKey {
-    /// The serialized message.
-    pub message: MPCMessageSlice,
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
-}
-
-/// Collects and reconstructs `MPCMessage`s from all parties across multiple rounds.
-/// This struct is useful for aggregating fragmented MPC messages from different
-/// parties, round by round, and reassembling them once all parts are received.
-#[derive(Clone)]
-pub struct MPCSessionMessagesCollector {
-    /// Each index corresponds to a round. Each round maps `PartyID` to its message builder.
-    pub messages: Vec<HashMap<PartyID, MPCMessageBuilder>>,
-}
-
-impl MPCSessionMessagesCollector {
-    /// Creates a new, empty message collector.
-    pub fn new() -> Self {
-        Self {
-            messages: Vec::new(),
-        }
-    }
-
-    /// Adds a message from a given party to the collector.
-    ///
-    /// If a complete message is reconstructed, it is returned as `Some(message)`.
-    /// Otherwise, returns `None`.
-    /// If the round number is beyond the current vector length, a new entry is created.
-    pub fn add_message(
-        &mut self,
-        party_id: PartyID,
-        new_message: DWalletMPCMessage,
-    ) -> Option<Vec<u8>> {
-        let messages_len = self.messages.len();
-        let round_number = new_message.round_number;
-        let message_fragment = new_message.message.clone();
-
-        match self.messages.get_mut(round_number) {
-            Some(party_to_msg) => {
-                let entry = party_to_msg.entry(party_id).or_insert_with(|| {
-                    let mut builder = MPCMessageBuilder::empty();
-                    builder.add_and_try_complete(message_fragment.clone());
-                    builder
-                });
-                entry.add_and_try_complete(message_fragment);
-                match &entry.messages {
-                    MessageState::Complete(msg) => Some(msg.clone()),
-                    MessageState::Incomplete(_) => None,
-                }
-            }
-
-            None if round_number >= messages_len => {
-                let mut round_map = HashMap::new();
-                let mut builder = MPCMessageBuilder::empty();
-                builder.add_and_try_complete(message_fragment.clone());
-                round_map.insert(party_id, builder.clone());
-                self.messages.push(round_map);
-
-                match &builder.messages {
-                    MessageState::Complete(msg) => Some(msg.clone()),
-                    MessageState::Incomplete(_) => None,
-                }
-            }
-
-            None => {
-                // Unexpected round number: probably older than expected
-                None
-            }
-        }
-    }
 }
 
 /// Holds information about the current MPC session.
