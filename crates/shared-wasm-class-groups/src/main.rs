@@ -25,7 +25,7 @@ fn main() {
     let mut decryption_shares = HashMap::new();
     for i in 1..=4 {
         let decryption_share = public_output.decrypt_decryption_key_shares::<secp256k1::GroupElement>(i, &current_access_structure, class_groups_key.decryption_key()).unwrap();
-        decryption_shares.insert(i, decryption_share.get(&i).unwrap().clone());
+        decryption_shares.insert(i, decryption_share);
     }
 
     let decryption_shares_base64 = base64::engine::general_purpose::STANDARD
