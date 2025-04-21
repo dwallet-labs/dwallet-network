@@ -292,7 +292,16 @@ impl DWalletMPCManager {
         event: DBSuiEvent,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
-        let (public_input, private_input) = session_input_from_event(event, &self).await?;
+        let res = session_input_from_event(event, &self).await;
+        if res.is_err() {
+            error!(
+                session_id=?session_info.session_id,
+                "failed to get session input from event with error: {:?}",
+                res.err().unwrap()
+            );
+            return Ok(());
+        }
+        let (public_input, private_input) = res?;
         let mpc_event_data = Some(MPCEventData {
             init_protocol_data: session_info.mpc_round.clone(),
             public_input,

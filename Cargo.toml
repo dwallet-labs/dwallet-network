@@ -42,6 +42,8 @@ strip = 'debuginfo'
 # Exit process with SIGABRT when any thread panics
 panic = 'abort'
 
+[profile.dev]
+panic = "abort"
 # Same as release, but build binary with debug symbols (binary size will be ~ 1GB).
 [profile.release-dbgsym]
 inherits = "release"
