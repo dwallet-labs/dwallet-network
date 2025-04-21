@@ -210,20 +210,20 @@ pub enum IkaError {
     TooManyRequests,
 
     // Sui Client
-    #[error("Sui Client failure to serialize")]
+    #[error("Sui Client failure to serialize: {0}")]
     SuiClientSerializationError(String),
 
-    #[error("Sui Client internal error")]
+    #[error("Sui Client internal error: {0}")]
     SuiClientInternalError(String),
 
     #[error("Sui Client sui transaction failure due to generic error: {0}")]
     SuiClientTxFailureGeneric(String),
 
     // Sui Connector
-    #[error("Sui Connector failure to serialize")]
+    #[error("Sui Connector failure to serialize: {0}")]
     SuiConnectorSerializationError(String),
 
-    #[error("Sui Connector internal error")]
+    #[error("Sui Connector internal error: {0}")]
     SuiConnectorInternalError(String),
 
     // This is a string because the encapsulating error has too many derives.
