@@ -2178,11 +2178,13 @@ Variant <code>AwaitingNetworkDKG</code>
 Variant <code>AwaitingNetworkReconfiguration</code>
 </dt>
 <dd>
+ Reconfiguration request was sent to the network, but didn't finish yet.
 </dd>
 <dt>
 Variant <code>AwaitingNextEpochReconfiguration</code>
 </dt>
 <dd>
+ Reconfiguration request finished, but we didn't switch an epoch yet.
 </dd>
 <dt>
 Variant <code>NetworkDKGCompleted</code>
