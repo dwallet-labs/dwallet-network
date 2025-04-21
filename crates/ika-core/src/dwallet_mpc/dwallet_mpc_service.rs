@@ -82,24 +82,33 @@ impl DWalletMPCService {
                 .await
             else {
                 error!("failed to fetch missed dWallet MPC events from Sui");
-                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             };
             let mut dwallet_mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
             for event in events {
-                if let Ok(Some(session_info)) =
-                    session_info_from_event(event.clone(), &epoch_store.packages_config)
-                {
-                    dwallet_mpc_manager
-                        .handle_dwallet_db_event(DWalletMPCEvent {
-                            event,
-                            session_info: session_info.clone(),
-                        })
-                        .await;
-                    info!(
-                        "Successfully processed missed event from Sui, session: {:?}",
-                        session_info.session_id
-                    );
+                match session_info_from_event(event.clone(), &epoch_store.packages_config) {
+                    Ok(Some(session_info)) => {
+                        dwallet_mpc_manager
+                            .handle_dwallet_db_event(DWalletMPCEvent {
+                                event,
+                                session_info: session_info.clone(),
+                            })
+                            .await;
+                        info!(
+                            session_id=?session_info.session_id,
+                            sequence_number=?session_info.sequence_number,
+                            is_immediate=?session_info.is_immediate,
+                            mpc_round=?session_info.mpc_round,
+                            "Successfully processed missed event from Sui"
+                        );
+                    }
+                    Ok(None) => {
+                        error!("Failed to extract session info from missed event");
+                    }
+                    Err(e) => {
+                        error!("Error processing a missed event: {}", e);
+                    }
                 }
             }
             return;
@@ -129,6 +138,7 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
+            info!("Running DWalletMPCService loop");
             self.update_last_session_to_complete_in_current_epoch(&sui_client)
                 .await;
             if let Err(e) = self.read_events().await {
@@ -185,26 +195,37 @@ impl DWalletMPCService {
         let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
-            .filter_map(|(id, event)| {
-                let Ok(event) = bcs::from_bytes::<DBSuiEvent>(event) else {
-                    return None;
-                };
-                let Ok(Some(session_info)) =
-                    session_info_from_event(event.clone(), &self.epoch_store.packages_config)
-                else {
-                    return None;
-                };
-                info!(
-                    mpc_protocol=?session_info.mpc_round,
-                    session_id=?session_info.session_id,
-                    validator=?self.epoch_store.name,
-                    "Received start event for session"
-                );
-                let event = DWalletMPCEvent {
-                    event,
-                    session_info,
-                };
-                Some(event)
+            .filter_map(|(id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
+                Ok(event) => {
+                    match session_info_from_event(event.clone(), &self.epoch_store.packages_config)
+                    {
+                        Ok(Some(session_info)) => {
+                            info!(
+                                mpc_protocol=?session_info.mpc_round,
+                                session_id=?session_info.session_id,
+                                validator=?self.epoch_store.name,
+                                "Received start event for session"
+                            );
+                            let event = DWalletMPCEvent {
+                                event,
+                                session_info,
+                            };
+                            Some(event)
+                        }
+                        Ok(None) => {
+                            error!("Failed to extract session info from event");
+                            None
+                        }
+                        Err(e) => {
+                            error!("Error getting session info from event: {}", e);
+                            None
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to deserialize event: {}", e);
+                    None
+                }
             })
             .collect();
 
