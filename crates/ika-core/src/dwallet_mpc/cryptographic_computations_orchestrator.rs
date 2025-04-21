@@ -77,7 +77,7 @@ impl CryptographicComputationsOrchestrator {
         }
 
         Ok(CryptographicComputationsOrchestrator {
-            available_cores_for_cryptographic_computations: available_cores_for_computations,
+            available_cores_for_cryptographic_computations: 3,
             computation_channel_sender: completed_computation_channel_sender,
             currently_running_sessions_count: 0,
         })

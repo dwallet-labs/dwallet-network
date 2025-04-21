@@ -565,7 +565,6 @@ pub struct ClassGroupsKeyPairWithPath {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Eq)]
-#[serde(untagged)]
 enum ClassGroupsKeyPairLocation {
     InPlace {
         value: Arc<ClassGroupsKeyPairAndProof>,

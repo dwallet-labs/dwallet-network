@@ -39,7 +39,8 @@ describe('Test dWallet MPC', () => {
 		);
 		const address = keypair.getPublicKey().toSuiAddress();
 		console.log(`Address: ${address}`);
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		let fullnodeUrl = getFullnodeUrl('localnet');
+		const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net:443' });
 		await requestSuiFromFaucetV1({
 			host: getFaucetHost('localnet'),
 			recipient: address,

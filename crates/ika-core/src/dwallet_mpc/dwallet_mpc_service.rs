@@ -18,7 +18,7 @@ use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use ika_types::sui::DWalletCoordinatorInner;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::EpochId;
 use sui_types::event::EventID;
@@ -125,6 +125,8 @@ impl DWalletMPCService {
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>) {
         self.load_missed_events(sui_client.clone()).await;
+        let start_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH).unwrap();
         loop {
             match self.exit.has_changed() {
                 Ok(true) => {
@@ -141,8 +143,12 @@ impl DWalletMPCService {
             info!("Running DWalletMPCService loop");
             self.update_last_session_to_complete_in_current_epoch(&sui_client)
                 .await;
-            if let Err(e) = self.read_events().await {
-                error!("failed to handle dWallet MPC events: {}", e);
+            let self_party_id = self.epoch_store.authority_name_to_party_id(&self.epoch_store.name).unwrap();
+            if !(self_party_id < 3 && SystemTime::now()
+                .duration_since(UNIX_EPOCH).unwrap().as_secs() < start_time.as_secs() + 50) {
+                if let Err(e) = self.read_events().await {
+                    error!("failed to handle dWallet MPC events: {}", e);
+                }
             }
             let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
             let Ok(tables) = self.epoch_store.tables() else {
