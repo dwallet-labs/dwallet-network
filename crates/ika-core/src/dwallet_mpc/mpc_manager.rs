@@ -126,10 +126,17 @@ struct ReadySessionsResponse {
 }
 
 impl DWalletMPCManager {
+    pub async fn create_dwallet_mpc_manager_until_success(
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        node_config: NodeConfig,
+    ) -> Self {
+        match Self::try_new(consensus_adapter, epoch_store.clone(), node_config) {  }
+    }
+
     pub fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> DwalletMPCResult<Self> {
         let weighted_threshold_access_structure =
