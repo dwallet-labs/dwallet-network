@@ -291,7 +291,7 @@ impl IkaNode {
             .await?,
         );
 
-        let latest_system_state = sui_client.get_system_inner_until_success().await;
+        let latest_system_state = sui_client.must_get_system_inner_object().await;
         let epoch_start_system_state = sui_client
             .get_epoch_start_system_until_success(&latest_system_state)
             .await;

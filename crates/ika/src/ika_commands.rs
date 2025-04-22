@@ -155,7 +155,6 @@ pub enum IkaCommand {
 
 impl IkaCommand {
     pub async fn execute(self) -> Result<(), anyhow::Error> {
-        //move_package::package_hooks::register_package_hooks(Box::new(SuiPackageHooks));
         match self {
             IkaCommand::Network {
                 config,
@@ -164,7 +163,7 @@ impl IkaCommand {
                 let config_path = config.unwrap_or(ika_config_dir()?.join(IKA_NETWORK_CONFIG));
                 let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
                     err.context(format!(
-                        "Cannot open Ika network config file at {:?}",
+                        "Cannot open Ika network swarm config file at {:?}",
                         config_path
                     ))
                 })?;
@@ -315,8 +314,8 @@ async fn start(
             let network_config: NetworkConfig = PersistedConfig::read(&network_config_path)
                 .map_err(|err| {
                     err.context(format!(
-                        "Cannot open Ika network config file at {:?}",
-                        network_config_path
+                        "Cannot open Ika network swarm config file at {:?}: {:?}",
+                        network_config_path, err
                     ))
                 })?;
 
