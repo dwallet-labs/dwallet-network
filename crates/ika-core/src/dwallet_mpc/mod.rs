@@ -31,8 +31,9 @@ use serde::Deserialize;
 use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 use std::vec::Vec;
-use sui_types::base_types::{EpochId, ObjectID};
+use sui_types::base_types::{EpochId, ObjectID, TransactionDigest};
 use sui_types::id::{ID, UID};
 
 use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp256k1Party};
@@ -245,33 +246,64 @@ fn presign_party_session_info(
     }
 }
 
+fn get_expected_decrypters(
+    epoch_store: Arc<AuthorityPerEpochStore>,
+    session_id: &ObjectID,
+) -> DwalletMPCResult<HashSet<PartyID>> {
+    let committee = epoch_store.committee();
+    let session_id_as_32_bytes: [u8; 32] = session_id.into_bytes();
+    let committee_length = committee.voting_rights.len();
+    let shuffled_committee =
+        committee.shuffle_by_stake_from_tx_digest(&TransactionDigest::new(session_id_as_32_bytes));
+    let expected_decrypters_length = epoch_store
+        .get_weighted_threshold_access_structure()?
+        .threshold as usize
+        + (committee_length as f64 * 0.05).floor() as usize;
+    let expected_decrypters = &shuffled_committee[..=expected_decrypters_length];
+    Ok(expected_decrypters
+        .iter()
+        .map(|authority_name| epoch_store.authority_name_to_party_id(authority_name))
+        .collect::<DwalletMPCResult<HashSet<PartyID>>>()?)
+}
+
 fn sign_public_input(
-    deserialized_event: &StartSignEvent,
+    deserialized_event: &DWalletMPCSuiEvent<StartSignEvent>,
     dwallet_mpc_manager: &DWalletMPCManager,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
     let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
         // Todo (#473): Support generic network key scheme
-        &deserialized_event.dwallet_mpc_network_key_id,
+        &deserialized_event.event_data.dwallet_mpc_network_key_id,
     )?;
+
+    let expected_decrypters = get_expected_decrypters(
+        dwallet_mpc_manager.epoch_store()?,
+        &deserialized_event.session_id,
+    )?;
+
     Ok(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
             deserialized_event
+                .event_data
                 .dwallet_decentralized_public_output
                 .clone(),
             bcs::to_bytes(
                 &message_digest(
-                    &deserialized_event.message.clone(),
-                    &Hash::try_from(deserialized_event.hash_scheme)
+                    &deserialized_event.event_data.message.clone(),
+                    &Hash::try_from(deserialized_event.event_data.hash_scheme)
                         .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
                 )
                 .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
             )?,
-            deserialized_event.presign.clone(),
-            deserialized_event.message_centralized_signature.clone(),
+            deserialized_event.event_data.presign.clone(),
+            deserialized_event
+                .event_data
+                .message_centralized_signature
+                .clone(),
             bcs::from_bytes(&decryption_pp)?,
+            expected_decrypters,
         )?,
     )
 }
@@ -561,7 +593,7 @@ pub(crate) async fn session_input_from_event(
                 .await;
             Ok((
                 sign_public_input(
-                    &deserialized_event.event_data,
+                    &deserialized_event,
                     dwallet_mpc_manager,
                     protocol_public_parameters,
                 )?,
