@@ -1399,6 +1399,25 @@ impl AuthorityPerEpochStore {
         Ok((verified_certificates, notifications))
     }
 
+    /// Filter DWalletMPCMessages from the consensus output and save them in the local
+    /// DB.
+    /// Those messages will get processed when the dWallet MPC service reads
+    /// them from the DB.
+    fn filter_dwallet_mpc_messages(
+        transactions: &[VerifiedSequencedConsensusTransaction],
+    ) -> Vec<DWalletMPCDBMessage> {
+        transactions
+            .iter()
+            .filter_map(|transaction| match &transaction {
+                SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                    kind: ConsensusTransactionKind::DWalletMPCMessage(message),
+                    ..
+                }) => Some(DWalletMPCDBMessage::Message(message.clone())),
+                _ => None,
+            })
+            .collect()
+    }
+
     #[instrument(level = "trace", skip_all)]
     async fn process_consensus_transaction<C: CheckpointServiceNotify>(
         &self,
@@ -1503,15 +1522,15 @@ impl AuthorityPerEpochStore {
         let authority_index = self.authority_name_to_party_id(&origin_authority);
         let mut dwallet_mpc_verifier = self.get_dwallet_mpc_outputs_verifier().await;
         let output_verification_result = dwallet_mpc_verifier
-            .try_verify_output(&output, &session_info, origin_authority)
-            .await
-            .unwrap_or_else(|e| {
-                error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
-                OutputVerificationResult {
-                    result: OutputVerificationStatus::Malicious,
-                    malicious_actors: vec![origin_authority],
-                }
-            });
+                .try_verify_output(&output, &session_info, origin_authority)
+                .await
+                .unwrap_or_else(|e| {
+                    error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
+                    OutputVerificationResult {
+                        result: OutputVerificationStatus::Malicious,
+                        malicious_actors: vec![origin_authority],
+                    }
+                });
 
         match output_verification_result.result {
             OutputVerificationStatus::FirstQuorumReached(output) => {
