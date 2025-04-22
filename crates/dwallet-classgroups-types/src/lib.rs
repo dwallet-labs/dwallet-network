@@ -37,6 +37,40 @@ pub struct ClassGroupsKeyPairAndProof {
     encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
 }
 
+pub mod class_groups_as_base64 {
+    use std::sync::Arc;
+    use base64::Engine;
+    use base64::engine::general_purpose;
+    use serde::{Deserializer, Serializer};
+    use serde::de::Error;
+    use super::*;
+
+    pub fn serialize<S>(
+        value: &Arc<impl serde::Serialize>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let bytes = bcs::to_bytes(&**value).map_err(serde::ser::Error::custom)?;
+        let encoded = general_purpose::STANDARD.encode(bytes);
+        serializer.serialize_str(&encoded)
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Arc<T>, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: serde::de::DeserializeOwned,
+    {
+        let encoded = String::deserialize(deserializer)?;
+        let bytes = general_purpose::STANDARD
+            .decode(&encoded)
+            .map_err(D::Error::custom)?;
+        let value: T = bcs::from_bytes(&bytes).map_err(D::Error::custom)?;
+        Ok(Arc::new(value))
+    }
+}
+
 /// Contains the public keys of the DWallet.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
 pub struct DWalletPublicKeys {

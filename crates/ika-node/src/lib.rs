@@ -389,6 +389,7 @@ impl IkaNode {
                 party_id,
                 class_groups_decryption_key: config
                     .class_groups_key_pair_and_proof
+                    .clone()
                     // Since this is a validator, we can unwrap the class_groups_key_pair_and_proof.
                     .unwrap()
                     .class_groups_keypair()
