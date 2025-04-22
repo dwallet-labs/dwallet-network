@@ -1408,6 +1408,17 @@ impl AuthorityPerEpochStore {
                         kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                         ..
                     }) => Some(DWalletMPCDBMessage::Message(message.clone())),
+                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                        kind:
+                            ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(
+                                authority_name,
+                                report,
+                            ),
+                        ..
+                    }) => Some(DWalletMPCDBMessage::SessionFailedWithMaliciousParties(
+                        authority_name.clone(),
+                        report.clone(),
+                    )),
                     _ => None,
                 }
             })
