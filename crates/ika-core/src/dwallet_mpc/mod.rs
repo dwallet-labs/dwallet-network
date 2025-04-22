@@ -35,7 +35,7 @@ use std::sync::Arc;
 use std::vec::Vec;
 use sui_types::base_types::{EpochId, ObjectID, TransactionDigest};
 use sui_types::id::{ID, UID};
-
+use ika_types::committee::CommitteeTrait;
 use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp256k1Party};
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 
@@ -252,18 +252,24 @@ fn get_expected_decrypters(
 ) -> DwalletMPCResult<HashSet<PartyID>> {
     let committee = epoch_store.committee();
     let session_id_as_32_bytes: [u8; 32] = session_id.into_bytes();
-    let committee_length = committee.voting_rights.len();
-    let shuffled_committee =
-        committee.shuffle_by_stake_from_tx_digest(&TransactionDigest::new(session_id_as_32_bytes));
-    let expected_decrypters_length = epoch_store
-        .get_weighted_threshold_access_structure()?
-        .threshold as usize
-        + (committee_length as f64 * 0.05).floor() as usize;
-    let expected_decrypters = &shuffled_committee[..=expected_decrypters_length];
+    let total_votes = committee.total_votes();
+    let mut shuffled_committee =
+        committee.shuffle_by_stake_from_seed(session_id_as_32_bytes);
+    let weighted_threshold_access_structure = epoch_store.get_weighted_threshold_access_structure()?;
+    let expected_decrypters_votes = weighted_threshold_access_structure
+        .threshold as u32
+        + (total_votes as f64 * 0.05).floor() as u32;
+    let mut votes_sum = 0;
+    let mut expected_decrypters = vec![];
+    while(votes_sum < expected_decrypters_votes) {
+        let authority_name = shuffled_committee.pop().unwrap();
+        let authority_index = epoch_store.authority_name_to_party_id(&authority_name)?;
+        votes_sum += weighted_threshold_access_structure.party_to_weight[&authority_index] as u32;
+        expected_decrypters.push(authority_index);
+    }
     Ok(expected_decrypters
-        .iter()
-        .map(|authority_name| epoch_store.authority_name_to_party_id(authority_name))
-        .collect::<DwalletMPCResult<HashSet<PartyID>>>()?)
+        .into_iter()
+        .collect::<HashSet<PartyID>>())
 }
 
 async fn sign_public_input(
