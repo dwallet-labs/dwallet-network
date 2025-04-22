@@ -197,7 +197,7 @@ impl DwalletMPCNetworkKeys {
         let mut inner = self.inner.write().await;
         inner.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
-            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)?;
+            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure).await?;
         Ok(())
     }
 
@@ -207,7 +207,7 @@ impl DwalletMPCNetworkKeys {
         key: NetworkDecryptionKeyShares,
         weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
-        let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
+        let mut inner = self.inner.write().await?;
         inner.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
             .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure).await?;
@@ -280,11 +280,11 @@ impl DwalletMPCNetworkKeys {
             .clone())
     }
 
-    fn try_get_decryption_keys(
+    async fn try_get_decryption_keys(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Option<NetworkDecryptionKeyShares>> {
-        let inner = self.inner.read().map_err(|_| DwalletMPCError::LockError)?;
+        let inner = self.inner.read().await;
         Ok(inner
             .network_decryption_keys
             .get(&key_id)
@@ -300,7 +300,7 @@ impl DwalletMPCNetworkKeys {
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
         loop {
-            let Ok(Some(result)) = self.try_get_decryption_keys(key_id) else {
+            let Ok(Some(result)) = self.try_get_decryption_keys(key_id).await else {
                 warn!("failed to fetch the network decryption key shares for key ID: {:?}, trying again", key_id);
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 continue;
