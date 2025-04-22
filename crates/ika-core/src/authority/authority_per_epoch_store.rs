@@ -346,7 +346,6 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
     pub(crate) dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
     dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
-    dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
     pub next_epoch_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
@@ -595,7 +594,6 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_round_outputs: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_round_events: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_round_completed_sessions: tokio::sync::Mutex::new(Vec::new()),
-            dwallet_mpc_manager: OnceCell::new(),
             dwallet_mpc_network_keys: OnceCell::new(),
             perpetual_tables,
             packages_config,
@@ -684,18 +682,6 @@ impl AuthorityPerEpochStore {
         dwallet_mpc_round_completed_sessions.push(session_id);
     }
 
-    /// A function to initiate the [`DWalletMPCManager`] when a new epoch starts.
-    pub fn set_dwallet_mpc_manager(&self, sender: DWalletMPCManager) -> IkaResult<()> {
-        if self
-            .dwallet_mpc_manager
-            .set(tokio::sync::Mutex::new(sender))
-            .is_err()
-        {
-            error!("AuthorityPerEpochStore: `set_dwallet_mpc_batches_manager` called more than once; this should never happen");
-        }
-        Ok(())
-    }
-
     /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
     /// This outputs verifier handles storing all the outputs of dWallet MPC session,
     /// and writes them to the chain once all the outputs are ready and verified.
@@ -757,19 +743,6 @@ impl AuthorityPerEpochStore {
                 }
                 None => {
                     error!("failed to get the DWalletMPCOutputsVerifier, retrying...");
-                    tokio::time::sleep(Duration::from_secs(1)).await;
-                }
-            }
-        }
-    }
-
-    /// Return the current epoch's [`DWalletMPCManager`].
-    pub async fn get_dwallet_mpc_manager(&self) -> tokio::sync::MutexGuard<DWalletMPCManager> {
-        loop {
-            match self.dwallet_mpc_manager.get() {
-                Some(dwallet_mpc_manager) => return dwallet_mpc_manager.lock().await,
-                None => {
-                    error!("failed to get the DWallet MPC Manager, retrying...");
                     tokio::time::sleep(Duration::from_secs(1)).await;
                 }
             }

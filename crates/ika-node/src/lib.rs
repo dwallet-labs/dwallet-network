@@ -861,8 +861,13 @@ impl IkaNode {
             previous_epoch_last_checkpoint_sequence_number,
         );
 
-        let dwallet_mpc_service_exit =
-            Self::start_dwallet_mpc_service(epoch_store.clone(), sui_client);
+        let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(
+            epoch_store.clone(),
+            sui_client,
+            Arc::new(consensus_adapter.clone()),
+            config.clone(),
+        )
+        .await;
 
         // Start the dWallet MPC manager on epoch start.
         epoch_store.set_dwallet_mpc_network_keys(network_keys)?;
@@ -870,13 +875,6 @@ impl IkaNode {
         // used to verify outputs before sending a system TX to store them.
         epoch_store
             .set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(&epoch_store))?;
-
-        epoch_store.set_dwallet_mpc_manager(DWalletMPCManager::try_new(
-            Arc::new(consensus_adapter.clone()),
-            Arc::clone(&epoch_store),
-            epoch_store.epoch(),
-            config.clone(),
-        )?)?;
 
         // create a new map that gets injected into both the consensus handler and the consensus adapter
         // the consensus handler will write values forwarded from consensus, and the consensus adapter
@@ -1259,13 +1257,23 @@ impl IkaNode {
         &self.config
     }
 
-    fn start_dwallet_mpc_service(
+    async fn start_dwallet_mpc_service(
         epoch_store: Arc<AuthorityPerEpochStore>,
         sui_client: Arc<SuiBridgeClient>,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        node_config: NodeConfig,
     ) -> watch::Sender<()> {
         let (exit_sender, exit_receiver) = watch::channel(());
-        let mut service = DWalletMPCService::new(epoch_store.clone(), exit_receiver);
-        spawn_monitored_task!(service.spawn(sui_client));
+        let mut service = DWalletMPCService::new(
+            epoch_store.clone(),
+            exit_receiver,
+            consensus_adapter,
+            node_config,
+            sui_client,
+        )
+        .await;
+
+        spawn_monitored_task!(service.spawn());
 
         exit_sender
     }

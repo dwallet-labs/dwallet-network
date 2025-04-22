@@ -53,6 +53,7 @@ use sui_types::digests::TransactionDigest;
 use sui_types::event::Event;
 use sui_types::id::ID;
 use tokio::runtime::Handle;
+use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, warn};
@@ -126,23 +127,38 @@ struct ReadySessionsResponse {
 }
 
 impl DWalletMPCManager {
+    pub(crate) async fn must_create_dwallet_mpc_manager(
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        node_config: NodeConfig,
+    ) -> Self {
+        Self::try_new(
+            consensus_adapter.clone(),
+            epoch_store.clone(),
+            node_config.clone(),
+        )
+        .unwrap_or_else(|err| {
+            error!(?err, "Failed to create DWalletMPCManager.");
+            // We panic on purpose, this should not happen.
+            panic!("DWalletMPCManager initialization failed: {:?}", err);
+        })
+    }
+
     pub fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> DwalletMPCResult<Self> {
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
-        let mpc_computations_orchestrator =
-            CryptographicComputationsOrchestrator::try_new(&epoch_store)?;
+        let mpc_computations_orchestrator = CryptographicComputationsOrchestrator::try_new()?;
         Ok(Self {
             mpc_sessions: HashMap::new(),
             pending_sessions: Default::default(),
             consensus_adapter,
             party_id: epoch_store.authority_name_to_party_id(&epoch_store.name.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
-            epoch_id,
+            epoch_id: epoch_store.epoch(),
             node_config,
             weighted_threshold_access_structure,
             validators_class_groups_public_keys_and_proofs: epoch_store
