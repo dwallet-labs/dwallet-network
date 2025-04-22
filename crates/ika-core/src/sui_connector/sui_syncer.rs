@@ -107,9 +107,8 @@ where
     ) {
         loop {
             time::sleep(Duration::from_secs(2)).await;
-            let system_inner = sui_client.get_system_inner_until_success().await;
+            let system_inner = sui_client.must_get_system_inner_object().await;
             let system_inner = system_inner.into_init_version_for_tooling();
-
             let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
                 let mut committee_lock = next_epoch_committee.write().await;
                 *committee_lock = None;

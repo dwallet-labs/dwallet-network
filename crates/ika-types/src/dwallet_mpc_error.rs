@@ -131,6 +131,9 @@ pub enum DwalletMPCError {
 
     #[error("failed to find the event driven data")]
     MissingEventDrivenData,
+
+    #[error("class groups key pair not found")]
+    ClassGroupsKeyPairNotFound,
 }
 
 /// A wrapper type for the result of a runtime operation.

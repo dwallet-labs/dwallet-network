@@ -2906,6 +2906,7 @@ name = "dwallet-classgroups-types"
 version = "1.0.0"
 dependencies = [
  "anyhow",
+ "base64 0.21.7",
  "bcs",
  "class_groups",
  "crypto-bigint 0.6.0-rc.6",

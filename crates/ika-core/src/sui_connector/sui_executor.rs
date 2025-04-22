@@ -227,7 +227,7 @@ where
 
         loop {
             interval.tick().await;
-            let ika_system_state_inner = self.sui_client.get_system_inner_until_success().await;
+            let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
             let epoch_on_sui: u64 = ika_system_state_inner.epoch();
             if epoch_on_sui > epoch {
                 fail_point_async!("crash");
