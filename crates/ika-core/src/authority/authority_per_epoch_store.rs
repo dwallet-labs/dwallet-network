@@ -1397,10 +1397,8 @@ impl AuthorityPerEpochStore {
             .iter()
             .filter_map(|transaction| {
                 let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
-                    certificate_author_index: _,
-                    certificate_author,
-                    consensus_index,
                     transaction,
+                    ..
                 }) = transaction;
                 match transaction {
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -1418,6 +1416,34 @@ impl AuthorityPerEpochStore {
                         authority_name.clone(),
                         report.clone(),
                     )),
+                    _ => None,
+                }
+            })
+            .collect()
+    }
+
+    /// Filter DWalletMPCMessages from the consensus output.
+    /// Those messages will get processed when the dWallet MPC service reads
+    /// them from the DB.
+    fn filter_dwallet_mpc_outputs(
+        transactions: &[VerifiedSequencedConsensusTransaction],
+    ) -> Vec<DWalletMPCOutputMessage> {
+        transactions
+            .iter()
+            .filter_map(|transaction| {
+                let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
+                    transaction,
+                    ..
+                }) = transaction;
+                match transaction {
+                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                        kind: ConsensusTransactionKind::DWalletMPCOutput(origin_authority, session_info, output),
+                        ..
+                    }) => Some(DWalletMPCOutputMessage {
+                        authority: origin_authority,
+                        session_info: session_info.clone(),
+                        output: output.clone(),
+                    }),
                     _ => None,
                 }
             })
