@@ -266,16 +266,25 @@ fn get_expected_decrypters(
         .collect::<DwalletMPCResult<HashSet<PartyID>>>()?)
 }
 
-fn sign_public_input(
+async fn sign_public_input(
     deserialized_event: &DWalletMPCSuiEvent<StartSignEvent>,
     dwallet_mpc_manager: &DWalletMPCManager,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
-        // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
-        // Todo (#473): Support generic network key scheme
-        &deserialized_event.event_data.dwallet_mpc_network_key_id,
-    )?;
+    let decryption_pp = dwallet_mpc_manager
+        .get_decryption_key_share_public_parameters(
+            // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
+            // Todo (#473): Support generic network key scheme
+            &deserialized_event.event_data.dwallet_mpc_network_key_id,
+        )
+        .await?;
+    let decryption_pp = dwallet_mpc_manager
+        .get_decryption_key_share_public_parameters(
+            // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
+            // Todo (#473): Support generic network key scheme
+            &deserialized_event.event_data.dwallet_mpc_network_key_id,
+        )
+        .await?;
 
     let expected_decrypters = get_expected_decrypters(
         dwallet_mpc_manager.epoch_store()?,
@@ -528,11 +537,13 @@ pub(crate) async fn session_input_from_event(
                     dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
                     dwallet_mpc_manager.must_get_next_active_committee().await,
                     protocol_public_parameters,
-                    dwallet_mpc_manager.get_decryption_key_share_public_parameters(
-                        &deserialized_event
-                            .event_data
-                            .dwallet_network_decryption_key_id,
-                    )?,
+                    dwallet_mpc_manager
+                        .get_decryption_key_share_public_parameters(
+                            &deserialized_event
+                                .event_data
+                                .dwallet_network_decryption_key_id,
+                        )
+                        .await?,
                 )?,
                 Some(bcs::to_bytes(
                     &class_groups_key_pair_and_proof
@@ -606,7 +617,8 @@ pub(crate) async fn session_input_from_event(
                     &deserialized_event,
                     dwallet_mpc_manager,
                     protocol_public_parameters,
-                )?,
+                )
+                .await?,
                 None,
             ))
         }
