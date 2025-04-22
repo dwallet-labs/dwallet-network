@@ -158,7 +158,7 @@ where
         &self,
         epoch_id: EpochId,
     ) -> IkaResult<Vec<DBSuiEvent>> {
-        let system_inner = self.get_system_inner_until_success().await;
+        let system_inner = self.must_get_system_inner_object().await;
         loop {
             if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
                 let dwallet_coordinator_inner = self
@@ -594,17 +594,19 @@ where
         self.inner.execute_transaction_block_with_effects(tx).await
     }
 
-    pub async fn get_system_inner_until_success(&self) -> SystemInner {
+    pub async fn must_get_system_inner_object(&self) -> SystemInner {
         loop {
             let Ok(Ok(ika_system_state)) =
                 retry_with_max_elapsed_time!(self.get_system_inner(), Duration::from_secs(30))
             else {
                 self.sui_client_metrics
                     .sui_rpc_errors
-                    .with_label_values(&["get_system_inner_until_success"])
+                    .with_label_values(&["must_get_system_inner_object"])
                     .inc();
-                // todo(zeev): add logs
-                error!("failed to get system inner until success");
+                error!(
+                    "failed to get system inner object: {:?}",
+                    self.ika_system_object_id
+                );
                 continue;
             };
             return ika_system_state;
@@ -614,7 +616,7 @@ where
     pub async fn get_dwallet_mpc_network_keys(
         &self,
     ) -> IkaResult<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>> {
-        let system_inner = self.get_system_inner_until_success().await;
+        let system_inner = self.must_get_system_inner_object().await;
         Ok(self
             .inner
             .get_network_decryption_keys(

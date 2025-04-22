@@ -110,7 +110,7 @@ where
             } else {
                 debug!("The next epoch committee wasn't set, syncing...");
             };
-            let system_inner = sui_client.get_system_inner_until_success().await;
+            let system_inner = sui_client.must_get_system_inner_object().await;
             let system_inner = system_inner.into_init_version_for_tooling();
 
             let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {

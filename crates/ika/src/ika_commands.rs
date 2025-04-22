@@ -215,7 +215,7 @@ impl IkaCommand {
                         )
                         .await
                         {
-                            eprintln!("{}", format!("[error] {e}").red().bold());
+                            eprintln!("{}", format!("[error] {e:?}").red().bold());
                         }
                     });
                 })?;
