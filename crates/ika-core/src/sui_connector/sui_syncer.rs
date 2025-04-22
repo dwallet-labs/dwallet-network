@@ -204,40 +204,49 @@ where
                 .collect::<HashMap<_, DwalletMPCResult<NetworkDecryptionKeyShares>>>();
             let mut local_network_decryption_keys =
                 dwallet_mpc_network_keys.network_decryption_keys().await;
-            network_decryption_keys
-                .into_iter()
-                .for_each(|(key_id, network_dec_key_shares)| {
-                    let network_dec_key_shares = match network_dec_key_shares {
-                        Ok(val) => val,
-                        Err(e) => {
-                            error!("failed to create network decryption key shares for key_id: {:?}: {}", key_id, e);
-                            return;
-                        }
-                    };
-                    if let Some(local_dec_key_shares) = local_network_decryption_keys.get(&key_id) {
-                        if *local_dec_key_shares != network_dec_key_shares {
-                            info!("Updating the network key for `key_id`: {:?}", key_id);
-                            if let Err(e) =
-                                dwallet_mpc_network_keys.update_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
-                            {
-                                error!(
-                                    "failed to update the key version for key_id: {:?}, error: {:?}",
-                                    key_id, e
-                                );
-                            }
-                        }
-                    } else {
-                        info!("Adding a new network key with ID: {:?}", key_id);
-                        if let Err(e) =
-                            dwallet_mpc_network_keys.add_new_network_key(key_id, network_dec_key_shares, &weighted_threshold_access_structure,)
-                        {
+
+            for (key_id, network_dec_key_shares) in network_decryption_keys {
+                let network_dec_key_shares = match network_dec_key_shares {
+                    Ok(val) => val,
+                    Err(e) => {
+                        error!(
+                            "failed to create network decryption key shares for key_id: {:?}: {}",
+                            key_id, e
+                        );
+                        return;
+                    }
+                };
+                if let Some(local_dec_key_shares) = local_network_decryption_keys.get(&key_id) {
+                    if *local_dec_key_shares != network_dec_key_shares {
+                        info!("Updating the network key for `key_id`: {:?}", key_id);
+                        if let Err(e) = dwallet_mpc_network_keys.update_network_key(
+                            key_id,
+                            network_dec_key_shares,
+                            &weighted_threshold_access_structure,
+                        ) {
                             error!(
-                                "failed to add new key for `key_id`: {:?}, error: {:?}",
+                                "failed to update the key version for key_id: {:?}, error: {:?}",
                                 key_id, e
                             );
                         }
                     }
-                });
+                } else {
+                    info!("Adding a new network key with ID: {:?}", key_id);
+                    if let Err(e) = dwallet_mpc_network_keys
+                        .add_new_network_key(
+                            key_id,
+                            network_dec_key_shares,
+                            &weighted_threshold_access_structure,
+                        )
+                        .await
+                    {
+                        error!(
+                            "failed to add new key for `key_id`: {:?}, error: {:?}",
+                            key_id, e
+                        );
+                    }
+                }
+            }
         }
     }
 

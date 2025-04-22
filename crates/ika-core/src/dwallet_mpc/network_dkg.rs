@@ -188,13 +188,13 @@ impl DwalletMPCNetworkKeys {
     }
 
     /// Adds a new network key to the network decryption keys.
-    pub fn add_new_network_key(
+    pub async fn add_new_network_key(
         &self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyShares,
         weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
-        let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
+        let mut inner = self.inner.write().await;
         inner.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
             .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)?;
