@@ -215,7 +215,7 @@ impl IkaCommand {
                         )
                         .await
                         {
-                            eprintln!("{}", format!("[error] {e}").red().bold());
+                            eprintln!("{}", format!("[error] {e:?}").red().bold());
                         }
                     });
                 })?;
@@ -314,8 +314,8 @@ async fn start(
             let network_config: NetworkConfig = PersistedConfig::read(&network_config_path)
                 .map_err(|err| {
                     err.context(format!(
-                        "Cannot open Ika network swarm config file at {:?}: {:?}",
-                        network_config_path, err
+                        "Cannot open Ika network swarm config file at {:?}",
+                        network_config_path
                     ))
                 })?;
 
