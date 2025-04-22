@@ -71,21 +71,22 @@ impl DWalletMPCService {
         }
     }
 
-    async fn update_last_session_to_complete_in_current_epoch(&self, sui_client: &SuiBridgeClient) {
-        let system_inner = sui_client.get_system_inner_until_success().await;
+    async fn update_last_session_to_complete_in_current_epoch(&mut self) {
+        let system_inner = self.sui_client.get_system_inner_until_success().await;
         if let Some(dwallet_coordinator_id) = system_inner
             .into_init_version_for_tooling()
             .dwallet_2pc_mpc_secp256k1_id
         {
-            let coordinator_state = sui_client
+            let coordinator_state = self
+                .sui_client
                 .get_dwallet_coordinator_inner_until_success(dwallet_coordinator_id)
                 .await;
             match coordinator_state {
                 DWalletCoordinatorInner::V1(inner_state) => {
-                    let mut dwallet_mpc_manager = self.epoch_store.get_dwallet_mpc_manager().await;
-                    dwallet_mpc_manager.update_last_session_to_complete_in_current_epoch(
-                        inner_state.last_session_to_complete_in_current_epoch,
-                    );
+                    self.dwallet_mpc_manager
+                        .update_last_session_to_complete_in_current_epoch(
+                            inner_state.last_session_to_complete_in_current_epoch,
+                        );
                 }
             }
         }
@@ -94,7 +95,8 @@ impl DWalletMPCService {
     async fn load_missed_events(&mut self) {
         let epoch_store = self.epoch_store.clone();
         loop {
-            let Ok(events) = self.sui_client
+            let Ok(events) = self
+                .sui_client
                 .get_dwallet_mpc_missed_events(epoch_store.epoch())
                 .await
             else {
@@ -155,7 +157,7 @@ impl DWalletMPCService {
             };
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
             info!("Running DWalletMPCService loop");
-            self.update_last_session_to_complete_in_current_epoch(&sui_client)
+            self.update_last_session_to_complete_in_current_epoch()
                 .await;
             if let Err(e) = self.read_events().await {
                 error!("failed to handle dWallet MPC events: {}", e);
@@ -173,10 +175,13 @@ impl DWalletMPCService {
                 continue;
             };
             for session_id in completed_sessions {
-                self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id).map(|session| {
-                    session.clear_data();
-                    session.status = MPCSessionStatus::Finished;
-                });
+                self.dwallet_mpc_manager
+                    .mpc_sessions
+                    .get_mut(&session_id)
+                    .map(|session| {
+                        session.clear_data();
+                        session.status = MPCSessionStatus::Finished;
+                    });
             }
             let Ok(events) = self
                 .epoch_store
@@ -187,7 +192,9 @@ impl DWalletMPCService {
                 continue;
             };
             for event in events {
-                self.dwallet_mpc_manager.handle_dwallet_db_event(event).await;
+                self.dwallet_mpc_manager
+                    .handle_dwallet_db_event(event)
+                    .await;
             }
             let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
@@ -198,12 +205,13 @@ impl DWalletMPCService {
                 new_messages.extend(messages);
             }
             for message in new_messages {
-                self.dwallet_mpc_manager.handle_dwallet_db_message(message).await;
+                self.dwallet_mpc_manager
+                    .handle_dwallet_db_message(message)
+                    .await;
             }
             self.dwallet_mpc_manager
                 .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;
-            drop(self.dwallet_mpc_manager);
         }
     }
 
