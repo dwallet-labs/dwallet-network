@@ -178,11 +178,8 @@ impl DwalletMPCNetworkKeys {
     pub async fn network_decryption_keys(&self) -> HashMap<ObjectID, NetworkDecryptionKeyShares> {
         self.inner
             .read()
+            .await
             .map(|inner| inner.network_decryption_keys.clone())
-            .unwrap_or_else(|_| {
-                warn!("no network decryption keys found");
-                HashMap::new()
-            })
     }
 
     pub fn validator_decryption_keys_shares(
