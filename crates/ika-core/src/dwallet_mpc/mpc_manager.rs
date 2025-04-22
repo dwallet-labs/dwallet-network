@@ -370,6 +370,10 @@ impl DWalletMPCManager {
                     return protocol_public_parameters;
                 }
             }
+            info!(
+                "Waiting for the protocol public parameters to be available for key_id: {:?}",
+                key_id
+            );
             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         }
     }

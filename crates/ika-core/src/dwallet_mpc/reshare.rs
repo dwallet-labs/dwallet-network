@@ -1,5 +1,7 @@
 use class_groups::reconfiguration::{PublicInput, Secp256k1Party};
-use class_groups::DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER;
+use class_groups::{
+    Secp256k1DecryptionKeySharePublicParameters, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+};
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::MPCPublicInput;
 use group::{secp256k1, GroupElement, PartyID};
@@ -93,7 +95,9 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
             plaintext_space_public_parameters.clone(),
             current_encryption_keys_per_crt_prime_and_proofs.clone(),
             upcoming_encryption_keys_per_crt_prime_and_proofs.clone(),
-            bcs::from_bytes(&decryption_key_share_public_parameters)?,
+            bcs::from_bytes::<Secp256k1DecryptionKeySharePublicParameters>(
+                &decryption_key_share_public_parameters,
+            )?,
             DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
             current_tangible_party_id_to_upcoming(current_committee, upcoming_committee).clone(),
             encryption_scheme_public_parameters,
