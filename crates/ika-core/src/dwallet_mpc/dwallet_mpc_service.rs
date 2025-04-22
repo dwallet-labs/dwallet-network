@@ -157,6 +157,9 @@ impl DWalletMPCService {
             };
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
             info!("Running DWalletMPCService loop");
+            self.dwallet_mpc_manager
+                .cryptographic_computations_orchestrator
+                .check_for_completed_computations();
             self.update_last_session_to_complete_in_current_epoch()
                 .await;
             if let Err(e) = self.read_events().await {
