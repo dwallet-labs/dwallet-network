@@ -179,8 +179,7 @@ impl DwalletMPCNetworkKeys {
     pub async fn validator_decryption_keys_shares(
         &self,
     ) -> HashMap<ObjectID, HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        self
-            .validator_private_dec_key_data
+        self.validator_private_dec_key_data
             .validator_decryption_key_shares
             .read()
             .await
@@ -197,7 +196,8 @@ impl DwalletMPCNetworkKeys {
         let mut inner = self.inner.write().await;
         inner.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
-            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure).await?;
+            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)
+            .await?;
         Ok(())
     }
 
@@ -207,10 +207,11 @@ impl DwalletMPCNetworkKeys {
         key: NetworkDecryptionKeyShares,
         weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
-        let mut inner = self.inner.write().await?;
+        let mut inner = self.inner.write().await;
         inner.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
-            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure).await?;
+            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)
+            .await?;
         Ok(())
     }
 
@@ -263,16 +264,21 @@ impl DwalletMPCNetworkKeys {
         key_id: ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         Ok(self
-            .validator_decryption_keys_shares().await
+            .validator_decryption_keys_shares()
+            .await
             .get(&key_id)
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .clone())
     }
 
-    pub async fn get_decryption_public_parameters(&self, key_id: &ObjectID) -> DwalletMPCResult<Vec<u8>> {
+    pub async fn get_decryption_public_parameters(
+        &self,
+        key_id: &ObjectID,
+    ) -> DwalletMPCResult<Vec<u8>> {
         Ok(self
             .inner
-            .read().await
+            .read()
+            .await
             .network_decryption_keys
             .get(key_id)
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?

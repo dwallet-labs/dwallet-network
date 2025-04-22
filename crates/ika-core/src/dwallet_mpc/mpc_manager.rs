@@ -318,12 +318,18 @@ impl DWalletMPCManager {
             public_input,
             private_input,
             decryption_share: match session_info.mpc_round {
-                MPCProtocolInitData::Sign(init_event) => self
-                    .get_decryption_key_shares(&init_event.event_data.dwallet_mpc_network_key_id).await?,
-                MPCProtocolInitData::DecryptionKeyReshare(init_event) => self
-                    .get_decryption_key_shares(
+                MPCProtocolInitData::Sign(init_event) => {
+                    self.get_decryption_key_shares(
+                        &init_event.event_data.dwallet_mpc_network_key_id,
+                    )
+                    .await?
+                }
+                MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
+                    self.get_decryption_key_shares(
                         &init_event.event_data.dwallet_network_decryption_key_id,
-                    ).await?,
+                    )
+                    .await?
+                }
                 _ => HashMap::new(),
             },
         });
@@ -407,7 +413,8 @@ impl DWalletMPCManager {
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
         self.dwallet_mpc_network_keys()?
-            .get_decryption_public_parameters(key_id).await
+            .get_decryption_public_parameters(key_id)
+            .await
     }
 
     /// Retrieves the decryption share for the current authority.
@@ -426,7 +433,8 @@ impl DWalletMPCManager {
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let decryption_shares = self
             .dwallet_mpc_network_keys()?
-            .get_decryption_key_share(key_id.clone()).await?;
+            .get_decryption_key_share(key_id.clone())
+            .await?;
 
         Ok(decryption_shares)
     }

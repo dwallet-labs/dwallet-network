@@ -391,7 +391,7 @@ impl IkaNode {
                     .class_groups_key_pair_and_proof
                     .class_groups_keypair()
                     .decryption_key(),
-                validator_decryption_key_shares: RwLock::new(HashMap::new()),
+                validator_decryption_key_shares: tokio::sync::RwLock::new(HashMap::new()),
             };
             let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
             let dwallet_network_keys_arc = Arc::new(dwallet_network_keys);
