@@ -5,17 +5,31 @@
 # q(threshold) = 2f+1 = 77
 # n(total) = 3f+1 = 115
 # Configuration variables (change these values as needed)
-TOTAL_VOTING_POWER=115
+#TOTAL_VOTING_POWER=115
+# For 26
+TOTAL_VOTING_POWER=79
 #TOTAL_VOTING_POWER=37
 # TOTAL_VOTING_POWER*2/3 + 1
-QUORUM_THRESHOLD=77
+# for 38
+#QUORUM_THRESHOLD=77
+# for 26
+QUORUM_THRESHOLD=53
+# for 12
 #QUORUM_THRESHOLD=25
 # Cap voting power of an individual validator at 10%.
+# for 38
+#MAX_VOTING_POWER=12
+# for 26
+MAX_VOTING_POWER=8
+# for 12
 #MAX_VOTING_POWER=4
-MAX_VOTING_POWER=12
 # Validity threshold for the committee.
 # f+1
-VALIDITY_THRESHOLD=39
+# for 38
+#VALIDITY_THRESHOLD=39
+# for 26
+VALIDITY_THRESHOLD=27
+# for 12
 #VALIDITY_THRESHOLD=13
 
 pushd ../../
