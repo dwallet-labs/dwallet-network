@@ -342,7 +342,6 @@ pub struct AuthorityPerEpochStore {
     /// where the quorum of votes is valid.
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub dwallet_mpc_network_keys: OnceCell<Arc<DwalletMPCNetworkKeys>>,
-    dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
     pub(crate) dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
     dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
@@ -589,7 +588,6 @@ impl AuthorityPerEpochStore {
             executed_in_epoch_table_enabled: once_cell::sync::OnceCell::new(),
             chain_identifier,
             dwallet_mpc_outputs_verifier: OnceCell::new(),
-            dwallet_mpc_round_outputs: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_round_events: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_round_completed_sessions: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_network_keys: OnceCell::new(),
@@ -629,14 +627,6 @@ impl AuthorityPerEpochStore {
         }
         Ok(validators_class_groups_public_keys_and_proofs)
     }
-
-    /// Saves a DWallet MPC output in the round messages
-    /// The round outputs are later being stored to the on-disk DB to allow state sync.
-    pub(crate) async fn save_dwallet_mpc_output(&self, output: DWalletMPCOutputMessage) {
-        let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_outputs.lock().await;
-        dwallet_mpc_round_outputs.push(output.clone());
-    }
-
     /// Loads the DWallet MPC events from the given mystecity round.
     pub(crate) async fn load_dwallet_mpc_events_from_round(
         &self,
@@ -1365,9 +1355,7 @@ impl AuthorityPerEpochStore {
         let mut new_dwallet_mpc_round_messages = Self::filter_dwallet_mpc_messages(transactions);
         new_dwallet_mpc_round_messages.push(DWalletMPCDBMessage::EndOfDelivery);
         output.set_dwallet_mpc_round_messages(new_dwallet_mpc_round_messages);
-        let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_outputs.lock().await;
-        output.set_dwallet_mpc_round_outputs(dwallet_mpc_round_outputs.clone());
-        dwallet_mpc_round_outputs.clear();
+        output.set_dwallet_mpc_round_outputs(Self::filter_dwallet_mpc_outputs(transactions));
         let mut dwallet_mpc_round_events = self.dwallet_mpc_round_events.lock().await;
         output.set_dwallet_mpc_round_events(dwallet_mpc_round_events.clone());
         dwallet_mpc_round_events.clear();
@@ -1397,10 +1385,8 @@ impl AuthorityPerEpochStore {
             .iter()
             .filter_map(|transaction| {
                 let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
-                    certificate_author_index: _,
-                    certificate_author,
-                    consensus_index,
                     transaction,
+                    ..
                 }) = transaction;
                 match transaction {
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -1418,6 +1404,39 @@ impl AuthorityPerEpochStore {
                         authority_name.clone(),
                         report.clone(),
                     )),
+                    _ => None,
+                }
+            })
+            .collect()
+    }
+
+    /// Filter DWalletMPCMessages from the consensus output.
+    /// Those messages will get processed when the dWallet MPC service reads
+    /// them from the DB.
+    fn filter_dwallet_mpc_outputs(
+        transactions: &[VerifiedSequencedConsensusTransaction],
+    ) -> Vec<DWalletMPCOutputMessage> {
+        transactions
+            .iter()
+            .filter_map(|transaction| {
+                let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
+                    transaction,
+                    ..
+                }) = transaction;
+                match transaction {
+                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                        kind:
+                            ConsensusTransactionKind::DWalletMPCOutput(
+                                origin_authority,
+                                session_info,
+                                output,
+                            ),
+                        ..
+                    }) => Some(DWalletMPCOutputMessage {
+                        authority: origin_authority.clone(),
+                        session_info: session_info.clone(),
+                        output: output.clone(),
+                    }),
                     _ => None,
                 }
             })
@@ -1497,13 +1516,6 @@ impl AuthorityPerEpochStore {
         session_info: SessionInfo,
         output: Vec<u8>,
     ) -> IkaResult<ConsensusCertificateResult> {
-        self.save_dwallet_mpc_output(DWalletMPCOutputMessage {
-            output: output.clone(),
-            authority: origin_authority.clone(),
-            session_info: session_info.clone(),
-        })
-        .await;
-
         let authority_index = self.authority_name_to_party_id(&origin_authority);
         let mut dwallet_mpc_verifier = self.get_dwallet_mpc_outputs_verifier().await;
         let output_verification_result = dwallet_mpc_verifier
