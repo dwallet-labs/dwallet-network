@@ -1457,8 +1457,7 @@ impl AuthorityPerEpochStore {
                 .await
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind:
-                    ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..),
+                kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..),
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
