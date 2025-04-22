@@ -160,7 +160,6 @@ impl DWalletMPCService {
             if let Err(e) = self.read_events().await {
                 error!("failed to handle dWallet MPC events: {}", e);
             }
-            let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
             let Ok(tables) = self.epoch_store.tables() else {
                 error!("Failed to load DB tables from epoch store");
                 continue;
@@ -174,7 +173,7 @@ impl DWalletMPCService {
                 continue;
             };
             for session_id in completed_sessions {
-                manager.mpc_sessions.get_mut(&session_id).map(|session| {
+                self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id).map(|session| {
                     session.clear_data();
                     session.status = MPCSessionStatus::Finished;
                 });
@@ -188,7 +187,7 @@ impl DWalletMPCService {
                 continue;
             };
             for event in events {
-                manager.handle_dwallet_db_event(event).await;
+                self.dwallet_mpc_manager.handle_dwallet_db_event(event).await;
             }
             let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
@@ -199,12 +198,12 @@ impl DWalletMPCService {
                 new_messages.extend(messages);
             }
             for message in new_messages {
-                manager.handle_dwallet_db_message(message).await;
+                self.dwallet_mpc_manager.handle_dwallet_db_message(message).await;
             }
-            manager
+            self.dwallet_mpc_manager
                 .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;
-            drop(manager);
+            drop(self.dwallet_mpc_manager);
         }
     }
 
