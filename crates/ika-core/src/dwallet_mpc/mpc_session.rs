@@ -164,6 +164,10 @@ impl DWalletMPCSession {
                 public_output,
             }) => {
                 info!(
+                    "session {:?} finalized successfully, malicious_parties {:?}",
+                    self.session_id, malicious_parties
+                );
+                info!(
                     // Safe to unwrap as advance can only be called after the event is received.
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
                     session_id=?self.session_id,

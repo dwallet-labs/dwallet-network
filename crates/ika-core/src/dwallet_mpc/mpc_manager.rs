@@ -53,6 +53,7 @@ use sui_types::digests::TransactionDigest;
 use sui_types::event::Event;
 use sui_types::id::ID;
 use tokio::runtime::Handle;
+use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, warn};
@@ -126,23 +127,38 @@ struct ReadySessionsResponse {
 }
 
 impl DWalletMPCManager {
+    pub(crate) async fn must_create_dwallet_mpc_manager(
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        node_config: NodeConfig,
+    ) -> Self {
+        Self::try_new(
+            consensus_adapter.clone(),
+            epoch_store.clone(),
+            node_config.clone(),
+        )
+        .unwrap_or_else(|err| {
+            error!(?err, "Failed to create DWalletMPCManager.");
+            // We panic on purpose, this should not happen.
+            panic!("DWalletMPCManager initialization failed: {:?}", err);
+        })
+    }
+
     pub fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> DwalletMPCResult<Self> {
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
-        let mpc_computations_orchestrator =
-            CryptographicComputationsOrchestrator::try_new(&epoch_store)?;
+        let mpc_computations_orchestrator = CryptographicComputationsOrchestrator::try_new()?;
         Ok(Self {
             mpc_sessions: HashMap::new(),
             pending_sessions: Default::default(),
             consensus_adapter,
             party_id: epoch_store.authority_name_to_party_id(&epoch_store.name.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
-            epoch_id,
+            epoch_id: epoch_store.epoch(),
             node_config,
             weighted_threshold_access_structure,
             validators_class_groups_public_keys_and_proofs: epoch_store
@@ -299,12 +315,18 @@ impl DWalletMPCManager {
             public_input,
             private_input,
             decryption_share: match session_info.mpc_round {
-                MPCProtocolInitData::Sign(init_event) => self
-                    .get_decryption_key_shares(&init_event.event_data.dwallet_mpc_network_key_id)?,
-                MPCProtocolInitData::DecryptionKeyReshare(init_event) => self
-                    .get_decryption_key_shares(
+                MPCProtocolInitData::Sign(init_event) => {
+                    self.get_decryption_key_shares(
+                        &init_event.event_data.dwallet_mpc_network_key_id,
+                    )
+                    .await?
+                }
+                MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
+                    self.get_decryption_key_shares(
                         &init_event.event_data.dwallet_network_decryption_key_id,
-                    )?,
+                    )
+                    .await?
+                }
                 _ => HashMap::new(),
             },
         });
@@ -370,6 +392,10 @@ impl DWalletMPCManager {
                     return protocol_public_parameters;
                 }
             }
+            info!(
+                "Waiting for the protocol public parameters to be available for key_id: {:?}",
+                key_id
+            );
             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         }
     }
@@ -383,12 +409,13 @@ impl DWalletMPCManager {
             .clone())
     }
 
-    pub(super) fn get_decryption_key_share_public_parameters(
+    pub(super) async fn get_decryption_key_share_public_parameters(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
         self.dwallet_mpc_network_keys()?
             .get_decryption_public_parameters(key_id)
+            .await
     }
 
     /// Retrieves the decryption share for the current authority.
@@ -401,13 +428,14 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    fn get_decryption_key_shares(
+    async fn get_decryption_key_shares(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let decryption_shares = self
             .dwallet_mpc_network_keys()?
-            .get_decryption_key_share(key_id.clone())?;
+            .get_decryption_key_share(key_id.clone())
+            .await?;
 
         Ok(decryption_shares)
     }
