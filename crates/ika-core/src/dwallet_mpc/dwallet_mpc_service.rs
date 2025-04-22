@@ -53,7 +53,7 @@ impl DWalletMPCService {
         node_config: NodeConfig,
         sui_client: Arc<SuiBridgeClient>,
     ) -> Self {
-        let dwallet_mpc_manager = DWalletMPCManager::create_dwallet_mpc_manager_until_success(
+        let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
             consensus_adapter.clone(),
             epoch_store.clone(),
             node_config,

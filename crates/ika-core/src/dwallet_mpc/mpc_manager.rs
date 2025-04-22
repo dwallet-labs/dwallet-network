@@ -24,6 +24,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
     MPCSessionStatus,
 };
+use expect_test::expect;
 use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::ToFromBytes;
 use futures::future::err;
@@ -127,24 +128,21 @@ struct ReadySessionsResponse {
 }
 
 impl DWalletMPCManager {
-    pub(crate) async fn create_dwallet_mpc_manager_until_success(
+    pub(crate) async fn must_create_dwallet_mpc_manager(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         node_config: NodeConfig,
     ) -> Self {
-        loop {
-            match Self::try_new(
-                consensus_adapter.clone(),
-                epoch_store.clone(),
-                node_config.clone(),
-            ) {
-                Ok(manager) => return manager,
-                Err(err) => {
-                    error!(?err, "Failed to create DWalletMPCManager. Retrying...",);
-                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                }
-            }
-        }
+        Self::try_new(
+            consensus_adapter.clone(),
+            epoch_store.clone(),
+            node_config.clone(),
+        )
+        .unwrap_or_else(|err| {
+            error!(?err, "Failed to create DWalletMPCManager.");
+            // We panic on purpose, this should not happen.
+            panic!("DWalletMPCManager initialization failed: {:?}", err);
+        })
     }
 
     pub fn try_new(
