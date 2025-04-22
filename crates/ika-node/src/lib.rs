@@ -858,7 +858,7 @@ impl IkaNode {
         );
 
         let dwallet_mpc_service_exit =
-            Self::start_dwallet_mpc_service(epoch_store.clone(), sui_client, consensus_adapter.clone(), config.clone());
+            Self::start_dwallet_mpc_service(epoch_store.clone(), sui_client, consensus_adapter.clone(), config.clone()).await;
 
         // Start the dWallet MPC manager on epoch start.
         epoch_store.set_dwallet_mpc_network_keys(network_keys)?;
@@ -1255,7 +1255,7 @@ impl IkaNode {
         &self.config
     }
 
-    fn start_dwallet_mpc_service(
+    async fn start_dwallet_mpc_service(
         epoch_store: Arc<AuthorityPerEpochStore>,
         sui_client: Arc<SuiBridgeClient>,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
@@ -1263,9 +1263,9 @@ impl IkaNode {
     ) -> watch::Sender<()> {
 
         let (exit_sender, exit_receiver) = watch::channel(());
-        let mut service = DWalletMPCService::new(epoch_store.clone(), exit_receiver);
+        let mut service = DWalletMPCService::new(epoch_store.clone(), exit_receiver, consensus_adapter, node_config, sui_client).await;
 
-        spawn_monitored_task!(service.spawn(sui_client, epoch_store, consensus_adapter, node_config));
+        spawn_monitored_task!(service.spawn(sui_client, epoch_store));
 
         exit_sender
     }

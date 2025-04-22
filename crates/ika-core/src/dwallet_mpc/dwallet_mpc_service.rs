@@ -8,6 +8,7 @@ use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::session_info_from_event;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
+use ika_config::NodeConfig;
 use ika_sui_client::{SuiBridgeClient, SuiClient};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
@@ -30,7 +31,6 @@ use tokio::task::yield_now;
 use tokio::time;
 use tracing::{error, info, warn};
 use typed_store::Map;
-use ika_config::NodeConfig;
 
 const READ_INTERVAL_MS: u64 = 100;
 
@@ -40,17 +40,33 @@ pub struct DWalletMPCService {
     epoch_store: Arc<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     notify: Arc<Notify>,
+    sui_client: Arc<SuiBridgeClient>,
+    dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
 }
 
 impl DWalletMPCService {
-    pub fn new(epoch_store: Arc<AuthorityPerEpochStore>, exit: Receiver<()>) -> Self {
+    pub async fn new(
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        exit: Receiver<()>,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        node_config: NodeConfig,
+        sui_client: Arc<SuiBridgeClient>,
+    ) -> Self {
+        let dwallet_mpc_manager = DWalletMPCManager::create_dwallet_mpc_manager_until_success(
+            consensus_adapter.clone(),
+            epoch_store.clone(),
+            node_config,
+        )
+        .await;
         Self {
             last_read_consensus_round: 0,
             read_messages: 0,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch_store.epoch(),
             notify: Arc::new(Notify::new()),
+            sui_client: sui_client.clone(),
+            dwallet_mpc_manager,
             exit,
         }
     }
@@ -75,10 +91,10 @@ impl DWalletMPCService {
         }
     }
 
-    async fn load_missed_events(&self, sui_client: Arc<SuiBridgeClient>) {
+    async fn load_missed_events(&mut self) {
         let epoch_store = self.epoch_store.clone();
         loop {
-            let Ok(events) = sui_client
+            let Ok(events) = self.sui_client
                 .get_dwallet_mpc_missed_events(epoch_store.epoch())
                 .await
             else {
@@ -86,11 +102,10 @@ impl DWalletMPCService {
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             };
-            let mut dwallet_mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
             for event in events {
                 match session_info_from_event(event.clone(), &epoch_store.packages_config) {
                     Ok(Some(session_info)) => {
-                        dwallet_mpc_manager
+                        self.dwallet_mpc_manager
                             .handle_dwallet_db_event(DWalletMPCEvent {
                                 event,
                                 session_info: session_info.clone(),
@@ -124,14 +139,8 @@ impl DWalletMPCService {
     /// [`DWalletMPCManager`] for processing.
     ///
     /// The service automatically terminates when an epoch switch occurs.
-    pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>, epoch_store: Arc<AuthorityPerEpochStore>, consensus_adapter: Arc<dyn SubmitToConsensus>, node_config: NodeConfig) {
-        let mut dwallet_mpc_manager =
-            DWalletMPCManager::create_dwallet_mpc_manager_until_success(
-                sui_client.clone(),
-                epoch_store.clone(),
-                node_config,
-            ).await;
-        self.load_missed_events(sui_client.clone()).await;
+    pub async fn spawn(&mut self) {
+        self.load_missed_events().await;
         loop {
             match self.exit.has_changed() {
                 Ok(true) => {
