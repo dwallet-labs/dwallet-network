@@ -53,6 +53,7 @@ use sui_types::digests::TransactionDigest;
 use sui_types::event::Event;
 use sui_types::id::ID;
 use tokio::runtime::Handle;
+use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, warn};
@@ -154,7 +155,7 @@ impl DWalletMPCManager {
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
         let mpc_computations_orchestrator =
-            CryptographicComputationsOrchestrator::try_new(&epoch_store)?;
+            CryptographicComputationsOrchestrator::try_new()?;
         Ok(Self {
             mpc_sessions: HashMap::new(),
             pending_sessions: Default::default(),
