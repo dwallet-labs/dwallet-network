@@ -1408,12 +1408,20 @@ impl AuthorityPerEpochStore {
     ) -> Vec<DWalletMPCDBMessage> {
         transactions
             .iter()
-            .filter_map(|transaction| match &transaction {
-                SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                    kind: ConsensusTransactionKind::DWalletMPCMessage(message),
-                    ..
-                }) => Some(DWalletMPCDBMessage::Message(message.clone())),
-                _ => None,
+            .filter_map(|transaction| {
+                let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
+                    certificate_author_index: _,
+                    certificate_author,
+                    consensus_index,
+                    transaction,
+                }) = transaction;
+                match transaction {
+                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                        kind: ConsensusTransactionKind::DWalletMPCMessage(message),
+                        ..
+                    }) => Some(DWalletMPCDBMessage::Message(message.clone())),
+                    _ => None,
+                }
             })
             .collect()
     }
