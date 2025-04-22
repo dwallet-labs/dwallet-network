@@ -193,7 +193,7 @@ impl DwalletMPCNetworkKeys {
         }
     }
 
-    pub async fn network_decryption_keys(&self) -> HashMap<ObjectID, NetworkDecryptionKeyShares> {
+    pub async fn network_decryption_keys(&self) -> HashMap<ObjectID, NetworkDecryptionKeyPublicData> {
         self.inner.read().await.network_decryption_keys.clone()
     }
 

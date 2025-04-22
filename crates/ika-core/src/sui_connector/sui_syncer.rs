@@ -223,7 +223,7 @@ where
         key_id: &ObjectID,
         network_dec_key_shares: &DWalletNetworkDecryptionKey,
     ) -> DwalletMPCResult<()> {
-        let local_network_decryption_keys = dwallet_mpc_network_keys.network_decryption_keys();
+        let local_network_decryption_keys = dwallet_mpc_network_keys.network_decryption_keys().await;
 
         let should_update = match local_network_decryption_keys.get(key_id) {
             Some(local_key) => local_key.epoch != network_dec_key_shares.current_epoch,
@@ -251,14 +251,14 @@ where
                 *key_id,
                 key,
                 &weighted_threshold_access_structure,
-            )
+            ).await
         } else {
             info!("Adding new network key for key_id: {:?}", key_id);
             dwallet_mpc_network_keys.add_new_network_key(
                 *key_id,
                 key,
                 &weighted_threshold_access_structure,
-            )
+            ).await
         }
     }
 
