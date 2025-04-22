@@ -342,7 +342,6 @@ pub struct AuthorityPerEpochStore {
     /// where the quorum of votes is valid.
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub dwallet_mpc_network_keys: OnceCell<Arc<DwalletMPCNetworkKeys>>,
-    dwallet_mpc_round_messages: tokio::sync::Mutex<Vec<DWalletMPCDBMessage>>,
     dwallet_mpc_round_outputs: tokio::sync::Mutex<Vec<DWalletMPCOutputMessage>>,
     pub(crate) dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
     dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
@@ -590,7 +589,6 @@ impl AuthorityPerEpochStore {
             executed_in_epoch_table_enabled: once_cell::sync::OnceCell::new(),
             chain_identifier,
             dwallet_mpc_outputs_verifier: OnceCell::new(),
-            dwallet_mpc_round_messages: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_round_outputs: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_round_events: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_round_completed_sessions: tokio::sync::Mutex::new(Vec::new()),
@@ -630,13 +628,6 @@ impl AuthorityPerEpochStore {
             validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
         }
         Ok(validators_class_groups_public_keys_and_proofs)
-    }
-
-    /// Saves a DWallet MPC message in the `round messages`.
-    /// The `round messages` are later being stored to the on-disk DB to allow state sync.
-    pub(crate) async fn save_dwallet_mpc_round_message(&self, message: DWalletMPCDBMessage) {
-        let mut dwallet_mpc_round_messages = self.dwallet_mpc_round_messages.lock().await;
-        dwallet_mpc_round_messages.push(message.clone());
     }
 
     /// Saves a DWallet MPC output in the round messages
@@ -1369,12 +1360,10 @@ impl AuthorityPerEpochStore {
             }
         }
 
-        self.save_dwallet_mpc_round_message(DWalletMPCDBMessage::EndOfDelivery)
-            .await;
-
         // Save all the dWallet-MPC related DB data to the consensus commit output to
         // write it to the local DB. After saving the data, clear the data from the epoch store.
-        let new_dwallet_mpc_round_messages = Self::filter_dwallet_mpc_messages(transactions);
+        let mut new_dwallet_mpc_round_messages = Self::filter_dwallet_mpc_messages(transactions);
+        new_dwallet_mpc_round_messages.push(DWalletMPCDBMessage::EndOfDelivery);
         output.set_dwallet_mpc_round_messages(new_dwallet_mpc_round_messages);
         let mut dwallet_mpc_round_outputs = self.dwallet_mpc_round_outputs.lock().await;
         output.set_dwallet_mpc_round_outputs(dwallet_mpc_round_outputs.clone());
@@ -1455,35 +1444,6 @@ impl AuthorityPerEpochStore {
                     output.clone(),
                 )
                 .await
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind:
-                    ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(
-                        authority_name,
-                        report,
-                    ),
-                ..
-            }) => {
-                self.save_dwallet_mpc_round_message(
-                    DWalletMPCDBMessage::SessionFailedWithMaliciousParties(
-                        authority_name.clone(),
-                        report.clone(),
-                    ),
-                )
-                .await;
-                Ok(ConsensusCertificateResult::ConsensusMessage)
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMessage(message),
-                ..
-            }) => {
-                // Filter DWalletMPCMessages from the consensus output and save them in the local
-                // DB.
-                // Those messages will get processed when the dWallet MPC service reads
-                // them from the DB.
-                self.save_dwallet_mpc_round_message(DWalletMPCDBMessage::Message(message.clone()))
-                    .await;
-                Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::CheckpointSignature(info),
