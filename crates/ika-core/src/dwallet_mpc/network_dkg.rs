@@ -117,10 +117,7 @@ impl ValidatorPrivateDecryptionKeyData {
             &key.decryption_key_share_public_parameters,
         )?;
 
-        let mut inner = self
-            .validator_decryption_key_shares
-            .write()
-            .await;
+        let mut inner = self.validator_decryption_key_shares.write().await;
         inner.insert(key_id, self_decryption_key_shares);
         Ok(())
     }
@@ -176,10 +173,7 @@ impl DwalletMPCNetworkKeys {
     }
 
     pub async fn network_decryption_keys(&self) -> HashMap<ObjectID, NetworkDecryptionKeyShares> {
-        self.inner
-            .read()
-            .await
-            .map(|inner| inner.network_decryption_keys.clone())
+        self.inner.read().await.network_decryption_keys.clone()
     }
 
     pub fn validator_decryption_keys_shares(
