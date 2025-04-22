@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::initiation;
 use crate::object_storage_config::ObjectStoreConfig;
 use crate::p2p::P2pConfig;
 use crate::Config;
@@ -11,34 +10,31 @@ use once_cell::sync::OnceCell;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
-use sui_keys::keypair_file::read_keypair_from_file;
 use sui_types::base_types::{ObjectID, SuiAddress};
 
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::crypto::KeypairTraits;
 use ika_types::crypto::NetworkKeyPair;
 use ika_types::messages_checkpoint::CheckpointSequenceNumber;
-use ika_types::supported_protocol_versions::{Chain, SupportedProtocolVersions};
+use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 pub use sui_config::node::KeyPairWithPath;
 use sui_types::crypto::SuiKeyPair;
-use sui_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
 
 use dwallet_classgroups_types::{
-    read_class_groups_from_file, ClassGroupsDecryptionKey, ClassGroupsKeyPairAndProof,
+    class_groups_as_base64, read_class_groups_from_file,
+    ClassGroupsKeyPairAndProof,
 };
 use ika_types::crypto::{
     get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, EncodeDecodeBase64,
 };
 use sui_types::event::EventID;
 use sui_types::multiaddr::Multiaddr;
-use tracing::info;
 
 pub const LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL: &'static str = "http://127.0.0.1:9000";
 pub const LOCAL_DEFAULT_SUI_FAUCET_URL: &'static str = "http://127.0.0.1:9123/gas";
@@ -98,7 +94,8 @@ pub struct SuiConnectorConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
-    pub class_groups_key_pair_and_proof: ClassGroupsKeyPairWithPath,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub class_groups_key_pair_and_proof: Option<ClassGroupsKeyPairWithPath>,
     #[serde(default = "default_authority_key_pair")]
     pub protocol_key_pair: AuthorityKeyPairWithPath,
     #[serde(default = "default_key_pair")]
@@ -569,6 +566,7 @@ pub struct ClassGroupsKeyPairWithPath {
 #[serde(untagged)]
 enum ClassGroupsKeyPairLocation {
     InPlace {
+        #[serde(with = "class_groups_as_base64")]
         value: Arc<ClassGroupsKeyPairAndProof>,
     },
     File {
@@ -605,7 +603,8 @@ impl ClassGroupsKeyPairWithPath {
             .get_or_init(|| match &self.location {
                 ClassGroupsKeyPairLocation::InPlace { value } => value.clone(),
                 ClassGroupsKeyPairLocation::File { path } => {
-                    // OK to unwrap panic because class_groups should not start without all keypairs loaded.
+                    // OK to unwrap panic because `class_groups`
+                    // should not start without all keypairs loaded.
                     Arc::new(*read_class_groups_from_file(path).unwrap())
                 }
             })

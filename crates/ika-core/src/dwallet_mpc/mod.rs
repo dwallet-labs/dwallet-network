@@ -442,21 +442,27 @@ pub(crate) async fn session_input_from_event(
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
-        t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => Ok((
-            network_dkg::network_dkg_public_input(
-                dwallet_mpc_manager
-                    .validators_class_groups_public_keys_and_proofs
-                    .clone(),
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-            )?,
-            Some(bcs::to_bytes(
-                &dwallet_mpc_manager
-                    .node_config
-                    .class_groups_key_pair_and_proof
-                    .class_groups_keypair()
-                    .decryption_key(),
-            )?),
-        )),
+        t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
+            let class_groups_key_pair_and_proof = dwallet_mpc_manager
+                .node_config
+                .class_groups_key_pair_and_proof
+                .clone();
+            let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
+                .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
+            Ok((
+                network_dkg::network_dkg_public_input(
+                    dwallet_mpc_manager
+                        .validators_class_groups_public_keys_and_proofs
+                        .clone(),
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
+                )?,
+                Some(bcs::to_bytes(
+                    &class_groups_key_pair_and_proof
+                        .class_groups_keypair()
+                        .decryption_key(),
+                )?),
+            ))
+        }
         t if t
             == &DWalletMPCSuiEvent::<DWalletDecryptionKeyReshareRequestEvent>::type_(
                 packages_config,
@@ -474,6 +480,12 @@ pub(crate) async fn session_input_from_event(
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                 )
                 .await;
+            let class_groups_key_pair_and_proof = dwallet_mpc_manager
+                .node_config
+                .class_groups_key_pair_and_proof
+                .clone();
+            let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
+                .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
                 ReshareSecp256k1Party::generate_public_input(
                     dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
@@ -486,9 +498,7 @@ pub(crate) async fn session_input_from_event(
                     )?,
                 )?,
                 Some(bcs::to_bytes(
-                    &dwallet_mpc_manager
-                        .node_config
-                        .class_groups_key_pair_and_proof
+                    &class_groups_key_pair_and_proof
                         .class_groups_keypair()
                         .decryption_key(),
                 )?),
