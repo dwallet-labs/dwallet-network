@@ -27,11 +27,10 @@ use twopc_mpc::secp256k1::SCALAR_LIMBS;
 use serde::{Deserialize, Serialize};
 use shared_wasm_class_groups::message_digest::message_digest;
 use twopc_mpc::dkg::Protocol;
-use twopc_mpc::languages::class_groups::{
-    construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
-};
+use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
 use twopc_mpc::secp256k1::class_groups::{
-    ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    EncryptionOfSecretShareProof, ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
@@ -61,12 +60,6 @@ fn public_keys_from_dkg_output(value: DKGDecentralizedOutput) -> anyhow::Result<
 }
 
 type SignedMessage = Vec<u8>;
-type EncryptionOfSecretShareProof = EncryptionOfDiscreteLogProofWithoutCtx<
-    SCALAR_LIMBS,
-    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    secp256k1::GroupElement,
->;
 
 type Secp256k1EncryptionKey = EncryptionKey<
     SCALAR_LIMBS,

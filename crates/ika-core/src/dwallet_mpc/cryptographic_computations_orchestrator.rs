@@ -76,7 +76,7 @@ impl CryptographicComputationsOrchestrator {
             .into();
         if !(available_cores_for_computations > 0) {
             error!(
-                "Failed to get available parallelism, no CPU cores available for cryptographic computations"
+                "failed to get available parallelism, no CPU cores available for cryptographic computations"
             );
             return Err(DwalletMPCError::InsufficientCPUCores);
         }
@@ -135,7 +135,7 @@ impl CryptographicComputationsOrchestrator {
             .send(ComputationUpdate::Started)
         {
             error!(
-                "Failed to send a started computation message with error: {:?}",
+                "failed to send a started computation message with error: {:?}",
                 err
             );
         }
@@ -146,7 +146,7 @@ impl CryptographicComputationsOrchestrator {
             };
             if let Err(err) = computation_channel_sender.send(ComputationUpdate::Completed) {
                 error!(
-                    "Failed to send a finished computation message with error: {:?}",
+                    "failed to send a finished computation message with error: {:?}",
                     err
                 );
             }
