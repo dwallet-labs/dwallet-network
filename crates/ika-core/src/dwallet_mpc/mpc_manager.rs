@@ -126,12 +126,24 @@ struct ReadySessionsResponse {
 }
 
 impl DWalletMPCManager {
-    pub async fn create_dwallet_mpc_manager_until_success(
+    pub(crate) async fn create_dwallet_mpc_manager_until_success(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         node_config: NodeConfig,
     ) -> Self {
-        match Self::try_new(consensus_adapter, epoch_store.clone(), node_config) {  }
+        loop {
+            match Self::try_new(
+                consensus_adapter.clone(),
+                epoch_store.clone(),
+                node_config.clone(),
+            ) {
+                Ok(manager) => return manager,
+                Err(err) => {
+                    error!(?err, "Failed to create DWalletMPCManager. Retrying...",);
+                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                }
+            }
+        }
     }
 
     pub fn try_new(
@@ -149,7 +161,7 @@ impl DWalletMPCManager {
             consensus_adapter,
             party_id: epoch_store.authority_name_to_party_id(&epoch_store.name.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
-            epoch_id,
+            epoch_id: epoch_store.epoch(),
             node_config,
             weighted_threshold_access_structure,
             validators_class_groups_public_keys_and_proofs: epoch_store
