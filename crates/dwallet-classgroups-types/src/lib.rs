@@ -38,12 +38,12 @@ pub struct ClassGroupsKeyPairAndProof {
 }
 
 pub mod class_groups_as_base64 {
-    use std::sync::Arc;
-    use base64::Engine;
-    use base64::engine::general_purpose;
-    use serde::{Deserializer, Serializer};
-    use serde::de::Error;
     use super::*;
+    use base64::engine::general_purpose;
+    use base64::Engine;
+    use serde::de::Error;
+    use serde::{Deserializer, Serializer};
+    use std::sync::Arc;
 
     pub fn serialize<S>(
         value: &Arc<impl serde::Serialize>,

@@ -31,7 +31,8 @@ use sui_types::crypto::SuiKeyPair;
 use sui_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
 
 use dwallet_classgroups_types::{
-    read_class_groups_from_file, class_groups_as_base64, ClassGroupsDecryptionKey, ClassGroupsKeyPairAndProof,
+    class_groups_as_base64, read_class_groups_from_file, ClassGroupsDecryptionKey,
+    ClassGroupsKeyPairAndProof,
 };
 use ika_types::crypto::{
     get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, EncodeDecodeBase64,
