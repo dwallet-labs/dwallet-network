@@ -603,7 +603,8 @@ where
                     .sui_rpc_errors
                     .with_label_values(&["get_system_inner_until_success"])
                     .inc();
-                error!("Failed to get system inner until success");
+                // todo(zeev): add logs
+                error!("failed to get system inner until success");
                 continue;
             };
             return ika_system_state;
