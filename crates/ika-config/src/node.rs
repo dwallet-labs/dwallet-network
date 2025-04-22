@@ -27,8 +27,7 @@ pub use sui_config::node::KeyPairWithPath;
 use sui_types::crypto::SuiKeyPair;
 
 use dwallet_classgroups_types::{
-    class_groups_as_base64, read_class_groups_from_file,
-    ClassGroupsKeyPairAndProof,
+    class_groups_as_base64, read_class_groups_from_file, ClassGroupsKeyPairAndProof,
 };
 use ika_types::crypto::{
     get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, EncodeDecodeBase64,
