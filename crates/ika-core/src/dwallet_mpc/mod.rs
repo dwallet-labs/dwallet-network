@@ -253,13 +253,13 @@ fn get_expected_decrypters(
     let committee = epoch_store.committee();
     let session_id_as_32_bytes: [u8; 32] = session_id.into_bytes();
     let committee_length = committee.voting_rights.len();
-    let shuffle_committee =
+    let shuffled_committee =
         committee.shuffle_by_stake_from_tx_digest(&TransactionDigest::new(session_id_as_32_bytes));
     let expected_decrypters_length = epoch_store
         .get_weighted_threshold_access_structure()?
         .threshold as usize
         + (committee_length as f64 * 0.05).floor() as usize;
-    let expected_decrypters = &shuffle_committee[..=expected_decrypters_length];
+    let expected_decrypters = &shuffled_committee[..=expected_decrypters_length];
     Ok(expected_decrypters
         .iter()
         .map(|authority_name| epoch_store.authority_name_to_party_id(authority_name))
