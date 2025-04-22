@@ -278,11 +278,13 @@ async fn sign_public_input(
             &deserialized_event.event_data.dwallet_mpc_network_key_id,
         )
         .await?;
-    let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
-        // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
-        // Todo (#473): Support generic network key scheme
-        &deserialized_event.event_data.dwallet_mpc_network_key_id,
-    ).await?;
+    let decryption_pp = dwallet_mpc_manager
+        .get_decryption_key_share_public_parameters(
+            // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
+            // Todo (#473): Support generic network key scheme
+            &deserialized_event.event_data.dwallet_mpc_network_key_id,
+        )
+        .await?;
 
     let expected_decrypters = get_expected_decrypters(
         dwallet_mpc_manager.epoch_store()?,
