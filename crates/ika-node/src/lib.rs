@@ -872,12 +872,6 @@ impl IkaNode {
         epoch_store
             .set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(&epoch_store))?;
 
-        epoch_store.set_dwallet_mpc_manager(DWalletMPCManager::try_new(
-            Arc::new(consensus_adapter.clone()),
-            Arc::clone(&epoch_store),
-            config.clone(),
-        )?)?;
-
         // create a new map that gets injected into both the consensus handler and the consensus adapter
         // the consensus handler will write values forwarded from consensus, and the consensus adapter
         // will read the values to make decisions about which validator submits a transaction to consensus
