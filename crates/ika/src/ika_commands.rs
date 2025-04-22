@@ -313,12 +313,6 @@ async fn start(
         } else {
             let network_config: NetworkConfig = PersistedConfig::read(&network_config_path)
                 .map_err(|err| {
-                    println!(
-                        "{}",
-                        format!("[error] Cannot open Ika network swarm config file: {err:?}",)
-                            .red()
-                            .bold()
-                    );
                     err.context(format!(
                         "Cannot open Ika network swarm config file at {:?}",
                         network_config_path
