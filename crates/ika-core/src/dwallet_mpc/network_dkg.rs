@@ -178,8 +178,7 @@ impl DwalletMPCNetworkKeys {
 
     pub async fn validator_decryption_keys_shares(
         &self,
-    ) -> HashMap<ObjectID, HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>{
-     {
+    ) -> HashMap<ObjectID, HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         self
             .validator_private_dec_key_data
             .validator_decryption_key_shares
