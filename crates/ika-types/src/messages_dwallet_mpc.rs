@@ -3,7 +3,7 @@ use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyShares,
+    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyPublicData,
     DWALLET_MPC_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
     START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
     START_SIGN_ROUND_EVENT_STRUCT_NAME,
@@ -26,7 +26,7 @@ use std::fmt::{Debug, Display};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
-use sui_types::collection_types::TableVec;
+use sui_types::collection_types::{Table, TableVec};
 use sui_types::id::ID;
 use sui_types::message_envelope::Message;
 use sui_types::SUI_SYSTEM_ADDRESS;
@@ -482,8 +482,7 @@ pub struct DWalletNetworkDecryptionKey {
     pub id: ObjectID,
     pub dwallet_network_decryption_key_cap_id: ObjectID,
     pub current_epoch: u64,
-    pub current_reconfiguration_public_output: TableVec,
-    pub next_reconfiguration_public_output: TableVec,
+    pub reconfiguration_public_outputs: Table,
     pub network_dkg_public_output: TableVec,
     /// The fees paid for computation in IKA.
     pub computation_fee_charged_ika: Balance,
@@ -496,7 +495,6 @@ pub struct DWalletNetworkDecryptionKeyData {
     pub dwallet_network_decryption_key_cap_id: ObjectID,
     pub current_epoch: u64,
     pub current_reconfiguration_public_output: Vec<u8>,
-    pub next_reconfiguration_public_output: Vec<u8>,
     pub network_dkg_public_output: Vec<u8>,
     pub state: DWalletNetworkDecryptionKeyState,
 }

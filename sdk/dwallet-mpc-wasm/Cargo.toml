@@ -20,4 +20,4 @@ crate-type = ["cdylib"]
 
 [patch.crates-io]
 ecdsa = { git = "https://github.com/yaelAbergel/signatures", rev = "7c8523182b1a28e5bcc6bb8d1508fbde1ea845c4"}
-crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '3c5fd81' }
+crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '800f9ff' }

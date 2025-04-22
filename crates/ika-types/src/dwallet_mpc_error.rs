@@ -75,8 +75,8 @@ pub enum DwalletMPCError {
     #[error("missing dwallet mpc decryption key shares")]
     MissingDwalletMPCDecryptionKeyShares,
 
-    #[error("missing dwallet mpc network key version")]
-    MissingKeyVersion,
+    #[error("network decryption key is not ready for use")]
+    NetworkDecryptionKeyNotReady,
 
     #[error("failed to lock the mutex")]
     LockError,
@@ -131,6 +131,9 @@ pub enum DwalletMPCError {
 
     #[error("failed to find the event driven data")]
     MissingEventDrivenData,
+
+    #[error("class groups key pair not found")]
+    ClassGroupsKeyPairNotFound,
 }
 
 /// A wrapper type for the result of a runtime operation.

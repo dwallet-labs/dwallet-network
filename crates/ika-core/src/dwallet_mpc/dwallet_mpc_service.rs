@@ -53,7 +53,7 @@ impl DWalletMPCService {
         node_config: NodeConfig,
         sui_client: Arc<SuiBridgeClient>,
     ) -> Self {
-        let dwallet_mpc_manager = DWalletMPCManager::create_dwallet_mpc_manager_until_success(
+        let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
             consensus_adapter.clone(),
             epoch_store.clone(),
             node_config,
@@ -72,7 +72,7 @@ impl DWalletMPCService {
     }
 
     async fn update_last_session_to_complete_in_current_epoch(&mut self) {
-        let system_inner = self.sui_client.get_system_inner_until_success().await;
+        let system_inner = self.sui_client.must_get_system_inner_object().await;
         if let Some(dwallet_coordinator_id) = system_inner
             .into_init_version_for_tooling()
             .dwallet_2pc_mpc_secp256k1_id
