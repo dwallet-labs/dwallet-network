@@ -183,7 +183,7 @@ impl DWalletMPCService {
                     .get_mut(&session_id)
                     .map(|session| {
                         session.status = MPCSessionStatus::Finished;
-                });
+                    });
             }
             let Ok(events) = self
                 .epoch_store
