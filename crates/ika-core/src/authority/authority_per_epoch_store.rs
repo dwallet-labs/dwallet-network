@@ -1387,8 +1387,7 @@ impl AuthorityPerEpochStore {
         Ok((verified_certificates, notifications))
     }
 
-    /// Filter DWalletMPCMessages from the consensus output and save them in the local
-    /// DB.
+    /// Filter DWalletMPCMessages from the consensus output.
     /// Those messages will get processed when the dWallet MPC service reads
     /// them from the DB.
     fn filter_dwallet_mpc_messages(
