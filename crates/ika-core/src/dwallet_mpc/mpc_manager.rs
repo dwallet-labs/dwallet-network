@@ -319,11 +319,11 @@ impl DWalletMPCManager {
             private_input,
             decryption_share: match session_info.mpc_round {
                 MPCProtocolInitData::Sign(init_event) => self
-                    .get_decryption_key_shares(&init_event.event_data.dwallet_mpc_network_key_id)?,
+                    .get_decryption_key_shares(&init_event.event_data.dwallet_mpc_network_key_id).await?,
                 MPCProtocolInitData::DecryptionKeyReshare(init_event) => self
                     .get_decryption_key_shares(
                         &init_event.event_data.dwallet_network_decryption_key_id,
-                    )?,
+                    ).await?,
                 _ => HashMap::new(),
             },
         });
@@ -420,13 +420,13 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    fn get_decryption_key_shares(
+    async fn get_decryption_key_shares(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let decryption_shares = self
             .dwallet_mpc_network_keys()?
-            .get_decryption_key_share(key_id.clone())?;
+            .get_decryption_key_share(key_id.clone()).await?;
 
         Ok(decryption_shares)
     }

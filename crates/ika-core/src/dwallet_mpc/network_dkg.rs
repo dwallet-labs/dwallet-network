@@ -176,17 +176,17 @@ impl DwalletMPCNetworkKeys {
         self.inner.read().await.network_decryption_keys.clone()
     }
 
-    pub fn validator_decryption_keys_shares(
+    pub async fn validator_decryption_keys_shares(
         &self,
-    ) -> DwalletMPCResult<
+    ) ->
         HashMap<ObjectID, HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
-    > {
-        Ok(self
+     {
+        self
             .validator_private_dec_key_data
             .validator_decryption_key_shares
             .read()
-            .map_err(|_| DwalletMPCError::LockError)?
-            .clone())
+            .await
+            .clone()
     }
 
     /// Adds a new network key to the network decryption keys.
@@ -260,12 +260,12 @@ impl DwalletMPCNetworkKeys {
     }
 
     /// Returns all the decryption key shares for any specified key ID.
-    pub fn get_decryption_key_share(
+    pub async fn get_decryption_key_share(
         &self,
         key_id: ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         Ok(self
-            .validator_decryption_keys_shares()?
+            .validator_decryption_keys_shares().await
             .get(&key_id)
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .clone())
