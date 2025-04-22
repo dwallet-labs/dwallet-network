@@ -1433,7 +1433,7 @@ impl AuthorityPerEpochStore {
                             ),
                         ..
                     }) => Some(DWalletMPCOutputMessage {
-                        authority: origin_authority,
+                        authority: origin_authority.clone(),
                         session_info: session_info.clone(),
                         output: output.clone(),
                     }),
