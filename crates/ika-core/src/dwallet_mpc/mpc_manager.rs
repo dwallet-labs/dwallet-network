@@ -24,7 +24,6 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
     MPCSessionStatus,
 };
-use expect_test::expect;
 use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::ToFromBytes;
 use futures::future::err;
