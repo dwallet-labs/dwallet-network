@@ -23,8 +23,9 @@ use ika_types::messages_dwallet_mpc::{
 };
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, RwLock, RwLockWriteGuard};
+use std::sync::Arc;
 use sui_types::base_types::ObjectID;
+use tokio::sync::RwLock;
 use tracing::{info, warn};
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
