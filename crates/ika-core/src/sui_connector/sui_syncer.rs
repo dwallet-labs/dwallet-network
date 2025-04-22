@@ -203,7 +203,7 @@ where
                 })
                 .collect::<HashMap<_, DwalletMPCResult<NetworkDecryptionKeyShares>>>();
             let mut local_network_decryption_keys =
-                dwallet_mpc_network_keys.network_decryption_keys();
+                dwallet_mpc_network_keys.network_decryption_keys().await;
             network_decryption_keys
                 .into_iter()
                 .for_each(|(key_id, network_dec_key_shares)| {

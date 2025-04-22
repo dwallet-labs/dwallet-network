@@ -99,7 +99,7 @@ impl ValidatorPrivateDecryptionKeyData {
     /// Stores the new decryption key shares of the validator.
     /// Decrypts the decryption key shares (for all the virtual parties)
     /// from the public output of the network DKG protocol.
-    pub fn store_decryption_secret_shares(
+    pub async fn store_decryption_secret_shares(
         &self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyShares,
@@ -120,7 +120,7 @@ impl ValidatorPrivateDecryptionKeyData {
         let mut inner = self
             .validator_decryption_key_shares
             .write()
-            .map_err(|_| DwalletMPCError::LockError)?;
+            .await;
         inner.insert(key_id, self_decryption_key_shares);
         Ok(())
     }
@@ -175,7 +175,7 @@ impl DwalletMPCNetworkKeys {
         }
     }
 
-    pub fn network_decryption_keys(&self) -> HashMap<ObjectID, NetworkDecryptionKeyShares> {
+    pub async fn network_decryption_keys(&self) -> HashMap<ObjectID, NetworkDecryptionKeyShares> {
         self.inner
             .read()
             .map(|inner| inner.network_decryption_keys.clone())
