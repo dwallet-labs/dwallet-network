@@ -389,6 +389,8 @@ impl IkaNode {
                 party_id,
                 class_groups_decryption_key: config
                     .class_groups_key_pair_and_proof
+                    // Since this is a validator, we can unwrap the class_groups_key_pair_and_proof.
+                    .unwrap()
                     .class_groups_keypair()
                     .decryption_key(),
                 validator_decryption_key_shares: RwLock::new(HashMap::new()),

@@ -98,7 +98,8 @@ pub struct SuiConnectorConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
-    pub class_groups_key_pair_and_proof: ClassGroupsKeyPairWithPath,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub class_groups_key_pair_and_proof: Option<ClassGroupsKeyPairWithPath>,
     #[serde(default = "default_authority_key_pair")]
     pub protocol_key_pair: AuthorityKeyPairWithPath,
     #[serde(default = "default_key_pair")]

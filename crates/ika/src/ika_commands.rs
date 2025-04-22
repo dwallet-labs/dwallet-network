@@ -314,6 +314,7 @@ async fn start(
         } else {
             let network_config: NetworkConfig = PersistedConfig::read(&network_config_path)
                 .map_err(|err| {
+                    println!("error: {err}");
                     err.context(format!(
                         "Cannot open Ika network config file at {:?}",
                         network_config_path
