@@ -207,7 +207,15 @@ impl DWalletMPCSession {
                 )
             }
             Err(e) => {
-                error!("failed to advance the MPC session: {:?}", e);
+                error!(
+                    // Safe to unwrap as advance can only be called after the event is received.
+                    mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
+                    session_id=?self.session_id,
+                    validator=?self.epoch_store()?.name,
+                    epoch=?self.epoch_id,
+                    error=?e,
+                    "failed to advance the MPC session"
+                );
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 let consensus_message = self.new_dwallet_mpc_output_message(
