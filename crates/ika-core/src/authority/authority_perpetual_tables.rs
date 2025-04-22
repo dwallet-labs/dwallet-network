@@ -12,6 +12,7 @@ use crate::authority::epoch_start_configuration::EpochStartConfiguration;
 use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use typed_store::rocksdb::Options;
 use typed_store::DBMapUtils;
+use crate::dwallet_mpc::session_info_from_event;
 
 /// AuthorityPerpetualTables contains data that must be preserved from one epoch to the next.
 #[derive(DBMapUtils)]

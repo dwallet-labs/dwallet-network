@@ -194,7 +194,7 @@ impl DWalletMPCService {
 
     async fn read_events(&mut self) -> IkaResult<()> {
         let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
-        let events: Vec<DWalletMPCEvent> = pending_events
+        let parsed_events: Vec<DWalletMPCEvent> = pending_events
             .iter()
             .filter_map(|(id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
                 Ok(event) => {
@@ -229,12 +229,10 @@ impl DWalletMPCService {
                 }
             })
             .collect();
-
-        let mut round_events = self.epoch_store.dwallet_mpc_round_events.lock().await;
-        round_events.extend(events.clone());
-        self.epoch_store
-            .perpetual_tables
-            .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
+        for event in parsed_events {
+            let mut dwallet_mpc_manager = self.epoch_store.get_dwallet_mpc_manager().await;
+            dwallet_mpc_manager.handle_dwallet_db_event(event.clone()).await;
+        }
         Ok(())
     }
 }
