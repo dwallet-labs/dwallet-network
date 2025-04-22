@@ -12,7 +12,7 @@ use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
 use consensus_config::{Authority, Committee as ConsensusCommittee};
 use dwallet_mpc_types::dwallet_mpc::{
-    ClassGroupsPublicKeyAndProofBytes, NetworkDecryptionKeyShares,
+    ClassGroupsPublicKeyAndProofBytes, NetworkDecryptionKeyPublicData,
 };
 use fastcrypto::bls12381;
 use fastcrypto::traits::{KeyPair, ToFromBytes, VerifyingKey};

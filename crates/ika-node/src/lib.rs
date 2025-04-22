@@ -234,7 +234,7 @@ impl IkaNode {
     pub async fn start(
         config: NodeConfig,
         registry_service: RegistryService,
-        custom_rpc_runtime: Option<Handle>,
+        _custom_rpc_runtime: Option<Handle>,
     ) -> Result<Arc<IkaNode>> {
         Self::start_async(config, registry_service, "unknown").await
     }
@@ -242,7 +242,7 @@ impl IkaNode {
     pub async fn start_async(
         config: NodeConfig,
         registry_service: RegistryService,
-        software_version: &'static str,
+        _software_version: &'static str,
     ) -> Result<Arc<IkaNode>> {
         if let Err(err) = rayon::ThreadPoolBuilder::new()
             .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
@@ -291,7 +291,7 @@ impl IkaNode {
             .await?,
         );
 
-        let latest_system_state = sui_client.get_system_inner_until_success().await;
+        let latest_system_state = sui_client.must_get_system_inner_object().await;
         let epoch_start_system_state = sui_client
             .get_epoch_start_system_until_success(&latest_system_state)
             .await;
@@ -378,7 +378,7 @@ impl IkaNode {
         //     &epoch_store,
         // );
 
-        info!("creating state sync store");
+        info!("Creating state sync store");
         let state_sync_store = RocksDbStore::new(committee_store.clone(), checkpoint_store.clone());
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
@@ -389,6 +389,10 @@ impl IkaNode {
                 party_id,
                 class_groups_decryption_key: config
                     .class_groups_key_pair_and_proof
+                    .clone()
+                    // Since this is a validator, we can unwrap
+                    // the `class_groups_key_pair_and_proof`.
+                    .expect("Class groups key pair and proof must be present")
                     .class_groups_keypair()
                     .decryption_key(),
                 validator_decryption_key_shares: RwLock::new(HashMap::new()),
@@ -468,7 +472,7 @@ impl IkaNode {
 
         info!("created authority state");
 
-        let (end_of_epoch_channel, end_of_epoch_receiver) =
+        let (end_of_epoch_channel, _end_of_epoch_receiver) =
             broadcast::channel(config.end_of_epoch_broadcast_channel_capacity);
 
         let authority_names_to_peer_ids = epoch_store
@@ -840,7 +844,7 @@ impl IkaNode {
         consensus_manager: ConsensusManager,
         consensus_store_pruner: ConsensusStorePruner,
         checkpoint_metrics: Arc<CheckpointMetrics>,
-        ika_node_metrics: Arc<IkaNodeMetrics>,
+        _ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys: Arc<DwalletMPCNetworkKeys>,

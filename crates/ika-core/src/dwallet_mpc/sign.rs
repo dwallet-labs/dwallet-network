@@ -4,8 +4,10 @@
 
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
+use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use mpc::Party;
+use std::collections::HashSet;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
@@ -37,6 +39,7 @@ pub(super) trait SignPartyPublicInputGenerator: Party {
         presign: MPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
+        expected_decrypters: HashSet<PartyID>,
     ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
@@ -48,8 +51,10 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         presign: MPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
+        expected_decrypters: HashSet<PartyID>,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let public_input = SignPublicInput::from((
+            expected_decrypters,
             bcs::from_bytes(&protocol_public_parameters)?,
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::HashedMessage>(
                 &message,
