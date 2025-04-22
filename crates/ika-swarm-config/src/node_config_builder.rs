@@ -27,7 +27,7 @@ use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use sui_types::crypto::SuiKeyPair;
 use sui_types::multiaddr::Multiaddr;
 
-/// This builder contains information that's not included in ValidatorInitializationConfig for building
+/// This builder contains information not included in [`ValidatorInitializationConfig`] for building
 /// a validator NodeConfig. It can be used to build either a genesis validator or a new validator.
 #[derive(Clone, Default)]
 pub struct ValidatorConfigBuilder {
@@ -116,7 +116,7 @@ impl ValidatorConfigBuilder {
             }),
             external_address: Some(validator.p2p_address.clone()),
             // Set a shorter timeout for checkpoint content download in tests, since
-            // checkpoint pruning also happens much faster, and network is local.
+            // checkpoint pruning also happens much faster, and the network is local.
             state_sync: Some(StateSyncConfig {
                 checkpoint_content_timeout_ms: Some(10_000),
                 ..Default::default()
@@ -317,7 +317,8 @@ impl FullnodeConfigBuilder {
                     .or(Some(validator_config.p2p_address.clone())),
                 seed_peers,
                 // Set a shorter timeout for checkpoint content download in tests, since
-                // checkpoint pruning also happens much faster, and network is local.
+                // checkpoint pruning also happens much faster,
+                // and the network is local.
                 state_sync: Some(StateSyncConfig {
                     checkpoint_content_timeout_ms: Some(10_000),
                     ..Default::default()
@@ -380,7 +381,7 @@ impl FullnodeConfigBuilder {
 fn get_key_path(key_pair: &AuthorityKeyPair) -> String {
     let public_key: AuthorityPublicKeyBytes = key_pair.public().into();
     let mut key_path = Hex::encode(public_key);
-    // 12 is rather arbitrary here but it's a nice balance between being short and being unique.
+    // 12 is rather arbitrary here, but it's a nice balance between being short and being unique.
     key_path.truncate(12);
     key_path
 }
