@@ -245,7 +245,7 @@ fn presign_party_session_info(
     }
 }
 
-fn sign_public_input(
+async fn sign_public_input(
     deserialized_event: &StartSignEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
     protocol_public_parameters: Vec<u8>,
@@ -254,7 +254,7 @@ fn sign_public_input(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
         // Todo (#473): Support generic network key scheme
         &deserialized_event.dwallet_mpc_network_key_id,
-    )?;
+    ).await?;
     Ok(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
@@ -483,7 +483,7 @@ pub(crate) async fn session_input_from_event(
                         &deserialized_event
                             .event_data
                             .dwallet_network_decryption_key_id,
-                    )?,
+                    ).await?,
                 )?,
                 Some(bcs::to_bytes(
                     &dwallet_mpc_manager
@@ -559,7 +559,7 @@ pub(crate) async fn session_input_from_event(
                     &deserialized_event.event_data,
                     dwallet_mpc_manager,
                     protocol_public_parameters,
-                )?,
+                ).await?,
                 None,
             ))
         }

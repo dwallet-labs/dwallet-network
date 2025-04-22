@@ -402,12 +402,12 @@ impl DWalletMPCManager {
             .clone())
     }
 
-    pub(super) fn get_decryption_key_share_public_parameters(
+    pub(super) async fn get_decryption_key_share_public_parameters(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
         self.dwallet_mpc_network_keys()?
-            .get_decryption_public_parameters(key_id)
+            .get_decryption_public_parameters(key_id).await
     }
 
     /// Retrieves the decryption share for the current authority.

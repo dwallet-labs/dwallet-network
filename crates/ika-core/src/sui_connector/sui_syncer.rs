@@ -223,7 +223,7 @@ where
                             key_id,
                             network_dec_key_shares,
                             &weighted_threshold_access_structure,
-                        ) {
+                        ).await {
                             error!(
                                 "failed to update the key version for key_id: {:?}, error: {:?}",
                                 key_id, e

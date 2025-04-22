@@ -201,7 +201,7 @@ impl DwalletMPCNetworkKeys {
         Ok(())
     }
 
-    pub fn update_network_key(
+    pub async fn update_network_key(
         &self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyShares,
@@ -210,7 +210,7 @@ impl DwalletMPCNetworkKeys {
         let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
         inner.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
-            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)?;
+            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure).await?;
         Ok(())
     }
 
@@ -269,11 +269,10 @@ impl DwalletMPCNetworkKeys {
             .clone())
     }
 
-    pub fn get_decryption_public_parameters(&self, key_id: &ObjectID) -> DwalletMPCResult<Vec<u8>> {
+    pub async fn get_decryption_public_parameters(&self, key_id: &ObjectID) -> DwalletMPCResult<Vec<u8>> {
         Ok(self
             .inner
-            .read()
-            .map_err(|_| DwalletMPCError::LockError)?
+            .read().await
             .network_decryption_keys
             .get(key_id)
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
