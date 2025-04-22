@@ -40,11 +40,11 @@ describe('Test dWallet MPC', () => {
 		);
 		const address = keypair.getPublicKey().toSuiAddress();
 		console.log(`Address: ${address}`);
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-		// const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
+		// const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
 		await requestSuiFromFaucetV1({
-			host: getFaucetHost('localnet'),
-			// host: 'https://faucet.sui.beta.devnet.ika-network.net',
+			// host: getFaucetHost('localnet'),
+			host: 'https://faucet.sui.beta.devnet.ika-network.net',
 			recipient: address,
 		});
 
@@ -199,7 +199,7 @@ describe('Test dWallet MPC', () => {
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
 		console.log('Running Sign...');
-		await sign(
+		const completedSignEvent = await sign(
 			conf,
 			presignCompletion.presign_id,
 			dwallet.dwallet_cap_id,
@@ -208,6 +208,7 @@ describe('Test dWallet MPC', () => {
 			Hash.KECCAK256,
 			networkDecryptionKeyPublicOutput,
 		);
+		console.log(`completedSignEvent: ${completedSignEvent}`);
 	});
 });
 
