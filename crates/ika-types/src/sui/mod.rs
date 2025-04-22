@@ -81,7 +81,7 @@ pub const IKA_SYSTEM_STATE_SIM_TEST_SHALLOW_V2: u64 = 18446744073709551606; // u
 pub const IKA_SYSTEM_STATE_SIM_TEST_DEEP_V2: u64 = 18446744073709551607; // u64::MAX - 8
 
 /// Rust version of the Move ika::ika_system::IkaSystemState type
-/// In Rust, this type should be rarely used since it's just a thin
+/// In Rust, this type should rarely be used since it's just a thin
 /// wrapper used to access the inner object.
 /// Within this module, we use it to determine the current version of the system state inner object type,
 /// so that we could deserialize the inner object correctly.
@@ -138,9 +138,10 @@ pub trait SystemInnerTrait {
     fn validators(&self) -> &ValidatorSetV1;
 }
 
-/// IkaSystemIkaSystemStateInnerState provides an abstraction over multiple versions of the inner IkaSystemStateInner object.
+/// [`SystemInner`] provides an abstraction over multiple versions of
+/// the inner [`IkaSystemStateInner`] object.
 /// This should be the primary interface to the system state object in Rust.
-/// We use enum dispatch to dispatch all methods defined in IkaSystemStateTrait to the actual
+/// We use enum dispatch to dispatch all methods defined in [`SystemInnerTrait`] to the actual
 /// implementation in the inner types.
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 #[enum_dispatch(SystemInnerTrait)]
@@ -183,7 +184,7 @@ pub struct PoolTokenExchangeRate {
 }
 
 impl PoolTokenExchangeRate {
-    /// Rate of the staking pool, pool token amount : Ika amount
+    /// Rate of the staking pool, pool token amount: Ika amount
     pub fn rate(&self) -> f64 {
         if self.ika_amount == 0 {
             1_f64
@@ -206,7 +207,7 @@ pub struct Validator {
     pub inner: Versioned,
 }
 
-/// Rust representation of the Move ika::class_groups::ClassGroupsPublicKeyAndProofBuilder type
+/// Rust representation of the Move `ika::class_groups::ClassGroupsPublicKeyAndProofBuilder` type.
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ClassGroupsPublicKeyAndProofBuilder;
 

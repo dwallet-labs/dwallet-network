@@ -8,19 +8,12 @@ use homomorphic_encryption::GroupsPublicParametersAccessors;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::StartEncryptedShareVerificationEvent;
 use std::marker::PhantomData;
-use twopc_mpc::languages::class_groups::{
-    construct_encryption_of_discrete_log_public_parameters, EncryptionOfDiscreteLogProofWithoutCtx,
-};
+use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
 use twopc_mpc::secp256k1;
-use twopc_mpc::secp256k1::class_groups::{AsyncProtocol, ProtocolPublicParameters};
+use twopc_mpc::secp256k1::class_groups::{
+    AsyncProtocol, EncryptionOfSecretShareProof, ProtocolPublicParameters,
+};
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
-
-type SecretShareEncryptionProof = EncryptionOfDiscreteLogProofWithoutCtx<
-    SCALAR_LIMBS,
-    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    secp256k1::GroupElement,
->;
 
 /// Verifies that the given encrypted secret key share matches the encryption of the dWallet's
 /// secret share, validates the signature on the dWallet's public share,
@@ -61,7 +54,7 @@ fn verify_centralized_secret_key_share_proof(
     let decentralized_public_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
         bcs::from_bytes(serialized_dkg_public_output)?;
     let (proof, encrypted_centralized_secret_key_share): (
-        SecretShareEncryptionProof,
+        EncryptionOfSecretShareProof,
         CiphertextSpaceValue<SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
     ) = bcs::from_bytes(encrypted_centralized_secret_share_and_proof)?;
     let encrypted_centralized_secret_key_share_for_statement = CiphertextSpaceGroupElement::new(

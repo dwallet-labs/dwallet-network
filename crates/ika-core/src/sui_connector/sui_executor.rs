@@ -18,6 +18,7 @@ use ika_types::governance::{
 };
 use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
+use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
 use ika_types::sui::{
@@ -106,11 +107,18 @@ where
             + (ika_system_state_inner.epoch_duration_ms() / 2);
         let next_epoch_committee_is_empty =
             system_inner_v1.validators.next_epoch_committee.is_none();
-        if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
+        if clock.timestamp_ms > mid_epoch_time
+            && next_epoch_committee_is_empty
+            && self.is_completed_network_dkg_for_all_keys().await
+        {
             info!("Calling `process_mid_epoch()`");
-            if let Err(e) =
-                Self::process_mid_epoch(self.ika_system_package_id, &sui_notifier, &self.sui_client)
-                    .await
+            if let Err(e) = Self::process_mid_epoch(
+                self.ika_system_package_id,
+                dwallet_2pc_mpc_secp256k1_id,
+                &sui_notifier,
+                &self.sui_client,
+            )
+            .await
             {
                 error!("`process_mid_epoch()` failed: {:?}", e);
             } else {
@@ -177,6 +185,24 @@ where
         }
     }
 
+    async fn is_completed_network_dkg_for_all_keys(&self) -> bool {
+        let network_decryption_keys = match self.sui_client.get_dwallet_mpc_network_keys().await {
+            Ok(network_decryption_keys) => network_decryption_keys,
+            Err(e) => {
+                error!("failed to get dwallet MPC network keys: {e}");
+                return false;
+            }
+        };
+
+        for (_, key) in network_decryption_keys.iter() {
+            if key.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG {
+                return false;
+            }
+        }
+
+        true
+    }
+
     pub async fn run_epoch(
         &self,
         epoch: EpochId,
@@ -201,7 +227,7 @@ where
 
         loop {
             interval.tick().await;
-            let ika_system_state_inner = self.sui_client.get_system_inner_until_success().await;
+            let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
             let epoch_on_sui: u64 = ika_system_state_inner.epoch();
             if epoch_on_sui > epoch {
                 fail_point_async!("crash");
@@ -301,6 +327,7 @@ where
 
     async fn process_mid_epoch(
         ika_system_package_id: ObjectID,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
@@ -314,9 +341,13 @@ where
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
+        let dwallet_2pc_mpc_secp256k1_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+            .await;
 
         let args = vec![
             CallArg::Object(ika_system_state_arg),
+            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
             CallArg::Object(clock_arg),
         ];
 
