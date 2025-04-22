@@ -55,7 +55,7 @@ impl DWalletMPCService {
     }
 
     async fn update_last_session_to_complete_in_current_epoch(&self, sui_client: &SuiBridgeClient) {
-        let system_inner = sui_client.get_system_inner_until_success().await;
+        let system_inner = sui_client.must_get_system_inner_object().await;
         if let Some(dwallet_coordinator_id) = system_inner
             .into_init_version_for_tooling()
             .dwallet_2pc_mpc_secp256k1_id
