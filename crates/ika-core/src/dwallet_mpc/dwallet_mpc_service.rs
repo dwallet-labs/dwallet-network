@@ -30,6 +30,7 @@ use tokio::task::yield_now;
 use tokio::time;
 use tracing::{error, info, warn};
 use typed_store::Map;
+use ika_config::NodeConfig;
 
 const READ_INTERVAL_MS: u64 = 100;
 
@@ -123,7 +124,13 @@ impl DWalletMPCService {
     /// [`DWalletMPCManager`] for processing.
     ///
     /// The service automatically terminates when an epoch switch occurs.
-    pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>) {
+    pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>, epoch_store: Arc<AuthorityPerEpochStore>, consensus_adapter: Arc<dyn SubmitToConsensus>, node_config: NodeConfig) {
+        let mut dwallet_mpc_manager =
+            DWalletMPCManager::create_dwallet_mpc_manager_until_success(
+                sui_client.clone(),
+                epoch_store.clone(),
+                node_config,
+            ).await;
         self.load_missed_events(sui_client.clone()).await;
         loop {
             match self.exit.has_changed() {
