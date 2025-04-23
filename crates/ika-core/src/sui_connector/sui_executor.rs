@@ -11,6 +11,7 @@ use ika_config::node::RunWithRange;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
+use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::governance::{
     MIN_VALIDATOR_JOINING_STAKE_NIKA, VALIDATOR_LOW_STAKE_GRACE_PERIOD,
@@ -20,7 +21,7 @@ use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
-use ika_types::sui::system_inner_v1::BlsCommittee;
+use ika_types::sui::system_inner_v1::{BlsCommittee, DWalletCoordinatorInnerV1};
 use ika_types::sui::{
     DWalletCoordinatorInner, SystemInner, SystemInnerTrait,
     PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_ADVANCE_EPOCH_FUNCTION_NAME,
@@ -76,6 +77,30 @@ where
             sui_client,
             metrics,
         }
+    }
+
+    async fn get_dwallet_coordinator_inner_from_system_inner(
+        &self,
+        system_inner: &SystemInner,
+    ) -> IkaResult<DWalletCoordinatorInnerV1> {
+        let Some(dwallet_2pc_mpc_secp256k1_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() else {
+            return Err(IkaError::SuiConnectorInternalError(
+                "failed to get `dwallet_2pc_mpc_secp256k1_id` when running epoch switch"
+                    .to_string(),
+            ));
+        };
+        let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
+            .sui_client
+            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
+            .await
+        else {
+            error!("failed to get dwallet coordinator inner when running epoch switch");
+            return Err(IkaError::SuiConnectorInternalError(
+                "failed to get dwallet coordinator inner when running epoch switch"
+                    .to_string(),
+            ));
+        };
+        Ok(coordinator)
     }
 
     /// Checks whether `process_mid_epoch`, `lock_last_active_session_sequence_number`, or
