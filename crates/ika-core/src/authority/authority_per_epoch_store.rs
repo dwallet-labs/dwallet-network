@@ -1348,7 +1348,7 @@ impl AuthorityPerEpochStore {
         output.set_dwallet_mpc_round_outputs(Self::filter_dwallet_mpc_outputs(transactions));
         match self.read_new_sui_events().await {
             Ok(events) => output.set_dwallet_mpc_round_events(events),
-            Err(e) => error!(err=?e, "Failed to read new Sui events"),
+            Err(e) => error!(err=?e, "failed to read new Sui events"),
         }
         let mut outputs_verifier = self.get_dwallet_mpc_outputs_verifier().await;
         output.set_dwallet_mpc_round_completed_sessions(
