@@ -51,6 +51,7 @@ use crate::consensus_handler::{
     ConsensusCommitInfo, SequencedConsensusTransaction, SequencedConsensusTransactionKey,
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
+use crate::dwallet_mpc::generate_access_structure_from_committee;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
@@ -685,16 +686,7 @@ impl AuthorityPerEpochStore {
     pub fn get_weighted_threshold_access_structure(
         &self,
     ) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
-        let quorum_threshold = self.committee().quorum_threshold();
-        let weighted_parties: HashMap<PartyID, Weight> = self
-            .committee()
-            .voting_rights
-            .iter()
-            .map(|(name, weight)| Ok((self.authority_name_to_party_id(name)?, *weight as Weight)))
-            .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
-
-        WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
-            .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
+        generate_access_structure_from_committee(self.committee().as_ref())
     }
 
     /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.

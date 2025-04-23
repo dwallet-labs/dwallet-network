@@ -13,7 +13,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicOutput,
 };
 use group::PartyID;
-use ika_types::committee::CommitteeTrait;
+use ika_types::committee::{Committee, CommitteeTrait};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::StartPartialSignaturesVerificationEvent;
@@ -55,6 +55,36 @@ mod reshare;
 pub(crate) mod sign;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
+
+pub(crate) fn authority_name_to_party_id_from_committee(
+    committee: &Committee,
+    authority_name: &AuthorityName,
+) -> DwalletMPCResult<PartyID> {
+    committee
+        .authority_index(authority_name)
+        // Need to add 1 because the authority index is 0-based,
+        // and the twopc_mpc library uses 1-based party IDs.
+        .map(|index| (index + 1) as PartyID)
+        .ok_or_else(|| DwalletMPCError::AuthorityNameNotFound(*authority_name))
+}
+
+pub(crate) fn generate_access_structure_from_committee(
+    committee: &Committee,
+) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
+    let weighted_parties: HashMap<PartyID, Weight> = committee
+        .voting_rights
+        .iter()
+        .map(|(name, weight)| {
+            Ok((
+                authority_name_to_party_id_from_committee(committee, name)?,
+                *weight as Weight,
+            ))
+        })
+        .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
+
+    WeightedThresholdAccessStructure::new(committee.quorum_threshold() as PartyID, weighted_parties)
+        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
+}
 
 /// Convert a given [`PartyID`] to it's corresponding authority name (address).
 pub(crate) fn party_id_to_authority_name(

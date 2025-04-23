@@ -4,13 +4,16 @@
 //! The SuiSyncer module handles synchronizing Events emitted
 //! on the Sui blockchain from concerned modules of `ika_system` package.
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
+use crate::dwallet_mpc::generate_access_structure_from_committee;
 use crate::dwallet_mpc::network_dkg::{
     instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output, DwalletMPCNetworkKeys,
 };
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
+use group::PartyID;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::{Committee, StakeUnit};
+use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
@@ -19,7 +22,6 @@ use itertools::Itertools;
 use mpc::{Weight, WeightedThresholdAccessStructure};
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
-use group::PartyID;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::BRIDGE_PACKAGE_ID;
@@ -31,7 +33,6 @@ use tokio::{
     time::{self, Duration},
 };
 use tracing::{debug, error, info, warn};
-use ika_types::crypto::AuthorityName;
 
 /// Map from contract address to their start cursor (exclusive)
 pub type SuiTargetModules = HashMap<Identifier, Option<EventID>>;
@@ -209,7 +210,7 @@ where
                 }
             };
             let weighted_threshold_access_structure =
-                match Self::generate_access_structure_from_active_committee(&active_committee) {
+                match generate_access_structure_from_committee(&active_committee) {
                     Ok(access_structure) => access_structure,
                     Err(e) => {
                         error!("failed to generate access structure: {e}");
@@ -247,39 +248,6 @@ where
                 }
             }
         }
-    }
-
-    pub fn authority_name_to_party_id_from_committee(
-        committee: &Committee,
-        authority_name: &AuthorityName,
-    ) -> DwalletMPCResult<PartyID> {
-        committee
-            .authority_index(authority_name)
-            // Need to add 1 because the authority index is 0-based,
-            // and the twopc_mpc library uses 1-based party IDs.
-            .map(|index| (index + 1) as PartyID)
-            .ok_or_else(|| DwalletMPCError::AuthorityNameNotFound(*authority_name))
-    }
-
-    fn generate_access_structure_from_active_committee(
-        committee: &Committee,
-    ) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
-        let weighted_parties: HashMap<PartyID, Weight> = committee
-            .voting_rights
-            .iter()
-            .map(|(name, weight)| {
-                Ok((
-                    Self::authority_name_to_party_id_from_committee(committee, name)?,
-                    *weight as Weight,
-                ))
-            })
-            .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
-
-        WeightedThresholdAccessStructure::new(
-            committee.quorum_threshold() as PartyID,
-            weighted_parties,
-        )
-        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
     }
 
     async fn sync_network_decryption_key_inner(
