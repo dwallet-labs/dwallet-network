@@ -43,6 +43,7 @@ pub struct DWalletMPCOutputsVerifier {
     pub(crate) last_processed_consensus_round: Round,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
+    pub(crate) consensus_round_completed_sessions: HashSet<ObjectID>,
 }
 
 /// The data needed to manage the outputs of an MPC session.
@@ -99,6 +100,7 @@ impl DWalletMPCOutputsVerifier {
             voted_to_lock_committee: HashSet::new(),
             last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
+            consensus_round_completed_sessions: Default::default(),
         }
     }
 
@@ -183,6 +185,8 @@ impl DWalletMPCOutputsVerifier {
         {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
             session_output_data.clear_data();
+            self.consensus_round_completed_sessions
+                .insert(session_info.session_id);
             return Ok(OutputVerificationResult {
                 result: OutputVerificationStatus::FirstQuorumReached(output.clone()),
                 malicious_actors: vec![],
