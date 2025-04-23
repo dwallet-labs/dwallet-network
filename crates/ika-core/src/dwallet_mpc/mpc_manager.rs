@@ -469,7 +469,8 @@ impl DWalletMPCManager {
                 self.pending_for_events_order.remove(index);
             }
         }
-        for _ in 0..self.pending_for_computation_order.len() {
+        let pending_for_computation = self.pending_for_computation_order.len();
+        for _ in 0..pending_for_computation {
             if !self
                 .cryptographic_computations_orchestrator
                 .can_spawn_session()
@@ -479,6 +480,7 @@ impl DWalletMPCManager {
             }
             // Safe to unwrap, as we just checked that the queue is not empty.
             let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
+            // Sasfe to unwarp since the session was ready to compute.
             let live_session = self
                 .mpc_sessions
                 .get(&oldest_pending_session.session_id)
@@ -518,7 +520,14 @@ impl DWalletMPCManager {
                 .cryptographic_computations_orchestrator
                 .spawn_session(&oldest_pending_session)
             {
-                error!("failed to spawn session with err: {:?}", err);
+                error!(
+                    session_id=?oldest_pending_session.session_id,
+                    session_sequence_number=?oldest_pending_session.sequence_number,
+                    last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
+                    mpc_protocol=?mpc_event_data.init_protocol_data,
+                    error=?err,
+                    "failed to spawn session with err"
+                );
             }
         }
     }
@@ -560,6 +569,13 @@ impl DWalletMPCManager {
         let session = match self.mpc_sessions.entry(message.session_id) {
             Entry::Occupied(session) => session.into_mut(),
             Entry::Vacant(_) => {
+                warn!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    receiving_authority=?self.epoch_store()?.name,
+                    crypto_round_number=?message.round_number,
+                    "received a message for an MPC session, which an event has not yet received for"
+                );
                 // This can happen if the session is not in the active sessions,
                 // but we still want to store the message.
                 // We will create a new session for it.
