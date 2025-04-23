@@ -67,7 +67,6 @@ impl SuiConnectorService {
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
-        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         next_epoch_committee: Arc<RwLock<Option<Committee>>>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
@@ -99,7 +98,6 @@ impl SuiConnectorService {
         .run(
             Duration::from_secs(2),
             dwallet_network_keys,
-            weighted_threshold_access_structure,
             next_epoch_committee,
         )
         .await
