@@ -60,6 +60,7 @@ title: Module `(ika_system=0x0)::system_inner_v1`
 -  [Function `get_reporters_of`](#(ika_system=0x0)_system_inner_v1_get_reporters_of)
 -  [Function `pool_exchange_rates`](#(ika_system=0x0)_system_inner_v1_pool_exchange_rates)
 -  [Function `active_committee`](#(ika_system=0x0)_system_inner_v1_active_committee)
+-  [Function `next_epoch_active_committee`](#(ika_system=0x0)_system_inner_v1_next_epoch_active_committee)
 -  [Function `verify_cap`](#(ika_system=0x0)_system_inner_v1_verify_cap)
 -  [Function `process_checkpoint_message_by_cap`](#(ika_system=0x0)_system_inner_v1_process_checkpoint_message_by_cap)
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_system_inner_v1_process_checkpoint_message_by_quorum)
@@ -543,6 +544,15 @@ the checkpoint submmision message.
 
 
 
+<a name="(ika_system=0x0)_system_inner_v1_ENextCommitteeNotSetOnAdvanceEpoch"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_ENextCommitteeNotSetOnAdvanceEpoch">ENextCommitteeNotSetOnAdvanceEpoch</a>: u64 = 6;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_system_inner_v1_EUnauthorizedProtocolCap"></a>
 
 
@@ -623,7 +633,7 @@ This function will be called only once in init.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_network_keys">advance_network_keys</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">dwallet_2pc_mpc_secp256k1::DWalletCoordinator</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_network_keys">advance_network_keys</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>): <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;
 </code></pre>
 
 
@@ -633,9 +643,13 @@ This function will be called only once in init.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_network_keys">advance_network_keys</a>(
-    self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> DWalletCoordinator
-) {
-    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.advance_epoch_dwallet_network_decryption_key(cap));
+    self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>: &<b>mut</b> DWalletCoordinatorInner
+): Balance&lt;IKA&gt; {
+    <b>let</b> <b>mut</b> total_reward = <a href="../sui/balance.md#sui_balance_zero">sui::balance::zero</a>&lt;IKA&gt;();
+    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| {
+        total_reward.join(<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.advance_epoch_dwallet_network_decryption_key(cap));
+    });
+    <b>return</b> total_reward
 }
 </code></pre>
 
@@ -1903,7 +1917,7 @@ gas coins.
 4. Update all validators.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>: u64, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>, dwallet_coordinator: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>: u64, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1914,6 +1928,7 @@ gas coins.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>,
+    dwallet_coordinator: &<b>mut</b> DWalletCoordinatorInner,
     <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>: u64, // Timestamp of the <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> start
     ctx: &<b>mut</b> TxContext,
 ) {
@@ -1936,8 +1951,10 @@ gas coins.
         stake_subsidy.join(self.<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>.stake_subsidy_for_distribution(ctx));
     };
     <b>let</b> computation_reward_amount_before_distribution = self.computation_reward.value();
+    <b>let</b> epoch_computation_reward = dwallet_coordinator.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_next_epoch_active_committee">next_epoch_active_committee</a>());
     <b>let</b> stake_subsidy_amount = stake_subsidy.value();
     <b>let</b> <b>mut</b> total_reward = <a href="../sui/balance.md#sui_balance_zero">sui::balance::zero</a>&lt;IKA&gt;();
+    total_reward.join(epoch_computation_reward);
     total_reward.join(self.computation_reward.withdraw_all());
     total_reward.join(stake_subsidy);
     <b>let</b> total_reward_amount_before_distribution = total_reward.value();
@@ -1966,6 +1983,8 @@ gas coins.
         last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
         self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
     };
+    <b>let</b> decryption_keys_rewards = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_network_keys">advance_network_keys</a>(dwallet_coordinator);
+    self.computation_reward.join(decryption_keys_rewards);
     event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemEpochInfoEvent">SystemEpochInfoEvent</a> {
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>,
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_protocol_version">protocol_version</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_protocol_version">protocol_version</a>,
@@ -2221,6 +2240,33 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 
 </details>
 
+<a name="(ika_system=0x0)_system_inner_v1_next_epoch_active_committee"></a>
+
+## Function `next_epoch_active_committee`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_next_epoch_active_committee">next_epoch_active_committee</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">system_inner_v1::SystemInnerV1</a>): (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_next_epoch_active_committee">next_epoch_active_committee</a>(self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>): BlsCommittee {
+    <b>let</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a> = &self.validators;
+    <b>let</b> next_epoch_committee = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.next_epoch_committee();
+    <b>assert</b>!(next_epoch_committee.is_some(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_ENextCommitteeNotSetOnAdvanceEpoch">ENextCommitteeNotSetOnAdvanceEpoch</a>);
+    <b>return</b> *next_epoch_committee.borrow()
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="(ika_system=0x0)_system_inner_v1_verify_cap"></a>
 
 ## Function `verify_cap`
@@ -2314,10 +2360,6 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message">process_checkpoint_message</a>(message, ctx);
     // TODO: seperate this to its own process
     <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(signature, signers_bitmap, message, ctx);
-    <b>if</b>(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a> + 1 == self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_epoch">epoch</a>()) {
-        <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_advance_epoch">advance_epoch</a>(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_active_committee">active_committee</a>());
-        self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>.advance_epoch_dwallet_network_decryption_key(cap));
-    }
 }
 </code></pre>
 

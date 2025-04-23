@@ -418,9 +418,6 @@ create_dwallet_coordinator
 request_dwallet_network_decryption_key_dkg
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
-advance_epoch_dwallet_network_decryption_key
-	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1
 advance_epoch
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
@@ -1304,6 +1301,9 @@ pool_exchange_rates
 	public(package) fun
 	0x0::system_inner_v1
 active_committee
+	public(package) fun
+	0x0::system_inner_v1
+next_epoch_active_committee
 	public(package) fun
 	0x0::system_inner_v1
 verify_cap

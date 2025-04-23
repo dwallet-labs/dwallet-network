@@ -203,15 +203,6 @@ the SystemInnerVX version, or vice versa.
 ## Constants
 
 
-<a name="(ika_system=0x0)_system_ECannotAdvanceEpoch"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>: u64 = 4;
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_system_EHaveNotReachedEndEpochTime"></a>
 
 
@@ -1797,10 +1788,7 @@ Advances the epoch to the next epoch.
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_advance_epoch">request_advance_epoch</a>(self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, dwallet_coordinator: &<b>mut</b> DWalletCoordinator, clock: &Clock, ctx: &<b>mut</b> TxContext) {
     <b>let</b> inner_system = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
     <b>let</b> inner_dwallet = dwallet_coordinator.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    <b>assert</b>!(inner_dwallet.all_current_epoch_sessions_completed(), <a href="../ika_system/system.md#(ika_system=0x0)_system_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
-    inner_system.advance_epoch(clock.timestamp_ms(), ctx);
-    dwallet_coordinator.advance_epoch(inner_system.<a href="../ika_system/system.md#(ika_system=0x0)_system_active_committee">active_committee</a>());
-    inner_system.advance_network_keys(dwallet_coordinator);
+    inner_system.advance_epoch(inner_dwallet, clock.timestamp_ms(), ctx);
 }
 </code></pre>
 
