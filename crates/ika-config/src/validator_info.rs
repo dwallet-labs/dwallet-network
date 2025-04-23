@@ -18,8 +18,8 @@ pub struct ValidatorInfo {
     pub computation_price: u64,
     pub commission_rate: u16,
     pub p2p_address: Multiaddr,
-    pub current_epoch_consensus_address: Multiaddr,
-    pub next_epoch_consensus_address: Multiaddr,
+    // keep only current and call it consensus_address
+    pub consensus_address: Multiaddr,
     pub description: String,
     pub image_url: String,
     pub project_url: String,

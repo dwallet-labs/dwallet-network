@@ -124,6 +124,7 @@ public struct SystemCheckpointInfoEvent has copy, drop {
 // Errors
 const ELimitExceeded: u64 = 1;
 const EBpsTooLarge: u64 = 5;
+const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 6;
 // const ESafeModeGasNotProcessed: u64 = 7;
 
 #[error]
@@ -178,9 +179,14 @@ public(package) fun create(
 }
 
 public(package) fun advance_network_keys(
-    self: &SystemInnerV1, dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator
-) {
-    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
+    self: &SystemInnerV1, dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinatorInner
+): Balance<IKA> {
+    let mut total_reward = sui::balance::zero<IKA>();
+
+    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| {
+        total_reward.join(dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
+    });
+    return total_reward
 }
 
 public(package) fun emit_start_reshare_events(
@@ -688,6 +694,7 @@ public(package) fun update_candidate_validator_network_pubkey_bytes(
 /// 4. Update all validators.
 public(package) fun advance_epoch(
     self: &mut SystemInnerV1,
+    dwallet_coordinator: &mut DWalletCoordinatorInner,
     epoch_start_timestamp_ms: u64, // Timestamp of the epoch start
     ctx: &mut TxContext,
 ) {
@@ -716,13 +723,15 @@ public(package) fun advance_epoch(
 
     let computation_reward_amount_before_distribution = self.computation_reward.value();
 
+    let epoch_computation_reward = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee());
+
     let stake_subsidy_amount = stake_subsidy.value();
     let mut total_reward = sui::balance::zero<IKA>();
+    total_reward.join(epoch_computation_reward);
     total_reward.join(self.computation_reward.withdraw_all());
     total_reward.join(stake_subsidy);
     let total_reward_amount_before_distribution = total_reward.value();
     self.epoch = self.epoch + 1;
-
     self
         .validators
         .advance_epoch(
@@ -752,6 +761,9 @@ public(package) fun advance_epoch(
         last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
         self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
     };
+
+    let decryption_keys_rewards = self.advance_network_keys(dwallet_coordinator);
+    self.computation_reward.join(decryption_keys_rewards);
 
     event::emit(SystemEpochInfoEvent {
         epoch: self.epoch,
@@ -823,6 +835,13 @@ public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
     validator_set.active_committee()
 }
 
+public(package) fun next_epoch_active_committee(self: &SystemInnerV1): BlsCommittee {
+    let validator_set = &self.validators;
+    let next_epoch_committee = validator_set.next_epoch_committee();
+    assert!(next_epoch_committee.is_some(), ENextCommitteeNotSetOnAdvanceEpoch);
+    return *next_epoch_committee.borrow()
+}
+
 fun verify_cap(
     self: &SystemInnerV1,
     cap: &ProtocolCap,
@@ -851,7 +870,6 @@ public(package) fun process_checkpoint_message_by_cap(
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut SystemInnerV1,
     dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
-
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
@@ -865,13 +883,8 @@ public(package) fun process_checkpoint_message_by_quorum(
     self.active_committee().verify_certificate(epoch, &signature, &signers_bitmap, &intent_bytes);
 
     self.process_checkpoint_message(message, ctx);
-
     // TODO: seperate this to its own process
     dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
-    if(epoch + 1 == self.epoch()) {
-        dwallet_2pc_mpc_secp256k1.advance_epoch(self.active_committee());
-        self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
-    }
 }
 
 public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
