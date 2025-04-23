@@ -281,12 +281,12 @@ where
         .await?;
 
         if local_network_decryption_keys.contains_key(&key_id) {
-            info!("Updating network key for key_id: {:?}", key_id);
+            info!(committee=?weighted_threshold_access_structure, "Updating network key for key_id: {:?}", key_id);
             dwallet_mpc_network_keys
                 .update_network_key(*key_id, key, &weighted_threshold_access_structure)
                 .await
         } else {
-            info!("Adding new network key for key_id: {:?}", key_id);
+            info!(committee=?weighted_threshold_access_structure, "Adding new network key for key_id: {:?}", key_id);
             dwallet_mpc_network_keys
                 .add_new_network_key(*key_id, key, &weighted_threshold_access_structure)
                 .await
