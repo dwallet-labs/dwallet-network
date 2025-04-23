@@ -163,7 +163,7 @@ where
                     .get(&id)
                     .ok_or(DwalletMPCError::ValidatorIDNotFound(id))?;
 
-                // Attempt to serialize class_groups, return error if serialization fails
+                // Attempt to serialize `class_groups`, return error if serialization fails
                 let class_groups_bytes = bcs::to_bytes(&class_groups)?;
 
                 Ok((*authority_name, class_groups_bytes))
@@ -235,7 +235,7 @@ where
                     }
                     Err(DwalletMPCError::NetworkDKGNotCompleted) => {
                         info!(
-                            "Network decryption key for key_id: {:?} was not completed yet",
+                            "Key Sync — The Network DKG for key_id: {:?} was not completed yet",
                             key_id
                         );
                     }

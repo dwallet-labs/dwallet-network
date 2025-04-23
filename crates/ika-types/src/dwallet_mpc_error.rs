@@ -138,7 +138,7 @@ pub enum DwalletMPCError {
     #[error("network DKG key has not been completed yet")]
     NetworkDKGNotCompleted,
 
-    #[error("failed to find the validator ID: {0}")]
+    #[error("failed to find the validator with ID: {0}")]
     ValidatorIDNotFound(ObjectID),
 
     #[error("{0}")]
