@@ -130,7 +130,7 @@ describe('Test dWallet MPC', () => {
 		);
 	});
 
-	it('should sign full flow', async () => {
+	it('should sign full flow with mocked network key', async () => {
 		console.log('Creating dWallet...');
 		const dwalletID = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
@@ -208,7 +208,7 @@ describe('Test dWallet MPC', () => {
 			Hash.KECCAK256,
 			networkDecryptionKeyPublicOutput,
 		);
-		console.log(`completedSignEvent: ${completedSignEvent}`);
+		console.log(`completedSignEvent: ${JSON.stringify(completedSignEvent)}`);
 	});
 });
 
