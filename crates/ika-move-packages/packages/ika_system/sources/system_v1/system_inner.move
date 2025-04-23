@@ -79,8 +79,6 @@ public struct SystemInnerV1 has store {
     epoch_start_timestamp_ms: u64,
     /// The total messages processed.
     total_messages_processed: u64,
-    /// The last checkpoint sequence number processed.
-    last_processed_checkpoint_sequence_number: Option<u64>,
     /// The last checkpoint sequence number of previous epoch.
     previous_epoch_last_checkpoint_sequence_number: u64,
     /// The fees paid for computation.
@@ -757,10 +755,6 @@ public(package) fun advance_epoch(
     // Derive the computation price per unit size for the new epoch
     self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&active_committee);
     let mut last_processed_checkpoint_sequence_number = 0;
-    if (self.last_processed_checkpoint_sequence_number.is_some()) {
-        last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
-        self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
-    };
 
     let decryption_keys_rewards = self.advance_network_keys(dwallet_coordinator);
     self.computation_reward.join(decryption_keys_rewards);
@@ -896,41 +890,6 @@ public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
     self.verify_cap(cap);
     let key_cap = dwallet_2pc_mpc_secp256k1.request_dwallet_network_decryption_key_dkg(ctx);
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.push_back(key_cap);
-}
-
-// TODO (#857): Remove this entire redundant function
-fun process_checkpoint_message(
-    self: &mut SystemInnerV1,
-    message: vector<u8>,
-    _ctx: &mut TxContext,
-) {
-    assert!(!self.active_committee().members().is_empty(), EActiveBlsCommitteeMustInitialize);
-
-    // first let's make sure it's the correct checkpoint message
-    let mut bcs_body = bcs::new(copy message);
-
-    let epoch = bcs_body.peel_u64();
-    assert!(epoch == self.epoch, EIncorrectEpochInCheckpoint);
-
-    let sequence_number = bcs_body.peel_u64();
-
-    if(self.last_processed_checkpoint_sequence_number.is_none()) {
-        assert!(sequence_number == 0, EWrongCheckpointSequenceNumber);
-        self.last_processed_checkpoint_sequence_number.fill(sequence_number);
-    } else {
-        assert!(sequence_number > 0 && *self.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongCheckpointSequenceNumber);
-        self.last_processed_checkpoint_sequence_number.swap(sequence_number);
-    };
-
-    //let network_total_messages = bcs_body.peel_u64();
-    //let previous_digest = bcs_body.peel_option!(|previous_digest| previous_digest.peel_vec_u8() );
-    let timestamp_ms = bcs_body.peel_u64();
-
-    event::emit(SystemCheckpointInfoEvent {
-        epoch,
-        sequence_number,
-        timestamp_ms,
-    });
 }
 
 #[allow(lint(self_transfer))]
