@@ -76,6 +76,7 @@ public struct DWalletCoordinatorInner has store {
     total_messages_processed: u64,
     /// The last checkpoint sequence number processed.
     last_processed_checkpoint_sequence_number: Option<u64>,
+    previous_epoch_last_checkpoint_sequence_number: u64,
 
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
@@ -888,7 +889,7 @@ public(package) fun advance_epoch(
 ): Balance<IKA> {
     assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
     if (self.last_processed_checkpoint_sequence_number.is_some()) {
-        last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
+        let last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
         self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
     };
     self.locked_last_session_to_complete_in_current_epoch = false;
