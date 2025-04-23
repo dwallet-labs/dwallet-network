@@ -1,29 +1,22 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::committee::CommitteeWithNetworkMetadata;
-use crate::sui::system_inner_v1::DWalletCoordinatorInnerV1;
+use crate::committee::StakeUnit;
+use crate::crypto::AuthorityName;
 use crate::sui::system_inner_v1::DWalletNetworkDecryptionKeyCap;
-use anyhow::Result;
+use crate::sui::system_inner_v1::{DWalletCoordinatorInnerV1, ValidatorSetV1};
 use enum_dispatch::enum_dispatch;
-use epoch_start_system::EpochStartSystem;
-use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
 use sui_types::collection_types::TableVec;
-use sui_types::dynamic_field::{
-    get_dynamic_field_from_store, get_dynamic_field_object_from_store, Field,
-};
-use sui_types::error::SuiError;
-use sui_types::object::{MoveObject, Object};
 use sui_types::storage::ObjectStore;
 use sui_types::versioned::Versioned;
-use sui_types::{id::UID, MoveTypeTagTrait};
+use sui_types::MoveTypeTagTrait;
 use system_inner_v1::SystemInnerV1;
 use system_inner_v1::UpgradeCap;
 use validator_inner_v1::ValidatorInnerV1;
@@ -88,7 +81,7 @@ pub const IKA_SYSTEM_STATE_SIM_TEST_SHALLOW_V2: u64 = 18446744073709551606; // u
 pub const IKA_SYSTEM_STATE_SIM_TEST_DEEP_V2: u64 = 18446744073709551607; // u64::MAX - 8
 
 /// Rust version of the Move ika::ika_system::IkaSystemState type
-/// In Rust, this type should be rarely used since it's just a thin
+/// In Rust, this type should rarely be used since it's just a thin
 /// wrapper used to access the inner object.
 /// Within this module, we use it to determine the current version of the system state inner object type,
 /// so that we could deserialize the inner object correctly.
@@ -140,13 +133,15 @@ pub trait SystemInnerTrait {
     fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
-    // fn get_current_epoch_committee(&self) -> CommitteeWithNetworkMetadata;
-    // fn into_epoch_start_state(self) -> EpochStartSystemState;
+    fn get_ika_next_epoch_committee(&self)
+        -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>>;
+    fn validators(&self) -> &ValidatorSetV1;
 }
 
-/// IkaSystemIkaSystemStateInnerState provides an abstraction over multiple versions of the inner IkaSystemStateInner object.
+/// [`SystemInner`] provides an abstraction over multiple versions of
+/// the inner [`IkaSystemStateInner`] object.
 /// This should be the primary interface to the system state object in Rust.
-/// We use enum dispatch to dispatch all methods defined in IkaSystemStateTrait to the actual
+/// We use enum dispatch to dispatch all methods defined in [`SystemInnerTrait`] to the actual
 /// implementation in the inner types.
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 #[enum_dispatch(SystemInnerTrait)]
@@ -189,7 +184,7 @@ pub struct PoolTokenExchangeRate {
 }
 
 impl PoolTokenExchangeRate {
-    /// Rate of the staking pool, pool token amount : Ika amount
+    /// Rate of the staking pool, pool token amount: Ika amount
     pub fn rate(&self) -> f64 {
         if self.ika_amount == 0 {
             1_f64
@@ -212,7 +207,7 @@ pub struct Validator {
     pub inner: Versioned,
 }
 
-/// Rust representation of the Move ika::class_groups::ClassGroupsPublicKeyAndProofBuilder type
+/// Rust representation of the Move `ika::class_groups::ClassGroupsPublicKeyAndProofBuilder` type.
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ClassGroupsPublicKeyAndProofBuilder;
 

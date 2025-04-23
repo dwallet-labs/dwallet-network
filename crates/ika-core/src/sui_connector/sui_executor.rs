@@ -16,9 +16,11 @@ use ika_types::governance::{
     MIN_VALIDATOR_JOINING_STAKE_NIKA, VALIDATOR_LOW_STAKE_GRACE_PERIOD,
     VALIDATOR_LOW_STAKE_THRESHOLD_NIKA, VALIDATOR_VERY_LOW_STAKE_THRESHOLD_NIKA,
 };
-use ika_types::message::Secp256K1NetworkDKGOutputSlice;
+use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
+use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
+use ika_types::sui::system_inner_v1::BlsCommittee;
 use ika_types::sui::{
     DWalletCoordinatorInner, SystemInner, SystemInnerTrait,
     PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_ADVANCE_EPOCH_FUNCTION_NAME,
@@ -103,15 +105,20 @@ where
 
         let mid_epoch_time = ika_system_state_inner.epoch_start_timestamp_ms()
             + (ika_system_state_inner.epoch_duration_ms() / 2);
-        let next_epoch_committee_is_empty = system_inner_v1
-            .validators
-            .next_epoch_active_committee
-            .is_none();
-        if clock.timestamp_ms > mid_epoch_time && next_epoch_committee_is_empty {
+        let next_epoch_committee_is_empty =
+            system_inner_v1.validators.next_epoch_committee.is_none();
+        if clock.timestamp_ms > mid_epoch_time
+            && next_epoch_committee_is_empty
+            && self.is_completed_network_dkg_for_all_keys().await
+        {
             info!("Calling `process_mid_epoch()`");
-            if let Err(e) =
-                Self::process_mid_epoch(self.ika_system_package_id, &sui_notifier, &self.sui_client)
-                    .await
+            if let Err(e) = Self::process_mid_epoch(
+                self.ika_system_package_id,
+                dwallet_2pc_mpc_secp256k1_id,
+                &sui_notifier,
+                &self.sui_client,
+            )
+            .await
             {
                 error!("`process_mid_epoch()` failed: {:?}", e);
             } else {
@@ -156,10 +163,7 @@ where
             == coordinator.last_session_to_complete_in_current_epoch;
         let all_immediate_sessions_completed = coordinator.started_immediate_sessions_count
             == coordinator.completed_immediate_sessions_count;
-        let next_epoch_committee_exists = system_inner_v1
-            .validators
-            .next_epoch_active_committee
-            .is_some();
+        let next_epoch_committee_exists = system_inner_v1.validators.next_epoch_committee.is_some();
         if coordinator.locked_last_session_to_complete_in_current_epoch
             && all_epoch_sessions_finished
             && all_immediate_sessions_completed
@@ -179,6 +183,24 @@ where
                 info!("Successfully processed request advance epoch");
             }
         }
+    }
+
+    async fn is_completed_network_dkg_for_all_keys(&self) -> bool {
+        let network_decryption_keys = match self.sui_client.get_dwallet_mpc_network_keys().await {
+            Ok(network_decryption_keys) => network_decryption_keys,
+            Err(e) => {
+                error!("failed to get dwallet MPC network keys: {e}");
+                return false;
+            }
+        };
+
+        for (_, key) in network_decryption_keys.iter() {
+            if key.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG {
+                return false;
+            }
+        }
+
+        true
     }
 
     pub async fn run_epoch(
@@ -205,7 +227,7 @@ where
 
         loop {
             interval.tick().await;
-            let ika_system_state_inner = self.sui_client.get_system_inner_until_success().await;
+            let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
             let epoch_on_sui: u64 = ika_system_state_inner.epoch();
             if epoch_on_sui > epoch {
                 fail_point_async!("crash");
@@ -235,9 +257,12 @@ where
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
                         ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
+                        let active_members: BlsCommittee =
+                            ika_system_state_inner.validators().clone().active_committee;
                         let auth_sig = checkpoint_message.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
-                        let signers_bitmap = Self::calculate_signers_bitmap(&auth_sig.signers_map);
+                        let signers_bitmap =
+                            Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
                         let message =
                             bcs::to_bytes::<CheckpointMessage>(&checkpoint_message.into_message())
                                 .expect("Serializing checkpoint message cannot fail");
@@ -269,11 +294,12 @@ where
         }
     }
 
-    fn calculate_signers_bitmap(signers_map: &RoaringBitmap) -> Vec<u8> {
-        let max_singers_bytes = signers_map.max().unwrap_or(0).div_ceil(8) as usize;
-        // The bitmap is 1 byte larger than the number of signers to accommodate the last byte.
-        // TODO (#877): Fix the signers bitmap in edge cases
-        let mut signers_bitmap = vec![0u8; max_singers_bytes];
+    fn calculate_signers_bitmap(
+        signers_map: &RoaringBitmap,
+        active_committee: &BlsCommittee,
+    ) -> Vec<u8> {
+        let committee_size = active_committee.members.len();
+        let mut signers_bitmap = vec![0u8; committee_size.div_ceil(8)];
         for singer in signers_map.iter() {
             // Set the i-th bit to 1,
             let byte_index = (singer / 8) as usize;
@@ -301,6 +327,7 @@ where
 
     async fn process_mid_epoch(
         ika_system_package_id: ObjectID,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
@@ -314,9 +341,13 @@ where
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
+        let dwallet_2pc_mpc_secp256k1_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+            .await;
 
         let args = vec![
             CallArg::Object(ika_system_state_arg),
+            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
             CallArg::Object(clock_arg),
         ];
 
@@ -576,7 +607,7 @@ mod tests {
 
     #[test]
     fn test_calculate_signers_bitmap_various_sizes() {
-        let test_cases = vec![4, 8, 12, 48, 50, 115, 200, 300];
+        let test_cases = vec![4, 8, 9, 12, 48, 50, 115, 200, 300];
 
         for &num_validators in &test_cases {
             let mut signers = RoaringBitmap::new();

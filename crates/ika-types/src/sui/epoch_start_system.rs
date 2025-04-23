@@ -7,11 +7,12 @@ use std::collections::HashMap;
 use super::DEFAULT_VALIDATOR_COMPUTATION_PRICE;
 use crate::committee::{Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
 use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
+use crate::messages_dwallet_mpc::DWalletNetworkDecryptionKeyData;
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
 use consensus_config::{Authority, Committee as ConsensusCommittee};
 use dwallet_mpc_types::dwallet_mpc::{
-    ClassGroupsPublicKeyAndProofBytes, NetworkDecryptionKeyShares,
+    ClassGroupsPublicKeyAndProofBytes, NetworkDecryptionKeyPublicData,
 };
 use fastcrypto::bls12381;
 use fastcrypto::traits::{KeyPair, ToFromBytes, VerifyingKey};
@@ -35,8 +36,9 @@ pub trait EpochStartSystemTrait {
     fn get_validator_as_p2p_peers(&self, excluding_self: AuthorityName) -> Vec<PeerInfo>;
     fn get_authority_names_to_peer_ids(&self) -> HashMap<AuthorityName, PeerId>;
     fn get_authority_names_to_hostnames(&self) -> HashMap<AuthorityName, String>;
-    fn get_dwallet_network_decryption_keys(&self)
-        -> &HashMap<ObjectID, NetworkDecryptionKeyShares>;
+    fn get_dwallet_network_decryption_keys(
+        &self,
+    ) -> &HashMap<ObjectID, DWalletNetworkDecryptionKeyData>;
 }
 
 /// This type captures the minimum amount of information from `System` needed by a validator
@@ -59,7 +61,7 @@ impl EpochStartSystem {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
-        dwallet_network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyShares>,
+        dwallet_network_decryption_keys: HashMap<ObjectID, DWalletNetworkDecryptionKeyData>,
     ) -> Self {
         Self::V1(EpochStartSystemV1 {
             epoch,
@@ -97,7 +99,7 @@ pub struct EpochStartSystemV1 {
     epoch_start_timestamp_ms: u64,
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
-    dwallet_network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyShares>,
+    dwallet_network_decryption_keys: HashMap<ObjectID, DWalletNetworkDecryptionKeyData>,
 }
 
 impl EpochStartSystemV1 {
@@ -268,7 +270,7 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
 
     fn get_dwallet_network_decryption_keys(
         &self,
-    ) -> &HashMap<ObjectID, NetworkDecryptionKeyShares> {
+    ) -> &HashMap<ObjectID, DWalletNetworkDecryptionKeyData> {
         &self.dwallet_network_decryption_keys
     }
 }
