@@ -59,6 +59,9 @@ use crate::dwallet_mpc::mpc_outputs_verifier::{
 use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::dwallet_mpc::session_info_from_event;
+use crate::dwallet_mpc::{
+    authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
+};
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
@@ -604,12 +607,7 @@ impl AuthorityPerEpochStore {
         &self,
         authority_name: &AuthorityName,
     ) -> DwalletMPCResult<PartyID> {
-        self.committee()
-            .authority_index(authority_name)
-            // Need to add 1 because the authority index is 0-based,
-            // and the twopc_mpc library uses 1-based party IDs.
-            .map(|index| (index + 1) as PartyID)
-            .ok_or_else(|| DwalletMPCError::AuthorityNameNotFound(*authority_name))
+        authority_name_to_party_id_from_committee(self.committee().as_ref(), authority_name)
     }
 
     pub(crate) fn get_validators_class_groups_public_keys_and_proofs(
@@ -675,16 +673,7 @@ impl AuthorityPerEpochStore {
     pub fn get_weighted_threshold_access_structure(
         &self,
     ) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
-        let quorum_threshold = self.committee().quorum_threshold();
-        let weighted_parties: HashMap<PartyID, Weight> = self
-            .committee()
-            .voting_rights
-            .iter()
-            .map(|(name, weight)| Ok((self.authority_name_to_party_id(name)?, *weight as Weight)))
-            .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
-
-        WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
-            .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
+        generate_access_structure_from_committee(self.committee().as_ref())
     }
 
     /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.

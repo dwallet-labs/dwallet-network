@@ -412,7 +412,6 @@ impl IkaNode {
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
                 dwallet_network_keys.clone(),
-                epoch_store.get_weighted_threshold_access_structure()?,
                 epoch_store.next_epoch_committee.clone(),
             )
             .await?,
