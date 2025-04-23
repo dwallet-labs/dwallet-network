@@ -326,23 +326,23 @@ impl DWalletMPCManager {
             );
             if session.mpc_event_data.is_none() {
                 session.mpc_event_data = mpc_event_data;
-            } else {
-                if session_info.is_immediate {
-                    self.push_mpc_immediate_session(
-                        &session_info.session_id,
-                        mpc_event_data,
-                        session_info.sequence_number,
-                    );
-                } else {
-                    self.push_new_mpc_session(
-                        &session_info.session_id,
-                        mpc_event_data,
-                        session_info.sequence_number,
-                    );
-                }
             }
-            Ok(())
+        } else {
+            if session_info.is_immediate {
+                self.push_mpc_immediate_session(
+                    &session_info.session_id,
+                    mpc_event_data,
+                    session_info.sequence_number,
+                );
+            } else {
+                self.push_new_mpc_session(
+                    &session_info.session_id,
+                    mpc_event_data,
+                    session_info.sequence_number,
+                );
+            }
         }
+        Ok(())
     }
 
     pub(crate) async fn get_protocol_public_parameters(
