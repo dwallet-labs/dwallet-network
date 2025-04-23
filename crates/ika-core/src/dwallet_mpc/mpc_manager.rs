@@ -561,7 +561,7 @@ impl DWalletMPCManager {
             .get_malicious_actors_names()
             .contains(&message.authority)
         {
-            info!(
+            warn!(
                 session_id=?message.session_id,
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
