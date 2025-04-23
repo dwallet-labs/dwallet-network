@@ -113,7 +113,7 @@ where
             let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
                 let mut committee_lock = next_epoch_committee.write().await;
                 *committee_lock = None;
-                debug!("ika next epoch active committee not found, retrying...");
+                debug!("Ika next epoch active committee not found, retrying...");
                 continue;
             };
 
@@ -241,7 +241,7 @@ where
                     }
                     Err(e) => {
                         error!(
-                            "Failed to sync network decryption key for key_id: {:?}, error: {:?}",
+                            "failed to sync the network decryption key for key_id: {:?}, error: {:?}",
                             key_id, e
                         );
                     }
@@ -286,7 +286,7 @@ where
                 .update_network_key(*key_id, key, &weighted_threshold_access_structure)
                 .await
         } else {
-            info!(committee=?weighted_threshold_access_structure, "Adding new network key for key_id: {:?}", key_id);
+            info!(committee=?weighted_threshold_access_structure, "Adding a new network key for key_id: {:?}", key_id);
             dwallet_mpc_network_keys
                 .add_new_network_key(*key_id, key, &weighted_threshold_access_structure)
                 .await
