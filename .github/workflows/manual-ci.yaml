@@ -34,14 +34,14 @@ jobs:
         run: rustup target add x86_64-unknown-linux-gnu
       - uses: Swatinem/rust-cache@v2
       - name: Build
-        run: cargo build --bin ika --target-dir . --release --target x86_64-unknown-linux-gnu
-      - name: Run the local hub
+        run: cargo build --features with-network-dkg --package ika --bin ika --target-dir . --release --target x86_64-unknown-linux-gnu
+      - name: Run the swarm network
         run: |
-          screen -dmS hub-session /usr/local/bin/dymd start --home "$ROLLER_CONFIG_PATH/local-hub"
+          screen -dmS swarm-session ./ika start
           sleep 5
-          HUB_PID=$(pgrep -f 'dymd start --home' | head -n 1)
-          echo "Captured PID: $HUB_PID"
-          echo "HUB_PID=$HUB_PID" >> $GITHUB_ENV
+          SWARM_PID=$(pgrep -f 'ika start' | head -n 1)
+          echo "Captured PID: SWARM_PID"
+          echo "SWARM_PID=$SWARM_PID" >> $GITHUB_ENV
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
