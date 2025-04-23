@@ -571,22 +571,26 @@ impl DWalletMPCManager {
             // Ignore a malicious actor's messages.
             return Ok(());
         }
+
         let session = match self.mpc_sessions.get_mut(&message.session_id) {
             Some(session) => session,
-            None => {
-                warn!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    receiving_authority=?self.epoch_store()?.name,
-                    crypto_round_number=?message.round_number,
-                    "received a message for an MPC session ID, which an event has not yet received for"
-                );
-                &mut self.push_new_mpc_session(
-                    &message.session_id,
-                    None,
-                    message.session_sequence_number,
-                )
-            }
+            None => match self.pending_sessions.get_mut(&message.session_id) {
+                Some(session) => session,
+                None => {
+                    warn!(
+                        session_id=?message.session_id,
+                        from_authority=?message.authority,
+                        receiving_authority=?self.epoch_store()?.name,
+                        crypto_round_number=?message.round_number,
+                        "received a message for an MPC session ID, which an event has not yet received for"
+                    );
+                    &mut self.push_new_mpc_session(
+                        &message.session_id,
+                        None,
+                        message.session_sequence_number,
+                    )
+                }
+            },
         };
         match session.store_message(&message) {
             Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
