@@ -134,6 +134,15 @@ pub enum DwalletMPCError {
 
     #[error("class groups key pair not found")]
     ClassGroupsKeyPairNotFound,
+
+    #[error("network DKG key has not been completed yet")]
+    NetworkDKGNotCompleted,
+
+    #[error("failed to find the validator ID: {0}")]
+    ValidatorIDNotFound(ObjectID),
+
+    #[error("{0}")]
+    IkaError(#[from] crate::error::IkaError),
 }
 
 /// A wrapper type for the result of a runtime operation.
