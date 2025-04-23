@@ -207,14 +207,6 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.epoch_start_timestamp_ms
     }
 
-    fn last_processed_checkpoint_sequence_number(&self) -> Option<u64> {
-        self.last_processed_checkpoint_sequence_number
-    }
-
-    fn previous_epoch_last_checkpoint_sequence_number(&self) -> u64 {
-        self.previous_epoch_last_checkpoint_sequence_number
-    }
-
     fn epoch_duration_ms(&self) -> u64 {
         self.parameters.epoch_duration_ms
     }

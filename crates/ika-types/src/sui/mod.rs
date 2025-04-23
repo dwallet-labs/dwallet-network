@@ -126,8 +126,6 @@ pub trait SystemInnerTrait {
     fn protocol_version(&self) -> u64;
     fn upgrade_caps(&self) -> &Vec<UpgradeCap>;
     fn epoch_start_timestamp_ms(&self) -> u64;
-    fn last_processed_checkpoint_sequence_number(&self) -> Option<u64>;
-    fn previous_epoch_last_checkpoint_sequence_number(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
     fn dwallet_2pc_mpc_secp256k1_id(&self) -> Option<ObjectID>;
     fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
