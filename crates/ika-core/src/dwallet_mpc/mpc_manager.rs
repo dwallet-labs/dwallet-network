@@ -318,6 +318,7 @@ impl DWalletMPCManager {
                 }
                 _ => HashMap::new(),
             },
+            is_immediate: session_info.is_immediate,
         });
         if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
@@ -496,6 +497,7 @@ impl DWalletMPCManager {
                 );
                 continue;
             }
+            // todo: check if the session is immediate
             if oldest_pending_session.sequence_number > self.last_session_to_complete_in_current_epoch {
                 info!(
                     session_id=?oldest_pending_session.session_id,
