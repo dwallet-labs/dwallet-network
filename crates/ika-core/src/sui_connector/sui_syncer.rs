@@ -4,19 +4,22 @@
 //! The SuiSyncer module handles synchronizing Events emitted
 //! on the Sui blockchain from concerned modules of `ika_system` package.
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
+use crate::dwallet_mpc::generate_access_structure_from_committee;
 use crate::dwallet_mpc::network_dkg::{
     instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output, DwalletMPCNetworkKeys,
 };
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
+use group::PartyID;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
-use ika_types::committee::Committee;
+use ika_types::committee::{Committee, StakeUnit};
+use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
-use ika_types::sui::SystemInnerTrait;
+use ika_types::sui::{SystemInnerInit, SystemInnerTrait};
 use itertools::Itertools;
-use mpc::WeightedThresholdAccessStructure;
+use mpc::{Weight, WeightedThresholdAccessStructure};
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
@@ -65,7 +68,6 @@ where
         self,
         query_interval: Duration,
         dwallet_mpc_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
-        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         next_epoch_committee: Arc<RwLock<Option<Committee>>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
@@ -80,7 +82,6 @@ where
             tokio::spawn(Self::sync_dwallet_network_keys(
                 sui_client_clone,
                 dwallet_mpc_network_keys,
-                weighted_threshold_access_structure,
             ));
         }
         for (module, cursor) in self.cursors {
@@ -116,67 +117,70 @@ where
                 continue;
             };
 
-            let validator_ids: Vec<_> = new_next_committee.keys().cloned().collect();
-
-            let validators = match sui_client
-                .get_validators_info_by_ids(&system_inner, validator_ids)
-                .await
+            let committee = match Self::new_committee(
+                sui_client.clone(),
+                &system_inner,
+                new_next_committee.clone(),
+                system_inner.epoch() + 1,
+            )
+            .await
             {
-                Ok(v) => v,
+                Ok(committee) => committee,
                 Err(e) => {
-                    error!("failed to fetch validators info: {e}");
+                    error!("failed to initiate the next committee: {e}");
                     continue;
                 }
             };
-
-            let class_group_encryption_keys_and_proofs = match sui_client
-                .get_class_groups_public_keys_and_proofs(&validators)
-                .await
-            {
-                Ok(data) => data,
-                Err(e) => {
-                    error!("can't get_class_groups_public_keys_and_proofs: {e}");
-                    continue;
-                }
-            };
-
-            let class_group_encryption_keys_and_proofs = class_group_encryption_keys_and_proofs
-                .into_iter()
-                .filter_map(|(id, class_groups)| {
-                    let authority_name = match new_next_committee.get(&id) {
-                        Some((authority_name, _)) => *authority_name,
-                        None => {
-                            error!("missing validator authority name for id: {id}");
-                            return None;
-                        }
-                    };
-
-                    match bcs::to_bytes(&class_groups) {
-                        Ok(bytes) => Some((authority_name, bytes)),
-                        Err(e) => {
-                            error!("failed to serialize class group for id {id}: {e}");
-                            None
-                        }
-                    }
-                })
-                .collect();
-
-            let committee = Committee::new(
-                system_inner.epoch + 1,
-                new_next_committee.values().cloned().collect(),
-                class_group_encryption_keys_and_proofs,
-            );
 
             let mut committee_lock = next_epoch_committee.write().await;
             *committee_lock = Some(committee);
         }
     }
 
+    async fn new_committee(
+        sui_client: Arc<SuiClient<C>>,
+        system_inner: &SystemInnerInit,
+        committee: HashMap<ObjectID, (AuthorityName, StakeUnit)>,
+        epoch: u64,
+    ) -> DwalletMPCResult<Committee> {
+        let validator_ids: Vec<_> = committee.keys().cloned().collect();
+
+        let validators = sui_client
+            .get_validators_info_by_ids(&system_inner, validator_ids)
+            .await
+            .map_err(|e| DwalletMPCError::IkaError(e))?;
+
+        let class_group_encryption_keys_and_proofs = sui_client
+            .get_class_groups_public_keys_and_proofs(&validators)
+            .await
+            .map_err(|e| DwalletMPCError::IkaError(e))?;
+
+        let class_group_encryption_keys_and_proofs = class_group_encryption_keys_and_proofs
+            .into_iter()
+            .map(|(id, class_groups)| {
+                // Try to get the authority name, return error if not found
+                let (authority_name, _) = committee
+                    .get(&id)
+                    .ok_or(DwalletMPCError::ValidatorIDNotFound(id))?;
+
+                // Attempt to serialize `class_groups`, return error if serialization fails
+                let class_groups_bytes = bcs::to_bytes(&class_groups)?;
+
+                Ok((*authority_name, class_groups_bytes))
+            })
+            .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
+
+        Ok(Committee::new(
+            epoch,
+            committee.values().cloned().collect(),
+            class_group_encryption_keys_and_proofs,
+        ))
+    }
+
     /// Sync the DwalletMPC network keys from the Sui client to the local store.
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
         dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
-        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     ) {
         loop {
             time::sleep(Duration::from_secs(2)).await;
@@ -188,7 +192,31 @@ where
                     error!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 });
-
+            let active_committee = sui_client.get_epoch_active_committee().await;
+            let system_inner = sui_client.must_get_system_inner_object().await;
+            let system_inner = system_inner.into_init_version_for_tooling();
+            let active_committee = match Self::new_committee(
+                sui_client.clone(),
+                &system_inner,
+                active_committee,
+                system_inner.epoch(),
+            )
+            .await
+            {
+                Ok(committee) => committee,
+                Err(e) => {
+                    error!("failed to initiate committee: {e}");
+                    continue;
+                }
+            };
+            let weighted_threshold_access_structure =
+                match generate_access_structure_from_committee(&active_committee) {
+                    Ok(access_structure) => access_structure,
+                    Err(e) => {
+                        error!("failed to generate access structure: {e}");
+                        continue;
+                    }
+                };
             for (key_id, network_dec_key_shares) in network_decryption_keys.into_iter() {
                 match Self::sync_network_decryption_key_inner(
                     &sui_client,
@@ -201,7 +229,13 @@ where
                 {
                     Ok(_) => {
                         info!(
-                            "Successfully synced network decryption key for key_id: {:?}",
+                            "Successfully synced the network decryption key for key_id: {:?}",
+                            key_id
+                        );
+                    }
+                    Err(DwalletMPCError::NetworkDKGNotCompleted) => {
+                        info!(
+                            "Key Sync — The Network DKG for key_id: {:?} was not completed yet",
                             key_id
                         );
                     }

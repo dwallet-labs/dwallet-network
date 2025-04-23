@@ -3,7 +3,7 @@
 
 use crate::committee::StakeUnit;
 use crate::crypto::AuthorityName;
-use crate::sui::system_inner_v1::DWalletNetworkDecryptionKeyCap;
+use crate::sui::system_inner_v1::{BlsCommittee, DWalletNetworkDecryptionKeyCap};
 use crate::sui::system_inner_v1::{DWalletCoordinatorInnerV1, ValidatorSetV1};
 use enum_dispatch::enum_dispatch;
 use move_core_types::account_address::AccountAddress;
@@ -135,6 +135,11 @@ pub trait SystemInnerTrait {
     ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
     fn get_ika_next_epoch_committee(&self)
         -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>>;
+    fn get_ika_active_committee(&self) -> HashMap<ObjectID, (AuthorityName, StakeUnit)>;
+    fn read_bls_committee(
+        &self,
+        committee: &BlsCommittee,
+    ) -> HashMap<ObjectID, (AuthorityName, StakeUnit)>;
     fn validators(&self) -> &ValidatorSetV1;
 }
 
