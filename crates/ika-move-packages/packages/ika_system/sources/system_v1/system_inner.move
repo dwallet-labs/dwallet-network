@@ -837,9 +837,9 @@ public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
 
 public(package) fun next_epoch_active_committee(self: &SystemInnerV1): BlsCommittee {
     let validator_set = &self.validators;
-    let next_epoch_active_committee = validator_set.next_epoch_active_committee();
-    assert!(next_epoch_active_committee.is_some(), ENextCommitteeNotSetOnAdvanceEpoch);
-    return *next_epoch_active_committee.borrow()
+    let next_epoch_committee = validator_set.next_epoch_committee();
+    assert!(next_epoch_committee.is_some(), ENextCommitteeNotSetOnAdvanceEpoch);
+    return *next_epoch_committee.borrow()
 }
 
 fun verify_cap(
