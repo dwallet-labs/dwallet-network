@@ -618,7 +618,7 @@ public fun active_committee(self: &mut System): BlsCommittee {
 
 // TODO: split dwallet_2pc_mpc_secp256k1 to its own checkpoint
 public fun process_checkpoint_message_by_quorum(
-    self: &mut System,
+    self: &System,
     dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
@@ -632,7 +632,7 @@ public fun process_checkpoint_message_by_quorum(
     message.append(message3);
     message.append(message4);
 
-    let self = self.inner_mut();
+    let self = self.inner();
     self.process_checkpoint_message_by_quorum(dwallet_2pc_mpc_secp256k1, signature, signers_bitmap, message, ctx);
 }
 
