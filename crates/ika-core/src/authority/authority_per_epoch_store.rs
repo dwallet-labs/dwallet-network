@@ -1,6 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use sui_types::event::EventID;
 use arc_swap::ArcSwapOption;
 use enum_dispatch::enum_dispatch;
 use fastcrypto::groups::bls12381;
@@ -81,10 +82,7 @@ use ika_types::messages_consensus::{
     ConsensusTransactionKind,
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
-use ika_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
-    StartPresignFirstRoundEvent,
-};
+use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo, StartPresignFirstRoundEvent};
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use move_bytecode_utils::module_cache::SyncModuleCache;
@@ -109,6 +107,7 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
+use crate::dwallet_mpc::session_info_from_event;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -1346,10 +1345,10 @@ impl AuthorityPerEpochStore {
         new_dwallet_mpc_round_messages.push(DWalletMPCDBMessage::EndOfDelivery);
         output.set_dwallet_mpc_round_messages(new_dwallet_mpc_round_messages);
         output.set_dwallet_mpc_round_outputs(Self::filter_dwallet_mpc_outputs(transactions));
-        let mut dwallet_mpc_round_events = self.dwallet_mpc_round_events.lock().await;
-        output.set_dwallet_mpc_round_events(dwallet_mpc_round_events.clone());
-
-        dwallet_mpc_round_events.clear();
+        match self.read_new_sui_events().await {
+            Ok(events) => output.set_dwallet_mpc_round_events(events),
+            Err(e) => error!(err=?e, "Failed to read new Sui events"),
+        }
         let mut outputs_verifier = self.get_dwallet_mpc_outputs_verifier().await;
         output.set_dwallet_mpc_round_completed_sessions(
             outputs_verifier
@@ -1369,6 +1368,49 @@ impl AuthorityPerEpochStore {
 
         Ok((verified_certificates, notifications))
     }
+
+    async fn read_new_sui_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
+        let pending_events = self.perpetual_tables.get_all_pending_events();
+        self.perpetual_tables
+            .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
+        let events: Vec<DWalletMPCEvent> = pending_events
+            .iter()
+            .filter_map(|(id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
+                Ok(event) => {
+                    match session_info_from_event(event.clone(), &self.packages_config)
+                    {
+                        Ok(Some(session_info)) => {
+                            info!(
+                                mpc_protocol=?session_info.mpc_round,
+                                session_id=?session_info.session_id,
+                                validator=?self.name,
+                                "Received start event for session"
+                            );
+                            let event = DWalletMPCEvent {
+                                event,
+                                session_info,
+                            };
+                            Some(event)
+                        }
+                        Ok(None) => {
+                            error!("Failed to extract session info from event");
+                            None
+                        }
+                        Err(e) => {
+                            error!("Error getting session info from event: {}", e);
+                            None
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to deserialize event: {}", e);
+                    None
+                }
+            })
+            .collect();
+        Ok(events)
+    }
+
 
     /// Filter DWalletMPCMessages from the consensus output.
     /// Those messages will get processed when the dWallet MPC service reads
