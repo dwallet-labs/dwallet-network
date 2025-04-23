@@ -117,7 +117,7 @@ where
                 continue;
             };
 
-            let committee = match Self::create_committee(
+            let committee = match Self::new_committee(
                 sui_client.clone(),
                 &system_inner,
                 new_next_committee.clone(),
@@ -127,7 +127,7 @@ where
             {
                 Ok(committee) => committee,
                 Err(e) => {
-                    error!("failed to fetch validators info: {e}");
+                    error!("failed to initiate the next committee: {e}");
                     continue;
                 }
             };
@@ -137,7 +137,7 @@ where
         }
     }
 
-    async fn create_committee(
+    async fn new_committee(
         sui_client: Arc<SuiClient<C>>,
         system_inner: &SystemInnerInit,
         committee: HashMap<ObjectID, (AuthorityName, StakeUnit)>,
@@ -195,7 +195,7 @@ where
             let active_committee = sui_client.get_epoch_active_committee().await;
             let system_inner = sui_client.must_get_system_inner_object().await;
             let system_inner = system_inner.into_init_version_for_tooling();
-            let active_committee = match Self::create_committee(
+            let active_committee = match Self::new_committee(
                 sui_client.clone(),
                 &system_inner,
                 active_committee,
@@ -205,7 +205,7 @@ where
             {
                 Ok(committee) => committee,
                 Err(e) => {
-                    error!("Failed to create committee: {e}");
+                    error!("failed to initiate committee: {e}");
                     continue;
                 }
             };
@@ -229,13 +229,13 @@ where
                 {
                     Ok(_) => {
                         info!(
-                            "Successfully synced network decryption key for key_id: {:?}",
+                            "Successfully synced the network decryption key for key_id: {:?}",
                             key_id
                         );
                     }
                     Err(DwalletMPCError::NetworkDKGNotCompleted) => {
                         info!(
-                            "Network decryption key for key_id: {:?} is not completed yet",
+                            "Network decryption key for key_id: {:?} was not completed yet",
                             key_id
                         );
                     }
