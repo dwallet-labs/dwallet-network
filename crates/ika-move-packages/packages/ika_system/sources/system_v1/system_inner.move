@@ -123,16 +123,7 @@ const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 6;
 // const ESafeModeGasNotProcessed: u64 = 7;
 
 #[error]
-const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
-
-#[error]
 const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
-
-#[error]
-const EWrongCheckpointSequenceNumber: vector<u8> = b"The checkpoint sequence number should be the expected next one.";
-
-#[error]
-const EActiveBlsCommitteeMustInitialize: vector<u8> = b"First active committee must initialize.";
 
 #[error]
 const ECannotInitialize: vector<u8> = b"Too early for initialization time or already initialized.";
@@ -844,7 +835,7 @@ fun verify_cap(
 }
 
 public(package) fun process_checkpoint_message_by_quorum(
-    self: &mut SystemInnerV1,
+    self: &SystemInnerV1,
     dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
