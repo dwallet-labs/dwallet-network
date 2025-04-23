@@ -343,7 +343,6 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub dwallet_mpc_network_keys: OnceCell<Arc<DwalletMPCNetworkKeys>>,
     pub(crate) dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
-    dwallet_mpc_round_completed_sessions: tokio::sync::Mutex<Vec<ObjectID>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
     pub next_epoch_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
@@ -589,7 +588,6 @@ impl AuthorityPerEpochStore {
             chain_identifier,
             dwallet_mpc_outputs_verifier: OnceCell::new(),
             dwallet_mpc_round_events: tokio::sync::Mutex::new(Vec::new()),
-            dwallet_mpc_round_completed_sessions: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_network_keys: OnceCell::new(),
             perpetual_tables,
             packages_config,
@@ -653,14 +651,6 @@ impl AuthorityPerEpochStore {
             .map(|(_, events)| events)
             .flatten()
             .collect())
-    }
-
-    /// Saves a DWallet MPC completed session in the round completed sessions
-    /// The round completed sessions are later being stored to the on-disk DB to allow state sync.
-    pub(crate) async fn save_dwallet_mpc_completed_session(&self, session_id: ObjectID) {
-        let mut dwallet_mpc_round_completed_sessions =
-            self.dwallet_mpc_round_completed_sessions.lock().await;
-        dwallet_mpc_round_completed_sessions.push(session_id);
     }
 
     /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
@@ -1358,13 +1348,18 @@ impl AuthorityPerEpochStore {
         output.set_dwallet_mpc_round_outputs(Self::filter_dwallet_mpc_outputs(transactions));
         let mut dwallet_mpc_round_events = self.dwallet_mpc_round_events.lock().await;
         output.set_dwallet_mpc_round_events(dwallet_mpc_round_events.clone());
-        dwallet_mpc_round_events.clear();
-        let mut dwallet_mpc_round_completed_sessions =
-            self.dwallet_mpc_round_completed_sessions.lock().await;
-        output
-            .set_dwallet_mpc_round_completed_sessions(dwallet_mpc_round_completed_sessions.clone());
 
-        dwallet_mpc_round_completed_sessions.clear();
+        dwallet_mpc_round_events.clear();
+        let mut outputs_verifier = self.get_dwallet_mpc_outputs_verifier().await;
+        output.set_dwallet_mpc_round_completed_sessions(
+            outputs_verifier
+                .consensus_round_completed_sessions
+                .clone()
+                .into_iter()
+                .collect(),
+        );
+
+        outputs_verifier.consensus_round_completed_sessions.clear();
 
         authority_metrics
             .consensus_handler_cancelled_transactions
@@ -1530,12 +1525,9 @@ impl AuthorityPerEpochStore {
                 });
 
         match output_verification_result.result {
-            OutputVerificationStatus::FirstQuorumReached(output) => {
-                self.save_dwallet_mpc_completed_session(session_info.session_id)
-                    .await;
-                self.process_dwallet_transaction(output, session_info)
-                    .map_err(|e| IkaError::from(e))
-            }
+            OutputVerificationStatus::FirstQuorumReached(output) => self
+                .process_dwallet_transaction(output, session_info)
+                .map_err(|e| IkaError::from(e)),
             OutputVerificationStatus::NotEnoughVotes => {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
