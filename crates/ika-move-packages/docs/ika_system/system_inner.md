@@ -2257,9 +2257,9 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_next_epoch_active_committee">next_epoch_active_committee</a>(self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_SystemInnerV1">SystemInnerV1</a>): BlsCommittee {
     <b>let</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a> = &self.validators;
-    <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_next_epoch_active_committee">next_epoch_active_committee</a> = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_next_epoch_active_committee">next_epoch_active_committee</a>();
-    <b>assert</b>!(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_next_epoch_active_committee">next_epoch_active_committee</a>.is_some(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_ENextCommitteeNotSetOnAdvanceEpoch">ENextCommitteeNotSetOnAdvanceEpoch</a>);
-    <b>return</b> *<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_next_epoch_active_committee">next_epoch_active_committee</a>.borrow()
+    <b>let</b> next_epoch_committee = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.next_epoch_committee();
+    <b>assert</b>!(next_epoch_committee.is_some(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_ENextCommitteeNotSetOnAdvanceEpoch">ENextCommitteeNotSetOnAdvanceEpoch</a>);
+    <b>return</b> *next_epoch_committee.borrow()
 }
 </code></pre>
 
