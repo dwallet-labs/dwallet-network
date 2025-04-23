@@ -616,7 +616,6 @@ public fun active_committee(self: &mut System): BlsCommittee {
     self.active_committee()
 }
 
-// TODO: split dwallet_2pc_mpc_secp256k1 to its own checkpoint
 public fun process_checkpoint_message_by_quorum(
     self: &System,
     dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
