@@ -45,7 +45,6 @@ mod dkg;
 pub mod dwallet_mpc_service;
 mod encrypt_user_share;
 mod malicious_handler;
-pub(crate) mod mpc_events;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
 pub mod mpc_session;
