@@ -496,6 +496,17 @@ impl DWalletMPCManager {
                 );
                 continue;
             }
+            if oldest_pending_session.sequence_number > self.last_session_to_complete_in_current_epoch {
+                info!(
+                    session_id=?oldest_pending_session.session_id,
+                    session_sequence_number=?oldest_pending_session.sequence_number,
+                    last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
+                    "Session should not be computed yet, skipping"
+                );
+                self.pending_for_computation_order
+                    .push_back(oldest_pending_session.clone());
+                continue;
+            }
             if let Err(err) = self
                 .cryptographic_computations_orchestrator
                 .spawn_session(&oldest_pending_session)
