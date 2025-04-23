@@ -5,6 +5,7 @@ use crate::dwallet_mpc::dkg::{
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
+use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp256k1Party};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -12,6 +13,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicOutput,
 };
 use group::PartyID;
+use ika_types::committee::CommitteeTrait;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::StartPartialSignaturesVerificationEvent;
@@ -30,14 +32,12 @@ use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
+use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::vec::Vec;
 use sui_types::base_types::{EpochId, ObjectID, TransactionDigest};
 use sui_types::id::{ID, UID};
-use ika_types::committee::CommitteeTrait;
-use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp256k1Party};
-use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 
 mod cryptographic_computations_orchestrator;
 mod dkg;
@@ -253,15 +253,14 @@ fn get_expected_decrypters(
     let committee = epoch_store.committee();
     let session_id_as_32_bytes: [u8; 32] = session_id.into_bytes();
     let total_votes = committee.total_votes();
-    let mut shuffled_committee =
-        committee.shuffle_by_stake_from_seed(session_id_as_32_bytes);
-    let weighted_threshold_access_structure = epoch_store.get_weighted_threshold_access_structure()?;
-    let expected_decrypters_votes = weighted_threshold_access_structure
-        .threshold as u32
+    let mut shuffled_committee = committee.shuffle_by_stake_from_seed(session_id_as_32_bytes);
+    let weighted_threshold_access_structure =
+        epoch_store.get_weighted_threshold_access_structure()?;
+    let expected_decrypters_votes = weighted_threshold_access_structure.threshold as u32
         + (total_votes as f64 * 0.05).floor() as u32;
     let mut votes_sum = 0;
     let mut expected_decrypters = vec![];
-    while(votes_sum < expected_decrypters_votes) {
+    while (votes_sum < expected_decrypters_votes) {
         let authority_name = shuffled_committee.pop().unwrap();
         let authority_index = epoch_store.authority_name_to_party_id(&authority_name)?;
         votes_sum += weighted_threshold_access_structure.party_to_weight[&authority_index] as u32;

@@ -1359,9 +1359,7 @@ impl AuthorityPerEpochStore {
                 .collect(),
         );
 
-        outputs_verifier
-            .consensus_round_completed_sessions
-            .clear();
+        outputs_verifier.consensus_round_completed_sessions.clear();
 
         authority_metrics
             .consensus_handler_cancelled_transactions
@@ -1527,10 +1525,9 @@ impl AuthorityPerEpochStore {
                 });
 
         match output_verification_result.result {
-            OutputVerificationStatus::FirstQuorumReached(output) => {
-                self.process_dwallet_transaction(output, session_info)
-                    .map_err(|e| IkaError::from(e))
-            }
+            OutputVerificationStatus::FirstQuorumReached(output) => self
+                .process_dwallet_transaction(output, session_info)
+                .map_err(|e| IkaError::from(e)),
             OutputVerificationStatus::NotEnoughVotes => {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }

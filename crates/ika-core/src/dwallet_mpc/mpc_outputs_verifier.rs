@@ -185,7 +185,8 @@ impl DWalletMPCOutputsVerifier {
         {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
             session_output_data.clear_data();
-            self.consensus_round_completed_sessions.insert(session_info.session_id);
+            self.consensus_round_completed_sessions
+                .insert(session_info.session_id);
             return Ok(OutputVerificationResult {
                 result: OutputVerificationStatus::FirstQuorumReached(output.clone()),
                 malicious_actors: vec![],
