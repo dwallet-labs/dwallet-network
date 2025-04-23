@@ -240,7 +240,7 @@ where
                         );
                     }
                     Err(e) => {
-                        error!(
+                        warn!(
                             "failed to sync the network decryption key for key_id: {:?}, error: {:?}",
                             key_id, e
                         );
