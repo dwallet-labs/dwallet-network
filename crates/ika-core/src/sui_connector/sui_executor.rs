@@ -94,7 +94,6 @@ where
             .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
             .await
         else {
-            error!("failed to get dwallet coordinator inner when running epoch switch");
             return Err(IkaError::SuiConnectorInternalError(
                 "failed to get dwallet coordinator inner when running epoch switch"
                     .to_string(),
