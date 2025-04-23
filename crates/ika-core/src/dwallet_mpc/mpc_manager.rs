@@ -491,12 +491,11 @@ impl DWalletMPCManager {
                 continue;
             }
             let Some(mpc_event_data) = oldest_pending_session.mpc_event_data.clone() else {
+                // This should never happen
                 error!(
                     session_id=?oldest_pending_session.session_id,
                     "Session does not have event data, skipping"
                 );
-                self.pending_for_computation_order
-                    .push_back(oldest_pending_session.clone());
                 continue;
             };
             if oldest_pending_session.sequence_number
