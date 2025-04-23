@@ -45,8 +45,8 @@ use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
-use std::collections::{HashMap, HashSet, VecDeque};
 use std::collections::hash_map::Entry;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
 use sui_json_rpc_types::SuiEvent;
 use sui_storage::mutex_table::MutexGuard;
@@ -330,19 +330,11 @@ impl DWalletMPCManager {
                 session.mpc_event_data = mpc_event_data;
             }
         } else {
-            if session_info.is_immediate {
-                self.push_mpc_immediate_session(
-                    &session_info.session_id,
-                    mpc_event_data,
-                    session_info.sequence_number,
-                );
-            } else {
-                self.push_new_mpc_session(
-                    &session_info.session_id,
-                    mpc_event_data,
-                    session_info.sequence_number,
-                );
-            }
+            self.push_new_mpc_session(
+                &session_info.session_id,
+                mpc_event_data,
+                session_info.sequence_number,
+            );
         }
         Ok(())
     }
@@ -648,8 +640,7 @@ impl DWalletMPCManager {
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
             "Adding MPC session to active sessions",
         );
-        self.mpc_sessions
-            .insert(session_id.clone(), new_session);
+        self.mpc_sessions.insert(session_id.clone(), new_session);
     }
 
     pub(super) async fn must_get_next_active_committee(&self) -> Committee {
