@@ -715,7 +715,8 @@ const EIncorrectCap: u64 = 11;
 const EUnverifiedCap: u64 = 12;
 const EInvalidSource: u64 =13;
 const EDWalletNetworkDecryptionKeyNotActive: u64 = 14;
-const EInvalidPresign: u64 = 10;
+const EInvalidPresign: u64 = 15;
+const ECannotAdvanceEpoch: u64 = 16;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -845,11 +846,16 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
 public(package) fun advance_epoch_dwallet_network_decryption_key(
     self: &mut DWalletCoordinatorInner,
     cap: &DWalletNetworkDecryptionKeyCap,
-) {
-    let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(cap.dwallet_network_decryption_key_id);
+): Balance<IKA> {
+    let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(
+        cap.dwallet_network_decryption_key_id
+    );
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
     dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::NetworkReconfigurationCompleted;
+    let mut epoch_computation_fee_charged_ika = sui::balance::zero<IKA>();
+    epoch_computation_fee_charged_ika.join(dwallet_network_decryption_key.computation_fee_charged_ika.withdraw_all());
+    return epoch_computation_fee_charged_ika
 }
 
 public(package) fun emit_start_reshare_event(
@@ -879,12 +885,16 @@ fun get_active_dwallet_network_decryption_key(
 public(package) fun advance_epoch(
     self: &mut DWalletCoordinatorInner,
     next_committee: BlsCommittee
-) {
+): Balance<IKA> {
+    assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
     self.locked_last_session_to_complete_in_current_epoch = false;
     self.update_last_session_to_complete_in_current_epoch();
     self.current_epoch = self.current_epoch + 1;
     self.previous_committee = self.active_committee;
     self.active_committee = next_committee;
+    let mut epoch_consensus_validation_fee_charged_ika = sui::balance::zero<IKA>();
+    epoch_consensus_validation_fee_charged_ika.join(self.consensus_validation_fee_charged_ika.withdraw_all());
+    return epoch_consensus_validation_fee_charged_ika
 }
 
 fun get_dwallet(
