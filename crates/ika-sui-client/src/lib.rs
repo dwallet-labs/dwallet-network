@@ -1024,14 +1024,17 @@ impl SuiClientInner for SuiSdkClient {
                 )
                 .await
             {
-                self.read_table_vec_as_raw_bytes(current_reconfiguration_public_output_id)
-                    .await?
+                Some(bcs::from_bytes(
+                    &self
+                        .read_table_vec_as_raw_bytes(current_reconfiguration_public_output_id)
+                        .await?,
+                )?)
             } else {
                 warn!(
                     "reconfiguration output for current epoch {:?} not found",
                     key.current_epoch
                 );
-                vec![]
+                None
             };
 
         Ok(DWalletNetworkDecryptionKeyData {
@@ -1039,7 +1042,7 @@ impl SuiClientInner for SuiSdkClient {
             dwallet_network_decryption_key_cap_id: key.dwallet_network_decryption_key_cap_id,
             current_epoch: key.current_epoch,
             current_reconfiguration_public_output,
-            network_dkg_public_output,
+            network_dkg_public_output: bcs::from_bytes(&network_dkg_public_output)?,
             state: key.state.clone(),
         })
     }

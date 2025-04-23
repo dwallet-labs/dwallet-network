@@ -134,6 +134,9 @@ pub enum DwalletMPCError {
 
     #[error("class groups key pair not found")]
     ClassGroupsKeyPairNotFound,
+
+    #[error("invalid MPC public output")]
+    InvalidMPCPublicOutput,
 }
 
 /// A wrapper type for the result of a runtime operation.

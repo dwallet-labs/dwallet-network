@@ -32,7 +32,20 @@ pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
 pub type MPCMessage = Vec<u8>;
 
 /// Alias for an MPC public output.
-pub type MPCPublicOutput = Vec<u8>;
+// pub type MPCPublicOutput = Vec<u8>;
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialOrd,
+)]
+pub enum MPCPublicOutput {
+    ClassGroups(MPCPublicOutputClassGroups),
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialOrd,
+)]
+pub enum MPCPublicOutputClassGroups {
+    V1(Vec<u8>),
+}
 
 /// Alias for an MPC private output.
 pub type MPCPrivateOutput = Vec<u8>;

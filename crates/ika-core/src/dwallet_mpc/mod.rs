@@ -10,7 +10,7 @@ use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    MPCPublicOutput,
+    MPCPublicOutput, MPCPublicOutputClassGroups,
 };
 use group::PartyID;
 use ika_types::committee::CommitteeTrait;
@@ -222,7 +222,7 @@ pub(crate) fn presign_public_input(
     Ok(
         <PresignParty as PresignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
-            deserialized_event.dkg_output.clone(),
+            bcs::from_bytes(&deserialized_event.dkg_output)?,
         )?,
     )
 }
@@ -275,13 +275,6 @@ async fn sign_public_input(
             &deserialized_event.event_data.dwallet_mpc_network_key_id,
         )
         .await?;
-    let decryption_pp = dwallet_mpc_manager
-        .get_decryption_key_share_public_parameters(
-            // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
-            // Todo (#473): Support generic network key scheme
-            &deserialized_event.event_data.dwallet_mpc_network_key_id,
-        )
-        .await?;
 
     let expected_decrypters = get_expected_decrypters(
         dwallet_mpc_manager.epoch_store()?,
@@ -291,10 +284,11 @@ async fn sign_public_input(
     Ok(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
-            deserialized_event
-                .event_data
-                .dwallet_decentralized_public_output
-                .clone(),
+            bcs::from_bytes(
+                &deserialized_event
+                    .event_data
+                    .dwallet_decentralized_public_output,
+            )?,
             bcs::to_bytes(
                 &message_digest(
                     &deserialized_event.event_data.message.clone(),
@@ -303,7 +297,7 @@ async fn sign_public_input(
                 )
                 .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
             )?,
-            deserialized_event.event_data.presign.clone(),
+            bcs::from_bytes(&deserialized_event.event_data.presign.clone())?,
             deserialized_event
                 .event_data
                 .message_centralized_signature
@@ -420,6 +414,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         } => {
             let public_output: P::PublicOutputValue = public_output.into();
             let public_output = bcs::to_bytes(&public_output)?;
+            let public_output =
+                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output));
             let private_output = bcs::to_bytes(&private_output)?;
             mpc::AsynchronousRoundResult::Finalize {
                 malicious_parties,

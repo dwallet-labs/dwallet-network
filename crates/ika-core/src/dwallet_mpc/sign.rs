@@ -3,7 +3,7 @@
 //! It integrates the Sign party (representing a round in the protocol).
 
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
-use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups};
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use mpc::Party;
@@ -53,23 +53,35 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
         expected_decrypters: HashSet<PartyID>,
     ) -> DwalletMPCResult<MPCPublicInput> {
-        let public_input = SignPublicInput::from((
-            expected_decrypters,
-            bcs::from_bytes(&protocol_public_parameters)?,
-            bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::HashedMessage>(
-                &message,
-            )?,
-            bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(
-                &dkg_output,
-            )?,
-            bcs::from_bytes::<<AsyncProtocol as twopc_mpc::presign::Protocol>::Presign>(&presign)?,
-            bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage>(
-                &centralized_signed_message,
-            )?,
-            decryption_key_share_public_parameters,
-        ));
+        match dkg_output {
+            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => {
+                let presign = match presign {
+                    MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                    _ => {
+                        return Err(DwalletMPCError::InvalidMPCPublicOutput);
+                    }
+                };
+                let public_input = SignPublicInput::from((
+                    expected_decrypters,
+                    bcs::from_bytes(&protocol_public_parameters)?,
+                    bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::HashedMessage>(
+                        &message,
+                    )?,
+                    bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(
+                        &output,
+                    )?,
+                    bcs::from_bytes::<<AsyncProtocol as twopc_mpc::presign::Protocol>::Presign>(
+                        &presign,
+                    )?,
+                    bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage>(
+                        &centralized_signed_message,
+                    )?,
+                    decryption_key_share_public_parameters,
+                ));
 
-        Ok(bcs::to_bytes(&public_input)?)
+                Ok(bcs::to_bytes(&public_input)?)
+            }
+        }
     }
 }
 

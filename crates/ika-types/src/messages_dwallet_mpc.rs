@@ -494,8 +494,8 @@ pub struct DWalletNetworkDecryptionKeyData {
     pub id: ObjectID,
     pub dwallet_network_decryption_key_cap_id: ObjectID,
     pub current_epoch: u64,
-    pub current_reconfiguration_public_output: Vec<u8>,
-    pub network_dkg_public_output: Vec<u8>,
+    pub current_reconfiguration_public_output: Option<MPCPublicOutput>,
+    pub network_dkg_public_output: MPCPublicOutput,
     pub state: DWalletNetworkDecryptionKeyState,
 }
 
