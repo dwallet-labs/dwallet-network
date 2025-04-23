@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use sui_types::event::EventID;
 use arc_swap::ArcSwapOption;
 use enum_dispatch::enum_dispatch;
 use fastcrypto::groups::bls12381;
@@ -26,6 +25,7 @@ use sui_types::authenticator_state::{get_authenticator_state, ActiveJwk};
 use sui_types::base_types::{ConciseableName, ObjectRef, SuiAddress};
 use sui_types::base_types::{EpochId, ObjectID, SequenceNumber};
 use sui_types::crypto::RandomnessRound;
+use sui_types::event::EventID;
 use sui_types::signature::GenericSignature;
 use sui_types::transaction::TransactionKey;
 use tokio::sync::OnceCell;
@@ -58,6 +58,7 @@ use crate::dwallet_mpc::mpc_outputs_verifier::{
 };
 use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
+use crate::dwallet_mpc::session_info_from_event;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
@@ -82,7 +83,10 @@ use ika_types::messages_consensus::{
     ConsensusTransactionKind,
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
-use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo, StartPresignFirstRoundEvent};
+use ika_types::messages_dwallet_mpc::{
+    DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
+    StartPresignFirstRoundEvent,
+};
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use move_bytecode_utils::module_cache::SyncModuleCache;
@@ -107,7 +111,6 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
-use crate::dwallet_mpc::session_info_from_event;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -341,7 +344,6 @@ pub struct AuthorityPerEpochStore {
     /// where the quorum of votes is valid.
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub dwallet_mpc_network_keys: OnceCell<Arc<DwalletMPCNetworkKeys>>,
-    pub(crate) dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
     pub next_epoch_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
@@ -586,7 +588,6 @@ impl AuthorityPerEpochStore {
             executed_in_epoch_table_enabled: once_cell::sync::OnceCell::new(),
             chain_identifier,
             dwallet_mpc_outputs_verifier: OnceCell::new(),
-            dwallet_mpc_round_events: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_network_keys: OnceCell::new(),
             perpetual_tables,
             packages_config,
@@ -1376,32 +1377,29 @@ impl AuthorityPerEpochStore {
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
             .filter_map(|(id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
-                Ok(event) => {
-                    match session_info_from_event(event.clone(), &self.packages_config)
-                    {
-                        Ok(Some(session_info)) => {
-                            info!(
-                                mpc_protocol=?session_info.mpc_round,
-                                session_id=?session_info.session_id,
-                                validator=?self.name,
-                                "Received start event for session"
-                            );
-                            let event = DWalletMPCEvent {
-                                event,
-                                session_info,
-                            };
-                            Some(event)
-                        }
-                        Ok(None) => {
-                            error!("Failed to extract session info from event");
-                            None
-                        }
-                        Err(e) => {
-                            error!("Error getting session info from event: {}", e);
-                            None
-                        }
+                Ok(event) => match session_info_from_event(event.clone(), &self.packages_config) {
+                    Ok(Some(session_info)) => {
+                        info!(
+                            mpc_protocol=?session_info.mpc_round,
+                            session_id=?session_info.session_id,
+                            validator=?self.name,
+                            "Received start event for session"
+                        );
+                        let event = DWalletMPCEvent {
+                            event,
+                            session_info,
+                        };
+                        Some(event)
                     }
-                }
+                    Ok(None) => {
+                        error!("Failed to extract session info from event");
+                        None
+                    }
+                    Err(e) => {
+                        error!("Error getting session info from event: {}", e);
+                        None
+                    }
+                },
                 Err(e) => {
                     error!("Failed to deserialize event: {}", e);
                     None
@@ -1410,7 +1408,6 @@ impl AuthorityPerEpochStore {
             .collect();
         Ok(events)
     }
-
 
     /// Filter DWalletMPCMessages from the consensus output.
     /// Those messages will get processed when the dWallet MPC service reads
