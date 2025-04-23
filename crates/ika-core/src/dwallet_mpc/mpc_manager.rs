@@ -469,7 +469,7 @@ impl DWalletMPCManager {
                 self.pending_for_events_order.remove(index);
             }
         }
-        while !self.pending_for_computation_order.is_empty() {
+        for _ in 0..self.pending_for_computation_order.len() {
             if !self
                 .cryptographic_computations_orchestrator
                 .can_spawn_session()
