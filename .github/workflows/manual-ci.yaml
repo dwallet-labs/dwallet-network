@@ -67,3 +67,7 @@ jobs:
         run: |
           cd sdk/typescript
           npx vitest run --disableConsoleIntercept test/e2e/dwallet-mpc.test.ts -t="Test dWallet MPC should sign full flow with on-chain network DKG output"
+
+      - name: Terminate the Swarm
+        run: |
+          kill $SWARM_PID
