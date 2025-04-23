@@ -25,6 +25,7 @@ use sui_types::authenticator_state::{get_authenticator_state, ActiveJwk};
 use sui_types::base_types::{ConciseableName, ObjectRef, SuiAddress};
 use sui_types::base_types::{EpochId, ObjectID, SequenceNumber};
 use sui_types::crypto::RandomnessRound;
+use sui_types::event::EventID;
 use sui_types::signature::GenericSignature;
 use sui_types::transaction::TransactionKey;
 use tokio::sync::OnceCell;
@@ -57,6 +58,7 @@ use crate::dwallet_mpc::mpc_outputs_verifier::{
 };
 use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
+use crate::dwallet_mpc::session_info_from_event;
 use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
@@ -85,7 +87,7 @@ use ika_types::messages_consensus::{
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
+    DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
     StartPresignFirstRoundEvent,
 };
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
@@ -345,7 +347,6 @@ pub struct AuthorityPerEpochStore {
     /// where the quorum of votes is valid.
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub dwallet_mpc_network_keys: OnceCell<Arc<DwalletMPCNetworkKeys>>,
-    pub(crate) dwallet_mpc_round_events: tokio::sync::Mutex<Vec<DWalletMPCEvent>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
     pub next_epoch_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
@@ -590,7 +591,6 @@ impl AuthorityPerEpochStore {
             executed_in_epoch_table_enabled: once_cell::sync::OnceCell::new(),
             chain_identifier,
             dwallet_mpc_outputs_verifier: OnceCell::new(),
-            dwallet_mpc_round_events: tokio::sync::Mutex::new(Vec::new()),
             dwallet_mpc_network_keys: OnceCell::new(),
             perpetual_tables,
             packages_config,
@@ -1335,10 +1335,10 @@ impl AuthorityPerEpochStore {
         new_dwallet_mpc_round_messages.push(DWalletMPCDBMessage::EndOfDelivery);
         output.set_dwallet_mpc_round_messages(new_dwallet_mpc_round_messages);
         output.set_dwallet_mpc_round_outputs(Self::filter_dwallet_mpc_outputs(transactions));
-        let mut dwallet_mpc_round_events = self.dwallet_mpc_round_events.lock().await;
-        output.set_dwallet_mpc_round_events(dwallet_mpc_round_events.clone());
-
-        dwallet_mpc_round_events.clear();
+        match self.read_new_sui_events().await {
+            Ok(events) => output.set_dwallet_mpc_round_events(events),
+            Err(e) => error!(err=?e, "failed to read new Sui events"),
+        }
         let mut outputs_verifier = self.get_dwallet_mpc_outputs_verifier().await;
         output.set_dwallet_mpc_round_completed_sessions(
             outputs_verifier
@@ -1357,6 +1357,45 @@ impl AuthorityPerEpochStore {
         let verified_certificates: Vec<_> = verified_certificates.into();
 
         Ok((verified_certificates, notifications))
+    }
+
+    async fn read_new_sui_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
+        let pending_events = self.perpetual_tables.get_all_pending_events();
+        self.perpetual_tables
+            .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
+        let events: Vec<DWalletMPCEvent> = pending_events
+            .iter()
+            .filter_map(|(id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
+                Ok(event) => match session_info_from_event(event.clone(), &self.packages_config) {
+                    Ok(Some(session_info)) => {
+                        info!(
+                            mpc_protocol=?session_info.mpc_round,
+                            session_id=?session_info.session_id,
+                            validator=?self.name,
+                            "Received start event for session"
+                        );
+                        let event = DWalletMPCEvent {
+                            event,
+                            session_info,
+                        };
+                        Some(event)
+                    }
+                    Ok(None) => {
+                        error!("failed to extract session info from event");
+                        None
+                    }
+                    Err(e) => {
+                        error!("error getting session info from event: {}", e);
+                        None
+                    }
+                },
+                Err(e) => {
+                    error!("failed to deserialize event: {}", e);
+                    None
+                }
+            })
+            .collect();
+        Ok(events)
     }
 
     /// Filter DWalletMPCMessages from the consensus output.

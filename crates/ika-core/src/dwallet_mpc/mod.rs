@@ -37,6 +37,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::vec::Vec;
 use sui_types::base_types::{EpochId, ObjectID, TransactionDigest};
+use sui_types::dynamic_field::Field;
 use sui_types::id::{ID, UID};
 
 mod cryptographic_computations_orchestrator;
@@ -44,7 +45,6 @@ mod dkg;
 pub mod dwallet_mpc_service;
 mod encrypt_user_share;
 mod malicious_handler;
-pub(crate) mod mpc_events;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
 pub mod mpc_session;
@@ -107,14 +107,6 @@ pub(crate) fn party_ids_to_authority_names(
         .iter()
         .map(|party_id| party_id_to_authority_name(*party_id, &epoch_store))
         .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
-}
-
-/// Rust version of the Move sui::dynamic_field::Field type.
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct Field<N, V> {
-    pub id: UID,
-    pub name: N,
-    pub value: V,
 }
 
 /// The type of the event is different when we receive an emitted event and when we
