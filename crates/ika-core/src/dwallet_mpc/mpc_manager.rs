@@ -618,15 +618,6 @@ impl DWalletMPCManager {
         mpc_event_data: Option<MPCEventData>,
         session_sequence_number: u64,
     ) {
-        if self.mpc_sessions.contains_key(&session_id) {
-            // This can happpen because the event will be loaded once from the `load_missed_events` function,
-            // and once by querying the events from Sui.
-            // These sessions are ignored since we already have them in the `mpc_sessions` map.
-            warn!(
-                "received start flow event for session ID {:?} that already exists",
-                &session_id
-            );
-        }
         info!(
             "Received start MPC flow event for session ID {:?}",
             session_id
