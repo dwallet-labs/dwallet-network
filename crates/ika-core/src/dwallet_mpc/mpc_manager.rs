@@ -115,7 +115,7 @@ pub enum DWalletMPCDBMessage {
     /// to skip redundant advancements that have already been completed by other validators.
     PerformCryptographicComputations,
     /// A message indicating that a session failed due to malicious parties.
-    /// We can receive new messages for this session with other validators,
+    /// We can receive new messages for this session with other validators
     /// and re-run the round again to make it succeed.
     /// AuthorityName is the name of the authority that reported the malicious parties.
     SessionFailedWithMaliciousParties(AuthorityName, MaliciousReport),
@@ -175,14 +175,15 @@ impl DWalletMPCManager {
 
     pub(crate) fn update_last_session_to_complete_in_current_epoch(
         &mut self,
-        last_session_to_complete_in_current_epoch: u64,
+        update_last_session_to_complete_in_current_epoch: u64,
     ) {
-        if last_session_to_complete_in_current_epoch
+        if update_last_session_to_complete_in_current_epoch
             <= self.last_session_to_complete_in_current_epoch
         {
             return;
         }
-        self.last_session_to_complete_in_current_epoch = last_session_to_complete_in_current_epoch;
+        self.last_session_to_complete_in_current_epoch =
+            update_last_session_to_complete_in_current_epoch;
     }
 
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
@@ -269,7 +270,7 @@ impl DWalletMPCManager {
                 }
                 if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
                     // For every advance we increase the round number by 1,
-                    // so to re-run the same round we decrease it by 1.
+                    // so to re-run the same round, we decrease it by 1.
                     session.pending_quorum_for_highest_round_number -= 1;
                     // Remove malicious parties from the session messages.
                     let round_messages = session
@@ -401,7 +402,8 @@ impl DWalletMPCManager {
         Ok(decryption_shares)
     }
 
-    /// Returns the sessions that can perform the next cryptographic round, and the list of malicious parties that has
+    /// Returns the sessions that can perform the next cryptographic round,
+    /// and the list of malicious parties that has
     /// been detected while checking for such sessions.
     fn get_ready_to_advance_sessions(&mut self) -> DwalletMPCResult<ReadySessionsResponse> {
         let quorum_check_results: Vec<(DWalletMPCSession, Vec<PartyID>)> = self
@@ -480,7 +482,7 @@ impl DWalletMPCManager {
             }
             // Safe to unwrap, as we just checked that the queue is not empty.
             let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
-            // Sasfe to unwarp since the session was ready to compute.
+            // Safe to unwarp since the session was ready to compute.
             let live_session = self
                 .mpc_sessions
                 .get(&oldest_pending_session.session_id)
@@ -498,7 +500,7 @@ impl DWalletMPCManager {
                     session_id=?oldest_pending_session.session_id,
                     session_sequence_number=?oldest_pending_session.sequence_number,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-                    "Session does not have event data, skipping"
+                    "session does not have event data, skipping"
                 );
                 continue;
             };
@@ -526,7 +528,7 @@ impl DWalletMPCManager {
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     mpc_protocol=?mpc_event_data.init_protocol_data,
                     error=?err,
-                    "failed to spawn session with err"
+                    "failed to spawn a cryptographic session"
                 );
             }
         }
