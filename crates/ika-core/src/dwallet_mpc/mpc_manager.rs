@@ -324,7 +324,7 @@ impl DWalletMPCManager {
         });
         if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
-                session_id=session_info.session_id
+                session_id=?session_info.session_id,
                 "received an event for an existing session (previously received messages)",
             );
             if session.mpc_event_data.is_none() {
