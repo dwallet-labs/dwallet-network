@@ -79,7 +79,7 @@ where
         }
     }
 
-    async fn get_dwallet_coordinator_inner_from_system_inner(
+    async fn fetch_dwallet_coordinator_inner_from_system_inner(
         &self,
         system_inner: &SystemInner,
     ) -> IkaResult<DWalletCoordinatorInnerV1> {
@@ -265,6 +265,9 @@ where
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
             }
+            let dwallet_coordinator_inner = match self.fetch_dwallet_coordinator_inner_from_system_inner(ika_system_state_inner).await {
+
+            };
             let last_processed_checkpoint_sequence_number: Option<u64> =
                 ika_system_state_inner.last_processed_checkpoint_sequence_number();
             let next_checkpoint_sequence_number = last_processed_checkpoint_sequence_number
