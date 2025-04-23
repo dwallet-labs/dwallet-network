@@ -20,6 +20,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: Download Sui
+        run: |
+          curl -L https://github.com/MystenLabs/sui/releases/download/mainnet-v1.41.1/sui-mainnet-v1.41.1-ubuntu-x86_64.tgz | tar -xz
+          chmod 777 ./sui
+      - name: Start local sui
+        run: |
+          screen -dmS sui-session RUST_LOG="off,sui_node=info" ./sui start --with-faucet --force-regenesis --epoch-duration-ms 1000000000000000
+          sleep 5
+          SWARM_PID=$(pgrep -f 'sui start' | head -n 1)
+          echo "Captured PID: SUI_PID"
+          echo "SUI_PID=$SUI_PID" >> $GITHUB_ENV
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Configure git with personal access token
@@ -68,6 +79,7 @@ jobs:
           cd sdk/typescript
           npx vitest run --disableConsoleIntercept test/e2e/dwallet-mpc.test.ts -t="Test dWallet MPC should sign full flow with on-chain network DKG output"
 
-      - name: Terminate the Swarm
+      - name: Terminate the Swarm & Sui
         run: |
           kill $SWARM_PID
+          kill $SUI_PID
