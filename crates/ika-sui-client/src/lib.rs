@@ -11,6 +11,8 @@ use dwallet_classgroups_types::{
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
 use fastcrypto::traits::ToFromBytes;
 use ika_move_packages::BuiltInIkaMovePackages;
+use ika_types::committee::StakeUnit;
+use ika_types::crypto::AuthorityName;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
@@ -318,10 +320,15 @@ where
     pub async fn get_class_groups_public_keys_and_proofs(
         &self,
         validators: &Vec<ValidatorInnerV1>,
-    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
+    ) -> IkaResult<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>> {
         self.inner
             .get_class_groups_public_keys_and_proofs(&validators)
             .await
+            .map_err(|e| {
+                IkaError::SuiClientInternalError(format!(
+                    "Can't get_class_groups_public_keys_and_proofs: {e}"
+                ))
+            })
     }
 
     pub async fn get_epoch_start_system(
@@ -645,6 +652,15 @@ where
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!("Can't get_network_decryption_keys: {e}"))
             })?)
+    }
+
+    pub async fn get_epoch_active_committee(
+        &self,
+    ) -> HashMap<ObjectID, (AuthorityName, StakeUnit)> {
+        let system_inner = self.must_get_system_inner_object().await;
+        system_inner
+            .into_init_version_for_tooling()
+            .get_ika_active_committee()
     }
 
     pub async fn get_network_decryption_key_with_full_data(

@@ -135,6 +135,15 @@ pub enum DwalletMPCError {
     #[error("class groups key pair not found")]
     ClassGroupsKeyPairNotFound,
 
+    #[error("network DKG key has not been completed yet")]
+    NetworkDKGNotCompleted,
+
+    #[error("failed to find the validator with ID: {0}")]
+    ValidatorIDNotFound(ObjectID),
+
+    #[error("{0}")]
+    IkaError(#[from] crate::error::IkaError),
+
     #[error("invalid MPC public output")]
     InvalidMPCPublicOutput,
 }
