@@ -500,7 +500,6 @@ impl DWalletMPCManager {
             };
             if oldest_pending_session.sequence_number
                 > self.last_session_to_complete_in_current_epoch
-                // Safe to unwrap, as pending for computation always has event data.
                 && !mpc_event_data.is_immediate
             {
                 info!(
