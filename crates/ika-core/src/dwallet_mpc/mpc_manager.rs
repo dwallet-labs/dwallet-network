@@ -574,7 +574,7 @@ impl DWalletMPCManager {
 
         let session = match self.mpc_sessions.get_mut(&message.session_id) {
             Some(session) => session,
-            None => match self.pending_sessions.get_mut(&message.session_id) {
+            None => match self.pending_sessions.get_mut(&message.session_sequence_number) {
                 Some(session) => session,
                 None => {
                     warn!(
