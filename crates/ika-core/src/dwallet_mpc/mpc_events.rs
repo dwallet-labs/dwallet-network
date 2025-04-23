@@ -15,6 +15,7 @@ pub struct LockedNextEpochCommitteeEvent {
     epoch: u64,
 }
 
+// todo: delete file
 impl DWalletMPCEventTrait for LockedNextEpochCommitteeEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`LockedNextEpochCommitteeEvent`] events from the chain and trigger the
