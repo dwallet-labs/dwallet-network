@@ -55,6 +55,7 @@ pub struct MPCEventData {
     pub(super) public_input: MPCPublicInput,
     pub init_protocol_data: MPCProtocolInitData,
     pub(crate) decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    pub(crate) is_immediate: bool,
 }
 
 /// A dWallet MPC session.

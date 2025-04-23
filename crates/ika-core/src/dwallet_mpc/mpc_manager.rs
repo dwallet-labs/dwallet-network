@@ -45,6 +45,7 @@ use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
+use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
 use sui_json_rpc_types::SuiEvent;
@@ -114,7 +115,7 @@ pub enum DWalletMPCDBMessage {
     /// to skip redundant advancements that have already been completed by other validators.
     PerformCryptographicComputations,
     /// A message indicating that a session failed due to malicious parties.
-    /// We can receive new messages for this session with other validators,
+    /// We can receive new messages for this session with other validators
     /// and re-run the round again to make it succeed.
     /// AuthorityName is the name of the authority that reported the malicious parties.
     SessionFailedWithMaliciousParties(AuthorityName, MaliciousReport),
@@ -174,25 +175,15 @@ impl DWalletMPCManager {
 
     pub(crate) fn update_last_session_to_complete_in_current_epoch(
         &mut self,
-        last_session_to_complete_in_current_epoch: u64,
+        update_last_session_to_complete_in_current_epoch: u64,
     ) {
-        if last_session_to_complete_in_current_epoch
+        if update_last_session_to_complete_in_current_epoch
             <= self.last_session_to_complete_in_current_epoch
         {
             return;
         }
-        for session_sequence_number in self.last_session_to_complete_in_current_epoch
-            ..=last_session_to_complete_in_current_epoch
-        {
-            if let Some(session) = self.pending_sessions.remove(&session_sequence_number) {
-                info!(session_sequence_number=?session_sequence_number,
-                      new_last_session_to_complete_in_current_epoch=?last_session_to_complete_in_current_epoch,
-                     "Adding session sequence number to active sessions");
-
-                self.mpc_sessions.insert(session.session_id, session);
-            }
-        }
-        self.last_session_to_complete_in_current_epoch = last_session_to_complete_in_current_epoch;
+        self.last_session_to_complete_in_current_epoch =
+            update_last_session_to_complete_in_current_epoch;
     }
 
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
@@ -279,7 +270,7 @@ impl DWalletMPCManager {
                 }
                 if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
                     // For every advance we increase the round number by 1,
-                    // so to re-run the same round we decrease it by 1.
+                    // so to re-run the same round, we decrease it by 1.
                     session.pending_quorum_for_highest_round_number -= 1;
                     // Remove malicious parties from the session messages.
                     let round_messages = session
@@ -329,6 +320,7 @@ impl DWalletMPCManager {
                 }
                 _ => HashMap::new(),
             },
+            is_immediate: session_info.is_immediate,
         });
         if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
@@ -338,42 +330,12 @@ impl DWalletMPCManager {
             if session.mpc_event_data.is_none() {
                 session.mpc_event_data = mpc_event_data;
             }
-        } else if let Some(mut session) =
-            self.pending_sessions.get_mut(&session_info.sequence_number)
-        {
-            warn!(
-                "received an event for an existing pending session with `session_id`: {:?}",
-                session_info.session_id
-            );
-            if session.mpc_event_data.is_none() {
-                session.mpc_event_data = mpc_event_data;
-            }
-            if session_info.is_immediate {
-                let _ = session;
-                let session = self
-                    .pending_sessions
-                    .remove(&session_info.sequence_number)
-                    // Safe to unwrap,
-                    // as we just checked
-                    // that the session exists in the pending sessions.
-                    .unwrap();
-                self.mpc_sessions
-                    .insert(session_info.session_id, session.clone());
-            }
         } else {
-            if session_info.is_immediate {
-                self.push_mpc_immediate_session(
-                    &session_info.session_id,
-                    mpc_event_data,
-                    session_info.sequence_number,
-                );
-            } else {
-                self.push_new_mpc_session(
-                    &session_info.session_id,
-                    mpc_event_data,
-                    session_info.sequence_number,
-                );
-            }
+            self.push_new_mpc_session(
+                &session_info.session_id,
+                mpc_event_data,
+                session_info.sequence_number,
+            );
         }
         Ok(())
     }
@@ -440,7 +402,8 @@ impl DWalletMPCManager {
         Ok(decryption_shares)
     }
 
-    /// Returns the sessions that can perform the next cryptographic round, and the list of malicious parties that has
+    /// Returns the sessions that can perform the next cryptographic round,
+    /// and the list of malicious parties that has
     /// been detected while checking for such sessions.
     fn get_ready_to_advance_sessions(&mut self) -> DwalletMPCResult<ReadySessionsResponse> {
         let quorum_check_results: Vec<(DWalletMPCSession, Vec<PartyID>)> = self
@@ -508,7 +471,8 @@ impl DWalletMPCManager {
                 self.pending_for_events_order.remove(index);
             }
         }
-        while !self.pending_for_computation_order.is_empty() {
+        let pending_for_computation = self.pending_for_computation_order.len();
+        for _ in 0..pending_for_computation {
             if !self
                 .cryptographic_computations_orchestrator
                 .can_spawn_session()
@@ -518,6 +482,7 @@ impl DWalletMPCManager {
             }
             // Safe to unwrap, as we just checked that the queue is not empty.
             let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
+            // Safe to unwarp since the session was ready to compute.
             let live_session = self
                 .mpc_sessions
                 .get(&oldest_pending_session.session_id)
@@ -529,11 +494,42 @@ impl DWalletMPCManager {
                 );
                 continue;
             }
+            let Some(mpc_event_data) = oldest_pending_session.mpc_event_data.clone() else {
+                // This should never happen
+                error!(
+                    session_id=?oldest_pending_session.session_id,
+                    session_sequence_number=?oldest_pending_session.sequence_number,
+                    last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
+                    "session does not have event data, skipping"
+                );
+                continue;
+            };
+            if oldest_pending_session.sequence_number
+                > self.last_session_to_complete_in_current_epoch
+                && !mpc_event_data.is_immediate
+            {
+                info!(
+                    session_id=?oldest_pending_session.session_id,
+                    session_sequence_number=?oldest_pending_session.sequence_number,
+                    last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
+                    "Session should not be computed yet, skipping"
+                );
+                self.pending_for_computation_order
+                    .push_back(oldest_pending_session.clone());
+                continue;
+            }
             if let Err(err) = self
                 .cryptographic_computations_orchestrator
                 .spawn_session(&oldest_pending_session)
             {
-                error!("failed to spawn session with err: {:?}", err);
+                error!(
+                    session_id=?oldest_pending_session.session_id,
+                    session_sequence_number=?oldest_pending_session.sequence_number,
+                    last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
+                    mpc_protocol=?mpc_event_data.init_protocol_data,
+                    error=?err,
+                    "failed to spawn a cryptographic session"
+                );
             }
         }
     }
@@ -571,21 +567,26 @@ impl DWalletMPCManager {
             // Ignore a malicious actor's messages.
             return Ok(());
         }
-        let session = match self.mpc_sessions.get_mut(&message.session_id) {
-            Some(session) => session,
-            None => {
+
+        let session = match self.mpc_sessions.entry(message.session_id) {
+            Entry::Occupied(session) => session.into_mut(),
+            Entry::Vacant(_) => {
                 warn!(
                     session_id=?message.session_id,
                     from_authority=?message.authority,
                     receiving_authority=?self.epoch_store()?.name,
                     crypto_round_number=?message.round_number,
-                    "received a message for an MPC session ID, which an event has not yet received for"
+                    "received a message for an MPC session, which an event has not yet received for"
                 );
-                &mut self.push_new_mpc_session(
+                // This can happen if the session is not in the active sessions,
+                // but we still want to store the message.
+                // We will create a new session for it.
+                self.push_new_mpc_session(
                     &message.session_id,
                     None,
                     message.session_sequence_number,
-                )
+                );
+                self.mpc_sessions.get_mut(&message.session_id).unwrap()
             }
         };
         match session.store_message(&message) {
@@ -636,74 +637,9 @@ impl DWalletMPCManager {
         session_id: &ObjectID,
         mpc_event_data: Option<MPCEventData>,
         session_sequence_number: u64,
-    ) -> DWalletMPCSession {
-        if self.mpc_sessions.contains_key(&session_id)
-            || self.pending_sessions.contains_key(&session_sequence_number)
-        {
-            // This can happpen because the event will be loaded once from the `load_missed_events` function,
-            // and once by querying the events from Sui.
-            // These sessions are ignored since we already have them in the `mpc_sessions` map.
-            warn!(
-                "received start flow event for session ID {:?} that already exists",
-                &session_id
-            );
-        }
+    ) {
         info!(
             "Received start MPC flow event for session ID {:?}",
-            session_id
-        );
-
-        let new_session = DWalletMPCSession::new(
-            self.epoch_store.clone(),
-            self.consensus_adapter.clone(),
-            self.epoch_id,
-            MPCSessionStatus::Active,
-            session_id.clone(),
-            self.party_id,
-            self.weighted_threshold_access_structure.clone(),
-            mpc_event_data,
-            session_sequence_number,
-        );
-        if session_sequence_number <= self.last_session_to_complete_in_current_epoch {
-            info!(
-                session_sequence_number=?session_sequence_number,
-                last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-                "Adding MPC session to active sessions",
-            );
-            self.mpc_sessions
-                .insert(session_id.clone(), new_session.clone());
-        } else {
-            info!(
-                session_sequence_number=?session_sequence_number,
-                last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-                "Adding MPC session to pending sessions, as its sequence number is too high",
-            );
-            self.pending_sessions
-                .insert(session_sequence_number, new_session.clone());
-        }
-        new_session
-    }
-
-    /// Spawns a new MPC session immediately.
-    pub(super) fn push_mpc_immediate_session(
-        &mut self,
-        session_id: &ObjectID,
-        mpc_event_data: Option<MPCEventData>,
-        session_sequence_number: u64,
-    ) -> DWalletMPCSession {
-        if self.mpc_sessions.contains_key(&session_id) {
-            // This can happen because the event will be loaded once from the `load_missed_events`
-            // function, and once by querying the events from Sui.
-            // These sessions are ignored since we already have them in the `mpc_sessions` map.
-            warn!(
-                "received start flow event for an immediate session ID {:?} that already exists",
-                &session_id
-            );
-            // Unwrap is safe since we just checked that the session exists in the map.
-            return self.mpc_sessions.get(session_id).unwrap().clone();
-        }
-        info!(
-            "Received start MPC flow event for immediate session ID: {:?}",
             session_id
         );
 
@@ -721,11 +657,9 @@ impl DWalletMPCManager {
         info!(
             session_sequence_number=?session_sequence_number,
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-            "Adding MPC an immediate session to active sessions",
+            "Adding MPC session to active sessions",
         );
-        self.mpc_sessions
-            .insert(session_id.clone(), new_session.clone());
-        new_session
+        self.mpc_sessions.insert(session_id.clone(), new_session);
     }
 
     pub(super) async fn must_get_next_active_committee(&self) -> Committee {
