@@ -1392,16 +1392,16 @@ impl AuthorityPerEpochStore {
                         Some(event)
                     }
                     Ok(None) => {
-                        error!("Failed to extract session info from event");
+                        error!("failed to extract session info from event");
                         None
                     }
                     Err(e) => {
-                        error!("Error getting session info from event: {}", e);
+                        error!("error getting session info from event: {}", e);
                         None
                     }
                 },
                 Err(e) => {
-                    error!("Failed to deserialize event: {}", e);
+                    error!("failed to deserialize event: {}", e);
                     None
                 }
             })
