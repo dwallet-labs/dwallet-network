@@ -26,7 +26,7 @@ jobs:
           chmod 777 ./sui
       - name: Start local sui
         run: |
-          RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis --epoch-duration-ms 1000000000000000 > /dev/null 2>&1 &
+          RUST_LOG="off,sui_node=info" ./sui start --with-faucet --force-regenesis --epoch-duration-ms 1000000000000000 > /dev/null 2>&1 &
           echo $! > sui.pid
           echo "Captured PID: $(cat sui.pid)"
           echo "SUI_PID=$(cat sui.pid)" >> $GITHUB_ENV
