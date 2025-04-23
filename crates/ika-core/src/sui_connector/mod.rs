@@ -10,7 +10,7 @@ use futures::{future, StreamExt};
 use ika_config::node::{RunWithRange, SuiChainIdentifier, SuiConnectorConfig};
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
-use ika_types::committee::EpochId;
+use ika_types::committee::{Committee, EpochId};
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::MovePackageDigest;
 use move_core_types::ident_str;
@@ -34,6 +34,7 @@ use sui_types::transaction::{
     ProgrammableTransaction, SenderSignedData, Transaction, TransactionData, TransactionKind,
 };
 use sui_types::Identifier;
+use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 use tracing::info;
 
@@ -67,6 +68,7 @@ impl SuiConnectorService {
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
@@ -98,6 +100,7 @@ impl SuiConnectorService {
             Duration::from_secs(2),
             dwallet_network_keys,
             weighted_threshold_access_structure,
+            next_epoch_committee,
         )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to start sui syncer"))?;
@@ -112,10 +115,10 @@ impl SuiConnectorService {
 
     pub async fn run_epoch(
         &self,
-        epoch: EpochId,
+        epoch_id: EpochId,
         run_with_range: Option<RunWithRange>,
     ) -> StopReason {
-        self.sui_executor.run_epoch(epoch, run_with_range).await
+        self.sui_executor.run_epoch(epoch_id, run_with_range).await
     }
 
     async fn prepare_for_sui(

@@ -21,8 +21,9 @@ use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use std::sync::Arc;
 use tokio::runtime::Handle;
-use tokio::sync::mpsc::UnboundedSender;
-use tracing::error;
+use tokio::sync::mpsc::error::TryRecvError;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tracing::{error, info};
 
 /// Represents the state transitions of cryptographic computations in the orchestrator.
 ///
@@ -57,6 +58,7 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// A channel sender to notify the manager about computation lifecycle events.
     /// Used to track when computations start and complete, allowing proper resource management.
     computation_channel_sender: UnboundedSender<ComputationUpdate>,
+    computation_channel_receiver: UnboundedReceiver<ComputationUpdate>,
 
     /// The number of currently running cryptographic computations.
     /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
@@ -66,55 +68,58 @@ pub(crate) struct CryptographicComputationsOrchestrator {
 
 impl CryptographicComputationsOrchestrator {
     /// Creates a new orchestrator for cryptographic computations.
-    pub(crate) fn try_new(epoch_store: &Arc<AuthorityPerEpochStore>) -> DwalletMPCResult<Self> {
-        let completed_computation_channel_sender =
-            Self::listen_for_completed_computations(&epoch_store);
+    pub(crate) fn try_new() -> DwalletMPCResult<Self> {
+        let (completed_computation_channel_sender, mut completed_computation_channel_receiver) =
+            tokio::sync::mpsc::unbounded_channel();
         let available_cores_for_computations: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
             .into();
         if !(available_cores_for_computations > 0) {
+            error!(
+                "failed to get available parallelism, no CPU cores available for cryptographic computations"
+            );
             return Err(DwalletMPCError::InsufficientCPUCores);
         }
 
         Ok(CryptographicComputationsOrchestrator {
             available_cores_for_cryptographic_computations: available_cores_for_computations,
             computation_channel_sender: completed_computation_channel_sender,
+            computation_channel_receiver: completed_computation_channel_receiver,
             currently_running_sessions_count: 0,
         })
     }
 
-    fn listen_for_completed_computations(
-        epoch_store: &Arc<AuthorityPerEpochStore>,
-    ) -> UnboundedSender<ComputationUpdate> {
-        let (completed_computation_channel_sender, mut completed_computation_channel_receiver) =
-            tokio::sync::mpsc::unbounded_channel();
-        let epoch_store_for_channel = epoch_store.clone();
-        tokio::spawn(async move {
-            loop {
-                match completed_computation_channel_receiver.recv().await {
-                    None => {
-                        break;
+    pub(crate) fn check_for_completed_computations(&mut self) {
+        loop {
+            match self.computation_channel_receiver.try_recv() {
+                Ok(computation_update) => match computation_update {
+                    ComputationUpdate::Started => {
+                        info!(
+                            currently_running_sessions_count =? self.currently_running_sessions_count,
+                            "Started cryptographic computation, increasing count"
+                        );
+                        self.currently_running_sessions_count += 1;
                     }
-                    Some(update_value) => match update_value {
-                        ComputationUpdate::Started => {
-                            epoch_store_for_channel
-                                .get_dwallet_mpc_manager()
-                                .await
-                                .cryptographic_computations_orchestrator
-                                .currently_running_sessions_count += 1;
-                        }
-                        ComputationUpdate::Completed => {
-                            epoch_store_for_channel
-                                .get_dwallet_mpc_manager()
-                                .await
-                                .cryptographic_computations_orchestrator
-                                .currently_running_sessions_count -= 1;
-                        }
-                    },
-                }
+                    ComputationUpdate::Completed => {
+                        info!(
+                            currently_running_sessions_count =? self.currently_running_sessions_count,
+                            "Completed cryptographic computation, decreasing count"
+                        );
+                        self.currently_running_sessions_count -= 1;
+                    }
+                },
+                Err(err) => match err {
+                    TryRecvError::Empty => {
+                        info!("no new completed computations");
+                        return;
+                    }
+                    TryRecvError::Disconnected => {
+                        error!("cryptographic computations channel got disconnected");
+                        return;
+                    }
+                },
             }
-        });
-        completed_computation_channel_sender
+        }
     }
 
     /// Checks if a new session can be spawned based on available CPU cores.
@@ -130,7 +135,7 @@ impl CryptographicComputationsOrchestrator {
             .send(ComputationUpdate::Started)
         {
             error!(
-                "Failed to send a started computation message with error: {:?}",
+                "failed to send a started computation message with error: {:?}",
                 err
             );
         }
@@ -141,7 +146,7 @@ impl CryptographicComputationsOrchestrator {
             };
             if let Err(err) = computation_channel_sender.send(ComputationUpdate::Completed) {
                 error!(
-                    "Failed to send a finished computation message with error: {:?}",
+                    "failed to send a finished computation message with error: {:?}",
                     err
                 );
             }

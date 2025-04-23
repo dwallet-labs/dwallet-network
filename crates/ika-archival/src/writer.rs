@@ -20,7 +20,6 @@ use std::io::{BufWriter, Seek, SeekFrom, Write};
 use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::thread::sleep;
 use std::time::Duration;
 use sui_storage::blob::{Blob, BlobEncoding};
 use sui_storage::object_store::util::{copy_file, path_to_filesystem};
@@ -330,18 +329,19 @@ impl ArchiveWriter {
             kill_sender.subscribe(),
             self.archive_metrics.clone(),
         ));
-        tokio::task::spawn_blocking(move || {
+        tokio::task::spawn(async move {
             Self::start_tailing_checkpoints(
                 start_checkpoint_sequence_number,
                 checkpoint_writer,
                 store,
                 kill_receiver,
             )
+            .await
         });
         Ok(kill_sender)
     }
 
-    fn start_tailing_checkpoints<S>(
+    async fn start_tailing_checkpoints<S>(
         start_checkpoint_sequence_number: CheckpointSequenceNumber,
         mut checkpoint_writer: CheckpointWriter,
         store: S,
@@ -367,7 +367,7 @@ impl ArchiveWriter {
             }
             // Checkpoint with `checkpoint_sequence_number` is not available to read from store yet,
             // sleep for sometime and then retry
-            sleep(Duration::from_secs(3));
+            tokio::time::sleep(Duration::from_secs(3)).await;
         }
         Ok(())
     }

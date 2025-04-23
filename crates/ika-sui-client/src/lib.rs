@@ -8,15 +8,14 @@ use core::panic;
 use dwallet_classgroups_types::{
     ClassGroupsEncryptionKeyAndProof, SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEYS,
 };
-use dwallet_mpc_types::dwallet_mpc::{
-    NetworkDecryptionKeyOnChainOutput, NetworkDecryptionKeyShares,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
 use fastcrypto::traits::ToFromBytes;
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyState,
+    DBSuiEvent, DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyData,
+    DWalletNetworkDecryptionKeyState,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::system_inner_v1::{
@@ -51,7 +50,7 @@ use sui_types::balance::Balance;
 use sui_types::base_types::SequenceNumber;
 use sui_types::base_types::{EpochId, ObjectRef};
 use sui_types::clock::Clock;
-use sui_types::collection_types::TableVec;
+use sui_types::collection_types::{Table, TableVec};
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
 use sui_types::id::{ID, UID};
@@ -159,7 +158,7 @@ where
         &self,
         epoch_id: EpochId,
     ) -> IkaResult<Vec<DBSuiEvent>> {
-        let system_inner = self.get_system_inner_until_success().await;
+        let system_inner = self.must_get_system_inner_object().await;
         loop {
             if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
                 let dwallet_coordinator_inner = self
@@ -316,6 +315,15 @@ where
         })
     }
 
+    pub async fn get_class_groups_public_keys_and_proofs(
+        &self,
+        validators: &Vec<ValidatorInnerV1>,
+    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
+        self.inner
+            .get_class_groups_public_keys_and_proofs(&validators)
+            .await
+    }
+
     pub async fn get_epoch_start_system(
         &self,
         ika_system_state_inner: &SystemInner,
@@ -331,52 +339,8 @@ where
                     .collect::<Vec<_>>();
 
                 let validators = self
-                    .inner
-                    .get_validators_from_object_table(
-                        ika_system_state_inner.validators.validators.id,
-                        validator_ids,
-                    )
-                    .await
-                    .map_err(|e| {
-                        IkaError::SuiClientInternalError(format!(
-                            "Can't get_validators_from_object_table: {e}"
-                        ))
-                    })?;
-                let validators = validators
-                    .iter()
-                    .map(|v| {
-                        bcs::from_bytes::<Validator>(&v).map_err(|e| {
-                            IkaError::SuiClientSerializationError(format!(
-                                "Can't serialize Validator: {e}"
-                            ))
-                        })
-                    })
-                    .collect::<Result<Vec<_>, _>>()?;
-
-                let validators =
-                    self.inner
-                        .get_validator_inners(validators)
-                        .await
-                        .map_err(|e| {
-                            IkaError::SuiClientInternalError(format!(
-                                "Can't get_validator_inners: {e}"
-                            ))
-                        })?;
-                let validators = validators
-                    .iter()
-                    .map(|v| {
-                        bcs::from_bytes::<Field<u64, ValidatorInnerV1>>(&v).map_err(|e| {
-                            IkaError::SuiClientSerializationError(format!(
-                                "Can't serialize ValidatorInnerV1: {e}"
-                            ))
-                        })
-                    })
-                    .collect::<Result<Vec<_>, _>>()?;
-
-                let validators = validators
-                    .iter()
-                    .map(|v| v.value.clone())
-                    .collect::<Vec<_>>();
+                    .get_validators_info_by_ids(ika_system_state_inner, validator_ids)
+                    .await?;
 
                 let network_decryption_keys = self
                     .inner
@@ -385,6 +349,23 @@ where
                     )
                     .await
                     .unwrap_or_default();
+
+                let mut network_decryption_keys_data = HashMap::new();
+                for (key_id, key) in network_decryption_keys.iter() {
+                    let network_decryption_key = match self
+                        .inner
+                        .get_network_decryption_key_with_full_data(key)
+                        .await
+                    {
+                        Ok(key) => key,
+                        Err(e) => {
+                            return Err(IkaError::SuiClientInternalError(format!(
+                                "can't get_network_decryption_key_with_full_data: {e}"
+                            )));
+                        }
+                    };
+                    network_decryption_keys_data.insert(key_id.clone(), network_decryption_key);
+                }
 
                 let validators_class_groups_public_key_and_proof = self
                     .inner
@@ -436,12 +417,68 @@ where
                     ika_system_state_inner.epoch_start_timestamp_ms,
                     ika_system_state_inner.epoch_duration_ms(),
                     validators,
-                    network_decryption_keys.clone(),
+                    network_decryption_keys_data,
                 );
 
                 Ok(epoch_start_system_state)
             }
         }
+    }
+
+    /// Get the validators' info by their IDs.
+    pub async fn get_validators_info_by_ids(
+        &self,
+        ika_system_state_inner: &SystemInnerV1,
+        validator_ids: Vec<ObjectID>,
+    ) -> Result<Vec<ValidatorInnerV1>, IkaError> {
+        let validators = self
+            .inner
+            .get_validators_from_object_table(
+                ika_system_state_inner.validators.validators.id,
+                validator_ids,
+            )
+            .await
+            .map_err(|e| {
+                IkaError::SuiClientInternalError(format!(
+                    "failure in `get_validators_from_object_table()`: {e}"
+                ))
+            })?;
+        let validators = validators
+            .iter()
+            .map(|v| {
+                bcs::from_bytes::<Validator>(&v).map_err(|e| {
+                    IkaError::SuiClientSerializationError(format!(
+                        "failed to de-serialize Validator info: {e}"
+                    ))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let validators = self
+            .inner
+            .get_validator_inners(validators)
+            .await
+            .map_err(|e| {
+                IkaError::SuiClientInternalError(format!(
+                    "failure in `get_validator_inners()`: {e}"
+                ))
+            })?;
+
+        let validators = validators
+            .iter()
+            .map(|v| {
+                bcs::from_bytes::<Field<u64, ValidatorInnerV1>>(&v).map_err(|e| {
+                    IkaError::SuiClientSerializationError(format!(
+                        "failure to de-serialize ValidatorInnerV1: {e}"
+                    ))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(validators
+            .iter()
+            .map(|v| v.value.clone())
+            .collect::<Vec<_>>())
     }
 
     /// Get the mutable system object arg on chain.
@@ -574,16 +611,19 @@ where
         self.inner.execute_transaction_block_with_effects(tx).await
     }
 
-    pub async fn get_system_inner_until_success(&self) -> SystemInner {
+    pub async fn must_get_system_inner_object(&self) -> SystemInner {
         loop {
             let Ok(Ok(ika_system_state)) =
                 retry_with_max_elapsed_time!(self.get_system_inner(), Duration::from_secs(30))
             else {
                 self.sui_client_metrics
                     .sui_rpc_errors
-                    .with_label_values(&["get_system_inner_until_success"])
+                    .with_label_values(&["must_get_system_inner_object"])
                     .inc();
-                error!("Failed to get system inner until success");
+                error!(
+                    "failed to get system inner object: {:?}",
+                    self.ika_system_object_id
+                );
                 continue;
             };
             return ika_system_state;
@@ -592,8 +632,8 @@ where
 
     pub async fn get_dwallet_mpc_network_keys(
         &self,
-    ) -> IkaResult<HashMap<ObjectID, NetworkDecryptionKeyShares>> {
-        let system_inner = self.get_system_inner_until_success().await;
+    ) -> IkaResult<HashMap<ObjectID, DWalletNetworkDecryptionKey>> {
+        let system_inner = self.must_get_system_inner_object().await;
         Ok(self
             .inner
             .get_network_decryption_keys(
@@ -605,6 +645,20 @@ where
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!("Can't get_network_decryption_keys: {e}"))
             })?)
+    }
+
+    pub async fn get_network_decryption_key_with_full_data(
+        &self,
+        network_decryption_key: &DWalletNetworkDecryptionKey,
+    ) -> IkaResult<DWalletNetworkDecryptionKeyData> {
+        self.inner
+            .get_network_decryption_key_with_full_data(network_decryption_key)
+            .await
+            .map_err(|e| {
+                IkaError::SuiClientInternalError(format!(
+                    "Can't get_network_decryption_key_with_full_data: {e}"
+                ))
+            })
     }
 
     pub async fn get_dwallet_coordinator_inner_until_success(
@@ -692,7 +746,18 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_network_decryption_keys(
         &self,
         network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
-    ) -> Result<HashMap<ObjectID, NetworkDecryptionKeyShares>, self::Error>;
+    ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error>;
+
+    async fn get_network_decryption_key_with_full_data(
+        &self,
+        network_decryption_key: &DWalletNetworkDecryptionKey,
+    ) -> Result<DWalletNetworkDecryptionKeyData, self::Error>;
+
+    async fn get_current_reconfiguration_public_output(
+        &self,
+        epoch_id: EpochId,
+        table_id: ObjectID,
+    ) -> Result<ObjectID, Self::Error>;
 
     async fn read_table_vec_as_raw_bytes(&self, table_id: ObjectID)
         -> Result<Vec<u8>, self::Error>;
@@ -914,7 +979,7 @@ impl SuiClientInner for SuiSdkClient {
     async fn get_network_decryption_keys(
         &self,
         network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
-    ) -> Result<HashMap<ObjectID, NetworkDecryptionKeyShares>, self::Error> {
+    ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error> {
         let mut network_decryption_keys = HashMap::new();
         for cap in network_decryption_caps {
             let key_id = cap.dwallet_network_decryption_key_id;
@@ -933,36 +998,103 @@ impl SuiClientInner for SuiSdkClient {
                 "object {:?} is not a MoveObject",
                 key_id
             )))?;
-            let key_obj = bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes)
-                .map_err(|e| {
-                Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e))
-            })?;
-            if DWalletNetworkDecryptionKeyState::NetworkDKGCompleted != key_obj.state {
-                continue;
-            }
-            let public_output_bytes = self
-                .read_table_vec_as_raw_bytes(key_obj.public_output.contents.id)
-                .await?;
-            let public_output =
-                bcs::from_bytes::<NetworkDecryptionKeyOnChainOutput>(&public_output_bytes)?;
-            let current_shares = self
-                .read_table_vec_as_raw_bytes(key_obj.current_epoch_shares.contents.id)
-                .await?;
-            let key = NetworkDecryptionKeyShares {
-                epoch: key_obj.current_epoch,
-                current_epoch_encryptions_of_shares_per_crt_prime: current_shares,
-                previous_epoch_encryptions_of_shares_per_crt_prime: vec![],
-                encryption_scheme_public_parameters: public_output
-                    .encryption_scheme_public_parameters,
-                decryption_key_share_public_parameters: public_output
-                    .decryption_key_share_public_parameters,
-                encryption_key: public_output.encryption_key,
-                public_verification_keys: public_output.public_verification_keys,
-                setup_parameters_per_crt_prime: public_output.setup_parameters_per_crt_prime,
-            };
-            network_decryption_keys.insert(key_id, key);
+
+            network_decryption_keys.insert(
+                key_id,
+                bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes).map_err(
+                    |e| Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e)),
+                )?,
+            );
         }
         Ok(network_decryption_keys)
+    }
+
+    async fn get_network_decryption_key_with_full_data(
+        &self,
+        key: &DWalletNetworkDecryptionKey,
+    ) -> Result<DWalletNetworkDecryptionKeyData, self::Error> {
+        let network_dkg_public_output = self
+            .read_table_vec_as_raw_bytes(key.network_dkg_public_output.contents.id)
+            .await?;
+        let current_reconfiguration_public_output =
+            if let Ok(current_reconfiguration_public_output_id) = self
+                .get_current_reconfiguration_public_output(
+                    key.current_epoch,
+                    key.reconfiguration_public_outputs.id,
+                )
+                .await
+            {
+                self.read_table_vec_as_raw_bytes(current_reconfiguration_public_output_id)
+                    .await?
+            } else {
+                warn!(
+                    "reconfiguration output for current epoch {:?} not found",
+                    key.current_epoch
+                );
+                vec![]
+            };
+
+        Ok(DWalletNetworkDecryptionKeyData {
+            id: key.id,
+            dwallet_network_decryption_key_cap_id: key.dwallet_network_decryption_key_cap_id,
+            current_epoch: key.current_epoch,
+            current_reconfiguration_public_output,
+            network_dkg_public_output,
+            state: key.state.clone(),
+        })
+    }
+
+    async fn get_current_reconfiguration_public_output(
+        &self,
+        epoch_id: EpochId,
+        table_id: ObjectID,
+    ) -> Result<ObjectID, Self::Error> {
+        let mut cursor = None;
+        loop {
+            let dynamic_fields = self
+                .read_api()
+                .get_dynamic_fields(table_id, cursor, None)
+                .await
+                .map_err(|e| {
+                    Error::DataError(format!(
+                        "can't get dynamic fields of table {:?}: {:?}",
+                        table_id, e
+                    ))
+                })?;
+
+            for df in dynamic_fields.data.iter() {
+                let object_id = df.object_id;
+                let dynamic_field_response = self
+                    .read_api()
+                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
+                    .await?;
+                let resp = dynamic_field_response.into_object().map_err(|e| {
+                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+                })?;
+                let raw_data = resp.bcs.ok_or(Error::DataError(format!(
+                    "object {:?} has no bcs data",
+                    object_id
+                )))?;
+                let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(format!(
+                    "object {:?} is not a MoveObject",
+                    object_id
+                )))?;
+                let reconfig_public_output =
+                    bcs::from_bytes::<Field<u64, Table>>(&raw_move_obj.bcs_bytes)?;
+                if reconfig_public_output.name == epoch_id {
+                    return Ok(reconfig_public_output.value.id);
+                }
+            }
+
+            cursor = dynamic_fields.next_cursor;
+            if !dynamic_fields.has_next_page {
+                break;
+            }
+        }
+        Err(Error::DataError(format!(
+            "Failed to load current reconfiguration public output for epoch {:?} from table {:?}",
+            epoch_id, table_id
+        )))
     }
 
     async fn read_table_vec_as_raw_bytes(
