@@ -56,12 +56,6 @@ jobs:
         run: pnpm install
         working-directory: ./sdk/typescript
 
-      - name: Compile TS tests
-        run: |
-          cd sdk/typescript
-          pnpm install
-          npm run build
-
       - name: Run TS full flow with network DKG test
         run: |
           cd sdk/typescript
