@@ -490,9 +490,19 @@ impl DWalletMPCManager {
                 );
                 continue;
             }
-            // todo: check if the session is immediate
+            let Some(mpc_event_data) = oldest_pending_session.mpc_event_data.clone() else {
+                error!(
+                    session_id=?oldest_pending_session.session_id,
+                    "Session does not have event data, skipping"
+                );
+                self.pending_for_computation_order
+                    .push_back(oldest_pending_session.clone());
+                continue;
+            };
             if oldest_pending_session.sequence_number
                 > self.last_session_to_complete_in_current_epoch
+                // Safe to unwrap, as pending for computation always has event data.
+                && !mpc_event_data.is_immediate
             {
                 info!(
                     session_id=?oldest_pending_session.session_id,
