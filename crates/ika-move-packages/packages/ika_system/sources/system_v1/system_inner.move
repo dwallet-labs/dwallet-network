@@ -79,8 +79,6 @@ public struct SystemInnerV1 has store {
     epoch_start_timestamp_ms: u64,
     /// The total messages processed.
     total_messages_processed: u64,
-    /// The last checkpoint sequence number of previous epoch.
-    previous_epoch_last_checkpoint_sequence_number: u64,
     /// The fees paid for computation.
     computation_reward: Balance<IKA>,
     /// List of authorized protocol cap ids.
@@ -102,7 +100,6 @@ public struct SystemEpochInfoEvent has copy, drop {
     stake_subsidy_amount: u64,
     total_computation_fees: u64,
     total_stake_rewards_distributed: u64,
-    last_processed_checkpoint_sequence_number: u64
 }
 
 /// Event emitted during verifing quorum checkpoint submmision signature.
@@ -165,8 +162,6 @@ public(package) fun create(
         protocol_treasury,
         epoch_start_timestamp_ms,
         total_messages_processed: 0,
-        last_processed_checkpoint_sequence_number: option::none(),
-        previous_epoch_last_checkpoint_sequence_number: 0,
         computation_reward: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_secp256k1_id: option::none(),
@@ -754,7 +749,6 @@ public(package) fun advance_epoch(
     let active_committee = self.active_committee();
     // Derive the computation price per unit size for the new epoch
     self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&active_committee);
-    let mut last_processed_checkpoint_sequence_number = 0;
 
     let decryption_keys_rewards = self.advance_network_keys(dwallet_coordinator);
     self.computation_reward.join(decryption_keys_rewards);
@@ -767,7 +761,6 @@ public(package) fun advance_epoch(
         stake_subsidy_amount,
         total_computation_fees: computation_reward_amount_before_distribution,
         total_stake_rewards_distributed: total_reward_distributed,
-        last_processed_checkpoint_sequence_number,
     });
 }
 
@@ -850,17 +843,6 @@ fun verify_cap(
     });
 }
 
-public(package) fun process_checkpoint_message_by_cap(
-    self: &mut SystemInnerV1,
-    cap: &ProtocolCap,
-    message: vector<u8>,
-    ctx: &mut TxContext,
-) {
-    self.verify_cap(cap);
-
-    self.process_checkpoint_message(message, ctx);
-}
-
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut SystemInnerV1,
     dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
@@ -873,11 +855,7 @@ public(package) fun process_checkpoint_message_by_quorum(
     let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
     intent_bytes.append(message);
     intent_bytes.append(bcs::to_bytes(&epoch));
-
     self.active_committee().verify_certificate(epoch, &signature, &signers_bitmap, &intent_bytes);
-
-    self.process_checkpoint_message(message, ctx);
-    // TODO: seperate this to its own process
     dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
 }
 

@@ -616,16 +616,6 @@ public fun active_committee(self: &mut System): BlsCommittee {
     self.active_committee()
 }
 
-public fun process_checkpoint_message_by_cap(
-    self: &mut System,
-    cap: &ProtocolCap,
-    message: vector<u8>,
-    ctx: &mut TxContext,
-) {
-    let self = self.inner_mut();
-    self.process_checkpoint_message_by_cap(cap, message, ctx);
-}
-
 // TODO: split dwallet_2pc_mpc_secp256k1 to its own checkpoint
 public fun process_checkpoint_message_by_quorum(
     self: &mut System,

@@ -758,6 +758,7 @@ public(package) fun create_dwallet_coordinator_inner(
         last_processed_checkpoint_sequence_number: option::none(),
         completed_immediate_sessions_count: 0,
         started_immediate_sessions_count: 0,
+        previous_epoch_last_checkpoint_sequence_number: 0,
         extra_fields: bag::new(ctx),
     }
 }
