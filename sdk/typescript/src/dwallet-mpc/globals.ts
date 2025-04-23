@@ -329,6 +329,11 @@ export async function getNetworkDecryptionKeyPublicOutputID(
 		return networkDecryptionKey.data.content.fields.network_dkg_public_output.fields.contents.fields
 			.id?.id;
 	}
+	throw new Error(
+		`timeout: unable to fetch valid network decryption key within timeout ${
+			c.timeout / (60 * 1000)
+		} minutes passed).`,
+	);
 }
 
 async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint8Array> {
