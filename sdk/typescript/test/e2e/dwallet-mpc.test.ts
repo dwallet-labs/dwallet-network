@@ -3,8 +3,8 @@
 
 import path from 'path';
 import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
+import { SuiClient } from '@mysten/sui/client';
+import { requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
@@ -130,7 +130,7 @@ describe('Test dWallet MPC', () => {
 		);
 	});
 
-	it('should sign full flow with mocked network key', async () => {
+	it('should sign full flow with a mocked network key', async () => {
 		console.log('Creating dWallet...');
 		const dwalletID = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
@@ -190,17 +190,20 @@ describe('Test dWallet MPC', () => {
 
 	it('should sign full flow with on-chain network DKG output', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		console.time('Creating dWallet...');
+
+		console.time('Step 1: dWallet Creation');
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
-		console.timeEnd('Creating dWallet...');
-		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
+		console.timeEnd('Step 1: dWallet Creation');
+		console.log(`Step 1: dWallet created | dWalletID = ${dwallet.dwalletID}`);
 		await delay(checkpointCreationTime);
-		console.time('Starting Presign...');
+
+		console.time('Step 2: Presign Phase');
 		const presignCompletion = await presign(conf, dwallet.dwalletID);
-		console.timeEnd('Starting Presign...');
-		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		console.timeEnd('Step 2: Presign Phase');
+		console.log(`Step 2: Presign completed | presignID = ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
-		console.time('Running Sign...');
+
+		console.time('Step 3: Sign Phase');
 		const completedSignEvent = await sign(
 			conf,
 			presignCompletion.presign_id,
@@ -210,13 +213,13 @@ describe('Test dWallet MPC', () => {
 			Hash.KECCAK256,
 			networkDecryptionKeyPublicOutput,
 		);
-		console.log(`completedSignEvent: ${JSON.stringify(completedSignEvent)}`);
-		console.timeEnd('Running Sign...');
+		console.timeEnd('Step 3: Sign Phase');
+		console.log(`Step 3: Sign completed | result = ${JSON.stringify(completedSignEvent)}`);
 	});
 });
 
 describe('Test dWallet MPC - offline', () => {
-	it('should run sign centralized party', () => {
+	it('should run sign for a centralized party', () => {
 		const centralizedSignedMessage = create_sign_centralized_output(
 			mockedNetworkDecryptionKeyPublicOutput,
 			MPCKeyScheme.Secp256k1,
