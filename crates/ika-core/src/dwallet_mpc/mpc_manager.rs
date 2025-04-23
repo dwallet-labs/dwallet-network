@@ -562,7 +562,7 @@ impl DWalletMPCManager {
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
                 crypto_round_number=?message.round_number,
-                "Received a message for from malicious authority",
+                "Received a message for from malicious authority — ignoring",
             );
             // Ignore a malicious actor's messages.
             return Ok(());
