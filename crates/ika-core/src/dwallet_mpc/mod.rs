@@ -81,6 +81,7 @@ pub(crate) fn party_ids_to_authority_names(
 
 /// Rust version of the Move sui::dynamic_field::Field type.
 #[derive(Clone, Serialize, Deserialize, Debug)]
+// remove
 pub struct Field<N, V> {
     pub id: UID,
     pub name: N,
