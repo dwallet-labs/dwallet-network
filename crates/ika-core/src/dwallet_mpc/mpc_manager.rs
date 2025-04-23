@@ -494,6 +494,8 @@ impl DWalletMPCManager {
                 // This should never happen
                 error!(
                     session_id=?oldest_pending_session.session_id,
+                    session_sequence_number=?oldest_pending_session.sequence_number,
+                    last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     "Session does not have event data, skipping"
                 );
                 continue;
