@@ -242,7 +242,10 @@ where
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
             }
-            let dwallet_coordinator_inner = self.sui_client.must_get_dwallet_coordinator_inner_v1().await;
+            let dwallet_coordinator_inner = self
+                .sui_client
+                .must_get_dwallet_coordinator_inner_v1()
+                .await;
             let last_processed_checkpoint_sequence_number: Option<u64> =
                 dwallet_coordinator_inner.last_processed_checkpoint_sequence_number;
             let next_checkpoint_sequence_number = last_processed_checkpoint_sequence_number
