@@ -976,17 +976,11 @@ fun create_immediate_dwallet_event<E: copy + drop + store>(
 
     let event = DWalletEvent {
         epoch: self.current_epoch,
-        session_sequence_number: self.next_session_sequence_number,
+        // session sequence number is not used for immediate events, passing a dummy value
+        session_sequence_number: 0,
         session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
         event_data,
     };
-
-    // This special logic is here to allow the immediate session have a unique session sequenece number on the one hand,
-    // yet ignore it when deciding the last session to complete in the current epoch, as immediate sessions
-    // are special sessions that must get completed in the current epoch.
-    self.next_session_sequence_number = self.next_session_sequence_number + 1;
-    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
-    self.last_session_to_complete_in_current_epoch = self.last_session_to_complete_in_current_epoch + 1;
 
     event
 }
