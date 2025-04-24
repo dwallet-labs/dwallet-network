@@ -15,6 +15,7 @@ import {
 	checkpointCreationTime,
 	Config,
 	delay,
+	getNetworkDecryptionKeyPublicOutput,
 	mockedNetworkDecryptionKeyPublicOutput,
 } from '../../src/dwallet-mpc/globals';
 
@@ -31,7 +32,8 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('encrypt a secret share for a given Sui address, decrypt it, verify it & publish signed dWallet output on chain ', async () => {
-		const sourceDwallet = await createDWallet(sourceConf, mockedNetworkDecryptionKeyPublicOutput);
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(sourceConf);
+		const sourceDwallet = await createDWallet(sourceConf, networkDecryptionKeyPublicOutput);
 		// Create Destination Class Groups Keypair & Store it on the chain.
 		await getOrCreateClassGroupsKeyPair(destConf);
 		await delay(checkpointCreationTime);
@@ -39,7 +41,7 @@ describe('Test dWallet MPC', () => {
 			sourceConf,
 			destConf.encryptedSecretShareSigningKeypair.toSuiAddress(),
 			sourceDwallet.secret_share,
-			mockedNetworkDecryptionKeyPublicOutput,
+			networkDecryptionKeyPublicOutput,
 		);
 		console.log(
 			`encryptedUserKeyShareAndProofOfEncryption: ${encryptedUserKeyShareAndProofOfEncryption}`,

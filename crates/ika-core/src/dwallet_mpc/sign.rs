@@ -95,26 +95,37 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
 pub(crate) fn verify_partial_signature(
     hashed_message: &[u8],
     dwallet_decentralized_output: &SerializedWrappedPublicOutput,
-    presign: &[u8],
+    presign: &SerializedWrappedPublicOutput,
     partially_signed_message: &[u8],
     protocol_public_parameters: &ProtocolPublicParameters,
 ) -> DwalletMPCResult<()> {
-    let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
-    // Todo (yael): check function call, match the output version
-    let dkg_output = bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(
-        &dwallet_decentralized_output,
-    )?;
-    let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
-        bcs::from_bytes(presign)?;
-    let partial: <AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage =
-        bcs::from_bytes(partially_signed_message)?;
-    twopc_mpc::sign::decentralized_party::signature_partial_decryption_round::Party::verify_encryption_of_signature_parts_prehash_class_groups(
-        protocol_public_parameters,
-        dkg_output,
-        presign,
-        partial,
-        message,
-    ).map_err(|err| {
-        DwalletMPCError::TwoPCMPCError(format!("{:?}", err))
-    })
+    let dkg_output: MPCPublicOutput = bcs::from_bytes(&dwallet_decentralized_output)?;
+    let presign: MPCPublicOutput = bcs::from_bytes(&presign)?;
+    match dkg_output {
+        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
+            let presign = match presign {
+                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                _ => {
+                    return Err(DwalletMPCError::InvalidMPCPublicOutput);
+                }
+            };
+            let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
+            let dkg_output = bcs::from_bytes::<
+                <AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput,
+            >(&dkg_output)?;
+            let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
+                bcs::from_bytes(&presign)?;
+            let partial: <AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage =
+                bcs::from_bytes(partially_signed_message)?;
+            twopc_mpc::sign::decentralized_party::signature_partial_decryption_round::Party::verify_encryption_of_signature_parts_prehash_class_groups(
+                protocol_public_parameters,
+                dkg_output,
+                presign,
+                partial,
+                message,
+            ).map_err(|err| {
+                DwalletMPCError::TwoPCMPCError(format!("{:?}", err))
+            })
+        }
+    }
 }
