@@ -20,11 +20,8 @@ use sui::coin::Coin;
 use sui::event;
 use sui::table::Table;
 use sui::vec_set::{VecSet};
-use sui::bcs;
 use sui::clock::Clock;
 use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
-
-const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
 const BASIS_POINT_DENOMINATOR: u16 = 10000;
 
@@ -832,22 +829,6 @@ fun verify_cap(
         epoch: self.epoch,
         protocol_cap_id: object::id(cap),
     });
-}
-
-public(package) fun process_checkpoint_message_by_quorum(
-    self: &SystemInnerV1,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
-    signature: vector<u8>,
-    signers_bitmap: vector<u8>,
-    message: vector<u8>,
-    ctx: &mut TxContext,
-) {
-    let epoch = self.epoch;
-    let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
-    intent_bytes.append(message);
-    intent_bytes.append(bcs::to_bytes(&epoch));
-    self.active_committee().verify_certificate(epoch, &signature, &signers_bitmap, &intent_bytes);
-    dwallet_2pc_mpc_secp256k1.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
 }
 
 public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(

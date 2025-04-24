@@ -617,7 +617,6 @@ public fun active_committee(self: &mut System): BlsCommittee {
 }
 
 public fun process_checkpoint_message_by_quorum(
-    self: &System,
     dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
@@ -630,9 +629,8 @@ public fun process_checkpoint_message_by_quorum(
     message.append(message2);
     message.append(message3);
     message.append(message4);
-
-    let self = self.inner();
-    self.process_checkpoint_message_by_quorum(dwallet_2pc_mpc_secp256k1, signature, signers_bitmap, message, ctx);
+    let dwallet_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
+    dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
 }
 
 /// Locks the committee of the next epoch to allow starting the reconfiguration process.
