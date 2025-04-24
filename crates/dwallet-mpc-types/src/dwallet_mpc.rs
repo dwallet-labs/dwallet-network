@@ -31,8 +31,9 @@ pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
 
+/// Alias for an MPC public output wrapped with version.
 pub type SerializedWrappedPublicOutput = Vec<u8>;
-/// Alias for an MPC public output.
+
 #[derive(
     Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialOrd,
 )]
