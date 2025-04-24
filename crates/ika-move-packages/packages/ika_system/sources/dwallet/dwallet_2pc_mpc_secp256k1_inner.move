@@ -1197,7 +1197,7 @@ fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinat
     let new_last_session_to_complete_in_current_epoch = (
         self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
-        self.next_session_sequence_number - 1,
+        self.next_session_sequence_number,
     );
     if (self.last_session_to_complete_in_current_epoch >= new_last_session_to_complete_in_current_epoch) {
         return
@@ -1207,9 +1207,7 @@ fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinat
 
 public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinatorInner): bool {
     return self.locked_last_session_to_complete_in_current_epoch &&
-        // The "+1" is needed, as the number_of_completed_sessions is a counter,
-        // while the last_session_to_complete_in_current_epoch is an index, that starts from 0.
-        self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch + 1 &&
+        self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
         self.completed_immediate_sessions_count == self.started_immediate_sessions_count
 }
 
