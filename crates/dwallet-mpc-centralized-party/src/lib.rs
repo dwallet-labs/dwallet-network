@@ -3,7 +3,7 @@
 // Allowed to improve code readability.
 #![allow(unused_qualifications)]
 
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, Context};
 use class_groups::dkg::Secp256k1Party;
 use class_groups::setup::get_setup_parameters_secp256k1;
 use class_groups::{
@@ -172,7 +172,7 @@ pub fn advance_centralized_sign_party(
             let presign = match presign {
                 MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
                 _ => {
-                    return Err(bail!(
+                    return Err(anyhow!(
                         "Invalid presign output version: expected ClassGroups::V1, got {:?}",
                         presign
                     ));
