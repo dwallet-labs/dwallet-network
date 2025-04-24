@@ -1071,7 +1071,8 @@ impl IkaNode {
                     );
                 }
             }
-            let dwallet_coordinator_inner = sui_client.must_get_dwallet_coordinator_inner_v1().await;
+            let dwallet_coordinator_inner =
+                sui_client.must_get_dwallet_coordinator_inner_v1().await;
             let previous_epoch_last_checkpoint_sequence_number =
                 dwallet_coordinator_inner.previous_epoch_last_checkpoint_sequence_number;
 
