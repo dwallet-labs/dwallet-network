@@ -558,8 +558,6 @@ where
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
-        let ika_system_state_arg = sui_client.get_system_arg_must_succeed().await;
-
         let dwallet_2pc_mpc_secp256k1_arg = sui_client
             .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
             .await;
@@ -571,7 +569,6 @@ where
 
         let messages = Self::break_down_checkpoint_message(message);
         let mut args = vec![
-            CallArg::Object(ika_system_state_arg),
             CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                 IkaError::SuiConnectorSerializationError(format!(
