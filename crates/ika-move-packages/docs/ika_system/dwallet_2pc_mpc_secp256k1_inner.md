@@ -3574,7 +3574,7 @@ This is part of the epoch switch logic.
     <b>let</b> new_last_session_to_complete_in_current_epoch = (
         self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
-        self.next_session_sequence_number - 1,
+        self.next_session_sequence_number,
     );
     <b>if</b> (self.last_session_to_complete_in_current_epoch &gt;= new_last_session_to_complete_in_current_epoch) {
         <b>return</b>
@@ -3604,9 +3604,7 @@ This is part of the epoch switch logic.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>): bool {
     <b>return</b> self.locked_last_session_to_complete_in_current_epoch &&
-        // The "+1" is needed, <b>as</b> the number_of_completed_sessions is a counter,
-        // <b>while</b> the last_session_to_complete_in_current_epoch is an index, that starts from 0.
-        self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch + 1 &&
+        self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
         self.completed_immediate_sessions_count == self.started_immediate_sessions_count
 }
 </code></pre>
