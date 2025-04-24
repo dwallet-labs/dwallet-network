@@ -1197,6 +1197,8 @@ fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinat
     let new_last_session_to_complete_in_current_epoch = (
         self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
+        // Setting it to the `next_session_sequence_number` and not `next_session_sequence_number - 1`,
+        // as we compare this index against the `number_of_completed_sessions` counter, that starts counting from 1.
         self.next_session_sequence_number,
     );
     if (self.last_session_to_complete_in_current_epoch >= new_last_session_to_complete_in_current_epoch) {
