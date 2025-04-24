@@ -161,7 +161,7 @@ where
         epoch_id: EpochId,
     ) -> IkaResult<Vec<DBSuiEvent>> {
         loop {
-            let dwallet_coordinator_inner = self.must_get_dwallet_coordinator_inner().await;
+            let dwallet_coordinator_inner = self.must_get_dwallet_coordinator_inner_v1().await;
 
             // Make sure we are synced with Sui in order to fetch the missed events
             // If Sui's epoch number matches ours, all the needed missed events must be synced as well.
@@ -645,7 +645,7 @@ where
         }
     }
 
-    pub async fn must_get_dwallet_coordinator_inner(&self) -> DWalletCoordinatorInnerV1 {
+    pub async fn must_get_dwallet_coordinator_inner_v1(&self) -> DWalletCoordinatorInnerV1 {
         loop {
             let system_inner = self.must_get_system_inner_object().await;
             let Some(dwallet_2pc_mpc_secp256k1_id) = system_inner.dwallet_2pc_mpc_secp256k1_id()
