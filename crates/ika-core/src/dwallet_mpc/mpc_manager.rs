@@ -378,7 +378,7 @@ impl DWalletMPCManager {
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
         self.dwallet_mpc_network_keys()?
-            .get_decryption_public_parameters(key_id)
+            .get_decryption_public_parameters(self.epoch_store()?.epoch(), key_id)
             .await
     }
 
@@ -398,7 +398,7 @@ impl DWalletMPCManager {
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let decryption_shares = self
             .dwallet_mpc_network_keys()?
-            .get_decryption_key_share(key_id.clone())
+            .get_decryption_key_share(self.epoch_store()?.epoch(), key_id.clone())
             .await?;
 
         Ok(decryption_shares)

@@ -241,8 +241,17 @@ impl DwalletMPCNetworkKeys {
     /// Returns all the decryption key shares for any specified key ID.
     pub async fn get_decryption_key_share(
         &self,
+        current_epoch: u64,
         key_id: ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
+        let key_epoch = self.get_key_epoch(&key_id).await?;
+        if key_epoch != current_epoch {
+            return Err(DwalletMPCError::KeyEpochMismatch {
+                key_id,
+                expected_epoch: current_epoch,
+                actual_epoch: key_epoch,
+            });
+        }
         Ok(self
             .validator_decryption_keys_shares()
             .await
@@ -253,8 +262,17 @@ impl DwalletMPCNetworkKeys {
 
     pub async fn get_decryption_public_parameters(
         &self,
+        current_epoch: u64,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
+        let key_epoch = self.get_key_epoch(&key_id).await?;
+        if key_epoch != current_epoch {
+            return Err(DwalletMPCError::KeyEpochMismatch {
+                key_id: *key_id,
+                expected_epoch: current_epoch,
+                actual_epoch: key_epoch,
+            });
+        }
         Ok(self
             .inner
             .read()
@@ -275,6 +293,15 @@ impl DwalletMPCNetworkKeys {
             .network_decryption_keys
             .get(&key_id)
             .map(|v| v.clone()))
+    }
+
+    pub async fn get_key_epoch(&self, key_id: &ObjectID) -> DwalletMPCResult<u64> {
+        let inner = self.inner.read().await;
+        Ok(inner
+            .network_decryption_keys
+            .get(&key_id)
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .epoch)
     }
 
     /// Retrieves the protocol public parameters for the specified key ID.
