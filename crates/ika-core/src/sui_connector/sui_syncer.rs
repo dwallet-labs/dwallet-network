@@ -140,10 +140,10 @@ where
     async fn new_committee(
         sui_client: Arc<SuiClient<C>>,
         system_inner: &SystemInnerInit,
-        committee: HashMap<ObjectID, (AuthorityName, StakeUnit)>,
+        committee: Vec<(ObjectID, (AuthorityName, StakeUnit))>,
         epoch: u64,
     ) -> DwalletMPCResult<Committee> {
-        let validator_ids: Vec<_> = committee.keys().cloned().collect();
+        let validator_ids: Vec<_> = committee.iter().map(|(id, _)| *id).collect();
 
         let validators = sui_client
             .get_validators_info_by_ids(&system_inner, validator_ids)
@@ -155,24 +155,24 @@ where
             .await
             .map_err(|e| DwalletMPCError::IkaError(e))?;
 
-        let class_group_encryption_keys_and_proofs = class_group_encryption_keys_and_proofs
-            .into_iter()
-            .map(|(id, class_groups)| {
-                // Try to get the authority name, return error if not found
-                let (authority_name, _) = committee
-                    .get(&id)
-                    .ok_or(DwalletMPCError::ValidatorIDNotFound(id))?;
+        let class_group_encryption_keys_and_proofs = committee
+            .iter()
+            .map(|(id, (name, _))| {
+                let class_groups = class_group_encryption_keys_and_proofs
+                    .get(id)
+                    .ok_or(DwalletMPCError::ValidatorIDNotFound(*id))?;
 
-                // Attempt to serialize `class_groups`, return error if serialization fails
                 let class_groups_bytes = bcs::to_bytes(&class_groups)?;
-
-                Ok((*authority_name, class_groups_bytes))
+                Ok((*name, class_groups_bytes))
             })
             .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
 
         Ok(Committee::new(
             epoch,
-            committee.values().cloned().collect(),
+            committee
+                .iter()
+                .map(|(_, (name, stake))| (*name, *stake))
+                .collect(),
             class_group_encryption_keys_and_proofs,
         ))
     }
@@ -281,12 +281,12 @@ where
         .await?;
 
         if local_network_decryption_keys.contains_key(&key_id) {
-            info!("Updating network key for key_id: {:?}", key_id);
+            info!(committee=?weighted_threshold_access_structure, "Updating network key for key_id: {:?}", key_id);
             dwallet_mpc_network_keys
                 .update_network_key(*key_id, key, &weighted_threshold_access_structure)
                 .await
         } else {
-            info!("Adding new network key for key_id: {:?}", key_id);
+            info!(committee=?weighted_threshold_access_structure, "Adding new network key for key_id: {:?}", key_id);
             dwallet_mpc_network_keys
                 .add_new_network_key(*key_id, key, &weighted_threshold_access_structure)
                 .await

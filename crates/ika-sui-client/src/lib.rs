@@ -659,9 +659,7 @@ where
             })?)
     }
 
-    pub async fn get_epoch_active_committee(
-        &self,
-    ) -> HashMap<ObjectID, (AuthorityName, StakeUnit)> {
+    pub async fn get_epoch_active_committee(&self) -> Vec<(ObjectID, (AuthorityName, StakeUnit))> {
         let system_inner = self.must_get_system_inner_object().await;
         system_inner
             .into_init_version_for_tooling()

@@ -131,13 +131,12 @@ pub trait SystemInnerTrait {
     fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
-    fn get_ika_next_epoch_committee(&self)
-        -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>>;
-    fn get_ika_active_committee(&self) -> HashMap<ObjectID, (AuthorityName, StakeUnit)>;
+    fn get_ika_next_epoch_committee(&self) -> Option<Vec<(ObjectID, (AuthorityName, StakeUnit))>>;
+    fn get_ika_active_committee(&self) -> Vec<(ObjectID, (AuthorityName, StakeUnit))>;
     fn read_bls_committee(
         &self,
         committee: &BlsCommittee,
-    ) -> HashMap<ObjectID, (AuthorityName, StakeUnit)>;
+    ) -> Vec<(ObjectID, (AuthorityName, StakeUnit))>;
     fn validators(&self) -> &ValidatorSetV1;
 }
 
