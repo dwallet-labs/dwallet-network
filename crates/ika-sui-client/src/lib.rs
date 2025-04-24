@@ -402,23 +402,7 @@ where
                     })
                     .collect::<Vec<_>>();
 
-                let Some(dwallet_2pc_mpc_secp256k1_id) =
-                    ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
-                else {
-                    return Err(IkaError::SuiClientInternalError(
-                        "DWallet 2PC MPC Secp256k1 ID not found in the system state".to_string(),
-                    ));
-                };
-
-                let dwallet_state = self
-                    .get_dwallet_coordinator_inner_until_success(dwallet_2pc_mpc_secp256k1_id)
-                    .await;
-
-                let DWalletCoordinatorInner::V1(dwallet_coordinator) = dwallet_state else {
-                    return Err(IkaError::SuiClientInternalError(
-                        "DWalletCoordinatorInner version does not match code version".to_string(),
-                    ));
-                };
+                let dwallet_coordinator = self.must_get_dwallet_coordinator_inner_v1().await;
 
                 let epoch_start_system_state = EpochStartSystem::new_v1(
                     ika_system_state_inner.epoch,
