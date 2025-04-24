@@ -80,7 +80,7 @@ impl DWalletMPCService {
         {
             let coordinator_state = self
                 .sui_client
-                .get_dwallet_coordinator_inner_until_success(dwallet_coordinator_id)
+                .must_get_dwallet_coordinator_inner(dwallet_coordinator_id)
                 .await;
             match coordinator_state {
                 DWalletCoordinatorInner::V1(inner_state) => {

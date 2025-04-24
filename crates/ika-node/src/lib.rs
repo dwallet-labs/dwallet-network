@@ -295,9 +295,9 @@ impl IkaNode {
         let epoch_start_system_state = sui_client
             .get_epoch_start_system_until_success(&latest_system_state)
             .await;
-
+        let dwallet_coordinator_inner = sui_client.must_get_dwallet_coordinator_inner_v1().await;
         let previous_epoch_last_checkpoint_sequence_number =
-            latest_system_state.previous_epoch_last_checkpoint_sequence_number();
+            dwallet_coordinator_inner.previous_epoch_last_checkpoint_sequence_number;
 
         let committee = Arc::new(epoch_start_system_state.get_ika_committee());
 
@@ -1068,9 +1068,10 @@ impl IkaNode {
                     );
                 }
             }
-
+            let dwallet_coordinator_inner =
+                sui_client.must_get_dwallet_coordinator_inner_v1().await;
             let previous_epoch_last_checkpoint_sequence_number =
-                latest_system_state.previous_epoch_last_checkpoint_sequence_number();
+                dwallet_coordinator_inner.previous_epoch_last_checkpoint_sequence_number;
 
             let next_epoch_committee = epoch_start_system_state.get_ika_committee();
             let next_epoch = next_epoch_committee.epoch();
