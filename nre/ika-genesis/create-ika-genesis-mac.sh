@@ -53,8 +53,8 @@ export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 # SUI Faucet URL.
 export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
 #export SUI_FAUCET_URL="http://localhost:9123/gas"
-# Default sui epoch duration time.
-export EPOCH_DURATION_TIME=86400000
+# Default Ika epoch duration time.
+export EPOCH_DURATION_TIME_MS=86400000
 # Sui chain identifier.
 export SUI_CHAIN_IDENTIFIER="custom"
 
@@ -75,7 +75,7 @@ show_help() {
     echo "  --validators-file <file>            Specify a file with validators."
     echo "  --image-name <image>                Specify the Docker image name. Default: $IMAGE_NAME"
     echo "  --sui-faucet-url <url>              Set the SUI faucet URL. Default: $SUI_FAUCET_URL"
-    echo "  --epoch-duration-time <time>        Set the epoch duration time. Default: $EPOCH_DURATION_TIME"
+    echo "  --epoch-duration-time <time>        Set the epoch duration time. Default: $EPOCH_DURATION_TIME_MS"
     echo "  -h, --help                        Display this help message and exit."
     echo ""
     echo "Note: --validators-file overrides --validator-prefix and --validator-num."
@@ -94,7 +94,7 @@ while [[ "$#" -gt 0 ]]; do
         --validators-file) VALIDATORS_FILE="$2"; shift ;;
         --image-name) IMAGE_NAME="$2"; shift ;;
         --sui-faucet-url) SUI_FAUCET_URL="$2"; shift ;;
-        --epoch-duration-time) EPOCH_DURATION_TIME="$2"; shift ;;
+        --epoch-duration-time) EPOCH_DURATION_TIME_MS="$2"; shift ;;
         -h|--help) show_help; exit 0 ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac

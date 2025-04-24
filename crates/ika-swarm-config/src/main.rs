@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 use fastcrypto::traits::EncodeDecodeBase64;
 use ika_config::initiation::InitiationParameters;
 use ika_move_packages::BuiltInIkaMovePackages;
+use ika_protocol_config::ProtocolVersion;
 use ika_swarm_config::sui_client::{
     ika_system_initialize, ika_system_request_dwallet_network_decryption_key_dkg_by_cap,
     init_initialize, mint_ika, publish_ika_package_to_sui, publish_ika_system_package_to_sui,
@@ -75,6 +76,12 @@ enum Commands {
         /// RPC URL for the Sui network.
         #[clap(long, default_value = "http://127.0.0.1:9000")]
         sui_rpc_addr: String,
+        /// Epoch Duration
+        #[clap(long)]
+        epoch_duration_ms: Option<u64>,
+        /// Protocol Version
+        #[clap(long)]
+        protocol_version: Option<ProtocolVersion>,
     },
 
     /// IKA system initialization.
@@ -243,13 +250,15 @@ async fn main() -> Result<()> {
             ika_config_path,
             sui_conf_dir,
             sui_rpc_addr,
+            epoch_duration_ms,
+            protocol_version,
         } => {
             println!(
                 "Initializing environment using configuration at {:?}",
                 ika_config_path
             );
 
-            let config_content = std::fs::read_to_string(&ika_config_path)?;
+            let config_content = fs::read_to_string(&ika_config_path)?;
             let mut publish_config: PublishIkaConfig = serde_json::from_str(&config_content)?;
 
             let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
@@ -260,8 +269,13 @@ async fn main() -> Result<()> {
             let mut context = WalletContext::new(&sui_config_path, None, None)?;
             let client = context.get_client().await?;
 
-            let initiation_parameters = InitiationParameters::new();
-
+            let mut initiation_parameters = InitiationParameters::new();
+            if let Some(epoch_duration_ms) = epoch_duration_ms {
+                initiation_parameters.epoch_duration_ms = epoch_duration_ms;
+            }
+            if let Some(protocol_version) = protocol_version {
+                initiation_parameters.protocol_version = protocol_version.as_u64();
+            }
             let (ika_system_object_id, protocol_cap_id, init_system_shared_version) =
                 init_initialize(
                     publisher_address,
