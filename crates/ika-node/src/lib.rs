@@ -292,6 +292,8 @@ impl IkaNode {
         );
 
         let latest_system_state = sui_client.must_get_system_inner_object().await;
+        latest_system_state.dwallet_2pc_mpc_secp256k1_id();
+
         let epoch_start_system_state = sui_client
             .get_epoch_start_system_until_success(&latest_system_state)
             .await;

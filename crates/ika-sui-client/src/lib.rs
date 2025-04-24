@@ -655,6 +655,21 @@ where
         }
     }
 
+    async fn must_fetch_dwallet_coordinator_inner_from_system_inner(&self) -> DWalletCoordinatorInnerV1 {
+        loop {
+            let system_inner = self.must_get_system_inner_object().await;
+            let Some(dwallet_2pc_mpc_secp256k1_id) = system_inner.dwallet_2pc_mpc_secp256k1_id()
+            else {
+                error!("failed to get `dwallet_2pc_mpc_secp256k1_id` when fetching dwallet coordinator inner");
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                continue;
+            };
+            return self
+                .get_dwallet_coordinator_inner_until_success(dwallet_2pc_mpc_secp256k1_id)
+                .await;
+        }
+    }
+
     pub async fn get_dwallet_mpc_network_keys(
         &self,
     ) -> IkaResult<HashMap<ObjectID, DWalletNetworkDecryptionKey>> {
