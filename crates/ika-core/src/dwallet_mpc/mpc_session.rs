@@ -409,7 +409,6 @@ impl DWalletMPCSession {
                     &protocol_public_parameters,
                 ) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
-                        // Todo (yael): check where or it we use this
                         public_output: vec![],
                         private_output: vec![],
                         malicious_parties: vec![],
@@ -434,7 +433,6 @@ impl DWalletMPCSession {
                 )?;
 
                 Ok(AsynchronousRoundResult::Finalize {
-                    // Todo (yael): check where or it we use this
                     public_output: vec![],
                     private_output: vec![],
                     malicious_parties: vec![],
