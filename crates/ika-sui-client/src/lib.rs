@@ -490,24 +490,6 @@ where
         .await
     }
 
-    /// Get the mutable system object arg on chain.
-    // We retry a few times in case of errors. If it fails eventually, we panic.
-    // In general it's safe to call in the beginning of the program.
-    // After the first call, the result is cached since the value should never change.
-    pub async fn get_system_arg_must_succeed(&self) -> ObjectArg {
-        static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
-        *ARG.get_or_init(|| async move {
-            let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
-                self.inner.get_shared_arg(self.ika_system_object_id),
-                Duration::from_secs(30)
-            ) else {
-                panic!("Failed to get system object arg after retries");
-            };
-            system_arg
-        })
-        .await
-    }
-
     /// Get the clock object arg for the shared system object on the chain.
     pub async fn get_clock_arg_must_succeed(&self) -> ObjectArg {
         static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
