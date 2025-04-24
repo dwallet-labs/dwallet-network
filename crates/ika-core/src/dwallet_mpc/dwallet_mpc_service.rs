@@ -6,7 +6,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
-use crate::dwallet_mpc::mpc_session::MPCEventData;
 use crate::dwallet_mpc::session_info_from_event;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use ika_config::NodeConfig;
