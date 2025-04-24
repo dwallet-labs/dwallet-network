@@ -36,7 +36,7 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Function `count_duplicates_vec`](#(ika_system=0x0)_validator_set_count_duplicates_vec)
 -  [Function `is_duplicate_validator`](#(ika_system=0x0)_validator_set_is_duplicate_validator)
 -  [Function `is_duplicate_with_active_validator`](#(ika_system=0x0)_validator_set_is_duplicate_with_active_validator)
--  [Function `is_duplicate_with_next_epoch_active_committee`](#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee)
+-  [Function `is_duplicate_with_next_epoch_committee`](#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_committee)
 -  [Function `is_duplicate_with_pending_validator`](#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator)
 -  [Function `get_validator_mut`](#(ika_system=0x0)_validator_set_get_validator_mut)
 -  [Function `get_validator_ref`](#(ika_system=0x0)_validator_set_get_validator_ref)
@@ -68,7 +68,7 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Function `report_validator_impl`](#(ika_system=0x0)_validator_set_report_validator_impl)
 -  [Function `undo_report_validator_impl`](#(ika_system=0x0)_validator_set_undo_report_validator_impl)
 -  [Function `active_committee`](#(ika_system=0x0)_validator_set_active_committee)
--  [Function `next_epoch_active_committee`](#(ika_system=0x0)_validator_set_next_epoch_active_committee)
+-  [Function `next_epoch_committee`](#(ika_system=0x0)_validator_set_next_epoch_committee)
 -  [Function `next_pending_active_validators`](#(ika_system=0x0)_validator_set_next_pending_active_validators)
 -  [Function `is_validator_candidate`](#(ika_system=0x0)_validator_set_is_validator_candidate)
 -  [Function `is_inactive_validator`](#(ika_system=0x0)_validator_set_is_inactive_validator)
@@ -145,7 +145,7 @@ title: Module `(ika_system=0x0)::validator_set`
 <code>validators: <a href="../sui/object_table.md#sui_object_table_ObjectTable">sui::object_table::ObjectTable</a>&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>&gt;</code>
 </dt>
 <dd>
- A talbe that contains all validators
+ A tale that contains all validators
 </dd>
 <dt>
 <code><a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>: (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a></code>
@@ -154,7 +154,7 @@ title: Module `(ika_system=0x0)::validator_set`
  The current list of active committee of validators.
 </dd>
 <dt>
-<code><a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;(ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a>&gt;</code>
+<code><a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;(ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a>&gt;</code>
 </dt>
 <dd>
  The next list of active committee of validators.
@@ -170,9 +170,9 @@ title: Module `(ika_system=0x0)::validator_set`
 <code>pending_active_validators: vector&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;</code>
 </dt>
 <dd>
- The next list of peding active validators to be next_epoch_active_committee.
- It will start from the last next_epoch_active_committee and will be
- process between middle of the epochs and will be finlize
+ The next list of pending active validators to be next_epoch_committee.
+ It will start from the last next_epoch_committee and will be
+ process between middle of the epochs and will be finalize
  at the middle of the epoch.
 </dd>
 <dt>
@@ -566,7 +566,7 @@ The epoch value corresponds to the first epoch this change takes place.
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_total_stake">total_stake</a>: 0,
         validators: object_table::new(ctx),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>: <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_empty">bls_committee::empty</a>(),
-        <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>: option::none(),
+        <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>: option::none(),
         previous_committee: <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_empty">bls_committee::empty</a>(),
         pending_active_validators: vector[],
         at_risk_validators: vec_map::empty(),
@@ -600,7 +600,7 @@ The epoch value corresponds to the first epoch this change takes place.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_initialize">initialize</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>) {
     <b>assert</b>!(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.members().is_empty(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAlreadyInitialized">EAlreadyInitialized</a>);
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_pending_validators">process_pending_validators</a>();
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.extract();
+    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>.extract();
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_activate_added_validators">activate_added_validators</a>(0);
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_total_stake">total_stake</a> = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_calculate_total_stakes">calculate_total_stakes</a>(self);
 }
@@ -669,7 +669,7 @@ Called by <code>ika_system</code> to add a new validator candidate.
     <b>assert</b>!(
         !<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_active_validator">is_duplicate_with_active_validator</a>(self, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1">validator_inner_v1</a>)
                 && !<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(self, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1">validator_inner_v1</a>)
-                && !<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee">is_duplicate_with_next_epoch_active_committee</a>(self, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1">validator_inner_v1</a>),
+                && !<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_committee">is_duplicate_with_next_epoch_committee</a>(self, <a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1">validator_inner_v1</a>),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>,
     );
     <b>assert</b>!(!self.validators.contains(validator_id), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>);
@@ -751,7 +751,7 @@ processed at the end of epoch.
     <b>assert</b>!(
         !<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_active_validator">is_duplicate_with_active_validator</a>(self, <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>)
                 && !<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(self, <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>)
-                && !<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee">is_duplicate_with_next_epoch_active_committee</a>(self, <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>),
+                && !<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_committee">is_duplicate_with_next_epoch_committee</a>(self, <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>,
     );
     <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_candidate(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorNotCandidate">EValidatorNotCandidate</a>);
@@ -1024,11 +1024,11 @@ the stake and any rewards corresponding to it will be immediately processed.
     very_low_stake_threshold: u64,
     low_stake_grace_period: u64,
 ) {
-    <b>assert</b>!(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_none(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>);
+    <b>assert</b>!(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>.is_none(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>);
     <b>let</b> new_epoch = epoch + 1;
     <b>if</b> (lock_active_committee) {
         // <b>if</b> we lock the committee just keep it the same <b>as</b> last time
-        self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.fill(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>)
+        self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>.fill(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>)
     } <b>else</b> {
         // kick low stake validators out.
         self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_update_and_process_low_stake_departures">update_and_process_low_stake_departures</a>(
@@ -1077,7 +1077,7 @@ It does the following things:
     reward_slashing_rate: u16,
     ctx: &<b>mut</b> TxContext,
 ) {
-    <b>assert</b>!(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>);
+    <b>assert</b>!(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>.is_some(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>);
     <b>let</b> total_voting_power = total_voting_power();
     // Compute the reward distribution without taking into account the tallying rule slashing.
     <b>let</b> unadjusted_staking_reward_amounts = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_compute_unadjusted_reward_distribution">compute_unadjusted_reward_distribution</a>(
@@ -1126,7 +1126,7 @@ It does the following things:
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_pending_stakes_and_withdraws">process_pending_stakes_and_withdraws</a>(new_epoch);
     self.previous_committee = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>;
     // Change to the next <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> committee
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.extract();
+    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>.extract();
     // Activate validators that were added during `<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_mid_epoch">process_mid_epoch</a>`
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_activate_added_validators">activate_added_validators</a>(new_epoch);
     // Emit events after we have processed all the rewards distribution and pending stakes.
@@ -1260,7 +1260,7 @@ It does the following things:
 
 ## Function `effectuate_staged_metadata`
 
-Effectutate pending next epoch metadata if they are staged.
+Effectuate pending next epoch metadata if they are staged.
 
 
 <pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_effectuate_staged_metadata">effectuate_staged_metadata</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>)
@@ -1590,14 +1590,14 @@ only the id but this function looks at more metadata.
 
 </details>
 
-<a name="(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee"></a>
+<a name="(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_committee"></a>
 
-## Function `is_duplicate_with_next_epoch_active_committee`
+## Function `is_duplicate_with_next_epoch_committee`
 
 Checks whether <code>new_validator</code> is duplicate with any next epoch active validators.
 
 
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee">is_duplicate_with_next_epoch_active_committee</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_validator: &(ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>): bool
+<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_committee">is_duplicate_with_next_epoch_committee</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_validator: &(ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1_ValidatorInnerV1">validator_inner_v1::ValidatorInnerV1</a>): bool
 </code></pre>
 
 
@@ -1606,11 +1606,11 @@ Checks whether <code>new_validator</code> is duplicate with any next epoch activ
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee">is_duplicate_with_next_epoch_active_committee</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, new_validator: &ValidatorInnerV1): bool {
-    <b>if</b>(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_none()) {
+<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_committee">is_duplicate_with_next_epoch_committee</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, new_validator: &ValidatorInnerV1): bool {
+    <b>if</b>(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>.is_none()) {
         <b>return</b> <b>false</b>
     };
-    <b>let</b> next_epoch_active_validator_ids = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.borrow().validator_ids();
+    <b>let</b> next_epoch_active_validator_ids = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>.borrow().validator_ids();
     <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_count_duplicates_vec">count_duplicates_vec</a>(self, &next_epoch_active_validator_ids, new_validator) &gt; 0
 }
 </code></pre>
@@ -2100,7 +2100,7 @@ Verify the operation capability is valid for a Validator.
 
 ## Function `process_pending_validators`
 
-Process the pending new validators. They will be <code><a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a></code> and activated during <code><a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_advance_epoch">advance_epoch</a></code>.
+Process the pending new validators. They will be <code><a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a></code> and activated during <code><a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_advance_epoch">advance_epoch</a></code>.
 
 
 <pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_pending_validators">process_pending_validators</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>)
@@ -2122,8 +2122,8 @@ Process the pending new validators. They will be <code><a href="../ika_system/va
         next_epoch_active_members.push_back(new_bls_committee_member(validator_id, *<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.protocol_pubkey(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.total_stake_amount()));
         i = i + 1;
     };
-    <b>let</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a> = new_bls_committee(next_epoch_active_members);
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.fill(<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>);
+    <b>let</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a> = new_bls_committee(next_epoch_active_members);
+    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>.fill(<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>);
 }
 </code></pre>
 
@@ -2745,14 +2745,14 @@ Return the active validators in <code>self</code>
 
 </details>
 
-<a name="(ika_system=0x0)_validator_set_next_epoch_active_committee"></a>
+<a name="(ika_system=0x0)_validator_set_next_epoch_committee"></a>
 
-## Function `next_epoch_active_committee`
+## Function `next_epoch_committee`
 
 Return the next epoch active committee in <code>self</code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>): <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;(ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>): <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;(ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a>&gt;
 </code></pre>
 
 
@@ -2761,8 +2761,8 @@ Return the next epoch active committee in <code>self</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>(self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>): Option&lt;BlsCommittee&gt; {
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>(self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>): Option&lt;BlsCommittee&gt; {
+    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_committee">next_epoch_committee</a>
 }
 </code></pre>
 

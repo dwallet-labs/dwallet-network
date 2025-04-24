@@ -788,9 +788,7 @@ async fn request_add_validator_candidate(
                 &validator_initialization_metadata.p2p_address.clone(),
             )?),
             CallArg::Pure(bcs::to_bytes(
-                &validator_initialization_metadata
-                    .current_epoch_consensus_address
-                    .clone(),
+                &validator_initialization_metadata.consensus_address.clone(),
             )?),
             CallArg::Pure(bcs::to_bytes(
                 &validator_initialization_metadata.computation_price,
@@ -997,47 +995,7 @@ async fn create_class_groups_public_key_and_proof_object(
         context,
         client,
         ika_system_package_id,
-        (4, 8),
-        builder_object_ref.0,
-        &class_groups_public_key_and_proof,
-    )
-    .await?;
-    add_public_keys_and_proofs_with_rng(
-        publisher_address,
-        context,
-        client,
-        ika_system_package_id,
-        (8, 12),
-        builder_object_ref.0,
-        &class_groups_public_key_and_proof,
-    )
-    .await?;
-    add_public_keys_and_proofs_with_rng(
-        publisher_address,
-        context,
-        client,
-        ika_system_package_id,
-        (12, 16),
-        builder_object_ref.0,
-        &class_groups_public_key_and_proof,
-    )
-    .await?;
-    add_public_keys_and_proofs_with_rng(
-        publisher_address,
-        context,
-        client,
-        ika_system_package_id,
-        (16, 20),
-        builder_object_ref.0,
-        &class_groups_public_key_and_proof,
-    )
-    .await?;
-    add_public_keys_and_proofs_with_rng(
-        publisher_address,
-        context,
-        client,
-        ika_system_package_id,
-        (20, 23),
+        (4, 6),
         builder_object_ref.0,
         &class_groups_public_key_and_proof,
     )

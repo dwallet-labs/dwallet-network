@@ -1,6 +1,5 @@
 use move_core_types::{ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fmt;
 use thiserror::Error;
 
@@ -65,7 +64,6 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 ///   This status indicates that the session cannot proceed further.
 #[derive(Clone, PartialEq, Debug)]
 pub enum MPCSessionStatus {
-    Pending,
     Active,
     Finished,
     Failed,
@@ -74,7 +72,6 @@ pub enum MPCSessionStatus {
 impl fmt::Display for MPCSessionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MPCSessionStatus::Pending => write!(f, "Pending"),
             MPCSessionStatus::Active => write!(f, "Active"),
             MPCSessionStatus::Finished => write!(f, "Finished"),
             MPCSessionStatus::Failed => write!(f, "Failed"),
@@ -82,46 +79,25 @@ impl fmt::Display for MPCSessionStatus {
     }
 }
 
-/// Rust representation of the Move struct `NetworkDecryptionKeyShares`
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
-pub struct NetworkDecryptionKeyShares {
+pub enum NetworkDecryptionKeyPublicOutputType {
+    NetworkDkg,
+    Reshare,
+}
+
+/// Network decryption key shares for the MPC protocol.
+/// Created for each DKG protocol and modified for each Reshare Protocol.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
+pub struct NetworkDecryptionKeyPublicData {
     /// The epoch of the last version update.
     pub epoch: u64,
 
-    /// Decryption key shares for the current epoch.
-    /// These keys together represent the network decryption key.
-    /// Each key is encrypted with the class groups key of each validator.
-    /// So only the validator can decrypt their own key.
-    pub current_epoch_encryptions_of_shares_per_crt_prime: Vec<u8>,
-
-    /// Decryption key shares for the previous epoch.
-    /// Updated at the reconfiguration.
-    pub previous_epoch_encryptions_of_shares_per_crt_prime: Vec<u8>,
-
-    /// Public parameters from the network DKG, used to create the
-    /// protocol public parameters.
-    /// Updated only after a successful network DKG.
-    pub encryption_scheme_public_parameters: Vec<u8>,
+    pub state: NetworkDecryptionKeyPublicOutputType,
+    pub public_output: MPCPublicOutput,
 
     /// The public parameters of the decryption key shares,
-    /// updated only after a successful network DKG.
+    /// updated only after a successful network DKG or Reshare.
     pub decryption_key_share_public_parameters: Vec<u8>,
-
-    /// The network encryption key, updated only after a successful network DKG.
-    pub encryption_key: Vec<u8>,
-
-    /// Validators' verification keys.
-    pub public_verification_keys: Vec<u8>,
-    pub setup_parameters_per_crt_prime: Vec<u8>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
-pub struct NetworkDecryptionKeyOnChainOutput {
-    pub encryption_key: Vec<u8>,
-    pub decryption_key_share_public_parameters: Vec<u8>,
-    pub encryption_scheme_public_parameters: Vec<u8>,
-    pub public_verification_keys: Vec<u8>,
-    pub setup_parameters_per_crt_prime: Vec<u8>,
 }
 
 #[repr(u8)]
@@ -147,20 +123,6 @@ impl TryFrom<u8> for DWalletMPCNetworkKeyScheme {
             1 => Ok(DWalletMPCNetworkKeyScheme::Secp256k1),
             2 => Ok(DWalletMPCNetworkKeyScheme::Ristretto),
             v => Err(DwalletNetworkMPCError::InvalidDWalletMPCNetworkKey(v)),
-        }
-    }
-}
-
-impl NetworkDecryptionKeyShares {
-    pub fn get_on_chain_output(&self) -> NetworkDecryptionKeyOnChainOutput {
-        NetworkDecryptionKeyOnChainOutput {
-            encryption_key: self.encryption_key.clone(),
-            decryption_key_share_public_parameters: self
-                .decryption_key_share_public_parameters
-                .clone(),
-            encryption_scheme_public_parameters: self.encryption_scheme_public_parameters.clone(),
-            public_verification_keys: self.public_verification_keys.clone(),
-            setup_parameters_per_crt_prime: self.setup_parameters_per_crt_prime.clone(),
         }
     }
 }

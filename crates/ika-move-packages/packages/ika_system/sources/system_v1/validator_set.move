@@ -29,18 +29,18 @@ use sui::vec_set::{Self, VecSet};
 public struct ValidatorSet has store {
     /// Total amount of stake from all active validators at the beginning of the epoch.
     total_stake: u64,
-    /// A talbe that contains all validators
+    /// A tale that contains all validators
     validators: ObjectTable<ID, Validator>,
     /// The current list of active committee of validators.
     active_committee: BlsCommittee,
     /// The next list of active committee of validators.
     /// It will become the active_committee at the end of the epoch.
-    next_epoch_active_committee: Option<BlsCommittee>,
+    next_epoch_committee: Option<BlsCommittee>,
     /// The current list of previous committee of validators.
     previous_committee: BlsCommittee,
-    /// The next list of peding active validators to be next_epoch_active_committee.
-    /// It will start from the last next_epoch_active_committee and will be
-    /// process between middle of the epochs and will be finlize
+    /// The next list of pending active validators to be next_epoch_committee.
+    /// It will start from the last next_epoch_committee and will be
+    /// process between middle of the epochs and will be finalize
     /// at the middle of the epoch.
     pending_active_validators: vector<ID>,
     /// Table storing the number of epochs during which a validator's stake has been below the low stake threshold.
@@ -136,7 +136,7 @@ public(package) fun new(ctx: &mut TxContext): ValidatorSet {
         total_stake: 0,
         validators: object_table::new(ctx),
         active_committee: bls_committee::empty(),
-        next_epoch_active_committee: option::none(),
+        next_epoch_committee: option::none(),
         previous_committee: bls_committee::empty(),
         pending_active_validators: vector[],
         at_risk_validators: vec_map::empty(),
@@ -150,7 +150,7 @@ public(package) fun new(ctx: &mut TxContext): ValidatorSet {
 public(package) fun initialize(self: &mut ValidatorSet) {
     assert!(self.active_committee.members().is_empty(), EAlreadyInitialized);
     self.process_pending_validators();
-    self.active_committee = self.next_epoch_active_committee.extract();
+    self.active_committee = self.next_epoch_committee.extract();
     self.activate_added_validators(0);
     self.total_stake = calculate_total_stakes(self);
 }
@@ -205,7 +205,7 @@ public(package) fun request_add_validator_candidate(
     assert!(
         !is_duplicate_with_active_validator(self, validator_inner_v1)
                 && !is_duplicate_with_pending_validator(self, validator_inner_v1)
-                && !is_duplicate_with_next_epoch_active_committee(self, validator_inner_v1),
+                && !is_duplicate_with_next_epoch_committee(self, validator_inner_v1),
         EDuplicateValidator,
     );
     assert!(!self.validators.contains(validator_id), EDuplicateValidator);
@@ -249,7 +249,7 @@ public(package) fun request_add_validator(
     assert!(
         !is_duplicate_with_active_validator(self, validator)
                 && !is_duplicate_with_pending_validator(self, validator)
-                && !is_duplicate_with_next_epoch_active_committee(self, validator),
+                && !is_duplicate_with_next_epoch_committee(self, validator),
         EDuplicateValidator,
     );
     assert!(validator.is_candidate(), EValidatorNotCandidate);
@@ -264,7 +264,7 @@ public(package) fun assert_no_pending_or_active_duplicates(
     self: &mut ValidatorSet,
     validator_id: ID,
 ) {
-    
+
     let active_validator_ids = self.active_committee.validator_ids();
     let pending_active_validators = self.pending_active_validators;
 
@@ -377,12 +377,12 @@ public(package) fun process_mid_epoch(
     very_low_stake_threshold: u64,
     low_stake_grace_period: u64,
 ) {
-    assert!(self.next_epoch_active_committee.is_none(), EProcessMidEpochOnlyAfterAdvanceEpoch);
+    assert!(self.next_epoch_committee.is_none(), EProcessMidEpochOnlyAfterAdvanceEpoch);
     let new_epoch = epoch + 1;
 
     if (lock_active_committee) {
         // if we lock the committee just keep it the same as last time
-        self.next_epoch_active_committee.fill(self.active_committee)
+        self.next_epoch_committee.fill(self.active_committee)
     } else {
         // kick low stake validators out.
         self.update_and_process_low_stake_departures(
@@ -412,7 +412,7 @@ public(package) fun advance_epoch(
     reward_slashing_rate: u16,
     ctx: &mut TxContext,
 ) {
-    assert!(self.next_epoch_active_committee.is_some(), EAdvanceEpochOnlyAfterProcessMidEpoch);
+    assert!(self.next_epoch_committee.is_some(), EAdvanceEpochOnlyAfterProcessMidEpoch);
 
     let total_voting_power = total_voting_power();
 
@@ -472,9 +472,9 @@ public(package) fun advance_epoch(
     self.process_pending_stakes_and_withdraws(new_epoch);
 
     self.previous_committee = self.active_committee;
-    
+
     // Change to the next validator committee
-    self.active_committee = self.next_epoch_active_committee.extract();
+    self.active_committee = self.next_epoch_committee.extract();
 
     // Activate validators that were added during `process_mid_epoch`
     self.activate_added_validators(new_epoch);
@@ -493,7 +493,7 @@ public(package) fun advance_epoch(
     self.effectuate_staged_metadata();
 }
 
-// Activate validators added during `process_mid_epoch` and kept in `next_epoch_active_committee`.
+// Activate validators added during `process_mid_epoch` and kept in `next_epoch_committee`.
 fun activate_added_validators(
     self: &mut ValidatorSet,
     new_epoch: u64,
@@ -566,7 +566,7 @@ fun update_and_process_low_stake_departures(
     }
 }
 
-/// Effectutate pending next epoch metadata if they are staged.
+/// Effectuate pending next epoch metadata if they are staged.
 fun effectuate_staged_metadata(self: &mut ValidatorSet) {
     let members = *self.active_committee.members();
     members.do!(|member| {
@@ -685,11 +685,11 @@ fun is_duplicate_with_active_validator(self: &mut ValidatorSet, new_validator: &
 }
 
 /// Checks whether `new_validator` is duplicate with any next epoch active validators.
-fun is_duplicate_with_next_epoch_active_committee(self: &mut ValidatorSet, new_validator: &ValidatorInnerV1): bool {
-    if(self.next_epoch_active_committee.is_none()) {
+fun is_duplicate_with_next_epoch_committee(self: &mut ValidatorSet, new_validator: &ValidatorInnerV1): bool {
+    if(self.next_epoch_committee.is_none()) {
         return false
     };
-    let next_epoch_active_validator_ids = self.next_epoch_active_committee.borrow().validator_ids();
+    let next_epoch_active_validator_ids = self.next_epoch_committee.borrow().validator_ids();
     count_duplicates_vec(self, &next_epoch_active_validator_ids, new_validator) > 0
 }
 
@@ -839,7 +839,7 @@ fun process_validator_departure(
     clean_report_records_leaving_validator(&mut self.validator_report_records, validator_id);
 
     let validator = self.get_validator_mut(validator_id);
-    
+
     let validator_stake = validator.total_stake_amount();
 
     // Deactivate the validator and its staking pool
@@ -880,7 +880,7 @@ fun clean_report_records_leaving_validator(
     }
 }
 
-/// Process the pending new validators. They will be `next_epoch_active_committee` and activated during `advance_epoch`.
+/// Process the pending new validators. They will be `next_epoch_committee` and activated during `advance_epoch`.
 fun process_pending_validators(self: &mut ValidatorSet) {
     let mut next_epoch_active_members = vector[];
     let mut i = 0;
@@ -891,8 +891,8 @@ fun process_pending_validators(self: &mut ValidatorSet) {
         next_epoch_active_members.push_back(new_bls_committee_member(validator_id, *validator.protocol_pubkey(), validator.total_stake_amount()));
         i = i + 1;
     };
-    let next_epoch_active_committee = new_bls_committee(next_epoch_active_members);
-    self.next_epoch_active_committee.fill(next_epoch_active_committee);
+    let next_epoch_committee = new_bls_committee(next_epoch_active_members);
+    self.next_epoch_committee.fill(next_epoch_committee);
 }
 
 /// Process all active validators' pending stake deposits and withdraws.
@@ -1225,8 +1225,8 @@ public fun active_committee(self: &ValidatorSet): BlsCommittee {
 }
 
 /// Return the next epoch active committee in `self`
-public fun next_epoch_active_committee(self: &ValidatorSet): Option<BlsCommittee> {
-    self.next_epoch_active_committee
+public fun next_epoch_committee(self: &ValidatorSet): Option<BlsCommittee> {
+    self.next_epoch_committee
 }
 
 /// Return the pending active validators in `self`

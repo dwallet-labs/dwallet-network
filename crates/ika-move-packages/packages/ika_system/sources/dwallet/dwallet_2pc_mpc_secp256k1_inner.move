@@ -26,26 +26,6 @@ use ika_system::bls_committee::{Self, BlsCommittee};
 const KECCAK256: u8 = 0;
 const SHA256: u8 = 1;
 
-// TODO: move to utils
-fun copy_table_vec(dest: &mut TableVec<vector<u8>>, src: &TableVec<vector<u8>>) {
-    while (!dest.is_empty()) {
-        dest.pop_back();
-    };
-    let mut i = 0;
-    while (i < src.length()) {
-        let vec = src.borrow(i);
-        let vec_len = vec.length();
-        let mut j = 0;
-        let mut new_vec: vector<u8> = vector[];
-        while (j < vec_len) {
-            new_vec.push_back(*(vec.borrow(j)));
-            j = j + 1;
-        };
-        dest.push_back(new_vec);
-        i = i + 1;
-    }
-}
-
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
 public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
@@ -139,15 +119,8 @@ public struct DWalletNetworkDecryptionKey has key, store {
     id: UID,
     dwallet_network_decryption_key_cap_id: ID,
     current_epoch: u64,
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    current_epoch_shares: table_vec::TableVec<vector<u8>>,
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    next_epoch_shares: table_vec::TableVec<vector<u8>>,
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    previous_epoch_shares: table_vec::TableVec<vector<u8>>,
-
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
-    public_output: table_vec::TableVec<vector<u8>>,
+    reconfiguration_public_outputs: sui::table::Table<u64, TableVec<vector<u8>>>,
+    network_dkg_public_output: TableVec<vector<u8>>,
     /// The fees paid for computation in IKA.
     computation_fee_charged_ika: Balance<IKA>,
     state: DWalletNetworkDecryptionKeyState,
@@ -156,6 +129,11 @@ public struct DWalletNetworkDecryptionKey has key, store {
 public enum DWalletNetworkDecryptionKeyState has copy, drop, store {
     AwaitingNetworkDKG,
     NetworkDKGCompleted,
+    /// Reconfiguration request was sent to the network, but didn't finish yet.
+    AwaitingNetworkReconfiguration,
+    /// Reconfiguration request finished, but we didn't switch an epoch yet.
+    AwaitingNextEpochReconfiguration,
+    NetworkReconfigurationCompleted,
 }
 
 
@@ -401,6 +379,10 @@ public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 }
 
+public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
+       dwallet_network_decryption_key_id: ID,
+}
+
 /// An event emitted when the first round of the DKG process is completed.
 ///
 /// This event is emitted by the blockchain to notify the user about
@@ -409,7 +391,6 @@ public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
 public struct CompletedDWalletNetworkDKGDecryptionKeyEvent has copy, drop, store {
        dwallet_network_decryption_key_id: ID,
-       public_output: vector<u8>,
 }
 
 // DKG TYPES
@@ -734,7 +715,8 @@ const EIncorrectCap: u64 = 11;
 const EUnverifiedCap: u64 = 12;
 const EInvalidSource: u64 =13;
 const EDWalletNetworkDecryptionKeyNotActive: u64 = 14;
-const EInvalidPresign: u64 = 10;
+const EInvalidPresign: u64 = 15;
+const ECannotAdvanceEpoch: u64 = 16;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -793,13 +775,8 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
         id,
         dwallet_network_decryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
-        // TODO: make sure to include class group type and version inside the bytes with the rust code
-        current_epoch_shares: table_vec::empty(ctx),
-        // TODO: make sure to include class group type and version inside the bytes with the rust code
-        next_epoch_shares: table_vec::empty(ctx),
-        // TODO: make sure to include class group type and version inside the bytes with the rust code
-        previous_epoch_shares: table_vec::empty(ctx),
-        public_output: table_vec::empty(ctx),
+        reconfiguration_public_outputs: sui::table::new(ctx),
+        network_dkg_public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
         state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
@@ -816,22 +793,19 @@ public(package) fun request_dwallet_network_decryption_key_dkg(
 public(package) fun respond_dwallet_network_decryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
-    public_output: vector<u8>,
-    key_shares: vector<u8>,
-    is_last: bool,
+    network_public_output: vector<u8>,
+    is_last_chunk: bool,
 ) {
-    if (is_last) {
+    if (is_last_chunk) {
         self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.public_output.push_back(public_output);
-    dwallet_network_decryption_key.current_epoch_shares.push_back(key_shares);
+    dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
     dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
         DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
-            if (is_last) {
+            if (is_last_chunk) {
                 event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
                     dwallet_network_decryption_key_id,
-                    public_output
                 });
                 DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
             } else {
@@ -845,26 +819,51 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
 public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
-    key_shares: vector<u8>,
+    public_output: vector<u8>,
+    is_last_chunk: bool,
 ) {
+    if (is_last_chunk) {
+        self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
+    };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.next_epoch_shares.push_back(key_shares);
+    let next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
+    next_reconfiguration_public_output.push_back(public_output);
+    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+        DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => {
+            if (is_last_chunk) {
+                event::emit(CompletedDWalletDecryptionKeyReshareEvent {
+                    dwallet_network_decryption_key_id,
+                });
+                DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration
+            } else {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
+            }
+        },
+        _ => abort EWrongState
+    };
 }
 
 public(package) fun advance_epoch_dwallet_network_decryption_key(
     self: &mut DWalletCoordinatorInner,
     cap: &DWalletNetworkDecryptionKeyCap,
-) {
-    let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(cap.dwallet_network_decryption_key_id);
+): Balance<IKA> {
+    let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(
+        cap.dwallet_network_decryption_key_id
+    );
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
-    copy_table_vec(&mut dwallet_network_decryption_key.previous_epoch_shares, &dwallet_network_decryption_key.current_epoch_shares);
-    copy_table_vec(&mut dwallet_network_decryption_key.current_epoch_shares, &dwallet_network_decryption_key.next_epoch_shares);
+    dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::NetworkReconfigurationCompleted;
+    let mut epoch_computation_fee_charged_ika = sui::balance::zero<IKA>();
+    epoch_computation_fee_charged_ika.join(dwallet_network_decryption_key.computation_fee_charged_ika.withdraw_all());
+    return epoch_computation_fee_charged_ika
 }
 
 public(package) fun emit_start_reshare_event(
     self: &mut DWalletCoordinatorInner, key_cap: &DWalletNetworkDecryptionKeyCap, ctx: &mut TxContext
 ) {
+    let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(key_cap.dwallet_network_decryption_key_id);
+    dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration;
+    dwallet_network_decryption_key.reconfiguration_public_outputs.add(dwallet_network_decryption_key.current_epoch + 1, table_vec::empty(ctx));
     event::emit(self.create_immediate_dwallet_event(
         key_cap.dwallet_network_decryption_key_id,
         DWalletDecryptionKeyReshareRequestEvent {
@@ -879,19 +878,23 @@ fun get_active_dwallet_network_decryption_key(
     dwallet_network_decryption_key_id: ID,
 ): &mut DWalletNetworkDecryptionKey {
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    assert!(dwallet_network_decryption_key.state == DWalletNetworkDecryptionKeyState::NetworkDKGCompleted, EDWalletNetworkDecryptionKeyNotActive);
+    assert!(dwallet_network_decryption_key.state != DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG, EDWalletNetworkDecryptionKeyNotActive);
     dwallet_network_decryption_key
 }
 
 public(package) fun advance_epoch(
     self: &mut DWalletCoordinatorInner,
     next_committee: BlsCommittee
-) {
+): Balance<IKA> {
+    assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
     self.locked_last_session_to_complete_in_current_epoch = false;
     self.update_last_session_to_complete_in_current_epoch();
     self.current_epoch = self.current_epoch + 1;
     self.previous_committee = self.active_committee;
     self.active_committee = next_committee;
+    let mut epoch_consensus_validation_fee_charged_ika = sui::balance::zero<IKA>();
+    epoch_consensus_validation_fee_charged_ika.join(self.consensus_validation_fee_charged_ika.withdraw_all());
+    return epoch_consensus_validation_fee_charged_ika
 }
 
 fun get_dwallet(
@@ -973,17 +976,11 @@ fun create_immediate_dwallet_event<E: copy + drop + store>(
 
     let event = DWalletEvent {
         epoch: self.current_epoch,
-        session_sequence_number: self.next_session_sequence_number,
+        // session sequence number is not used for immediate events, passing a dummy value
+        session_sequence_number: 0,
         session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
         event_data,
     };
-
-    // This special logic is here to allow the immediate session have a unique session sequenece number on the one hand,
-    // yet ignore it when deciding the last session to complete in the current epoch, as immediate sessions
-    // are special sessions that must get completed in the current epoch.
-    self.next_session_sequence_number = self.next_session_sequence_number + 1;
-    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
-    self.last_session_to_complete_in_current_epoch = self.last_session_to_complete_in_current_epoch + 1;
 
     event
 }
@@ -1200,7 +1197,9 @@ fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinat
     let new_last_session_to_complete_in_current_epoch = (
         self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
-        self.next_session_sequence_number - 1,
+        // Setting it to the `next_session_sequence_number` and not `next_session_sequence_number - 1`,
+        // as we compare this index against the `number_of_completed_sessions` counter, that starts counting from 1.
+        self.next_session_sequence_number,
     );
     if (self.last_session_to_complete_in_current_epoch >= new_last_session_to_complete_in_current_epoch) {
         return
@@ -2363,9 +2362,13 @@ fun process_checkpoint_message(
             } else if (message_data_type == 6) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
-                let key_shares = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, key_shares, is_last);
+                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, is_last);
+            } else if (message_data_type == 7) {
+                let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let public_output = bcs_body.peel_vec_u8();
+                let is_last = bcs_body.peel_bool();
+                self.respond_dwallet_network_decryption_key_reconfiguration(dwallet_network_decryption_key_id, public_output, is_last);
             };
         i = i + 1;
     };

@@ -19,6 +19,7 @@ use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::network_dkg::{advance_network_dkg, DwalletMPCNetworkKeys};
 use crate::dwallet_mpc::presign::PresignParty;
+use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{
     message_digest, party_id_to_authority_name, party_ids_to_authority_names, presign,
@@ -54,6 +55,7 @@ pub struct MPCEventData {
     pub(super) public_input: MPCPublicInput,
     pub init_protocol_data: MPCProtocolInitData,
     pub(crate) decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    pub(crate) is_immediate: bool,
 }
 
 /// A dWallet MPC session.
@@ -134,6 +136,14 @@ impl DWalletMPCSession {
                 malicious_parties,
                 message,
             }) => {
+                info!(
+                    // Safe to unwrap as advance can only be called after the event is received.
+                    mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
+                    session_id=?self.session_id,
+                    validator=?self.epoch_store()?.name,
+                    round=?self.serialized_full_messages.len(),
+                    "Advanced MPC session"
+                );
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
@@ -159,6 +169,10 @@ impl DWalletMPCSession {
                 private_output: _,
                 public_output,
             }) => {
+                info!(
+                    "session {:?} finalized successfully, malicious_parties {:?}",
+                    self.session_id, malicious_parties
+                );
                 info!(
                     // Safe to unwrap as advance can only be called after the event is received.
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
@@ -242,7 +256,7 @@ impl DWalletMPCSession {
         ))
     }
 
-    /// In the Sign Identifiable Abort protocol, each validator sends a malicious report, even
+    /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
     /// if no malicious actors are found. This is necessary to reach agreement on a malicious report
     /// and to punish the validator who started the Sign IA report if they sent a faulty report.
     fn report_malicious_actors(
@@ -421,6 +435,30 @@ impl DWalletMPCSession {
                     malicious_parties: vec![],
                 })
             }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                let public_input = bcs::from_bytes(public_input)?;
+                let decryption_key_shares = mpc_event_data
+                    .decryption_share
+                    .iter()
+                    .map(|(party_id, share)| (*party_id, share.decryption_key_share))
+                    .collect::<HashMap<_, _>>();
+                crate::dwallet_mpc::advance_and_serialize::<ReshareSecp256k1Party>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.serialized_full_messages.clone(),
+                    public_input,
+                    (
+                        bcs::from_bytes(
+                            &mpc_event_data
+                                .private_input
+                                .clone()
+                                .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
+                        )?,
+                        decryption_key_shares,
+                    ),
+                )
+            }
             _ => {
                 unreachable!("Unsupported MPC protocol type")
             }
@@ -461,6 +499,18 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+        // This happens because we clear the session when it is finished, and change the status,
+        // so we might receive a message with delay, and it's irrelevant.
+        if self.status != MPCSessionStatus::Active {
+            warn!(
+                session_id=?message.session_id,
+                from_authority=?message.authority,
+                receiving_authority=?self.epoch_store()?.name,
+                crypto_round_number=?message.round_number,
+                "Received a message for a session that is not active",
+            );
+            return Ok(());
+        }
         // TODO (#876): Set the maximum message size to the smallest size possible.
         info!(
             session_id=?message.session_id,
@@ -471,12 +521,18 @@ impl DWalletMPCSession {
             "Received DWallet mpc message",
         );
         if message.round_number == 0 {
+            error!(
+                session_id=?message.session_id,
+                from_authority=?message.authority,
+                receiving_authority=?self.epoch_store()?.name,
+                crypto_round_number=?message.round_number,
+                "Received a message for round zero",
+            );
             return Err(DwalletMPCError::MessageForFirstMPCStep);
         }
         let source_party_id = self
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;
-
         let current_round = self.serialized_full_messages.len();
 
         let authority_name = self.epoch_store()?.name;
@@ -505,26 +561,27 @@ impl DWalletMPCSession {
                 );
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
-            // If next round.
             None if message.round_number == current_round => {
                 info!(
                     session_id=?message.session_id,
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
-                    "Store message for a future round",
+                    "Store message for the current round",
                 );
                 let mut map = HashMap::new();
                 map.insert(source_party_id, message.message.clone());
                 self.serialized_full_messages.push(map);
             }
+            // Received a message for a future round (above the current round).
+            // If it happens, there is an issue with the consensus.
             None => {
-                warn!(
+                error!(
                     session_id=?message.session_id,
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
-                    "Store message for a future round",
+                    "Received a message for two or more rounds above known round for session",
                 );
                 // Unexpected round number; rounds should grow sequentially.
                 return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));

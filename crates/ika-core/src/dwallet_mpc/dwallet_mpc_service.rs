@@ -9,6 +9,7 @@ use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_session::MPCEventData;
 use crate::dwallet_mpc::session_info_from_event;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
+use ika_config::NodeConfig;
 use ika_sui_client::{SuiBridgeClient, SuiClient};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
@@ -40,67 +41,93 @@ pub struct DWalletMPCService {
     epoch_store: Arc<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     notify: Arc<Notify>,
+    sui_client: Arc<SuiBridgeClient>,
+    dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
 }
 
 impl DWalletMPCService {
-    pub fn new(epoch_store: Arc<AuthorityPerEpochStore>, exit: Receiver<()>) -> Self {
+    pub async fn new(
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        exit: Receiver<()>,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        node_config: NodeConfig,
+        sui_client: Arc<SuiBridgeClient>,
+    ) -> Self {
+        let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
+            consensus_adapter.clone(),
+            epoch_store.clone(),
+            node_config,
+        )
+        .await;
         Self {
             last_read_consensus_round: 0,
             read_messages: 0,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch_store.epoch(),
             notify: Arc::new(Notify::new()),
+            sui_client: sui_client.clone(),
+            dwallet_mpc_manager,
             exit,
         }
     }
 
-    async fn update_last_session_to_complete_in_current_epoch(&self, sui_client: &SuiBridgeClient) {
-        let system_inner = sui_client.get_system_inner_until_success().await;
+    async fn update_last_session_to_complete_in_current_epoch(&mut self) {
+        let system_inner = self.sui_client.must_get_system_inner_object().await;
         if let Some(dwallet_coordinator_id) = system_inner
             .into_init_version_for_tooling()
             .dwallet_2pc_mpc_secp256k1_id
         {
-            let coordinator_state = sui_client
+            let coordinator_state = self
+                .sui_client
                 .get_dwallet_coordinator_inner_until_success(dwallet_coordinator_id)
                 .await;
             match coordinator_state {
                 DWalletCoordinatorInner::V1(inner_state) => {
-                    let mut dwallet_mpc_manager = self.epoch_store.get_dwallet_mpc_manager().await;
-                    dwallet_mpc_manager.update_last_session_to_complete_in_current_epoch(
-                        inner_state.last_session_to_complete_in_current_epoch,
-                    );
+                    self.dwallet_mpc_manager
+                        .update_last_session_to_complete_in_current_epoch(
+                            inner_state.last_session_to_complete_in_current_epoch,
+                        );
                 }
             }
         }
     }
 
-    async fn load_missed_events(&self, sui_client: Arc<SuiBridgeClient>) {
+    async fn load_missed_events(&mut self) {
         let epoch_store = self.epoch_store.clone();
         loop {
-            let Ok(events) = sui_client
+            let Ok(events) = self
+                .sui_client
                 .get_dwallet_mpc_missed_events(epoch_store.epoch())
                 .await
             else {
                 error!("failed to fetch missed dWallet MPC events from Sui");
-                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             };
-            let mut dwallet_mpc_manager = epoch_store.get_dwallet_mpc_manager().await;
             for event in events {
-                if let Ok(Some(session_info)) =
-                    session_info_from_event(event.clone(), &epoch_store.packages_config)
-                {
-                    dwallet_mpc_manager
-                        .handle_dwallet_db_event(DWalletMPCEvent {
-                            event,
-                            session_info: session_info.clone(),
-                        })
-                        .await;
-                    info!(
-                        "Successfully processed missed event from Sui, session: {:?}",
-                        session_info.session_id
-                    );
+                match session_info_from_event(event.clone(), &epoch_store.packages_config) {
+                    Ok(Some(session_info)) => {
+                        self.dwallet_mpc_manager
+                            .handle_dwallet_db_event(DWalletMPCEvent {
+                                event,
+                                session_info: session_info.clone(),
+                            })
+                            .await;
+                        info!(
+                            session_id=?session_info.session_id,
+                            sequence_number=?session_info.sequence_number,
+                            is_immediate=?session_info.is_immediate,
+                            mpc_round=?session_info.mpc_round,
+                            "Successfully processed missed event from Sui"
+                        );
+                    }
+                    Ok(None) => {
+                        error!("Failed to extract session info from missed event");
+                    }
+                    Err(e) => {
+                        error!("Error processing a missed event: {}", e);
+                    }
                 }
             }
             return;
@@ -115,8 +142,8 @@ impl DWalletMPCService {
     /// [`DWalletMPCManager`] for processing.
     ///
     /// The service automatically terminates when an epoch switch occurs.
-    pub async fn spawn(&mut self, sui_client: Arc<SuiBridgeClient>) {
-        self.load_missed_events(sui_client.clone()).await;
+    pub async fn spawn(&mut self) {
+        self.load_missed_events().await;
         loop {
             match self.exit.has_changed() {
                 Ok(true) => {
@@ -130,12 +157,12 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
-            self.update_last_session_to_complete_in_current_epoch(&sui_client)
+            info!("Running DWalletMPCService loop");
+            self.dwallet_mpc_manager
+                .cryptographic_computations_orchestrator
+                .check_for_completed_computations();
+            self.update_last_session_to_complete_in_current_epoch()
                 .await;
-            if let Err(e) = self.read_events().await {
-                error!("failed to handle dWallet MPC events: {}", e);
-            }
-            let mut manager = self.epoch_store.get_dwallet_mpc_manager().await;
             let Ok(tables) = self.epoch_store.tables() else {
                 error!("Failed to load DB tables from epoch store");
                 continue;
@@ -149,10 +176,13 @@ impl DWalletMPCService {
                 continue;
             };
             for session_id in completed_sessions {
-                manager.mpc_sessions.get_mut(&session_id).map(|session| {
-                    session.clear_data();
-                    session.status = MPCSessionStatus::Finished;
-                });
+                self.dwallet_mpc_manager
+                    .mpc_sessions
+                    .get_mut(&session_id)
+                    .map(|session| {
+                        session.clear_data();
+                        session.status = MPCSessionStatus::Finished;
+                    });
             }
             let Ok(events) = self
                 .epoch_store
@@ -163,7 +193,9 @@ impl DWalletMPCService {
                 continue;
             };
             for event in events {
-                manager.handle_dwallet_db_event(event).await;
+                self.dwallet_mpc_manager
+                    .handle_dwallet_db_event(event)
+                    .await;
             }
             let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
@@ -174,47 +206,13 @@ impl DWalletMPCService {
                 new_messages.extend(messages);
             }
             for message in new_messages {
-                manager.handle_dwallet_db_message(message).await;
+                self.dwallet_mpc_manager
+                    .handle_dwallet_db_message(message)
+                    .await;
             }
-            manager
+            self.dwallet_mpc_manager
                 .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;
-            drop(manager);
         }
-    }
-
-    async fn read_events(&mut self) -> IkaResult<()> {
-        let pending_events = self.epoch_store.perpetual_tables.get_all_pending_events();
-        let events: Vec<DWalletMPCEvent> = pending_events
-            .iter()
-            .filter_map(|(id, event)| {
-                let Ok(event) = bcs::from_bytes::<DBSuiEvent>(event) else {
-                    return None;
-                };
-                let Ok(Some(session_info)) =
-                    session_info_from_event(event.clone(), &self.epoch_store.packages_config)
-                else {
-                    return None;
-                };
-                info!(
-                    mpc_protocol=?session_info.mpc_round,
-                    session_id=?session_info.session_id,
-                    validator=?self.epoch_store.name,
-                    "Received start event for session"
-                );
-                let event = DWalletMPCEvent {
-                    event,
-                    session_info,
-                };
-                Some(event)
-            })
-            .collect();
-
-        let mut round_events = self.epoch_store.dwallet_mpc_round_events.lock().await;
-        round_events.extend(events.clone());
-        self.epoch_store
-            .perpetual_tables
-            .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
-        Ok(())
     }
 }

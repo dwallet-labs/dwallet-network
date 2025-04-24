@@ -234,7 +234,7 @@ impl IkaNode {
     pub async fn start(
         config: NodeConfig,
         registry_service: RegistryService,
-        custom_rpc_runtime: Option<Handle>,
+        _custom_rpc_runtime: Option<Handle>,
     ) -> Result<Arc<IkaNode>> {
         Self::start_async(config, registry_service, "unknown").await
     }
@@ -242,7 +242,7 @@ impl IkaNode {
     pub async fn start_async(
         config: NodeConfig,
         registry_service: RegistryService,
-        software_version: &'static str,
+        _software_version: &'static str,
     ) -> Result<Arc<IkaNode>> {
         if let Err(err) = rayon::ThreadPoolBuilder::new()
             .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
@@ -291,7 +291,7 @@ impl IkaNode {
             .await?,
         );
 
-        let latest_system_state = sui_client.get_system_inner_until_success().await;
+        let latest_system_state = sui_client.must_get_system_inner_object().await;
         let epoch_start_system_state = sui_client
             .get_epoch_start_system_until_success(&latest_system_state)
             .await;
@@ -334,6 +334,8 @@ impl IkaNode {
             ika_system_package_id: config.sui_connector_config.ika_system_package_id,
             ika_system_object_id: config.sui_connector_config.ika_system_object_id,
         };
+
+        let next_epoch_committee = Arc::new(tokio::sync::RwLock::new(None));
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
             committee.clone(),
@@ -344,6 +346,7 @@ impl IkaNode {
             chain_identifier.clone(),
             perpetual_tables.clone(),
             packages_config,
+            next_epoch_committee,
         );
 
         info!("created epoch store");
@@ -375,7 +378,7 @@ impl IkaNode {
         //     &epoch_store,
         // );
 
-        info!("creating state sync store");
+        info!("Creating state sync store");
         let state_sync_store = RocksDbStore::new(committee_store.clone(), checkpoint_store.clone());
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
@@ -386,9 +389,13 @@ impl IkaNode {
                 party_id,
                 class_groups_decryption_key: config
                     .class_groups_key_pair_and_proof
+                    .clone()
+                    // Since this is a validator, we can unwrap
+                    // the `class_groups_key_pair_and_proof`.
+                    .expect("Class groups key pair and proof must be present")
                     .class_groups_keypair()
                     .decryption_key(),
-                validator_decryption_key_shares: RwLock::new(HashMap::new()),
+                validator_decryption_key_shares: tokio::sync::RwLock::new(HashMap::new()),
             };
             let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
             let dwallet_network_keys_arc = Arc::new(dwallet_network_keys);
@@ -405,7 +412,7 @@ impl IkaNode {
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
                 dwallet_network_keys.clone(),
-                epoch_store.get_weighted_threshold_access_structure()?,
+                epoch_store.next_epoch_committee.clone(),
             )
             .await?,
         );
@@ -464,7 +471,7 @@ impl IkaNode {
 
         info!("created authority state");
 
-        let (end_of_epoch_channel, end_of_epoch_receiver) =
+        let (end_of_epoch_channel, _end_of_epoch_receiver) =
             broadcast::channel(config.end_of_epoch_broadcast_channel_capacity);
 
         let authority_names_to_peer_ids = epoch_store
@@ -835,7 +842,7 @@ impl IkaNode {
         consensus_manager: ConsensusManager,
         consensus_store_pruner: ConsensusStorePruner,
         checkpoint_metrics: Arc<CheckpointMetrics>,
-        ika_node_metrics: Arc<IkaNodeMetrics>,
+        _ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys: Arc<DwalletMPCNetworkKeys>,
@@ -852,8 +859,13 @@ impl IkaNode {
             previous_epoch_last_checkpoint_sequence_number,
         );
 
-        let dwallet_mpc_service_exit =
-            Self::start_dwallet_mpc_service(epoch_store.clone(), sui_client);
+        let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(
+            epoch_store.clone(),
+            sui_client,
+            Arc::new(consensus_adapter.clone()),
+            config.clone(),
+        )
+        .await;
 
         // Start the dWallet MPC manager on epoch start.
         epoch_store.set_dwallet_mpc_network_keys(network_keys)?;
@@ -861,13 +873,6 @@ impl IkaNode {
         // used to verify outputs before sending a system TX to store them.
         epoch_store
             .set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(&epoch_store))?;
-
-        epoch_store.set_dwallet_mpc_manager(DWalletMPCManager::try_new(
-            Arc::new(consensus_adapter.clone()),
-            Arc::clone(&epoch_store),
-            epoch_store.epoch(),
-            config.clone(),
-        )?)?;
 
         // create a new map that gets injected into both the consensus handler and the consensus adapter
         // the consensus handler will write values forwarded from consensus, and the consensus adapter
@@ -1250,13 +1255,23 @@ impl IkaNode {
         &self.config
     }
 
-    fn start_dwallet_mpc_service(
+    async fn start_dwallet_mpc_service(
         epoch_store: Arc<AuthorityPerEpochStore>,
         sui_client: Arc<SuiBridgeClient>,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        node_config: NodeConfig,
     ) -> watch::Sender<()> {
         let (exit_sender, exit_receiver) = watch::channel(());
-        let mut service = DWalletMPCService::new(epoch_store.clone(), exit_receiver);
-        spawn_monitored_task!(service.spawn(sui_client));
+        let mut service = DWalletMPCService::new(
+            epoch_store.clone(),
+            exit_receiver,
+            consensus_adapter,
+            node_config,
+            sui_client,
+        )
+        .await;
+
+        spawn_monitored_task!(service.spawn());
 
         exit_sender
     }

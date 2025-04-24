@@ -260,6 +260,13 @@ impl Committee {
         self.shuffle_by_stake_with_rng(None, None, &mut rng)
     }
 
+    /// Shuffle the validators deterministically based on the seed.
+    pub fn shuffle_by_stake_from_seed(&self, seed: [u8; 32]) -> Vec<AuthorityName> {
+        // permute the validators deterministically, based on the seed
+        let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
+        self.shuffle_by_stake_with_rng(None, None, &mut rng)
+    }
+
     // ===== Testing-only methods =====
     //
     pub fn new_simple_test_committee_of_size(size: usize) -> (Self, Vec<AuthorityKeyPair>) {
