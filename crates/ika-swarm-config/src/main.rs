@@ -81,7 +81,7 @@ enum Commands {
         epoch_duration_ms: Option<u64>,
         /// Protocol Version
         #[clap(long)]
-        protocol_version: Option<ProtocolVersion>,
+        protocol_version: Option<u64>,
     },
 
     /// IKA system initialization.
@@ -274,7 +274,7 @@ async fn main() -> Result<()> {
                 initiation_parameters.epoch_duration_ms = epoch_duration_ms;
             }
             if let Some(protocol_version) = protocol_version {
-                initiation_parameters.protocol_version = protocol_version.as_u64();
+                initiation_parameters.protocol_version = protocol_version;
             }
             let (ika_system_object_id, protocol_cap_id, init_system_shared_version) =
                 init_initialize(

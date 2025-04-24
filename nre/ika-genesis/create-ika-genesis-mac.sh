@@ -26,7 +26,7 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=12
+export VALIDATOR_NUM=50
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
@@ -54,7 +54,8 @@ export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
 #export SUI_FAUCET_URL="http://localhost:9123/gas"
 # Default Ika epoch duration time.
-export EPOCH_DURATION_TIME_MS=86400000
+#export EPOCH_DURATION_TIME_MS=86400000
+export EPOCH_DURATION_TIME_MS=2400000
 # Sui chain identifier.
 export SUI_CHAIN_IDENTIFIER="custom"
 
@@ -235,7 +236,7 @@ cp ../../../target/debug/ika-swarm-config .
 ./ika-swarm-config mint-ika-tokens --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL" --ika-config-path ./ika_publish_config.json
 
 # Init IKA
-./ika-swarm-config init-env --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path ./ika_publish_config.json
+./ika-swarm-config init-env --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path ./ika_publish_config.json --epoch-duration-ms "$EPOCH_DURATION_TIME_MS"
 
 export PUBLISHER_DIR=publisher
 
@@ -441,7 +442,6 @@ done
 ############################
 # Stake Validators
 ############################
-set -x
 
 # Copy publisher sui_config to SUI_CONFIG_PATH
 rm -rf "$SUI_CONFIG_PATH"

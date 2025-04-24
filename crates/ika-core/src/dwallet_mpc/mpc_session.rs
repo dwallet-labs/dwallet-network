@@ -537,13 +537,14 @@ impl DWalletMPCSession {
             return Ok(());
         }
         // TODO (#876): Set the maximum message size to the smallest size possible.
+        // todo(zeev): add protocol
         info!(
             session_id=?message.session_id,
             from_authority=?message.authority,
             receiving_authority=?self.epoch_store()?.name,
             crypto_round_number=?message.round_number,
             message_size_bytes=?message.message.len(),
-            "Received DWallet mpc message",
+            "Received a dWallet MPC message",
         );
         if message.round_number == 0 {
             error!(
@@ -582,7 +583,7 @@ impl DWalletMPCSession {
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
-                    "Inserting a message into the party to message maps",
+                    "Inserting an MPC message into the party to message maps",
                 );
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
