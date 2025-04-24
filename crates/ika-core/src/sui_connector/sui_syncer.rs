@@ -229,14 +229,14 @@ where
                 {
                     Ok(_) => {
                         info!(
-                            "Successfully synced the network decryption key for key_id: {:?}",
-                            key_id
+                            key_id=?key_id,
+                            "Successfully synced the network decryption key for `key_id`",
                         );
                     }
                     Err(DwalletMPCError::NetworkDKGNotCompleted) => {
                         info!(
-                            "Key Sync — The Network DKG for key_id: {:?} was not completed yet",
-                            key_id
+                            key_id=?key_id,
+                            "Key Sync — The Network DKG for `key_id` was not completed yet",
                         );
                     }
                     Err(e) => {
