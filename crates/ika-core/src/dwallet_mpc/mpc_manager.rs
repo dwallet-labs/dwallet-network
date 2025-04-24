@@ -552,6 +552,7 @@ impl DWalletMPCManager {
             from_authority=?message.authority,
             receiving_authority=?self.epoch_store()?.name,
             crypto_round_number=?message.round_number,
+            mpc_protocol=?message.mpc_protocol,
             "Received an MPC message for session",
         );
         if self
@@ -564,6 +565,7 @@ impl DWalletMPCManager {
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
                 crypto_round_number=?message.round_number,
+                mpc_protocol=?message.mpc_protocol,
                 "Received a message for from malicious authority — ignoring",
             );
             // Ignore a malicious actor's messages.
@@ -578,6 +580,7 @@ impl DWalletMPCManager {
                     from_authority=?message.authority,
                     receiving_authority=?self.epoch_store()?.name,
                     crypto_round_number=?message.round_number,
+                    mpc_protocol=?message.mpc_protocol,
                     "received a message for an MPC session, which an event has not yet received for"
                 );
                 // This can happen if the session is not in the active sessions,
@@ -599,6 +602,7 @@ impl DWalletMPCManager {
                     receiving_authority=?self.epoch_store()?.name,
                     crypto_round_number=?message.round_number,
                     malicious_parties=?malicious_parties,
+                    mpc_protocol=?message.mpc_protocol,
                     "Error storing message, malicious parties detected"
                 );
                 self.flag_parties_as_malicious(&malicious_parties)?;
