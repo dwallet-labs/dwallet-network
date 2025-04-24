@@ -95,8 +95,7 @@ where
             .await
         else {
             return Err(IkaError::SuiConnectorInternalError(
-                "failed to get dwallet coordinator inner when running epoch switch"
-                    .to_string(),
+                "failed to get dwallet coordinator inner when running epoch switch".to_string(),
             ));
         };
         Ok(coordinator)
@@ -265,7 +264,10 @@ where
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
             }
-            let Ok(dwallet_coordinator_inner) = self.fetch_dwallet_coordinator_inner_from_system_inner(ika_system_state_inner).await else {
+            let Ok(dwallet_coordinator_inner) = self
+                .fetch_dwallet_coordinator_inner_from_system_inner(&ika_system_state_inner)
+                .await
+            else {
                 error!("failed to get dwallet coordinator inner");
                 continue;
             };
