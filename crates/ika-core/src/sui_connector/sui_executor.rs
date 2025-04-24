@@ -160,6 +160,8 @@ where
 
         // Check if we can advance the epoch.
         let all_epoch_sessions_finished = coordinator.number_of_completed_sessions
+            // The "+1" is needed, as the number_of_completed_sessions is a counter,
+            // while the last_session_to_complete_in_current_epoch is an index, that starts from 0.
             == coordinator.last_session_to_complete_in_current_epoch + 1;
         let all_immediate_sessions_completed = coordinator.started_immediate_sessions_count
             == coordinator.completed_immediate_sessions_count;
