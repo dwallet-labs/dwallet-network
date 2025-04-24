@@ -655,7 +655,9 @@ where
         }
     }
 
-    async fn must_get_dwallet_coordinator_inner_from_system_inner(&self) -> DWalletCoordinatorInnerV1 {
+    async fn must_get_dwallet_coordinator_inner_from_system_inner(
+        &self,
+    ) -> DWalletCoordinatorInnerV1 {
         loop {
             let system_inner = self.must_get_system_inner_object().await;
             let Some(dwallet_2pc_mpc_secp256k1_id) = system_inner.dwallet_2pc_mpc_secp256k1_id()
@@ -664,9 +666,15 @@ where
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             };
-            return self
+            let DWalletCoordinatorInner::V1(inner_v1) = self
                 .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
-                .await;
+                .await
+            else {
+                error!("fetched wrong version of dwallet coordinator inner, trying again");
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                continue;
+            };
+            return inner_v1
         }
     }
 
