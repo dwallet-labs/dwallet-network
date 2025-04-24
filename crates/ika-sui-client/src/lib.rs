@@ -164,7 +164,7 @@ where
         loop {
             if let Some(dwallet_state_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() {
                 let dwallet_coordinator_inner = self
-                    .get_dwallet_coordinator_inner_until_success(dwallet_state_id)
+                    .must_get_dwallet_coordinator_inner(dwallet_state_id)
                     .await;
                 match dwallet_coordinator_inner {
                     DWalletCoordinatorInner::V1(dwallet_coordinator_inner_v1) => {
@@ -655,7 +655,7 @@ where
         }
     }
 
-    async fn must_fetch_dwallet_coordinator_inner_from_system_inner(&self) -> DWalletCoordinatorInnerV1 {
+    async fn must_get_dwallet_coordinator_inner_from_system_inner(&self) -> DWalletCoordinatorInnerV1 {
         loop {
             let system_inner = self.must_get_system_inner_object().await;
             let Some(dwallet_2pc_mpc_secp256k1_id) = system_inner.dwallet_2pc_mpc_secp256k1_id()
@@ -665,7 +665,7 @@ where
                 continue;
             };
             return self
-                .get_dwallet_coordinator_inner_until_success(dwallet_2pc_mpc_secp256k1_id)
+                .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
                 .await;
         }
     }
@@ -710,7 +710,7 @@ where
             })
     }
 
-    pub async fn get_dwallet_coordinator_inner_until_success(
+    pub async fn must_get_dwallet_coordinator_inner(
         &self,
         dwallet_state_id: ObjectID,
     ) -> DWalletCoordinatorInner {
