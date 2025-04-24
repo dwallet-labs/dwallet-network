@@ -166,9 +166,13 @@ impl ConsensusManagerTrait for MysticetiManager {
         // I have opened an [issue](https://github.com/MystenLabs/sui/issues/21891)
         // in the Sui repository to address this limitation.
         // TODO (#876): Set the maximum message size to the smallest size possible.
-        protocol_config.set_consensus_max_transaction_size_bytes_for_testing(500 * 1024 * 1024);
-        protocol_config
-            .set_consensus_max_transactions_in_block_bytes_for_testing(500 * 1024 * 1024);
+        let max_dwallet_mpc_message_size_bytes = 315218930;
+        protocol_config.set_consensus_max_transaction_size_bytes_for_testing(
+            max_dwallet_mpc_message_size_bytes,
+        );
+        protocol_config.set_consensus_max_transactions_in_block_bytes_for_testing(
+            max_dwallet_mpc_message_size_bytes,
+        );
         let authority = ConsensusAuthority::start(
             protocol_config.consensus_network(),
             own_index,
