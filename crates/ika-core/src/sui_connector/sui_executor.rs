@@ -79,28 +79,6 @@ where
         }
     }
 
-    async fn fetch_dwallet_coordinator_inner_from_system_inner(
-        &self,
-        system_inner: &SystemInner,
-    ) -> IkaResult<DWalletCoordinatorInnerV1> {
-        let Some(dwallet_2pc_mpc_secp256k1_id) = system_inner.dwallet_2pc_mpc_secp256k1_id() else {
-            return Err(IkaError::SuiConnectorInternalError(
-                "failed to get `dwallet_2pc_mpc_secp256k1_id` when running epoch switch"
-                    .to_string(),
-            ));
-        };
-        let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
-            .sui_client
-            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
-            .await
-        else {
-            return Err(IkaError::SuiConnectorInternalError(
-                "failed to get dwallet coordinator inner when running epoch switch".to_string(),
-            ));
-        };
-        Ok(coordinator)
-    }
-
     /// Checks whether `process_mid_epoch`, `lock_last_active_session_sequence_number`, or
     /// `request_advance_epoch` can be called, and calls them if so.
     ///
@@ -264,13 +242,7 @@ where
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
             }
-            let Ok(dwallet_coordinator_inner) = self
-                .fetch_dwallet_coordinator_inner_from_system_inner(&ika_system_state_inner)
-                .await
-            else {
-                error!("failed to get dwallet coordinator inner");
-                continue;
-            };
+            let dwallet_coordinator_inner = self.sui_client.must_get_dwallet_coordinator_inner_v1().await;
             let last_processed_checkpoint_sequence_number: Option<u64> =
                 dwallet_coordinator_inner.last_processed_checkpoint_sequence_number;
             let next_checkpoint_sequence_number = last_processed_checkpoint_sequence_number
