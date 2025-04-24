@@ -19,7 +19,7 @@ use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionK
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCPublicOutput,
     MPCPublicOutputClassGroups, NetworkDecryptionKeyPublicData,
-    NetworkDecryptionKeyPublicOutputType,
+    NetworkDecryptionKeyPublicOutputType, SerializedWrappedPublicOutput,
 };
 use group::{ristretto, secp256k1, GroupElement, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -298,25 +298,30 @@ impl DwalletMPCNetworkKeys {
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 continue;
             };
-            let decryption_key_share_public_parameters =
-                bcs::from_bytes::<Secp256k1DecryptionKeySharePublicParameters>(
-                    &result.decryption_key_share_public_parameters,
-                )?;
+            match result.public_output {
+                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(_)) => {
+                    let decryption_key_share_public_parameters =
+                        bcs::from_bytes::<Secp256k1DecryptionKeySharePublicParameters>(
+                            &result.decryption_key_share_public_parameters,
+                        )?;
 
-            match key_scheme {
-                DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                    return bcs::to_bytes(&ProtocolPublicParameters::new::<
-                        { secp256k1::SCALAR_LIMBS },
-                        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
-                        { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-                        secp256k1::GroupElement,
-                    >(
-                        decryption_key_share_public_parameters.encryption_scheme_public_parameters,
-                    ))
-                    .map_err(|e| DwalletMPCError::BcsError(e))
-                }
-                DWalletMPCNetworkKeyScheme::Ristretto => {
-                    todo!()
+                    match key_scheme {
+                        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                            return bcs::to_bytes(&ProtocolPublicParameters::new::<
+                                { secp256k1::SCALAR_LIMBS },
+                                { FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                                { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                                secp256k1::GroupElement,
+                            >(
+                                decryption_key_share_public_parameters
+                                    .encryption_scheme_public_parameters,
+                            ))
+                            .map_err(|e| DwalletMPCError::BcsError(e))
+                        }
+                        DWalletMPCNetworkKeyScheme::Ristretto => {
+                            todo!()
+                        }
+                    }
                 }
             }
         }
@@ -332,7 +337,10 @@ pub(crate) fn advance_network_dkg(
     key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
-) -> DwalletMPCResult<AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, MPCPublicOutput>> {
+) -> DwalletMPCResult<
+    AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedPublicOutput>,
+> {
+    // Todo (yael): fix mocks
     #[cfg(not(feature = "with-network-dkg"))]
     {
         let secret_shares = shared_wasm_class_groups::decryption_key_shares(party_id);
@@ -461,20 +469,18 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     key_data: DWalletNetworkDecryptionKeyData,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-    if let Some(current_reconfiguration_public_output) =
-        key_data.current_reconfiguration_public_output
-    {
-        instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_output(
-            epoch,
-            weighted_threshold_access_structure,
-            current_reconfiguration_public_output,
-        )
-    } else {
+    if (key_data.current_reconfiguration_public_output.is_empty()) {
         instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
             epoch,
             key_scheme,
             weighted_threshold_access_structure,
-            key_data.network_dkg_public_output,
+            &key_data.network_dkg_public_output,
+        )
+    } else {
+        instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_output(
+            epoch,
+            weighted_threshold_access_structure,
+            &key_data.current_reconfiguration_public_output,
         )
     }
 }
@@ -482,10 +488,10 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
 fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_output(
     epoch: u64,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-    mpc_public_output: Vec<u8>,
+    public_output_bytes: &SerializedWrappedPublicOutput,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
     let mpc_public_output: MPCPublicOutput =
-        bcs::from_bytes(&mpc_public_output).map_err(|e| DwalletMPCError::BcsError(e))?;
+        bcs::from_bytes(public_output_bytes).map_err(|e| DwalletMPCError::BcsError(e))?;
     match &mpc_public_output {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output_bytes)) => {
             let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
@@ -512,10 +518,10 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
     epoch: u64,
     key_scheme: DWalletMPCNetworkKeyScheme,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-    mpc_public_output: Vec<u8>,
+    public_output_bytes: &SerializedWrappedPublicOutput,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
     let mpc_public_output: MPCPublicOutput =
-        bcs::from_bytes(&mpc_public_output).map_err(|e| DwalletMPCError::BcsError(e))?;
+        bcs::from_bytes(public_output_bytes).map_err(|e| DwalletMPCError::BcsError(e))?;
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => match &mpc_public_output {
             MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output_bytes)) => {

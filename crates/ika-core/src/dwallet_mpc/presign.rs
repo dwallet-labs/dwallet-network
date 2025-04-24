@@ -2,7 +2,9 @@
 //!
 //! It integrates both Presign parties (each representing a round in the Presign protocol).
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
-use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups};
+use dwallet_mpc_types::dwallet_mpc::{
+    MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedPublicOutput,
+};
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 
 pub(super) type PresignParty = <AsyncProtocol as twopc_mpc::presign::Protocol>::PresignParty;
@@ -14,15 +16,16 @@ pub(super) type PresignParty = <AsyncProtocol as twopc_mpc::presign::Protocol>::
 pub(super) trait PresignPartyPublicInputGenerator: mpc::Party {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
-        dkg_output: MPCPublicOutput,
+        dkg_output: SerializedWrappedPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
 impl PresignPartyPublicInputGenerator for PresignParty {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
-        dkg_output: MPCPublicOutput,
+        dkg_output: SerializedWrappedPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput> {
+        let dkg_output = bcs::from_bytes(&dkg_output)?;
         match dkg_output {
             MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => {
                 let pub_input = Self::PublicInput {

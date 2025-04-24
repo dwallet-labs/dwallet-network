@@ -13,6 +13,7 @@ use class_groups::{
 };
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPublicOutput, MPCPublicOutputClassGroups,
+    SerializedWrappedPublicOutput,
 };
 use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
@@ -99,9 +100,9 @@ pub struct CentralizedDKGWasmResult {
 /// Returns an error if decoding or advancing the protocol fails.
 /// This is okay since a malicious blockchain can always block a client.
 pub fn create_dkg_output(
-    network_decryption_key_public_output: Vec<u8>,
+    network_decryption_key_public_output: SerializedWrappedPublicOutput,
     key_scheme: u8,
-    decentralized_first_round_public_output: Vec<u8>,
+    decentralized_first_round_public_output: SerializedWrappedPublicOutput,
     session_id: String,
 ) -> anyhow::Result<CentralizedDKGWasmResult> {
     let decentralized_first_round_public_output =
@@ -153,11 +154,11 @@ pub fn create_dkg_output(
 /// The [`advance_centralized_sign_party`] function is
 /// called by the client (the centralized party).
 pub fn advance_centralized_sign_party(
-    network_decryption_key_public_output: Vec<u8>,
+    network_decryption_key_public_output: SerializedWrappedPublicOutput,
     key_scheme: u8,
-    decentralized_party_dkg_public_output: Vec<u8>,
+    decentralized_party_dkg_public_output: SerializedWrappedPublicOutput,
     centralized_party_secret_key_share: Vec<u8>,
-    presign: Vec<u8>,
+    presign: SerializedWrappedPublicOutput,
     message: Vec<u8>,
     hash_type: u8,
 ) -> anyhow::Result<SignedMessage> {
@@ -218,7 +219,7 @@ pub fn advance_centralized_sign_party(
 }
 
 fn protocol_public_parameters_by_key_scheme(
-    network_decryption_key_public_output: Vec<u8>,
+    network_decryption_key_public_output: SerializedWrappedPublicOutput,
     key_scheme: u8,
 ) -> anyhow::Result<Vec<u8>> {
     let mpc_public_output: MPCPublicOutput =
@@ -276,7 +277,7 @@ pub fn generate_secp256k1_cg_keypair_from_seed_internal(
 }
 
 pub fn centralized_public_share_from_decentralized_output_inner(
-    dkg_output: Vec<u8>,
+    dkg_output: SerializedWrappedPublicOutput,
 ) -> anyhow::Result<Vec<u8>> {
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
@@ -294,7 +295,7 @@ pub fn centralized_public_share_from_decentralized_output_inner(
 pub fn encrypt_secret_key_share_and_prove(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
-    network_decryption_key_public_output: Vec<u8>,
+    network_decryption_key_public_output: SerializedWrappedPublicOutput,
 ) -> anyhow::Result<Vec<u8>> {
     let protocol_public_params: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
@@ -337,7 +338,10 @@ pub fn encrypt_secret_key_share_and_prove(
 
 /// Verifies the given secret share matches the given dWallets`
 /// DKG output centralized_party_public_key_share.
-pub fn verify_secret_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> anyhow::Result<bool> {
+pub fn verify_secret_share(
+    secret_share: Vec<u8>,
+    dkg_output: SerializedWrappedPublicOutput,
+) -> anyhow::Result<bool> {
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {

@@ -3,7 +3,9 @@
 //! It integrates the Sign party (representing a round in the protocol).
 
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
-use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups};
+use dwallet_mpc_types::dwallet_mpc::{
+    MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedPublicOutput,
+};
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use mpc::Party;
@@ -34,9 +36,9 @@ pub(super) type SignPublicInput =
 pub(super) trait SignPartyPublicInputGenerator: Party {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
-        dkg_output: MPCPublicOutput,
+        dkg_output: SerializedWrappedPublicOutput,
         message: Vec<u8>,
-        presign: MPCPublicOutput,
+        presign: SerializedWrappedPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
         expected_decrypters: HashSet<PartyID>,
@@ -46,13 +48,15 @@ pub(super) trait SignPartyPublicInputGenerator: Party {
 impl SignPartyPublicInputGenerator for SignFirstParty {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
-        dkg_output: MPCPublicOutput,
+        dkg_output: SerializedWrappedPublicOutput,
         message: Vec<u8>,
-        presign: MPCPublicOutput,
+        presign: SerializedWrappedPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
         expected_decrypters: HashSet<PartyID>,
     ) -> DwalletMPCResult<MPCPublicInput> {
+        let dkg_output = bcs::from_bytes(&dkg_output)?;
+        let presign = bcs::from_bytes(&presign)?;
         match dkg_output {
             MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => {
                 let presign = match presign {
@@ -90,12 +94,13 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
 /// Returns Ok if the message is valid, Err otherwise.
 pub(crate) fn verify_partial_signature(
     hashed_message: &[u8],
-    dwallet_decentralized_output: &[u8],
+    dwallet_decentralized_output: &SerializedWrappedPublicOutput,
     presign: &[u8],
     partially_signed_message: &[u8],
     protocol_public_parameters: &ProtocolPublicParameters,
 ) -> DwalletMPCResult<()> {
     let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
+    // Todo (yael): check function call, match the output version
     let dkg_output = bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(
         &dwallet_decentralized_output,
     )?;

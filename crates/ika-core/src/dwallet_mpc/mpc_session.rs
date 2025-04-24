@@ -3,7 +3,7 @@ use commitment::CommitmentSizedNumber;
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    MPCPublicOutput, MPCPublicOutputClassGroups, MPCSessionStatus,
+    MPCPublicOutput, MPCPublicOutputClassGroups, MPCSessionStatus, SerializedWrappedPublicOutput,
 };
 use group::PartyID;
 use itertools::Itertools;
@@ -190,10 +190,8 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
-                let consensus_message = self.new_dwallet_mpc_output_message(
-                    bcs::to_bytes(&public_output.clone())?,
-                    self.sequence_number,
-                )?;
+                let consensus_message = self
+                    .new_dwallet_mpc_output_message(public_output.clone(), self.sequence_number)?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
@@ -298,8 +296,9 @@ impl DWalletMPCSession {
 
     fn advance_specific_party(
         &self,
-    ) -> DwalletMPCResult<AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, MPCPublicOutput>>
-    {
+    ) -> DwalletMPCResult<
+        AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedPublicOutput>,
+    > {
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
@@ -343,38 +342,27 @@ impl DWalletMPCSession {
                     (),
                 )?;
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
-                    match public_output {
-                        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
-                            public_output,
-                        )) => {
-                            verify_encrypted_share(
-                                &StartEncryptedShareVerificationEvent {
-                                    decentralized_public_output: public_output.clone(),
-                                    encrypted_centralized_secret_share_and_proof: event_data
-                                        .event_data
-                                        .encrypted_centralized_secret_share_and_proof
-                                        .clone(),
-                                    encryption_key: event_data.event_data.encryption_key.clone(),
-                                    encryption_key_id: event_data
-                                        .event_data
-                                        .encryption_key_id
-                                        .clone(),
-                                    dwallet_mpc_network_key_id: event_data
-                                        .event_data
-                                        .dwallet_mpc_network_key_id
-                                        .clone(),
+                    verify_encrypted_share(
+                        &StartEncryptedShareVerificationEvent {
+                            decentralized_public_output: public_output.clone(),
+                            encrypted_centralized_secret_share_and_proof: event_data
+                                .event_data
+                                .encrypted_centralized_secret_share_and_proof
+                                .clone(),
+                            encryption_key: event_data.event_data.encryption_key.clone(),
+                            encryption_key_id: event_data.event_data.encryption_key_id.clone(),
+                            dwallet_mpc_network_key_id: event_data
+                                .event_data
+                                .dwallet_mpc_network_key_id
+                                .clone(),
 
-                                    // Fields not relevant for verification; passing empty values.
-                                    dwallet_id: ObjectID::new([0; 32]),
-                                    source_encrypted_user_secret_key_share_id: ObjectID::new(
-                                        [0; 32],
-                                    ),
-                                    encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
-                                },
-                                &bcs::to_bytes(&public_input.protocol_public_parameters)?,
-                            )?;
-                        }
-                    }
+                            // Fields not relevant for verification; passing empty values.
+                            dwallet_id: ObjectID::new([0; 32]),
+                            source_encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
+                            encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
+                        },
+                        &bcs::to_bytes(&public_input.protocol_public_parameters)?,
+                    )?;
                 }
                 Ok(result)
             }
@@ -421,9 +409,8 @@ impl DWalletMPCSession {
                     &protocol_public_parameters,
                 ) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
-                        public_output: MPCPublicOutput::ClassGroups(
-                            MPCPublicOutputClassGroups::V1(vec![]),
-                        ),
+                        // Todo (yael): check where or it we use this
+                        public_output: vec![],
                         private_output: vec![],
                         malicious_parties: vec![],
                     }),
@@ -447,9 +434,8 @@ impl DWalletMPCSession {
                 )?;
 
                 Ok(AsynchronousRoundResult::Finalize {
-                    public_output: MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
-                        vec![],
-                    )),
+                    // Todo (yael): check where or it we use this
+                    public_output: vec![],
                     private_output: vec![],
                     malicious_parties: vec![],
                 })

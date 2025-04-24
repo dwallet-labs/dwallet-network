@@ -10,7 +10,7 @@ use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    MPCPublicOutput, MPCPublicOutputClassGroups,
+    MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedPublicOutput,
 };
 use group::PartyID;
 use ika_types::committee::{Committee, CommitteeTrait};
@@ -252,7 +252,7 @@ pub(crate) fn presign_public_input(
     Ok(
         <PresignParty as PresignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
-            bcs::from_bytes(&deserialized_event.dkg_output)?,
+            deserialized_event.dkg_output.clone(),
         )?,
     )
 }
@@ -314,11 +314,10 @@ async fn sign_public_input(
     Ok(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
-            bcs::from_bytes(
-                &deserialized_event
-                    .event_data
-                    .dwallet_decentralized_public_output,
-            )?,
+            deserialized_event
+                .event_data
+                .dwallet_decentralized_public_output
+                .clone(),
             bcs::to_bytes(
                 &message_digest(
                     &deserialized_event.event_data.message.clone(),
@@ -327,7 +326,7 @@ async fn sign_public_input(
                 )
                 .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
             )?,
-            bcs::from_bytes(&deserialized_event.event_data.presign.clone())?,
+            deserialized_event.event_data.presign.clone(),
             deserialized_event
                 .event_data
                 .message_centralized_signature
@@ -387,7 +386,9 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
-) -> DwalletMPCResult<mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, MPCPublicOutput>> {
+) -> DwalletMPCResult<
+    mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedPublicOutput>,
+> {
     let DeserializeMPCMessagesResponse {
         messages,
         malicious_parties: _,
@@ -443,14 +444,14 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
             public_output,
         } => {
             let public_output: P::PublicOutputValue = public_output.into();
-            let public_output = bcs::to_bytes(&public_output)?;
-            let public_output =
-                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output));
+            let wrapped_public_output = MPCPublicOutput::ClassGroups(
+                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&public_output)?),
+            );
             let private_output = bcs::to_bytes(&private_output)?;
             mpc::AsynchronousRoundResult::Finalize {
                 malicious_parties,
                 private_output,
-                public_output,
+                public_output: bcs::to_bytes(&wrapped_public_output)?,
             }
         }
     })
