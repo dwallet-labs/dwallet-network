@@ -344,9 +344,13 @@ impl DWalletMPCManager {
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> Vec<u8> {
         loop {
+            let Ok(epoch_store) = self.epoch_store() else {
+                error!("failed to get the epoch store");
+                continue;
+            };
             if let Ok(dwallet_mpc_network_keys) = self.dwallet_mpc_network_keys() {
                 if let Ok(protocol_public_parameters) = dwallet_mpc_network_keys
-                    .get_protocol_public_parameters(key_id, key_scheme)
+                    .get_protocol_public_parameters(epoch_store.epoch(), key_id, key_scheme)
                     .await
                 {
                     return protocol_public_parameters;

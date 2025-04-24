@@ -2887,6 +2887,7 @@ Supported hash schemes for message signing.
         cap.dwallet_network_decryption_key_id
     );
     <b>assert</b>!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EIncorrectCap">EIncorrectCap</a>);
+    <b>assert</b>!(dwallet_network_decryption_key.state == DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
     dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::NetworkReconfigurationCompleted;
     <b>let</b> <b>mut</b> epoch_computation_fee_charged_ika = <a href="../sui/balance.md#sui_balance_zero">sui::balance::zero</a>&lt;IKA&gt;();
@@ -3574,6 +3575,8 @@ This is part of the epoch switch logic.
     <b>let</b> new_last_session_to_complete_in_current_epoch = (
         self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
+        // Setting it to the `next_session_sequence_number` and not `next_session_sequence_number - 1`,
+        // <b>as</b> we compare this index against the `number_of_completed_sessions` counter, that starts counting from 1.
         self.next_session_sequence_number,
     );
     <b>if</b> (self.last_session_to_complete_in_current_epoch &gt;= new_last_session_to_complete_in_current_epoch) {

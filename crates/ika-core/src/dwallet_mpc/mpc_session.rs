@@ -284,15 +284,6 @@ impl DWalletMPCSession {
         Ok(())
     }
 
-    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeys>> {
-        Ok(self
-            .epoch_store()?
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .clone())
-    }
-
     fn advance_specific_party(
         &self,
     ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
