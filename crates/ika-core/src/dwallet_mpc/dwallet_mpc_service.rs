@@ -106,7 +106,8 @@ impl DWalletMPCService {
             };
             for event in events {
                 match session_info_from_event(event.clone(), &epoch_store.packages_config) {
-                    Ok(Some(session_info)) => {
+                    Ok(Some(mut session_info)) => {
+                        session_info.epoch = self.epoch_id;
                         self.dwallet_mpc_manager
                             .handle_dwallet_db_event(DWalletMPCEvent {
                                 event,
