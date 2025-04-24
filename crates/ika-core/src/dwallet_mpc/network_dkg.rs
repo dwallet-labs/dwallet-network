@@ -282,6 +282,7 @@ impl DwalletMPCNetworkKeys {
     /// the Sui network.
     pub async fn get_protocol_public_parameters(
         &self,
+        current_epoch: u64,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
@@ -291,6 +292,16 @@ impl DwalletMPCNetworkKeys {
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 continue;
             };
+            if result.epoch != current_epoch {
+                warn!(
+                    key_epoch=?result.epoch,
+                    current_epoch=?current_epoch,
+                    key_id=?key_id,
+                    "network decryption key shares for are not up to date, trying again");
+
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                continue;
+            }
             let decryption_key_share_public_parameters =
                 bcs::from_bytes::<Secp256k1DecryptionKeySharePublicParameters>(
                     &result.decryption_key_share_public_parameters,
