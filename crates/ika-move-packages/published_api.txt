@@ -4,6 +4,57 @@ IKA
 init
 	fun
 	0x0::ika
+inku_per_ika
+	public fun
+	0x0::ika
+ActiveSetEntry
+	public struct
+	0x0::active_set
+ActiveSet
+	public struct
+	0x0::active_set
+new
+	public(package) fun
+	0x0::active_set
+insert_or_update
+	public(package) fun
+	0x0::active_set
+update
+	public(package) fun
+	0x0::active_set
+insert
+	fun
+	0x0::active_set
+remove
+	public(package) fun
+	0x0::active_set
+find_validator_index
+	fun
+	0x0::active_set
+insert_sorted
+	fun
+	0x0::active_set
+reposition_validator
+	fun
+	0x0::active_set
+max_size
+	public(package) fun
+	0x0::active_set
+size
+	public(package) fun
+	0x0::active_set
+active_ids
+	public(package) fun
+	0x0::active_set
+active_ids_and_stake
+	public(package) fun
+	0x0::active_set
+min_stake
+	public(package) fun
+	0x0::active_set
+total_stake
+	public(package) fun
+	0x0::active_set
 ed25519_address
 	public fun
 	0x0::address
@@ -92,7 +143,7 @@ DWalletPricing2PcMpcSecp256K1
 	public struct
 	0x0::dwallet_pricing
 create_dwallet_pricing_2pc_mpc_secp256k1
-	public(package) fun
+	public fun
 	0x0::dwallet_pricing
 zero
 	public fun
@@ -415,6 +466,9 @@ DWalletCoordinator
 create_dwallet_coordinator
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
+share_dwallet_coordinator
+	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1
 request_dwallet_network_decryption_key_dkg
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
@@ -481,10 +535,196 @@ inner_mut
 inner
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
+ExtendedField
+	public struct
+	0x0::extended_field
+Key
+	public struct
+	0x0::extended_field
+new
+	public fun
+	0x0::extended_field
+borrow
+	public fun
+	0x0::extended_field
+borrow_mut
+	public fun
+	0x0::extended_field
+swap
+	public fun
+	0x0::extended_field
+destroy
+	public fun
+	0x0::extended_field
+ValidatorMetadata
+	public struct
+	0x0::validator_metadata
+new
+	public fun
+	0x0::validator_metadata
+set_image_url
+	public fun
+	0x0::validator_metadata
+set_project_url
+	public fun
+	0x0::validator_metadata
+set_description
+	public fun
+	0x0::validator_metadata
+set_extra_fields
+	public fun
+	0x0::validator_metadata
+image_url
+	public fun
+	0x0::validator_metadata
+project_url
+	public fun
+	0x0::validator_metadata
+description
+	public fun
+	0x0::validator_metadata
+extra_fields
+	public fun
+	0x0::validator_metadata
+default
+	public(package) fun
+	0x0::validator_metadata
+validate_tcp
+	public fun
+	0x0::multiaddr
+validate_udp
+	public fun
+	0x0::multiaddr
+validate_with_transport
+	fun
+	0x0::multiaddr
+is_valid_ipv4
+	fun
+	0x0::multiaddr
+is_valid_ipv6
+	fun
+	0x0::multiaddr
+is_valid_dns
+	fun
+	0x0::multiaddr
+ValidatorInfo
+	public struct
+	0x0::validator_info
+new
+	public(package) fun
+	0x0::validator_info
+metadata
+	public(package) fun
+	0x0::validator_info
+validator_id
+	public fun
+	0x0::validator_info
+network_address
+	public fun
+	0x0::validator_info
+p2p_address
+	public fun
+	0x0::validator_info
+consensus_address
+	public fun
+	0x0::validator_info
+protocol_pubkey_bytes
+	public fun
+	0x0::validator_info
+protocol_pubkey
+	public fun
+	0x0::validator_info
+network_pubkey_bytes
+	public fun
+	0x0::validator_info
+consensus_pubkey_bytes
+	public fun
+	0x0::validator_info
+class_groups_pubkey_and_proof_bytes
+	public fun
+	0x0::validator_info
+next_epoch_network_address
+	public fun
+	0x0::validator_info
+next_epoch_p2p_address
+	public fun
+	0x0::validator_info
+next_epoch_consensus_address
+	public fun
+	0x0::validator_info
+next_epoch_protocol_pubkey_bytes
+	public fun
+	0x0::validator_info
+next_epoch_network_pubkey_bytes
+	public fun
+	0x0::validator_info
+next_epoch_consensus_pubkey_bytes
+	public fun
+	0x0::validator_info
+next_epoch_class_groups_pubkey_and_proof_bytes
+	public fun
+	0x0::validator_info
+set_name
+	public(package) fun
+	0x0::validator_info
+set_network_address
+	public(package) fun
+	0x0::validator_info
+set_validator_metadata
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_network_address
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_p2p_address
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_consensus_address
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_protocol_pubkey_bytes
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_network_pubkey_bytes
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_consensus_pubkey_bytes
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_class_groups_pubkey_and_proof_bytes
+	public(package) fun
+	0x0::validator_info
+roatate_next_epoch_info
+	public(package) fun
+	0x0::validator_info
+update_class_groups_key_and_proof
+	fun
+	0x0::validator_info
+verify_proof_of_possession
+	public(package) fun
+	0x0::validator_info
+validate
+	public fun
+	0x0::validator_info
+destroy
+	public(package) fun
+	0x0::validator_info
+is_duplicate
+	public fun
+	0x0::validator_info
+is_equal_some_and_value
+	fun
+	0x0::validator_info
+is_equal_some
+	fun
+	0x0::validator_info
 ValidatorCap
 	public struct
 	0x0::validator_cap
 ValidatorOperationCap
+	public struct
+	0x0::validator_cap
+ValidatorCommissionCap
 	public struct
 	0x0::validator_cap
 new_validator_cap
@@ -499,417 +739,237 @@ validator_operation_cap_validator_id
 new_validator_operation_cap
 	public(package) fun
 	0x0::validator_cap
+validator_commission_cap_validator_id
+	public(package) fun
+	0x0::validator_cap
+new_validator_commission_cap
+	public(package) fun
+	0x0::validator_cap
 StakedIka
 	public struct
 	0x0::staked_ika
-FungibleStakedIka
-	public struct
+StakedIkaState
+	public enum
 	0x0::staked_ika
-create
+mint
 	public(package) fun
 	0x0::staked_ika
 into_balance
 	public(package) fun
 	0x0::staked_ika
-create_fungible
+set_withdrawing
+	public(package) fun
+	0x0::staked_ika
+can_withdraw_early
 	public(package) fun
 	0x0::staked_ika
 validator_id
 	public fun
 	0x0::staked_ika
-fungible_staked_ika_validator_id
+value
 	public fun
 	0x0::staked_ika
-staked_ika_amount
+activation_epoch
 	public fun
 	0x0::staked_ika
-stake_activation_epoch
+is_staked
 	public fun
 	0x0::staked_ika
-fungible_staked_ika_value
+is_withdrawing
 	public fun
 	0x0::staked_ika
-split_fungible_staked_ika
+withdraw_epoch
 	public fun
 	0x0::staked_ika
-join_fungible_staked_ika
+join
 	public fun
 	0x0::staked_ika
 split
 	public fun
 	0x0::staked_ika
-split_staked_ika
-	public entry fun
-	0x0::staked_ika
-join_staked_ika
-	public entry fun
-	0x0::staked_ika
-is_equal_staking_metadata
-	public fun
-	0x0::staked_ika
-destroy
+PoolExchangeRate
+	public enum
+	0x0::pool_exchange_rate
+flat
 	public(package) fun
-	0x0::staked_ika
+	0x0::pool_exchange_rate
+new
+	public(package) fun
+	0x0::pool_exchange_rate
+convert_to_ika_amount
+	public(package) fun
+	0x0::pool_exchange_rate
+convert_to_share_amount
+	public(package) fun
+	0x0::pool_exchange_rate
+PendingValues
+	public struct
+	0x0::pending_values
+empty
+	public(package) fun
+	0x0::pending_values
+insert_or_add
+	public(package) fun
+	0x0::pending_values
+insert_or_replace
+	public(package) fun
+	0x0::pending_values
+reduce
+	public(package) fun
+	0x0::pending_values
+value_at
+	public(package) fun
+	0x0::pending_values
+flush
+	public(package) fun
+	0x0::pending_values
+inner
+	public(package) fun
+	0x0::pending_values
+inner_mut
+	public(package) fun
+	0x0::pending_values
+unwrap
+	public(package) fun
+	0x0::pending_values
+is_empty
+	public(package) fun
+	0x0::pending_values
 StakingPool
 	public struct
 	0x0::staking_pool
-PoolTokenExchangeRate
-	public struct
+PoolState
+	public enum
 	0x0::staking_pool
 new
 	public(package) fun
 	0x0::staking_pool
-request_add_stake
+activate
+	public(package) fun
+	0x0::staking_pool
+set_withdrawing
+	public(package) fun
+	0x0::staking_pool
+deactivate
+	public(package) fun
+	0x0::staking_pool
+stake
 	public(package) fun
 	0x0::staking_pool
 request_withdraw_stake
 	public(package) fun
 	0x0::staking_pool
-redeem_fungible_staked_ika
+withdraw_stake
 	public(package) fun
 	0x0::staking_pool
-calculate_fungible_staked_ika_withdraw_amount
-	fun
-	0x0::staking_pool
-convert_to_fungible_staked_ika
+advance_epoch
 	public(package) fun
-	0x0::staking_pool
-withdraw_from_principal
-	public(package) fun
-	0x0::staking_pool
-deposit_rewards
-	public(package) fun
-	0x0::staking_pool
-process_pending_stakes_and_withdraws
-	public(package) fun
-	0x0::staking_pool
-process_pending_stake_withdraw
-	fun
 	0x0::staking_pool
 process_pending_stake
 	public(package) fun
 	0x0::staking_pool
-withdraw_rewards
-	fun
-	0x0::staking_pool
-activate_staking_pool
+set_name
 	public(package) fun
 	0x0::staking_pool
-deactivate_staking_pool
+set_validator_metadata
+	public(package) fun
+	0x0::staking_pool
+set_next_commission
+	public(package) fun
+	0x0::staking_pool
+set_next_epoch_network_address
+	public(package) fun
+	0x0::staking_pool
+set_next_epoch_p2p_address
+	public(package) fun
+	0x0::staking_pool
+set_next_epoch_consensus_address
+	public(package) fun
+	0x0::staking_pool
+set_next_epoch_protocol_pubkey_bytes
+	public(package) fun
+	0x0::staking_pool
+set_next_epoch_network_pubkey_bytes
+	public(package) fun
+	0x0::staking_pool
+set_next_epoch_consensus_pubkey_bytes
+	public(package) fun
+	0x0::staking_pool
+set_next_epoch_class_groups_pubkey_and_proof_bytes
+	public(package) fun
+	0x0::staking_pool
+destroy_empty
+	public(package) fun
+	0x0::staking_pool
+exchange_rate_at_epoch
+	public(package) fun
+	0x0::staking_pool
+ika_balance_at_epoch
+	public(package) fun
+	0x0::staking_pool
+new_validator_operation_cap
+	public(package) fun
+	0x0::staking_pool
+new_validator_commission_cap
+	public(package) fun
+	0x0::staking_pool
+collect_commission
+	public(package) fun
+	0x0::staking_pool
+validator_id
+	public(package) fun
+	0x0::staking_pool
+validator_cap_id
+	public(package) fun
+	0x0::staking_pool
+operation_cap_id
+	public(package) fun
+	0x0::staking_pool
+commission_cap_id
+	public(package) fun
+	0x0::staking_pool
+commission_rate
+	public(package) fun
+	0x0::staking_pool
+commission_amount
+	public(package) fun
+	0x0::staking_pool
+rewards_amount
 	public(package) fun
 	0x0::staking_pool
 ika_balance
-	public fun
+	public(package) fun
 	0x0::staking_pool
-is_candidate
-	public fun
+activation_epoch
+	public(package) fun
 	0x0::staking_pool
-is_inactive
-	public fun
+validator_info
+	public(package) fun
 	0x0::staking_pool
-pool_token_exchange_rate_at_epoch
-	public fun
+is_preactive
+	public(package) fun
 	0x0::staking_pool
-pending_stake_amount
-	public fun
+is_active
+	public(package) fun
 	0x0::staking_pool
-pending_stake_withdraw_amount
-	public fun
+is_withdrawing
+	public(package) fun
+	0x0::staking_pool
+withdrawing_epoch
+	public(package) fun
+	0x0::staking_pool
+is_preactive_at_epoch
+	fun
 	0x0::staking_pool
 exchange_rates
 	public(package) fun
 	0x0::staking_pool
-ika_amount
-	public fun
+is_empty
+	public(package) fun
 	0x0::staking_pool
-pool_token_amount
-	public fun
+calculate_rewards
+	public(package) fun
 	0x0::staking_pool
-is_candidate_at_epoch
-	fun
-	0x0::staking_pool
-get_ika_amount
-	fun
-	0x0::staking_pool
-get_token_amount
-	fun
-	0x0::staking_pool
-initial_exchange_rate
-	fun
-	0x0::staking_pool
-check_balance_invariants
-	fun
-	0x0::staking_pool
-ValidatorMetadata
-	public struct
-	0x0::validator_inner_v1
-ValidatorInnerV1
-	public struct
-	0x0::validator_inner_v1
-StakingRequestEvent
-	public struct
-	0x0::validator_inner_v1
-UnstakingRequestEvent
-	public struct
-	0x0::validator_inner_v1
-ConvertingToFungibleStakedIkaEvent
-	public struct
-	0x0::validator_inner_v1
-RedeemingFungibleStakedIkaEvent
-	public struct
-	0x0::validator_inner_v1
-create_metadata
-	public(package) fun
-	0x0::validator_inner_v1
-create
-	public(package) fun
-	0x0::validator_inner_v1
-deactivate
-	public(package) fun
-	0x0::validator_inner_v1
-activate
-	public(package) fun
-	0x0::validator_inner_v1
-adjust_stake_and_computation_price
-	public(package) fun
-	0x0::validator_inner_v1
-request_add_stake
-	public(package) fun
-	0x0::validator_inner_v1
-convert_to_fungible_staked_ika
-	public(package) fun
-	0x0::validator_inner_v1
-redeem_fungible_staked_ika
-	public(package) fun
-	0x0::validator_inner_v1
-request_withdraw_stake
-	public(package) fun
-	0x0::validator_inner_v1
-request_set_computation_price
-	public(package) fun
-	0x0::validator_inner_v1
-set_candidate_computation_price
-	public(package) fun
-	0x0::validator_inner_v1
-request_set_commission_rate
-	public(package) fun
-	0x0::validator_inner_v1
-set_candidate_commission_rate
-	public(package) fun
-	0x0::validator_inner_v1
-deposit_stake_rewards
-	public(package) fun
-	0x0::validator_inner_v1
-process_pending_stakes_and_withdraws
-	public(package) fun
-	0x0::validator_inner_v1
-is_candidate
-	public fun
-	0x0::validator_inner_v1
-is_inactive
-	public fun
-	0x0::validator_inner_v1
-validator_id
-	public fun
-	0x0::validator_inner_v1
-metadata
-	public fun
-	0x0::validator_inner_v1
-payment_address
-	public fun
-	0x0::validator_inner_v1
-name
-	public fun
-	0x0::validator_inner_v1
-description
-	public fun
-	0x0::validator_inner_v1
-image_url
-	public fun
-	0x0::validator_inner_v1
-project_url
-	public fun
-	0x0::validator_inner_v1
-network_address
-	public fun
-	0x0::validator_inner_v1
-p2p_address
-	public fun
-	0x0::validator_inner_v1
-consensus_address
-	public fun
-	0x0::validator_inner_v1
-protocol_pubkey_bytes
-	public fun
-	0x0::validator_inner_v1
-protocol_pubkey
-	public fun
-	0x0::validator_inner_v1
-proof_of_possession_bytes
-	public fun
-	0x0::validator_inner_v1
-network_pubkey_bytes
-	public fun
-	0x0::validator_inner_v1
-consensus_pubkey_bytes
-	public fun
-	0x0::validator_inner_v1
-class_groups_pubkey_and_proof_bytes
-	public fun
-	0x0::validator_inner_v1
-next_epoch_network_address
-	public fun
-	0x0::validator_inner_v1
-next_epoch_p2p_address
-	public fun
-	0x0::validator_inner_v1
-next_epoch_consensus_address
-	public fun
-	0x0::validator_inner_v1
-next_epoch_protocol_pubkey_bytes
-	public fun
-	0x0::validator_inner_v1
-next_epoch_proof_of_possession_bytes
-	public fun
-	0x0::validator_inner_v1
-next_epoch_network_pubkey_bytes
-	public fun
-	0x0::validator_inner_v1
-next_epoch_consensus_pubkey_bytes
-	public fun
-	0x0::validator_inner_v1
-next_epoch_class_groups_pubkey_and_proof_bytes
-	public fun
-	0x0::validator_inner_v1
-operation_cap_id
-	public fun
-	0x0::validator_inner_v1
-next_epoch_computation_price
-	public fun
-	0x0::validator_inner_v1
-total_stake_amount
-	public fun
-	0x0::validator_inner_v1
-pending_stake_amount
-	public fun
-	0x0::validator_inner_v1
-pending_stake_withdraw_amount
-	public fun
-	0x0::validator_inner_v1
-computation_price
-	public fun
-	0x0::validator_inner_v1
-commission_rate
-	public fun
-	0x0::validator_inner_v1
-pool_token_exchange_rate_at_epoch
-	public fun
-	0x0::validator_inner_v1
-is_duplicate
-	public fun
-	0x0::validator_inner_v1
-is_equal_some_and_value
-	fun
-	0x0::validator_inner_v1
-is_equal_some
-	fun
-	0x0::validator_inner_v1
-new_validator_operation_cap
-	public(package) fun
-	0x0::validator_inner_v1
-update_payment_address
-	public(package) fun
-	0x0::validator_inner_v1
-update_name
-	public(package) fun
-	0x0::validator_inner_v1
-update_description
-	public(package) fun
-	0x0::validator_inner_v1
-update_image_url
-	public(package) fun
-	0x0::validator_inner_v1
-update_project_url
-	public(package) fun
-	0x0::validator_inner_v1
-update_next_epoch_network_address
-	public(package) fun
-	0x0::validator_inner_v1
-update_candidate_network_address
-	public(package) fun
-	0x0::validator_inner_v1
-update_next_epoch_p2p_address
-	public(package) fun
-	0x0::validator_inner_v1
-update_candidate_p2p_address
-	public(package) fun
-	0x0::validator_inner_v1
-update_next_epoch_consensus_address
-	public(package) fun
-	0x0::validator_inner_v1
-update_candidate_consensus_address
-	public(package) fun
-	0x0::validator_inner_v1
-update_next_epoch_protocol_pubkey_bytes
-	public(package) fun
-	0x0::validator_inner_v1
-update_candidate_protocol_pubkey_bytes
-	public(package) fun
-	0x0::validator_inner_v1
-update_next_epoch_network_pubkey_bytes
-	public(package) fun
-	0x0::validator_inner_v1
-update_candidate_network_pubkey_bytes
-	public(package) fun
-	0x0::validator_inner_v1
-update_next_epoch_consensus_pubkey_bytes
-	public(package) fun
-	0x0::validator_inner_v1
-update_next_epoch_class_groups_pubkey_and_proof_bytes
-	public(package) fun
-	0x0::validator_inner_v1
-update_candidate_consensus_pubkey_bytes
-	public(package) fun
-	0x0::validator_inner_v1
-update_candidate_class_groups_pubkey_and_proof_bytes
-	public(package) fun
-	0x0::validator_inner_v1
-effectuate_staged_metadata
-	public(package) fun
-	0x0::validator_inner_v1
-update_class_groups_key_and_proof
-	fun
-	0x0::validator_inner_v1
-verify_proof_of_possession
-	public(package) fun
-	0x0::validator_inner_v1
-validate_metadata
-	public fun
-	0x0::validator_inner_v1
-get_staking_pool_ref
-	public(package) fun
-	0x0::validator_inner_v1
-create_from_metadata
-	fun
-	0x0::validator_inner_v1
-Validator
-	public struct
-	0x0::validator
-create
-	public(package) fun
-	0x0::validator
-load_validator_maybe_upgrade
-	public(package) fun
-	0x0::validator
-destroy
-	public(package) fun
-	0x0::validator
-upgrade_to_latest
-	fun
-	0x0::validator
-version
-	fun
-	0x0::validator
 ValidatorSet
 	public struct
 	0x0::validator_set
@@ -949,13 +1009,37 @@ request_add_stake
 request_withdraw_stake
 	public(package) fun
 	0x0::validator_set
-convert_to_fungible_staked_ika
+withdraw_stake
 	public(package) fun
 	0x0::validator_set
-redeem_fungible_staked_ika
+set_validator_name
 	public(package) fun
 	0x0::validator_set
-request_set_commission_rate
+set_validator_metadata
+	public(package) fun
+	0x0::validator_set
+set_next_commission
+	public(package) fun
+	0x0::validator_set
+set_next_epoch_network_address
+	public(package) fun
+	0x0::validator_set
+set_next_epoch_p2p_address
+	public(package) fun
+	0x0::validator_set
+set_next_epoch_consensus_address
+	public(package) fun
+	0x0::validator_set
+set_next_epoch_protocol_pubkey_bytes
+	public(package) fun
+	0x0::validator_set
+set_next_epoch_network_pubkey_bytes
+	public(package) fun
+	0x0::validator_set
+set_next_epoch_consensus_pubkey_bytes
+	public(package) fun
+	0x0::validator_set
+set_next_epoch_class_groups_pubkey_and_proof_bytes
 	public(package) fun
 	0x0::validator_set
 process_mid_epoch
@@ -969,12 +1053,6 @@ activate_added_validators
 	0x0::validator_set
 update_and_process_low_stake_departures
 	fun
-	0x0::validator_set
-effectuate_staged_metadata
-	fun
-	0x0::validator_set
-derive_computation_price_per_unit_size
-	public(package) fun
 	0x0::validator_set
 total_stake
 	public fun
@@ -1003,7 +1081,7 @@ is_duplicate_validator
 is_duplicate_with_active_validator
 	fun
 	0x0::validator_set
-is_duplicate_with_next_epoch_committee
+is_duplicate_with_next_epoch_active_committee
 	fun
 	0x0::validator_set
 is_duplicate_with_pending_validator
@@ -1054,13 +1132,7 @@ clean_report_records_leaving_validator
 process_pending_validators
 	fun
 	0x0::validator_set
-process_pending_stakes_and_withdraws
-	fun
-	0x0::validator_set
 calculate_total_stakes
-	fun
-	0x0::validator_set
-adjust_stake_and_computation_price
 	fun
 	0x0::validator_set
 compute_reward_adjustments
@@ -1099,7 +1171,7 @@ undo_report_validator_impl
 active_committee
 	public fun
 	0x0::validator_set
-next_epoch_committee
+next_epoch_active_committee
 	public fun
 	0x0::validator_set
 next_pending_active_validators
@@ -1140,202 +1212,154 @@ new_protocol_cap
 	0x0::protocol_cap
 SystemParametersV1
 	public struct
-	0x0::system_inner_v1
+	0x0::system_inner
 SystemInnerV1
 	public struct
-	0x0::system_inner_v1
+	0x0::system_inner
 SystemEpochInfoEvent
 	public struct
-	0x0::system_inner_v1
+	0x0::system_inner
 SystemProtocolCapVerifiedEvent
 	public struct
-	0x0::system_inner_v1
+	0x0::system_inner
 SystemCheckpointInfoEvent
 	public struct
-	0x0::system_inner_v1
+	0x0::system_inner
 create
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 advance_network_keys
 	public(package) fun
-	0x0::system_inner_v1
-emit_start_reshare_events
-	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 create_system_parameters
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 initialize
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 request_add_validator_candidate
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 request_remove_validator_candidate
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 request_add_validator
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 request_remove_validator
 	public(package) fun
-	0x0::system_inner_v1
-request_set_computation_price
+	0x0::system_inner
+set_validator_metadata
 	public(package) fun
-	0x0::system_inner_v1
-set_candidate_validator_computation_price
+	0x0::system_inner
+set_next_commission
 	public(package) fun
-	0x0::system_inner_v1
-request_set_commission_rate
-	public(package) fun
-	0x0::system_inner_v1
-set_candidate_validator_commission_rate
-	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 request_add_stake
 	public(package) fun
-	0x0::system_inner_v1
-request_add_stake_mul_coin
-	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 request_withdraw_stake
 	public(package) fun
-	0x0::system_inner_v1
-convert_to_fungible_staked_ika
+	0x0::system_inner
+withdraw_stake
 	public(package) fun
-	0x0::system_inner_v1
-redeem_fungible_staked_ika
-	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 report_validator
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 undo_report_validator
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 rotate_operation_cap
 	public(package) fun
-	0x0::system_inner_v1
-update_validator_payment_address
+	0x0::system_inner
+rotate_commission_cap
 	public(package) fun
-	0x0::system_inner_v1
-update_validator_name
+	0x0::system_inner
+set_validator_name
 	public(package) fun
-	0x0::system_inner_v1
-update_validator_description
+	0x0::system_inner
+set_next_epoch_network_address
 	public(package) fun
-	0x0::system_inner_v1
-update_validator_image_url
+	0x0::system_inner
+set_next_epoch_p2p_address
 	public(package) fun
-	0x0::system_inner_v1
-update_validator_project_url
+	0x0::system_inner
+set_next_epoch_consensus_address
 	public(package) fun
-	0x0::system_inner_v1
-update_validator_next_epoch_network_address
+	0x0::system_inner
+set_next_epoch_protocol_pubkey_bytes
 	public(package) fun
-	0x0::system_inner_v1
-update_candidate_validator_network_address
+	0x0::system_inner
+set_next_epoch_consensus_pubkey_bytes
 	public(package) fun
-	0x0::system_inner_v1
-update_validator_next_epoch_p2p_address
+	0x0::system_inner
+set_next_epoch_class_groups_pubkey_and_proof_bytes
 	public(package) fun
-	0x0::system_inner_v1
-update_candidate_validator_p2p_address
+	0x0::system_inner
+set_next_epoch_network_pubkey_bytes
 	public(package) fun
-	0x0::system_inner_v1
-update_validator_next_epoch_consensus_address
-	public(package) fun
-	0x0::system_inner_v1
-update_candidate_validator_consensus_address
-	public(package) fun
-	0x0::system_inner_v1
-update_validator_next_epoch_protocol_pubkey_bytes
-	public(package) fun
-	0x0::system_inner_v1
-update_candidate_validator_protocol_pubkey_bytes
-	public(package) fun
-	0x0::system_inner_v1
-update_validator_next_epoch_consensus_pubkey_bytes
-	public(package) fun
-	0x0::system_inner_v1
-update_candidate_validator_consensus_pubkey_bytes
-	public(package) fun
-	0x0::system_inner_v1
-update_validator_next_epoch_class_groups_pubkey_and_proof_bytes
-	public(package) fun
-	0x0::system_inner_v1
-update_candidate_validator_class_groups_pubkey_and_proof_bytes
-	public(package) fun
-	0x0::system_inner_v1
-update_validator_next_epoch_network_pubkey_bytes
-	public(package) fun
-	0x0::system_inner_v1
-update_candidate_validator_network_pubkey_bytes
-	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 advance_epoch
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 process_mid_epoch
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 epoch
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 protocol_version
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 upgrade_caps
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 epoch_start_timestamp_ms
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 validator_stake_amount
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 get_reporters_of
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 pool_exchange_rates
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 active_committee
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 next_epoch_active_committee
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 verify_cap
 	fun
-	0x0::system_inner_v1
+	0x0::system_inner
 process_checkpoint_message_by_cap
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 process_checkpoint_message_by_quorum
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 request_dwallet_network_decryption_key_dkg_by_cap
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 process_checkpoint_message
 	fun
-	0x0::system_inner_v1
-extract_coin_balance
-	fun
-	0x0::system_inner_v1
+	0x0::system_inner
 authorize_update_message_by_cap
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 authorize_update_message
 	fun
-	0x0::system_inner_v1
+	0x0::system_inner
 commit_upgrade
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 epoch_duration_ms
 	public(package) fun
-	0x0::system_inner_v1
+	0x0::system_inner
 System
 	public struct
 	0x0::system
@@ -1346,121 +1370,67 @@ initialize
 	public fun
 	0x0::system
 request_add_validator_candidate
-	public entry fun
-	0x0::system
-request_add_validator_candidate_non_entry
 	public fun
 	0x0::system
 request_remove_validator_candidate
-	public entry fun
+	public fun
 	0x0::system
 request_add_validator
-	public entry fun
+	public fun
 	0x0::system
 request_remove_validator
-	public entry fun
+	public fun
 	0x0::system
-request_set_computation_price
-	public entry fun
-	0x0::system
-set_candidate_validator_computation_price
-	public entry fun
-	0x0::system
-request_set_commission_rate
-	public entry fun
-	0x0::system
-set_candidate_validator_commission_rate
-	public entry fun
+set_next_commission
+	public fun
 	0x0::system
 request_add_stake
-	public entry fun
-	0x0::system
-request_add_stake_non_entry
 	public fun
-	0x0::system
-request_add_stake_mul_coin
-	public entry fun
 	0x0::system
 request_withdraw_stake
-	public entry fun
-	0x0::system
-convert_to_fungible_staked_ika
 	public fun
 	0x0::system
-redeem_fungible_staked_ika
-	public fun
-	0x0::system
-request_withdraw_stake_non_entry
+withdraw_stake
 	public fun
 	0x0::system
 report_validator
-	public entry fun
-	0x0::system
-undo_report_validator
-	public entry fun
-	0x0::system
-rotate_operation_cap
-	public entry fun
-	0x0::system
-rotate_operation_cap_non_entry
 	public fun
 	0x0::system
-update_validator_payment_address
-	public entry fun
+undo_report_validator
+	public fun
 	0x0::system
-update_validator_name
-	public entry fun
+rotate_operation_cap
+	public fun
 	0x0::system
-update_validator_description
-	public entry fun
+rotate_commission_cap
+	public fun
 	0x0::system
-update_validator_image_url
-	public entry fun
+set_validator_name
+	public fun
 	0x0::system
-update_validator_project_url
-	public entry fun
+set_validator_metadata
+	public fun
 	0x0::system
-update_validator_next_epoch_network_address
-	public entry fun
+set_next_epoch_network_address
+	public fun
 	0x0::system
-update_candidate_validator_network_address
-	public entry fun
+set_next_epoch_p2p_address
+	public fun
 	0x0::system
-update_validator_next_epoch_p2p_address
-	public entry fun
+set_next_epoch_consensus_address
+	public fun
 	0x0::system
-update_candidate_validator_p2p_address
-	public entry fun
+set_next_epoch_protocol_pubkey_bytes
+	public fun
 	0x0::system
-update_validator_next_epoch_consensus_address
-	public entry fun
+set_next_epoch_consensus_pubkey_bytes
+	public fun
 	0x0::system
-update_candidate_validator_consensus_address
-	public entry fun
+set_next_epoch_class_groups_pubkey_and_proof_bytes
+	public fun
 	0x0::system
-update_validator_next_epoch_protocol_pubkey_bytes
-	public entry fun
-	0x0::system
-update_candidate_validator_protocol_pubkey_bytes
-	public entry fun
-	0x0::system
-update_validator_next_epoch_consensus_pubkey_bytes
-	public entry fun
-	0x0::system
-update_candidate_validator_consensus_pubkey_bytes
-	public entry fun
-	0x0::system
-update_validator_next_epoch_class_groups_pubkey_and_proof_bytes
-	public entry fun
-	0x0::system
-update_candidate_validator_class_groups_pubkey_and_proof_bytes
-	public entry fun
-	0x0::system
-update_validator_next_epoch_network_pubkey_bytes
-	public entry fun
-	0x0::system
-update_candidate_validator_network_pubkey_bytes
-	public entry fun
+set_next_epoch_network_pubkey_bytes
+	public fun
 	0x0::system
 pool_exchange_rates
 	public fun
@@ -1516,9 +1486,3 @@ initialize
 destroy
 	fun
 	0x0::init
-TestEvent
-	public struct
-	0x0::test
-test_event
-	public entry fun
-	0x0::test

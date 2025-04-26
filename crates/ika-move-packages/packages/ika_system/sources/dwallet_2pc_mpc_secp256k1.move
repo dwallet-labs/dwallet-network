@@ -41,7 +41,7 @@ public(package) fun create_dwallet_coordinator(
     active_committee: BlsCommittee,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
-): ID {
+): DWalletCoordinator {
     let dwallet_coordinator_inner = dwallet_2pc_mpc_secp256k1_inner::create_dwallet_coordinator_inner(
         epoch,
         active_committee,
@@ -55,12 +55,15 @@ public(package) fun create_dwallet_coordinator(
         package_id,
         new_package_id: option::none(),
     };
-    let self_id = object::id(&self);
     dynamic_field::add(&mut self.id, VERSION, dwallet_coordinator_inner);
-    transfer::share_object(self);
-    self_id
+    self
 }
 
+public(package) fun share_dwallet_coordinator(
+    dwallet_coordinator: DWalletCoordinator,
+) {
+    transfer::share_object(dwallet_coordinator);
+}
 
 public(package) fun request_dwallet_network_decryption_key_dkg(
     self: &mut DWalletCoordinator,

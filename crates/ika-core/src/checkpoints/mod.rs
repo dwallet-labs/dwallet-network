@@ -963,7 +963,7 @@ impl CheckpointBuilder {
         //     }
         // }
         let mut last_checkpoint_seq = last_checkpoint.as_ref().map(|(seq, _)| *seq);
-        if epoch != 0 && last_checkpoint_seq.is_none() {
+        if epoch != 1 && last_checkpoint_seq.is_none() {
             last_checkpoint_seq = Some(self.previous_epoch_last_checkpoint_sequence_number);
         }
         info!(

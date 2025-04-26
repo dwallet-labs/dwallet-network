@@ -1,46 +1,43 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module ika_system::validator_set;
 
 use ika::ika::IKA;
-use ika_system::staking_pool::{
-    PoolTokenExchangeRate,
-};
+use ika_system::pool_exchange_rate::PoolExchangeRate;
 use ika_system::staked_ika::{
     StakedIka,
-    validator_id,
-    FungibleStakedIka,
 };
-use ika_system::validator_inner_v1::{ValidatorInnerV1};
-use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap };
-use ika_system::validator::{Self, Validator};
+use ika_system::staking_pool::{Self, StakingPool};
+use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
 use ika_system::bls_committee::{Self, BlsCommittee, new_bls_committee, new_bls_committee_member, total_voting_power, quorum_threshold};
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
+use ika_system::validator_metadata::{ValidatorMetadata};
 use sui::bag::{Self, Bag};
-use sui::balance::Balance;
+use sui::balance::{Self, Balance};
+use sui::coin::Coin;
 use sui::event;
-use sui::priority_queue as pq;
 use sui::table::{Table};
 use sui::object_table::{Self, ObjectTable};
 use sui::vec_map::{Self, VecMap};
 use sui::vec_set::{Self, VecSet};
+use std::string::String;
 
 public struct ValidatorSet has store {
     /// Total amount of stake from all active validators at the beginning of the epoch.
     total_stake: u64,
-    /// A tale that contains all validators
-    validators: ObjectTable<ID, Validator>,
+    /// A table that contains all staking pools
+    validators: ObjectTable<ID, StakingPool>,
     /// The current list of active committee of validators.
     active_committee: BlsCommittee,
     /// The next list of active committee of validators.
     /// It will become the active_committee at the end of the epoch.
-    next_epoch_committee: Option<BlsCommittee>,
+    next_epoch_active_committee: Option<BlsCommittee>,
     /// The current list of previous committee of validators.
     previous_committee: BlsCommittee,
-    /// The next list of pending active validators to be next_epoch_committee.
-    /// It will start from the last next_epoch_committee and will be
-    /// process between middle of the epochs and will be finalize
+    /// The next list of peding active validators to be next_epoch_active_committee.
+    /// It will start from the last next_epoch_active_committee and will be
+    /// process between middle of the epochs and will be finlize
     /// at the middle of the epoch.
     pending_active_validators: vector<ID>,
     /// Table storing the number of epochs during which a validator's stake has been below the low stake threshold.
@@ -63,12 +60,12 @@ public struct ValidatorSet has store {
 public struct ValidatorEpochInfoEventV1 has copy, drop {
     epoch: u64,
     validator_id: ID,
-    reference_gas_survey_quote: u64,
+    //reference_gas_survey_quote: u64,
     stake: u64,
     voting_power: u64,
     commission_rate: u16,
     pool_staking_reward: u64,
-    pool_token_exchange_rate: PoolTokenExchangeRate,
+    pool_token_exchange_rate: PoolExchangeRate,
     tallying_rule_reporters: vector<ID>,
     tallying_rule_global_score: u64,
 }
@@ -101,7 +98,6 @@ const EValidatorNotCandidate: u64 = 7;
 const ENotActiveOrPendingValidator: u64 = 9;
 const EStakingBelowThreshold: u64 = 10;
 const EValidatorAlreadyRemoved: u64 = 11;
-const EValidatorSetEmpty: u64 = 13;
 const ENotCandidateOrActiveValidator: u64 = 14;
 const ENotCandidateOrActiveOrInactiveValidator: u64 = 15;
 const ENotCandidateOrActiveOrPendingValidator: u64 = 16;
@@ -123,35 +119,24 @@ const EAlreadyInitialized: vector<u8> = b"Protocol cannot be initialized more th
 // ==== initialization ====
 
 public(package) fun new(ctx: &mut TxContext): ValidatorSet {
-    // let total_stake = calculate_total_stakes(&init_active_committee);
-    // let mut staking_pool_mappings = table::new(ctx);
-    // let num_validators = init_active_committee.length();
-    // let mut i = 0;
-    // while (i < num_validators) {
-    //     let validator = &init_active_committee[i];
-    //     staking_pool_mappings.add(staking_pool_id(validator), sui_address(validator));
-    //     i = i + 1;
-    // };
-    let validators = ValidatorSet {
+    ValidatorSet {
         total_stake: 0,
         validators: object_table::new(ctx),
         active_committee: bls_committee::empty(),
-        next_epoch_committee: option::none(),
+        next_epoch_active_committee: option::none(),
         previous_committee: bls_committee::empty(),
         pending_active_validators: vector[],
         at_risk_validators: vec_map::empty(),
         validator_report_records: vec_map::empty(),
         extra_fields: bag::new(ctx),
-    };
-    //voting_power::set_voting_power(&mut validators.active_committee);
-    validators
+    }
 }
 
 public(package) fun initialize(self: &mut ValidatorSet) {
     assert!(self.active_committee.members().is_empty(), EAlreadyInitialized);
-    self.process_pending_validators();
-    self.active_committee = self.next_epoch_committee.extract();
-    self.activate_added_validators(0);
+    self.process_pending_validators(1);
+    self.active_committee = self.next_epoch_active_committee.extract();
+    self.activate_added_validators(1);
     self.total_stake = calculate_total_stakes(self);
 }
 
@@ -160,64 +145,51 @@ public(package) fun initialize(self: &mut ValidatorSet) {
 /// Called by `ika_system` to add a new validator candidate.
 public(package) fun request_add_validator_candidate(
     self: &mut ValidatorSet,
-    payment_address: address,
+    current_epoch: u64,
+    name: String,
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
     class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
-    name: vector<u8>,
-    description: vector<u8>,
-    image_url: vector<u8>,
-    project_url: vector<u8>,
-    network_address: vector<u8>,
-    p2p_address: vector<u8>,
-    consensus_address: vector<u8>,
-    computation_price: u64,
+    network_address: String,
+    p2p_address: String,
+    consensus_address: String,
     commission_rate: u16,
+    metadata: ValidatorMetadata,
     ctx: &mut TxContext,
-): (ValidatorCap, ValidatorOperationCap) {
-
-    let (mut validator, cap, operation_cap) = validator::create(
-        payment_address,
+): (ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap) {
+    let (staking_pool, cap, operation_cap, commission_cap) = staking_pool::new(
+        current_epoch,
+        name,
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
         class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
-        name,
-        description,
-        image_url,
-        project_url,
         network_address,
         p2p_address,
         consensus_address,
-        computation_price,
         commission_rate,
+        metadata,
         ctx,
     );
 
-    let validator_inner_v1 = validator.load_validator_maybe_upgrade();
-
-    let validator_id = validator_inner_v1.validator_id();
+    let validator_id = staking_pool.validator_id();
 
     // The next assertions are not critical for the protocol, but they are here to catch problematic configs earlier.
     assert!(
-        !is_duplicate_with_active_validator(self, validator_inner_v1)
-                && !is_duplicate_with_pending_validator(self, validator_inner_v1)
-                && !is_duplicate_with_next_epoch_committee(self, validator_inner_v1),
+        !is_duplicate_with_active_validator(self, &staking_pool)
+                && !is_duplicate_with_pending_validator(self, &staking_pool)
+                && !is_duplicate_with_next_epoch_active_committee(self, &staking_pool),
         EDuplicateValidator,
     );
     assert!(!self.validators.contains(validator_id), EDuplicateValidator);
 
-    assert!(validator_inner_v1.is_candidate(), EValidatorNotCandidate);
-    self
-        .validators
-        .add(
-            validator_id,
-            validator,
-        );
-    (cap, operation_cap)
+    assert!(staking_pool.is_preactive(), EValidatorNotCandidate);
+    self.validators.add(validator_id, staking_pool);
+    
+    (cap, operation_cap, commission_cap)
 }
 
 /// Called by `ika_system` to remove a validator candidate, and move them to `inactive_committee`.
@@ -228,34 +200,42 @@ public(package) fun request_remove_validator_candidate(
 ) {
     let validator_id = cap.validator_id();
     let validator = self.get_validator_mut(validator_id);
-    assert!(validator.is_candidate(), EValidatorNotCandidate);
+    assert!(validator.is_preactive(), EValidatorNotCandidate);
 
-    // Deactivate the staking pool.
-    validator.deactivate(epoch);
+    // Set the pool to withdrawing state
+    validator.set_withdrawing(cap, epoch);
 }
 
-/// Called by `ika_system` to add a new validator to `pending_active_validators`, which will be
-/// processed at the end of epoch.
+/// Called by `ika_system` to add a new validator to `pending_active_validators`
 public(package) fun request_add_validator(
     self: &mut ValidatorSet,
-    min_joining_stake_amount: u64,
+    current_epoch: u64,
     cap: &ValidatorCap,
+    min_validator_joining_stake: u64,
 ) {
     let validator_id = cap.validator_id();
     assert!(self.validators.contains(validator_id), EValidatorNotCandidate);
     // We have to remove and to add again because we can have 2 refs to self
-    let mut wrapper = self.validators.remove(validator_id);
-    let validator = wrapper.load_validator_maybe_upgrade();
+    let mut validator = self.validators.remove(validator_id);
     assert!(
-        !is_duplicate_with_active_validator(self, validator)
-                && !is_duplicate_with_pending_validator(self, validator)
-                && !is_duplicate_with_next_epoch_committee(self, validator),
+        !self.is_duplicate_with_active_validator(&validator)
+                && !self.is_duplicate_with_pending_validator(&validator)
+                && !self.is_duplicate_with_next_epoch_active_committee(&validator),
         EDuplicateValidator,
     );
-    assert!(validator.is_candidate(), EValidatorNotCandidate);
-    assert!(validator.total_stake_amount() >= min_joining_stake_amount, EMinJoiningStakeNotReached);
 
-    self.validators.add(validator_id, wrapper);
+    assert!(validator.is_preactive(), EValidatorNotCandidate);
+
+    let balance = if (self.next_epoch_active_committee.is_none()) {
+        validator.ika_balance_at_epoch(current_epoch + 2)
+    } else {
+        validator.ika_balance_at_epoch(current_epoch + 1)
+    };
+
+    assert!(balance >= min_validator_joining_stake, EMinJoiningStakeNotReached);
+    validator.activate(cap, current_epoch, true);
+
+    self.validators.add(validator_id, validator);
 
     self.pending_active_validators.push_back(validator_id);
 }
@@ -264,23 +244,18 @@ public(package) fun assert_no_pending_or_active_duplicates(
     self: &mut ValidatorSet,
     validator_id: ID,
 ) {
-
-    let active_validator_ids = self.active_committee.validator_ids();
-    let pending_active_validators = self.pending_active_validators;
-
-    assert!(self.validators.contains(validator_id), EValidatorNotCandidate);
+    assert!(self.validators.contains(validator_id), ENotAValidator);
     // We have to remove and to add again because we can have 2 refs to self
-    let mut wrapper = self.validators.remove(validator_id);
-    let validator = wrapper.load_validator_maybe_upgrade();
+    let validator = self.validators.remove(validator_id);
 
-    // Validator here must be active or pending, and thus must be identified as duplicate exactly once.
     assert!(
-        count_duplicates_vec(self, &active_validator_ids, validator) +
-                count_duplicates_vec(self, &pending_active_validators, validator) == 1,
+        !self.is_duplicate_with_active_validator(&validator)
+                && !self.is_duplicate_with_pending_validator(&validator)
+                && !self.is_duplicate_with_next_epoch_active_committee(&validator),
         EDuplicateValidator,
     );
 
-    self.validators.add(validator_id, wrapper);
+    self.validators.add(validator_id, validator);
 }
 
 /// Called by `ika_system`, to remove a validator.
@@ -289,11 +264,15 @@ public(package) fun assert_no_pending_or_active_duplicates(
 /// Only an active validator can request to be removed.
 public(package) fun request_remove_validator(
     self: &mut ValidatorSet,
+    current_epoch: u64,
     cap: &ValidatorCap,
 ) {
     let validator_id = cap.validator_id();
-    assert!(!self.pending_active_validators.contains(&validator_id), EValidatorAlreadyRemoved);
-    self.pending_active_validators.push_back(validator_id);
+    let (found, index) = self.pending_active_validators.index_of(&validator_id);
+    assert!(found, EValidatorAlreadyRemoved);
+    let validator = self.get_validator_mut(validator_id);
+    validator.set_withdrawing(cap, current_epoch);
+    self.pending_active_validators.remove(index);
 }
 
 // ==== staking related functions ====
@@ -309,80 +288,213 @@ public(package) fun request_add_stake(
     stake: Balance<IKA>,
     ctx: &mut TxContext,
 ): StakedIka {
+    let committee_selected = self.next_epoch_active_committee.is_some();
     let ika_amount = stake.value();
     assert!(ika_amount >= MIN_STAKING_THRESHOLD, EStakingBelowThreshold);
     let validator = get_candidate_or_active_validator_mut(self, validator_id);
-    validator.request_add_stake(epoch, stake, ctx)
+    validator.stake(
+        stake, 
+        epoch, 
+        committee_selected, 
+        ctx
+    )
 }
 
-/// Called by `ika_system`, to withdraw some share of a stake from the validator. The share to withdraw
-/// is denoted by `principal_withdraw_amount`. One of two things occurs in this function:
-/// 1. If the `staked_ika` is staked with an active validator, the request is added to the validator's
-///    staking pool's pending stake withdraw entries, processed at the end of the epoch.
-/// 2. If the `staked_ika` was staked with a validator that is no longer active,
-///    the stake and any rewards corresponding to it will be immediately processed.
+/// Requests withdrawal of the given amount from the `StakedIKA`, marking it as
+/// `Withdrawing`. Once the epoch is greater than the `withdraw_epoch`, the
+/// withdrawal can be performed.
 public(package) fun request_withdraw_stake(
     self: &mut ValidatorSet,
-    epoch: u64,
-    staked_ika: StakedIka,
-): Balance<IKA> {
+    staked_ika: &mut StakedIka,
+    current_epoch: u64,
+) {
     let validator_id = staked_ika.validator_id();
-    let validator = self.get_candidate_or_active_or_inactive_validator_mut(validator_id);
-    validator.request_withdraw_stake(epoch, staked_ika)
+    let is_current_committee = self.active_committee.contains(&validator_id);
+    let is_next_committee = self.next_epoch_active_committee.is_some_and!(|c| c.contains(&validator_id));
+    let validator = self.get_candidate_or_active_or_inactive_validator_mut(validator_id);validator.request_withdraw_stake(
+        staked_ika,
+        is_current_committee, 
+        is_next_committee, 
+        current_epoch
+    );
 }
 
-public(package) fun convert_to_fungible_staked_ika(
+/// Perform the withdrawal of the staked WAL, returning the amount to the caller.
+/// The `StakedWal` must be in the `Withdrawing` state, and the epoch must be
+/// greater than the `withdraw_epoch`.
+public(package) fun withdraw_stake(
     self: &mut ValidatorSet,
-    epoch: u64,
     staked_ika: StakedIka,
+    current_epoch: u64,
     ctx: &mut TxContext,
-): FungibleStakedIka {
+): Coin<IKA> {
     let validator_id = staked_ika.validator_id();
+    let is_current_committee = self.active_committee.contains(&validator_id);
+    let is_next_committee = self.next_epoch_active_committee.is_some_and!(|c| c.contains(&validator_id));
+    
     let validator = self.get_candidate_or_active_or_inactive_validator_mut(validator_id);
-
-    validator.convert_to_fungible_staked_ika(epoch, staked_ika, ctx)
+    let ika_balance = validator.withdraw_stake(
+        staked_ika,
+        is_current_committee, 
+        is_next_committee,
+        current_epoch
+    );
+    ika_balance.into_coin(ctx)
 }
 
-public(package) fun redeem_fungible_staked_ika(
-    self: &mut ValidatorSet,
-    epoch: u64,
-    fungible_staked_ika: FungibleStakedIka,
-): Balance<IKA> {
-    let validator_id = fungible_staked_ika.validator_id();
-    let validator = self.get_candidate_or_active_or_inactive_validator_mut(validator_id);
 
-    validator.redeem_fungible_staked_ika(epoch, fungible_staked_ika)
-}
+// public(package) fun convert_to_fungible_staked_ika(
+//     self: &mut ValidatorSet,
+//     epoch: u64,
+//     staked_ika: StakedIka,
+//     ctx: &mut TxContext,
+// ): FungibleStakedIka {
+//     let validator_id = staked_ika.validator_id();
+//     let validator = self.get_candidate_or_active_or_inactive_validator_mut(validator_id);
+
+//     validator.convert_to_fungible_staked_ika(epoch, staked_ika, ctx)
+// }
+
+// public(package) fun redeem_fungible_staked_ika(
+//     self: &mut ValidatorSet,
+//     epoch: u64,
+//     fungible_staked_ika: FungibleStakedIka,
+// ): Balance<IKA> {
+//     let validator_id = fungible_staked_ika.validator_id();
+//     let validator = self.get_candidate_or_active_or_inactive_validator_mut(validator_id);
+
+//     validator.redeem_fungible_staked_ika(epoch, fungible_staked_ika)
+// }
 
 // ==== validator config setting functions ====
 
-public(package) fun request_set_commission_rate(
+public(package) fun set_validator_name(
     self: &mut ValidatorSet,
-    new_commission_rate: u16,
-    cap: &ValidatorCap,
+    name: String,
+    cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
     let validator = self.get_validator_mut(validator_id);
-    validator.request_set_commission_rate(new_commission_rate);
+    validator.set_name(name, cap);
+}
+
+public(package) fun set_validator_metadata(
+    self: &mut ValidatorSet,
+    cap: &ValidatorOperationCap,
+    metadata: ValidatorMetadata,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.set_validator_metadata(cap, metadata);
+}
+/// Request to set commission rate for the validator.
+public(package) fun set_next_commission(
+    self: &mut ValidatorSet,
+    new_commission_rate: u16,
+    cap: &ValidatorOperationCap,
+    current_epoch: u64,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.set_next_commission(new_commission_rate, current_epoch, cap);
+}
+
+public(package) fun set_next_epoch_network_address(
+    self: &mut ValidatorSet,
+    network_address: String,
+    cap: &ValidatorOperationCap,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.set_next_epoch_network_address(network_address, cap);
+    self.assert_no_pending_or_active_duplicates(validator_id);
+}
+
+public(package) fun set_next_epoch_p2p_address(
+    self: &mut ValidatorSet,
+    p2p_address: String,
+    cap: &ValidatorOperationCap,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.set_next_epoch_p2p_address(p2p_address, cap);
+    self.assert_no_pending_or_active_duplicates(validator_id);
+}
+
+public(package) fun set_next_epoch_consensus_address(
+    self: &mut ValidatorSet,
+    consensus_address: String,
+    cap: &ValidatorOperationCap,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.set_next_epoch_consensus_address(consensus_address, cap);
+    self.assert_no_pending_or_active_duplicates(validator_id);
+}
+
+public(package) fun set_next_epoch_protocol_pubkey_bytes(
+    self: &mut ValidatorSet,
+    protocol_pubkey_bytes: vector<u8>,
+    proof_of_possession: vector<u8>,
+    cap: &ValidatorOperationCap,
+    ctx: &TxContext,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.set_next_epoch_protocol_pubkey_bytes(protocol_pubkey_bytes, proof_of_possession, cap, ctx);
+    self.assert_no_pending_or_active_duplicates(validator_id);
+}   
+
+public(package) fun set_next_epoch_network_pubkey_bytes(
+    self: &mut ValidatorSet,
+    network_pubkey_bytes: vector<u8>,
+    cap: &ValidatorOperationCap,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.set_next_epoch_network_pubkey_bytes(network_pubkey_bytes, cap);
+    self.assert_no_pending_or_active_duplicates(validator_id);
+}
+
+public(package) fun set_next_epoch_consensus_pubkey_bytes(
+    self: &mut ValidatorSet,
+    consensus_pubkey_bytes: vector<u8>,
+    cap: &ValidatorOperationCap,
+) { 
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes, cap);
+    self.assert_no_pending_or_active_duplicates(validator_id);
+}
+
+public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
+    self: &mut ValidatorSet,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+    cap: &ValidatorOperationCap,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes, cap);
+    self.assert_no_pending_or_active_duplicates(validator_id);
 }
 
 // ==== epoch change functions ====
 
-
+/// Process the pending validator changes at mid epoch
 public(package) fun process_mid_epoch(
     self: &mut ValidatorSet,
-    epoch: u64,
+    current_epoch: u64,
     lock_active_committee: bool,
     low_stake_threshold: u64,
     very_low_stake_threshold: u64,
     low_stake_grace_period: u64,
 ) {
-    assert!(self.next_epoch_committee.is_none(), EProcessMidEpochOnlyAfterAdvanceEpoch);
-    let new_epoch = epoch + 1;
+    assert!(self.next_epoch_active_committee.is_none(), EProcessMidEpochOnlyAfterAdvanceEpoch);
+    let new_epoch = current_epoch + 1;
 
     if (lock_active_committee) {
         // if we lock the committee just keep it the same as last time
-        self.next_epoch_committee.fill(self.active_committee)
+        self.next_epoch_active_committee.fill(self.active_committee)
     } else {
         // kick low stake validators out.
         self.update_and_process_low_stake_departures(
@@ -392,8 +504,8 @@ public(package) fun process_mid_epoch(
             low_stake_grace_period,
         );
 
-        // Note that all their staged next epoch metadata will be effectuated during next `advance_epoch`.
-        self.process_pending_validators();
+        // Process pending validators
+        self.process_pending_validators(new_epoch);
     };
 }
 
@@ -406,13 +518,12 @@ public(package) fun process_mid_epoch(
 ///   5. At the end, we calculate the total stake for the new epoch.
 public(package) fun advance_epoch(
     self: &mut ValidatorSet,
-    epoch: u64,
+    _current_epoch: u64,
     new_epoch: u64,
     total_reward: &mut Balance<IKA>,
     reward_slashing_rate: u16,
-    ctx: &mut TxContext,
 ) {
-    assert!(self.next_epoch_committee.is_some(), EAdvanceEpochOnlyAfterProcessMidEpoch);
+    assert!(self.next_epoch_active_committee.is_some(), EAdvanceEpochOnlyAfterProcessMidEpoch);
 
     let total_voting_power = total_voting_power();
 
@@ -461,20 +572,15 @@ public(package) fun advance_epoch(
     // Distribute the rewards before adjusting stake so that we immediately start compounding
     // the rewards for validators and stakers.
     self.distribute_reward(
-        epoch,
+        new_epoch,
         &adjusted_staking_reward_amounts,
-        total_reward,
-        ctx,
+        total_reward
     );
 
-    self.adjust_stake_and_computation_price();
-
-    self.process_pending_stakes_and_withdraws(new_epoch);
-
     self.previous_committee = self.active_committee;
-
+    
     // Change to the next validator committee
-    self.active_committee = self.next_epoch_committee.extract();
+    self.active_committee = self.next_epoch_active_committee.extract();
 
     // Activate validators that were added during `process_mid_epoch`
     self.activate_added_validators(new_epoch);
@@ -487,13 +593,9 @@ public(package) fun advance_epoch(
     );
 
     self.total_stake = self.calculate_total_stakes();
-
-    // At this point, self.active_committee are updated for next epoch.
-    // Now we process the staged validator metadata.
-    self.effectuate_staged_metadata();
 }
 
-// Activate validators added during `process_mid_epoch` and kept in `next_epoch_committee`.
+// Activate validators added during `process_mid_epoch` and kept in `next_epoch_active_committee`.
 fun activate_added_validators(
     self: &mut ValidatorSet,
     new_epoch: u64,
@@ -501,8 +603,8 @@ fun activate_added_validators(
     let members = *self.active_committee.members();
     members.do!(|member| {
         let validator = self.get_validator_mut(member.validator_id());
-        if(validator.is_candidate()) {
-            validator.activate(new_epoch);
+        if(validator.activation_epoch().is_some_and!(|epoch| epoch == new_epoch)) {
+            validator.advance_epoch(balance::zero(), new_epoch);
             event::emit(ValidatorJoinEvent {
                 epoch: new_epoch,
                 validator_id: validator.validator_id(),
@@ -526,7 +628,7 @@ fun update_and_process_low_stake_departures(
         let validator_id = pending_active_validators[i];
 
         let validator = self.get_validator_mut(validator_id);
-        let stake = validator.total_stake_amount();
+        let stake = validator.ika_balance_at_epoch(new_epoch);
         if (stake >= low_stake_threshold) {
             // The validator is safe. We remove their entry from the at_risk map if there exists one.
             if (self.at_risk_validators.contains(&validator_id)) {
@@ -546,8 +648,7 @@ fun update_and_process_low_stake_departures(
             // If the grace period has passed, the validator has to leave us.
             if (new_low_stake_period > low_stake_grace_period) {
                 let _ = self.pending_active_validators.remove(i);
-                process_validator_departure(
-                    self,
+                self.process_validator_departure(
                     new_epoch,
                     validator_id,
                     false, /* the validator is kicked out involuntarily */
@@ -556,8 +657,7 @@ fun update_and_process_low_stake_departures(
         } else {
             // The validator's stake is lower than the very low threshold so we kick them out immediately.
             let _ = self.pending_active_validators.remove(i);
-            process_validator_departure(
-                self,
+            self.process_validator_departure(
                 new_epoch,
                 validator_id,
                 false, /* the validator is kicked out involuntarily */
@@ -566,46 +666,36 @@ fun update_and_process_low_stake_departures(
     }
 }
 
-/// Effectuate pending next epoch metadata if they are staged.
-fun effectuate_staged_metadata(self: &mut ValidatorSet) {
-    let members = *self.active_committee.members();
-    members.do!(|member| {
-        let validator_id = member.validator_id();
-        let validator = self.get_validator_mut(validator_id);
-        validator.effectuate_staged_metadata();
-    });
-}
+// /// Called by `ika_system` to derive computation price per unit size for the new epoch.
+// /// Derive the computation price per unit size based on the computation price quote submitted by each validator.
+// /// The returned computation price should be greater than or equal to 2/3 of the validators submitted
+// /// computation price, weighted by stake.
+// public(package) fun derive_computation_price_per_unit_size(self: &mut ValidatorSet, committee: &BlsCommittee): u64 {
+//     let vs = committee.members();
+//     let num_validators = vs.length();
+//     let mut entries = vector[];
+//     let mut i = 0;
+//     while (i < num_validators) {
+//         let vid = vs[i].validator_id();
 
-/// Called by `ika_system` to derive computation price per unit size for the new epoch.
-/// Derive the computation price per unit size based on the computation price quote submitted by each validator.
-/// The returned computation price should be greater than or equal to 2/3 of the validators submitted
-/// computation price, weighted by stake.
-public(package) fun derive_computation_price_per_unit_size(self: &mut ValidatorSet, committee: &BlsCommittee): u64 {
-    let vs = committee.members();
-    let num_validators = vs.length();
-    let mut entries = vector[];
-    let mut i = 0;
-    while (i < num_validators) {
-        let vid = vs[i].validator_id();
-
-        let v = self.get_validator_ref(vid);
-        entries.push_back(
-            pq::new_entry(v.computation_price(), vs[i].voting_power()),
-        );
-        i = i + 1;
-    };
-    // Build a priority queue that will pop entries with computation price from the highest to the lowest.
-    let mut pq = pq::new(entries);
-    let mut sum = 0;
-    let threshold = total_voting_power() - quorum_threshold();
-    let mut result = 0;
-    while (sum < threshold) {
-        let (computation_price, voting_power) = pq.pop_max();
-        result = computation_price;
-        sum = sum + voting_power;
-    };
-    result
-}
+//         let v = self.get_validator_ref(vid);
+//         entries.push_back(
+//             pq::new_entry(v.computation_price(), vs[i].voting_power()),
+//         );
+//         i = i + 1;
+//     };
+//     // Build a priority queue that will pop entries with computation price from the highest to the lowest.
+//     let mut pq = pq::new(entries);
+//     let mut sum = 0;
+//     let threshold = total_voting_power() - quorum_threshold();
+//     let mut result = 0;
+//     while (sum < threshold) {
+//         let (computation_price, voting_power) = pq.pop_max();
+//         result = computation_price;
+//         sum = sum + voting_power;
+//     };
+//     result
+// }
 
 // ==== getter functions ====
 
@@ -615,15 +705,15 @@ public fun total_stake(self: &ValidatorSet): u64 {
 
 public fun validator_total_stake_amount(self: &mut ValidatorSet, validator_id: ID): u64 {
     let validator = get_validator_ref(self, validator_id);
-    validator.total_stake_amount()
+    validator.ika_balance()
 }
 
 public(package) fun pool_exchange_rates(
     self: &mut ValidatorSet,
     validator_id: ID,
-): &Table<u64, PoolTokenExchangeRate> {
+): &Table<u64, PoolExchangeRate> {
     let validator = self.get_validator_ref(validator_id);
-    validator.get_staking_pool_ref().exchange_rates()
+    validator.exchange_rates()
 }
 
 /// Get the total number of pending validators.
@@ -652,7 +742,7 @@ public(package) fun get_reporters_of(self: &ValidatorSet, validator_id: ID): Vec
 fun count_duplicates_vec(
     self: &mut ValidatorSet,
     validators: &vector<ID>,
-    validator: &ValidatorInnerV1
+    validator: &StakingPool
 ): u64 {
     let len = validators.length();
     let mut i = 0;
@@ -660,7 +750,7 @@ fun count_duplicates_vec(
     while (i < len) {
         let vid = validators[i];
         let v = self.get_validator_mut(vid);
-        if (v.is_duplicate(validator)) {
+        if (v.validator_info().is_duplicate(validator.validator_info())) {
             result = result + 1;
         };
         i = i + 1;
@@ -671,43 +761,45 @@ fun count_duplicates_vec(
 public(package) fun is_duplicate_validator(
     self: &mut ValidatorSet,
     validators: &vector<ID>,
-    new_validator: &ValidatorInnerV1,
+    new_validator: &StakingPool,
 ): bool {
-    count_duplicates_vec(self, validators, new_validator) > 0
+    self.count_duplicates_vec( validators, new_validator) > 0
 }
 
 /// Checks whether `new_validator` is duplicate with any currently active validators.
 /// It differs from `is_active_validator` in that the former checks
 /// only the id but this function looks at more metadata.
-fun is_duplicate_with_active_validator(self: &mut ValidatorSet, new_validator: &ValidatorInnerV1): bool {
+fun is_duplicate_with_active_validator(self: &mut ValidatorSet, new_validator: &StakingPool): bool {
     let active_validator_ids = self.active_committee.validator_ids();
-    is_duplicate_validator(self, &active_validator_ids, new_validator)
+    self.count_duplicates_vec(&active_validator_ids, new_validator) > 0
 }
 
 /// Checks whether `new_validator` is duplicate with any next epoch active validators.
-fun is_duplicate_with_next_epoch_committee(self: &mut ValidatorSet, new_validator: &ValidatorInnerV1): bool {
-    if(self.next_epoch_committee.is_none()) {
+fun is_duplicate_with_next_epoch_active_committee(self: &mut ValidatorSet, new_validator: &StakingPool): bool {
+    if(self.next_epoch_active_committee.is_none()) {
         return false
     };
-    let next_epoch_active_validator_ids = self.next_epoch_committee.borrow().validator_ids();
-    count_duplicates_vec(self, &next_epoch_active_validator_ids, new_validator) > 0
+    let next_epoch_active_validator_ids = self.next_epoch_active_committee.borrow().validator_ids();
+    self.count_duplicates_vec(&next_epoch_active_validator_ids, new_validator) > 0
 }
 
 /// Checks whether `new_validator` is duplicate with any currently pending validators.
-fun is_duplicate_with_pending_validator(self: &mut ValidatorSet, new_validator: &ValidatorInnerV1): bool {
+fun is_duplicate_with_pending_validator(self: &mut ValidatorSet, new_validator: &StakingPool): bool {
     let pending_active_validators = self.pending_active_validators;
-    count_duplicates_vec(self, &pending_active_validators, new_validator) > 0
+    self.count_duplicates_vec(&pending_active_validators, new_validator) > 0
 }
 
+/// Get mutable reference to a validator by id.
 public(package) fun get_validator_mut(
     self: &mut ValidatorSet,
     validator_id: ID,
-): &mut ValidatorInnerV1 {
+): &mut StakingPool {
     assert!(self.validators.contains(validator_id), ENotAValidator);
-    self.validators.borrow_mut(validator_id).load_validator_maybe_upgrade()
+    self.validators.borrow_mut(validator_id)
 }
 
-public fun get_validator_ref(self: &mut ValidatorSet, validator_id: ID): &ValidatorInnerV1 {
+/// Get reference to a validator by id.
+public fun get_validator_ref(self: &mut ValidatorSet, validator_id: ID): &StakingPool {
     self.get_validator_mut(validator_id)
 }
 
@@ -715,10 +807,10 @@ public fun get_validator_ref(self: &mut ValidatorSet, validator_id: ID): &Valida
 fun get_candidate_or_active_validator_mut(
     self: &mut ValidatorSet,
     validator_id: ID,
-): &mut ValidatorInnerV1 {
+): &mut StakingPool {
     let is_active_validator = self.is_active_validator(validator_id);
     let validator = self.get_validator_mut(validator_id);
-    assert!(validator.is_candidate() || is_active_validator, ENotCandidateOrActiveValidator);
+    assert!(validator.is_preactive() || is_active_validator, ENotCandidateOrActiveValidator);
     validator
 }
 
@@ -726,13 +818,12 @@ fun get_candidate_or_active_validator_mut(
 fun get_candidate_or_active_or_inactive_validator_mut(
     self: &mut ValidatorSet,
     validator_id: ID,
-): &mut ValidatorInnerV1 {
+): &mut StakingPool {
     let is_active_validator = self.is_active_validator(validator_id);
     let validator = self.get_validator_mut(validator_id);
-    assert!(validator.is_candidate() || validator.is_inactive() || is_active_validator, ENotCandidateOrActiveOrInactiveValidator);
+    assert!(validator.is_preactive() || validator.is_withdrawing() || is_active_validator, ENotCandidateOrActiveOrInactiveValidator);
     validator
 }
-
 
 /// Get mutable reference to an active or (if active does not exist) pending or (if pending and
 /// active do not exist) by id.
@@ -741,10 +832,9 @@ fun get_candidate_or_active_or_inactive_validator_mut(
 fun get_active_or_pending_validator_mut(
     self: &mut ValidatorSet,
     validator_id: ID,
-): &mut ValidatorInnerV1 {
+): &mut StakingPool {
     assert!(self.active_committee.contains(&validator_id) || self.pending_active_validators.contains(&validator_id), ENotActiveOrPendingValidator);
-    let validator = self.get_validator_mut(validator_id);
-    validator
+    self.get_validator_mut(validator_id)
 }
 
 /// Get mutable reference to an active or (if active does not exist) pending or (if pending and
@@ -754,28 +844,27 @@ fun get_active_or_pending_validator_mut(
 fun get_active_or_pending_or_candidate_validator_mut(
     self: &mut ValidatorSet,
     validator_id: ID,
-): &mut ValidatorInnerV1 {
+): &mut StakingPool {
     let is_active_validator = self.is_active_validator(validator_id);
     let is_pending_active_validator = self.pending_active_validators.contains(&validator_id);
 
     let validator = self.get_validator_mut(validator_id);
-    assert!(is_active_validator || is_pending_active_validator || validator.is_candidate(), ENotCandidateOrActiveOrPendingValidator);
+    assert!(is_active_validator || is_pending_active_validator || validator.is_preactive(), ENotCandidateOrActiveOrPendingValidator);
     validator
 }
 
 public(package) fun get_validator_mut_with_operation_cap(
     self: &mut ValidatorSet,
     operation_cap: &ValidatorOperationCap,
-): &mut ValidatorInnerV1 {
+): &mut StakingPool {
     let validator_id = operation_cap.validator_id();
     self.get_active_or_pending_validator_mut(validator_id)
-
 }
 
 public(package) fun get_validator_mut_with_operation_cap_including_candidates(
     self: &mut ValidatorSet,
     operation_cap: &ValidatorOperationCap,
-): &mut ValidatorInnerV1 {
+): &mut StakingPool {
     let validator_id = operation_cap.validator_id();
     self.get_active_or_pending_or_candidate_validator_mut(validator_id)
 }
@@ -783,7 +872,7 @@ public(package) fun get_validator_mut_with_operation_cap_including_candidates(
 public(package) fun get_validator_mut_with_cap(
     self: &mut ValidatorSet,
     cap: &ValidatorCap,
-): &mut ValidatorInnerV1 {
+): &mut StakingPool {
     let validator_id = cap.validator_id();
     self.get_active_or_pending_validator_mut(validator_id)
 }
@@ -791,7 +880,7 @@ public(package) fun get_validator_mut_with_cap(
 public(package) fun get_validator_mut_with_cap_including_candidates(
     self: &mut ValidatorSet,
     cap: &ValidatorCap,
-): &mut ValidatorInnerV1 {
+): &mut StakingPool {
     let validator_id = cap.validator_id();
     self.get_active_or_pending_or_candidate_validator_mut(validator_id)
 }
@@ -826,6 +915,7 @@ public(package) fun verify_operation_cap(
     assert!(validator.operation_cap_id() == &object::id(cap), EInvalidCap);
 }
 
+/// Process validator departure
 fun process_validator_departure(
     self: &mut ValidatorSet,
     new_epoch: u64,
@@ -839,8 +929,8 @@ fun process_validator_departure(
     clean_report_records_leaving_validator(&mut self.validator_report_records, validator_id);
 
     let validator = self.get_validator_mut(validator_id);
-
-    let validator_stake = validator.total_stake_amount();
+    
+    let validator_stake = validator.ika_balance();
 
     // Deactivate the validator and its staking pool
     validator.deactivate(new_epoch);
@@ -880,30 +970,21 @@ fun clean_report_records_leaving_validator(
     }
 }
 
-/// Process the pending new validators. They will be `next_epoch_committee` and activated during `advance_epoch`.
-fun process_pending_validators(self: &mut ValidatorSet) {
+/// Process the pending new validators. They will be `next_epoch_active_committee` and activated during `advance_epoch`.
+fun process_pending_validators(self: &mut ValidatorSet, new_epoch: u64) {
     let mut next_epoch_active_members = vector[];
     let mut i = 0;
     let length = self.pending_active_validators.length();
     while (i < length) {
         let validator_id = self.pending_active_validators[i];
         let validator = self.get_validator_mut(validator_id);
-        next_epoch_active_members.push_back(new_bls_committee_member(validator_id, *validator.protocol_pubkey(), validator.total_stake_amount()));
+        next_epoch_active_members.push_back(new_bls_committee_member(validator_id, *validator.validator_info().protocol_pubkey(), validator.ika_balance_at_epoch(new_epoch)));
         i = i + 1;
     };
-    let next_epoch_committee = new_bls_committee(next_epoch_active_members);
-    self.next_epoch_committee.fill(next_epoch_committee);
+    let next_epoch_active_committee = new_bls_committee(next_epoch_active_members);
+    self.next_epoch_active_committee.fill(next_epoch_active_committee);
 }
 
-/// Process all active validators' pending stake deposits and withdraws.
-fun process_pending_stakes_and_withdraws(self: &mut ValidatorSet, new_epoch: u64) {
-    let members = *self.active_committee.members();
-    members.do!(|member| {
-        let validator_id = member.validator_id();
-        let validator = self.get_validator_mut(validator_id);
-        validator.process_pending_stakes_and_withdraws(new_epoch);
-    });
-}
 
 /// Calculate the total active validator stake.
 fun calculate_total_stakes(self: &mut ValidatorSet): u64 {
@@ -912,23 +993,10 @@ fun calculate_total_stakes(self: &mut ValidatorSet): u64 {
     members.do!(|member| {
         let validator_id = member.validator_id();
         let validator = self.get_validator_mut(validator_id);
-        stake = stake + validator.total_stake_amount();
+        stake = stake + validator.ika_balance();
     });
 
     stake
-}
-
-/// Process the pending stake changes for each validator.
-fun adjust_stake_and_computation_price(
-    self: &mut ValidatorSet,
-) {
-    let members = *self.active_committee.members();
-
-    members.do!(|member| {
-        let validator_id = member.validator_id();
-        let validator = self.get_validator_mut(validator_id);
-        validator.adjust_stake_and_computation_price();
-    });
 }
 
 /// Compute both the individual reward adjustments and total reward adjustment for staking rewards
@@ -1060,45 +1128,23 @@ fun compute_adjusted_reward_distribution(
     adjusted_staking_reward_amounts
 }
 
+/// Distribute rewards to validators and stakers
 fun distribute_reward(
     self: &mut ValidatorSet,
-    epoch: u64,
+    new_epoch: u64,
     adjusted_staking_reward_amounts: &vector<u64>,
     staking_rewards: &mut Balance<IKA>,
-    ctx: &mut TxContext,
 ) {
     let members = *self.active_committee.members();
     let length = members.length();
-    assert!(length > 0, EValidatorSetEmpty);
     let mut i = 0;
     while (i < length) {
         let validator_id = members[i].validator_id();
         let validator = self.get_validator_mut(validator_id);
         let staking_reward_amount = adjusted_staking_reward_amounts[i];
-        let mut staker_reward = staking_rewards.split(staking_reward_amount);
+        let validator_rewards = staking_rewards.split(staking_reward_amount);
 
-        // Validator takes a cut of the rewards as commission.
-        let validator_commission_amount =
-            (staking_reward_amount as u128) * (validator.commission_rate() as u128) / BASIS_POINT_DENOMINATOR;
-
-        // The validator reward commission.
-        let validator_reward = staker_reward.split(validator_commission_amount as u64);
-
-        // Add rewards to the validator. Don't try and distribute rewards though if the payout is zero.
-        if (validator_reward.value() > 0) {
-            let validator_address = validator.payment_address();
-            let rewards_stake = validator.request_add_stake(
-                epoch,
-                validator_reward,
-                ctx,
-            );
-            transfer::public_transfer(rewards_stake, validator_address);
-        } else {
-            validator_reward.destroy_zero();
-        };
-
-        // Add rewards to stake staking pool to auto compound for stakers.
-        validator.deposit_stake_rewards(staker_reward);
+        validator.advance_epoch(validator_rewards, new_epoch);
         i = i + 1;
     }
 }
@@ -1111,7 +1157,7 @@ fun emit_validator_epoch_events(
     pool_staking_reward_amounts: &vector<u64>,
     slashed_validators: &vector<ID>,
 ) {
-    let members = *self.active_committee.members();
+    let members = *self.previous_committee.members();
     let num_validators = members.length();
     let mut i = 0;
     while (i < num_validators) {
@@ -1128,12 +1174,12 @@ fun emit_validator_epoch_events(
         event::emit(ValidatorEpochInfoEventV1 {
             epoch: new_epoch,
             validator_id,
-            reference_gas_survey_quote: validator.computation_price(),
-            stake: validator.total_stake_amount(),
+            //reference_gas_survey_quote: validator.computation_price(),
+            stake: validator.ika_balance(),
             voting_power: member.voting_power(),
             commission_rate: validator.commission_rate(),
             pool_staking_reward: pool_staking_reward_amounts[i],
-            pool_token_exchange_rate: validator.pool_token_exchange_rate_at_epoch(new_epoch),
+            pool_token_exchange_rate: validator.exchange_rate_at_epoch(new_epoch),
             tallying_rule_reporters,
             tallying_rule_global_score,
         });
@@ -1225,8 +1271,8 @@ public fun active_committee(self: &ValidatorSet): BlsCommittee {
 }
 
 /// Return the next epoch active committee in `self`
-public fun next_epoch_committee(self: &ValidatorSet): Option<BlsCommittee> {
-    self.next_epoch_committee
+public fun next_epoch_active_committee(self: &ValidatorSet): Option<BlsCommittee> {
+    self.next_epoch_active_committee
 }
 
 /// Return the pending active validators in `self`
@@ -1237,11 +1283,11 @@ public fun next_pending_active_validators(self: &ValidatorSet): vector<ID> {
 /// Returns true if the `validator_id` is a validator candidate.
 public fun is_validator_candidate(self: &mut ValidatorSet, validator_id: ID): bool {
     let validator = self.get_validator_ref(validator_id);
-    validator.is_candidate()
+    validator.is_preactive()
 }
 
 /// Returns true if the staking pool identified by `validator_id` is of an inactive validator.
 public fun is_inactive_validator(self: &mut ValidatorSet, validator_id: ID): bool {
     let validator = self.get_validator_ref(validator_id);
-    validator.is_inactive()
+    validator.is_withdrawing()
 }

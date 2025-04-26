@@ -1,16 +1,17 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module ika_system::system_inner_v1;
+module ika_system::system_inner;
 
 use ika::ika::IKA;
 use ika_system::protocol_treasury::ProtocolTreasury;
-use ika_system::staking_pool::{PoolTokenExchangeRate};
-use ika_system::staked_ika::{StakedIka, FungibleStakedIka};
-use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap};
+use ika_system::pool_exchange_rate::PoolExchangeRate;
+use ika_system::staked_ika::{StakedIka};
+use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
 use ika_system::validator_set::{ValidatorSet};
 use ika_system::bls_committee::{BlsCommittee};
 use ika_system::protocol_cap::ProtocolCap;
+use ika_system::validator_metadata::ValidatorMetadata;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::dwallet_2pc_mpc_secp256k1::{Self, DWalletCoordinator};
 use ika_system::dwallet_2pc_mpc_secp256k1_inner::{DWalletNetworkDecryptionKeyCap, DWalletCoordinatorInner};
@@ -23,6 +24,7 @@ use sui::vec_set::{VecSet};
 use sui::bcs;
 use sui::clock::Clock;
 use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
+use std::string::String;
 
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
@@ -142,6 +144,12 @@ const EActiveBlsCommitteeMustInitialize: vector<u8> = b"First active committee m
 #[error]
 const ECannotInitialize: vector<u8> = b"Too early for initialization time or already initialized.";
 
+#[error]
+const EWrongEpochState: vector<u8> = b"The system is in the wrong epoch state for the operation.";
+
+#[error]
+const EHaveNotReachedMidEpochTime: vector<u8> = b"The system has not reached the mid epoch time.";
+
 // ==== functions that can only be called by init ====
 
 /// Create a new IkaSystemState object and make it shared.
@@ -186,13 +194,7 @@ public(package) fun advance_network_keys(
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| {
         total_reward.join(dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
     });
-    return total_reward
-}
-
-public(package) fun emit_start_reshare_events(
-    self: &SystemInnerV1, dwallet_coordinator_inner: &mut DWalletCoordinatorInner, ctx: &mut TxContext
-) {
-    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
+    total_reward
 }
 
 public(package) fun create_system_parameters(
@@ -240,10 +242,24 @@ public(package) fun initialize(
     let now = clock.timestamp_ms();
     assert!(self.epoch == 0 && now >= self.epoch_start_timestamp_ms, ECannotInitialize);
     assert!(self.active_committee().members().is_empty(), ECannotInitialize);
-    self.validators.initialize();
+    // self.epoch = self.epoch + 1;
+    // self.validators.initialize();
+    
+    self.validators.process_mid_epoch(
+        self.epoch, 
+        self.parameters.lock_active_committee,
+        self.parameters.validator_low_stake_threshold,
+        self.parameters.validator_very_low_stake_threshold,
+        self.parameters.validator_low_stake_grace_period,
+    );
     let pricing = ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
-    let dwallet_2pc_mpc_secp256k1_id = dwallet_2pc_mpc_secp256k1::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, ctx);
-    self.dwallet_2pc_mpc_secp256k1_id.fill(dwallet_2pc_mpc_secp256k1_id);
+    let mut dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, ctx);
+    let dwallet_2pc_mpc_secp256k1_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
+    dwallet_2pc_mpc_secp256k1_inner.lock_last_active_session_sequence_number();
+    self.advance_epoch(dwallet_2pc_mpc_secp256k1_inner, clock, ctx);
+
+    self.dwallet_2pc_mpc_secp256k1_id.fill(object::id(&dwallet_2pc_mpc_secp256k1));
+    dwallet_2pc_mpc_secp256k1.share_dwallet_coordinator();
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
@@ -254,39 +270,32 @@ public(package) fun initialize(
 /// To produce a valid PoP, run [fn test_proof_of_possession_bytes].
 public(package) fun request_add_validator_candidate(
     self: &mut SystemInnerV1,
-    payment_address: address,
+    name: String,
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
     class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
-    name: vector<u8>,
-    description: vector<u8>,
-    image_url: vector<u8>,
-    project_url: vector<u8>,
-    network_address: vector<u8>,
-    p2p_address: vector<u8>,
-    consensus_address: vector<u8>,
-    computation_price: u64,
+    network_address: String,
+    p2p_address: String,
+    consensus_address: String,
     commission_rate: u16,
+    metadata: ValidatorMetadata,
     ctx: &mut TxContext,
-): (ValidatorCap, ValidatorOperationCap) {
+): (ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap) {
     self.validators.request_add_validator_candidate(
-        payment_address,
+        self.epoch,
+        name,
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
         class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
-        name,
-        description,
-        image_url,
-        project_url,
         network_address,
         p2p_address,
         consensus_address,
-        computation_price,
         commission_rate,
+        metadata,
         ctx,
     )
 }
@@ -313,7 +322,7 @@ public(package) fun request_add_validator(
         ELimitExceeded,
     );
 
-    self.validators.request_add_validator(self.parameters.min_validator_joining_stake, cap);
+    self.validators.request_add_validator(self.epoch, cap, self.parameters.min_validator_joining_stake);
 }
 
 /// A validator can call this function to request a removal in the next epoch.
@@ -321,7 +330,10 @@ public(package) fun request_add_validator(
 /// (i.e. sender must match the sui_address in the validator).
 /// At the end of the epoch, the `validator` object will be returned to the sui_address
 /// of the validator.
-public(package) fun request_remove_validator(self: &mut SystemInnerV1, cap: &ValidatorCap) {
+public(package) fun request_remove_validator(
+    self: &mut SystemInnerV1,
+    cap: &ValidatorCap,
+) {
     // Only check min validator condition if the current number of validators satisfy the constraint.
     // This is so that if we somehow already are in a state where we have less than min validators, it no longer matters
     // and is ok to stay so. This is useful for a test setup.
@@ -332,62 +344,32 @@ public(package) fun request_remove_validator(self: &mut SystemInnerV1, cap: &Val
         );
     };
 
-    self.validators.request_remove_validator(cap)
+    self.validators.request_remove_validator(self.epoch, cap);
 }
 
-/// A validator can call this function to submit a new computation price quote, to be
-/// used for the computation price per unit size calculation at the end of the epoch.
-public(package) fun request_set_computation_price(
-    self: &mut SystemInnerV1,
-    operation_cap: &ValidatorOperationCap,
-    new_computation_price: u64,
-) {
-    // Verify that the capability is still valid.
-    self.validators.verify_operation_cap(operation_cap);
-    let validator = self
-        .validators
-        .get_validator_mut_with_operation_cap(operation_cap);
 
-    validator.request_set_computation_price(operation_cap, new_computation_price);
-}
-
-/// This function is used to set new computation price for candidate validators
-public(package) fun set_candidate_validator_computation_price(
+public(package) fun set_validator_metadata(
     self: &mut SystemInnerV1,
-    operation_cap: &ValidatorOperationCap,
-    new_computation_price: u64,
+    cap: &ValidatorOperationCap,
+    metadata: ValidatorMetadata,
 ) {
-    // Verify that the capability is still valid.
-    self.validators.verify_operation_cap(operation_cap);
-    let candidate = self
-        .validators
-        .get_validator_mut_with_operation_cap_including_candidates(operation_cap);
-    candidate.set_candidate_computation_price(operation_cap, new_computation_price)
+    self.validators.set_validator_metadata(cap, metadata);
 }
 
 /// A validator can call this function to set a new commission rate, updated at the end of
 /// the epoch.
-public(package) fun request_set_commission_rate(
+public(package) fun set_next_commission(
     self: &mut SystemInnerV1,
     new_commission_rate: u16,
-    cap: &ValidatorCap,
+    cap: &ValidatorOperationCap,
 ) {
     self
         .validators
-        .request_set_commission_rate(
+        .set_next_commission(
             new_commission_rate,
             cap,
-        )
-}
-
-/// This function is used to set new commission rate for candidate validators
-public(package) fun set_candidate_validator_commission_rate(
-    self: &mut SystemInnerV1,
-    new_commission_rate: u16,
-    cap: &ValidatorCap,
-) {
-    let candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-    candidate.set_candidate_commission_rate(new_commission_rate)
+            self.epoch,
+        );
 }
 
 /// Add stake to a validator's staking pool.
@@ -407,40 +389,36 @@ public(package) fun request_add_stake(
         )
 }
 
-/// Add stake to a validator's staking pool using multiple coins.
-public(package) fun request_add_stake_mul_coin(
-    self: &mut SystemInnerV1,
-    stakes: vector<Coin<IKA>>,
-    stake_amount: option::Option<u64>,
-    validator_id: ID,
-    ctx: &mut TxContext,
-): StakedIka {
-    let balance = extract_coin_balance(stakes, stake_amount, ctx);
-    self.validators.request_add_stake(self.epoch, validator_id, balance, ctx)
-}
-
 /// Withdraw some portion of a stake from a validator's staking pool.
 public(package) fun request_withdraw_stake(
     self: &mut SystemInnerV1,
-    staked_ika: StakedIka,
-): Balance<IKA> {
-    self.validators.request_withdraw_stake(self.epoch, staked_ika)
+    staked_ika: &mut StakedIka,
+) {
+    self.validators.request_withdraw_stake(staked_ika, self.epoch);
 }
 
-public(package) fun convert_to_fungible_staked_ika(
+public(package) fun withdraw_stake(
     self: &mut SystemInnerV1,
     staked_ika: StakedIka,
     ctx: &mut TxContext,
-): FungibleStakedIka {
-    self.validators.convert_to_fungible_staked_ika(self.epoch, staked_ika, ctx)
+): Coin<IKA> {
+    self.validators.withdraw_stake(staked_ika, self.epoch, ctx)
 }
 
-public(package) fun redeem_fungible_staked_ika(
-    self: &mut SystemInnerV1,
-    fungible_staked_ika: FungibleStakedIka,
-): Balance<IKA> {
-    self.validators.redeem_fungible_staked_ika(self.epoch, fungible_staked_ika)
-}
+// public(package) fun convert_to_fungible_staked_ika(
+//     self: &mut SystemInnerV1,
+//     staked_ika: StakedIka,
+//     ctx: &mut TxContext,
+// ): FungibleStakedIka {
+//     self.validators.convert_to_fungible_staked_ika(self.epoch, staked_ika, ctx)
+// }
+
+// public(package) fun redeem_fungible_staked_ika(
+//     self: &mut SystemInnerV1,
+//     fungible_staked_ika: FungibleStakedIka,
+// ): Balance<IKA> {
+//     self.validators.redeem_fungible_staked_ika(self.epoch, fungible_staked_ika)
+// }
 
 public(package) fun report_validator(
     self: &mut SystemInnerV1,
@@ -467,222 +445,92 @@ public(package) fun rotate_operation_cap(self: &mut SystemInnerV1, cap: &Validat
     validator.new_validator_operation_cap(cap, ctx)
 }
 
-/// Update a validator's payment address.
-public(package) fun update_validator_payment_address(
-    self: &mut SystemInnerV1,
-    payment_address: address,
-    cap: &ValidatorCap
-) {
+public(package) fun rotate_commission_cap(self: &mut SystemInnerV1, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorCommissionCap {
     let validator = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-
-    validator.update_payment_address(payment_address);
+    validator.new_validator_commission_cap(cap, ctx)
 }
 
-/// Update a validator's name.
-public(package) fun update_validator_name(
+/// Sets a validator's name.
+public(package) fun set_validator_name(
     self: &mut SystemInnerV1,
-    name: vector<u8>,
-    cap: &ValidatorCap
+    name: String,
+    cap: &ValidatorOperationCap
 ) {
-    let validator = self.validators.get_validator_mut_with_cap_including_candidates(cap);
+    self.validators.set_validator_name(name, cap);}
 
-    validator.update_name(name);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
-}
-
-/// Update a validator's description
-public(package) fun update_validator_description(
-    self: &mut SystemInnerV1,
-    description: vector<u8>,
-    cap: &ValidatorCap
-) {
-    let validator = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-    validator.update_description(description);
-}
-
-/// Update a validator's image url
-public(package) fun update_validator_image_url(
-    self: &mut SystemInnerV1,
-    image_url: vector<u8>,
-    cap: &ValidatorCap
-) {
-    let validator = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-    validator.update_image_url(image_url);
-}
-
-/// Update a validator's project url
-public(package) fun update_validator_project_url(
-    self: &mut SystemInnerV1,
-    project_url: vector<u8>,
-    cap: &ValidatorCap
-) {
-    let validator = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-    validator.update_project_url(project_url);
-}
-
-/// Update a validator's network address.
+/// Sets a validator's network address.
 /// The change will only take effects starting from the next epoch.
-public(package) fun update_validator_next_epoch_network_address(
+public(package) fun set_next_epoch_network_address(
     self: &mut SystemInnerV1,
-    network_address: vector<u8>,
-    cap: &ValidatorCap
+    network_address: String,
+    cap: &ValidatorOperationCap
 ) {
-    let validator = self.validators.get_validator_mut_with_cap(cap);
-    validator.update_next_epoch_network_address(network_address);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
+    self.validators.set_next_epoch_network_address(network_address, cap);
 }
 
-/// Update candidate validator's network address.
-public(package) fun update_candidate_validator_network_address(
-    self: &mut SystemInnerV1,
-    network_address: vector<u8>,
-    cap: &ValidatorCap
-) {
-    let candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-    candidate.update_candidate_network_address(network_address);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
-}
-
-/// Update a validator's p2p address.
+/// Sets a validator's p2p address.
 /// The change will only take effects starting from the next epoch.
-public(package) fun update_validator_next_epoch_p2p_address(
+public(package) fun set_next_epoch_p2p_address(
     self: &mut SystemInnerV1,
-    p2p_address: vector<u8>,
-    cap: &ValidatorCap
+    p2p_address: String,
+    cap: &ValidatorOperationCap
 ) {
-    let validator = self.validators.get_validator_mut_with_cap(cap);
-    validator.update_next_epoch_p2p_address(p2p_address);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
+    self.validators.set_next_epoch_p2p_address(p2p_address, cap);
 }
 
-/// Update candidate validator's p2p address.
-public(package) fun update_candidate_validator_p2p_address(
-    self: &mut SystemInnerV1,
-    p2p_address: vector<u8>,
-    cap: &ValidatorCap
-) {
-    let candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-    candidate.update_candidate_p2p_address(p2p_address);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
-}
-
-/// Update a validator's consensus address.
+/// Sets a validator's consensus address.
 /// The change will only take effects starting from the next epoch.
-public(package) fun update_validator_next_epoch_consensus_address(
+public(package) fun set_next_epoch_consensus_address(
     self: &mut SystemInnerV1,
-    consensus_address: vector<u8>,
-    cap: &ValidatorCap
+    consensus_address: String,
+    cap: &ValidatorOperationCap
 ) {
-    let validator = self.validators.get_validator_mut_with_cap(cap);
-    validator.update_next_epoch_consensus_address(consensus_address);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
+    self.validators.set_next_epoch_consensus_address(consensus_address, cap);
 }
 
-/// Update candidate validator's consensus address.
-public(package) fun update_candidate_validator_consensus_address(
-    self: &mut SystemInnerV1,
-    consensus_address: vector<u8>,
-    cap: &ValidatorCap
-) {
-    let candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-    candidate.update_candidate_consensus_address(consensus_address);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
-}
 
-/// Update a validator's public key of protocol key and proof of possession.
+/// Sets a validator's public key of protocol key and proof of possession.
 /// The change will only take effects starting from the next epoch.
-public(package) fun update_validator_next_epoch_protocol_pubkey_bytes(
+public(package) fun set_next_epoch_protocol_pubkey_bytes(
     self: &mut SystemInnerV1,
-    protocol_pubkey: vector<u8>,
+    protocol_pubkey_bytes: vector<u8>,
     proof_of_possession_bytes: vector<u8>,
-    cap: &ValidatorCap,
+    cap: &ValidatorOperationCap,
     ctx: &TxContext,
 ) {
-    let validator = self.validators.get_validator_mut_with_cap(cap);
-    validator.update_next_epoch_protocol_pubkey_bytes(protocol_pubkey, proof_of_possession_bytes, ctx);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
+    self.validators.set_next_epoch_protocol_pubkey_bytes(protocol_pubkey_bytes, proof_of_possession_bytes, cap, ctx);
 }
 
-/// Update candidate validator's public key of protocol key and proof of possession.
-public(package) fun update_candidate_validator_protocol_pubkey_bytes(
-    self: &mut SystemInnerV1,
-    protocol_pubkey: vector<u8>,
-    proof_of_possession_bytes: vector<u8>,
-    cap: &ValidatorCap,
-    ctx: &TxContext,
-) {
-    let candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-    candidate.update_candidate_protocol_pubkey_bytes(protocol_pubkey, proof_of_possession_bytes, ctx);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
-}
-
-/// Update a validator's public key of worker key.
+/// Sets a validator's public key of worker key.
 /// The change will only take effects starting from the next epoch.
-public(package) fun update_validator_next_epoch_consensus_pubkey_bytes(
+public(package) fun set_next_epoch_consensus_pubkey_bytes(
     self: &mut SystemInnerV1,
     consensus_pubkey_bytes: vector<u8>,
-    cap: &ValidatorCap
+    cap: &ValidatorOperationCap
 ) {
-    let validator = self.validators.get_validator_mut_with_cap(cap);
-    validator.update_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
+    self.validators.set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes, cap);
 }
 
-/// Update candidate validator's public key of worker key.
-public(package) fun update_candidate_validator_consensus_pubkey_bytes(
-    self: &mut SystemInnerV1,
-    consensus_pubkey_bytes: vector<u8>,
-    cap: &ValidatorCap
-) {
-    let candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-    candidate.update_candidate_consensus_pubkey_bytes(consensus_pubkey_bytes);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
-}
 
-/// Update a validator's public key and its associated proof of class groups key.
+/// Sets a validator's public key and its associated proof of class groups key.
 /// The change will only take effects starting from the next epoch.
-public(package) fun update_validator_next_epoch_class_groups_pubkey_and_proof_bytes(
+public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self: &mut SystemInnerV1,
-    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
-    cap: &ValidatorCap,
+    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+    cap: &ValidatorOperationCap
 ) {
-    let validator = self.validators.get_validator_mut_with_cap(cap);
-    validator.update_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
+    self.validators.set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes, cap);
 }
 
-/// Update candidate validator's public key and its associated proof of class groups key.
-public(package) fun update_candidate_validator_class_groups_pubkey_and_proof_bytes(
-    self: &mut SystemInnerV1,
-    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
-    cap: &ValidatorCap
-) {
-    let candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-    candidate.update_candidate_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
-}
 
-/// Update a validator's public key of network key.
+/// Sets a validator's public key of network key.
 /// The change will only take effects starting from the next epoch.
-public(package) fun update_validator_next_epoch_network_pubkey_bytes(
+public(package) fun set_next_epoch_network_pubkey_bytes(
     self: &mut SystemInnerV1,
-    network_pubkey: vector<u8>,
-    cap: &ValidatorCap
+    network_pubkey_bytes: vector<u8>,
+    cap: &ValidatorOperationCap
 ) {
-    let validator = self.validators.get_validator_mut_with_cap(cap);
-    validator.update_next_epoch_network_pubkey_bytes(network_pubkey);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
-}
-
-/// Update candidate validator's public key of network key.
-public(package) fun update_candidate_validator_network_pubkey_bytes(
-    self: &mut SystemInnerV1,
-    network_pubkey: vector<u8>,
-    cap: &ValidatorCap
-) {
-    let candidate = self.validators.get_validator_mut_with_cap_including_candidates(cap);
-    candidate.update_candidate_network_pubkey_bytes(network_pubkey);
-    self.validators.assert_no_pending_or_active_duplicates(cap.validator_id());
+    self.validators.set_next_epoch_network_pubkey_bytes(network_pubkey_bytes, cap);
 }
 
 /// This function should be called at the end of an epoch, and advances the system to the next epoch.
@@ -695,27 +543,25 @@ public(package) fun update_candidate_validator_network_pubkey_bytes(
 public(package) fun advance_epoch(
     self: &mut SystemInnerV1,
     dwallet_coordinator: &mut DWalletCoordinatorInner,
-    epoch_start_timestamp_ms: u64, // Timestamp of the epoch start
+    clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    let prev_epoch_start_timestamp = self.epoch_start_timestamp_ms;
-    self.epoch_start_timestamp_ms = epoch_start_timestamp_ms;
+    let now = clock.timestamp_ms();
+    let last_epoch_change = self.epoch_start_timestamp_ms;
 
-    // TODO: remove this in later upgrade.
-    if (self.parameters.stake_subsidy_start_epoch > 0) {
-        self.parameters.stake_subsidy_start_epoch = 20;
-    };
+    if (self.epoch == 0) assert!(now >= last_epoch_change, EWrongEpochState)
+    else assert!(now >= last_epoch_change + self.parameters.epoch_duration_ms, EWrongEpochState);
+    self.epoch_start_timestamp_ms = now;
 
     let mut stake_subsidy = balance::zero();
 
     // during the transition from epoch N to epoch N + 1, self.epoch() will return N
-    let epoch = self.epoch();
+    let current_epoch = self.epoch();
     // Include stake subsidy in the rewards given out to validators and stakers.
     // Delay distributing any stake subsidies until after `stake_subsidy_start_epoch`.
     // And if this epoch is shorter than the regular epoch duration, don't distribute any stake subsidy.
     if (
-        epoch >= self.parameters.stake_subsidy_start_epoch  &&
-            epoch_start_timestamp_ms >= prev_epoch_start_timestamp + self.parameters.epoch_duration_ms
+        current_epoch >= self.parameters.stake_subsidy_start_epoch
     ) {
         stake_subsidy.join(self.protocol_treasury.stake_subsidy_for_distribution(ctx));
     };
@@ -724,23 +570,27 @@ public(package) fun advance_epoch(
     let computation_reward_amount_before_distribution = self.computation_reward.value();
 
     let epoch_computation_reward = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee());
+    let decryption_keys_rewards = self.advance_network_keys(dwallet_coordinator);
 
     let stake_subsidy_amount = stake_subsidy.value();
     let mut total_reward = sui::balance::zero<IKA>();
     total_reward.join(epoch_computation_reward);
     total_reward.join(self.computation_reward.withdraw_all());
     total_reward.join(stake_subsidy);
+
+    self.computation_reward.join(decryption_keys_rewards);
+
     let total_reward_amount_before_distribution = total_reward.value();
-    self.epoch = self.epoch + 1;
+    let new_epoch = current_epoch + 1;
+    self.epoch = new_epoch;
+
     self
         .validators
         .advance_epoch(
-            epoch,
-            self.epoch,
+            current_epoch,
+            new_epoch,
             &mut total_reward,
             self.parameters.reward_slashing_rate,
-
-            ctx,
         );
 
     let new_total_stake = self.validators.total_stake();
@@ -753,17 +603,14 @@ public(package) fun advance_epoch(
     // remaining balance in `computation_reward`.
     self.computation_reward.join(total_reward);
 
-    let active_committee = self.active_committee();
-    // Derive the computation price per unit size for the new epoch
-    self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&active_committee);
+    //let active_committee = self.active_committee();
+    // // Derive the computation price per unit size for the new epoch
+    //self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&active_committee);
     let mut last_processed_checkpoint_sequence_number = 0;
     if (self.last_processed_checkpoint_sequence_number.is_some()) {
         last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
         self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
     };
-
-    let decryption_keys_rewards = self.advance_network_keys(dwallet_coordinator);
-    self.computation_reward.join(decryption_keys_rewards);
 
     event::emit(SystemEpochInfoEvent {
         epoch: self.epoch,
@@ -779,7 +626,12 @@ public(package) fun advance_epoch(
 
 public(package) fun process_mid_epoch(
     self: &mut SystemInnerV1,
+    clock: &Clock,
+    dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
+    ctx: &mut TxContext,
 ) {
+    assert!(self.validators.next_epoch_active_committee().is_none() && clock.timestamp_ms() > self.epoch_start_timestamp_ms + (self.parameters.epoch_duration_ms / 2), EHaveNotReachedMidEpochTime);
+
     self.validators.process_mid_epoch(
         self.epoch, 
         self.parameters.lock_active_committee,
@@ -787,6 +639,7 @@ public(package) fun process_mid_epoch(
         self.parameters.validator_very_low_stake_threshold,
         self.parameters.validator_low_stake_grace_period,
     );
+    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
 }
 
 /// Return the current epoch number. Useful for applications that need a coarse-grained concept of time,
@@ -825,7 +678,7 @@ public(package) fun get_reporters_of(self: &SystemInnerV1, validator_id: ID): Ve
 public(package) fun pool_exchange_rates(
     self: &mut SystemInnerV1,
     validator_id: ID,
-): &Table<u64, PoolTokenExchangeRate> {
+): &Table<u64, PoolExchangeRate> {
     let validators = &mut self.validators;
     validators.pool_exchange_rates(validator_id)
 }
@@ -836,8 +689,7 @@ public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
 }
 
 public(package) fun next_epoch_active_committee(self: &SystemInnerV1): BlsCommittee {
-    let validator_set = &self.validators;
-    let next_epoch_committee = validator_set.next_epoch_committee();
+    let next_epoch_committee = self.validators.next_epoch_active_committee();
     assert!(next_epoch_committee.is_some(), ENextCommitteeNotSetOnAdvanceEpoch);
     return *next_epoch_committee.borrow()
 }
@@ -933,34 +785,6 @@ fun process_checkpoint_message(
     });
 }
 
-#[allow(lint(self_transfer))]
-/// Extract required Balance from vector of Coin<IKA>, transfer the remainder back to sender.
-fun extract_coin_balance(
-    mut coins: vector<Coin<IKA>>,
-    amount: option::Option<u64>,
-    ctx: &mut TxContext,
-): Balance<IKA> {
-    let mut merged_coin = coins.pop_back();
-    merged_coin.join_vec(coins);
-
-    let mut total_balance = merged_coin.into_balance();
-    // return the full amount if amount is not specified
-    if (amount.is_some()) {
-        let amount = amount.destroy_some();
-        let balance = total_balance.split(amount);
-        // transfer back the remainder if non zero.
-        if (total_balance.value() > 0) {
-            transfer::public_transfer(total_balance.into_coin(ctx), ctx.sender());
-        } else {
-            total_balance.destroy_zero();
-        };
-        balance
-    } else {
-        total_balance
-    }
-}
-
-
 
 public(package) fun authorize_update_message_by_cap(
     self: &mut SystemInnerV1,
@@ -1020,15 +844,16 @@ public(package) fun set_epoch_for_testing(self: &mut SystemInnerV1, epoch_num: u
 #[test_only]
 public(package) fun request_add_validator_for_testing(
     self: &mut SystemInnerV1,
-    min_joining_stake_for_testing: u64,
     cap: &ValidatorCap,
+    min_joining_stake_for_testing: u64,
+    _ctx: &TxContext,
 ) {
     assert!(
         self.validators.pending_active_validators_count() < self.parameters.max_validator_count,
         ELimitExceeded,
     );
 
-    self.validators.request_add_validator(min_joining_stake_for_testing, cap);
+    self.validators.request_add_validator(self.epoch, cap, min_joining_stake_for_testing);
 }
 
 #[test_only]
@@ -1043,49 +868,49 @@ public(package) fun epoch_duration_ms(self: &SystemInnerV1): u64 {
     self.parameters.epoch_duration_ms
 }
 
-// CAUTION: THIS CODE IS ONLY FOR TESTING AND THIS MACRO MUST NEVER EVER BE REMOVED.  Creates a
-// candidate validator - bypassing the proof of possession check and other metadata validation
-// in the process.
-#[test_only]
-public(package) fun request_add_validator_candidate_for_testing(
-    self: &mut SystemInnerV1,
-    protocol_pubkey_bytes: vector<u8>,
-    network_pubkey_bytes: vector<u8>,
-    consensus_pubkey_bytes_bytes: vector<u8>,
-    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
-    proof_of_possession_bytes: vector<u8>,
-    name: vector<u8>,
-    description: vector<u8>,
-    image_url: vector<u8>,
-    project_url: vector<u8>,
-    network_address: vector<u8>,
-    p2p_address: vector<u8>,
-    consensus_address: vector<u8>,
-    computation_price: u64,
-    commission_rate: u16,
-    ctx: &mut TxContext,
-): (ValidatorCap, ValidatorOperationCap) {
-    let (validator, cap, operation_cap) = validator_inner_v1::new_for_testing(
-        ctx.sender(),
-        protocol_pubkey_bytes,
-        network_pubkey_bytes,
-        consensus_pubkey_bytes_bytes,
-        class_groups_pubkey_and_proof_bytes,
-        proof_of_possession_bytes,
-        name,
-        description,
-        image_url,
-        project_url,
-        network_address,
-        p2p_address,
-        consensus_address,
-        option::none(),
-        computation_price,
-        commission_rate,
-        false, // not an initial validator active at init
-        ctx,
-    );
+// // CAUTION: THIS CODE IS ONLY FOR TESTING AND THIS MACRO MUST NEVER EVER BE REMOVED.  Creates a
+// // candidate validator - bypassing the proof of possession check and other metadata validation
+// // in the process.
+// #[test_only]
+// public(package) fun request_add_validator_candidate_for_testing(
+//     self: &mut SystemInnerV1,
+//     protocol_pubkey_bytes: vector<u8>,
+//     network_pubkey_bytes: vector<u8>,
+//     consensus_pubkey_bytes_bytes: vector<u8>,
+//     class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+//     proof_of_possession_bytes: vector<u8>,
+//     name: vector<u8>,
+//     description: vector<u8>,
+//     image_url: vector<u8>,
+//     project_url: vector<u8>,
+//     network_address: vector<u8>,
+//     p2p_address: vector<u8>,
+//     consensus_address: vector<u8>,
+//     computation_price: u64,
+//     commission_rate: u16,
+//     ctx: &mut TxContext,
+// ): (ValidatorCap, ValidatorOperationCap) {
+//     let (validator, cap, operation_cap) = validator_inner_v1::new_for_testing(
+//         ctx.sender(),
+//         protocol_pubkey_bytes,
+//         network_pubkey_bytes,
+//         consensus_pubkey_bytes_bytes,
+//         class_groups_pubkey_and_proof_bytes,
+//         proof_of_possession_bytes,
+//         name,
+//         description,
+//         image_url,
+//         project_url,
+//         network_address,
+//         p2p_address,
+//         consensus_address,
+//         option::none(),
+//         computation_price,
+//         commission_rate,
+//         false, // not an initial validator active at init
+//         ctx,
+//     );
 
-    self.validators.request_add_validator_candidate(validator, ctx);
-    (cap, operation_cap)
-}
+//     self.validators.request_add_validator_candidate(validator, ctx);
+//     (cap, operation_cap)
+// }

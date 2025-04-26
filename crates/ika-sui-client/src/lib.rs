@@ -23,7 +23,7 @@ use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorIn
 use ika_types::sui::system_inner_v1::{
     DWalletCoordinatorInnerV1, DWalletNetworkDecryptionKeyCap, SystemInnerV1,
 };
-use ika_types::sui::validator_inner_v1::ValidatorInnerV1;
+use ika_types::sui::staking::StakingPool;
 use ika_types::sui::{
     DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
 };
@@ -319,7 +319,7 @@ where
 
     pub async fn get_class_groups_public_keys_and_proofs(
         &self,
-        validators: &Vec<ValidatorInnerV1>,
+        validators: &Vec<StakingPool>,
     ) -> IkaResult<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>> {
         self.inner
             .get_class_groups_public_keys_and_proofs(&validators)
@@ -346,8 +346,31 @@ where
                     .collect::<Vec<_>>();
 
                 let validators = self
-                    .get_validators_info_by_ids(ika_system_state_inner, validator_ids)
-                    .await?;
+                    .inner
+                    .get_validators_from_object_table(
+                        ika_system_state_inner.validators.validators.id,
+                        validator_ids,
+                    )
+                    .await
+                    .map_err(|e| {
+                        IkaError::SuiClientInternalError(format!(
+                            "Can't get_validators_from_object_table: {e}"
+                        ))
+                    })?;
+                let validators = validators
+                    .iter()
+                    .map(|v| {
+                        bcs::from_bytes::<StakingPool>(&v).map_err(|e| {
+                            IkaError::SuiClientSerializationError(format!(
+                                "Can't serialize StakingPool: {e}"
+                            ))
+                        })
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                // let validators = self
+                //     .get_validators_info_by_ids(ika_system_state_inner, validator_ids)
+                //     .await?;
 
                 let network_decryption_keys = self
                     .inner
@@ -392,28 +415,28 @@ where
                     .map(|m| {
                         let validator = validators
                             .iter()
-                            .find(|v| v.validator_id == m.validator_id)
+                            .find(|v| v.id == m.validator_id)
                             .unwrap();
-                        let metadata = validator.verified_metadata();
+                        let info = validator.verified_validator_info();
                         EpochStartValidatorInfoV1 {
-                            validator_id: validator.validator_id,
-                            protocol_pubkey: metadata.protocol_pubkey.clone(),
-                            network_pubkey: metadata.network_pubkey.clone(),
-                            consensus_pubkey: metadata.consensus_pubkey.clone(),
+                            validator_id: validator.id,
+                            protocol_pubkey: info.protocol_pubkey.clone(),
+                            network_pubkey: info.network_pubkey.clone(),
+                            consensus_pubkey: info.consensus_pubkey.clone(),
                             class_groups_public_key_and_proof: bcs::to_bytes(
                                 &validators_class_groups_public_key_and_proof
-                                    .get(&validator.validator_id)
+                                    .get(&validator.id)
                                     // Okay to `unwrap`
                                     // because we can't start the chain without the system state data.
                                     .expect("failed to get the validator class groups public key from Sui")
                                     .clone(),
                             )
                                 .unwrap(),
-                            network_address: metadata.network_address.clone(),
-                            p2p_address: metadata.p2p_address.clone(),
-                            consensus_address: metadata.consensus_address.clone(),
+                            network_address: info.network_address.clone(),
+                            p2p_address: info.p2p_address.clone(),
+                            consensus_address: info.consensus_address.clone(),
                             voting_power: m.voting_power,
-                            hostname: metadata.name.clone(),
+                            hostname: info.name.clone(),
                         }
                     })
                     .collect::<Vec<_>>();
@@ -437,7 +460,7 @@ where
         &self,
         ika_system_state_inner: &SystemInnerV1,
         validator_ids: Vec<ObjectID>,
-    ) -> Result<Vec<ValidatorInnerV1>, IkaError> {
+    ) -> Result<Vec<StakingPool>, IkaError> {
         let validators = self
             .inner
             .get_validators_from_object_table(
@@ -450,42 +473,64 @@ where
                     "failure in `get_validators_from_object_table()`: {e}"
                 ))
             })?;
-        let validators = validators
+        validators
             .iter()
             .map(|v| {
-                bcs::from_bytes::<Validator>(&v).map_err(|e| {
+                bcs::from_bytes::<StakingPool>(&v).map_err(|e| {
                     IkaError::SuiClientSerializationError(format!(
                         "failed to de-serialize Validator info: {e}"
                     ))
                 })
             })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let validators = self
-            .inner
-            .get_validator_inners(validators)
-            .await
-            .map_err(|e| {
-                IkaError::SuiClientInternalError(format!(
-                    "failure in `get_validator_inners()`: {e}"
-                ))
-            })?;
-
-        let validators = validators
-            .iter()
-            .map(|v| {
-                bcs::from_bytes::<Field<u64, ValidatorInnerV1>>(&v).map_err(|e| {
-                    IkaError::SuiClientSerializationError(format!(
-                        "failure to de-serialize ValidatorInnerV1: {e}"
-                    ))
-                })
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(validators
-            .iter()
-            .map(|v| v.value.clone())
-            .collect::<Vec<_>>())
+            .collect::<Result<Vec<_>, _>>()
+        // let validators = self
+        //     .inner
+        //     .get_validators_from_object_table(
+        //         ika_system_state_inner.validators.validators.id,
+        //         validator_ids,
+        //     )
+        //     .await
+        //     .map_err(|e| {
+        //         IkaError::SuiClientInternalError(format!(
+        //             "failure in `get_validators_from_object_table()`: {e}"
+        //         ))
+        //     })?;
+        // let validators = validators
+        //     .iter()
+        //     .map(|v| {
+        //         bcs::from_bytes::<Validator>(&v).map_err(|e| {
+        //             IkaError::SuiClientSerializationError(format!(
+        //                 "failed to de-serialize Validator info: {e}"
+        //             ))
+        //         })
+        //     })
+        //     .collect::<Result<Vec<_>, _>>()?;
+        // 
+        // let validators = self
+        //     .inner
+        //     .get_validator_inners(validators)
+        //     .await
+        //     .map_err(|e| {
+        //         IkaError::SuiClientInternalError(format!(
+        //             "failure in `get_validator_inners()`: {e}"
+        //         ))
+        //     })?;
+        // 
+        // let validators = validators
+        //     .iter()
+        //     .map(|v| {
+        //         bcs::from_bytes::<Field<u64, ValidatorInnerV1>>(&v).map_err(|e| {
+        //             IkaError::SuiClientSerializationError(format!(
+        //                 "failure to de-serialize ValidatorInnerV1: {e}"
+        //             ))
+        //         })
+        //     })
+        //     .collect::<Result<Vec<_>, _>>()?;
+        // 
+        // Ok(validators
+        //     .iter()
+        //     .map(|v| v.value.clone())
+        //     .collect::<Vec<_>>())
     }
 
     /// Get the mutable system object arg on chain.
@@ -754,7 +799,7 @@ pub trait SuiClientInner: Send + Sync {
 
     async fn get_class_groups_public_keys_and_proofs(
         &self,
-        validators: &Vec<ValidatorInnerV1>,
+        validators: &Vec<StakingPool>,
     ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error>;
 
     async fn get_network_decryption_keys(
@@ -929,18 +974,18 @@ impl SuiClientInner for SuiSdkClient {
 
     async fn get_class_groups_public_keys_and_proofs(
         &self,
-        validators: &Vec<ValidatorInnerV1>,
+        validators: &Vec<StakingPool>,
     ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
         let mut class_groups_public_keys_and_proofs: HashMap<
             ObjectID,
             ClassGroupsEncryptionKeyAndProof,
         > = HashMap::new();
         for validator in validators {
-            let metadata = validator.verified_metadata();
+            let info = validator.verified_validator_info();
             let dynamic_fields = self
                 .read_api()
                 .get_dynamic_fields(
-                    metadata.class_groups_public_key_and_proof.contents.id,
+                    info.class_groups_pubkey_and_proof_bytes.contents.id,
                     None,
                     None,
                 )
@@ -977,7 +1022,7 @@ impl SuiClientInner for SuiSdkClient {
                 .collect();
 
             class_groups_public_keys_and_proofs.insert(
-                validator.validator_id,
+                validator.id,
                 validator_class_groups_public_key_and_proof?
                     .try_into()
                     .map_err(|_| {

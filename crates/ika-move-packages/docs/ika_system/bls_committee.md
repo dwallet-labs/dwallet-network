@@ -760,7 +760,7 @@ If there is a certificate, the function returns the total stake. Otherwise, it a
     <b>let</b> max_bitmap_len_bytes = n_members.divide_and_round_up(8);
     // The signers bitmap must not be longer than necessary to hold all <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.
     // It may be shorter, in which case the excluded <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a> are treated <b>as</b> non-signers.
-    <b>assert</b>!(signers_bitmap.length() &lt;= max_bitmap_len_bytes, <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidBitmap">EInvalidBitmap</a>);
+    <b>assert</b>!(signers_bitmap.length() == max_bitmap_len_bytes, <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidBitmap">EInvalidBitmap</a>);
     // Iterate over the signers bitmap and check <b>if</b> each member is a signer.
     max_bitmap_len_bytes.do!(|i| {
         // Get the current byte or 0 <b>if</b> we've reached the end of the bitmap.

@@ -46,11 +46,11 @@ impl CommitteeStore {
             tables,
             cache: RwLock::new(HashMap::new()),
         };
-        if store.database_is_empty() {
-            store
-                .init_genesis_committee(genesis_committee.clone())
-                .expect("Init genesis committee data must not fail");
-        }
+        // if store.database_is_empty() {
+        //     store
+        //         .init_genesis_committee(genesis_committee.clone())
+        //         .expect("Init genesis committee data must not fail");
+        // }
         store
     }
 

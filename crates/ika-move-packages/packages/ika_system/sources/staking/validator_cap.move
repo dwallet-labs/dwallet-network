@@ -50,3 +50,29 @@ public(package) fun new_validator_operation_cap(
     };
     operation_cap
 }
+
+/// A capability for validator commission, can be revoked using `ValidatorCap`.
+public struct ValidatorCommissionCap has key, store {
+    id: UID,
+    validator_id: ID,
+}
+
+public(package) fun validator_commission_cap_validator_id(cap: &ValidatorCommissionCap): ID {
+    cap.validator_id
+}
+
+public use fun validator_commission_cap_validator_id as ValidatorCommissionCap.validator_id;
+
+/// Should be only called by the friend modules when adding a `Validator`
+/// or rotating an existing validaotr's `commission_cap_id`.
+public(package) fun new_validator_commission_cap(
+    validator_id: ID,
+    ctx: &mut TxContext,
+): ValidatorCommissionCap {
+    let commission_cap = ValidatorCommissionCap {
+        id: object::new(ctx),
+        validator_id,
+    };
+    commission_cap
+}
+

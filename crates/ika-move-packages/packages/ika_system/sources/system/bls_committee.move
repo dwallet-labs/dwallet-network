@@ -256,7 +256,7 @@ public(package) fun verify_certificate(
 
     // The signers bitmap must not be longer than necessary to hold all members.
     // It may be shorter, in which case the excluded members are treated as non-signers.
-    assert!(signers_bitmap.length() <= max_bitmap_len_bytes, EInvalidBitmap);
+    assert!(signers_bitmap.length() == max_bitmap_len_bytes, EInvalidBitmap);
 
     // Iterate over the signers bitmap and check if each member is a signer.
     max_bitmap_len_bytes.do!(|i| {

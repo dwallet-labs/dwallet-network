@@ -76,7 +76,7 @@ pub type ObjectTable = Table;
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ValidatorSetV1 {
     pub total_stake: u64,
-    pub validators: ObjectTable,
+    pub validators: ObjectTable,  // This now holds StakingPool objects
     pub active_committee: BlsCommittee,
     pub next_epoch_committee: Option<BlsCommittee>,
     pub previous_committee: BlsCommittee,
@@ -95,7 +95,7 @@ pub struct UpgradeCap {
     pub policy: u8,
 }
 
-/// Rust version of the Move ika_system::ika_system::IkaSystemStateInner type
+/// Rust version of the Move ika::ika_system::SystemInner type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct SystemInnerV1 {
     pub epoch: u64,
