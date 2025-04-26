@@ -110,7 +110,7 @@ impl InitiationParameters {
     }
 
     fn default_stake_subsidy_start_epoch() -> u64 {
-        0
+        1
     }
 
     fn default_stake_subsidy_rate() -> u16 {

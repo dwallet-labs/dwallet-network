@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 module ika_system::address;
 
 public fun ed25519_address(public_key: vector<u8>): address {

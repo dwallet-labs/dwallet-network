@@ -318,9 +318,11 @@ mod test {
             let narwhal_network_key = NetworkKeyPair::generate(&mut thread_rng());
 
             active_validators.push(EpochStartValidatorInfoV1 {
+                validator_id: ObjectID::random(),
                 protocol_pubkey: protocol_key.public().clone(),
                 network_pubkey: narwhal_network_key.public().clone(),
                 consensus_pubkey: narwhal_network_key.public().clone(),
+                class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes::default(),
                 network_address: Multiaddr::empty(),
                 p2p_address: Multiaddr::empty(),
                 consensus_address: Multiaddr::empty(),

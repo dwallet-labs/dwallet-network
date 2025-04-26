@@ -41,7 +41,7 @@ public(package) fun create_dwallet_coordinator(
     active_committee: BlsCommittee,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
-): ID {
+): DWalletCoordinator {
     let dwallet_coordinator_inner = dwallet_2pc_mpc_secp256k1_inner::create_dwallet_coordinator_inner(
         epoch,
         active_committee,
@@ -55,28 +55,14 @@ public(package) fun create_dwallet_coordinator(
         package_id,
         new_package_id: option::none(),
     };
-    let self_id = object::id(&self);
     dynamic_field::add(&mut self.id, VERSION, dwallet_coordinator_inner);
-    transfer::share_object(self);
-    self_id
+    self
 }
 
-/// Being called by the Ika network to store outputs of completed MPC sessions to Sui.
-public fun process_checkpoint_message_by_quorum(
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
-    signature: vector<u8>,
-    signers_bitmap: vector<u8>,
-    mut message: vector<u8>,
-    message2: vector<u8>,
-    message3: vector<u8>,
-    message4: vector<u8>,
-    ctx: &mut TxContext,
+public(package) fun share_dwallet_coordinator(
+    dwallet_coordinator: DWalletCoordinator,
 ) {
-    message.append(message2);
-    message.append(message3);
-    message.append(message4);
-    let dwallet_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
-    dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+    transfer::share_object(dwallet_coordinator);
 }
 
 public(package) fun request_dwallet_network_decryption_key_dkg(

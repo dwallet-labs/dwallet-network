@@ -199,12 +199,13 @@ impl ChainIdentifier {
     }
 
     pub fn chain(&self) -> Chain {
-        let mainnet_id = get_mainnet_chain_identifier();
-        let testnet_id = get_testnet_chain_identifier();
+        // TODO: undo comments once we have a real chain identifier for mainnet and testnet
+        // let mainnet_id = get_mainnet_chain_identifier();
+        // let testnet_id = get_testnet_chain_identifier();
 
         let chain = match self {
-            id if *id == mainnet_id => Chain::Mainnet,
-            id if *id == testnet_id => Chain::Testnet,
+            // id if *id == mainnet_id => Chain::Mainnet,
+            // id if *id == testnet_id => Chain::Testnet,
             _ => Chain::Unknown,
         };
         if let Some(override_chain) = *IKA_PROTOCOL_CONFIG_CHAIN_OVERRIDE {

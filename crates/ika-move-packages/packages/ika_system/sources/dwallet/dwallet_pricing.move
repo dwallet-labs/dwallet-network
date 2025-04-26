@@ -90,7 +90,7 @@ public struct DWalletPricing2PcMpcSecp256K1 has key, store {
 /// # Returns
 ///
 /// A newly created instance of `DWalletPricing2PcMpcSecp256K1`.
-public(package) fun create_dwallet_pricing_2pc_mpc_secp256k1(
+public fun create_dwallet_pricing_2pc_mpc_secp256k1(
     // DKG First Round Pricing
     dkg_first_round_consensus_validation_ika: u64,
     dkg_first_round_computation_ika: u64,
