@@ -80,6 +80,10 @@ impl CryptographicComputationsOrchestrator {
             );
             return Err(DwalletMPCError::InsufficientCPUCores);
         }
+        info!(
+            available_cores_for_computations =? available_cores_for_computations,
+            "available CPU cores for Rayon cryptographic computations"
+        );
 
         Ok(CryptographicComputationsOrchestrator {
             available_cores_for_cryptographic_computations: available_cores_for_computations,
