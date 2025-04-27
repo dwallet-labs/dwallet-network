@@ -45,6 +45,7 @@ pub struct DWalletMPCService {
     sui_client: Arc<SuiBridgeClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
+    pub network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
 }
 
 impl DWalletMPCService {
@@ -70,6 +71,7 @@ impl DWalletMPCService {
             notify: Arc::new(Notify::new()),
             sui_client: sui_client.clone(),
             dwallet_mpc_manager,
+            network_keys_receiver,
             exit,
         }
     }
@@ -139,6 +141,21 @@ impl DWalletMPCService {
                 }
             }
             return;
+        }
+    }
+
+    async fn update_network_keys_if_needed(&mut self) {
+        match self.network_keys_receiver.has_changed() {
+            Ok(has_changed) => {
+                if has_changed {
+                    todo!("update keys")
+                } else {
+
+                }
+            }
+            Err(err) => {
+                error!(?err, "failed to check network keys receiver");
+            }
         }
     }
 
