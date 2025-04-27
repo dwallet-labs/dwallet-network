@@ -390,21 +390,19 @@ impl DWalletMPCManager {
     }
 
     fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeys>> {
-        Ok(self
-            .epoch_store()?
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .clone())
+        Ok(self.dw)
     }
 
-    pub(super) async fn get_decryption_key_share_public_parameters(
+    pub(super) fn get_decryption_key_share_public_parameters(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
-        self.dwallet_mpc_network_keys()?
-            .get_decryption_public_parameters(key_id)
-            .await
+        Ok(self
+            .network_decryption_keys
+            .get(key_id)
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .decryption_key_share_public_parameters
+            .clone())
     }
 
     /// Retrieves the decryption share for the current authority.

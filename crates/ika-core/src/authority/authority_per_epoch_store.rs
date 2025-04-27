@@ -676,21 +676,6 @@ impl AuthorityPerEpochStore {
         generate_access_structure_from_committee(self.committee().as_ref())
     }
 
-    /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
-    pub fn set_dwallet_mpc_network_keys(
-        &self,
-        dwallet_network_keys: Arc<DwalletMPCNetworkKeys>,
-    ) -> IkaResult<()> {
-        if self
-            .dwallet_mpc_network_keys
-            .set(dwallet_network_keys)
-            .is_err()
-        {
-            error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
-        }
-        Ok(())
-    }
-
     /// Return the [`DWalletMPCOutputsVerifier`].
     /// Uses a Mutex because the instance is initialized from a different thread.
     pub async fn get_dwallet_mpc_outputs_verifier(
