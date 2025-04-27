@@ -285,7 +285,7 @@ impl DwalletMPCNetworkKeys {
 
             match key_scheme {
                 DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                    return bcs::to_bytes(&ProtocolPublicParameters::new::<
+                    bcs::to_bytes(&ProtocolPublicParameters::new::<
                         { secp256k1::SCALAR_LIMBS },
                         { FUNDAMENTAL_DISCRIMINANT_LIMBS },
                         { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },

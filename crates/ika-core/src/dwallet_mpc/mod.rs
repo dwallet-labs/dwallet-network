@@ -550,8 +550,7 @@ pub(crate) async fn session_input_from_event(
                         .event_data
                         .dwallet_network_decryption_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
-                )
-                .await;
+                )?;
             let class_groups_key_pair_and_proof = dwallet_mpc_manager
                 .node_config
                 .class_groups_key_pair_and_proof
@@ -588,8 +587,7 @@ pub(crate) async fn session_input_from_event(
                         .event_data
                         .dwallet_network_decryption_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
-                )
-                .await;
+                )?;
             Ok((dkg_first_public_input(protocol_public_parameters)?, None))
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGSecondRoundEvent>::type_(packages_config) => {
@@ -601,8 +599,7 @@ pub(crate) async fn session_input_from_event(
                     // Todo (#473): Support generic network key scheme
                     &deserialized_event.event_data.dwallet_mpc_network_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
-                )
-                .await;
+                )?;
             Ok((
                 dkg_second_public_input(deserialized_event.event_data, protocol_public_parameters)?,
                 None,
@@ -619,8 +616,7 @@ pub(crate) async fn session_input_from_event(
                         .event_data
                         .dwallet_network_decryption_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
-                )
-                .await;
+                )?;
             Ok((
                 presign_public_input(deserialized_event.event_data, protocol_public_parameters)?,
                 None,
@@ -635,8 +631,7 @@ pub(crate) async fn session_input_from_event(
                     // Todo (#473): Support generic network key scheme
                     &deserialized_event.event_data.dwallet_mpc_network_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
-                )
-                .await;
+                )?;
             Ok((
                 sign_public_input(
                     &deserialized_event,
@@ -660,8 +655,7 @@ pub(crate) async fn session_input_from_event(
                     // Todo (#473): Support generic network key scheme
                     &deserialized_event.event_data.dwallet_mpc_network_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
-                )
-                .await;
+                )?;
             Ok((protocol_public_parameters, None))
         }
         t if t
