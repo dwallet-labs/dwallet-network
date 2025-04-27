@@ -294,7 +294,7 @@ fn get_expected_decrypters(
         .collect::<HashSet<PartyID>>())
 }
 
-async fn sign_public_input(
+fn sign_public_input(
     deserialized_event: &DWalletMPCSuiEvent<StartSignEvent>,
     dwallet_mpc_manager: &DWalletMPCManager,
     protocol_public_parameters: Vec<u8>,
@@ -637,8 +637,7 @@ pub(crate) async fn session_input_from_event(
                     &deserialized_event,
                     dwallet_mpc_manager,
                     protocol_public_parameters,
-                )
-                .await?,
+                )?,
                 None,
             ))
         }

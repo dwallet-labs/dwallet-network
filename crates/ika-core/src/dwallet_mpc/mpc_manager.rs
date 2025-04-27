@@ -351,14 +351,12 @@ impl DWalletMPCManager {
                 MPCProtocolInitData::Sign(init_event) => {
                     self.get_decryption_key_shares(
                         &init_event.event_data.dwallet_mpc_network_key_id,
-                    )
-                    .await?
+                    )?
                 }
                 MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
                     self.get_decryption_key_shares(
                         &init_event.event_data.dwallet_network_decryption_key_id,
-                    )
-                    .await?
+                    )?
                 }
                 _ => HashMap::new(),
             },

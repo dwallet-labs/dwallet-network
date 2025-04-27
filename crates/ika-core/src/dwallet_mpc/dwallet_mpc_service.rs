@@ -161,7 +161,6 @@ impl DWalletMPCService {
                                 &self.dwallet_mpc_manager
                                     .weighted_threshold_access_structure,
                             )
-                            .await
                         {
                             error!(?err, "failed to store network keys");
                         };
