@@ -26,7 +26,7 @@ use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
-use tokio::sync::RwLock;
+use tokio::sync::{watch, RwLock};
 use tokio::{
     sync::Notify,
     task::JoinHandle,
@@ -181,6 +181,7 @@ where
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
         dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
+        network_keys_sender: watch::Sender<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
     ) {
         loop {
             time::sleep(Duration::from_secs(2)).await;
@@ -225,7 +226,9 @@ where
                     &weighted_threshold_access_structure,
                     &key_id,
                     &network_dec_key_shares,
-                ).await {
+                )
+                .await
+                {
                     Ok(key) => {
                         all_network_keys_data.insert(key_id, key);
                     }
@@ -266,7 +269,9 @@ where
                     }
                 }
             }
-
+            if let Err(err) = network_keys_sender.send(all_network_keys_data) {
+                error!(?err, "failed to send network keys data to the channel",);
+            }
         }
     }
 
