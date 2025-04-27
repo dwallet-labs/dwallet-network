@@ -1359,7 +1359,7 @@ impl AuthorityPerEpochStore {
         Ok((verified_certificates, notifications))
     }
 
-    /// Read events from perpetual tables, remove them, and store in the current epoch tables. 
+    /// Read events from perpetual tables, remove them, and store in the current epoch tables.
     async fn read_new_sui_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
         let pending_events = self.perpetual_tables.get_all_pending_events();
         self.perpetual_tables
