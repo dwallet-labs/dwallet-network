@@ -79,7 +79,7 @@ impl DWalletMPCService {
         {
             let coordinator_state = self
                 .sui_client
-                .get_dwallet_coordinator_inner_until_success(dwallet_coordinator_id)
+                .must_get_dwallet_coordinator_inner(dwallet_coordinator_id)
                 .await;
             match coordinator_state {
                 DWalletCoordinatorInner::V1(inner_state) => {
@@ -92,6 +92,9 @@ impl DWalletMPCService {
         }
     }
 
+    /// Load missed events from the Sui network.
+    /// These events are from different Epochs, not necessarily the current one.
+    ///
     async fn load_missed_events(&mut self) {
         let epoch_store = self.epoch_store.clone();
         loop {
@@ -107,6 +110,9 @@ impl DWalletMPCService {
             for event in events {
                 match session_info_from_event(event.clone(), &epoch_store.packages_config) {
                     Ok(Some(mut session_info)) => {
+                        // We modify the session info to include the current epoch ID,
+                        // or else
+                        // this event will be ignored while handled.
                         session_info.epoch = self.epoch_id;
                         self.dwallet_mpc_manager
                             .handle_dwallet_db_event(DWalletMPCEvent {
@@ -184,7 +190,7 @@ impl DWalletMPCService {
                         session.status = MPCSessionStatus::Finished;
                     });
             }
-            let Ok(events) = self
+            let Ok(events_from_sui) = self
                 .epoch_store
                 .load_dwallet_mpc_events_from_round(self.last_read_consensus_round + 1)
                 .await
@@ -192,7 +198,7 @@ impl DWalletMPCService {
                 error!("Failed to load DWallet MPC events from the local DB");
                 continue;
             };
-            for event in events {
+            for event in events_from_sui {
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_event(event)
                     .await;

@@ -74,7 +74,6 @@ pub struct DWalletMPCManager {
     party_id: PartyID,
     /// MPC sessions that where created.
     pub(crate) mpc_sessions: HashMap<ObjectID, DWalletMPCSession>,
-    pub(crate) pending_sessions: HashMap<u64, DWalletMPCSession>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub(super) node_config: NodeConfig,
     epoch_store: Weak<AuthorityPerEpochStore>,
@@ -155,7 +154,6 @@ impl DWalletMPCManager {
         let mpc_computations_orchestrator = CryptographicComputationsOrchestrator::try_new()?;
         Ok(Self {
             mpc_sessions: HashMap::new(),
-            pending_sessions: Default::default(),
             consensus_adapter,
             party_id: epoch_store.authority_name_to_party_id(&epoch_store.name.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
