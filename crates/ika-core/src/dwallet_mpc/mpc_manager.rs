@@ -37,10 +37,7 @@ use ika_types::crypto::DefaultHash;
 use ika_types::digests::Digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
-    MaliciousReport, SessionInfo, StartPresignFirstRoundEvent,
-};
+use ika_types::messages_dwallet_mpc::{AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, SessionInfo, SessionType, StartPresignFirstRoundEvent};
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
@@ -327,7 +324,6 @@ impl DWalletMPCManager {
                 }
                 _ => HashMap::new(),
             },
-            is_system: session_info.is_system,
         });
         if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
@@ -511,7 +507,7 @@ impl DWalletMPCManager {
                 );
                 continue;
             };
-            if oldest_pending_session.sequence_number
+            if let SessionType::User {sequence_number} = mpc_event_data.session_type
                 > self.last_session_to_complete_in_current_epoch
                 && !mpc_event_data.is_system
             {
