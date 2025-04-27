@@ -145,7 +145,7 @@ impl DWalletMPCService {
         }
     }
 
-    async fn update_network_keys_if_needed(&mut self) {
+    async fn update_network_keys(&mut self) {
         match self.network_keys_receiver.has_changed() {
             Ok(has_changed) => {
                 if has_changed {
