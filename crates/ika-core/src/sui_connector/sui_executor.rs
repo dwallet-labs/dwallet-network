@@ -11,6 +11,7 @@ use ika_config::node::RunWithRange;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
+use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::governance::{
     MIN_VALIDATOR_JOINING_STAKE_NIKA, VALIDATOR_LOW_STAKE_GRACE_PERIOD,
@@ -20,7 +21,7 @@ use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
-use ika_types::sui::system_inner_v1::BlsCommittee;
+use ika_types::sui::system_inner_v1::{BlsCommittee, DWalletCoordinatorInnerV1};
 use ika_types::sui::{
     DWalletCoordinatorInner, SystemInner, SystemInnerTrait,
     PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_ADVANCE_EPOCH_FUNCTION_NAME,
@@ -241,8 +242,12 @@ where
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
             }
+            let dwallet_coordinator_inner = self
+                .sui_client
+                .must_get_dwallet_coordinator_inner_v1()
+                .await;
             let last_processed_checkpoint_sequence_number: Option<u64> =
-                ika_system_state_inner.last_processed_checkpoint_sequence_number();
+                dwallet_coordinator_inner.last_processed_checkpoint_sequence_number;
             let next_checkpoint_sequence_number = last_processed_checkpoint_sequence_number
                 .map(|s| s + 1)
                 .unwrap_or(0);
@@ -531,8 +536,6 @@ where
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
-        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
-
         let dwallet_2pc_mpc_secp256k1_arg = sui_client
             .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
             .await;
@@ -544,7 +547,6 @@ where
 
         let messages = Self::break_down_checkpoint_message(message);
         let mut args = vec![
-            CallArg::Object(ika_system_state_arg),
             CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                 IkaError::SuiConnectorSerializationError(format!(
