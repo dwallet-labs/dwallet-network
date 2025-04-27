@@ -99,6 +99,7 @@ pub struct DWalletMPCManager {
     pub(crate) recognized_self_as_malicious: bool,
     pub(crate) network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyPublicData>,
     pub(crate) validator_private_data: ValidatorPrivateDecryptionKeyData,
+    pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -212,7 +213,15 @@ impl DWalletMPCManager {
             );
             return;
         }
-        if let Err(err) = self.handle_event(event.event, event.session_info).await {
+        if let Err(err) = self
+            .handle_event(event.event.clone(), event.session_info.clone())
+            .await
+        {
+            if let DwalletMPCError::WaitingForNetworkKey(key_id) = err {
+                error!(?key_id, "Waiting for network key");
+                self.events_pending_for_network_key
+                    .push((event.event, event.session_info));
+            }
             error!("failed to handle event with error: {:?}", err);
         }
     }
@@ -389,10 +398,6 @@ impl DWalletMPCManager {
         }
     }
 
-    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeys>> {
-        Ok(self.dw)
-    }
-
     pub(super) fn get_decryption_key_share_public_parameters(
         &self,
         key_id: &ObjectID,
@@ -475,7 +480,14 @@ impl DWalletMPCManager {
 
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
-    pub(crate) fn perform_cryptographic_computation(&mut self) {
+    pub(crate) async fn perform_cryptographic_computation(&mut self) {
+        for ((event, session_info)) in self.events_pending_for_network_key.drain(..) {
+            self.handle_dwallet_db_event(DWalletMPCEvent {
+                event: event.clone(),
+                session_info: session_info.clone(),
+            })
+            .await;
+        }
         for (index, pending_for_event_session) in
             self.pending_for_events_order.clone().iter().enumerate()
         {

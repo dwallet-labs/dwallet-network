@@ -143,6 +143,9 @@ pub enum DwalletMPCError {
 
     #[error("{0}")]
     IkaError(#[from] crate::error::IkaError),
+
+    #[error("failed to get the network decryption key shares: {0}")]
+    WaitingForNetworkKey(ObjectID),
 }
 
 /// A wrapper type for the result of a runtime operation.
