@@ -519,7 +519,6 @@ impl DWalletMPCManager {
             if should_advance {
                 info!(
                     session_id=?oldest_pending_session.session_id,
-                    session_sequence_number=?oldest_pending_session.sequence_number,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     "Session should not be computed yet, skipping"
                 );
@@ -533,7 +532,6 @@ impl DWalletMPCManager {
             {
                 error!(
                     session_id=?oldest_pending_session.session_id,
-                    session_sequence_number=?oldest_pending_session.sequence_number,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     mpc_protocol=?mpc_event_data.init_protocol_data,
                     error=?err,
