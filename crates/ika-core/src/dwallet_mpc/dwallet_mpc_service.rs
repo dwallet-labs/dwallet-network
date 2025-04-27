@@ -155,7 +155,7 @@ impl DWalletMPCService {
                         if let Err(err) = self
                             .dwallet_mpc_manager
                             .network_keys
-                            .insert_new_network_key(
+                            .update_network_key(
                                 key_id.clone(),
                                 key_data.clone(),
                                 &self.dwallet_mpc_manager

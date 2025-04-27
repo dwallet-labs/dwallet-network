@@ -390,9 +390,7 @@ impl DWalletMPCManager {
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
-        self
-            .network_keys
-            .get_decryption_public_parameters(key_id)
+        self.network_keys.get_decryption_public_parameters(key_id)
     }
 
     /// Retrieves the decryption share for the current authority.
@@ -405,16 +403,11 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    async fn get_decryption_key_shares(
+    fn get_decryption_key_shares(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        let decryption_shares = self
-            .network_keys
-            .get_decryption_key_share(key_id.clone())
-            .await?;
-
-        Ok(decryption_shares)
+        self.network_keys.get_decryption_key_share(key_id.clone())
     }
 
     /// Returns the sessions that can perform the next cryptographic round,
@@ -466,10 +459,15 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) async fn perform_cryptographic_computation(&mut self) {
-        for ((event, session_info)) in self.events_pending_for_network_key.drain(..).collect::<Vec<_>>().into_iter() {
+        for ((event, session_info)) in self
+            .events_pending_for_network_key
+            .drain(..)
+            .collect::<Vec<_>>()
+            .into_iter()
+        {
             self.handle_dwallet_db_event(DWalletMPCEvent {
-                event: event,
-                session_info: session_info,
+                event,
+                session_info,
             })
             .await;
         }

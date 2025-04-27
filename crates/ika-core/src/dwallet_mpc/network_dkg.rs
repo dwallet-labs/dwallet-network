@@ -43,12 +43,7 @@ use twopc_mpc::ProtocolPublicParameters;
 /// Holds the network (decryption) keys of the network MPC protocols.
 pub struct DwalletMPCNetworkKeys {
     pub(crate) network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyPublicData>,
-    /// Holds all network (decryption) keys for the current network in encrypted form.
-    /// This data is identical for all the Validator nodes.
-    /// Limits the access to the network keys to a single thread at a time.
-    inner: Arc<DwalletMPCNetworkKeyInner>,
-
-    validator_private_dec_key_data: Arc<ValidatorPrivateDecryptionKeyData>,
+    pub(crate) validator_private_dec_key_data: ValidatorPrivateDecryptionKeyData,
 }
 
 /// Holds the private decryption key data for a validator node.
@@ -119,7 +114,7 @@ impl ValidatorPrivateDecryptionKeyData {
     /// Stores the new decryption key shares of the validator.
     /// Decrypts the decryption key shares (for all the virtual parties)
     /// from the public output of the network DKG protocol.
-    pub async fn store_decryption_secret_shares(
+    pub fn store_decryption_secret_shares(
         &mut self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyPublicData,
@@ -137,7 +132,8 @@ impl ValidatorPrivateDecryptionKeyData {
             &key.decryption_key_share_public_parameters,
         )?;
 
-        self.validator_decryption_key_shares.insert(key_id, self_decryption_key_shares);
+        self.validator_decryption_key_shares
+            .insert(key_id, self_decryption_key_shares);
         Ok(())
     }
 
@@ -165,44 +161,23 @@ impl ValidatorPrivateDecryptionKeyData {
     }
 }
 
-/// Encapsulates all the fields in a single structure for atomic access.
-pub struct DwalletMPCNetworkKeyInner {
-    /// The encrypted network (decryption) key shares used by the dWallet MPC network.
-    ///
-    /// This map holds the encrypted shares of decryption keys,
-    /// indexed by a unique key ID (`ObjectID`).
-    /// Each entry contains the set of shares
-    /// needed to collaboratively decrypt data without any single party
-    /// holding the full key.
-    ///
-    /// These shares are part of a threshold decryption scheme, where multiple parties contribute their share
-    /// to reconstruct the original key securely.
-    pub network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyPublicData>,
-}
-
 impl DwalletMPCNetworkKeys {
-    /// Creates a new instance of the network decryption key shares.
     pub fn new(node_context: ValidatorPrivateDecryptionKeyData) -> Self {
         Self {
-            inner: Arc::new(RwLock::new(DwalletMPCNetworkKeyInner {
-                network_decryption_keys: HashMap::new(),
-            })),
+            network_decryption_keys: Default::default(),
             validator_private_dec_key_data: node_context,
         }
     }
 
-    pub async fn validator_decryption_keys_shares(
+    pub fn validator_decryption_keys_shares(
         &self,
     ) -> HashMap<ObjectID, HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         self.validator_private_dec_key_data
             .validator_decryption_key_shares
-            .read()
-            .await
             .clone()
     }
 
-    /// Adds a new network key to the network decryption keys.
-    pub async fn insert_new_network_key(
+    pub fn update_network_key(
         &mut self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyPublicData,
@@ -211,31 +186,15 @@ impl DwalletMPCNetworkKeys {
         self.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
             .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)
-            .await?;
-        Ok(())
-    }
-
-    pub async fn update_network_key(
-        &mut self,
-        key_id: ObjectID,
-        key: NetworkDecryptionKeyPublicData,
-        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-    ) -> DwalletMPCResult<()> {
-        self.network_decryption_keys.insert(key_id, key.clone());
-        self.validator_private_dec_key_data
-            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)
-            .await?;
-        Ok(())
     }
 
     /// Returns all the decryption key shares for any specified key ID.
-    pub async fn get_decryption_key_share(
+    pub fn get_decryption_key_share(
         &self,
         key_id: ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         Ok(self
             .validator_decryption_keys_shares()
-            .await
             .get(&key_id)
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .clone())
@@ -253,16 +212,6 @@ impl DwalletMPCNetworkKeys {
             .clone())
     }
 
-    fn try_get_decryption_keys(
-        &self,
-        key_id: &ObjectID,
-    ) -> DwalletMPCResult<Option<NetworkDecryptionKeyPublicData>> {
-        Ok(self.inner
-            .network_decryption_keys
-            .get(&key_id)
-            .map(|v| v.clone()))
-    }
-
     /// Retrieves the protocol public parameters for the specified key ID.
     /// This function assumes the given key_id is a valid key ID, and retries getting it until it has been synced from
     /// the Sui network.
@@ -271,31 +220,34 @@ impl DwalletMPCNetworkKeys {
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
-            let Ok(Some(result)) = self.try_get_decryption_keys(key_id) else {
-                warn!("failed to fetch the network decryption key shares for key ID: {:?}", key_id);
-                return DwalletMPCError::WaitingForNetworkKey(key_id.clone()).into();
-            };
-            let decryption_key_share_public_parameters =
-                bcs::from_bytes::<Secp256k1DecryptionKeySharePublicParameters>(
-                    &result.decryption_key_share_public_parameters,
-                )?;
+        let Some(result) = self.network_decryption_keys.get(key_id) else {
+            warn!(
+                "failed to fetch the network decryption key shares for key ID: {:?}",
+                key_id
+            );
+            return DwalletMPCError::WaitingForNetworkKey(key_id.clone()).into();
+        };
+        let decryption_key_share_public_parameters =
+            bcs::from_bytes::<Secp256k1DecryptionKeySharePublicParameters>(
+                &result.decryption_key_share_public_parameters,
+            )?;
 
-            match key_scheme {
-                DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                    bcs::to_bytes(&ProtocolPublicParameters::new::<
-                        { secp256k1::SCALAR_LIMBS },
-                        { FUNDAMENTAL_DISCRIMINANT_LIMBS },
-                        { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-                        secp256k1::GroupElement,
-                    >(
-                        decryption_key_share_public_parameters.encryption_scheme_public_parameters,
-                    ))
-                    .map_err(|e| DwalletMPCError::BcsError(e))
-                }
-                DWalletMPCNetworkKeyScheme::Ristretto => {
-                    todo!()
-                }
+        match key_scheme {
+            DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                bcs::to_bytes(&ProtocolPublicParameters::new::<
+                    { secp256k1::SCALAR_LIMBS },
+                    { FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                    { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                    secp256k1::GroupElement,
+                >(
+                    decryption_key_share_public_parameters.encryption_scheme_public_parameters,
+                ))
+                .map_err(|e| DwalletMPCError::BcsError(e))
             }
+            DWalletMPCNetworkKeyScheme::Ristretto => {
+                todo!()
+            }
+        }
     }
 }
 
