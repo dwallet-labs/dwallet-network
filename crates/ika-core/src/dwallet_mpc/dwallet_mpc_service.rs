@@ -163,6 +163,16 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
+
+            if self.dwallet_mpc_manager.recognized_self_as_malicious {
+                error!(
+                    authority=?self.epoch_store.name,
+                    "node has identified itself as malicious and is no longer participating in MPC protocols"
+                );
+                tokio::time::sleep(Duration::from_secs(120)).await;
+                continue;
+            }
+
             info!("Running DWalletMPCService loop");
             self.dwallet_mpc_manager
                 .cryptographic_computations_orchestrator
