@@ -33,6 +33,7 @@ use tokio::task::yield_now;
 use tokio::time;
 use tracing::{error, info, warn};
 use typed_store::Map;
+use crate::dwallet_mpc::network_dkg::ValidatorPrivateDecryptionKeyData;
 
 const READ_INTERVAL_MS: u64 = 100;
 
@@ -149,6 +150,19 @@ impl DWalletMPCService {
             Ok(has_changed) => {
                 if has_changed {
                     let new_keys = self.network_keys_receiver.borrow_and_update();
+                    for (key_id, key_data) in new_keys {
+                        if self.dwallet_mpc_manager.network_decryption_keys.contains_key(&key_id) {
+                            info!("Updating network key for key_id: {:?}", key_id);
+                            dwallet_mpc_network_keys
+                                .update_network_key(*key_id, key, &weighted_threshold_access_structure)
+                                .await
+                        } else {
+                            info!(committee=?weighted_threshold_access_structure, "Adding new network key for key_id: {:?}", key_id);
+                            dwallet_mpc_network_keys
+                                .add_new_network_key(*key_id, key, &weighted_threshold_access_structure)
+                                .await
+                        }
+                    }
                 } else {
 
                 }

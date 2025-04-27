@@ -11,7 +11,7 @@ use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
+use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::party_id_to_authority_name;
 use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
@@ -20,10 +20,7 @@ use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event}
 use class_groups::DecryptionKeyShare;
 use crypto_bigint::Zero;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
-    MPCSessionStatus,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput, MPCSessionStatus, NetworkDecryptionKeyPublicData};
 use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::ToFromBytes;
 use futures::future::err;
@@ -97,6 +94,8 @@ pub struct DWalletMPCManager {
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
+    pub(crate) network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyPublicData>,
+    pub(crate) validator_private_data: ValidatorPrivateDecryptionKeyData,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -153,6 +152,18 @@ impl DWalletMPCManager {
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
         let mpc_computations_orchestrator = CryptographicComputationsOrchestrator::try_new()?;
+        let validator_private_data = ValidatorPrivateDecryptionKeyData {
+            party_id,
+            class_groups_decryption_key: node_config
+                .class_groups_key_pair_and_proof
+                .clone()
+                // Since this is a validator, we can unwrap
+                // the `class_groups_key_pair_and_proof`.
+                .expect("Class groups key pair and proof must be present")
+                .class_groups_keypair()
+                .decryption_key(),
+            validator_decryption_key_shares: HashMap::new(),
+        };
         Ok(Self {
             mpc_sessions: HashMap::new(),
             consensus_adapter,
@@ -170,6 +181,8 @@ impl DWalletMPCManager {
             pending_for_events_order: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
             recognized_self_as_malicious: false,
+            network_decryption_keys: Default::default(),
+            validator_private_data
         })
     }
 
