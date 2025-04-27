@@ -181,7 +181,7 @@ where
         network_keys_sender: watch::Sender<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
     ) {
         loop {
-            time::sleep(Duration::from_secs(2)).await;
+            time::sleep(Duration::from_secs(30)).await;
 
             let network_decryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
