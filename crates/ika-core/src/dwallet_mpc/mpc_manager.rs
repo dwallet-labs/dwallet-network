@@ -20,7 +20,10 @@ use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event}
 use class_groups::DecryptionKeyShare;
 use crypto_bigint::Zero;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput, MPCSessionStatus, NetworkDecryptionKeyPublicData};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
+    MPCSessionStatus, NetworkDecryptionKeyPublicData,
+};
 use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::ToFromBytes;
 use futures::future::err;
@@ -182,7 +185,7 @@ impl DWalletMPCManager {
             last_session_to_complete_in_current_epoch: 0,
             recognized_self_as_malicious: false,
             network_decryption_keys: Default::default(),
-            validator_private_data
+            validator_private_data,
         })
     }
 
