@@ -20,7 +20,6 @@ use homomorphic_encryption::{
 use mpc::two_party::Round;
 use mpc::Party;
 use rand_core::{OsRng, SeedableRng};
-use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
@@ -29,8 +28,7 @@ use shared_wasm_class_groups::message_digest::message_digest;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
 use twopc_mpc::secp256k1::class_groups::{
-    EncryptionOfSecretShareProof, ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    EncryptionOfSecretShareProof, ProtocolPublicParameters,
 };
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
