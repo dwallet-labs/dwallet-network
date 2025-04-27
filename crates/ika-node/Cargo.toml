@@ -10,6 +10,7 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+dwallet-mpc-types.workspace = true
 anemo.workspace = true
 anemo-tower.workspace = true
 arc-swap.workspace = true

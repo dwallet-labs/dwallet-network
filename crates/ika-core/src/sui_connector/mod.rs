@@ -6,6 +6,7 @@ use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
 use crate::sui_connector::sui_syncer::{SuiSyncer, SuiTargetModules};
 use anyhow::anyhow;
 use async_trait::async_trait;
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use futures::{future, StreamExt};
 use ika_config::node::{RunWithRange, SuiChainIdentifier, SuiConnectorConfig};
 use ika_sui_client::metrics::SuiClientMetrics;
@@ -34,7 +35,7 @@ use sui_types::transaction::{
     ProgrammableTransaction, SenderSignedData, Transaction, TransactionData, TransactionKind,
 };
 use sui_types::Identifier;
-use tokio::sync::RwLock;
+use tokio::sync::{watch, RwLock};
 use tokio::task::JoinHandle;
 use tracing::info;
 
@@ -68,6 +69,7 @@ impl SuiConnectorService {
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
         next_epoch_committee: Arc<RwLock<Option<Committee>>>,
+        network_keys_sender: watch::Sender<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
