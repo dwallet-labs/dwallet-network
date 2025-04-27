@@ -28,7 +28,10 @@ use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState, SessionInfo, SessionType, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent};
+use ika_types::messages_dwallet_mpc::{
+    AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState,
+    SessionInfo, SessionType, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
+};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
 
@@ -183,8 +186,8 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
-                let consensus_message = self
-                    .new_dwallet_mpc_output_message(public_output.clone(), self.sequence_number)?;
+                let consensus_message =
+                    self.new_dwallet_mpc_output_message(public_output.clone())?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
@@ -210,10 +213,8 @@ impl DWalletMPCSession {
                 error!("failed to advance the MPC session: {:?}", e);
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
-                let consensus_message = self.new_dwallet_mpc_output_message(
-                    FAILED_SESSION_OUTPUT.to_vec(),
-                    self.sequence_number,
-                )?;
+                let consensus_message =
+                    self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT.to_vec())?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
@@ -233,7 +234,6 @@ impl DWalletMPCSession {
     fn new_dwallet_mpc_output_message(
         &self,
         output: Vec<u8>,
-        session_type: SessionType,
     ) -> DwalletMPCResult<ConsensusTransaction> {
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
@@ -242,7 +242,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             output,
             SessionInfo {
-                session_type,
+                session_type: mpc_event_data.session_type.clone(),
                 session_id: self.session_id.clone(),
                 mpc_round: mpc_event_data.init_protocol_data.clone(),
                 epoch: self.epoch_id,

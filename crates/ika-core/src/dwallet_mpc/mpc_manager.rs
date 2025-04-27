@@ -349,7 +349,6 @@ impl DWalletMPCManager {
             self.push_new_mpc_session(
                 &session_info.session_id,
                 mpc_event_data,
-                session_info.sequence_number,
             );
         }
         Ok(())
@@ -600,7 +599,6 @@ impl DWalletMPCManager {
                 self.push_new_mpc_session(
                     &message.session_id,
                     None,
-                    message.session_sequence_number,
                 );
                 self.mpc_sessions.get_mut(&message.session_id).unwrap()
             }
