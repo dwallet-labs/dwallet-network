@@ -67,7 +67,6 @@ impl SuiConnectorService {
         sui_client: Arc<SuiClient<SuiSdkClient>>,
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
-        dwallet_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
         next_epoch_committee: Arc<RwLock<Option<Committee>>>,
         network_keys_sender: watch::Sender<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
     ) -> anyhow::Result<Self> {
@@ -99,7 +98,7 @@ impl SuiConnectorService {
         )
         .run(
             Duration::from_secs(2),
-            dwallet_network_keys,
+            network_keys_sender,
             next_epoch_committee,
         )
         .await

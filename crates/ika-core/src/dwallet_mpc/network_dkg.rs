@@ -200,10 +200,7 @@ impl DwalletMPCNetworkKeys {
             .clone())
     }
 
-    pub fn get_decryption_public_parameters(
-        &self,
-        key_id: &ObjectID,
-    ) -> DwalletMPCResult<Vec<u8>> {
+    pub fn get_decryption_public_parameters(&self, key_id: &ObjectID) -> DwalletMPCResult<Vec<u8>> {
         Ok(self
             .network_decryption_keys
             .get(key_id)
@@ -225,7 +222,7 @@ impl DwalletMPCNetworkKeys {
                 "failed to fetch the network decryption key shares for key ID: {:?}",
                 key_id
             );
-            return DwalletMPCError::WaitingForNetworkKey(key_id.clone()).into();
+            return Err(DwalletMPCError::WaitingForNetworkKey(key_id.clone()));
         };
         let decryption_key_share_public_parameters =
             bcs::from_bytes::<Secp256k1DecryptionKeySharePublicParameters>(

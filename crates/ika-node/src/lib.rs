@@ -384,27 +384,6 @@ impl IkaNode {
         let state_sync_store = RocksDbStore::new(committee_store.clone(), checkpoint_store.clone());
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
-        let is_validator = config.consensus_config.is_some();
-        let dwallet_network_keys = if is_validator {
-            let party_id = epoch_store.authority_name_to_party_id(&config.protocol_public_key())?;
-            let validator_private_data = ValidatorPrivateDecryptionKeyData {
-                party_id,
-                class_groups_decryption_key: config
-                    .class_groups_key_pair_and_proof
-                    .clone()
-                    // Since this is a validator, we can unwrap
-                    // the `class_groups_key_pair_and_proof`.
-                    .expect("Class groups key pair and proof must be present")
-                    .class_groups_keypair()
-                    .decryption_key(),
-                validator_decryption_key_shares: tokio::sync::RwLock::new(HashMap::new()),
-            };
-            let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
-            let dwallet_network_keys_arc = Arc::new(dwallet_network_keys);
-            Some(dwallet_network_keys_arc)
-        } else {
-            None
-        };
 
         let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
         let sui_connector_service = Arc::new(
@@ -414,7 +393,6 @@ impl IkaNode {
                 sui_client.clone(),
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
-                dwallet_network_keys.clone(),
                 epoch_store.next_epoch_committee.clone(),
                 network_keys_sender,
             )

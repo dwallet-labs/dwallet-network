@@ -67,7 +67,6 @@ where
     pub async fn run(
         self,
         query_interval: Duration,
-        dwallet_mpc_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
         next_epoch_committee: Arc<RwLock<Option<Committee>>>,
         network_keys_sender: watch::Sender<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
@@ -78,13 +77,11 @@ where
             sui_client_clone.clone(),
             next_epoch_committee,
         ));
-        if let Some(dwallet_mpc_network_keys) = dwallet_mpc_network_keys {
-            // Todo (#810): Check the usage adding the task handle to the task_handles vector.
-            tokio::spawn(Self::sync_dwallet_network_keys(
-                sui_client_clone,
-                dwallet_mpc_network_keys,
-            ));
-        }
+        // Todo (#810): Check the usage adding the task handle to the task_handles vector.
+        tokio::spawn(Self::sync_dwallet_network_keys(
+            sui_client_clone,
+            network_keys_sender,
+        ));
         for (module, cursor) in self.cursors {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
@@ -181,7 +178,6 @@ where
     /// Sync the DwalletMPC network keys from the Sui client to the local store.
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
-        dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
         network_keys_sender: watch::Sender<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
     ) {
         loop {
@@ -221,11 +217,9 @@ where
                 };
             let mut all_network_keys_data = HashMap::new();
             for (key_id, network_dec_key_shares) in network_decryption_keys.into_iter() {
-                match Self::get_key_data(
+                match Self::fetch_and_create_network_key(
                     &sui_client,
-                    dwallet_mpc_network_keys.clone(),
                     &weighted_threshold_access_structure,
-                    &key_id,
                     &network_dec_key_shares,
                 )
                 .await
@@ -246,37 +240,6 @@ where
                 error!(?err, "failed to send network keys data to the channel",);
             }
         }
-    }
-
-    async fn get_key_data(
-        sui_client: &Arc<SuiClient<C>>,
-        dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
-        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-        key_id: &ObjectID,
-        network_dec_key_shares: &DWalletNetworkDecryptionKey,
-    ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-        let local_network_decryption_keys =
-            dwallet_mpc_network_keys.network_decryption_keys().await;
-
-        let should_update = match local_network_decryption_keys.get(key_id) {
-            Some(local_key) => local_key.epoch != network_dec_key_shares.current_epoch,
-            None => true,
-        };
-
-        if !should_update {
-            info!(
-                "Network decryption key for key_id: {:?} is up to date",
-                key_id
-            );
-            return Ok(());
-        }
-
-        Self::fetch_and_create_network_key(
-            &sui_client,
-            &network_dec_key_shares,
-            &weighted_threshold_access_structure,
-        )
-        .await
     }
 
     async fn fetch_and_create_network_key(
