@@ -256,12 +256,11 @@ impl DwalletMPCNetworkKeys {
             .clone())
     }
 
-    async fn try_get_decryption_keys(
+    fn try_get_decryption_keys(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Option<NetworkDecryptionKeyPublicData>> {
-        let inner = self.inner.read().await;
-        Ok(inner
+        Ok(self.inner
             .network_decryption_keys
             .get(&key_id)
             .map(|v| v.clone()))
@@ -270,15 +269,14 @@ impl DwalletMPCNetworkKeys {
     /// Retrieves the protocol public parameters for the specified key ID.
     /// This function assumes the given key_id is a valid key ID, and retries getting it until it has been synced from
     /// the Sui network.
-    pub async fn get_protocol_public_parameters(
+    pub fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
-            let Ok(Some(result)) = self.try_get_decryption_keys(key_id).await else {
-                warn!("failed to fetch the network decryption key shares for key ID: {:?}, trying again", key_id);
-                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                continue;
+            let Ok(Some(result)) = self.try_get_decryption_keys(key_id) else {
+                warn!("failed to fetch the network decryption key shares for key ID: {:?}", key_id);
+                return DwalletMPCError::WaitingForNetworkKey(key_id.clone()).into();
             };
             let decryption_key_share_public_parameters =
                 bcs::from_bytes::<Secp256k1DecryptionKeySharePublicParameters>(
