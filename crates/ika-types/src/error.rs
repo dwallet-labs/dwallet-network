@@ -30,7 +30,6 @@ macro_rules! fp_ensure {
     };
 }
 use crate::dwallet_mpc_error::DwalletMPCError;
-pub(crate) use fp_ensure;
 use sui_types::error::SuiError;
 
 #[macro_export]

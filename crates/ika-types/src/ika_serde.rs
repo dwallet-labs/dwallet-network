@@ -1,23 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::fmt;
+use std::fmt::Debug;
 use std::fmt::Write;
-use std::fmt::{Debug, Display, Formatter};
-use std::marker::PhantomData;
-use std::ops::Deref;
-use std::str::FromStr;
 
-use fastcrypto::encoding::Hex;
 use ika_protocol_config::ProtocolVersion;
 use schemars::JsonSchema;
 use serde;
-use serde::de::{Deserializer, Error};
-use serde::ser::{Error as SerError, Serializer};
+use serde::de::Deserializer;
+use serde::ser::Serializer;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use serde_with::DisplayFromStr;
-use serde_with::{Bytes, DeserializeAs, SerializeAs};
+use serde_with::{DeserializeAs, SerializeAs};
 use sui_types::sui_serde::BigInt;
 
 #[serde_as]
