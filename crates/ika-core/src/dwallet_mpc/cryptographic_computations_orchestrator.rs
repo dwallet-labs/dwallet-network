@@ -81,6 +81,10 @@ impl CryptographicComputationsOrchestrator {
             );
             return Err(DwalletMPCError::InsufficientCPUCores);
         }
+        info!(
+            available_cores_for_computations =? available_cores_for_computations,
+            "Available CPU cores for Rayon cryptographic computations"
+        );
 
         Ok(CryptographicComputationsOrchestrator {
             available_cores_for_cryptographic_computations: available_cores_for_computations,
@@ -138,9 +142,9 @@ impl CryptographicComputationsOrchestrator {
         {
             // This should not happen, but error just in case.
             error!(
-                session_id=session.session_id,
+                session_id=?session.session_id,
                 mpc_protocol=?mpc_protocol,
-                error=?err
+                error=?err,
                 "failed to send a `started` computation message",
             );
         }
@@ -152,7 +156,7 @@ impl CryptographicComputationsOrchestrator {
                 error!(
                     error=?err,
                     mpc_protocol=?mpc_protocol,
-                    session_id=session.session_id,
+                    session_id=?session.session_id,
                     "failed to advance an MPC session"
                 );
             } else {
