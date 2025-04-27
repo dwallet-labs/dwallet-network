@@ -404,6 +404,7 @@ impl IkaNode {
             None
         };
 
+        let (sender, receiver) = watch::channel(());
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),

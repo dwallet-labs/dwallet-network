@@ -217,7 +217,26 @@ where
                         continue;
                     }
                 };
+            let mut all_network_keys_data = HashMap::new();
             for (key_id, network_dec_key_shares) in network_decryption_keys.into_iter() {
+                match Self::get_key_data(
+                    &sui_client,
+                    dwallet_mpc_network_keys.clone(),
+                    &weighted_threshold_access_structure,
+                    &key_id,
+                    &network_dec_key_shares,
+                ).await {
+                    Ok(key) => {
+                        all_network_keys_data.insert(key_id, key);
+                    }
+                    Err(err) => {
+                        error!(
+                            "Failed to get network decryption key data for key_id: {:?}, error: {:?}",
+                            key_id, err
+                        );
+                        continue;
+                    }
+                }
                 match Self::sync_network_decryption_key_inner(
                     &sui_client,
                     dwallet_mpc_network_keys.clone(),
@@ -247,6 +266,7 @@ where
                     }
                 }
             }
+
         }
     }
 
@@ -291,6 +311,37 @@ where
                 .add_new_network_key(*key_id, key, &weighted_threshold_access_structure)
                 .await
         }
+    }
+
+    async fn get_key_data(
+        sui_client: &Arc<SuiClient<C>>,
+        dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
+        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+        key_id: &ObjectID,
+        network_dec_key_shares: &DWalletNetworkDecryptionKey,
+    ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
+        let local_network_decryption_keys =
+            dwallet_mpc_network_keys.network_decryption_keys().await;
+
+        let should_update = match local_network_decryption_keys.get(key_id) {
+            Some(local_key) => local_key.epoch != network_dec_key_shares.current_epoch,
+            None => true,
+        };
+
+        if !should_update {
+            info!(
+                "Network decryption key for key_id: {:?} is up to date",
+                key_id
+            );
+            return Ok(());
+        }
+
+        Self::fetch_and_create_network_key(
+            &sui_client,
+            &network_dec_key_shares,
+            &weighted_threshold_access_structure,
+        )
+        .await
     }
 
     async fn fetch_and_create_network_key(
