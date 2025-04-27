@@ -1144,7 +1144,7 @@ impl IkaNode {
                             ika_tx_validator_metrics,
                             previous_epoch_last_checkpoint_sequence_number,
                             // safe to unwrap because we are a validator
-                            dwallet_network_keys.clone().unwrap(),
+                            network_keys_receiver,
                             sui_client_clone2.clone(),
                         )
                         .await?,
@@ -1179,7 +1179,7 @@ impl IkaNode {
                             self.metrics.clone(),
                             previous_epoch_last_checkpoint_sequence_number,
                             // safe to unwrap because we are a validator
-                            dwallet_network_keys.clone().unwrap(),
+                            network_keys_receiver,
                             sui_client.clone(),
                         )
                         .await?,
