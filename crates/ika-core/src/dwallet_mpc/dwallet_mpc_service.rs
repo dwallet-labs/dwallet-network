@@ -152,21 +152,20 @@ impl DWalletMPCService {
                     let new_keys = self.network_keys_receiver.borrow_and_update();
                     for (key_id, key_data) in new_keys {
                         info!("Updating network key for key_id: {:?}", key_id);
-                        self.dwallet_mpc_manager
-                            .network_decryption_keys
-                            .insert(key_id.clone(), key_data.clone());
                         if let Err(err) = self
                             .dwallet_mpc_manager
-                            .validator_private_data
-                            .store_decryption_secret_shares(
-                                key_id,
-                                key_data,
-                                &self.dwallet_mpc_manager.weighted_threshold_access_structure,
+                            .network_keys
+                            .insert_new_network_key(
+                                key_id.clone(),
+                                key_data.clone(),
+                                self.dwallet_mpc_manager
+                                    .weighted_threshold_access_structure
+                                    .clone(),
                             )
                             .await
                         {
-                            error!(?err, "failed to store decryption secret shares");
-                        }
+                            error!(?err, "failed to store network keys");
+                        };
                     }
                 }
             }

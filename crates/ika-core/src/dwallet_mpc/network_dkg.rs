@@ -45,10 +45,9 @@ pub struct DwalletMPCNetworkKeys {
     /// Holds all network (decryption) keys for the current network in encrypted form.
     /// This data is identical for all the Validator nodes.
     /// Limits the access to the network keys to a single thread at a time.
-    inner: Arc<RwLock<DwalletMPCNetworkKeyInner>>,
+    inner: Arc<DwalletMPCNetworkKeyInner>,
 
-    ///
-    validator_private_dec_key_data: ValidatorPrivateDecryptionKeyData,
+    validator_private_dec_key_data: Arc<ValidatorPrivateDecryptionKeyData>,
 }
 
 /// Holds the private decryption key data for a validator node.
@@ -120,7 +119,7 @@ impl ValidatorPrivateDecryptionKeyData {
     /// Decrypts the decryption key shares (for all the virtual parties)
     /// from the public output of the network DKG protocol.
     pub async fn store_decryption_secret_shares(
-        &self,
+        &mut self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyPublicData,
         weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
@@ -137,8 +136,7 @@ impl ValidatorPrivateDecryptionKeyData {
             &key.decryption_key_share_public_parameters,
         )?;
 
-        let mut inner = self.validator_decryption_key_shares.write().await;
-        inner.insert(key_id, self_decryption_key_shares);
+        self.validator_decryption_key_shares.insert(key_id, self_decryption_key_shares);
         Ok(())
     }
 
@@ -192,12 +190,6 @@ impl DwalletMPCNetworkKeys {
         }
     }
 
-    pub async fn network_decryption_keys(
-        &self,
-    ) -> HashMap<ObjectID, NetworkDecryptionKeyPublicData> {
-        self.inner.read().await.network_decryption_keys.clone()
-    }
-
     pub async fn validator_decryption_keys_shares(
         &self,
     ) -> HashMap<ObjectID, HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
@@ -209,14 +201,13 @@ impl DwalletMPCNetworkKeys {
     }
 
     /// Adds a new network key to the network decryption keys.
-    pub async fn add_new_network_key(
-        &self,
+    pub async fn insert_new_network_key(
+        &mut self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyPublicData,
         weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
-        let mut inner = self.inner.write().await;
-        inner.network_decryption_keys.insert(key_id, key.clone());
+        self.inner.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
             .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)
             .await?;
@@ -284,7 +275,6 @@ impl DwalletMPCNetworkKeys {
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
-        loop {
             let Ok(Some(result)) = self.try_get_decryption_keys(key_id).await else {
                 warn!("failed to fetch the network decryption key shares for key ID: {:?}, trying again", key_id);
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
@@ -311,7 +301,6 @@ impl DwalletMPCNetworkKeys {
                     todo!()
                 }
             }
-        }
     }
 }
 

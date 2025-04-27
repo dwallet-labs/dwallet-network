@@ -97,8 +97,7 @@ pub struct DWalletMPCManager {
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
-    pub(crate) network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyPublicData>,
-    pub(crate) validator_private_data: ValidatorPrivateDecryptionKeyData,
+    pub(crate) network_keys: DwalletMPCNetworkKeys,
     pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
 }
 
@@ -185,7 +184,7 @@ impl DWalletMPCManager {
             pending_for_events_order: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
             recognized_self_as_malicious: false,
-            network_decryption_keys: Default::default(),
+            network_keys: Default::default(),
             validator_private_data,
         })
     }
@@ -403,7 +402,7 @@ impl DWalletMPCManager {
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
         Ok(self
-            .network_decryption_keys
+            .network_keys
             .get(key_id)
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .decryption_key_share_public_parameters

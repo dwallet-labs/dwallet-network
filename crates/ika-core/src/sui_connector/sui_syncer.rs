@@ -314,7 +314,7 @@ where
         } else {
             info!(committee=?weighted_threshold_access_structure, "Adding new network key for key_id: {:?}", key_id);
             dwallet_mpc_network_keys
-                .add_new_network_key(*key_id, key, &weighted_threshold_access_structure)
+                .insert_new_network_key(*key_id, key, &weighted_threshold_access_structure)
                 .await
         }
     }
