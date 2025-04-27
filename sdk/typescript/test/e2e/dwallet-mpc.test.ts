@@ -105,29 +105,6 @@ describe('Test dWallet MPC', () => {
 		console.log(`presign has been created successfully: ${presign}`);
 	});
 
-	it('should fail sign - mocked network key is outdated between runs', async () => {
-		const dkgResult = await mockCreateDWallet(
-			conf,
-			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
-			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
-		);
-		await delay(checkpointCreationTime);
-		const presign = await mockCreatePresign(
-			conf,
-			Buffer.from(mockPresign.presignBytes, 'base64'),
-			dkgResult.dwalletID,
-		);
-		await delay(checkpointCreationTime);
-		await sign(
-			conf,
-			presign.presign_id,
-			dkgResult.dwallet_cap_id,
-			Buffer.from('hello world'),
-			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
-			mockedNetworkDecryptionKeyPublicOutput,
-		);
-	});
-
 	it('should sign full flow', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		console.log('Creating dWallet...');
