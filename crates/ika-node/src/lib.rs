@@ -1179,7 +1179,7 @@ impl IkaNode {
                             self.metrics.clone(),
                             previous_epoch_last_checkpoint_sequence_number,
                             // safe to unwrap because we are a validator
-                            network_keys_receiver,
+                            network_keys_receiver.clone(),
                             sui_client.clone(),
                         )
                         .await?,
