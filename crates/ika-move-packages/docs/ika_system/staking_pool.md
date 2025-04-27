@@ -323,6 +323,15 @@ Variant <code>Withdrawing</code>
 ## Constants
 
 
+<a name="(ika_system=0x0)_staking_pool_BASIS_POINT_DENOMINATOR"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>: u16 = 10000;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_staking_pool_EActivationEpochNotReached"></a>
 
 Attempt to withdraw before <code><a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_activation_epoch">activation_epoch</a></code>.
@@ -489,15 +498,6 @@ Trying to stake zero amount.
 
 
 <pre><code><b>const</b> <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_EZeroStake">EZeroStake</a>: u64 = 7;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_staking_pool_N_BASIS_POINTS"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_N_BASIS_POINTS">N_BASIS_POINTS</a>: u16 = 10000;
 </code></pre>
 
 
@@ -899,7 +899,7 @@ Advance epoch for the <code><a href="../ika_system/staking_pool.md#(ika_system=0
     // Split the commission from the rewards.
     <b>let</b> total_rewards = rewards.value();
     <b>let</b> commission = rewards.split(
-        total_rewards * (pool.<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_commission_rate">commission_rate</a> <b>as</b> u64) / (<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_N_BASIS_POINTS">N_BASIS_POINTS</a> <b>as</b> u64),
+        total_rewards * (pool.<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_commission_rate">commission_rate</a> <b>as</b> u64) / (<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a> <b>as</b> u64),
     );
     pool.commission.join(commission);
     // Update the <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_commission_rate">commission_rate</a> <b>for</b> the <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_new">new</a> epoch <b>if</b> there's a pending value.
@@ -1068,7 +1068,7 @@ Sets the next commission rate for the pool.
 ) {
     <b>assert</b>!(cap.<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_validator_id">validator_id</a>() == pool.<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_validator_id">validator_id</a>(), <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_EAuthorizationFailure">EAuthorizationFailure</a>);
     <b>assert</b>!(object::id(cap) == pool.<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_commission_rate">commission_rate</a> &lt;= <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_N_BASIS_POINTS">N_BASIS_POINTS</a>, <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_EIncorrectCommissionRate">EIncorrectCommissionRate</a>);
+    <b>assert</b>!(<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_commission_rate">commission_rate</a> &lt;= <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>, <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_EIncorrectCommissionRate">EIncorrectCommissionRate</a>);
     pool.pending_commission_rate.insert_or_replace(current_epoch + 2, <a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool_commission_rate">commission_rate</a> <b>as</b> u64);
 }
 </code></pre>

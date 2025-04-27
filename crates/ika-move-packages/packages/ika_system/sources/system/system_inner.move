@@ -79,7 +79,7 @@ public struct SystemInnerV1 has store {
     /// The total messages processed.
     total_messages_processed: u64,
     /// The fees paid for computation.
-    computation_reward: Balance<IKA>,
+    remaining_rewards: Balance<IKA>,
     /// List of authorized protocol cap ids.
     authorized_protocol_cap_ids: vector<ID>, 
     // TODO: maybe change that later
@@ -158,7 +158,7 @@ public(package) fun create(
         protocol_treasury,
         epoch_start_timestamp_ms,
         total_messages_processed: 0,
-        computation_reward: balance::zero(),
+        remaining_rewards: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_secp256k1_id: option::none(),
         dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector[],
@@ -547,19 +547,19 @@ public(package) fun advance_epoch(
         stake_subsidy.join(self.protocol_treasury.stake_subsidy_for_distribution(ctx));
     };
 
-
-    let computation_reward_amount_before_distribution = self.computation_reward.value();
-
-    let epoch_computation_reward = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee());
-    let decryption_keys_rewards = self.advance_network_keys(dwallet_coordinator);
-
     let stake_subsidy_amount = stake_subsidy.value();
-    let mut total_reward = sui::balance::zero<IKA>();
-    total_reward.join(epoch_computation_reward);
-    total_reward.join(self.computation_reward.withdraw_all());
-    total_reward.join(stake_subsidy);
 
-    self.computation_reward.join(decryption_keys_rewards);
+    let consensus_validation_rewards = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee());
+    let computation_rewards = self.advance_network_keys(dwallet_coordinator);
+
+    let total_computation_fees = consensus_validation_rewards.value() + computation_rewards.value();
+
+    let mut total_reward = sui::balance::zero<IKA>();
+    total_reward.join(consensus_validation_rewards);
+    total_reward.join(computation_rewards);
+    total_reward.join(stake_subsidy);
+    total_reward.join(self.remaining_rewards.withdraw_all());
+
 
     let total_reward_amount_before_distribution = total_reward.value();
     let new_epoch = current_epoch + 1;
@@ -581,8 +581,8 @@ public(package) fun advance_epoch(
          total_reward_amount_before_distribution - total_reward_amount_after_distribution;
 
     // Because of precision issues with integer divisions, we expect that there will be some
-    // remaining balance in `computation_reward`.
-    self.computation_reward.join(total_reward);
+    // remaining balance in `remaining_rewards`.
+    self.remaining_rewards.join(total_reward);
 
     //let active_committee = self.active_committee();
     // // Derive the computation price per unit size for the new epoch
@@ -594,7 +594,7 @@ public(package) fun advance_epoch(
         computation_price_per_unit_size: self.computation_price_per_unit_size,
         total_stake: new_total_stake,
         stake_subsidy_amount,
-        total_computation_fees: computation_reward_amount_before_distribution,
+        total_computation_fees,
         total_stake_rewards_distributed: total_reward_distributed,
     });
 }
@@ -728,34 +728,6 @@ fun process_checkpoint_message(
         timestamp_ms,
     });
 }
-
-#[allow(lint(self_transfer))]
-/// Extract required Balance from vector of Coin<IKA>, transfer the remainder back to sender.
-fun extract_coin_balance(
-    mut coins: vector<Coin<IKA>>,
-    amount: option::Option<u64>,
-    ctx: &mut TxContext,
-): Balance<IKA> {
-    let mut merged_coin = coins.pop_back();
-    merged_coin.join_vec(coins);
-
-    let mut total_balance = merged_coin.into_balance();
-    // return the full amount if amount is not specified
-    if (amount.is_some()) {
-        let amount = amount.destroy_some();
-        let balance = total_balance.split(amount);
-        // transfer back the remainder if non zero.
-        if (total_balance.value() > 0) {
-            transfer::public_transfer(total_balance.into_coin(ctx), ctx.sender());
-        } else {
-            total_balance.destroy_zero();
-        };
-        balance
-    } else {
-        total_balance
-    }
-}
-
 
 
 public(package) fun authorize_update_message_by_cap(

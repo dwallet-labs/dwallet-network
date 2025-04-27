@@ -113,6 +113,7 @@ pub struct ValidatorComponents {
 
     dwallet_mpc_service_exit: watch::Sender<()>,
 }
+
 pub struct P2pComponents {
     p2p_network: Network,
     known_peers: HashMap<PeerId, String>,

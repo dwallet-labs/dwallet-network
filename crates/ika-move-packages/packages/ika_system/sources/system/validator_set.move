@@ -10,7 +10,7 @@ use ika_system::staked_ika::{
 };
 use ika_system::staking_pool::{Self, StakingPool};
 use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
-use ika_system::bls_committee::{Self, BlsCommittee, new_bls_committee, new_bls_committee_member, total_voting_power, quorum_threshold};
+use ika_system::bls_committee::{Self, BlsCommittee, new_bls_committee, new_bls_committee_member};
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::validator_metadata::{ValidatorMetadata};
 use sui::bag::{Self, Bag};
@@ -525,7 +525,7 @@ public(package) fun advance_epoch(
 ) {
     assert!(self.next_epoch_active_committee.is_some(), EAdvanceEpochOnlyAfterProcessMidEpoch);
 
-    let total_voting_power = total_voting_power();
+    let total_voting_power = self.active_committee.total_voting_power();
 
     // Compute the reward distribution without taking into account the tallying rule slashing.
     let unadjusted_staking_reward_amounts = self.compute_unadjusted_reward_distribution(
@@ -537,10 +537,11 @@ public(package) fun advance_epoch(
     // punished.
     let slashed_validators = self.compute_slashed_validators();
 
+    // let total_slashed_validator_voting_power = self.sum_voting_power_by_validator_indices(
+    //     slashed_validators,
+    // );
 
-    let total_slashed_validator_voting_power = self.sum_voting_power_by_validator_indices(
-        slashed_validators,
-    );
+    let total_slashed_validator_voting_power = slashed_validators.length();
 
     let slashed_validator_indices = self.get_validator_indices(&slashed_validators);
 
@@ -1051,11 +1052,13 @@ fun compute_slashed_validators(
         );
         // Sum up the voting power of validators that have reported this validator and check if it has
         // passed the slashing threshold.
-        let reporter_votes = sum_voting_power_by_validator_indices(
-            self,
-            reporters.into_keys(),
-        );
-        if (reporter_votes >= quorum_threshold()) {
+        // let reporter_votes = sum_voting_power_by_validator_indices(
+        //     self,
+        //     reporters.into_keys(),
+        // );
+        let reporter_votes = reporters.size();
+        //if (reporter_votes >= quorum_threshold()) {
+        if (self.active_committee.is_quorum_threshold(reporter_votes)) {
             slashed_validators.push_back(validator_id);
         }
     };
@@ -1072,13 +1075,12 @@ fun compute_unadjusted_reward_distribution(
     total_reward: u64,
 ): vector<u64> {
     let members = self.active_committee.members();
-    let reward_amounts = members.map_ref!(|member| {
+    let reward_amounts = members.map_ref!(|_| {
         // Integer divisions will truncate the results. Because of this, we expect that at the end
         // there will be some reward remaining in `total_reward`.
         // Use u128 to avoid multiplication overflow.
-        let voting_power: u128 = member.voting_power() as u128;
         let reward_amount =
-            voting_power * (total_reward as u128) / (total_voting_power as u128);
+            (total_reward as u128) / (total_voting_power as u128);
         reward_amount as u64
     });
     reward_amounts
@@ -1106,7 +1108,6 @@ fun compute_adjusted_reward_distribution(
         // Integer divisions will truncate the results. Because of this, we expect that at the end
         // there will be some reward remaining in `total_reward`.
         // Use u128 to avoid multiplication overflow.
-        let voting_power = members[i].voting_power() as u128;
 
         // Compute adjusted staking reward.
         let unadjusted_staking_reward_amount = unadjusted_staking_reward_amounts[i];
@@ -1118,7 +1119,7 @@ fun compute_adjusted_reward_distribution(
             // Otherwise the slashed rewards should be distributed among the unslashed
             // validators so add the corresponding adjustment.
             let adjustment =
-                total_staking_reward_adjustment as u128 * voting_power
+                total_staking_reward_adjustment as u128
                                    / (total_unslashed_validator_voting_power as u128);
             unadjusted_staking_reward_amount + (adjustment as u64)
         };
@@ -1176,7 +1177,7 @@ fun emit_validator_epoch_events(
             validator_id,
             //reference_gas_survey_quote: validator.computation_price(),
             stake: validator.ika_balance(),
-            voting_power: member.voting_power(),
+            voting_power: 1, //member.voting_power(),
             commission_rate: validator.commission_rate(),
             pool_staking_reward: pool_staking_reward_amounts[i],
             pool_token_exchange_rate: validator.exchange_rate_at_epoch(new_epoch),
@@ -1187,15 +1188,15 @@ fun emit_validator_epoch_events(
     }
 }
 
-/// Sum up the total stake of a given list of validator indices.
-public fun sum_voting_power_by_validator_indices(self: &mut ValidatorSet, validator_ids: vector<ID>): u64 {
-    let validator_indices = get_validator_indices(self, &validator_ids);
-    let members = self.active_committee.members();
-    let sum = validator_indices.fold!(0, |s, i|  {
-        s + members[i].voting_power()
-    });
-    sum
-}
+// /// Sum up the total stake of a given list of validator indices.
+// public fun sum_voting_power_by_validator_indices(self: &mut ValidatorSet, validator_ids: vector<ID>): u64 {
+//     let validator_indices = get_validator_indices(self, &validator_ids);
+//     //let members = self.active_committee.members();
+//     let sum = validator_indices.fold!(0, |s, i|  {
+//         s + 1 //members[i].voting_power()
+//     });
+//     sum
+// }
 
 /// Report a validator as a bad or non-performant actor in the system.
 /// Succeeds if all the following are satisfied:

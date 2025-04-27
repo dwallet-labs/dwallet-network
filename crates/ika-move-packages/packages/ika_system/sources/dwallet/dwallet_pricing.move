@@ -1,8 +1,6 @@
 // Copyright (c) dWallet Labs Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-/// # Module: dwallet_pricing
-///
 /// This module provides structures and functions for managing pricing information for a dWallet.
 /// Each operation (e.g., DKG, re-encrypt user share, ECDSA presign, etc.) has its own pricing data,
 /// represented by a `PricingPerOperation`. Each `PricingPerOperation` holds three values:

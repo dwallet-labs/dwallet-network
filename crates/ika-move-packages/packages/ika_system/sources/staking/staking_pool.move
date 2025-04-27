@@ -17,7 +17,7 @@ use ika_system::{
 };
 
 // The number of basis points in 100%.
-const N_BASIS_POINTS: u16 = 100_00;
+const BASIS_POINT_DENOMINATOR: u16 = 10_000;
 
 // Error codes
 /// The epoch of the pool has already been advanced.
@@ -411,7 +411,7 @@ public(package) fun advance_epoch(
     // Split the commission from the rewards.
     let total_rewards = rewards.value();
     let commission = rewards.split(
-        total_rewards * (pool.commission_rate as u64) / (N_BASIS_POINTS as u64),
+        total_rewards * (pool.commission_rate as u64) / (BASIS_POINT_DENOMINATOR as u64),
     );
     pool.commission.join(commission);
 
@@ -515,7 +515,7 @@ public(package) fun set_next_commission(
     assert!(cap.validator_id() == pool.validator_id(), EAuthorizationFailure);
     assert!(object::id(cap) == pool.operation_cap_id, EAuthorizationFailure);
 
-    assert!(commission_rate <= N_BASIS_POINTS, EIncorrectCommissionRate);
+    assert!(commission_rate <= BASIS_POINT_DENOMINATOR, EIncorrectCommissionRate);
     pool.pending_commission_rate.insert_or_replace(current_epoch + 2, commission_rate as u64);
 }
 

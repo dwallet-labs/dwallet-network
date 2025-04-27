@@ -66,7 +66,6 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Function `compute_adjusted_reward_distribution`](#(ika_system=0x0)_validator_set_compute_adjusted_reward_distribution)
 -  [Function `distribute_reward`](#(ika_system=0x0)_validator_set_distribute_reward)
 -  [Function `emit_validator_epoch_events`](#(ika_system=0x0)_validator_set_emit_validator_epoch_events)
--  [Function `sum_voting_power_by_validator_indices`](#(ika_system=0x0)_validator_set_sum_voting_power_by_validator_indices)
 -  [Function `report_validator`](#(ika_system=0x0)_validator_set_report_validator)
 -  [Function `undo_report_validator`](#(ika_system=0x0)_validator_set_undo_report_validator)
 -  [Function `report_validator_impl`](#(ika_system=0x0)_validator_set_report_validator_impl)
@@ -1324,7 +1323,7 @@ It does the following things:
     reward_slashing_rate: u16,
 ) {
     <b>assert</b>!(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>);
-    <b>let</b> total_voting_power = total_voting_power();
+    <b>let</b> total_voting_power = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.total_voting_power();
     // Compute the reward distribution without taking into account the tallying rule slashing.
     <b>let</b> unadjusted_staking_reward_amounts = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_compute_unadjusted_reward_distribution">compute_unadjusted_reward_distribution</a>(
         total_voting_power,
@@ -1333,9 +1332,10 @@ It does the following things:
     // Use the tallying rule report records <b>for</b> the epoch to compute validators that will be
     // punished.
     <b>let</b> slashed_validators = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_compute_slashed_validators">compute_slashed_validators</a>();
-    <b>let</b> total_slashed_validator_voting_power = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_sum_voting_power_by_validator_indices">sum_voting_power_by_validator_indices</a>(
-        slashed_validators,
-    );
+    // <b>let</b> total_slashed_validator_voting_power = self.sum_voting_power_by_validator_indices(
+    //     slashed_validators,
+    // );
+    <b>let</b> total_slashed_validator_voting_power = slashed_validators.length();
     <b>let</b> slashed_validator_indices = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_indices">get_validator_indices</a>(&slashed_validators);
     // Compute the reward adjustments of slashed validators, to be taken into
     // account in adjusted reward computation.
@@ -2405,11 +2405,13 @@ non-performant validators according to the input threshold.
         );
         // Sum up the voting power of validators that have reported this validator and check <b>if</b> it <b>has</b>
         // passed the slashing threshold.
-        <b>let</b> reporter_votes = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_sum_voting_power_by_validator_indices">sum_voting_power_by_validator_indices</a>(
-            self,
-            reporters.into_keys(),
-        );
-        <b>if</b> (reporter_votes &gt;= quorum_threshold()) {
+        // <b>let</b> reporter_votes = sum_voting_power_by_validator_indices(
+        //     self,
+        //     reporters.into_keys(),
+        // );
+        <b>let</b> reporter_votes = reporters.size();
+        //<b>if</b> (reporter_votes &gt;= quorum_threshold()) {
+        <b>if</b> (self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.is_quorum_threshold(reporter_votes)) {
             slashed_validators.push_back(validator_id);
         }
     };
@@ -2446,13 +2448,12 @@ Returns the unadjusted amounts of staking reward for each validator.
     total_reward: u64,
 ): vector&lt;u64&gt; {
     <b>let</b> members = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.members();
-    <b>let</b> reward_amounts = members.map_ref!(|member| {
+    <b>let</b> reward_amounts = members.map_ref!(|_| {
         // Integer divisions will truncate the results. Because of this, we expect that at the end
         // there will be some reward remaining in `total_reward`.
         // Use u128 to avoid multiplication overflow.
-        <b>let</b> voting_power: u128 = member.voting_power() <b>as</b> u128;
         <b>let</b> reward_amount =
-            voting_power * (total_reward <b>as</b> u128) / (total_voting_power <b>as</b> u128);
+            (total_reward <b>as</b> u128) / (total_voting_power <b>as</b> u128);
         reward_amount <b>as</b> u64
     });
     reward_amounts
@@ -2499,7 +2500,6 @@ The staking rewards are shared with the stakers.
         // Integer divisions will truncate the results. Because of this, we expect that at the end
         // there will be some reward remaining in `total_reward`.
         // Use u128 to avoid multiplication overflow.
-        <b>let</b> voting_power = members[i].voting_power() <b>as</b> u128;
         // Compute adjusted staking reward.
         <b>let</b> unadjusted_staking_reward_amount = unadjusted_staking_reward_amounts[i];
         <b>let</b> adjusted_staking_reward_amount = // If the validator is one of the slashed ones, then subtract the adjustment.
@@ -2510,7 +2510,7 @@ The staking rewards are shared with the stakers.
             // Otherwise the slashed rewards should be distributed among the unslashed
             // validators so add the corresponding adjustment.
             <b>let</b> adjustment =
-                total_staking_reward_adjustment <b>as</b> u128 * voting_power
+                total_staking_reward_adjustment <b>as</b> u128
                                    / (total_unslashed_validator_voting_power <b>as</b> u128);
             unadjusted_staking_reward_amount + (adjustment <b>as</b> u64)
         };
@@ -2607,7 +2607,7 @@ including stakes, rewards, performance, etc.
             validator_id,
             //reference_gas_survey_quote: validator.computation_price(),
             stake: validator.ika_balance(),
-            voting_power: member.voting_power(),
+            voting_power: 1, //member.voting_power(),
             commission_rate: validator.commission_rate(),
             pool_staking_reward: pool_staking_reward_amounts[i],
             pool_token_exchange_rate: validator.exchange_rate_at_epoch(new_epoch),
@@ -2616,36 +2616,6 @@ including stakes, rewards, performance, etc.
         });
         i = i + 1;
     }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_sum_voting_power_by_validator_indices"></a>
-
-## Function `sum_voting_power_by_validator_indices`
-
-Sum up the total stake of a given list of validator indices.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_sum_voting_power_by_validator_indices">sum_voting_power_by_validator_indices</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_ids: vector&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_sum_voting_power_by_validator_indices">sum_voting_power_by_validator_indices</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, validator_ids: vector&lt;ID&gt;): u64 {
-    <b>let</b> validator_indices = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_indices">get_validator_indices</a>(self, &validator_ids);
-    <b>let</b> members = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.members();
-    <b>let</b> sum = validator_indices.fold!(0, |s, i|  {
-        s + members[i].voting_power()
-    });
-    sum
 }
 </code></pre>
 

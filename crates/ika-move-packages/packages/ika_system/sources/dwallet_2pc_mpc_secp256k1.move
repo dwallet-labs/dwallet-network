@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 module ika_system::dwallet_2pc_mpc_secp256k1;
 
 use ika::ika::IKA;
