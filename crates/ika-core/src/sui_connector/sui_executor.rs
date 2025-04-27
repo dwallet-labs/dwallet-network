@@ -44,6 +44,7 @@ use tokio::{
     time::{self, Duration},
 };
 use tracing::{error, info};
+use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum StopReason {
@@ -563,7 +564,7 @@ where
 
         ptb.move_call(
             ika_system_package_id,
-            SYSTEM_MODULE_NAME.into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
             vec![],
             args,
