@@ -346,10 +346,7 @@ impl DWalletMPCManager {
                 session.mpc_event_data = mpc_event_data;
             }
         } else {
-            self.push_new_mpc_session(
-                &session_info.session_id,
-                mpc_event_data,
-            );
+            self.push_new_mpc_session(&session_info.session_id, mpc_event_data);
         }
         Ok(())
     }
@@ -596,10 +593,7 @@ impl DWalletMPCManager {
                 // This can happen if the session is not in the active sessions,
                 // but we still want to store the message.
                 // We will create a new session for it.
-                self.push_new_mpc_session(
-                    &message.session_id,
-                    None,
-                );
+                self.push_new_mpc_session(&message.session_id, None);
                 self.mpc_sessions.get_mut(&message.session_id).unwrap()
             }
         };
