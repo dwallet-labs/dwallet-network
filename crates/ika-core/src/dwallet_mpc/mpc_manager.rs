@@ -75,7 +75,7 @@ pub struct DWalletMPCManager {
     pub(super) node_config: NodeConfig,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
-    weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+    pub(crate) weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) validators_class_groups_public_keys_and_proofs:
         HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     pub(crate) cryptographic_computations_orchestrator: CryptographicComputationsOrchestrator,

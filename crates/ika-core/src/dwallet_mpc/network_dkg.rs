@@ -66,9 +66,7 @@ pub struct ValidatorPrivateDecryptionKeyData {
     /// These shares are used in multi-party cryptographic protocols.
     /// NOTE: EACH PARTY IN HERE IS A **VIRTUAL PARTY**.
     /// NOTE 2: `ObjectID` is the ID of the network decryption key, not the party.
-    pub validator_decryption_key_shares: RwLock<
-        HashMap<ObjectID, HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
-    >,
+    pub validator_decryption_key_shares: HashMap<ObjectID, HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
 }
 
 fn get_decryption_key_shares_from_public_output(
