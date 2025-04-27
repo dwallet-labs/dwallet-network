@@ -4,7 +4,7 @@
 use fastcrypto::hash::HashFunction;
 
 use ika_types::committee::ProtocolVersion;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
