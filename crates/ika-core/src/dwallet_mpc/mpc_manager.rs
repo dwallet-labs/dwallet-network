@@ -168,6 +168,7 @@ impl DWalletMPCManager {
                 .decryption_key(),
             validator_decryption_key_shares: HashMap::new(),
         };
+        let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
         Ok(Self {
             mpc_sessions: HashMap::new(),
             consensus_adapter,
@@ -185,8 +186,8 @@ impl DWalletMPCManager {
             pending_for_events_order: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
             recognized_self_as_malicious: false,
-            network_keys: Default::default(),
-            validator_private_data,
+            network_keys: dwallet_network_keys,
+            events_pending_for_network_key: vec![],
         })
     }
 
