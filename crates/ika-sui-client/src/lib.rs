@@ -156,6 +156,7 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
+    /// Remaining sessions not processed during previous Epochs.
     pub async fn get_dwallet_mpc_missed_events(
         &self,
         epoch_id: EpochId,
@@ -163,9 +164,17 @@ where
         loop {
             let dwallet_coordinator_inner = self.must_get_dwallet_coordinator_inner_v1().await;
 
-            // Make sure we are synced with Sui in order to fetch the missed events
-            // If Sui's epoch number matches ours, all the needed missed events must be synced as well.
+            // Make sure we are synced with Sui to fetch the missed events.
+            // If Sui's epoch number matches ours,
+            // all the necessary missed events must be synced as well.
+            // Note that we make sure that the coordinator's epoch number matches ours,
+            // so that we know for sure that our Sui state is synced.
             if dwallet_coordinator_inner.current_epoch != epoch_id {
+                warn!(
+                    sui_state_current_epoch=?dwallet_coordinator_inner.current_epoch,
+                    our_current_epoch=?epoch_id,
+                    "Sui's epoch number doesn't match ours "
+                );
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             }
@@ -634,7 +643,7 @@ where
                 .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
                 .await
             else {
-                error!("fetched wrong version of dwallet coordinator inner, trying again");
+                error!("fetched a wrong version of dwallet coordinator inner, trying again");
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             };
@@ -825,6 +834,7 @@ pub trait SuiClientInner: Send + Sync {
 
     async fn get_gas_objects(&self, address: SuiAddress) -> Vec<ObjectRef>;
 
+    /// Missed events are events that were started, but the MPC flow wasn't completed.
     async fn get_missed_events(
         &self,
         events_bag_id: ObjectID,
@@ -885,16 +895,17 @@ impl SuiClientInner for SuiSdkClient {
             .await
     }
 
+    /// Ge the missed events from the dWallet coordinator object dynamic field.
     async fn get_missed_events(
         &self,
-        events_bag_id: ObjectID,
+        coordinator_events_bag_id: ObjectID,
     ) -> Result<Vec<DBSuiEvent>, self::Error> {
         let mut events = vec![];
         let mut next_cursor = None;
         loop {
             let dynamic_fields = self
                 .read_api()
-                .get_dynamic_fields(events_bag_id, next_cursor, None)
+                .get_dynamic_fields(coordinator_events_bag_id, next_cursor, None)
                 .await?;
             for df in dynamic_fields.data.iter() {
                 let object_id = df.object_id;
