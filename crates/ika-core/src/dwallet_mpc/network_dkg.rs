@@ -42,6 +42,7 @@ use twopc_mpc::ProtocolPublicParameters;
 
 /// Holds the network (decryption) keys of the network MPC protocols.
 pub struct DwalletMPCNetworkKeys {
+    pub(crate) network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyPublicData>,
     /// Holds all network (decryption) keys for the current network in encrypted form.
     /// This data is identical for all the Validator nodes.
     /// Limits the access to the network keys to a single thread at a time.
@@ -207,7 +208,7 @@ impl DwalletMPCNetworkKeys {
         key: NetworkDecryptionKeyPublicData,
         weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
-        self.inner.network_decryption_keys.insert(key_id, key.clone());
+        self.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
             .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)
             .await?;
@@ -215,13 +216,12 @@ impl DwalletMPCNetworkKeys {
     }
 
     pub async fn update_network_key(
-        &self,
+        &mut self,
         key_id: ObjectID,
         key: NetworkDecryptionKeyPublicData,
         weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
-        let mut inner = self.inner.write().await;
-        inner.network_decryption_keys.insert(key_id, key.clone());
+        self.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
             .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)
             .await?;
@@ -246,9 +246,6 @@ impl DwalletMPCNetworkKeys {
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
         Ok(self
-            .inner
-            .read()
-            .await
             .network_decryption_keys
             .get(key_id)
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?

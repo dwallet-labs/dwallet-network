@@ -241,81 +241,10 @@ where
                         continue;
                     }
                 }
-                match Self::sync_network_decryption_key_inner(
-                    &sui_client,
-                    dwallet_mpc_network_keys.clone(),
-                    &weighted_threshold_access_structure,
-                    &key_id,
-                    &network_dec_key_shares,
-                )
-                .await
-                {
-                    Ok(_) => {
-                        info!(
-                            "Successfully synced the network decryption key for key_id: {:?}",
-                            key_id
-                        );
-                    }
-                    Err(DwalletMPCError::NetworkDKGNotCompleted) => {
-                        info!(
-                            "Key Sync — The Network DKG for key_id: {:?} was not completed yet",
-                            key_id
-                        );
-                    }
-                    Err(e) => {
-                        error!(
-                            "Failed to sync network decryption key for key_id: {:?}, error: {:?}",
-                            key_id, e
-                        );
-                    }
-                }
             }
             if let Err(err) = network_keys_sender.send(all_network_keys_data) {
                 error!(?err, "failed to send network keys data to the channel",);
             }
-        }
-    }
-
-    async fn sync_network_decryption_key_inner(
-        sui_client: &Arc<SuiClient<C>>,
-        dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
-        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-        key_id: &ObjectID,
-        network_dec_key_shares: &DWalletNetworkDecryptionKey,
-    ) -> DwalletMPCResult<()> {
-        let local_network_decryption_keys =
-            dwallet_mpc_network_keys.network_decryption_keys().await;
-
-        let should_update = match local_network_decryption_keys.get(key_id) {
-            Some(local_key) => local_key.epoch != network_dec_key_shares.current_epoch,
-            None => true,
-        };
-
-        if !should_update {
-            info!(
-                "Network decryption key for key_id: {:?} is up to date",
-                key_id
-            );
-            return Ok(());
-        }
-
-        let key = Self::fetch_and_create_network_key(
-            &sui_client,
-            &network_dec_key_shares,
-            &weighted_threshold_access_structure,
-        )
-        .await?;
-
-        if local_network_decryption_keys.contains_key(&key_id) {
-            info!(committee=?weighted_threshold_access_structure, "Updating network key for key_id: {:?}", key_id);
-            dwallet_mpc_network_keys
-                .update_network_key(*key_id, key, &weighted_threshold_access_structure)
-                .await
-        } else {
-            info!(committee=?weighted_threshold_access_structure, "Adding new network key for key_id: {:?}", key_id);
-            dwallet_mpc_network_keys
-                .insert_new_network_key(*key_id, key, &weighted_threshold_access_structure)
-                .await
         }
     }
 
