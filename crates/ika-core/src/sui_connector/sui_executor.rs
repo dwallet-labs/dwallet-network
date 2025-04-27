@@ -6,6 +6,7 @@
 use crate::checkpoints::CheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
+use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
@@ -44,7 +45,6 @@ use tokio::{
     time::{self, Duration},
 };
 use tracing::{error, info};
-use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum StopReason {
