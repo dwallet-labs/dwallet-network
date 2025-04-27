@@ -568,8 +568,7 @@ pub(crate) async fn session_input_from_event(
                             &deserialized_event
                                 .event_data
                                 .dwallet_network_decryption_key_id,
-                        )
-                        .await?,
+                        )?,
                 )?,
                 Some(bcs::to_bytes(
                     &class_groups_key_pair_and_proof
