@@ -380,22 +380,10 @@ impl DWalletMPCManager {
         &self,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
-    ) -> Vec<u8> {
-        loop {
-            if let Ok(dwallet_mpc_network_keys) = self.dwallet_mpc_network_keys() {
-                if let Ok(protocol_public_parameters) = dwallet_mpc_network_keys
-                    .get_protocol_public_parameters(key_id, key_scheme)
-                    .await
-                {
-                    return protocol_public_parameters;
-                }
-            }
-            info!(
-                "Waiting for the protocol public parameters to be available for key_id: {:?}",
-                key_id
-            );
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-        }
+    ) -> DwalletMPCResult<Vec<u8>> {
+        self.network_keys
+            .get_protocol_public_parameters(key_id, key_scheme)
+            .await
     }
 
     pub(super) fn get_decryption_key_share_public_parameters(
