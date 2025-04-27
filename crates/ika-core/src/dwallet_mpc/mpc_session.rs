@@ -128,7 +128,6 @@ impl DWalletMPCSession {
     /// computation, and Tokio, which is good for IO heavy tasks, is used to submit the result to
     /// the consensus.
     pub(super) fn advance(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
-        error!("advancing yeah");
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
