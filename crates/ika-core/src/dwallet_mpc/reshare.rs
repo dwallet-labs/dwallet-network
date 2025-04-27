@@ -109,7 +109,7 @@ pub(super) fn network_decryption_key_reshare_session_info_from_event(
         session_id: deserialized_event.session_id,
         epoch: deserialized_event.epoch,
         mpc_round: MPCProtocolInitData::DecryptionKeyReshare(deserialized_event),
-        is_immediate: true,
+        is_system: true,
     }
 }
 

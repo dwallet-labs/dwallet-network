@@ -55,7 +55,7 @@ pub struct MPCEventData {
     pub(super) public_input: MPCPublicInput,
     pub init_protocol_data: MPCProtocolInitData,
     pub(crate) decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
-    pub(crate) is_immediate: bool,
+    pub(crate) is_system: bool,
 }
 
 /// A dWallet MPC session.
@@ -251,7 +251,7 @@ impl DWalletMPCSession {
                 sequence_number,
                 session_id: self.session_id.clone(),
                 mpc_round: mpc_event_data.init_protocol_data.clone(),
-                is_immediate: false,
+                is_system: false,
                 epoch: self.epoch_id,
             },
         ))

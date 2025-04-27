@@ -407,7 +407,7 @@ fn network_dkg_secp256k1_session_info(
             DWalletMPCNetworkKeyScheme::Secp256k1,
             deserialized_event,
         ),
-        is_immediate: true,
+        is_system: true,
     }
 }
 
@@ -422,7 +422,7 @@ fn network_dkg_ristretto_session_info(
             DWalletMPCNetworkKeyScheme::Ristretto,
             deserialized_event,
         ),
-        is_immediate: true,
+        is_system: true,
     }
 }
 

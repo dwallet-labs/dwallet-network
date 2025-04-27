@@ -188,7 +188,7 @@ pub struct SessionInfo {
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
     pub mpc_round: MPCProtocolInitData,
-    pub is_immediate: bool,
+    pub is_system: bool,
     pub epoch: u64,
 }
 

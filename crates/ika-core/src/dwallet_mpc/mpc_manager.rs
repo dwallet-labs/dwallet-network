@@ -326,7 +326,7 @@ impl DWalletMPCManager {
                 }
                 _ => HashMap::new(),
             },
-            is_immediate: session_info.is_immediate,
+            is_system: session_info.is_system,
         });
         if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
@@ -512,7 +512,7 @@ impl DWalletMPCManager {
             };
             if oldest_pending_session.sequence_number
                 > self.last_session_to_complete_in_current_epoch
-                && !mpc_event_data.is_immediate
+                && !mpc_event_data.is_system
             {
                 info!(
                     session_id=?oldest_pending_session.session_id,
