@@ -538,7 +538,7 @@ impl DWalletMPCSession {
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
                 crypto_round_number=?message.round_number,
-                mpc_protocol=?message.mpc_protocol,
+                mpc_protocol=%message.mpc_protocol,
                 "Received a message for a session that is not active",
             );
             return Ok(());
