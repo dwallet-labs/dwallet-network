@@ -12,42 +12,31 @@ use fastcrypto::bls12381::min_pk::{
     BLS12381PrivateKey, BLS12381PublicKey, BLS12381Signature,
 };
 use fastcrypto::ed25519::{
-    Ed25519KeyPair, Ed25519PrivateKey, Ed25519PublicKey, Ed25519PublicKeyAsBytes, Ed25519Signature,
-    Ed25519SignatureAsBytes,
+    Ed25519KeyPair, Ed25519PrivateKey, Ed25519PublicKey,
 };
-use fastcrypto::encoding::{Base64, Bech32, Encoding, Hex};
-use fastcrypto::error::{FastCryptoError, FastCryptoResult};
+use fastcrypto::encoding::{Base64, Encoding, Hex};
+use fastcrypto::error::FastCryptoError;
 use fastcrypto::hash::{Blake2b256, HashFunction};
-use fastcrypto::secp256k1::{
-    Secp256k1KeyPair, Secp256k1PublicKey, Secp256k1PublicKeyAsBytes, Secp256k1Signature,
-    Secp256k1SignatureAsBytes,
-};
-use fastcrypto::secp256r1::{
-    Secp256r1KeyPair, Secp256r1PublicKey, Secp256r1PublicKeyAsBytes, Secp256r1Signature,
-    Secp256r1SignatureAsBytes,
-};
+use fastcrypto::secp256k1::Secp256k1PublicKey;
+use fastcrypto::secp256r1::Secp256r1PublicKey;
 pub use fastcrypto::traits::KeyPair as KeypairTraits;
 pub use fastcrypto::traits::Signer;
 pub use fastcrypto::traits::{
     AggregateAuthenticator, Authenticator, EncodeDecodeBase64, SigningKey, ToFromBytes,
     VerifyingKey,
 };
-use fastcrypto_zkp::bn254::zk_login::ZkLoginInputs;
-use fastcrypto_zkp::zk_login_utils::Bn254FrElement;
 use move_core_types::account_address::AccountAddress;
-use rand::rngs::{OsRng, StdRng};
+use rand::rngs::StdRng;
 use rand::SeedableRng;
 use roaring::RoaringBitmap;
 use schemars::JsonSchema;
-use serde::ser::Serializer;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::fmt::{self, Display, Formatter};
+use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
-use strum::EnumString;
 use sui_types::base_types::{ConciseableName, SuiAddress};
 use sui_types::crypto::SignatureScheme;
 use sui_types::sui_serde::{Readable, SuiBitmap};

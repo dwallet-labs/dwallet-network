@@ -5,11 +5,8 @@ use base64::{engine::general_purpose::STANDARD, Engine as _};
 use class_groups::dkg::Secp256k1Party;
 use class_groups::SecretKeyShareSizedInteger;
 use constants::{DYCRPTION_SHARES, NETWORK_DKG_OUTPUT};
-use group::{secp256k1, PartyID};
+use group::PartyID;
 use std::collections::HashMap;
-use twopc_mpc::secp256k1::class_groups::{
-    ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-};
 
 pub fn network_dkg_final_output() -> Box<<Secp256k1Party as mpc::Party>::PublicOutput> {
     // Safe to unwrap as we're using a hardcoded constant.

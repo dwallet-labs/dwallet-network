@@ -7,14 +7,12 @@ use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
 
 use crate::committee::EpochId;
-use crate::error::IkaError;
 use crate::ika_coin::NIKA_PER_IKA;
 use serde::Deserialize;
 use serde::Serialize;
 use sui_types::balance::Balance;
 use sui_types::base_types::ObjectID;
 use sui_types::id::{ID, UID};
-use sui_types::object::{Data, Object};
 
 /// Minimum number of active validators at any moment.
 /// We do not allow the number of validators in any epoch to go below this.
