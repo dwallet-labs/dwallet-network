@@ -83,7 +83,7 @@ pub struct CentralizedDKGWasmResult {
 /// - A public key share and its proof.
 /// - Centralized DKG output required for further protocol steps.
 /// # Warning
-/// The secret (private) key returned from this function should never be sent,
+/// The secret (private) key returned from this function should never be sent
 /// and should always be kept private.
 ///
 /// # Parameters
@@ -97,7 +97,7 @@ pub struct CentralizedDKGWasmResult {
 /// - Serialized centralized DKG output.
 ///
 /// # Errors
-/// Returns an error if decoding or advancing the protocol fails.
+/// Return an error if decoding or advancing the protocol fails.
 /// This is okay since a malicious blockchain can always block a client.
 pub fn create_dkg_output(
     network_decryption_key_public_output: SerializedWrappedPublicOutput,
@@ -136,7 +136,8 @@ pub fn create_dkg_output(
             let public_output = bcs::to_bytes(&round_result.public_output)?;
             // Centralized Secret Key Share.
             // Warning:
-            // The secret (private) key share returned from this function should never be sent,
+            // The secret (private)
+            // key share returned from this function should never be sent
             // and should always be kept private.
             let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
             Ok(CentralizedDKGWasmResult {
@@ -149,7 +150,7 @@ pub fn create_dkg_output(
 }
 
 /// Executes the centralized phase of the Sign protocol,
-/// first part of the protocol.
+///  the first part of the protocol.
 ///
 /// The [`advance_centralized_sign_party`] function is
 /// called by the client (the centralized party).
@@ -260,9 +261,10 @@ fn protocol_public_parameters_by_key_scheme(
 /// The plaintext space/fundamental group will correspond to the order
 /// of the respective elliptic curve.
 /// The secret decryption key may be the same in terms of correctness,
-/// but to simplify security analysis and implementation current version maintain distinct key-pairs.
+/// but to simplify security analysis,
+/// and the implementation current version maintains distinct key-pairs.
 /// # Warning
-/// The secret (private) key returned from this function should never be sent,
+/// The secret (private) key returned from this function should never be sent
 /// and should always be kept private.
 pub fn generate_secp256k1_cg_keypair_from_seed_internal(
     seed: [u8; 32],
