@@ -106,6 +106,7 @@ impl CryptographicComputationsOrchestrator {
                         self.currently_running_sessions_count += 1;
                     }
                     ComputationUpdate::Completed => {
+                        // todo(zeev): protocol, session, etc..
                         info!(
                             currently_running_sessions_count =? self.currently_running_sessions_count,
                             "Completed cryptographic computation, decreasing count"
@@ -155,13 +156,15 @@ impl CryptographicComputationsOrchestrator {
             if let Err(err) = session.advance(&handle) {
                 error!(
                     error=?err,
-                    mpc_protocol=?mpc_protocol,
+                    mpc_protocol=%mpc_protocol,
                     session_id=?session.session_id,
                     "failed to advance an MPC session"
                 );
             } else {
                 let elapsed_ms = start_advance.elapsed().as_millis();
                 info!(
+                    mpc_protocol=%mpc_protocol,
+                    session_id=?session.session_id,
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
                     "MPC session advanced successfully"

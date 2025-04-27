@@ -326,11 +326,13 @@ impl DWalletMPCSession {
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
+
         info!(
             mpc_protocol=?mpc_event_data.init_protocol_data,
             validator=?self.epoch_store()?.name,
             session_id=?self.session_id,
             crypto_round=?self.pending_quorum_for_highest_round_number,
+            weighted_parties=?self.weighted_threshold_access_structure,
             "Advancing MPC session"
         );
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
@@ -548,7 +550,7 @@ impl DWalletMPCSession {
             receiving_authority=?self.epoch_store()?.name,
             crypto_round_number=?message.round_number,
             message_size_bytes=?message.message.len(),
-            mpc_protocol=?message.mpc_protocol,
+            mpc_protocol=message.mpc_protocol,
             "Received a dWallet MPC message",
         );
         if message.round_number == 0 {
@@ -590,7 +592,7 @@ impl DWalletMPCSession {
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
-                    mpc_protocol=?message.mpc_protocol,
+                    mpc_protocol=%message.mpc_protocol,
                     "Inserting an MPC message into the party-to-message maps",
                 );
                 party_to_msg.insert(source_party_id, message.message.clone());
