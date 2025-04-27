@@ -47,7 +47,7 @@ use ika_system::system_inner::{
     SystemInnerV1
 };
 use ika_system::protocol_treasury::ProtocolTreasury;
-use ika_system::pool_exchange_rate::PoolExchangeRate;
+use ika_system::token_exchange_rate::TokenExchangeRate;
 use ika_system::staked_ika::{StakedIka};
 use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
 use ika_system::validator_set::ValidatorSet;
@@ -405,12 +405,12 @@ public fun set_next_epoch_network_pubkey_bytes(
 }
 
 /// Getter of the pool token exchange rate of a validator. Works for both active and inactive pools.
-public fun pool_exchange_rates(
+public fun token_exchange_rates(
     self: &mut System,
     validator_id: ID,
-): &Table<u64, PoolExchangeRate> {
+): &Table<u64, TokenExchangeRate> {
     let self = self.inner_mut();
-    self.pool_exchange_rates(validator_id)
+    self.token_exchange_rates(validator_id)
 }
 
 /// Getter returning ids of the currently active validators.

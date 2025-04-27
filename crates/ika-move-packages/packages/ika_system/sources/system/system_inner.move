@@ -5,7 +5,7 @@ module ika_system::system_inner;
 
 use ika::ika::IKA;
 use ika_system::protocol_treasury::ProtocolTreasury;
-use ika_system::pool_exchange_rate::PoolExchangeRate;
+use ika_system::token_exchange_rate::TokenExchangeRate;
 use ika_system::staked_ika::{StakedIka};
 use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
 use ika_system::validator_set::{ValidatorSet};
@@ -650,12 +650,12 @@ public(package) fun get_reporters_of(self: &SystemInnerV1, validator_id: ID): Ve
     self.get_reporters_of(validator_id)
 }
 
-public(package) fun pool_exchange_rates(
+public(package) fun token_exchange_rates(
     self: &mut SystemInnerV1,
     validator_id: ID,
-): &Table<u64, PoolExchangeRate> {
+): &Table<u64, TokenExchangeRate> {
     let validators = &mut self.validators;
-    validators.pool_exchange_rates(validator_id)
+    validators.token_exchange_rates(validator_id)
 }
 
 public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
