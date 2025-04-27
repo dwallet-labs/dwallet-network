@@ -27,9 +27,7 @@ use serde::{Deserialize, Serialize};
 use shared_wasm_class_groups::message_digest::message_digest;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
-use twopc_mpc::secp256k1::class_groups::{
-    EncryptionOfSecretShareProof, ProtocolPublicParameters,
-};
+use twopc_mpc::secp256k1::class_groups::{EncryptionOfSecretShareProof, ProtocolPublicParameters};
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;

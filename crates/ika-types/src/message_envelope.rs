@@ -3,8 +3,8 @@
 
 use crate::committee::{Committee, EpochId};
 use crate::crypto::{
-    AuthorityKeyPair, AuthorityName, AuthorityQuorumSignInfo, AuthoritySignInfo, AuthoritySignature, EmptySignInfo,
-    Signer,
+    AuthorityKeyPair, AuthorityName, AuthorityQuorumSignInfo, AuthoritySignInfo,
+    AuthoritySignature, EmptySignInfo, Signer,
 };
 use crate::error::IkaResult;
 use crate::intent::{Intent, IntentScope};
