@@ -23,6 +23,30 @@ const MAX_PROTOCOL_VERSION: u64 = 1;
 //
 // Version 1: Original version.
 
+self.feature_flags.consensus_round_prober
+self.feature_flags.consensus_median_based_commit_timestamp;
+{
+    if let Some(enabled) = is_mysticeti_fpc_enabled_in_env() {
+    return enabled;
+    }
+    self.feature_flags.mysticeti_fastpath
+}
+self.feature_flags.consensus_batched_block_sync
+self.feature_flags.consensus_median_based_commit_timestamp = val;
+self.feature_flags.consensus_batched_block_sync = val;
+self.feature_flags.enforce_checkpoint_timestamp_monotonicity
+
+pub fn consensus_median_based_commit_timestamp(&self) -> bool {
+    let res = self.feature_flags.consensus_median_based_commit_timestamp;
+    assert!(
+        !res || self.gc_depth() > 0,
+        "The consensus median based commit timestamp requires GC to be enabled"
+    );
+    res
+}
+
+
+
 #[derive(Copy, Clone, Debug, Hash, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ProtocolVersion(u64);
 
@@ -190,6 +214,11 @@ pub struct ProtocolConfig {
     /// can happen automatically. 10000bps would indicate that complete unanimity is required (all
     /// 3f+1 must vote), while 0bps would indicate that 2f+1 is sufficient.
     buffer_stake_for_protocol_upgrade_bps: Option<u64>,
+
+    // Dictates the threshold (percentage of stake) that is used to calculate the "bad" nodes to be
+    // swapped when creating the consensus schedule. The values should be of the range [0 - 33]. Anything
+    // above 33 (f) will not be allowed.
+    consensus_bad_nodes_stake_threshold: Option<u64>,
 
     /// Minimum interval of commit timestamps between consecutive checkpoints.
     min_checkpoint_interval_ms: Option<u64>,
