@@ -219,8 +219,8 @@ where
             for (key_id, network_dec_key_shares) in network_decryption_keys.into_iter() {
                 match Self::fetch_and_create_network_key(
                     &sui_client,
-                    &weighted_threshold_access_structure,
                     &network_dec_key_shares,
+                    &weighted_threshold_access_structure,
                 )
                 .await
                 {

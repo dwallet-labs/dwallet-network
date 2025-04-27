@@ -98,8 +98,8 @@ impl SuiConnectorService {
         )
         .run(
             Duration::from_secs(2),
-            network_keys_sender,
             next_epoch_committee,
+            network_keys_sender,
         )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to start sui syncer"))?;
