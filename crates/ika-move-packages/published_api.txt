@@ -418,6 +418,9 @@ DWalletCoordinator
 create_dwallet_coordinator
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
+process_checkpoint_message_by_quorum
+	public fun
+	0x0::dwallet_2pc_mpc_secp256k1
 request_dwallet_network_decryption_key_dkg
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1
@@ -1457,9 +1460,6 @@ pool_exchange_rates
 	public fun
 	0x0::system
 active_committee
-	public fun
-	0x0::system
-process_checkpoint_message_by_quorum
 	public fun
 	0x0::system
 request_reconfig_mid_epoch

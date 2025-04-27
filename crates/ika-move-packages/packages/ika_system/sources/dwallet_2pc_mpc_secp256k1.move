@@ -61,6 +61,22 @@ public(package) fun create_dwallet_coordinator(
     self_id
 }
 
+public fun process_checkpoint_message_by_quorum(
+    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    signature: vector<u8>,
+    signers_bitmap: vector<u8>,
+    mut message: vector<u8>,
+    message2: vector<u8>,
+    message3: vector<u8>,
+    message4: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    message.append(message2);
+    message.append(message3);
+    message.append(message4);
+    let dwallet_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
+    dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+}
 
 public(package) fun request_dwallet_network_decryption_key_dkg(
     self: &mut DWalletCoordinator,

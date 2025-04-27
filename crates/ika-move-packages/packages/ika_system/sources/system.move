@@ -616,23 +616,6 @@ public fun active_committee(self: &mut System): BlsCommittee {
     self.active_committee()
 }
 
-public fun process_checkpoint_message_by_quorum(
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
-    signature: vector<u8>,
-    signers_bitmap: vector<u8>,
-    mut message: vector<u8>,
-    message2: vector<u8>,
-    message3: vector<u8>,
-    message4: vector<u8>,
-    ctx: &mut TxContext,
-) {
-    message.append(message2);
-    message.append(message3);
-    message.append(message4);
-    let dwallet_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
-    dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
-}
-
 /// Locks the committee of the next epoch to allow starting the reconfiguration process.
 public fun request_reconfig_mid_epoch(
     self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, ctx: &mut TxContext
