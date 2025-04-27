@@ -462,8 +462,14 @@ impl DWalletMPCManager {
                 continue;
             };
             if live_session.mpc_event_data.is_some() {
+                let mpc_protocol = live_session
+                    .mpc_event_data
+                    .clone()
+                    .unwrap()
+                    .init_protocol_data;
                 info!(
                     session_id=?pending_for_event_session.session_id,
+                    mpc_protocol=?mpc_protocol,
                     "Received event data for a known session"
                 );
                 let mut ready_to_advance_session = pending_for_event_session.clone();
