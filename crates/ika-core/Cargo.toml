@@ -165,8 +165,3 @@ harness = false
 
 [features]
 test-utils = []
-# This feature must be enabled for release builds!
-# If it is not enabled, then we will receive dWallet MPC sessions even if the network key is not set.
-# The network DKG pauses the manager from advancing any MPC sessions if the network key is not initialized.
-# This feature allows bypassing this restriction, enabling development without relying on the network DKG.
-with-network-dkg = []

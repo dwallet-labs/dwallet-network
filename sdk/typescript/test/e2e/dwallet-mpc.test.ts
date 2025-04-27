@@ -62,7 +62,8 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create a dWallet (DKG)', async () => {
-		const dwallet = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwallet}`);
 	});
 
@@ -105,6 +106,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should sign', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		const dkgResult = await mockCreateDWallet(
 			conf,
 			Buffer.from(dkgMocks.dwalletOutput, 'base64'),
@@ -123,12 +125,14 @@ describe('Test dWallet MPC', () => {
 			dkgResult.dwallet_cap_id,
 			Buffer.from('hello world'),
 			Buffer.from(dkgMocks.centralizedSecretKeyShare, 'base64'),
+			networkDecryptionKeyPublicOutput,
 		);
 	});
 
 	it('should sign full flow', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		console.log('Creating dWallet...');
-		const dwalletID = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
+		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
 		await delay(checkpointCreationTime);
 		console.log('Running Presign...');
@@ -142,8 +146,8 @@ describe('Test dWallet MPC', () => {
 			dwalletID.dwallet_cap_id,
 			Buffer.from('hello world'),
 			dwalletID.secret_share,
+			networkDecryptionKeyPublicOutput,
 			Hash.KECCAK256,
-			mockedNetworkDecryptionKeyPublicOutput,
 		);
 	});
 
@@ -164,8 +168,8 @@ describe('Test dWallet MPC', () => {
 				dwallet.dwallet_cap_id,
 				Buffer.from('hello world'),
 				dwallet.secret_share,
-				Hash.KECCAK256,
 				networkDecryptionKeyPublicOutput,
+				Hash.KECCAK256,
 			);
 		await delay(checkpointCreationTime);
 		const verifiedECDSAPartialUserSignatureCapID = await verifyECFSASignWithPartialUserSignatures(
@@ -199,8 +203,8 @@ describe('Test dWallet MPC', () => {
 			dwallet.dwallet_cap_id,
 			Buffer.from('hello world'),
 			dwallet.secret_share,
-			Hash.KECCAK256,
 			networkDecryptionKeyPublicOutput,
+			Hash.KECCAK256,
 		);
 	});
 });

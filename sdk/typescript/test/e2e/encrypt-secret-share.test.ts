@@ -16,7 +16,6 @@ import {
 	Config,
 	delay,
 	getNetworkDecryptionKeyPublicOutput,
-	mockedNetworkDecryptionKeyPublicOutput,
 } from '../../src/dwallet-mpc/globals';
 
 const fiveMinutes = 5 * 60 * 1000;
