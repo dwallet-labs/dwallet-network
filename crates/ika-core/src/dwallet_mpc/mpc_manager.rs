@@ -390,12 +390,9 @@ impl DWalletMPCManager {
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
-        Ok(self
+        self
             .network_keys
-            .get(key_id)
-            .ok_or(DwalletMPCError::WaitingForNetworkKey(key_id.clone()))?
-            .decryption_key_share_public_parameters
-            .clone())
+            .get_decryption_public_parameters(key_id)
     }
 
     /// Retrieves the decryption share for the current authority.
