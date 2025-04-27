@@ -155,6 +155,7 @@ impl DWalletMPCManager {
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
         let mpc_computations_orchestrator = CryptographicComputationsOrchestrator::try_new()?;
+        let party_id = epoch_store.authority_name_to_party_id(&epoch_store.name)?;
         let validator_private_data = ValidatorPrivateDecryptionKeyData {
             party_id,
             class_groups_decryption_key: node_config
@@ -404,7 +405,7 @@ impl DWalletMPCManager {
         Ok(self
             .network_keys
             .get(key_id)
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(key_id.clone()))?
             .decryption_key_share_public_parameters
             .clone())
     }
