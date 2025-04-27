@@ -230,7 +230,7 @@ impl DWalletMPCManager {
     pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
         match message {
             DWalletMPCDBMessage::PerformCryptographicComputations => {
-                self.perform_cryptographic_computation();
+                self.perform_cryptographic_computation().await;
             }
             DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message.clone()) {
@@ -453,6 +453,7 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) async fn perform_cryptographic_computation(&mut self) {
+        error!(the_size=self.mpc_sessions.len());
         for ((event, session_info)) in self
             .events_pending_for_network_key
             .drain(..)
@@ -648,7 +649,7 @@ impl DWalletMPCManager {
         session_id: &ObjectID,
         mpc_event_data: Option<MPCEventData>,
     ) {
-        info!(
+        error!(
             "Received start MPC flow event for session ID {:?}",
             session_id
         );
@@ -663,7 +664,7 @@ impl DWalletMPCManager {
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
         );
-        info!(
+        error!(
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
             "Adding MPC session to active sessions",
         );

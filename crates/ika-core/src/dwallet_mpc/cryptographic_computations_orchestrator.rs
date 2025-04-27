@@ -139,6 +139,7 @@ impl CryptographicComputationsOrchestrator {
                 err
             );
         }
+        error!("advancing it whoo");
         let computation_channel_sender = self.computation_channel_sender.clone();
         rayon::spawn_fifo(move || {
             if let Err(err) = session.advance(&handle) {
