@@ -163,7 +163,6 @@ pub struct DWalletMPCMessage {
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
-    pub session_sequence_number: u64,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
 }
