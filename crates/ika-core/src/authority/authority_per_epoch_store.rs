@@ -346,7 +346,6 @@ pub struct AuthorityPerEpochStore {
     /// This state machine is used to store outputs and emit ones
     /// where the quorum of votes is valid.
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
-    pub dwallet_mpc_network_keys: OnceCell<Arc<DwalletMPCNetworkKeys>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
     pub next_epoch_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
@@ -591,7 +590,6 @@ impl AuthorityPerEpochStore {
             executed_in_epoch_table_enabled: once_cell::sync::OnceCell::new(),
             chain_identifier,
             dwallet_mpc_outputs_verifier: OnceCell::new(),
-            dwallet_mpc_network_keys: OnceCell::new(),
             perpetual_tables,
             packages_config,
             next_epoch_committee,
