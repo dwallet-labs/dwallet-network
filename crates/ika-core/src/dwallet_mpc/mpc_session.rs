@@ -28,10 +28,7 @@ use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState,
-    SessionInfo, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
-};
+use ika_types::messages_dwallet_mpc::{AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState, SessionInfo, SessionType, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
 
@@ -56,6 +53,7 @@ pub struct MPCEventData {
     pub init_protocol_data: MPCProtocolInitData,
     pub(crate) decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     pub(crate) is_system: bool,
+    pub(crate) session_type: SessionType,
 }
 
 /// A dWallet MPC session.
@@ -81,7 +79,6 @@ pub(super) struct DWalletMPCSession {
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
-    pub(crate) sequence_number: u64,
 }
 
 impl DWalletMPCSession {
@@ -239,7 +236,7 @@ impl DWalletMPCSession {
     fn new_dwallet_mpc_output_message(
         &self,
         output: Vec<u8>,
-        sequence_number: u64,
+        session_type: SessionType,
     ) -> DwalletMPCResult<ConsensusTransaction> {
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
@@ -248,10 +245,9 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             output,
             SessionInfo {
-                sequence_number,
+                session_type,
                 session_id: self.session_id.clone(),
                 mpc_round: mpc_event_data.init_protocol_data.clone(),
-                is_system: false,
                 epoch: self.epoch_id,
             },
         ))

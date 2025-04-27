@@ -308,6 +308,7 @@ impl DWalletMPCManager {
     ) -> DwalletMPCResult<()> {
         let (public_input, private_input) = session_input_from_event(event, &self).await?;
         let mpc_event_data = Some(MPCEventData {
+            session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
             public_input,
             private_input,
