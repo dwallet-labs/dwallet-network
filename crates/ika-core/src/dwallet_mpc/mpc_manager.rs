@@ -186,10 +186,11 @@ impl DWalletMPCManager {
 
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
         if event.session_info.epoch != self.epoch_id {
-            error!(
+            warn!(
                 session_id=?event.session_info.session_id,
                 event_type=?event.event,
-                "Received an event for a different epoch, skipping"
+                event_epoch=?event.session_info.epoch,
+                "received an event for a different epoch, skipping"
             );
             return;
         }
