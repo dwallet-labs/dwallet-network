@@ -200,7 +200,7 @@ impl DwalletMPCNetworkKeys {
             .clone())
     }
 
-    pub async fn get_decryption_public_parameters(
+    pub fn get_decryption_public_parameters(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
