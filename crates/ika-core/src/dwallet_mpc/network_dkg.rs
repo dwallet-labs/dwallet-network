@@ -2,8 +2,6 @@
 //! The network DKG protocol handles generating the network Decryption-Key shares.
 //! The module provides the management of the network Decryption-Key shares and
 //! the network DKG protocol.
-//! It provides inner mutability for the [`EpochStore`]
-//! to update the network decryption key shares synchronously.
 use crate::dwallet_mpc::advance_and_serialize;
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
@@ -54,7 +52,7 @@ pub struct ValidatorPrivateDecryptionKeyData {
     /// The validator's class groups decryption key.
     pub class_groups_decryption_key: ClassGroupsDecryptionKey,
 
-    /// A thread-safe map of the validator's decryption key shares.
+    /// A map of the validator's decryption key shares.
     ///
     /// This structure maps each key ID (`ObjectID`) to a sub-map of `PartyID`
     /// to the corresponding decryption key share.
@@ -210,8 +208,6 @@ impl DwalletMPCNetworkKeys {
     }
 
     /// Retrieves the protocol public parameters for the specified key ID.
-    /// This function assumes the given key_id is a valid key ID, and retries getting it until it has been synced from
-    /// the Sui network.
     pub fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,

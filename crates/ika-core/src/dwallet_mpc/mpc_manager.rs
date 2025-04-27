@@ -453,7 +453,7 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) async fn perform_cryptographic_computation(&mut self) {
-        error!(the_size=self.mpc_sessions.len());
+        error!(the_size = self.mpc_sessions.len());
         for ((event, session_info)) in self
             .events_pending_for_network_key
             .drain(..)
