@@ -148,7 +148,7 @@ impl DWalletMPCService {
         match self.network_keys_receiver.has_changed() {
             Ok(has_changed) => {
                 if has_changed {
-                    todo!("update keys")
+                    let new_keys = self.network_keys_receiver.borrow_and_update();
                 } else {
 
                 }
