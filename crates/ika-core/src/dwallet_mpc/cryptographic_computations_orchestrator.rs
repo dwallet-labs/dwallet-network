@@ -135,19 +135,19 @@ impl CryptographicComputationsOrchestrator {
             .send(ComputationUpdate::Started)
         {
             error!(
-                "failed to send a started computation message with error: {:?}",
-                err
+                "failed to send a `started` computation message",
+                error=?err
             );
         }
         let computation_channel_sender = self.computation_channel_sender.clone();
         rayon::spawn_fifo(move || {
             if let Err(err) = session.advance(&handle) {
-                error!("failed to advance session with error: {:?}", err);
+                error!("failed to advance an MPC session", error=?err);
             };
             if let Err(err) = computation_channel_sender.send(ComputationUpdate::Completed) {
                 error!(
-                    "failed to send a finished computation message with error: {:?}",
-                    err
+                    "failed to send a finished computation message",
+                    error=?err,
                 );
             }
         });

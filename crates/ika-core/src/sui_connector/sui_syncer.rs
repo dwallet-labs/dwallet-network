@@ -268,8 +268,8 @@ where
 
         if !should_update {
             info!(
-                "Network decryption key for key_id: {:?} is up to date",
-                key_id
+                key_id=?key_id,
+                "Network decryption key for is up to date",
             );
             return Ok(());
         }

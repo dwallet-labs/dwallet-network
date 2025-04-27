@@ -536,18 +536,19 @@ impl DWalletMPCSession {
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
                 crypto_round_number=?message.round_number,
+                mpc_protocol=?message.mpc_protocol,
                 "Received a message for a session that is not active",
             );
             return Ok(());
         }
         // TODO (#876): Set the maximum message size to the smallest size possible.
-        // todo(zeev): add protocol
         info!(
             session_id=?message.session_id,
             from_authority=?message.authority,
             receiving_authority=?self.epoch_store()?.name,
             crypto_round_number=?message.round_number,
             message_size_bytes=?message.message.len(),
+            mpc_protocol=?message.mpc_protocol,
             "Received a dWallet MPC message",
         );
         if message.round_number == 0 {
@@ -556,6 +557,7 @@ impl DWalletMPCSession {
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
                 crypto_round_number=?message.round_number,
+                mpc_protocol=?message.mpc_protocol,
                 "Received a message for round zero",
             );
             return Err(DwalletMPCError::MessageForFirstMPCStep);
@@ -575,6 +577,7 @@ impl DWalletMPCSession {
                         from_authority=?message.authority,
                         receiving_authority=?authority_name,
                         crypto_round_number=?message.round_number,
+                        mpc_protocol=?message.mpc_protocol,
                         "Received a duplicate message from authority",
                     );
                     // Duplicate.
@@ -587,6 +590,7 @@ impl DWalletMPCSession {
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
+                    mpc_protocol=?message.mpc_protocol,
                     "Inserting an MPC message into the party-to-message maps",
                 );
                 party_to_msg.insert(source_party_id, message.message.clone());
@@ -597,6 +601,7 @@ impl DWalletMPCSession {
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
+                    mpc_protocol=?message.mpc_protocol,
                     "Storing a message for the current round",
                 );
                 let mut map = HashMap::new();
@@ -611,6 +616,7 @@ impl DWalletMPCSession {
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
+                    mpc_protocol=?message.mpc_protocol,
                     "Received a message for two or more rounds above known round for session",
                 );
                 // Unexpected round number; rounds should grow sequentially.

@@ -464,7 +464,7 @@ impl DWalletMPCManager {
             if live_session.mpc_event_data.is_some() {
                 info!(
                     session_id=?pending_for_event_session.session_id,
-                    "Received event data for session"
+                    "Received event data for a known session"
                 );
                 let mut ready_to_advance_session = pending_for_event_session.clone();
                 ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
@@ -479,7 +479,7 @@ impl DWalletMPCManager {
                 .cryptographic_computations_orchestrator
                 .can_spawn_session()
             {
-                info!("No available CPUs for cryptographic computations, waiting for a free CPU");
+                warn!("No available CPUs for cryptographic computations, waiting for a free CPU");
                 return;
             }
             // Safe to unwrap, as we just checked that the queue is not empty.
@@ -497,7 +497,7 @@ impl DWalletMPCManager {
                 continue;
             }
             let Some(mpc_event_data) = oldest_pending_session.mpc_event_data.clone() else {
-                // This should never happen
+                // This should never happen.
                 error!(
                     session_id=?oldest_pending_session.session_id,
                     session_sequence_number=?oldest_pending_session.sequence_number,
