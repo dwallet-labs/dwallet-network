@@ -354,9 +354,16 @@ public enum ECDSASignState has copy, drop, store {
     }
 }
 
+public enum SessionType has copy, drop, store {
+    User {
+        sequence_number: u64,
+    },
+    System
+}
+
 public struct DWalletEvent<E: copy + drop + store> has copy, drop, store {
     epoch: u64,
-    session_sequence_number: u64,
+    session_type: SessionType,
     session_id: ID,
     event_data: E,
 }
@@ -959,7 +966,11 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     };
     let event = DWalletEvent {
         epoch: self.current_epoch,
-        session_sequence_number,
+        session_type: {
+            SessionType::User {
+                sequence_number: session_sequence_number,
+            }
+        },
         session_id: object::id(&session),
         event_data,
     };
@@ -982,8 +993,7 @@ fun create_system_dwallet_event<E: copy + drop + store>(
 
     let event = DWalletEvent {
         epoch: self.current_epoch,
-        // session sequence number is not used for system events, passing a dummy value
-        session_sequence_number: 0,
+        session_type: SessionType::System,
         session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
         event_data,
     };

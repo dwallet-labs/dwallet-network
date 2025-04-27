@@ -54,6 +54,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Enum `DWalletState`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletState)
 -  [Enum `ECDSAPresignState`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSAPresignState)
 -  [Enum `ECDSASignState`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECDSASignState)
+-  [Enum `SessionType`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SessionType)
 -  [Constants](#@Constants_1)
 -  [Function `lock_last_active_session_sequence_number`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_lock_last_active_session_sequence_number)
 -  [Function `create_dwallet_coordinator_inner`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_dwallet_coordinator_inner)
@@ -68,7 +69,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `get_dwallet_mut`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet_mut)
 -  [Function `validate_active_and_get_public_output`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_validate_active_and_get_public_output)
 -  [Function `charge_and_create_current_epoch_dwallet_event`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge_and_create_current_epoch_dwallet_event)
--  [Function `create_immediate_dwallet_event`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_immediate_dwallet_event)
+-  [Function `create_system_dwallet_event`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_system_dwallet_event)
 -  [Function `get_active_dwallet_and_public_output`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_and_public_output)
 -  [Function `get_active_dwallet_and_public_output_mut`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_and_public_output_mut)
 -  [Function `get_active_encryption_key`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_encryption_key)
@@ -191,12 +192,12 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <dd>
 </dd>
 <dt>
-<code>started_immediate_sessions_count: u64</code>
+<code>started_system_sessions_count: u64</code>
 </dt>
 <dd>
 </dd>
 <dt>
-<code>completed_immediate_sessions_count: u64</code>
+<code>completed_system_sessions_count: u64</code>
 </dt>
 <dd>
 </dd>
@@ -1012,7 +1013,7 @@ The output of a batched Sign session.
 <dd>
 </dd>
 <dt>
-<code>session_sequence_number: u64</code>
+<code>session_type: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SessionType">dwallet_2pc_mpc_secp256k1_inner::SessionType</a></code>
 </dt>
 <dd>
 </dd>
@@ -2443,6 +2444,46 @@ Variant <code>Requested</code>
 
 </details>
 
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SessionType"></a>
+
+## Enum `SessionType`
+
+
+
+<pre><code><b>public</b> <b>enum</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SessionType">SessionType</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Variants</summary>
+
+
+<dl>
+<dt>
+Variant <code>System</code>
+</dt>
+<dd>
+</dd>
+<dt>
+Variant <code>User</code>
+</dt>
+<dd>
+</dd>
+
+<dl>
+<dt>
+<code>sequence_number: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+</dl>
+
+
+</details>
+
 <a name="@Constants_1"></a>
 
 ## Constants
@@ -2716,8 +2757,8 @@ Supported hash schemes for message signing.
         previous_committee: <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_empty">bls_committee::empty</a>(),
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: option::none(),
-        completed_immediate_sessions_count: 0,
-        started_immediate_sessions_count: 0,
+        completed_system_sessions_count: 0,
+        started_system_sessions_count: 0,
         previous_epoch_last_checkpoint_sequence_number: 0,
         extra_fields: bag::new(ctx),
     }
@@ -2762,7 +2803,7 @@ Supported hash schemes for message signing.
         computation_fee_charged_ika: balance::zero(),
         state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
     });
-    event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_immediate_dwallet_event">create_immediate_dwallet_event</a>(
+    event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_system_dwallet_event">create_system_dwallet_event</a>(
         dwallet_network_decryption_key_id,
         <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletNetworkDKGDecryptionKeyRequestEvent">DWalletNetworkDKGDecryptionKeyRequestEvent</a> {
             dwallet_network_decryption_key_id
@@ -2799,7 +2840,7 @@ Supported hash schemes for message signing.
     is_last_chunk: bool,
 ) {
     <b>if</b> (is_last_chunk) {
-        self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
+        self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
     <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
@@ -2845,7 +2886,7 @@ Supported hash schemes for message signing.
     is_last_chunk: bool,
 ) {
     <b>if</b> (is_last_chunk) {
-        self.completed_immediate_sessions_count = self.completed_immediate_sessions_count + 1;
+        self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
     <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
     <b>let</b> next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
@@ -2926,7 +2967,7 @@ Supported hash schemes for message signing.
     <b>let</b> dwallet_network_decryption_key = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_network_decryption_key">get_active_dwallet_network_decryption_key</a>(key_cap.dwallet_network_decryption_key_id);
     dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration;
     dwallet_network_decryption_key.reconfiguration_public_outputs.add(dwallet_network_decryption_key.current_epoch + 1, table_vec::empty(ctx));
-    event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_immediate_dwallet_event">create_immediate_dwallet_event</a>(
+    event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_system_dwallet_event">create_system_dwallet_event</a>(
         key_cap.dwallet_network_decryption_key_id,
         <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDecryptionKeyReshareRequestEvent">DWalletDecryptionKeyReshareRequestEvent</a> {
             dwallet_network_decryption_key_id: key_cap.dwallet_network_decryption_key_id
@@ -3136,7 +3177,11 @@ Supported hash schemes for message signing.
     };
     <b>let</b> event = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a> {
         epoch: self.current_epoch,
-        session_sequence_number,
+        session_type: {
+            SessionType::User {
+                sequence_number: session_sequence_number,
+            }
+        },
         session_id: object::id(&session),
         event_data,
     };
@@ -3152,13 +3197,13 @@ Supported hash schemes for message signing.
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_immediate_dwallet_event"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_system_dwallet_event"></a>
 
-## Function `create_immediate_dwallet_event`
+## Function `create_system_dwallet_event`
 
 
 
-<pre><code><b>fun</b> create_immediate_dwallet_eventE(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, event_data: E, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">dwallet_2pc_mpc_secp256k1_inner::DWalletEvent</a>&lt;E&gt;
+<pre><code><b>fun</b> create_system_dwallet_eventE(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, event_data: E, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">dwallet_2pc_mpc_secp256k1_inner::DWalletEvent</a>&lt;E&gt;
 </code></pre>
 
 
@@ -3167,18 +3212,17 @@ Supported hash schemes for message signing.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_immediate_dwallet_event">create_immediate_dwallet_event</a>&lt;E: <b>copy</b> + drop + store&gt;(
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_system_dwallet_event">create_system_dwallet_event</a>&lt;E: <b>copy</b> + drop + store&gt;(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_network_decryption_key_id: ID,
     event_data: E,
     ctx: &<b>mut</b> TxContext,
 ): <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a>&lt;E&gt; {
     <b>assert</b>!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EDWalletNetworkDecryptionKeyNotExist">EDWalletNetworkDecryptionKeyNotExist</a>);
-    self.started_immediate_sessions_count = self.started_immediate_sessions_count + 1;
+    self.started_system_sessions_count = self.started_system_sessions_count + 1;
     <b>let</b> event = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletEvent">DWalletEvent</a> {
         epoch: self.current_epoch,
-        // session sequence number is not used <b>for</b> immediate events, passing a dummy value
-        session_sequence_number: 0,
+        session_type: SessionType::System,
         session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
         event_data,
     };
@@ -3584,6 +3628,8 @@ This is part of the epoch switch logic.
     <b>let</b> new_last_session_to_complete_in_current_epoch = (
         self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
+        // Setting it to the `next_session_sequence_number` and not `next_session_sequence_number - 1`,
+        // <b>as</b> we compare this index against the `number_of_completed_sessions` counter, that starts counting from 1.
         self.next_session_sequence_number,
     );
     <b>if</b> (self.last_session_to_complete_in_current_epoch &gt;= new_last_session_to_complete_in_current_epoch) {
@@ -3615,7 +3661,7 @@ This is part of the epoch switch logic.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>): bool {
     <b>return</b> self.locked_last_session_to_complete_in_current_epoch &&
         self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
-        self.completed_immediate_sessions_count == self.started_immediate_sessions_count
+        self.completed_system_sessions_count == self.started_system_sessions_count
 }
 </code></pre>
 
