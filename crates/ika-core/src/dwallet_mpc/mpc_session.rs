@@ -90,7 +90,6 @@ impl DWalletMPCSession {
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         mpc_event_data: Option<MPCEventData>,
-        sequence_number: u64,
     ) -> Self {
         Self {
             status,
@@ -103,7 +102,6 @@ impl DWalletMPCSession {
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
-            sequence_number,
         }
     }
 

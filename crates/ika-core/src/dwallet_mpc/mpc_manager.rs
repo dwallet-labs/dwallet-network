@@ -652,7 +652,6 @@ impl DWalletMPCManager {
         &mut self,
         session_id: &ObjectID,
         mpc_event_data: Option<MPCEventData>,
-        session_sequence_number: u64,
     ) {
         info!(
             "Received start MPC flow event for session ID {:?}",
@@ -668,10 +667,8 @@ impl DWalletMPCManager {
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
-            session_sequence_number,
         );
         info!(
-            session_sequence_number=?session_sequence_number,
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
             "Adding MPC session to active sessions",
         );
