@@ -1597,7 +1597,8 @@ impl AuthorityPerEpochStore {
         match &session_info.mpc_round {
             MPCProtocolInitData::DKGFirst(event_data) => {
                 if rejected {
-                    // This should never happen because the DWallet DKG first round receives no user input,
+                    // This should never happen because the dWallet DKG first round
+                    // receives no user input,
                     // so a failure is necessarily due to a bug on our end.
                     error!(
                         validator=?self.name,
@@ -1685,8 +1686,8 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => {
                 if rejected {
-                    // This should never happen because Network DKG receives no user input, so a failure is
-                    // necessarily due to a bug on our end.
+                    // This should never happen because Network DKG receives no user input,
+                    // so a failure is necessarily due to a bug on our end.
                     error!(
                         validator=?self.name,
                         mpc_protocol=?session_info.mpc_round,
