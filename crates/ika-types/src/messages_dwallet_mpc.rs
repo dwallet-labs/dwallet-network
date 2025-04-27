@@ -196,11 +196,17 @@ pub trait DWalletMPCEventTrait {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag;
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub enum SessionType {
+    User { sequence_number: u64 },
+    System,
+}
+
 /// Represents the Rust version of the Move struct `ika_system::dwallet::DWalletMPCEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct DWalletMPCSuiEvent<E: DWalletMPCEventTrait> {
     pub epoch: u64,
-    pub session_sequence_number: u64,
+    pub session_type: SessionType,
     pub session_id: ObjectID,
     pub event_data: E,
 }
