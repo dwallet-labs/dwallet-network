@@ -160,7 +160,7 @@ impl DWalletMPCService {
             if self.dwallet_mpc_manager.recognized_self_as_malicious {
                 error!(
                     authority=?self.epoch_store.name,
-                    "node has been identified as malicious and is no longer participating in MPC protocols"
+                    "node has identified itself as malicious and is no longer participating in MPC protocols"
                 );
                 tokio::time::sleep(Duration::from_secs(120)).await;
                 continue;
