@@ -376,14 +376,13 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    pub(crate) async fn get_protocol_public_parameters(
+    pub(crate) fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
         self.network_keys
             .get_protocol_public_parameters(key_id, key_scheme)
-            .await
     }
 
     pub(super) fn get_decryption_key_share_public_parameters(
