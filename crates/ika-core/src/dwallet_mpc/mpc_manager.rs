@@ -521,7 +521,7 @@ impl DWalletMPCManager {
                 }
                 SessionType::System => true,
             };
-            if should_advance {
+            if !should_advance {
                 info!(
                     session_id=?oldest_pending_session.session_id,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
