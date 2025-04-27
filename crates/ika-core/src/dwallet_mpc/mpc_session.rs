@@ -470,7 +470,6 @@ impl DWalletMPCSession {
             message,
             self.session_id.clone(),
             self.pending_quorum_for_highest_round_number,
-            self.sequence_number,
         ))
     }
 
