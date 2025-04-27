@@ -402,6 +402,8 @@ where
                     })
                     .collect::<Vec<_>>();
 
+                let dwallet_coordinator = self.must_get_dwallet_coordinator_inner_v1().await;
+
                 let epoch_start_system_state = EpochStartSystem::new_v1(
                     ika_system_state_inner.epoch,
                     ika_system_state_inner.protocol_version,
@@ -409,6 +411,7 @@ where
                     ika_system_state_inner.epoch_duration_ms(),
                     validators,
                     network_decryption_keys_data,
+                    dwallet_coordinator.max_active_sessions_buffer,
                 );
 
                 Ok(epoch_start_system_state)

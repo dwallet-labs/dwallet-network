@@ -196,7 +196,7 @@ impl DWalletMPCManager {
                 self.perform_cryptographic_computation();
             }
             DWalletMPCDBMessage::Message(message) => {
-                if let Err(err) = self.handle_message(message.clone()) {
+                if let Err(err) = self.handle_message(message.clone()).await {
                     error!(
                         ?err,
                         session_id=?message.session_id,
@@ -542,7 +542,10 @@ impl DWalletMPCManager {
 
     /// Handles a message by forwarding it to the relevant MPC session.
     /// If the session does not exist, punish the sender.
-    pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) -> DwalletMPCResult<()> {
+    pub(crate) async fn handle_message(
+        &mut self,
+        message: DWalletMPCMessage,
+    ) -> DwalletMPCResult<()> {
         info!(
             session_id=?message.session_id,
             from_authority=?message.authority,
