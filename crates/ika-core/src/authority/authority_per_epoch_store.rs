@@ -1597,6 +1597,18 @@ impl AuthorityPerEpochStore {
         let rejected = output == FAILED_SESSION_OUTPUT.to_vec();
         match &session_info.mpc_round {
             MPCProtocolInitData::DKGFirst(event_data) => {
+                if rejected {
+                    // This should never happen because the dWallet DKG first round
+                    // receives no user input,
+                    // so a failure is necessarily due to a bug on our end.
+                    error!(
+                        validator=?self.name,
+                        mpc_protocol=?session_info.mpc_round,
+                        session_id=?session_info.session_id,
+                        "rejected DWalletDKGFirstRound MPC session, this should never happen"
+                    );
+                    return Ok(ConsensusCertificateResult::Ignored);
+                }
                 let SessionType::User { sequence_number } = event_data.session_type else {
                     panic!("DKGFirst round should be a user session");
                 };
@@ -1691,24 +1703,46 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => match key_scheme {
-                DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                    let slices = Self::slice_network_decryption_key_public_output_into_messages(
-                        &init_event.event_data.dwallet_network_decryption_key_id,
-                        output,
+            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => {
+                if rejected {
+                    // This should never happen because Network DKG receives no user input,
+                    // so a failure is necessarily due to a bug on our end.
+                    error!(
+                        validator=?self.name,
+                        mpc_protocol=?session_info.mpc_round,
+                        session_id=?session_info.session_id,
+                        "rejected NetworkDkg MPC session, this should never happen"
                     );
+                    return Ok(ConsensusCertificateResult::Ignored);
+                }
+                match key_scheme {
+                    DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                        let slices = Self::slice_network_decryption_key_public_output_into_messages(
+                            &init_event.event_data.dwallet_network_decryption_key_id,
+                            output,
+                        );
 
-                    let messages: Vec<_> = slices
-                        .into_iter()
-                        .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
-                        .collect();
-                    Ok(self.process_consensus_system_bulk_transaction(&messages))
+                        let messages: Vec<_> = slices
+                            .into_iter()
+                            .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
+                            .collect();
+                        Ok(self.process_consensus_system_bulk_transaction(&messages))
+                    }
+                    DWalletMPCNetworkKeyScheme::Ristretto => {
+                        Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
+                    }
                 }
-                DWalletMPCNetworkKeyScheme::Ristretto => {
-                    Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
-                }
-            },
+            }
             MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
+                if rejected {
+                    error!(
+                        validator=?self.name,
+                        mpc_protocol=?session_info.mpc_round,
+                        session_id=?session_info.session_id,
+                        "rejected DecryptionKeyReshare MPC session, this should never happen"
+                    );
+                    return Ok(ConsensusCertificateResult::Ignored);
+                }
                 let slices = Self::slice_network_decryption_key_public_output_into_messages(
                     &init_event.event_data.dwallet_network_decryption_key_id,
                     output,
