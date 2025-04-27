@@ -671,8 +671,7 @@ pub(crate) async fn session_input_from_event(
                     // Todo (#473): Support generic network key scheme
                     &deserialized_event.event_data.dwallet_mpc_network_key_id,
                     DWalletMPCNetworkKeyScheme::Secp256k1,
-                )
-                .await;
+                )?;
             Ok((protocol_public_parameters, None))
         }
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),

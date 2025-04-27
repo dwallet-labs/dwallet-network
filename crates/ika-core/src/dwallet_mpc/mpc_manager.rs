@@ -412,7 +412,7 @@ impl DWalletMPCManager {
         key_id: &ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let decryption_shares = self
-            .dwallet_mpc_network_keys()?
+            .network_keys
             .get_decryption_key_share(key_id.clone())
             .await?;
 
@@ -468,10 +468,10 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) async fn perform_cryptographic_computation(&mut self) {
-        for ((event, session_info)) in self.events_pending_for_network_key.drain(..) {
+        for ((event, session_info)) in self.events_pending_for_network_key.drain(..).collect::<Vec<_>>().into_iter() {
             self.handle_dwallet_db_event(DWalletMPCEvent {
-                event: event.clone(),
-                session_info: session_info.clone(),
+                event: event,
+                session_info: session_info,
             })
             .await;
         }
