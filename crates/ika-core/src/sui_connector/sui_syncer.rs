@@ -183,7 +183,7 @@ where
     ) {
         // (Key Obj ID, Epoch)
         let mut network_keys_cache: HashSet<(ObjectID, u64)> = HashSet::new();
-        loop {
+        'sync_network_keys: loop {
             time::sleep(Duration::from_secs(5)).await;
 
             let network_decryption_keys = sui_client
@@ -246,8 +246,7 @@ where
                             err=?err,
                             "failed to get network decryption key data, retrying...",
                         );
-                        // todo(itay): retry the outer loop.
-                        continue;
+                        continue 'sync_network_keys;
                     }
                 }
             }
