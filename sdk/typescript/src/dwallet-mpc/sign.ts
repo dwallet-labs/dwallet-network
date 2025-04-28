@@ -12,7 +12,6 @@ import {
 	isDWalletCap,
 	isPresign,
 	isStartSessionEvent,
-	mockedNetworkDecryptionKeyPublicOutput,
 	MPCKeyScheme,
 	SUI_PACKAGE_ID,
 } from './globals.js';
@@ -57,8 +56,8 @@ export async function sign(
 	dwalletCapID: string,
 	message: Uint8Array,
 	secretKey: Uint8Array,
+	networkDecryptionKeyPublicOutput: Uint8Array,
 	hash = Hash.KECCAK256,
-	networkDecryptionKeyPublicOutput: Uint8Array = mockedNetworkDecryptionKeyPublicOutput,
 ): Promise<CompletedSignEvent> {
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
@@ -137,8 +136,8 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 	dwalletCapID: string,
 	message: Uint8Array,
 	secretKey: Uint8Array,
+	networkDecryptionKeyPublicOutput: Uint8Array,
 	hash = Hash.KECCAK256,
-	networkDecryptionKeyPublicOutput: Uint8Array = mockedNetworkDecryptionKeyPublicOutput,
 ): Promise<string> {
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;

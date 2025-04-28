@@ -75,4 +75,3 @@ normal = ["jemalloc-ctl"]
 tracing = [
     "ika-types/tracing",
 ]
-with-network-dkg = ["ika-swarm/with-network-dkg"]
