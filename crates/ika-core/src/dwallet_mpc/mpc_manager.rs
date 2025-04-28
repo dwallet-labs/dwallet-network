@@ -186,7 +186,7 @@ impl DWalletMPCManager {
 
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
         if let Err(err) = self.handle_event(event.event, event.session_info).await {
-            error!("failed to handle event with error: {:?}", err);
+            error!(?err, "failed to handle event with error");
         }
     }
 
@@ -344,9 +344,13 @@ impl DWalletMPCManager {
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> Vec<u8> {
         loop {
-            let Ok(epoch_store) = self.epoch_store() else {
-                error!("failed to get the epoch store");
-                continue;
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            let epoch_store = match self.epoch_store() {
+                Ok(store) => store,
+                Err(err) => {
+                    error!(?err, "failed to get the epoch store, retrying...");
+                    continue;
+                }
             };
             if let Ok(dwallet_mpc_network_keys) = self.dwallet_mpc_network_keys() {
                 if let Ok(protocol_public_parameters) = dwallet_mpc_network_keys
@@ -357,10 +361,9 @@ impl DWalletMPCManager {
                 }
             }
             info!(
-                "Waiting for the protocol public parameters to be available for key_id: {:?}",
-                key_id
+                ?key_id,
+                "Waiting for the protocol public parameters to be available for key_id",
             );
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         }
     }
 

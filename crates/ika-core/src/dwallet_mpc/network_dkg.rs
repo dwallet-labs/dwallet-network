@@ -246,7 +246,7 @@ impl DwalletMPCNetworkKeys {
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let key_epoch = self.get_key_epoch(&key_id).await?;
         if key_epoch != current_epoch {
-            return Err(DwalletMPCError::KeyEpochMismatch {
+            return Err(DwalletMPCError::DecryptionKeyEpochMismatch {
                 key_id,
                 expected_epoch: current_epoch,
                 actual_epoch: key_epoch,
@@ -267,7 +267,7 @@ impl DwalletMPCNetworkKeys {
     ) -> DwalletMPCResult<Vec<u8>> {
         let key_epoch = self.get_key_epoch(&key_id).await?;
         if key_epoch != current_epoch {
-            return Err(DwalletMPCError::KeyEpochMismatch {
+            return Err(DwalletMPCError::DecryptionKeyEpochMismatch {
                 key_id: *key_id,
                 expected_epoch: current_epoch,
                 actual_epoch: key_epoch,
