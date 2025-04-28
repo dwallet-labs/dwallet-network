@@ -18,6 +18,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
 use ika_types::sui::{SystemInnerInit, SystemInnerTrait};
+use im::HashSet;
 use itertools::Itertools;
 use mpc::{Weight, WeightedThresholdAccessStructure};
 use mysten_metrics::spawn_logged_monitored_task;
@@ -26,7 +27,7 @@ use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
-use tokio::sync::RwLock;
+use tokio::sync::{watch, RwLock};
 use tokio::{
     sync::Notify,
     task::JoinHandle,
@@ -67,8 +68,8 @@ where
     pub async fn run(
         self,
         query_interval: Duration,
-        dwallet_mpc_network_keys: Option<Arc<DwalletMPCNetworkKeys>>,
         next_epoch_committee: Arc<RwLock<Option<Committee>>>,
+        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
@@ -77,13 +78,11 @@ where
             sui_client_clone.clone(),
             next_epoch_committee,
         ));
-        if let Some(dwallet_mpc_network_keys) = dwallet_mpc_network_keys {
-            // Todo (#810): Check the usage adding the task handle to the task_handles vector.
-            tokio::spawn(Self::sync_dwallet_network_keys(
-                sui_client_clone,
-                dwallet_mpc_network_keys,
-            ));
-        }
+        // Todo (#810): Check the usage adding the task handle to the task_handles vector.
+        tokio::spawn(Self::sync_dwallet_network_keys(
+            sui_client_clone,
+            network_keys_sender,
+        ));
         for (module, cursor) in self.cursors {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
@@ -180,21 +179,32 @@ where
     /// Sync the DwalletMPC network keys from the Sui client to the local store.
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
-        dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
+        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     ) {
-        loop {
-            time::sleep(Duration::from_secs(2)).await;
+        // (Key Obj ID, Epoch)
+        let mut network_keys_cache: HashSet<(ObjectID, u64)> = HashSet::new();
+        'sync_network_keys: loop {
+            time::sleep(Duration::from_secs(5)).await;
 
             let network_decryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
                 .await
                 .unwrap_or_else(|e| {
-                    error!("failed to fetch dwallet MPC network keys: {e}");
+                    warn!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 });
             let active_committee = sui_client.get_epoch_active_committee().await;
             let system_inner = sui_client.must_get_system_inner_object().await;
             let system_inner = system_inner.into_init_version_for_tooling();
+            let current_keys = system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys();
+            let should_fetch_keys = current_keys.iter().any(|key| {
+                !network_keys_cache
+                    .contains(&(key.dwallet_network_decryption_key_id, system_inner.epoch()))
+            });
+            if !should_fetch_keys {
+                info!("No new network keys to fetch");
+                continue;
+            }
             let active_committee = match Self::new_committee(
                 sui_client.clone(),
                 &system_inner,
@@ -217,83 +227,36 @@ where
                         continue;
                     }
                 };
+            let mut all_network_keys_data = HashMap::new();
             for (key_id, network_dec_key_shares) in network_decryption_keys.into_iter() {
-                match Self::sync_network_decryption_key_inner(
+                match Self::fetch_and_init_network_key(
                     &sui_client,
-                    dwallet_mpc_network_keys.clone(),
-                    &weighted_threshold_access_structure,
-                    &key_id,
                     &network_dec_key_shares,
+                    &weighted_threshold_access_structure,
                 )
                 .await
                 {
-                    Ok(_) => {
-                        info!(
-                            "Successfully synced the network decryption key for key_id: {:?}",
-                            key_id
-                        );
+                    Ok(key) => {
+                        all_network_keys_data.insert(key_id.clone(), key);
+                        network_keys_cache.insert((key_id, system_inner.epoch()));
                     }
-                    Err(DwalletMPCError::NetworkDKGNotCompleted) => {
-                        info!(
-                            "Key Sync — The Network DKG for key_id: {:?} was not completed yet",
-                            key_id
-                        );
-                    }
-                    Err(e) => {
+                    Err(err) => {
                         error!(
-                            "Failed to sync network decryption key for key_id: {:?}, error: {:?}",
-                            key_id, e
+                            key=?key_id,
+                            err=?err,
+                            "failed to get network decryption key data, retrying...",
                         );
+                        continue 'sync_network_keys;
                     }
                 }
+            }
+            if let Err(err) = network_keys_sender.send(Arc::new(all_network_keys_data)) {
+                error!(?err, "failed to send network keys data to the channel",);
             }
         }
     }
 
-    async fn sync_network_decryption_key_inner(
-        sui_client: &Arc<SuiClient<C>>,
-        dwallet_mpc_network_keys: Arc<DwalletMPCNetworkKeys>,
-        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-        key_id: &ObjectID,
-        network_dec_key_shares: &DWalletNetworkDecryptionKey,
-    ) -> DwalletMPCResult<()> {
-        let local_network_decryption_keys =
-            dwallet_mpc_network_keys.network_decryption_keys().await;
-
-        let should_update = match local_network_decryption_keys.get(key_id) {
-            Some(local_key) => local_key.epoch != network_dec_key_shares.current_epoch,
-            None => true,
-        };
-
-        if !should_update {
-            info!(
-                "Network decryption key for key_id: {:?} is up to date",
-                key_id
-            );
-            return Ok(());
-        }
-
-        let key = Self::fetch_and_create_network_key(
-            &sui_client,
-            &network_dec_key_shares,
-            &weighted_threshold_access_structure,
-        )
-        .await?;
-
-        if local_network_decryption_keys.contains_key(&key_id) {
-            info!(committee=?weighted_threshold_access_structure, "Updating network key for key_id: {:?}", key_id);
-            dwallet_mpc_network_keys
-                .update_network_key(*key_id, key, &weighted_threshold_access_structure)
-                .await
-        } else {
-            info!(committee=?weighted_threshold_access_structure, "Adding new network key for key_id: {:?}", key_id);
-            dwallet_mpc_network_keys
-                .add_new_network_key(*key_id, key, &weighted_threshold_access_structure)
-                .await
-        }
-    }
-
-    async fn fetch_and_create_network_key(
+    async fn fetch_and_init_network_key(
         sui_client: &SuiClient<C>,
         network_dec_key_shares: &DWalletNetworkDecryptionKey,
         access_structure: &WeightedThresholdAccessStructure,

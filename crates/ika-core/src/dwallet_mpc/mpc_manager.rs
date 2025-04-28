@@ -11,7 +11,7 @@ use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
+use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::party_id_to_authority_name;
 use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
@@ -22,7 +22,7 @@ use crypto_bigint::Zero;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
-    MPCSessionStatus,
+    MPCSessionStatus, NetworkDecryptionKeyPublicData,
 };
 use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::ToFromBytes;
@@ -47,6 +47,7 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::ops::Deref;
 use std::sync::{Arc, Weak};
 use sui_json_rpc_types::SuiEvent;
 use sui_storage::mutex_table::MutexGuard;
@@ -78,7 +79,7 @@ pub struct DWalletMPCManager {
     pub(super) node_config: NodeConfig,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
-    weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+    pub(crate) weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) validators_class_groups_public_keys_and_proofs:
         HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     pub(crate) cryptographic_computations_orchestrator: CryptographicComputationsOrchestrator,
@@ -97,6 +98,10 @@ pub struct DWalletMPCManager {
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
+    pub(crate) network_keys: Box<DwalletMPCNetworkKeys>,
+    /// Events that wait for the network key to update,
+    /// once we get the network key, these evetns will continue.
+    pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -153,6 +158,20 @@ impl DWalletMPCManager {
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
         let mpc_computations_orchestrator = CryptographicComputationsOrchestrator::try_new()?;
+        let party_id = epoch_store.authority_name_to_party_id(&epoch_store.name)?;
+        let validator_private_data = ValidatorPrivateDecryptionKeyData {
+            party_id,
+            class_groups_decryption_key: node_config
+                .class_groups_key_pair_and_proof
+                .clone()
+                // Since this is a validator, we can unwrap
+                // the `class_groups_key_pair_and_proof`.
+                .expect("Class groups key pair and proof must be present")
+                .class_groups_keypair()
+                .decryption_key(),
+            validator_decryption_key_shares: HashMap::new(),
+        };
+        let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
         Ok(Self {
             mpc_sessions: HashMap::new(),
             consensus_adapter,
@@ -170,6 +189,8 @@ impl DWalletMPCManager {
             pending_for_events_order: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
             recognized_self_as_malicious: false,
+            network_keys: Box::new(dwallet_network_keys),
+            events_pending_for_network_key: vec![],
         })
     }
 
@@ -196,7 +217,15 @@ impl DWalletMPCManager {
             );
             return;
         }
-        if let Err(err) = self.handle_event(event.event, event.session_info).await {
+        if let Err(err) = self
+            .handle_event(event.event.clone(), event.session_info.clone())
+            .await
+        {
+            if let DwalletMPCError::WaitingForNetworkKey(key_id) = err {
+                error!(?err, session_info=?event.session_info, type=?event.event.type_);
+                self.events_pending_for_network_key
+                    .push((event.event, event.session_info));
+            }
             error!(?err, "failed to handle event with error");
         }
     }
@@ -204,7 +233,7 @@ impl DWalletMPCManager {
     pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
         match message {
             DWalletMPCDBMessage::PerformCryptographicComputations => {
-                self.perform_cryptographic_computation();
+                self.perform_cryptographic_computation().await;
             }
             DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message.clone()) {
@@ -322,18 +351,12 @@ impl DWalletMPCManager {
             public_input,
             private_input,
             decryption_share: match session_info.mpc_round {
-                MPCProtocolInitData::Sign(init_event) => {
-                    self.get_decryption_key_shares(
-                        &init_event.event_data.dwallet_mpc_network_key_id,
-                    )
-                    .await?
-                }
-                MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
-                    self.get_decryption_key_shares(
+                MPCProtocolInitData::Sign(init_event) => self
+                    .get_decryption_key_shares(&init_event.event_data.dwallet_mpc_network_key_id)?,
+                MPCProtocolInitData::DecryptionKeyReshare(init_event) => self
+                    .get_decryption_key_shares(
                         &init_event.event_data.dwallet_network_decryption_key_id,
-                    )
-                    .await?
-                }
+                    )?,
                 _ => HashMap::new(),
             },
         });
@@ -351,51 +374,20 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    pub(crate) async fn get_protocol_public_parameters(
+    pub(crate) fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
-    ) -> Vec<u8> {
-        loop {
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-            let epoch_store = match self.epoch_store() {
-                Ok(store) => store,
-                Err(err) => {
-                    error!(?err, "failed to get the epoch store, retrying...");
-                    continue;
-                }
-            };
-            if let Ok(dwallet_mpc_network_keys) = self.dwallet_mpc_network_keys() {
-                if let Ok(protocol_public_parameters) = dwallet_mpc_network_keys
-                    .get_protocol_public_parameters(epoch_store.epoch(), key_id, key_scheme)
-                    .await
-                {
-                    return protocol_public_parameters;
-                }
-            }
-            info!(
-                ?key_id,
-                "Waiting for the protocol public parameters to be available for key_id",
-            );
-        }
+    ) -> DwalletMPCResult<Vec<u8>> {
+        self.network_keys
+            .get_protocol_public_parameters(key_id, key_scheme)
     }
 
-    fn dwallet_mpc_network_keys(&self) -> DwalletMPCResult<Arc<DwalletMPCNetworkKeys>> {
-        Ok(self
-            .epoch_store()?
-            .dwallet_mpc_network_keys
-            .get()
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .clone())
-    }
-
-    pub(super) async fn get_decryption_key_share_public_parameters(
+    pub(super) fn get_decryption_key_share_public_parameters(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
-        self.dwallet_mpc_network_keys()?
-            .get_decryption_public_parameters(self.epoch_store()?.epoch(), key_id)
-            .await
+        self.network_keys.get_decryption_public_parameters(key_id)
     }
 
     /// Retrieves the decryption share for the current authority.
@@ -408,16 +400,16 @@ impl DWalletMPCManager {
     /// to build a [`DecryptionKeyShare`].
     /// If any required data is missing or invalid, an
     /// appropriate error is returned.
-    async fn get_decryption_key_shares(
+    fn get_decryption_key_shares(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        let decryption_shares = self
-            .dwallet_mpc_network_keys()?
-            .get_decryption_key_share(self.epoch_store()?.epoch(), key_id.clone())
-            .await?;
-
-        Ok(decryption_shares)
+        self.network_keys
+            .validator_private_dec_key_data
+            .validator_decryption_key_shares
+            .get(&key_id)
+            .map(|v| v.clone())
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))
     }
 
     /// Returns the sessions that can perform the next cryptographic round,
@@ -468,7 +460,19 @@ impl DWalletMPCManager {
 
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
-    pub(crate) fn perform_cryptographic_computation(&mut self) {
+    pub(crate) async fn perform_cryptographic_computation(&mut self) {
+        for (event, session_info) in self
+            .events_pending_for_network_key
+            .drain(..)
+            .collect::<Vec<_>>()
+            .into_iter()
+        {
+            self.handle_dwallet_db_event(DWalletMPCEvent {
+                event,
+                session_info,
+            })
+            .await;
+        }
         for (index, pending_for_event_session) in
             self.pending_for_events_order.clone().iter().enumerate()
         {
