@@ -63,6 +63,7 @@ impl DWalletMPCService {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
             consensus_adapter.clone(),
             epoch_store.clone(),
+            next_epoch_committee_receiver,
             node_config,
         )
         .await;

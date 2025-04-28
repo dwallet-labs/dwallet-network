@@ -56,7 +56,7 @@ use sui_types::id::ID;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::UnboundedSender;
-use tokio::sync::OnceCell;
+use tokio::sync::{watch, OnceCell};
 use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
@@ -98,6 +98,7 @@ pub struct DWalletMPCManager {
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
     pub(crate) network_keys: DwalletMPCNetworkKeys,
+    pub(crate) next_epoch_committee_receiver: watch::Receiver<Committee>,
     pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
 }
 
@@ -133,11 +134,13 @@ impl DWalletMPCManager {
     pub(crate) async fn must_create_dwallet_mpc_manager(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
+        next_epoch_committee_receiver: watch::Receiver<Committee>,
         node_config: NodeConfig,
     ) -> Self {
         Self::try_new(
             consensus_adapter.clone(),
             epoch_store.clone(),
+            next_epoch_committee_receiver,
             node_config.clone(),
         )
         .unwrap_or_else(|err| {
@@ -150,6 +153,7 @@ impl DWalletMPCManager {
     pub fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
+        next_epoch_committee_receiver: watch::Receiver<Committee>,
         node_config: NodeConfig,
     ) -> DwalletMPCResult<Self> {
         let weighted_threshold_access_structure =
@@ -187,6 +191,7 @@ impl DWalletMPCManager {
             last_session_to_complete_in_current_epoch: 0,
             recognized_self_as_malicious: false,
             network_keys: dwallet_network_keys,
+            next_epoch_committee_receiver,
             events_pending_for_network_key: vec![],
         })
     }
@@ -670,16 +675,11 @@ impl DWalletMPCManager {
         self.mpc_sessions.insert(session_id.clone(), new_session);
     }
 
-    pub(super) async fn must_get_next_active_committee(&self) -> Committee {
-        loop {
-            if let Ok(epoch_store) = self.epoch_store() {
-                if let Some(next_active_committee) =
-                    epoch_store.next_epoch_committee.read().await.as_ref()
-                {
-                    return next_active_committee.clone();
-                }
-            };
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-        }
+    pub(super) async fn must_get_next_active_committee(&mut self) -> Committee {
+        self.next_epoch_committee_receiver
+            .wait_for(|committee| committee.epoch == self.epoch_id + 1)
+            .await
+            .expect("next epoch committee channel got closed unexpectedly")
+            .clone()
     }
 }
