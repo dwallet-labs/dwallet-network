@@ -235,28 +235,14 @@ impl DwalletMPCNetworkKeys {
 
     pub async fn get_network_dkg_public_output(
         &self,
-        current_epoch: u64,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<MPCPublicOutput> {
-        loop {
-            let Ok(Some(result)) = self.try_get_decryption_keys(key_id).await else {
-                warn!("failed to fetch the network decryption key shares for key ID: {:?}, trying again", key_id);
-                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                continue;
-            };
-            if result.epoch != current_epoch {
-                warn!(
-                    key_epoch=?result.epoch,
-                    current_epoch=?current_epoch,
-                    key_id=?key_id,
-                    "network decryption key shares for are not up to date, trying again");
-
-                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                continue;
-            }
-
-            return Ok(result.network_dkg_output.clone());
-        }
+        Ok(self
+            .network_decryption_keys
+            .get(key_id)
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .network_dkg_output
+            .clone())
     }
 }
 
