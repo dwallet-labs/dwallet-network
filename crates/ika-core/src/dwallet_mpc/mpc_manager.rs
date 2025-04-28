@@ -677,11 +677,11 @@ impl DWalletMPCManager {
 
     pub(super) async fn must_get_next_active_committee(&self) -> Committee {
         let mut mut_receiver = self.next_epoch_committee_receiver.clone();
-        let x = mut_receiver
+        let next_epoch_committee = mut_receiver
             .wait_for(|committee| committee.epoch == self.epoch_id + 1)
             .await
             .expect("next epoch committee channel got closed unexpectedly")
             .clone();
-        x
+        next_epoch_committee
     }
 }
