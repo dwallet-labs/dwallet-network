@@ -13,6 +13,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use ika_config::NodeConfig;
 use ika_sui_client::{SuiBridgeClient, SuiClient};
+use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::ConsensusTransaction;
@@ -57,10 +58,12 @@ impl DWalletMPCService {
         node_config: NodeConfig,
         sui_client: Arc<SuiBridgeClient>,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        next_epoch_committee_receiver: Receiver<Committee>,
     ) -> Self {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
             consensus_adapter.clone(),
             epoch_store.clone(),
+            next_epoch_committee_receiver,
             node_config,
         )
         .await;

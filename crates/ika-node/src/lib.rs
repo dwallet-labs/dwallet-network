@@ -301,13 +301,14 @@ impl IkaNode {
         let previous_epoch_last_checkpoint_sequence_number =
             dwallet_coordinator_inner.previous_epoch_last_checkpoint_sequence_number;
 
-        let committee = Arc::new(epoch_start_system_state.get_ika_committee());
+        let committee = epoch_start_system_state.get_ika_committee();
+        let committee_arc = Arc::new(committee.clone());
 
         let secret = Arc::pin(config.protocol_key_pair().copy());
         //let genesis_committee = genesis.committee()?;
         let committee_store = Arc::new(CommitteeStore::new(
             config.db_path().join("epochs"),
-            &committee,
+            &committee_arc,
             None,
         ));
         let perpetual_tables_options = default_db_options().optimize_db_for_write_throughput(4);
@@ -337,10 +338,9 @@ impl IkaNode {
             ika_system_object_id: config.sui_connector_config.ika_system_object_id,
         };
 
-        let next_epoch_committee = Arc::new(tokio::sync::RwLock::new(None));
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
-            committee.clone(),
+            committee_arc.clone(),
             &config.db_path().join("store"),
             Some(epoch_options.options),
             EpochMetrics::new(&registry_service.default_registry()),
@@ -348,7 +348,6 @@ impl IkaNode {
             chain_identifier.clone(),
             perpetual_tables.clone(),
             packages_config,
-            next_epoch_committee,
         );
 
         info!("created epoch store");
@@ -386,6 +385,8 @@ impl IkaNode {
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
 
         let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
+        let (next_epoch_committee_sender, next_epoch_committee_receiver) =
+            watch::channel::<Committee>(committee);
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
@@ -393,8 +394,8 @@ impl IkaNode {
                 sui_client.clone(),
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
-                epoch_store.next_epoch_committee.clone(),
                 network_keys_sender,
+                next_epoch_committee_sender,
             )
             .await?,
         );
@@ -485,7 +486,7 @@ impl IkaNode {
             let components = Self::construct_validator_components(
                 config.clone(),
                 state.clone(),
-                committee,
+                committee_arc,
                 epoch_store.clone(),
                 checkpoint_store.clone(),
                 state_sync_handle.clone(),
@@ -495,6 +496,7 @@ impl IkaNode {
                 previous_epoch_last_checkpoint_sequence_number,
                 // Safe to unwrap() because the node is a Validator.
                 network_keys_receiver.clone(),
+                next_epoch_committee_receiver.clone(),
                 sui_client.clone(),
             )
             .await?;
@@ -543,6 +545,7 @@ impl IkaNode {
                 node_copy,
                 perpetual_tables_copy,
                 network_keys_receiver.clone(),
+                next_epoch_committee_receiver.clone(),
                 sui_client_clone,
             )
             .await;
@@ -763,6 +766,7 @@ impl IkaNode {
         ika_node_metrics: Arc<IkaNodeMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiBridgeClient>,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
@@ -810,6 +814,7 @@ impl IkaNode {
             ika_tx_validator_metrics,
             previous_epoch_last_checkpoint_sequence_number,
             network_keys_receiver,
+            next_epoch_committee_receiver,
             sui_client,
         )
         .await
@@ -829,6 +834,7 @@ impl IkaNode {
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiBridgeClient>,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_checkpoint_service(
@@ -848,6 +854,7 @@ impl IkaNode {
             Arc::new(consensus_adapter.clone()),
             config.clone(),
             network_keys_receiver,
+            next_epoch_committee_receiver,
         )
         .await;
         // This verifier is in sync with the consensus,
@@ -999,6 +1006,7 @@ impl IkaNode {
         self: Arc<Self>,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiBridgeClient>,
     ) -> Result<()> {
         let sui_client_clone2 = sui_client.clone();
@@ -1145,6 +1153,7 @@ impl IkaNode {
                             previous_epoch_last_checkpoint_sequence_number,
                             // safe to unwrap because we are a validator
                             network_keys_receiver.clone(),
+                            next_epoch_committee_receiver.clone(),
                             sui_client_clone2.clone(),
                         )
                         .await?,
@@ -1180,6 +1189,7 @@ impl IkaNode {
                             previous_epoch_last_checkpoint_sequence_number,
                             // safe to unwrap because we are a validator
                             network_keys_receiver.clone(),
+                            next_epoch_committee_receiver.clone(),
                             sui_client.clone(),
                         )
                         .await?,
@@ -1243,6 +1253,7 @@ impl IkaNode {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        next_epoch_committee_receiver: Receiver<Committee>,
     ) -> watch::Sender<()> {
         let (exit_sender, exit_receiver) = watch::channel(());
         let mut service = DWalletMPCService::new(
@@ -1252,6 +1263,7 @@ impl IkaNode {
             node_config,
             sui_client,
             network_keys_receiver,
+            next_epoch_committee_receiver,
         )
         .await;
 

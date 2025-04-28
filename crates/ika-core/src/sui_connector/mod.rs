@@ -67,8 +67,8 @@ impl SuiConnectorService {
         sui_client: Arc<SuiClient<SuiSdkClient>>,
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
-        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
         network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        next_epoch_committee_sender: watch::Sender<Committee>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
@@ -98,7 +98,7 @@ impl SuiConnectorService {
         )
         .run(
             Duration::from_secs(2),
-            next_epoch_committee,
+            next_epoch_committee_sender,
             network_keys_sender,
         )
         .await

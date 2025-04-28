@@ -27,6 +27,7 @@ use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
+use tokio::sync::watch::Sender;
 use tokio::sync::{watch, RwLock};
 use tokio::{
     sync::Notify,
@@ -68,7 +69,7 @@ where
     pub async fn run(
         self,
         query_interval: Duration,
-        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
+        next_epoch_committee_sender: watch::Sender<Committee>,
         network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
@@ -76,7 +77,7 @@ where
         let sui_client_clone = self.sui_client.clone();
         tokio::spawn(Self::sync_next_committee(
             sui_client_clone.clone(),
-            next_epoch_committee,
+            next_epoch_committee_sender,
         ));
         // Todo (#810): Check the usage adding the task handle to the task_handles vector.
         tokio::spawn(Self::sync_dwallet_network_keys(
@@ -103,15 +104,13 @@ where
 
     async fn sync_next_committee(
         sui_client: Arc<SuiClient<C>>,
-        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
+        next_epoch_committee_sender: Sender<Committee>,
     ) {
         loop {
             time::sleep(Duration::from_secs(2)).await;
             let system_inner = sui_client.must_get_system_inner_object().await;
             let system_inner = system_inner.into_init_version_for_tooling();
             let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
-                let mut committee_lock = next_epoch_committee.write().await;
-                *committee_lock = None;
                 debug!("ika next epoch active committee not found, retrying...");
                 continue;
             };
@@ -130,9 +129,12 @@ where
                     continue;
                 }
             };
-
-            let mut committee_lock = next_epoch_committee.write().await;
-            *committee_lock = Some(committee);
+            let committee_epoch = committee.epoch();
+            if let Err(err) = next_epoch_committee_sender.send(committee) {
+                error!(?err, committee_epoch=?committee_epoch, "failed to send the next epoch committee to the channel");
+            } else {
+                info!(committee_epoch=?committee_epoch, "The next epoch committee was sent successfully");
+            }
         }
     }
 
