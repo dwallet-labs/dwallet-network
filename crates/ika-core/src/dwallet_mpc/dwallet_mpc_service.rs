@@ -6,10 +6,14 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
+use crate::dwallet_mpc::network_dkg::ValidatorPrivateDecryptionKeyData;
 use crate::dwallet_mpc::session_info_from_event;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCSessionStatus, NetworkDecryptionKeyPublicData,
+};
 use ika_config::NodeConfig;
 use ika_sui_client::{SuiBridgeClient, SuiClient};
+use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::ConsensusTransaction;
@@ -21,7 +25,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 use sui_json_rpc_types::SuiEvent;
-use sui_types::base_types::EpochId;
+use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::watch::error::RecvError;
@@ -43,6 +47,7 @@ pub struct DWalletMPCService {
     sui_client: Arc<SuiBridgeClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
+    pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
 }
 
 impl DWalletMPCService {
@@ -52,10 +57,13 @@ impl DWalletMPCService {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         sui_client: Arc<SuiBridgeClient>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        next_epoch_committee_receiver: Receiver<Committee>,
     ) -> Self {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
             consensus_adapter.clone(),
             epoch_store.clone(),
+            next_epoch_committee_receiver,
             node_config,
         )
         .await;
@@ -67,6 +75,7 @@ impl DWalletMPCService {
             notify: Arc::new(Notify::new()),
             sui_client: sui_client.clone(),
             dwallet_mpc_manager,
+            network_keys_receiver,
             exit,
         }
     }
@@ -122,14 +131,13 @@ impl DWalletMPCService {
                             .await;
                         info!(
                             session_id=?session_info.session_id,
-                            sequence_number=?session_info.sequence_number,
-                            is_immediate=?session_info.is_immediate,
+                            session_type=?session_info.session_type,
                             mpc_round=?session_info.mpc_round,
                             "Successfully processed missed event from Sui"
                         );
                     }
                     Ok(None) => {
-                        error!("Failed to extract session info from missed event");
+                        warn!("Received an event that does not trigger the start of an MPC flow");
                     }
                     Err(e) => {
                         error!("Error processing a missed event: {}", e);
@@ -137,6 +145,30 @@ impl DWalletMPCService {
                 }
             }
             return;
+        }
+    }
+
+    async fn update_network_keys(&mut self) {
+        match self.network_keys_receiver.has_changed() {
+            Ok(has_changed) => {
+                if has_changed {
+                    let new_keys = self.network_keys_receiver.borrow_and_update();
+                    for (key_id, key_data) in new_keys.iter() {
+                        info!("Updating network key for key_id: {:?}", key_id);
+                        self.dwallet_mpc_manager
+                            .network_keys
+                            .update_network_key(
+                                *key_id,
+                                &key_data,
+                                &self.dwallet_mpc_manager.weighted_threshold_access_structure,
+                            )
+                            .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
+                    }
+                }
+            }
+            Err(err) => {
+                error!(?err, "failed to check network keys receiver");
+            }
         }
     }
 
@@ -172,6 +204,7 @@ impl DWalletMPCService {
                 tokio::time::sleep(Duration::from_secs(120)).await;
                 continue;
             }
+            self.update_network_keys().await;
 
             info!("Running DWalletMPCService loop");
             self.dwallet_mpc_manager

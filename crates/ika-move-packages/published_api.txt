@@ -268,6 +268,9 @@ ECDSAPresignState
 ECDSASignState
 	public enum
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+SessionType
+	public enum
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 lock_last_active_session_sequence_number
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
@@ -307,7 +310,7 @@ validate_active_and_get_public_output
 charge_and_create_current_epoch_dwallet_event
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-create_immediate_dwallet_event
+create_system_dwallet_event
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 get_active_dwallet_and_public_output
@@ -405,6 +408,9 @@ DWalletCoordinator
 	0x0::dwallet_2pc_mpc_secp256k1
 create_dwallet_coordinator
 	public(package) fun
+	0x0::dwallet_2pc_mpc_secp256k1
+process_checkpoint_message_by_quorum
+	public fun
 	0x0::dwallet_2pc_mpc_secp256k1
 request_dwallet_network_decryption_key_dkg
 	public(package) fun
@@ -1436,9 +1442,6 @@ pool_exchange_rates
 	public fun
 	0x0::system
 active_committee
-	public fun
-	0x0::system
-process_checkpoint_message_by_quorum
 	public fun
 	0x0::system
 request_reconfig_mid_epoch

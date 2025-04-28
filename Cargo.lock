@@ -5218,6 +5218,7 @@ dependencies = [
  "bin-version",
  "clap",
  "consensus-core",
+ "dwallet-mpc-types",
  "fastcrypto",
  "fastcrypto-zkp",
  "futures",

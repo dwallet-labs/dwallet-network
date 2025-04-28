@@ -163,7 +163,6 @@ pub struct DWalletMPCMessage {
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
-    pub session_sequence_number: u64,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
 }
@@ -182,13 +181,12 @@ pub struct DWalletMPCMessageKey {
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {
-    pub sequence_number: u64,
+    pub session_type: SessionType,
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
     pub mpc_round: MPCProtocolInitData,
-    pub is_immediate: bool,
     pub epoch: u64,
 }
 
@@ -196,11 +194,21 @@ pub trait DWalletMPCEventTrait {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag;
 }
 
+/// The DWallet MPC session type
+/// User initiated sessions have a sequence number, which is used to determine in which epoch the session will get
+/// completed.
+/// System sessions are guaranteed to always get completed in the epoch they were created in.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub enum SessionType {
+    User { sequence_number: u64 },
+    System,
+}
+
 /// Represents the Rust version of the Move struct `ika_system::dwallet::DWalletMPCEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct DWalletMPCSuiEvent<E: DWalletMPCEventTrait> {
     pub epoch: u64,
-    pub session_sequence_number: u64,
+    pub session_type: SessionType,
     pub session_id: ObjectID,
     pub event_data: E,
 }

@@ -6,6 +6,7 @@
 use crate::checkpoints::CheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
+use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
@@ -162,8 +163,8 @@ where
         // Check if we can advance the epoch.
         let all_epoch_sessions_finished = coordinator.number_of_completed_sessions
             == coordinator.last_session_to_complete_in_current_epoch;
-        let all_immediate_sessions_completed = coordinator.started_immediate_sessions_count
-            == coordinator.completed_immediate_sessions_count;
+        let all_immediate_sessions_completed = coordinator.started_system_sessions_count
+            == coordinator.completed_system_sessions_count;
         let next_epoch_committee_exists = system_inner_v1.validators.next_epoch_committee.is_some();
         if coordinator.locked_last_session_to_complete_in_current_epoch
             && all_epoch_sessions_finished
@@ -226,6 +227,8 @@ where
 
         let mut interval = time::interval(Duration::from_millis(120));
 
+        let mut last_submitted_checkpoint: Option<u64> = None;
+
         loop {
             interval.tick().await;
             let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
@@ -251,6 +254,12 @@ where
             let next_checkpoint_sequence_number = last_processed_checkpoint_sequence_number
                 .map(|s| s + 1)
                 .unwrap_or(0);
+
+            if last_submitted_checkpoint.is_some()
+                && last_submitted_checkpoint.unwrap() >= next_checkpoint_sequence_number
+            {
+                continue;
+            }
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
@@ -287,6 +296,7 @@ where
                         .await;
                         match task {
                             Ok(_) => {
+                                last_submitted_checkpoint = Some(next_checkpoint_sequence_number);
                                 info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
                             }
                             Err(err) => {
@@ -563,7 +573,7 @@ where
 
         ptb.move_call(
             ika_system_package_id,
-            SYSTEM_MODULE_NAME.into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
             vec![],
             args,
