@@ -115,6 +115,8 @@ pub struct NetworkDecryptionKeyPublicData {
     /// The public parameters of the decryption key shares,
     /// updated only after a successful network DKG or Reshare.
     pub decryption_key_share_public_parameters: Vec<u8>,
+
+    pub network_dkg_output: MPCPublicOutput,
 }
 
 #[repr(u8)]

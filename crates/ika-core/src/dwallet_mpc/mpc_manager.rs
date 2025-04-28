@@ -402,6 +402,15 @@ impl DWalletMPCManager {
             .await
     }
 
+    pub(super) async fn get_network_dkg_public_output(
+        &self,
+        key_id: &ObjectID,
+    ) -> DwalletMPCResult<MPCPublicOutput> {
+        self.dwallet_mpc_network_keys()?
+            .get_network_dkg_public_output(self.epoch_store()?.epoch(), key_id)
+            .await
+    }
+
     /// Retrieves the decryption share for the current authority.
     ///
     /// This function accesses the current epoch's store and determines the party ID for the

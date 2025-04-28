@@ -527,6 +527,9 @@ pub(crate) async fn session_input_from_event(
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
                 network_dkg::network_dkg_public_input(
+                    &dwallet_mpc_manager
+                        .epoch_store()?
+                        .get_weighted_threshold_access_structure()?,
                     dwallet_mpc_manager
                         .validators_class_groups_public_keys_and_proofs
                         .clone(),
@@ -569,6 +572,13 @@ pub(crate) async fn session_input_from_event(
                     protocol_public_parameters,
                     dwallet_mpc_manager
                         .get_decryption_key_share_public_parameters(
+                            &deserialized_event
+                                .event_data
+                                .dwallet_network_decryption_key_id,
+                        )
+                        .await?,
+                    dwallet_mpc_manager
+                        .get_network_dkg_public_output(
                             &deserialized_event
                                 .event_data
                                 .dwallet_network_decryption_key_id,
