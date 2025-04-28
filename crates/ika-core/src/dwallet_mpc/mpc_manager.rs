@@ -403,12 +403,13 @@ impl DWalletMPCManager {
     fn get_decryption_key_shares(
         &self,
         key_id: &ObjectID,
-    ) -> Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
+    ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         self.network_keys
             .validator_private_dec_key_data
             .validator_decryption_key_shares
             .get(&key_id)
             .map(|v| v.clone())
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))
     }
 
     /// Returns the sessions that can perform the next cryptographic round,
