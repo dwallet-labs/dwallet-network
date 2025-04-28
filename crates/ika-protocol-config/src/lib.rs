@@ -109,6 +109,7 @@ struct FeatureFlags {
     // Add feature flags here, e.g.:
     // #[serde(skip_serializing_if = "is_false")]
     // new_protocol_feature: bool,
+
     // Probe rounds received by peers from every authority.
     #[serde(skip_serializing_if = "is_false")]
     consensus_round_prober: bool,
