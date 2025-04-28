@@ -10,7 +10,7 @@ Since the inception of Bitcoin, noncollusivity and decentralization have been fo
 
 Noncollusivity refers to the design and operation of systems in a way that prevents collusion among participants. In the context of blockchain and Web3 technologies, this means ensuring that validators, miners, or any parties involved in the network cannot conspire to steal user assets.
 
-In the context of a specific blockchain, noncollusivity is achieved through digital signatures. Even if all nodes on a specific network collude, they can never sign a transation on behalf of the user who holds the private key. That is a fundamental value that Web3 is built upon.
+In the context of a specific blockchain, noncollusivity is achieved through digital signatures. Even if all nodes on a specific network collude, they can never sign a transaction on behalf of the user who holds the private key. That is a fundamental value that Web3 is built upon.
 
 ## Decentralization
 
