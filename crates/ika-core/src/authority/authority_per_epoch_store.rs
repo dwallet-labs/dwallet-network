@@ -1361,7 +1361,7 @@ impl AuthorityPerEpochStore {
                         Some(event)
                     }
                     Ok(None) => {
-                        info!("Received an event that does not trigger the start of an MPC flow");
+                        warn!("Received an event that does not trigger the start of an MPC flow");
                         None
                     }
                     Err(e) => {
