@@ -227,6 +227,8 @@ where
 
         let mut interval = time::interval(Duration::from_millis(120));
 
+        let mut last_submitted_checkpoint: Option<u64> = None;
+
         loop {
             interval.tick().await;
             let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
@@ -252,6 +254,12 @@ where
             let next_checkpoint_sequence_number = last_processed_checkpoint_sequence_number
                 .map(|s| s + 1)
                 .unwrap_or(0);
+
+            if last_submitted_checkpoint.is_some()
+                && last_submitted_checkpoint.unwrap() >= next_checkpoint_sequence_number
+            {
+                continue;
+            }
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
@@ -288,6 +296,7 @@ where
                         .await;
                         match task {
                             Ok(_) => {
+                                last_submitted_checkpoint = Some(next_checkpoint_sequence_number);
                                 info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
                             }
                             Err(err) => {
