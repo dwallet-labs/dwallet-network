@@ -354,6 +354,10 @@ public enum ECDSASignState has copy, drop, store {
     }
 }
 
+/// The dWallet MPC session type
+/// User initiated sessions have a sequence number, which is used to determine in which epoch
+/// the session will get completed.
+/// System sessions are guaranteed to always get completed in the epoch they were created in.
 public enum SessionType has copy, drop, store {
     User {
         sequence_number: u64,
@@ -860,6 +864,7 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
         cap.dwallet_network_decryption_key_id
     );
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
+    assert!(dwallet_network_decryption_key.state == DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration, EWrongState);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
     dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::NetworkReconfigurationCompleted;
     let mut epoch_computation_fee_charged_ika = sui::balance::zero<IKA>();
@@ -1294,58 +1299,6 @@ public(package) fun respond_dwallet_dkg_first_round(
 
 }
 
-// TODO (#493): Remove mock functions
-public(package) fun create_first_round_dwallet_mock(
-    self: &mut DWalletCoordinatorInner, first_round_output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
-): DWalletCap {
-    let id = object::new(ctx);
-    let dwallet_id = id.to_inner();
-    let dwallet_cap = DWalletCap {
-        id: object::new(ctx),
-        dwallet_id,
-    };
-    let dwallet_cap_id = object::id(&dwallet_cap);
-    self.dwallets.add(dwallet_id, DWallet {
-        id,
-        created_at_epoch: self.current_epoch,
-        dwallet_cap_id,
-        dwallet_network_decryption_key_id,
-        encrypted_user_secret_key_shares: object_table::new(ctx),
-        ecdsa_presigns: object_table::new(ctx),
-        ecdsa_signs: object_table::new(ctx),
-        state: DWalletState::AwaitingUser {
-            first_round_output
-        },
-    });
-    dwallet_cap
-}
-
-// TODO (#493): Remove mock functions
-public(package) fun mock_create_dwallet(
-    self: &mut DWalletCoordinatorInner, output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext
-): DWalletCap {
-    let id = object::new(ctx);
-    let dwallet_id = id.to_inner();
-    let dwallet_cap = DWalletCap {
-        id: object::new(ctx),
-        dwallet_id,
-    };
-    let dwallet_cap_id = object::id(&dwallet_cap);
-    self.dwallets.add(dwallet_id, DWallet {
-        id,
-        created_at_epoch: self.current_epoch,
-        dwallet_cap_id,
-        dwallet_network_decryption_key_id,
-        encrypted_user_secret_key_shares: object_table::new(ctx),
-        ecdsa_presigns: object_table::new(ctx),
-        ecdsa_signs: object_table::new(ctx),
-        state: DWalletState::Active {
-            public_output: output
-        },
-    });
-    dwallet_cap
-}
-
 /// Initiates the second round of the Distributed Key Generation (DKG) process
 /// and emits an event for validators to begin their participation in this round.
 ///
@@ -1718,39 +1671,6 @@ public(package) fun request_ecdsa_presign(
             ctx,
         )
     );
-    cap
-}
-
-// TODO (#493): Remove mock functions
-public(package) fun mock_create_presign(
-    self: &mut DWalletCoordinatorInner,
-    dwallet_id: ID,
-    presign: vector<u8>,
-    ctx: &mut TxContext
-): ECDSAPresignCap {
-    let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
-    let id = object::new(ctx);
-    let presign_id = id.to_inner();
-    let cap = ECDSAPresignCap {
-        id: object::new(ctx),
-        dwallet_id,
-        presign_id,
-    };
-    dwallet.ecdsa_presigns.add(presign_id, ECDSAPresign {
-        id,
-        created_at_epoch: 0,
-        dwallet_id,
-        cap_id: object::id(&cap),
-        state: ECDSAPresignState::Completed {
-            presign
-        }
-    });
-    event::emit(CompletedECDSAPresignEvent {
-        dwallet_id,
-        session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
-        presign_id,
-        presign
-    });
     cap
 }
 

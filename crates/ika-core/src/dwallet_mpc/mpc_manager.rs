@@ -47,6 +47,7 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::ops::Deref;
 use std::sync::{Arc, Weak};
 use sui_json_rpc_types::SuiEvent;
 use sui_storage::mutex_table::MutexGuard;
@@ -230,7 +231,7 @@ impl DWalletMPCManager {
                 self.events_pending_for_network_key
                     .push((event.event, event.session_info));
             }
-            error!("failed to handle event with error: {:?}", err);
+            error!(?err, "failed to handle event with error");
         }
     }
 
@@ -408,7 +409,12 @@ impl DWalletMPCManager {
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        self.network_keys.get_decryption_key_share(key_id.clone())
+        self.network_keys
+            .validator_private_dec_key_data
+            .validator_decryption_key_shares
+            .get(&key_id)
+            .map(|v| v.clone())
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))
     }
 
     /// Returns the sessions that can perform the next cryptographic round,
