@@ -200,14 +200,13 @@ impl DwalletMPCNetworkKeys {
     /// Retrieves the protocol public parameters for the specified key ID.
     pub fn get_protocol_public_parameters(
         &self,
-        current_epoch: u64,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
         let Some(result) = self.network_decryption_keys.get(key_id) else {
             warn!(
-                "failed to fetch the network decryption key shares for key ID",
                 ?key_id,
+                "failed to fetch the network decryption key shares for key ID"
             );
             return Err(DwalletMPCError::WaitingForNetworkKey(key_id.clone()));
         };

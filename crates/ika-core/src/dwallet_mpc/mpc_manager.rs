@@ -406,7 +406,7 @@ impl DWalletMPCManager {
         key_id: &ObjectID,
     ) -> DwalletMPCResult<MPCPublicOutput> {
         self.network_keys
-            .get_network_dkg_public_output(self.epoch_store()?.epoch(), key_id)
+            .get_network_dkg_public_output(key_id)
             .await
     }
 
