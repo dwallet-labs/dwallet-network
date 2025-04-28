@@ -348,7 +348,6 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
-    pub next_epoch_committee: Arc<tokio::sync::RwLock<Option<Committee>>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
