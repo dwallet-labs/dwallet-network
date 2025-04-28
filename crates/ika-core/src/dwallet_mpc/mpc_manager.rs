@@ -675,8 +675,9 @@ impl DWalletMPCManager {
         self.mpc_sessions.insert(session_id.clone(), new_session);
     }
 
-    pub(super) async fn must_get_next_active_committee(&mut self) -> Committee {
-        self.next_epoch_committee_receiver
+    pub(super) async fn must_get_next_active_committee(&self) -> Committee {
+        let mut mut_receiver = self.next_epoch_committee_receiver.clone();
+        mut_receiver
             .wait_for(|committee| committee.epoch == self.epoch_id + 1)
             .await
             .expect("next epoch committee channel got closed unexpectedly")
