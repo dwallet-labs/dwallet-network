@@ -61,6 +61,7 @@ public(package) fun create_dwallet_coordinator(
     self_id
 }
 
+/// Being called by the Ika network to store outputs of completed MPC sessions to Sui.
 public fun process_checkpoint_message_by_quorum(
     dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
     signature: vector<u8>,
