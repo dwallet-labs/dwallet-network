@@ -111,8 +111,6 @@ where
             let system_inner = sui_client.must_get_system_inner_object().await;
             let system_inner = system_inner.into_init_version_for_tooling();
             let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
-                let mut committee_lock = next_epoch_committee.write().await;
-                *committee_lock = None;
                 debug!("ika next epoch active committee not found, retrying...");
                 continue;
             };
