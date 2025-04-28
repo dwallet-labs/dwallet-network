@@ -10,7 +10,7 @@ use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    MPCPublicOutput,
+    MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
 use group::PartyID;
 use ika_types::committee::{Committee, CommitteeTrait};
@@ -294,16 +294,11 @@ fn get_expected_decrypters(
         .collect::<HashSet<PartyID>>())
 }
 
-fn sign_public_input(
+fn sign_session_public_input(
     deserialized_event: &DWalletMPCSuiEvent<StartSignEvent>,
     dwallet_mpc_manager: &DWalletMPCManager,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
-        // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
-        // Todo (#473): Support generic network key scheme
-        &deserialized_event.event_data.dwallet_mpc_network_key_id,
-    )?;
     let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
         // Todo (#473): Support generic network key scheme
@@ -390,7 +385,9 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
-) -> DwalletMPCResult<mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, MPCPublicOutput>> {
+) -> DwalletMPCResult<
+    mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
+> {
     let DeserializeMPCMessagesResponse {
         messages,
         malicious_parties: _,
@@ -446,12 +443,14 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
             public_output,
         } => {
             let public_output: P::PublicOutputValue = public_output.into();
-            let public_output = bcs::to_bytes(&public_output)?;
+            let wrapped_public_output = MPCPublicOutput::ClassGroups(
+                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&public_output)?),
+            );
             let private_output = bcs::to_bytes(&private_output)?;
             mpc::AsynchronousRoundResult::Finalize {
                 malicious_parties,
                 private_output,
-                public_output,
+                public_output: bcs::to_bytes(&wrapped_public_output)?,
             }
         }
     })
@@ -625,7 +624,7 @@ pub(crate) async fn session_input_from_event(
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((
-                sign_public_input(
+                sign_session_public_input(
                     &deserialized_event,
                     dwallet_mpc_manager,
                     protocol_public_parameters,

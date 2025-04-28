@@ -765,7 +765,7 @@ impl IkaNode {
         registry_service: &RegistryService,
         ika_node_metrics: Arc<IkaNodeMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
-        network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiBridgeClient>,
     ) -> Result<ValidatorComponents> {
@@ -833,7 +833,7 @@ impl IkaNode {
         _ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
-        network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiBridgeClient>,
     ) -> Result<ValidatorComponents> {
@@ -1005,7 +1005,7 @@ impl IkaNode {
     pub async fn monitor_reconfiguration(
         self: Arc<Self>,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
-        network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiBridgeClient>,
     ) -> Result<()> {
@@ -1252,7 +1252,7 @@ impl IkaNode {
         sui_client: Arc<SuiBridgeClient>,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
-        network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
     ) -> watch::Sender<()> {
         let (exit_sender, exit_receiver) = watch::channel(());

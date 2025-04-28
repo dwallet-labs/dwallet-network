@@ -47,6 +47,7 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::ops::Deref;
 use std::sync::{Arc, Weak};
 use sui_json_rpc_types::SuiEvent;
 use sui_storage::mutex_table::MutexGuard;
@@ -97,9 +98,11 @@ pub struct DWalletMPCManager {
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
-    pub(crate) network_keys: DwalletMPCNetworkKeys,
-    pub(crate) next_epoch_committee_receiver: watch::Receiver<Committee>,
+    pub(crate) network_keys: Box<DwalletMPCNetworkKeys>,
+    /// Events that wait for the network key to update.
+    /// Once we get the network key, these events will continue.
     pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
+    pub(crate) next_epoch_committee_receiver: watch::Receiver<Committee>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -190,7 +193,7 @@ impl DWalletMPCManager {
             pending_for_events_order: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
             recognized_self_as_malicious: false,
-            network_keys: dwallet_network_keys,
+            network_keys: Box::new(dwallet_network_keys),
             next_epoch_committee_receiver,
             events_pending_for_network_key: vec![],
         })
@@ -224,11 +227,17 @@ impl DWalletMPCManager {
             .await
         {
             if let DwalletMPCError::WaitingForNetworkKey(key_id) = err {
-                error!(?key_id, "waiting for network key");
+                error!(
+                    ?err,
+                    session_info=?event.session_info,
+                    type=?event.event.type_,
+                    key_id=?key_id,
+                    "adding event to pending for the network key"
+                );
                 self.events_pending_for_network_key
                     .push((event.event, event.session_info));
             }
-            error!("failed to handle event with error: {:?}", err);
+            error!(?err, "failed to handle event with error");
         }
     }
 
@@ -406,7 +415,12 @@ impl DWalletMPCManager {
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        self.network_keys.get_decryption_key_share(key_id.clone())
+        self.network_keys
+            .validator_private_dec_key_data
+            .validator_decryption_key_shares
+            .get(&key_id)
+            .map(|v| v.clone())
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))
     }
 
     /// Returns the sessions that can perform the next cryptographic round,
@@ -458,7 +472,7 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) async fn perform_cryptographic_computation(&mut self) {
-        for ((event, session_info)) in self
+        for (event, session_info) in self
             .events_pending_for_network_key
             .drain(..)
             .collect::<Vec<_>>()
