@@ -137,7 +137,7 @@ impl DWalletMPCService {
                         );
                     }
                     Ok(None) => {
-                        error!("Failed to extract session info from missed event");
+                        info!("Received an event that does not trigger the start of an MPC flow");
                     }
                     Err(e) => {
                         error!("Error processing a missed event: {}", e);
