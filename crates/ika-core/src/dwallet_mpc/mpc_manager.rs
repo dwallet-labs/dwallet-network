@@ -99,8 +99,8 @@ pub struct DWalletMPCManager {
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
     pub(crate) network_keys: Box<DwalletMPCNetworkKeys>,
-    /// Events that wait for the network key to update,
-    /// once we get the network key, these evetns will continue.
+    /// Events that wait for the network key to update.
+    /// Once we get the network key, these events will continue.
     pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
     pub(crate) next_epoch_committee_receiver: watch::Receiver<Committee>,
 }
@@ -227,7 +227,13 @@ impl DWalletMPCManager {
             .await
         {
             if let DwalletMPCError::WaitingForNetworkKey(key_id) = err {
-                error!(?err, session_info=?event.session_info, type=?event.event.type_);
+                error!(
+                    ?err,
+                    session_info=?event.session_info,
+                    type=?event.event.type_,
+                    key_id=?key_id,
+                    "adding event to pending for the network key"
+                );
                 self.events_pending_for_network_key
                     .push((event.event, event.session_info));
             }
