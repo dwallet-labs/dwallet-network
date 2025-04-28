@@ -441,6 +441,7 @@ fn network_dkg_secp256k1_session_info(
     SessionInfo {
         sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
+        epoch: deserialized_event.epoch,
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Secp256k1,
             deserialized_event,
@@ -455,6 +456,7 @@ fn network_dkg_ristretto_session_info(
     SessionInfo {
         sequence_number: deserialized_event.session_sequence_number,
         session_id: deserialized_event.session_id,
+        epoch: deserialized_event.epoch,
         mpc_round: MPCProtocolInitData::NetworkDkg(
             DWalletMPCNetworkKeyScheme::Ristretto,
             deserialized_event,

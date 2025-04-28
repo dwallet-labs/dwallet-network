@@ -191,6 +191,7 @@ pub struct SessionInfo {
     /// Contains extra parameters if needed.
     pub mpc_round: MPCProtocolInitData,
     pub is_immediate: bool,
+    pub epoch: u64,
 }
 
 pub trait DWalletMPCEventTrait {
