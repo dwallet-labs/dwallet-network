@@ -39,8 +39,8 @@ pub(super) trait DKGSecondPartyPublicInputGenerator: Party {
     /// Generates the public input required for the second round of the DKG protocol.
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
-        first_round_output: Vec<u8>,
-        centralized_party_public_key_share: Vec<u8>,
+        first_round_output: SerializedWrappedPublicOutput,
+        centralized_party_public_key_share: SerializedWrappedPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
@@ -57,17 +57,27 @@ impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
         first_round_output_buf: SerializedWrappedPublicOutput,
-        centralized_party_public_key_share_buf: Vec<u8>,
+        centralized_party_public_key_share_buf: SerializedWrappedPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let first_round_output_buf: MPCPublicOutput =
             bcs::from_bytes(&first_round_output_buf).map_err(|e| DwalletMPCError::BcsError(e))?;
+        let centralized_party_public_key_share: MPCPublicOutput =
+            bcs::from_bytes(&centralized_party_public_key_share_buf)
+                .map_err(|e| DwalletMPCError::BcsError(e))?;
         match first_round_output_buf {
             MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(first_round_output)) => {
                 let first_round_output: <DKGFirstParty as Party>::PublicOutput =
                     bcs::from_bytes(&first_round_output)
                         .map_err(|e| DwalletMPCError::BcsError(e))?;
-                let centralized_party_public_key_share: <AsyncProtocol as Protocol>::PublicKeyShareAndProof =
-            bcs::from_bytes(&centralized_party_public_key_share_buf).map_err(|e| DwalletMPCError::BcsError(e))?;
+                let centralized_party_public_key_share = match centralized_party_public_key_share {
+                    MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
+                        centralized_party_public_key_share,
+                    )) => bcs::from_bytes(&centralized_party_public_key_share)
+                        .map_err(|e| DwalletMPCError::BcsError(e))?,
+                    _ => {
+                        return Err(DwalletMPCError::InvalidMPCPublicOutput);
+                    }
+                };
 
                 let input: Self::PublicInput = (
                     bcs::from_bytes(&protocol_public_parameters)?,

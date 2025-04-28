@@ -130,7 +130,10 @@ pub fn create_dkg_output(
             .context("advance() failed on the DKGCentralizedParty")?;
 
             // Centralized Public Key Share and Proof.
-            let public_key_share_and_proof = bcs::to_bytes(&round_result.outgoing_message)?;
+            let public_key_share_and_proof = MPCPublicOutput::ClassGroups(
+                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.outgoing_message)?),
+            );
+            let public_key_share_and_proof = bcs::to_bytes(&public_key_share_and_proof)?;
             // Public Output:
             // centralized_public_key_share + public_key + decentralized_party_public_key_share
             let public_output = bcs::to_bytes(&round_result.public_output)?;
@@ -139,7 +142,10 @@ pub fn create_dkg_output(
             // The secret (private)
             // key share returned from this function should never be sent
             // and should always be kept private.
-            let centralized_secret_output = bcs::to_bytes(&round_result.private_output)?;
+            let centralized_secret_output = MPCPublicOutput::ClassGroups(
+                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.private_output)?),
+            );
+            let centralized_secret_output = bcs::to_bytes(&centralized_secret_output)?;
             Ok(CentralizedDKGWasmResult {
                 public_output,
                 public_key_share_and_proof,
@@ -158,7 +164,7 @@ pub fn advance_centralized_sign_party(
     network_decryption_key_public_output: SerializedWrappedPublicOutput,
     key_scheme: u8,
     decentralized_party_dkg_public_output: SerializedWrappedPublicOutput,
-    centralized_party_secret_key_share: Vec<u8>,
+    centralized_party_secret_key_share: SerializedWrappedPublicOutput,
     presign: SerializedWrappedPublicOutput,
     message: Vec<u8>,
     hash_type: u8,
@@ -176,6 +182,17 @@ pub fn advance_centralized_sign_party(
                     return Err(anyhow!(
                         "Invalid presign output version: expected ClassGroups::V1, got {:?}",
                         presign
+                    ));
+                }
+            };
+            let centralized_party_secret_key_share: MPCPublicOutput =
+                bcs::from_bytes(&centralized_party_secret_key_share)?;
+            let centralized_party_secret_key_share = match centralized_party_secret_key_share {
+                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                _ => {
+                    return Err(anyhow!(
+                        "Invalid centralized public output version: expected ClassGroups::V1, got {:?}",
+                        centralized_party_secret_key_share
                     ));
                 }
             };
@@ -213,7 +230,10 @@ pub fn advance_centralized_sign_party(
             )
             .context("advance() failed on the SignCentralizedParty")?;
 
-            let signed_message = bcs::to_bytes(&round_result.outgoing_message)?;
+            let signed_message = MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
+                bcs::to_bytes(&round_result.outgoing_message)?,
+            ));
+            let signed_message = bcs::to_bytes(&signed_message)?;
             Ok(signed_message)
         }
     }
@@ -295,7 +315,7 @@ pub fn centralized_public_share_from_decentralized_output_inner(
 /// Returns a serialized tuple containing the `proof of encryption`,
 /// and an encrypted `secret key share`.
 pub fn encrypt_secret_key_share_and_prove(
-    secret_key_share: Vec<u8>,
+    secret_key_share: SerializedWrappedPublicOutput,
     encryption_key: Vec<u8>,
     network_decryption_key_public_output: SerializedWrappedPublicOutput,
 ) -> anyhow::Result<Vec<u8>> {
@@ -325,17 +345,23 @@ pub fn encrypt_secret_key_share_and_prove(
             .randomness_space_public_parameters(),
         &mut OsRng,
     )?;
-    let parsed_secret_key_share = bcs::from_bytes(&secret_key_share)?;
-    let witness = (parsed_secret_key_share, randomness).into();
-    let (proof, statements) = EncryptionOfSecretShareProof::prove(
-        &PhantomData,
-        &language_public_parameters,
-        vec![witness],
-        &mut OsRng,
-    )?;
-    // todo(scaly): why is it derived from statements?
-    let (encryption_of_discrete_log, _) = statements.first().unwrap().clone().into();
-    Ok(bcs::to_bytes(&(proof, encryption_of_discrete_log.value()))?)
+
+    let secret_key_share: MPCPublicOutput = bcs::from_bytes(&secret_key_share)?;
+    match secret_key_share {
+        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(secret_key_share)) => {
+            let parsed_secret_key_share = bcs::from_bytes(&secret_key_share)?;
+            let witness = (parsed_secret_key_share, randomness).into();
+            let (proof, statements) = EncryptionOfSecretShareProof::prove(
+                &PhantomData,
+                &language_public_parameters,
+                vec![witness],
+                &mut OsRng,
+            )?;
+            // todo(scaly): why is it derived from statements?
+            let (encryption_of_discrete_log, _) = statements.first().unwrap().clone().into();
+            Ok(bcs::to_bytes(&(proof, encryption_of_discrete_log.value()))?)
+        }
+    }
 }
 
 /// Verifies the given secret share matches the given dWallets`
