@@ -125,10 +125,14 @@ pub async fn init_ika_on_sui(
         validator_addresses.push(validator_address);
     }
 
-    futures::future::join_all(request_tokens_from_faucet_futures)
-        .await
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?;
+    for future in request_tokens_from_faucet_futures {
+        future.await?;
+    }
+
+    // futures::future::join_all(request_tokens_from_faucet_futures)
+    //     .await
+    //     .into_iter()
+    //     .collect::<Result<Vec<_>, _>>()?;
 
     let ika_package = ika_move_packages::BuiltInIkaMovePackages::get_package_by_name("ika");
     let ika_system_package =
@@ -276,7 +280,7 @@ pub async fn init_ika_on_sui(
     ))
 }
 
-async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
+pub async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -321,7 +325,7 @@ async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
     Ok(())
 }
 
-async fn ika_system_initialize(
+pub async fn ika_system_initialize(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -398,7 +402,7 @@ async fn ika_system_initialize(
     Ok((dwallet_2pc_mpc_secp256k1_id, initial_shared_version))
 }
 
-async fn init_initialize(
+pub async fn init_initialize(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -662,7 +666,7 @@ async fn stake_ika(
     Ok(())
 }
 
-async fn mint_ika(
+pub async fn mint_ika(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -838,7 +842,7 @@ async fn request_add_validator_candidate(
     Ok((validator_cap.validator_id, validator_cap_id))
 }
 
-async fn publish_ika_system_package_to_sui(
+pub async fn publish_ika_system_package_to_sui(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -1084,7 +1088,7 @@ async fn add_public_keys_and_proofs_with_rng(
     Ok(())
 }
 
-async fn publish_ika_package_to_sui(
+pub async fn publish_ika_package_to_sui(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,

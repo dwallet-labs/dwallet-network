@@ -853,6 +853,7 @@ public(package) fun advance_epoch_dwallet_network_decryption_key(
         cap.dwallet_network_decryption_key_id
     );
     assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
+    assert!(dwallet_network_decryption_key.state == DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration, EWrongState);
     dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
     dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::NetworkReconfigurationCompleted;
     let mut epoch_computation_fee_charged_ika = sui::balance::zero<IKA>();

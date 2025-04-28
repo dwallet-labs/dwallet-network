@@ -1382,7 +1382,10 @@ impl AuthorityPerEpochStore {
                         Some(event)
                     }
                     Ok(None) => {
-                        error!("failed to extract session info from event");
+                        warn!(
+                            event=?event,
+                            "failed to extract session info from event"
+                        );
                         None
                     }
                     Err(e) => {

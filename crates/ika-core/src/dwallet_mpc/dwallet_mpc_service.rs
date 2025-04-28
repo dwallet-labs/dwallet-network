@@ -29,7 +29,7 @@ use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
 use tokio::task::yield_now;
 use tokio::time;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use typed_store::Map;
 
 const READ_INTERVAL_MS: u64 = 100;
@@ -125,14 +125,17 @@ impl DWalletMPCService {
                             sequence_number=?session_info.sequence_number,
                             is_immediate=?session_info.is_immediate,
                             mpc_round=?session_info.mpc_round,
-                            "Successfully processed missed event from Sui"
+                            "Successfully processed a missed event from Sui"
                         );
                     }
                     Ok(None) => {
-                        error!("Failed to extract session info from missed event");
+                        warn!("Failed to extract session info from a missed event");
                     }
                     Err(e) => {
-                        error!("Error processing a missed event: {}", e);
+                        error!(
+                            erorr=?e,
+                            "error while processing a missed event"
+                        );
                     }
                 }
             }
@@ -163,6 +166,7 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
+            debug!("Running DWalletMPCService loop");
 
             if self.dwallet_mpc_manager.recognized_self_as_malicious {
                 error!(
@@ -180,7 +184,7 @@ impl DWalletMPCService {
             self.update_last_session_to_complete_in_current_epoch()
                 .await;
             let Ok(tables) = self.epoch_store.tables() else {
-                error!("Failed to load DB tables from epoch store");
+                error!("failed to load DB tables from the epoch store");
                 continue;
             };
             let Ok(completed_sessions) = self
@@ -188,7 +192,7 @@ impl DWalletMPCService {
                 .load_dwallet_mpc_completed_sessions_from_round(self.last_read_consensus_round + 1)
                 .await
             else {
-                error!("Failed to load DWallet MPC events from the local DB");
+                error!("failed to load dWallet MPC completed sessions from the local DB");
                 continue;
             };
             for session_id in completed_sessions {
@@ -196,7 +200,6 @@ impl DWalletMPCService {
                     .mpc_sessions
                     .get_mut(&session_id)
                     .map(|session| {
-                        session.clear_data();
                         session.status = MPCSessionStatus::Finished;
                     });
             }
@@ -205,7 +208,7 @@ impl DWalletMPCService {
                 .load_dwallet_mpc_events_from_round(self.last_read_consensus_round + 1)
                 .await
             else {
-                error!("Failed to load DWallet MPC events from the local DB");
+                error!("failed to load dWallet MPC events from the local DB");
                 continue;
             };
             for event in events_from_sui {

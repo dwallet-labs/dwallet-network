@@ -113,7 +113,7 @@ where
             let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
                 let mut committee_lock = next_epoch_committee.write().await;
                 *committee_lock = None;
-                debug!("ika next epoch active committee not found, retrying...");
+                debug!("Ika next epoch active committee not found, retrying...");
                 continue;
             };
 
@@ -229,20 +229,21 @@ where
                 {
                     Ok(_) => {
                         info!(
-                            "Successfully synced the network decryption key for key_id: {:?}",
-                            key_id
+                            key_id=?key_id,
+                            "Successfully synced the network decryption key for `key_id`",
                         );
                     }
                     Err(DwalletMPCError::NetworkDKGNotCompleted) => {
                         info!(
-                            "Key Sync — The Network DKG for key_id: {:?} was not completed yet",
-                            key_id
+                            key_id=?key_id,
+                            "Key Sync — The Network DKG for `key_id` was not completed yet",
                         );
                     }
                     Err(e) => {
-                        error!(
-                            "Failed to sync network decryption key for key_id: {:?}, error: {:?}",
-                            key_id, e
+                        warn!(
+                            key_id=?key_id,
+                            error=?e,
+                            "failed to sync the network decryption key",
                         );
                     }
                 }
@@ -267,8 +268,8 @@ where
 
         if !should_update {
             info!(
-                "Network decryption key for key_id: {:?} is up to date",
-                key_id
+                key_id=?key_id,
+                "Network decryption key for is up to date",
             );
             return Ok(());
         }
@@ -286,7 +287,7 @@ where
                 .update_network_key(*key_id, key, &weighted_threshold_access_structure)
                 .await
         } else {
-            info!(committee=?weighted_threshold_access_structure, "Adding new network key for key_id: {:?}", key_id);
+            info!(committee=?weighted_threshold_access_structure, "Adding a new network key for key_id: {:?}", key_id);
             dwallet_mpc_network_keys
                 .add_new_network_key(*key_id, key, &weighted_threshold_access_structure)
                 .await

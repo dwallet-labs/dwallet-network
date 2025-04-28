@@ -73,3 +73,15 @@ here: https://www.figma.com/board/ISrirOSeSr9YyS6U4MTUyT/Flows-Diagrams?node-id=
 
 Diagrams of our State Sync mechanism can be found
 here: https://www.figma.com/board/uzpZ7ToOQ8DWcID2vOUlwt/State-Sync-Overview?node-id=0-1&t=fnWiOtTlWT7ZYV93-1.
+
+
+### Tests
+
+1. Run the network with X validators
+2. Run MPC Protocols
+3. Kill randomly X validators, run the network without them.
+4. Kill more than a 1/3 of the validators, run the network without them—halts.
+5. Bring the Validators back and make sure the network recovers.
+6. Make the messages slow and see if the network still works. (1/2 of the net slows)
+7. Make a Validator receive a message and re-send it as its own.
+8. Epoch change - add validator, remove validator.
