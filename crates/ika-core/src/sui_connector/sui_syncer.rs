@@ -18,6 +18,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
 use ika_types::sui::{SystemInnerInit, SystemInnerTrait};
+use im::HashSet;
 use itertools::Itertools;
 use mpc::{Weight, WeightedThresholdAccessStructure};
 use mysten_metrics::spawn_logged_monitored_task;
@@ -180,8 +181,9 @@ where
         sui_client: Arc<SuiClient<C>>,
         network_keys_sender: watch::Sender<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
     ) {
+        let mut fetched_network_keys: HashSet<(ObjectID, u64)> = HashSet::new();
         loop {
-            time::sleep(Duration::from_secs(30)).await;
+            time::sleep(Duration::from_secs(5)).await;
 
             let network_decryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
@@ -193,6 +195,15 @@ where
             let active_committee = sui_client.get_epoch_active_committee().await;
             let system_inner = sui_client.must_get_system_inner_object().await;
             let system_inner = system_inner.into_init_version_for_tooling();
+            let current_keys = system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys();
+            let should_fetch_keys = current_keys.iter().any(|key| {
+                !fetched_network_keys
+                    .contains(&(key.dwallet_network_decryption_key_id, system_inner.epoch()))
+            });
+            if !should_fetch_keys {
+                info!("No new network keys to fetch");
+                continue;
+            }
             let active_committee = match Self::new_committee(
                 sui_client.clone(),
                 &system_inner,
@@ -225,7 +236,8 @@ where
                 .await
                 {
                     Ok(key) => {
-                        all_network_keys_data.insert(key_id, key);
+                        all_network_keys_data.insert(key_id.clone(), key);
+                        fetched_network_keys.insert((key_id, system_inner.epoch()));
                     }
                     Err(err) => {
                         error!(
